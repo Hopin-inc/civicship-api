@@ -1,0 +1,40 @@
+type Agenda {
+    id: Int!
+    name: String!
+    description: String
+}
+
+type City {
+    code: ID!
+    name: String!
+    state: State!
+}
+
+type State {
+    code: ID!
+    countryCode: ID!
+    name: String!
+}
+
+type Index {
+    id: ID!
+    name: String!
+    valueType: ValueType!
+    description: String
+}
+
+enum EntityPosition {
+    PREFIX
+    SUFFIX
+}
+
+enum ValueType {
+    INT
+    FLOAT
+}
+
+extend type Query {
+    agendas: [Agenda!]!
+    cities(name: String): [City!]!
+    states(name: String): [State!]!
+}

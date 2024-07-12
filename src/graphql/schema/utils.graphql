@@ -1,0 +1,35 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+scalar Datetime
+
+type Query {
+    echo: String!
+}
+
+type Mutation {
+    mutationEcho: String!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+type Paging {
+    take: Int!
+    skip: Int!
+}
+
+interface Edge {
+    cursor: String!
+}
+
+enum SortDirection {
+    asc
+    desc
+}

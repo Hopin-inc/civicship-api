@@ -1,0 +1,97 @@
+import { Prisma } from "@prisma/client";
+import {
+  GqlEvent,
+  GqlEventsConnection,
+  GqlMutationCreateEventArgs,
+  GqlMutationDeleteEventArgs,
+  GqlMutationUpdateEventArgs,
+  GqlQueryEventArgs,
+  GqlQueryEventsArgs
+} from "@/types/graphql";
+import { prismaClient } from "@/prisma/client";
+
+export default class EventService {
+  private static db = prismaClient;
+
+  static async queryEvents({ cursor, filter, sort, first }: GqlQueryEventsArgs): Promise<GqlEventsConnection> {
+    const take = first ?? 10;
+    const where: Prisma.EventWhereInput = {
+      AND: [
+        filter?.agendaId ? { agendas: { some: { agendaId: filter?.agendaId } } } : {},
+        filter?.cityCode ? { cities: { some: { cityCode: filter?.cityCode } } } : {},
+        filter?.keyword ? {
+          OR: [
+            { description: { contains: filter?.keyword } },
+            { organizations: { some: { organization: { name: { contains: filter?.keyword } } } } }
+          ]
+        } : {}
+      ]
+    };
+    const orderBy: Prisma.EventOrderByWithRelationInput = {
+      startsAt: sort?.startsAt ?? Prisma.SortOrder.desc
+    };
+
+    const data = await this.db.event.findMany({
+      where,
+      orderBy,
+      include: {
+        agendas: { include: { agenda: true } }
+      },
+      take: take + 1,
+      skip: cursor ? 1 : 0,
+      cursor: cursor ? { id: cursor } : undefined
+    });
+    const hasNextPage = data.length > take;
+    const formattedData = data
+      .slice(0, take)
+      .map(record => ({
+        ...record,
+        agendas: record.agendas.map(r => r.agenda)
+      }));
+    return {
+      totalCount: data.length,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: true,
+        startCursor: formattedData[0]?.id,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined
+      },
+      edges: formattedData.map(edge => ({
+        cursor: edge.id,
+        node: edge
+      }))
+    };
+  }
+
+  static async getEvent({ id }: GqlQueryEventArgs): Promise<GqlEvent | null> {
+    return this.db.event.findUnique({ where: { id } });
+  }
+
+  static async createEvent({ content }: GqlMutationCreateEventArgs): Promise<GqlEvent> {
+    const { organizationIds, agendaIds, cityCodes, ...properties } = content;
+    const data: Prisma.EventCreateInput = {
+      ...properties,
+      organizations: {
+        create: organizationIds?.map(organizationId => ({ organizationId }))
+      },
+      agendas: {
+        create: agendaIds?.map(agendaId => ({ agendaId }))
+      },
+      cities: {
+        create: cityCodes?.map(cityCode => ({ cityCode }))
+      }
+    }
+    return this.db.event.create({ data });
+  }
+
+  static async updateEvent({ id, content }: GqlMutationUpdateEventArgs): Promise<GqlEvent> {
+    return this.db.event.update({
+      where: { id },
+      data: content
+    });
+  }
+
+  static async deleteEvent({ id }: GqlMutationDeleteEventArgs): Promise<GqlEvent> {
+    return this.db.event.delete({ where: { id } });
+  }
+}

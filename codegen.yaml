@@ -1,0 +1,29 @@
+overwrite: true
+generates:
+  ./src/types/graphql.ts:
+    schema: ./src/graphql/**/*.graphql
+    plugins:
+      - typescript
+      - typescript-resolvers
+    config:
+      typesPrefix: Gql
+      useIndexSignature: true
+      maybeValue: T | null
+      inputMaybeValue: T | undefined
+      strictScalars: true
+      scalars:
+        Datetime: Date
+      mappers:
+        Agenda: "@prisma/client/index.d#Agenda"
+        City: "@prisma/client/index.d#City"
+        State: "@prisma/client/index.d#State"
+        Index: "@prisma/client/index.d#Index"
+        Event: "@prisma/client/index.d#Event"
+        Activity: "@prisma/client/index.d#Activity"
+        Like: "@prisma/client/index.d#Like"
+        Comment: "@prisma/client/index.d#Comment"
+        Organization: "@prisma/client/index.d#Organization"
+        Group: "@prisma/client/index.d#Group"
+        Target: "@prisma/client/index.d#Target"
+        User: "@prisma/client/index.d#User"
+      contextType: "@/prisma/client#Context"

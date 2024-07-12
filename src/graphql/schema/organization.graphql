@@ -1,0 +1,84 @@
+# Queries and Mutations
+
+#extend type Query {
+#
+#}
+
+extend type Mutation {
+    createOrganization(content: OrganizationCreateInput!): Organization
+}
+
+# Queries/Mutations-related type definitions
+
+input OrganizationCreateInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+# Type definitions
+
+type Organizations {
+    total: Int!
+    data: [Organization!]!
+}
+
+type Organization {
+    id: ID!
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    state: State!
+    city: City!
+    address1: String!
+    address2: String
+
+    groups: [Group!]
+    users: [User!]
+    events: [Event!]
+    agendas: [Agenda!]
+    cities: [City!]
+    targets: [Target!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type Group {
+    id: ID!
+}
+
+type Target {
+    id: ID!
+    name: String!
+    value: Float!
+    validFrom: String!
+    validTo: String!
+
+    organization: Organization
+    group: Group
+    index: Index
+
+    createdAt: String!
+    updatedAt: String
+}

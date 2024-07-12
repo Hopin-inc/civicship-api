@@ -1,0 +1,49 @@
+# Queries and Mutations
+
+#extend type Query {
+#
+#}
+
+extend type Mutation {
+    createUser(content: UserCreateInput!): User
+}
+
+# Queries/Mutations-related type definitions
+
+input UserCreateInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    isPublic: Boolean!
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    groupIds: [String!]
+    organizationIds: [String!]
+}
+
+# Type definitions
+
+type User {
+    id: ID!
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    isPublic: Boolean!
+
+    agendas: [Agenda!]
+    cities: [City!]
+    groups: [Group!]
+    organizations: [Organization!]
+    activities: [Activity!]
+    likes: [Like!]
+    comments: [Comment!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
