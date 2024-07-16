@@ -5,7 +5,8 @@ steps:
     args:
       - -c
       - >-
-        build
+        docker build
+        --file=Dockerfile
         --tag=gcr.io/$PROJECT_ID/civicship-api
         --build-arg=PROJECT_ID=$$PROJECT_ID
         .
