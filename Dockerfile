@@ -8,7 +8,7 @@ RUN yarn global add pnpm && pnpm i --frozen-lockfile;
 
 FROM base AS builder
 WORKDIR /tmp
-COPY --from=deps /tmp/node_modules ./node_modules
+COPY --from=base /tmp/node_modules ./node_modules
 COPY . .
 
 RUN pnpm build
