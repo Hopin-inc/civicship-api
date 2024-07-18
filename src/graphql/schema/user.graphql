@@ -1,16 +1,59 @@
 # Queries and Mutations
 
-#extend type Query {
-#
-#}
+extend type Query {
+    users(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection!
+    user(id: ID!): User
+}
 
 extend type Mutation {
     createUser(content: UserCreateInput!): User
+    updateUser(id: ID!, content: UserUpdateInput!): User
+    deleteUser(id: ID!): User
 }
 
 # Queries/Mutations-related type definitions
 
+type UsersConnection {
+    edges: [UserEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type UserEdge implements Edge {
+    cursor: String!
+    node: User
+}
+
+input UserFilterInput {
+    keyword: String
+    agendaId: Int
+    cityCode: String
+}
+
+input UserSortInput {
+    updatedAt: SortDirection
+}
+
 input UserCreateInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    isPublic: Boolean!
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    groupIds: [String!]
+    organizationIds: [String!]
+}
+
+input UserUpdateInput {
     lastName: String!
     middleName: String
     firstName: String!
