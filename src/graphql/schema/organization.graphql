@@ -1,14 +1,42 @@
 # Queries and Mutations
 
-#extend type Query {
-#
-#}
+extend type Query {
+    organizations(
+        filter: OrganizationFilterInput
+        sort: OrganizationSortInput
+        cursor: String
+        first: Int
+    ): OrganizationsConnection!
+    organization(id: ID!): Organization
+}
 
 extend type Mutation {
     createOrganization(content: OrganizationCreateInput!): Organization
+    updateOrganization(id: ID!, content: OrganizationUpdateInput!): Organization
+    deleteOrganization(id: ID!): Organization
 }
 
 # Queries/Mutations-related type definitions
+
+type OrganizationsConnection {
+    edges: [OrganizationEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OrganizationEdge implements Edge {
+    cursor: String!
+    node: Organization
+}
+
+input OrganizationFilterInput {
+    keyword: String
+    agendaId: Int
+}
+
+input OrganizationSortInput {
+    updatedAt: SortDirection
+}
 
 input OrganizationCreateInput {
     name: String!
@@ -28,6 +56,30 @@ input OrganizationCreateInput {
 
     agendaIds: [Int!]
     cityCodes: [String!]
+}
+
+input OrganizationUpdateInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+
+    groupIds: [String!]
+    userIds: [String!]
+    eventIds: [String!]
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    targetIds: [String!]
 }
 
 # Type definitions

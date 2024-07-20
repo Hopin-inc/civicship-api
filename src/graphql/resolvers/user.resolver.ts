@@ -1,6 +1,8 @@
 import UserService from "@/services/user.service";
 import {
   GqlMutationCreateUserArgs,
+  GqlMutationDeleteUserArgs,
+  GqlMutationUpdateUserArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
 } from "@/types/graphql";
@@ -15,6 +17,10 @@ const userResolver = {
   Mutation: {
     createUser: async (_: unknown, args: GqlMutationCreateUserArgs) =>
       UserService.createUser(args),
+    updateUser: async (_: unknown, args: GqlMutationUpdateUserArgs) =>
+      UserService.updateUser(args),
+    deleteUser: async (_: unknown, args: GqlMutationDeleteUserArgs) =>
+      UserService.deleteUser(args),
   },
 };
 
