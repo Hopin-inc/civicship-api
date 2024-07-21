@@ -26,6 +26,13 @@ export type GqlActivities = {
   total: Scalars['Int']['output'];
 };
 
+export type GqlActivitiesConnection = {
+  __typename?: 'ActivitiesConnection';
+  edges?: Maybe<Array<Maybe<GqlActivityEdge>>>;
+  pageInfo: GqlPageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type GqlActivity = {
   __typename?: 'Activity';
   createdAt: Scalars['Datetime']['output'];
@@ -39,6 +46,45 @@ export type GqlActivity = {
   startsAt: Scalars['Datetime']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user: GqlUser;
+};
+
+export type GqlActivityCreateInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  endsAt: Scalars['Datetime']['input'];
+  eventId: Scalars['String']['input'];
+  images?: InputMaybe<Array<Scalars['String']['input']>>;
+  isPublic: Scalars['Boolean']['input'];
+  remark?: InputMaybe<Scalars['String']['input']>;
+  startsAt: Scalars['Datetime']['input'];
+  userId: Scalars['String']['input'];
+};
+
+export type GqlActivityEdge = GqlEdge & {
+  __typename?: 'ActivityEdge';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<GqlActivity>;
+};
+
+export type GqlActivityFilterInput = {
+  eventId?: InputMaybe<Scalars['String']['input']>;
+  keyword?: InputMaybe<Scalars['String']['input']>;
+  userId?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlActivitySortInput = {
+  createdAt?: InputMaybe<GqlSortDirection>;
+  startsAt?: InputMaybe<GqlSortDirection>;
+};
+
+export type GqlActivityUpdateInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  endsAt: Scalars['Datetime']['input'];
+  eventId: Scalars['String']['input'];
+  images?: InputMaybe<Array<Scalars['String']['input']>>;
+  isPublic: Scalars['Boolean']['input'];
+  remark?: InputMaybe<Scalars['String']['input']>;
+  startsAt: Scalars['Datetime']['input'];
+  userId: Scalars['String']['input'];
 };
 
 export type GqlAgenda = {
@@ -198,16 +244,19 @@ export type GqlLikes = {
 export type GqlMutation = {
   __typename?: 'Mutation';
   addLike?: Maybe<GqlLike>;
+  createActivity?: Maybe<GqlActivity>;
   createComment?: Maybe<GqlComment>;
   createEvent?: Maybe<GqlEvent>;
   createOrganization?: Maybe<GqlOrganization>;
   createUser?: Maybe<GqlUser>;
+  deleteActivity?: Maybe<GqlActivity>;
   deleteComment?: Maybe<GqlComment>;
   deleteEvent?: Maybe<GqlEvent>;
   deleteOrganization?: Maybe<GqlOrganization>;
   deleteUser?: Maybe<GqlUser>;
   mutationEcho: Scalars['String']['output'];
   removeLike?: Maybe<GqlLike>;
+  updateActivity?: Maybe<GqlActivity>;
   updateComment?: Maybe<GqlComment>;
   updateEvent?: Maybe<GqlEvent>;
   updateOrganization?: Maybe<GqlOrganization>;
@@ -217,6 +266,11 @@ export type GqlMutation = {
 
 export type GqlMutationAddLikeArgs = {
   content: GqlLikeCreateInput;
+};
+
+
+export type GqlMutationCreateActivityArgs = {
+  content: GqlActivityCreateInput;
 };
 
 
@@ -237,6 +291,11 @@ export type GqlMutationCreateOrganizationArgs = {
 
 export type GqlMutationCreateUserArgs = {
   content: GqlUserCreateInput;
+};
+
+
+export type GqlMutationDeleteActivityArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -263,6 +322,12 @@ export type GqlMutationDeleteUserArgs = {
 export type GqlMutationRemoveLikeArgs = {
   eventId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationUpdateActivityArgs = {
+  content: GqlActivityUpdateInput;
+  id: Scalars['ID']['input'];
 };
 
 
@@ -398,6 +463,8 @@ export type GqlPaging = {
 
 export type GqlQuery = {
   __typename?: 'Query';
+  activities: GqlActivitiesConnection;
+  activity?: Maybe<GqlActivity>;
   agendas: Array<GqlAgenda>;
   cities: Array<GqlCity>;
   echo: Scalars['String']['output'];
@@ -408,6 +475,19 @@ export type GqlQuery = {
   states: Array<GqlState>;
   user?: Maybe<GqlUser>;
   users: GqlUsersConnection;
+};
+
+
+export type GqlQueryActivitiesArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlActivityFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlActivitySortInput>;
+};
+
+
+export type GqlQueryActivityArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -633,13 +713,19 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlEventEdge, 'node'> & { node?: Maybe<_RefType['Event']> } ) | ( Omit<GqlOrganizationEdge, 'node'> & { node?: Maybe<_RefType['Organization']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } );
+  Edge: ( Omit<GqlActivityEdge, 'node'> & { node?: Maybe<_RefType['Activity']> } ) | ( Omit<GqlEventEdge, 'node'> & { node?: Maybe<_RefType['Event']> } ) | ( Omit<GqlOrganizationEdge, 'node'> & { node?: Maybe<_RefType['Organization']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
 export type GqlResolversTypes = ResolversObject<{
   Activities: ResolverTypeWrapper<Omit<GqlActivities, 'data'> & { data: Array<GqlResolversTypes['Activity']> }>;
+  ActivitiesConnection: ResolverTypeWrapper<Omit<GqlActivitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ActivityEdge']>>> }>;
   Activity: ResolverTypeWrapper<Activity>;
+  ActivityCreateInput: GqlActivityCreateInput;
+  ActivityEdge: ResolverTypeWrapper<Omit<GqlActivityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Activity']> }>;
+  ActivityFilterInput: GqlActivityFilterInput;
+  ActivitySortInput: GqlActivitySortInput;
+  ActivityUpdateInput: GqlActivityUpdateInput;
   Agenda: ResolverTypeWrapper<Agenda>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   City: ResolverTypeWrapper<City>;
@@ -694,7 +780,13 @@ export type GqlResolversTypes = ResolversObject<{
 /** Mapping between all available schema types and the resolvers parents */
 export type GqlResolversParentTypes = ResolversObject<{
   Activities: Omit<GqlActivities, 'data'> & { data: Array<GqlResolversParentTypes['Activity']> };
+  ActivitiesConnection: Omit<GqlActivitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ActivityEdge']>>> };
   Activity: Activity;
+  ActivityCreateInput: GqlActivityCreateInput;
+  ActivityEdge: Omit<GqlActivityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Activity']> };
+  ActivityFilterInput: GqlActivityFilterInput;
+  ActivitySortInput: GqlActivitySortInput;
+  ActivityUpdateInput: GqlActivityUpdateInput;
   Agenda: Agenda;
   Boolean: Scalars['Boolean']['output'];
   City: City;
@@ -749,6 +841,13 @@ export type GqlActivitiesResolvers<ContextType = Context, ParentType extends Gql
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlActivitiesConnectionResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ActivitiesConnection'] = GqlResolversParentTypes['ActivitiesConnection']> = ResolversObject<{
+  edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['ActivityEdge']>>>, ParentType, ContextType>;
+  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlActivityResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Activity'] = GqlResolversParentTypes['Activity']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -761,6 +860,12 @@ export type GqlActivityResolvers<ContextType = Context, ParentType extends GqlRe
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlActivityEdgeResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ActivityEdge'] = GqlResolversParentTypes['ActivityEdge']> = ResolversObject<{
+  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -800,7 +905,7 @@ export interface GqlDatetimeScalarConfig extends GraphQLScalarTypeConfig<GqlReso
 }
 
 export type GqlEdgeResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'EventEdge' | 'OrganizationEdge' | 'UserEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ActivityEdge' | 'EventEdge' | 'OrganizationEdge' | 'UserEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -865,16 +970,19 @@ export type GqlLikesResolvers<ContextType = Context, ParentType extends GqlResol
 
 export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Mutation'] = GqlResolversParentTypes['Mutation']> = ResolversObject<{
   addLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationAddLikeArgs, 'content'>>;
+  createActivity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlMutationCreateActivityArgs, 'content'>>;
   createComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationCreateCommentArgs, 'content'>>;
   createEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationCreateEventArgs, 'content'>>;
   createOrganization?: Resolver<Maybe<GqlResolversTypes['Organization']>, ParentType, ContextType, RequireFields<GqlMutationCreateOrganizationArgs, 'content'>>;
   createUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType, RequireFields<GqlMutationCreateUserArgs, 'content'>>;
+  deleteActivity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlMutationDeleteActivityArgs, 'id'>>;
   deleteComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationDeleteCommentArgs, 'id'>>;
   deleteEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationDeleteEventArgs, 'id'>>;
   deleteOrganization?: Resolver<Maybe<GqlResolversTypes['Organization']>, ParentType, ContextType, RequireFields<GqlMutationDeleteOrganizationArgs, 'id'>>;
   deleteUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType, RequireFields<GqlMutationDeleteUserArgs, 'id'>>;
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   removeLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationRemoveLikeArgs, 'eventId' | 'userId'>>;
+  updateActivity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlMutationUpdateActivityArgs, 'content' | 'id'>>;
   updateComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationUpdateCommentArgs, 'content' | 'id'>>;
   updateEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationUpdateEventArgs, 'content' | 'id'>>;
   updateOrganization?: Resolver<Maybe<GqlResolversTypes['Organization']>, ParentType, ContextType, RequireFields<GqlMutationUpdateOrganizationArgs, 'content' | 'id'>>;
@@ -940,6 +1048,8 @@ export type GqlPagingResolvers<ContextType = Context, ParentType extends GqlReso
 }>;
 
 export type GqlQueryResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
+  activities?: Resolver<GqlResolversTypes['ActivitiesConnection'], ParentType, ContextType, Partial<GqlQueryActivitiesArgs>>;
+  activity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlQueryActivityArgs, 'id'>>;
   agendas?: Resolver<Array<GqlResolversTypes['Agenda']>, ParentType, ContextType>;
   cities?: Resolver<Array<GqlResolversTypes['City']>, ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
   echo?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -1009,7 +1119,9 @@ export type GqlUsersConnectionResolvers<ContextType = Context, ParentType extend
 
 export type GqlResolvers<ContextType = Context> = ResolversObject<{
   Activities?: GqlActivitiesResolvers<ContextType>;
+  ActivitiesConnection?: GqlActivitiesConnectionResolvers<ContextType>;
   Activity?: GqlActivityResolvers<ContextType>;
+  ActivityEdge?: GqlActivityEdgeResolvers<ContextType>;
   Agenda?: GqlAgendaResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
   Comment?: GqlCommentResolvers<ContextType>;
