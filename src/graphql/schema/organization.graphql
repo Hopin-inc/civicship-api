@@ -116,10 +116,6 @@ type Organization {
     updatedAt: Datetime
 }
 
-type Group {
-    id: ID!
-}
-
 type Target {
     id: ID!
     name: String!
