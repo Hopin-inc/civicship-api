@@ -26,67 +26,38 @@ export default class CommentService {
       postedAt: new Date(postedAt ?? Date.now()).toISOString(),
     };
 
-    const [comment, event, user] = await Promise.all([
-      this.db.comment.create({ data }),
-      this.db.event.findUnique({ where: { id: eventId } }),
-      this.db.user.findUnique({ where: { id: userId } }),
-    ]);
-
-    if (!event || !user) {
-      throw new Error("Event or user not found");
-    }
-
-    return {
-      ...comment,
-      event,
-      user,
-    };
+    return this.db.comment.create({
+      data,
+      include: {
+        user: true,
+        event: true,
+      },
+    });
   }
 
   static async updateComment({
     id,
     content,
   }: GqlMutationUpdateCommentArgs): Promise<GqlComment> {
-    const comment = await this.db.comment.update({
+    return this.db.comment.update({
       where: { id },
       data: content,
+      include: {
+        user: true,
+        event: true,
+      },
     });
-
-    const [event, user] = await Promise.all([
-      this.db.event.findUnique({ where: { id: comment.eventId } }),
-      this.db.user.findUnique({ where: { id: comment.userId } }),
-    ]);
-
-    if (!event || !user) {
-      throw new Error("User or event not found");
-    }
-
-    return {
-      ...comment,
-      user: user,
-      event: event,
-    };
   }
 
   static async deleteComment({
     id,
   }: GqlMutationDeleteCommentArgs): Promise<GqlComment> {
-    const comment = await this.db.comment.delete({
+    return this.db.comment.delete({
       where: { id },
       include: {
         user: true,
         event: true,
       },
     });
-
-    if (!comment.user || !comment.event) {
-      throw new Error("User or event not found");
-    }
-
-    return {
-      ...comment,
-      user: comment.user,
-      event: comment.event,
-    };
   }
 }
