@@ -44,8 +44,9 @@ model User {
   groups        UsersOnGroups[]
   organizations UsersOnOrganizations[]
   activities    Activity[]
-  likes         Like[]
-  comments      Comment[]
+
+  likes    Like[]
+  comments Comment[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -168,6 +169,8 @@ model Activity {
   eventId String @map("event_id")
   event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  stat ActivityStatView?
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -192,6 +195,7 @@ model Event {
   comments      Comment[]
   activities    Activity[]
   cities        CitiesOnEvents[]
+  stat          EventStatView?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -451,4 +455,35 @@ enum EntityPosition {
 enum ValueType {
   INT
   FLOAT
+}
+
+// Views
+
+view ActivityStatView {
+  id       String   @unique
+  isPublic Boolean  @map("is_public")
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime @map("ends_at")
+
+  userId  String @map("user_id")
+  eventId String @map("event_id")
+
+  activity     Activity @relation(fields: [id], references: [id])
+  totalMinutes Int      @map("total_minutes")
+
+  @@map("v_activities_stats")
+}
+
+view EventStatView {
+  id              String    @unique
+  isPublic        Boolean   @map("is_public")
+  startsAt        DateTime  @map("starts_at")
+  endsAt          DateTime  @map("ends_at")
+  plannedStartsAt DateTime? @map("planned_starts_at")
+  plannedEndsAt   DateTime? @map("planned_ends_at")
+
+  event        Event @relation(fields: [id], references: [id])
+  totalMinutes Int   @map("total_minutes")
+
+  @@map("v_events_stats")
 }

@@ -35,17 +35,19 @@ export default class EventService {
       where,
       orderBy,
       include: {
-        agendas: { include: { agenda: true } }
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } },
       },
       take: take + 1,
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined
     });
     const hasNextPage = data.length > take;
-    const formattedData = data
+    const formattedData: GqlEvent[] = data
       .slice(0, take)
       .map(record => ({
         ...record,
+        totalMinutes: record.stat?.totalMinutes ?? 0,
         agendas: record.agendas.map(r => r.agenda)
       }));
     return {
@@ -64,7 +66,18 @@ export default class EventService {
   }
 
   static async getEvent({ id }: GqlQueryEventArgs): Promise<GqlEvent | null> {
-    return this.db.event.findUnique({ where: { id } });
+    const event = await this.db.event.findUnique({
+      where: { id },
+      include: {
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } }
+      }
+    });
+    return event ? {
+      ...event,
+      agendas: event.agendas.map(r => r.agenda),
+      totalMinutes: event.stat?.totalMinutes ?? 0,
+    } : null;
   }
 
   static async createEvent({ content }: GqlMutationCreateEventArgs): Promise<GqlEvent> {
@@ -81,17 +94,48 @@ export default class EventService {
         create: cityCodes?.map(cityCode => ({ cityCode }))
       }
     }
-    return this.db.event.create({ data });
+    const event = await this.db.event.create({
+      data,
+      include: {
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } }
+      }
+    });
+    return {
+      ...event,
+      agendas: event.agendas.map(r => r.agenda),
+      totalMinutes: event.stat?.totalMinutes ?? 0,
+    };
   }
 
   static async updateEvent({ id, content }: GqlMutationUpdateEventArgs): Promise<GqlEvent> {
-    return this.db.event.update({
+    const event = await this.db.event.update({
       where: { id },
-      data: content
+      data: content,
+      include: {
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } }
+      }
     });
+    return {
+      ...event,
+      agendas: event.agendas.map(r => r.agenda),
+      totalMinutes: event.stat?.totalMinutes ?? 0,
+    };
   }
 
   static async deleteEvent({ id }: GqlMutationDeleteEventArgs): Promise<GqlEvent> {
-    return this.db.event.delete({ where: { id } });
+    const event = await this.db.event.delete({
+      where: { id },
+      include: {
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } }
+      }
+    });
+    return {
+      ...event,
+      agendas: event.agendas.map(r => r.agenda),
+      totalMinutes: event.stat?.totalMinutes ?? 0,
+    };
   }
 }
