@@ -1,5 +1,6 @@
 import {
   GqlMutationCreateOrganizationArgs,
+  GqlMutationDeleteOrganizationArgs,
   GqlMutationUpdateOrganizationArgs,
   GqlOrganization,
   GqlOrganizationsConnection,
@@ -13,6 +14,7 @@ export default class OrganizationService {
   private static db = prismaClient;
 
   // TODO: check userId, cities, etc. -> filter
+  // TODO why need as GqlOrganization
   static async queryOrganizations({
     cursor,
     filter,
@@ -75,14 +77,21 @@ export default class OrganizationService {
     };
   }
 
+  // TODO why need as GqlOrganization
   static async getOrganization({
     id,
   }: GqlQueryOrganizationArgs): Promise<GqlOrganization | null> {
-    const organization = await this.db.organization.findUnique({
+    return (await this.db.organization.findUnique({
       where: { id },
-    });
-
-    return organization as GqlOrganization | null;
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    })) as GqlOrganization | null;
   }
 
   static async createOrganization({
@@ -228,10 +237,20 @@ export default class OrganizationService {
     };
   }
 
-  // TODO: add delete if need
-  // static async deleteOrganization({
-  //   id,
-  // }: GqlMutationDeleteOrganizationArgs): Promise<GqlOrganization> {
-  //   return this.db.organization.delete({ where: { id } });
-  // }
+  // TODO why need as GqlOrganization
+  static async deleteOrganization({
+    id,
+  }: GqlMutationDeleteOrganizationArgs): Promise<GqlOrganization> {
+    return (await this.db.organization.delete({
+      where: { id },
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    })) as GqlOrganization;
+  }
 }
