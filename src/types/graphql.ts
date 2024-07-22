@@ -44,6 +44,7 @@ export type GqlActivity = {
   isPublic: Scalars['Boolean']['output'];
   remark?: Maybe<Scalars['String']['output']>;
   startsAt: Scalars['Datetime']['output'];
+  totalMinutes: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user: GqlUser;
 };
@@ -153,6 +154,7 @@ export type GqlEvent = {
   plannedEndsAt?: Maybe<Scalars['Datetime']['output']>;
   plannedStartsAt?: Maybe<Scalars['Datetime']['output']>;
   startsAt: Scalars['Datetime']['output'];
+  totalMinutes: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -966,6 +968,7 @@ export type GqlActivityResolvers<ContextType = Context, ParentType extends GqlRe
   isPublic?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   remark?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1031,6 +1034,7 @@ export type GqlEventResolvers<ContextType = Context, ParentType extends GqlResol
   plannedEndsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   plannedStartsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

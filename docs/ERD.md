@@ -256,6 +256,28 @@ FLOAT FLOAT
     String description "❓"
     }
   
+
+  "v_activities_stats" {
+    String id 
+    Boolean isPublic 
+    DateTime startsAt 
+    DateTime endsAt 
+    String userId 
+    String eventId 
+    Int totalMinutes 
+    }
+  
+
+  "v_events_stats" {
+    String id 
+    Boolean isPublic 
+    DateTime startsAt 
+    DateTime endsAt 
+    DateTime plannedStartsAt "❓"
+    DateTime plannedEndsAt "❓"
+    Int totalMinutes 
+    }
+  
     "t_users" o{--}o "t_agendas_on_users" : "agendas"
     "t_users" o{--}o "t_cities_on_users" : "cities"
     "t_users" o{--}o "t_users_on_groups" : "groups"
@@ -286,6 +308,7 @@ FLOAT FLOAT
     "t_users_on_organizations" o|--|| "t_organizations" : "organization"
     "t_activities" o|--|| "t_users" : "user"
     "t_activities" o|--|| "t_events" : "event"
+    "t_activities" o{--}o "v_activities_stats" : "stat"
     "t_events" o{--}o "t_agendas_on_events" : "agendas"
     "t_events" o{--}o "t_events_on_groups" : "groups"
     "t_events" o{--}o "t_events_on_organizations" : "organizations"
@@ -293,6 +316,7 @@ FLOAT FLOAT
     "t_events" o{--}o "t_comments" : "comments"
     "t_events" o{--}o "t_activities" : "activities"
     "t_events" o{--}o "t_cities_on_events" : "cities"
+    "t_events" o{--}o "v_events_stats" : "stat"
     "t_events_on_groups" o|--|| "t_groups" : "group"
     "t_events_on_groups" o|--|| "t_events" : "event"
     "t_events_on_organizations" o|--|| "t_organizations" : "organization"
@@ -334,4 +358,6 @@ FLOAT FLOAT
     "t_cities_on_events" o|--|| "m_cities" : "city"
     "t_indexes" o|--|| "ValueType" : "enum:value_type"
     "t_indexes" o{--}o "t_targets" : "targets"
+    "v_activities_stats" o|--|| "t_activities" : "activity"
+    "v_events_stats" o|--|| "t_events" : "event"
 ```
