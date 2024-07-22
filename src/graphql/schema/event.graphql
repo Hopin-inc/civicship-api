@@ -141,8 +141,3 @@ type Comment {
     createdAt: Datetime!
     updatedAt: Datetime
 }
-
-type Activities {
-    total: Int!
-    data: [Activity!]!
-}
