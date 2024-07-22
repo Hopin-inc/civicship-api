@@ -14,7 +14,6 @@ export default class OrganizationService {
   private static db = prismaClient;
 
   // TODO: check userId, cities, etc. -> filter
-  // TODO why need as GqlOrganization
   static async queryOrganizations({
     cursor,
     filter,
@@ -72,16 +71,15 @@ export default class OrganizationService {
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
-        node: edge as GqlOrganization | null,
+        node: edge,
       })),
     };
   }
 
-  // TODO why need as GqlOrganization
   static async getOrganization({
     id,
   }: GqlQueryOrganizationArgs): Promise<GqlOrganization | null> {
-    return (await this.db.organization.findUnique({
+    return this.db.organization.findUnique({
       where: { id },
       include: {
         city: {
@@ -91,7 +89,7 @@ export default class OrganizationService {
         },
         state: true,
       },
-    })) as GqlOrganization | null;
+    });
   }
 
   static async createOrganization({
@@ -135,9 +133,9 @@ export default class OrganizationService {
       cityCode,
       stateCode,
       stateCountryCode,
-      groupIds,
+      // groupIds,
       userIds,
-      eventIds,
+      // eventIds,
       cityCodes,
       targetIds,
       ...properties
@@ -180,21 +178,21 @@ export default class OrganizationService {
             })),
           }
         : undefined,
-      events: eventIds
-        ? {
-            connectOrCreate: eventIds.map((eventId) => ({
-              create: {
-                eventId,
-              },
-              where: {
-                organizationId_eventId: {
-                  organizationId: id,
-                  eventId,
-                },
-              },
-            })),
-          }
-        : undefined,
+      // events: eventIds
+      //   ? {
+      //       connectOrCreate: eventIds.map((eventId) => ({
+      //         create: {
+      //           eventId,
+      //         },
+      //         where: {
+      //           organizationId_eventId: {
+      //             organizationId: id,
+      //             eventId,
+      //           },
+      //         },
+      //       })),
+      //     }
+      //   : undefined,
       cities: cityCodes
         ? {
             connectOrCreate: cityCodes.map((cityCode) => ({
@@ -210,11 +208,11 @@ export default class OrganizationService {
             })),
           }
         : undefined,
-      groups: groupIds
-        ? {
-            set: groupIds.map((groupId) => ({ id: groupId })),
-          }
-        : undefined,
+      // groups: groupIds
+      //   ? {
+      //       set: groupIds.map((groupId) => ({ id: groupId })),
+      //     }
+      //   : undefined,
       targets: targetIds
         ? {
             connect: targetIds.map((targetId) => ({ id: targetId })),
@@ -237,11 +235,10 @@ export default class OrganizationService {
     };
   }
 
-  // TODO why need as GqlOrganization
   static async deleteOrganization({
     id,
   }: GqlMutationDeleteOrganizationArgs): Promise<GqlOrganization> {
-    return (await this.db.organization.delete({
+    return this.db.organization.delete({
       where: { id },
       include: {
         city: {
@@ -251,6 +248,6 @@ export default class OrganizationService {
         },
         state: true,
       },
-    })) as GqlOrganization;
+    });
   }
 }

@@ -13,6 +13,7 @@ generates:
       strictScalars: true
       scalars:
         Datetime: Date
+      enumsAsConst: true
       mappers:
         Agenda: "@prisma/client/index.d#Agenda"
         City: "@prisma/client/index.d#City"

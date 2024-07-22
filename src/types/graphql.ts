@@ -133,11 +133,12 @@ export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
 
-export enum GqlEntityPosition {
-  Prefix = 'PREFIX',
-  Suffix = 'SUFFIX'
-}
+export const GqlEntityPosition = {
+  Prefix: 'PREFIX',
+  Suffix: 'SUFFIX'
+} as const;
 
+export type GqlEntityPosition = typeof GqlEntityPosition[keyof typeof GqlEntityPosition];
 export type GqlEvent = {
   __typename?: 'Event';
   activities?: Maybe<GqlActivities>;
@@ -635,11 +636,12 @@ export type GqlQueryUsersArgs = {
   sort?: InputMaybe<GqlUserSortInput>;
 };
 
-export enum GqlSortDirection {
-  Asc = 'asc',
-  Desc = 'desc'
-}
+export const GqlSortDirection = {
+  Asc: 'asc',
+  Desc: 'desc'
+} as const;
 
+export type GqlSortDirection = typeof GqlSortDirection[keyof typeof GqlSortDirection];
 export type GqlState = {
   __typename?: 'State';
   code: Scalars['ID']['output'];
@@ -733,11 +735,12 @@ export type GqlUsersConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-export enum GqlValueType {
-  Float = 'FLOAT',
-  Int = 'INT'
-}
+export const GqlValueType = {
+  Float: 'FLOAT',
+  Int: 'INT'
+} as const;
 
+export type GqlValueType = typeof GqlValueType[keyof typeof GqlValueType];
 export type WithIndex<TObject> = TObject & Record<string, any>;
 export type ResolversObject<TObject> = WithIndex<TObject>;
 
