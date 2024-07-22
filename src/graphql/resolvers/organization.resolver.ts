@@ -1,6 +1,7 @@
 import OrganizationService from "@/services/organization.service";
 import {
   GqlMutationCreateOrganizationArgs,
+  GqlMutationDeleteOrganizationArgs,
   GqlMutationUpdateOrganizationArgs,
   GqlQueryOrganizationArgs,
   GqlQueryOrganizationsArgs,
@@ -22,10 +23,10 @@ const organizationResolver = {
       _: unknown,
       args: GqlMutationUpdateOrganizationArgs,
     ) => OrganizationService.updateOrganization(args),
-    // deleteOrganization: async (
-    //   _: unknown,
-    //   args: GqlMutationDeleteOrganizationArgs,
-    // ) => OrganizationService.deleteOrganization(args),
+    deleteOrganization: async (
+      _: unknown,
+      args: GqlMutationDeleteOrganizationArgs,
+    ) => OrganizationService.deleteOrganization(args),
   },
 };
 

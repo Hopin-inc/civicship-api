@@ -56,20 +56,15 @@ export default class OrganizationService {
       cursor: cursor ? { id: cursor } : undefined,
     });
     const hasNextPage = data.length > take;
-    const formattedData = data.slice(0, take).map((record) => ({
-      ...record,
-    }));
     return {
       totalCount: data.length,
       pageInfo: {
         hasNextPage,
         hasPreviousPage: true,
-        startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        startCursor: data[0]?.id,
+        endCursor: data.length ? data[data.length - 1].id : undefined,
       },
-      edges: formattedData.map((edge) => ({
+      edges: data.slice(0, take).map((edge) => ({
         cursor: edge.id,
         node: edge,
       })),
@@ -111,17 +106,13 @@ export default class OrganizationService {
         create: agendaIds?.map((agendaId) => ({ agendaId })),
       },
     };
-    const organization = await this.db.organization.create({
+    return this.db.organization.create({
       data,
       include: {
         city: { include: { state: true } },
         state: true,
       },
     });
-    return {
-      ...organization,
-      entityPosition: content.entityPosition,
-    };
   }
 
   static async updateOrganization({
@@ -133,9 +124,7 @@ export default class OrganizationService {
       cityCode,
       stateCode,
       stateCountryCode,
-      // groupIds,
       userIds,
-      // eventIds,
       cityCodes,
       targetIds,
       ...properties
@@ -178,21 +167,6 @@ export default class OrganizationService {
             })),
           }
         : undefined,
-      // events: eventIds
-      //   ? {
-      //       connectOrCreate: eventIds.map((eventId) => ({
-      //         create: {
-      //           eventId,
-      //         },
-      //         where: {
-      //           organizationId_eventId: {
-      //             organizationId: id,
-      //             eventId,
-      //           },
-      //         },
-      //       })),
-      //     }
-      //   : undefined,
       cities: cityCodes
         ? {
             connectOrCreate: cityCodes.map((cityCode) => ({
@@ -208,11 +182,6 @@ export default class OrganizationService {
             })),
           }
         : undefined,
-      // groups: groupIds
-      //   ? {
-      //       set: groupIds.map((groupId) => ({ id: groupId })),
-      //     }
-      //   : undefined,
       targets: targetIds
         ? {
             connect: targetIds.map((targetId) => ({ id: targetId })),
@@ -220,7 +189,7 @@ export default class OrganizationService {
         : undefined,
     };
 
-    const organization = await this.db.organization.update({
+    return this.db.organization.update({
       where: { id },
       data,
       include: {
@@ -228,11 +197,6 @@ export default class OrganizationService {
         state: true,
       },
     });
-
-    return {
-      ...organization,
-      entityPosition: content.entityPosition,
-    };
   }
 
   static async deleteOrganization({
