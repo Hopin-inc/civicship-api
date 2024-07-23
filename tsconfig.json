@@ -11,7 +11,7 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["node", "jest"],
+    "types": ["node", "@types/jest", "@quramy/jest-prisma"],
     "paths": {
       "@/*": ["./src/*"]
     },
