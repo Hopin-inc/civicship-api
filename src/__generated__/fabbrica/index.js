@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineIndexFactory = exports.defineCitiesOnEventsFactory = exports.defineCitiesOnOrganizationsFactory = exports.defineCitiesOnGroupsFactory = exports.defineCitiesOnUsersFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineAgendasOnEventsFactory = exports.defineAgendasOnOrganizationsFactory = exports.defineAgendasOnGroupsFactory = exports.defineAgendasOnUsersFactory = exports.defineAgendaFactory = exports.defineTargetFactory = exports.defineCommentFactory = exports.defineLikeFactory = exports.defineEventsOnOrganizationsFactory = exports.defineEventsOnGroupsFactory = exports.defineEventFactory = exports.defineActivityFactory = exports.defineUsersOnOrganizationsFactory = exports.defineOrganizationFactory = exports.defineUsersOnGroupsFactory = exports.defineGroupFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineEventStatViewFactory = exports.defineActivityStatViewFactory = exports.defineIndexFactory = exports.defineCitiesOnEventsFactory = exports.defineCitiesOnOrganizationsFactory = exports.defineCitiesOnGroupsFactory = exports.defineCitiesOnUsersFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineAgendasOnEventsFactory = exports.defineAgendasOnOrganizationsFactory = exports.defineAgendasOnGroupsFactory = exports.defineAgendasOnUsersFactory = exports.defineAgendaFactory = exports.defineTargetFactory = exports.defineCommentFactory = exports.defineLikeFactory = exports.defineEventsOnOrganizationsFactory = exports.defineEventsOnGroupsFactory = exports.defineEventFactory = exports.defineActivityFactory = exports.defineUsersOnOrganizationsFactory = exports.defineOrganizationFactory = exports.defineUsersOnGroupsFactory = exports.defineGroupFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -142,6 +142,10 @@ const modelFieldDefinitions = [{
                 name: "event",
                 type: "Event",
                 relationName: "ActivityToEvent"
+            }, {
+                name: "stat",
+                type: "ActivityStatView",
+                relationName: "ActivityToActivityStatView"
             }]
     }, {
         name: "Event",
@@ -173,6 +177,10 @@ const modelFieldDefinitions = [{
                 name: "cities",
                 type: "CitiesOnEvents",
                 relationName: "CitiesOnEventsToEvent"
+            }, {
+                name: "stat",
+                type: "EventStatView",
+                relationName: "EventToEventStatView"
             }]
     }, {
         name: "EventsOnGroups",
@@ -384,6 +392,20 @@ const modelFieldDefinitions = [{
                 name: "targets",
                 type: "Target",
                 relationName: "IndexToTarget"
+            }]
+    }, {
+        name: "ActivityStatView",
+        fields: [{
+                name: "activity",
+                type: "Activity",
+                relationName: "ActivityToActivityStatView"
+            }]
+    }, {
+        name: "EventStatView",
+        fields: [{
+                name: "event",
+                type: "Event",
+                relationName: "EventToEventStatView"
             }]
     }];
 function autoGenerateUserScalarsOrEnums({ seq }) {
@@ -875,6 +897,9 @@ function isActivityuserFactory(x) {
 function isActivityeventFactory(x) {
     return x?._factoryFor === "Event";
 }
+function isActivitystatFactory(x) {
+    return x?._factoryFor === "ActivityStatView";
+}
 function autoGenerateActivityScalarsOrEnums({ seq }) {
     return {
         startsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "Activity", fieldName: "startsAt", isId: false, isUnique: false, seq }),
@@ -919,7 +944,10 @@ function defineActivityFactoryInternal({ defaultData: defaultDataResolver, onAft
                 } : defaultData.user,
                 event: isActivityeventFactory(defaultData.event) ? {
                     create: await defaultData.event.build()
-                } : defaultData.event
+                } : defaultData.event,
+                stat: isActivitystatFactory(defaultData.stat) ? {
+                    create: await defaultData.stat.build()
+                } : defaultData.stat
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -969,6 +997,9 @@ exports.defineActivityFactory = ((options) => {
     return defineActivityFactoryInternal(options, {});
 });
 exports.defineActivityFactory.withTransientFields = defaultTransientFieldValues => options => defineActivityFactoryInternal(options, defaultTransientFieldValues);
+function isEventstatFactory(x) {
+    return x?._factoryFor === "EventStatView";
+}
 function autoGenerateEventScalarsOrEnums({ seq }) {
     return {
         startsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "Event", fieldName: "startsAt", isId: false, isUnique: false, seq }),
@@ -1007,7 +1038,11 @@ function defineEventFactoryInternal({ defaultData: defaultDataResolver, onAfterB
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {};
+            const defaultAssociations = {
+                stat: isEventstatFactory(defaultData.stat) ? {
+                    create: await defaultData.stat.build()
+                } : defaultData.stat
+            };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
@@ -2702,3 +2737,197 @@ exports.defineIndexFactory = ((options) => {
     return defineIndexFactoryInternal(options ?? {}, {});
 });
 exports.defineIndexFactory.withTransientFields = defaultTransientFieldValues => options => defineIndexFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isActivityStatViewactivityFactory(x) {
+    return x?._factoryFor === "Activity";
+}
+function autoGenerateActivityStatViewScalarsOrEnums({ seq }) {
+    return {
+        isPublic: (0, internal_1.getScalarFieldValueGenerator)().Boolean({ modelName: "ActivityStatView", fieldName: "isPublic", isId: false, isUnique: false, seq }),
+        startsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "ActivityStatView", fieldName: "startsAt", isId: false, isUnique: false, seq }),
+        endsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "ActivityStatView", fieldName: "endsAt", isId: false, isUnique: false, seq }),
+        userId: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "ActivityStatView", fieldName: "userId", isId: false, isUnique: false, seq }),
+        eventId: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "ActivityStatView", fieldName: "eventId", isId: false, isUnique: false, seq }),
+        totalMinutes: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "ActivityStatView", fieldName: "totalMinutes", isId: false, isUnique: false, seq })
+    };
+}
+function defineActivityStatViewFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("ActivityStatView", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateActivityStatViewScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                activity: isActivityStatViewactivityFactory(defaultData.activity) ? {
+                    create: await defaultData.activity.build()
+                } : defaultData.activity
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().activityStatView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ActivityStatView",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link ActivityStatView} model.
+ *
+ * @param options
+ * @returns factory {@link ActivityStatViewFactoryInterface}
+ */
+exports.defineActivityStatViewFactory = ((options) => {
+    return defineActivityStatViewFactoryInternal(options, {});
+});
+exports.defineActivityStatViewFactory.withTransientFields = defaultTransientFieldValues => options => defineActivityStatViewFactoryInternal(options, defaultTransientFieldValues);
+function isEventStatVieweventFactory(x) {
+    return x?._factoryFor === "Event";
+}
+function autoGenerateEventStatViewScalarsOrEnums({ seq }) {
+    return {
+        isPublic: (0, internal_1.getScalarFieldValueGenerator)().Boolean({ modelName: "EventStatView", fieldName: "isPublic", isId: false, isUnique: false, seq }),
+        startsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "EventStatView", fieldName: "startsAt", isId: false, isUnique: false, seq }),
+        endsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "EventStatView", fieldName: "endsAt", isId: false, isUnique: false, seq }),
+        totalMinutes: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "EventStatView", fieldName: "totalMinutes", isId: false, isUnique: false, seq })
+    };
+}
+function defineEventStatViewFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("EventStatView", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateEventStatViewScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                event: isEventStatVieweventFactory(defaultData.event) ? {
+                    create: await defaultData.event.build()
+                } : defaultData.event
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().eventStatView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "EventStatView",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link EventStatView} model.
+ *
+ * @param options
+ * @returns factory {@link EventStatViewFactoryInterface}
+ */
+exports.defineEventStatViewFactory = ((options) => {
+    return defineEventStatViewFactoryInternal(options, {});
+});
+exports.defineEventStatViewFactory.withTransientFields = defaultTransientFieldValues => options => defineEventStatViewFactoryInternal(options, defaultTransientFieldValues);

@@ -22,6 +22,8 @@ import type { CitiesOnGroups } from "@prisma/client";
 import type { CitiesOnOrganizations } from "@prisma/client";
 import type { CitiesOnEvents } from "@prisma/client";
 import type { Index } from "@prisma/client";
+import type { ActivityStatView } from "@prisma/client";
+import type { EventStatView } from "@prisma/client";
 import type { EntityPosition } from "@prisma/client";
 import type { ValueType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
@@ -340,6 +342,10 @@ type ActivityeventFactory = {
     _factoryFor: "Event";
     build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutActivitiesInput["create"]>;
 };
+type ActivitystatFactory = {
+    _factoryFor: "ActivityStatView";
+    build: () => PromiseLike<Prisma.ActivityStatViewCreateNestedOneWithoutActivityInput["create"]>;
+};
 type ActivityFactoryDefineInput = {
     id?: string;
     description?: string | null;
@@ -352,6 +358,7 @@ type ActivityFactoryDefineInput = {
     updatedAt?: Date | null;
     user: ActivityuserFactory | Prisma.UserCreateNestedOneWithoutActivitiesInput;
     event: ActivityeventFactory | Prisma.EventCreateNestedOneWithoutActivitiesInput;
+    stat?: ActivitystatFactory | Prisma.ActivityStatViewCreateNestedOneWithoutActivityInput;
 };
 type ActivityTransientFields = Record<string, unknown> & Partial<Record<keyof ActivityFactoryDefineInput, never>>;
 type ActivityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -390,6 +397,10 @@ interface ActivityFactoryBuilder {
  * @returns factory {@link ActivityFactoryInterface}
  */
 export declare const defineActivityFactory: ActivityFactoryBuilder;
+type EventstatFactory = {
+    _factoryFor: "EventStatView";
+    build: () => PromiseLike<Prisma.EventStatViewCreateNestedOneWithoutEventInput["create"]>;
+};
 type EventFactoryDefineInput = {
     id?: string;
     description?: string | null;
@@ -408,6 +419,7 @@ type EventFactoryDefineInput = {
     comments?: Prisma.CommentCreateNestedManyWithoutEventInput;
     activities?: Prisma.ActivityCreateNestedManyWithoutEventInput;
     cities?: Prisma.CitiesOnEventsCreateNestedManyWithoutEventInput;
+    stat?: EventstatFactory | Prisma.EventStatViewCreateNestedOneWithoutEventInput;
 };
 type EventTransientFields = Record<string, unknown> & Partial<Record<keyof EventFactoryDefineInput, never>>;
 type EventFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -1308,3 +1320,103 @@ interface IndexFactoryBuilder {
  * @returns factory {@link IndexFactoryInterface}
  */
 export declare const defineIndexFactory: IndexFactoryBuilder;
+type ActivityStatViewactivityFactory = {
+    _factoryFor: "Activity";
+    build: () => PromiseLike<Prisma.ActivityCreateNestedOneWithoutStatInput["create"]>;
+};
+type ActivityStatViewFactoryDefineInput = {
+    isPublic?: boolean;
+    startsAt?: Date;
+    endsAt?: Date;
+    userId?: string;
+    eventId?: string;
+    totalMinutes?: number;
+    activity: ActivityStatViewactivityFactory | Prisma.ActivityCreateNestedOneWithoutStatInput;
+};
+type ActivityStatViewTransientFields = Record<string, unknown> & Partial<Record<keyof ActivityStatViewFactoryDefineInput, never>>;
+type ActivityStatViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ActivityStatViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ActivityStatView, Prisma.ActivityStatViewCreateInput, TTransients>;
+type ActivityStatViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ActivityStatViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ActivityStatViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ActivityStatView, Prisma.ActivityStatViewCreateInput, TTransients>;
+type ActivityStatViewTraitKeys<TOptions extends ActivityStatViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface ActivityStatViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ActivityStatView";
+    build(inputData?: Partial<Prisma.ActivityStatViewCreateInput & TTransients>): PromiseLike<Prisma.ActivityStatViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ActivityStatViewCreateInput & TTransients>): PromiseLike<Prisma.ActivityStatViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.ActivityStatViewCreateInput & TTransients>[]): PromiseLike<Prisma.ActivityStatViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ActivityStatViewCreateInput & TTransients>): PromiseLike<Prisma.ActivityStatViewCreateInput[]>;
+    pickForConnect(inputData: ActivityStatView): Pick<ActivityStatView, "id">;
+    create(inputData?: Partial<Prisma.ActivityStatViewCreateInput & TTransients>): PromiseLike<ActivityStatView>;
+    createList(list: readonly Partial<Prisma.ActivityStatViewCreateInput & TTransients>[]): PromiseLike<ActivityStatView[]>;
+    createList(count: number, item?: Partial<Prisma.ActivityStatViewCreateInput & TTransients>): PromiseLike<ActivityStatView[]>;
+    createForConnect(inputData?: Partial<Prisma.ActivityStatViewCreateInput & TTransients>): PromiseLike<Pick<ActivityStatView, "id">>;
+}
+export interface ActivityStatViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ActivityStatViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ActivityStatViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface ActivityStatViewFactoryBuilder {
+    <TOptions extends ActivityStatViewFactoryDefineOptions>(options: TOptions): ActivityStatViewFactoryInterface<{}, ActivityStatViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ActivityStatViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ActivityStatViewFactoryDefineOptions<TTransients>>(options: TOptions) => ActivityStatViewFactoryInterface<TTransients, ActivityStatViewTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link ActivityStatView} model.
+ *
+ * @param options
+ * @returns factory {@link ActivityStatViewFactoryInterface}
+ */
+export declare const defineActivityStatViewFactory: ActivityStatViewFactoryBuilder;
+type EventStatVieweventFactory = {
+    _factoryFor: "Event";
+    build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutStatInput["create"]>;
+};
+type EventStatViewFactoryDefineInput = {
+    isPublic?: boolean;
+    startsAt?: Date;
+    endsAt?: Date;
+    plannedStartsAt?: Date | null;
+    plannedEndsAt?: Date | null;
+    totalMinutes?: number;
+    event: EventStatVieweventFactory | Prisma.EventCreateNestedOneWithoutStatInput;
+};
+type EventStatViewTransientFields = Record<string, unknown> & Partial<Record<keyof EventStatViewFactoryDefineInput, never>>;
+type EventStatViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<EventStatViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<EventStatView, Prisma.EventStatViewCreateInput, TTransients>;
+type EventStatViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<EventStatViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: EventStatViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<EventStatView, Prisma.EventStatViewCreateInput, TTransients>;
+type EventStatViewTraitKeys<TOptions extends EventStatViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface EventStatViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "EventStatView";
+    build(inputData?: Partial<Prisma.EventStatViewCreateInput & TTransients>): PromiseLike<Prisma.EventStatViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.EventStatViewCreateInput & TTransients>): PromiseLike<Prisma.EventStatViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.EventStatViewCreateInput & TTransients>[]): PromiseLike<Prisma.EventStatViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.EventStatViewCreateInput & TTransients>): PromiseLike<Prisma.EventStatViewCreateInput[]>;
+    pickForConnect(inputData: EventStatView): Pick<EventStatView, "id">;
+    create(inputData?: Partial<Prisma.EventStatViewCreateInput & TTransients>): PromiseLike<EventStatView>;
+    createList(list: readonly Partial<Prisma.EventStatViewCreateInput & TTransients>[]): PromiseLike<EventStatView[]>;
+    createList(count: number, item?: Partial<Prisma.EventStatViewCreateInput & TTransients>): PromiseLike<EventStatView[]>;
+    createForConnect(inputData?: Partial<Prisma.EventStatViewCreateInput & TTransients>): PromiseLike<Pick<EventStatView, "id">>;
+}
+export interface EventStatViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EventStatViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): EventStatViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface EventStatViewFactoryBuilder {
+    <TOptions extends EventStatViewFactoryDefineOptions>(options: TOptions): EventStatViewFactoryInterface<{}, EventStatViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends EventStatViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EventStatViewFactoryDefineOptions<TTransients>>(options: TOptions) => EventStatViewFactoryInterface<TTransients, EventStatViewTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link EventStatView} model.
+ *
+ * @param options
+ * @returns factory {@link EventStatViewFactoryInterface}
+ */
+export declare const defineEventStatViewFactory: EventStatViewFactoryBuilder;

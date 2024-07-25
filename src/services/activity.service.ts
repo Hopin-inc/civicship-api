@@ -44,7 +44,12 @@ export default class ActivityService {
       orderBy,
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
+        stat: { select: { totalMinutes: true } },
       },
       take: take + 1,
       skip: cursor ? 1 : 0,
@@ -53,6 +58,11 @@ export default class ActivityService {
     const hasNextPage = data.length > take;
     const formattedData = data.slice(0, take).map((record) => ({
       ...record,
+      event: {
+        ...record.event,
+        totalMinutes: record.event.stat?.totalMinutes ?? 0,
+      },
+      totalMinutes: record.stat?.totalMinutes ?? 0,
     }));
     return {
       totalCount: data.length,
@@ -74,61 +84,117 @@ export default class ActivityService {
   static async getActivity({
     id,
   }: GqlQueryActivityArgs): Promise<GqlActivity | null> {
-    return this.db.activity.findUnique({
+    const activity = await this.db.activity.findUnique({
       where: { id },
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
+        stat: { select: { totalMinutes: true } },
       },
     });
+
+    return activity
+      ? {
+          ...activity,
+          totalMinutes: activity.stat?.totalMinutes ?? 0,
+          event: {
+            ...activity.event,
+            totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+          },
+        }
+      : null;
   }
 
   static async createActivity({
     content,
   }: GqlMutationCreateActivityArgs): Promise<GqlActivity> {
     const { userId, eventId, ...properties } = content;
-    const data: Prisma.ActivityCreateInput = {
-      ...properties,
-      user: {
-        connect: { id: userId },
+    const activity = await this.db.activity.create({
+      data: {
+        ...properties,
+        user: {
+          connect: { id: userId },
+        },
+        event: {
+          connect: { id: eventId },
+        },
       },
-      event: {
-        connect: { id: eventId },
-      },
-    };
-
-    return this.db.activity.create({
-      data,
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
+        stat: { select: { totalMinutes: true } },
       },
     });
+
+    return {
+      ...activity,
+      totalMinutes: activity.stat?.totalMinutes ?? 0,
+      event: {
+        ...activity.event,
+        totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+      },
+    };
   }
 
   static async updateActivity({
     id,
     content,
   }: GqlMutationUpdateActivityArgs): Promise<GqlActivity> {
-    return this.db.activity.update({
+    const activity = await this.db.activity.update({
       where: { id },
       data: content,
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
+        stat: { select: { totalMinutes: true } },
       },
     });
+
+    return {
+      ...activity,
+      totalMinutes: activity.stat?.totalMinutes ?? 0,
+      event: {
+        ...activity.event,
+        totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+      },
+    };
   }
 
   static async deleteActivity({
     id,
   }: GqlMutationDeleteActivityArgs): Promise<GqlActivity> {
-    return this.db.activity.delete({
+    const activity = await this.db.activity.delete({
       where: { id },
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
+        stat: { select: { totalMinutes: true } },
       },
     });
+
+    return {
+      ...activity,
+      totalMinutes: activity.stat?.totalMinutes ?? 0,
+      event: {
+        ...activity.event,
+        totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+      },
+    };
   }
 }
