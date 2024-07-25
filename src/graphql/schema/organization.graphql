@@ -115,18 +115,3 @@ type Organization {
     createdAt: Datetime!
     updatedAt: Datetime
 }
-
-type Target {
-    id: ID!
-    name: String!
-    value: Float!
-    validFrom: String!
-    validTo: String!
-
-    organization: Organization
-    group: Group
-    index: Index
-
-    createdAt: String!
-    updatedAt: String
-}
