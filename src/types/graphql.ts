@@ -170,6 +170,20 @@ export type GqlCreateTargetInput = {
   value: Scalars['Float']['input'];
 };
 
+export type GqlCreateUserInput = {
+  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  bio?: InputMaybe<Scalars['String']['input']>;
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  firstName: Scalars['String']['input'];
+  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  isPublic: Scalars['Boolean']['input'];
+  lastName: Scalars['String']['input'];
+  middleName?: InputMaybe<Scalars['String']['input']>;
+  organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -435,7 +449,7 @@ export type GqlMutationCreateTargetArgs = {
 
 
 export type GqlMutationCreateUserArgs = {
-  content: GqlUserCreateInput;
+  content: GqlCreateUserInput;
 };
 
 
@@ -879,20 +893,6 @@ export type GqlUser = {
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
-export type GqlUserCreateInput = {
-  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
-  bio?: InputMaybe<Scalars['String']['input']>;
-  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
-  email?: InputMaybe<Scalars['String']['input']>;
-  firstName: Scalars['String']['input'];
-  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
-  image?: InputMaybe<Scalars['String']['input']>;
-  isPublic: Scalars['Boolean']['input'];
-  lastName: Scalars['String']['input'];
-  middleName?: InputMaybe<Scalars['String']['input']>;
-  organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
 export type GqlUserEdge = GqlEdge & {
   __typename?: 'UserEdge';
   cursor: Scalars['String']['output'];
@@ -1020,6 +1020,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommentUpdateInput: GqlCommentUpdateInput;
   Comments: ResolverTypeWrapper<Omit<GqlComments, 'data'> & { data: Array<GqlResolversTypes['Comment']> }>;
   CreateTargetInput: GqlCreateTargetInput;
+  CreateUserInput: GqlCreateUserInput;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
   EntityPosition: GqlEntityPosition;
@@ -1075,7 +1076,6 @@ export type GqlResolversTypes = ResolversObject<{
   UpdateUserProfileInput: GqlUpdateUserProfileInput;
   UpdateUserProfilePayload: ResolverTypeWrapper<Omit<GqlUpdateUserProfilePayload, 'user'> & { user: GqlResolversTypes['User'] }>;
   User: ResolverTypeWrapper<User>;
-  UserCreateInput: GqlUserCreateInput;
   UserEdge: ResolverTypeWrapper<Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversTypes['User']> }>;
   UserFilterInput: GqlUserFilterInput;
   UserSortInput: GqlUserSortInput;
@@ -1107,6 +1107,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommentUpdateInput: GqlCommentUpdateInput;
   Comments: Omit<GqlComments, 'data'> & { data: Array<GqlResolversParentTypes['Comment']> };
   CreateTargetInput: GqlCreateTargetInput;
+  CreateUserInput: GqlCreateUserInput;
   Datetime: Scalars['Datetime']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
   Event: Event;
@@ -1160,7 +1161,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   UpdateUserProfileInput: GqlUpdateUserProfileInput;
   UpdateUserProfilePayload: Omit<GqlUpdateUserProfilePayload, 'user'> & { user: GqlResolversParentTypes['User'] };
   User: User;
-  UserCreateInput: GqlUserCreateInput;
   UserEdge: Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['User']> };
   UserFilterInput: GqlUserFilterInput;
   UserSortInput: GqlUserSortInput;

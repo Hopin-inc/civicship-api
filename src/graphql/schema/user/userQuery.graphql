@@ -1,0 +1,22 @@
+# Queries/Mutations-related type definitions
+
+type UsersConnection {
+    edges: [UserEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type UserEdge implements Edge {
+    cursor: String!
+    node: User
+}
+
+input UserFilterInput {
+    keyword: String
+    agendaId: Int
+    cityCode: String
+}
+
+input UserSortInput {
+    updatedAt: SortDirection
+}

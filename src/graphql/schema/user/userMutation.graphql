@@ -1,17 +1,18 @@
-# Queries and Mutations
-
-extend type Mutation {
-    updateUserProfile(id: ID!, input: UpdateUserProfileInput!): UpdateUserProfilePayload
-    updateUserPrivacy(id: ID!, input: UpdateUserPrivacyInput!): UpdateUserPrivacyPayload
-    addGroupToUser(id: ID!, input: AddGroupToUserInput!): AddGroupToUserPayload
-    removeGroupFromUser(id: ID!, input: RemoveGroupFromUserInput!): RemoveGroupFromUserPayload
-    addOrganizationToUser(id: ID!, input: AddOrganizationToUserInput!): AddOrganizationToUserPayload
-    removeOrganizationFromUser(id: ID!, input: RemoveOrganizationFromUserInput!): RemoveOrganizationFromUserPayload
-    addActivityToUser(id: ID!, input: AddActivityToUserInput!): AddActivityToUserPayload
-    removeActivityFromUser(id: ID!, input: RemoveActivityFromUserInput!): RemoveActivityFromUserPayload
-}
-
 # Queries/Mutations-related type definitions
+
+input CreateUserInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    isPublic: Boolean!
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    groupIds: [String!]
+    organizationIds: [String!]
+}
 
 input UpdateUserProfileInput {
     lastName: String!
