@@ -5,7 +5,6 @@ import {
   GqlMutationDeleteCommentArgs,
   GqlMutationUpdateCommentArgs,
 } from "@/types/graphql";
-import { Prisma } from "@prisma/client";
 
 export default class CommentService {
   private static db = prismaClient;
@@ -15,49 +14,79 @@ export default class CommentService {
   }: GqlMutationCreateCommentArgs): Promise<GqlComment> {
     const { userId, eventId, postedAt, ...properties } = content;
 
-    const data: Prisma.CommentCreateInput = {
-      ...properties,
-      user: {
-        connect: { id: userId },
+    const comment = await this.db.comment.create({
+      data: {
+        ...properties,
+        user: { connect: { id: userId } },
+        event: { connect: { id: eventId } },
+        postedAt: new Date(postedAt ?? Date.now()).toISOString(),
       },
-      event: {
-        connect: { id: eventId },
-      },
-      postedAt: new Date(postedAt ?? Date.now()).toISOString(),
-    };
-
-    return this.db.comment.create({
-      data,
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
       },
     });
+
+    return {
+      ...comment,
+      event: {
+        ...comment.event,
+        totalMinutes: comment.event.stat?.totalMinutes ?? 0,
+      },
+    };
   }
 
   static async updateComment({
     id,
     content,
   }: GqlMutationUpdateCommentArgs): Promise<GqlComment> {
-    return this.db.comment.update({
+    const comment = await this.db.comment.update({
       where: { id },
       data: content,
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
       },
     });
+
+    return {
+      ...comment,
+      event: {
+        ...comment.event,
+        totalMinutes: comment.event.stat?.totalMinutes ?? 0,
+      },
+    };
   }
 
   static async deleteComment({
     id,
   }: GqlMutationDeleteCommentArgs): Promise<GqlComment> {
-    return this.db.comment.delete({
+    const comment = await this.db.comment.delete({
       where: { id },
       include: {
         user: true,
-        event: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
       },
     });
+
+    return {
+      ...comment,
+      event: {
+        ...comment.event,
+        totalMinutes: comment.event.stat?.totalMinutes ?? 0,
+      },
+    };
   }
 }
