@@ -46,9 +46,6 @@ input CreateTargetInput {
     organizationId: String!
     groupId: String!
     indexId: String!
-
-    createdAt: String!
-    updatedAt: String
 }
 
 # Type definitions
