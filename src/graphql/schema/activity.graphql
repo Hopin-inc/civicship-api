@@ -66,6 +66,11 @@ input ActivityUpdateInput {
 
 # Type definitions
 
+type Activities {
+    total: Int!
+    data: [Activity!]!
+}
+
 type Activity {
     id: ID!
     description: String
@@ -74,6 +79,7 @@ type Activity {
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
+    totalMinutes: Int!
 
     user: User!
     event: Event!
