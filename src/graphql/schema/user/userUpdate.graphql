@@ -1,0 +1,93 @@
+# Queries and Mutations
+
+extend type Mutation {
+    updateUserProfile(id: ID!, input: UpdateUserProfileInput!): UpdateUserProfilePayload
+    updateUserPrivacy(id: ID!, input: UpdateUserPrivacyInput!): UpdateUserPrivacyPayload
+    addGroupToUser(id: ID!, input: AddGroupToUserInput!): AddGroupToUserPayload
+    removeGroupFromUser(id: ID!, input: RemoveGroupFromUserInput!): RemoveGroupFromUserPayload
+    addOrganizationToUser(id: ID!, input: AddOrganizationToUserInput!): AddOrganizationToUserPayload
+    removeOrganizationFromUser(id: ID!, input: RemoveOrganizationFromUserInput!): RemoveOrganizationFromUserPayload
+    addActivityToUser(id: ID!, input: AddActivityToUserInput!): AddActivityToUserPayload
+    removeActivityFromUser(id: ID!, input: RemoveActivityFromUserInput!): RemoveActivityFromUserPayload
+}
+
+# Queries/Mutations-related type definitions
+
+input UpdateUserProfileInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+input UpdateUserPrivacyInput {
+    isPublic: Boolean!
+}
+
+input AddGroupToUserInput {
+    groupId: String!
+}
+
+input RemoveGroupFromUserInput {
+    groupId: String!
+}
+
+input AddOrganizationToUserInput {
+    organizationId: String!
+}
+
+input RemoveOrganizationFromUserInput {
+    organizationId: String!
+}
+
+input AddActivityToUserInput {
+    activityId: String!
+}
+
+input RemoveActivityFromUserInput {
+    activityId: String!
+}
+
+# Type definitions
+
+type UpdateUserProfilePayload {
+    user: User!
+}
+
+type UpdateUserPrivacyPayload {
+    user: User!
+}
+
+type AddGroupToUserPayload {
+    user: User!
+    group: Group!
+}
+
+type RemoveGroupFromUserPayload {
+    user: User!
+    group: Group!
+}
+
+type AddOrganizationToUserPayload {
+    user: User!
+    organization: Organization!
+}
+
+type RemoveOrganizationFromUserPayload {
+    user: User!
+    organization: Organization!
+}
+
+type AddActivityToUserPayload {
+    user: User
+    activity: Activity!
+}
+
+type RemoveActivityFromUserPayload {
+    user: User!
+    activity: Activity!
+}

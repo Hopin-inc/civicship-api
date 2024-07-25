@@ -144,6 +144,7 @@ export default class ActivityService {
     };
   }
 
+  // TODO add role -> update user & event
   static async updateActivity({
     id,
     content,

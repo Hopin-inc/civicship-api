@@ -2,9 +2,16 @@ import UserService from "@/services/user.service";
 import {
   GqlMutationCreateUserArgs,
   GqlMutationDeleteUserArgs,
-  GqlMutationUpdateUserArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
+  GqlMutationUpdateUserProfileArgs,
+  GqlMutationUpdateUserPrivacyArgs,
+  GqlMutationAddGroupToUserArgs,
+  GqlMutationRemoveGroupFromUserArgs,
+  GqlMutationAddOrganizationToUserArgs,
+  GqlMutationRemoveOrganizationFromUserArgs,
+  GqlMutationAddActivityToUserArgs,
+  GqlMutationRemoveActivityFromUserArgs,
 } from "@/types/graphql";
 
 const userResolver = {
@@ -17,10 +24,38 @@ const userResolver = {
   Mutation: {
     createUser: async (_: unknown, args: GqlMutationCreateUserArgs) =>
       UserService.createUser(args),
-    updateUser: async (_: unknown, args: GqlMutationUpdateUserArgs) =>
-      UserService.updateUser(args),
     deleteUser: async (_: unknown, args: GqlMutationDeleteUserArgs) =>
       UserService.deleteUser(args),
+    updateUserProfile: async (
+      _: unknown,
+      args: GqlMutationUpdateUserProfileArgs,
+    ) => UserService.updateUserProfile(args),
+    updateUserPrivacy: async (
+      _: unknown,
+      args: GqlMutationUpdateUserPrivacyArgs,
+    ) => UserService.updateUserPrivacy(args),
+    addGroupToUser: async (_: unknown, args: GqlMutationAddGroupToUserArgs) =>
+      UserService.addGroupToUser(args),
+    deleteGroupFromUser: async (
+      _: unknown,
+      args: GqlMutationRemoveGroupFromUserArgs,
+    ) => UserService.removeGroupFromUser(args),
+    addOrganizationToUser: async (
+      _: unknown,
+      args: GqlMutationAddOrganizationToUserArgs,
+    ) => UserService.addOrganizationToUser(args),
+    deleteOrganizationFromUser: async (
+      _: unknown,
+      args: GqlMutationRemoveOrganizationFromUserArgs,
+    ) => UserService.removeOrganizationFromUser(args),
+    addActivityToUser: async (
+      _: unknown,
+      args: GqlMutationAddActivityToUserArgs,
+    ) => UserService.addActivityToUser(args),
+    deleteActivityFromUser: async (
+      _: unknown,
+      args: GqlMutationRemoveActivityFromUserArgs,
+    ) => UserService.removeActivityFromUser(args),
   },
 };
 
