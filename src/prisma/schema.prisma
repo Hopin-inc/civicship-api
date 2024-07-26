@@ -44,11 +44,15 @@ model User {
   bio        String?
   isPublic   Boolean @default(false) @map("is_public")
 
-  agendas       AgendasOnUsers[]
-  cities        CitiesOnUsers[]
-  groups        UsersOnGroups[]
-  organizations UsersOnOrganizations[]
-  activities    Activity[]
+  agendas         AgendasOnUsers[]
+  skillsets       SkillsetsOnUsers[]
+  issueCategories IssueCategoriesOnUsers[]
+  cities          CitiesOnUsers[]
+  groups          UsersOnGroups[]
+  organizations   UsersOnOrganizations[]
+  applications    Application[]
+  confirmations   ApplicationConfirmation[]
+  activities      Activity[]
 
   likes    Like[]
   comments Comment[]
@@ -69,12 +73,13 @@ model Group {
 
   users   UsersOnGroups[]
   events  EventsOnGroups[]
+  issues  IssuesOnGroups[]
   agendas AgendasOnGroups[]
   cities  CitiesOnGroups[]
   targets Target[]
 
   parentId String? @map("parent_id")
-  parent   Group?  @relation("groups_on_groups", fields: [parentId], references: [id])
+  parent   Group?  @relation("groups_on_groups", fields: [parentId], references: [id], onDelete: SetNull)
   children Group[] @relation("groups_on_groups")
 
   organizationId String       @map("organization_id")
@@ -113,19 +118,21 @@ model Organization {
   bio            String?
   establishedAt  DateTime?       @map("established_at")
   website        String?
+  isPublic       Boolean         @default(false) @map("is_public")
 
   zipcode          String  @db.VarChar(7)
   stateCode        String  @map("state_code")
   stateCountryCode String  @map("state_country_code")
   cityCode         String  @map("city_code")
-  state            State   @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode])
-  city             City    @relation(fields: [cityCode], references: [code])
+  state            State   @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode], onDelete: Restrict)
+  city             City    @relation(fields: [cityCode], references: [code], onDelete: Restrict)
   address1         String
   address2         String?
 
   groups  Group[]
   users   UsersOnOrganizations[]
   events  EventsOnOrganizations[]
+  issues  IssuesOnOrganizations[]
   agendas AgendasOnOrganizations[]
   cities  CitiesOnOrganizations[]
   targets Target[]
@@ -147,7 +154,7 @@ model UsersOnOrganizations {
   displayImage String?   @map("display_image")
   addedAt      DateTime? @map("added_at")
   removedAt    DateTime? @map("removed_at")
-  isPublic     Boolean   @default(true) @map("is_public")
+  isPublic     Boolean   @default(false) @map("is_public")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -159,20 +166,27 @@ model UsersOnOrganizations {
 // # Activities
 
 model Activity {
-  id          String   @id @default(cuid())
-  description String?
-  remark      String?
-  isPublic    Boolean  @default(true) @map("is_public")
+  id            String        @id @default(cuid())
+  description   String?
+  remark        String?
+  isPublic      Boolean       @default(false) @map("is_public")
+  activityStyle ActivityStyle @default(OFFSITE) @map("activity_style")
   /// [ArrayOfString]
-  images      Json     @default("[]")
-  startsAt    DateTime @map("starts_at")
-  endsAt      DateTime @map("ends_at")
+  images        Json          @default("[]")
+  startsAt      DateTime      @map("starts_at")
+  endsAt        DateTime      @map("ends_at")
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  eventId String @map("event_id")
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String? @map("event_id")
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  issueId String? @map("issue_id")
+  issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: SetNull)
+
+  applicationId String?      @map("application_id")
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   stat ActivityStatView?
 
@@ -182,10 +196,48 @@ model Activity {
   @@map("t_activities")
 }
 
+model Application {
+  id          String   @id @default(cuid())
+  comment     String?
+  isPublic    Boolean  @default(false) @map("is_public")
+  submittedAt DateTime @map("submitted_at")
+
+  eventId String? @map("event_id")
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  activities Activity[]
+  approvals  ApplicationConfirmation[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_applications")
+}
+
+model ApplicationConfirmation {
+  id         String  @id @default(cuid())
+  isApproved Boolean @default(true) @map("is_approved")
+  comment    String?
+
+  applicationId String      @map("application_id")
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  confirmerId String? @map("confirmer_id")
+  confirmedBy User?   @relation(fields: [confirmerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_application_confirmations")
+}
+
 model Event {
   id              String    @id @default(cuid())
   description     String?
-  isPublic        Boolean   @default(true) @map("is_public")
+  isPublic        Boolean   @default(false) @map("is_public")
   /// [ArrayOfString]
   images          Json      @default("[]")
   startsAt        DateTime  @map("starts_at")
@@ -194,8 +246,10 @@ model Event {
   plannedEndsAt   DateTime? @map("planned_ends_at")
 
   agendas       AgendasOnEvents[]
+  skillsets     SkillsetsOnEvents[]
   groups        EventsOnGroups[]
   organizations EventsOnOrganizations[]
+  applications  Application[]
   likes         Like[]
   comments      Comment[]
   activities    Activity[]
@@ -234,20 +288,73 @@ model EventsOnOrganizations {
   @@map("t_events_on_organizations")
 }
 
-// # Reactions
+model Issue {
+  id          String  @id @default(cuid())
+  description String?
+  isPublic    Boolean @default(false) @map("is_public")
+  /// [ArrayOfString]
+  images      Json    @default("[]")
 
-model Like {
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillsets       SkillsetsOnIssues[]
+  issueCategories IssueCategoriesOnIssues[]
+  groups          IssuesOnGroups[]
+  organizations   IssuesOnOrganizations[]
+  likes           Like[]
+  comments        Comment[]
+  activities      Activity[]
+  cities          CitiesOnIssues[]
+  stat            IssueStatView?
 
-  eventId String @map("event_id")
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  postedAt  DateTime  @map("posted_at")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@id([userId, eventId])
+  @@map("t_issues")
+}
+
+model IssuesOnGroups {
+  groupId String @map("group_id")
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  issueId String @map("issue_id")
+  issue   Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([groupId, issueId])
+  @@map("t_issues_on_groups")
+}
+
+model IssuesOnOrganizations {
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issueId        String       @map("issue_id")
+  issue          Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([organizationId, issueId])
+  @@map("t_issues_on_organizations")
+}
+
+// # Reactions
+
+model Like {
+  id       String   @id @default(cuid())
+  postedAt DateTime @map("posted_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId String? @map("event_id")
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  issueId String? @map("issue_id")
+  issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
   @@map("t_likes")
 }
 
@@ -259,8 +366,11 @@ model Comment {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  eventId String @map("event_id")
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String? @map("event_id")
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  issueId String? @map("issue_id")
+  issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -284,7 +394,7 @@ model Target {
   group   Group?  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   indexId Int   @map("index_id")
-  index   Index @relation(fields: [indexId], references: [id])
+  index   Index @relation(fields: [indexId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -312,7 +422,7 @@ model AgendasOnUsers {
   userId   String @map("user_id")
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   agendaId Int    @map("agenda_id")
-  agenda   Agenda @relation(fields: [agendaId], references: [id])
+  agenda   Agenda @relation(fields: [agendaId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -325,7 +435,7 @@ model AgendasOnGroups {
   groupId  String @map("group_id")
   group    Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   agendaId Int    @map("agenda_id")
-  agenda   Agenda @relation(fields: [agendaId], references: [id])
+  agenda   Agenda @relation(fields: [agendaId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -338,7 +448,7 @@ model AgendasOnOrganizations {
   organizationId String       @map("organization_id")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   agendaId       Int          @map("agenda_id")
-  agenda         Agenda       @relation(fields: [agendaId], references: [id])
+  agenda         Agenda       @relation(fields: [agendaId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -351,7 +461,7 @@ model AgendasOnEvents {
   eventId  String @map("event_id")
   event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   agendaId Int    @map("agenda_id")
-  agenda   Agenda @relation(fields: [agendaId], references: [id])
+  agenda   Agenda @relation(fields: [agendaId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -360,18 +470,103 @@ model AgendasOnEvents {
   @@map("t_agendas_on_events")
 }
 
+model IssueCategory {
+  id          Int     @id
+  code        String
+  name        String
+  description String?
+
+  issues IssueCategoriesOnIssues[]
+  users  IssueCategoriesOnUsers[]
+
+  @@map("m_issue_categories")
+}
+
+model IssueCategoriesOnIssues {
+  issueId         String        @map("issue_id")
+  issue           Issue         @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  issueCategoryId Int           @map("issue_category_id")
+  issueCategory   IssueCategory @relation(fields: [issueCategoryId], references: [id], onDelete: Restrict)
+
+  @@id([issueId, issueCategoryId])
+  @@map("m_issue_categories_on_issues")
+}
+
+model IssueCategoriesOnUsers {
+  userId          String        @map("user_id")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issueCategoryId Int           @map("issue_category_id")
+  issueCategory   IssueCategory @relation(fields: [issueCategoryId], references: [id], onDelete: Restrict)
+
+  @@id([userId, issueCategoryId])
+  @@map("m_issue_categories_on_users")
+}
+
+model Skillset {
+  id          Int     @id
+  code        String
+  name        String
+  description String?
+
+  users  SkillsetsOnUsers[]
+  events SkillsetsOnEvents[]
+  issues SkillsetsOnIssues[]
+
+  @@map("m_skillsets")
+}
+
+model SkillsetsOnUsers {
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillsetId Int      @map("skillset_id")
+  skillset   Skillset @relation(fields: [skillsetId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, skillsetId])
+  @@map("t_skillsets_on_users")
+}
+
+model SkillsetsOnEvents {
+  eventId    String   @map("event_id")
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  skillsetId Int      @map("skillset_id")
+  skillset   Skillset @relation(fields: [skillsetId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([eventId, skillsetId])
+  @@map("t_skillsets_on_events")
+}
+
+model SkillsetsOnIssues {
+  issueId    String   @map("issue_id")
+  issue      Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  skillsetId Int      @map("skillset_id")
+  skillset   Skillset @relation(fields: [skillsetId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([issueId, skillsetId])
+  @@map("t_skillsets_on_issues")
+}
+
 model City {
   code        String @id
   name        String
   stateCode   String @map("state_code")
   countryCode String @map("country_code") @db.Char(2)
-  state       State  @relation(fields: [stateCode, countryCode], references: [code, countryCode])
+  state       State  @relation(fields: [stateCode, countryCode], references: [code, countryCode], onDelete: Restrict)
 
   cities                 CitiesOnUsers[]
   groups                 CitiesOnGroups[]
   organizations          CitiesOnOrganizations[]
   addressedOrganizations Organization[]
-  citiesOnEvents         CitiesOnEvents[]
+  events                 CitiesOnEvents[]
+  issues                 CitiesOnIssues[]
 
   @@map("m_cities")
 }
@@ -391,7 +586,7 @@ model CitiesOnUsers {
   userId   String @map("user_id")
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   cityCode String @map("city_code")
-  city     City   @relation(fields: [cityCode], references: [code])
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -404,7 +599,7 @@ model CitiesOnGroups {
   groupId  String @map("group_id")
   group    Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
   cityCode String @map("city_code")
-  city     City   @relation(fields: [cityCode], references: [code])
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -417,7 +612,7 @@ model CitiesOnOrganizations {
   organizationId String       @map("organization_id")
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   cityCode       String       @map("city_code")
-  city           City         @relation(fields: [cityCode], references: [code])
+  city           City         @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -430,7 +625,7 @@ model CitiesOnEvents {
   eventId  String @map("event_id")
   event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   cityCode String @map("city_code")
-  city     City   @relation(fields: [cityCode], references: [code])
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -439,8 +634,22 @@ model CitiesOnEvents {
   @@map("t_cities_on_events")
 }
 
+model CitiesOnIssues {
+  issueId  String @map("issue_id")
+  issue    Issue  @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  cityCode String @map("city_code")
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([issueId, cityCode])
+  @@map("t_cities_on_issues")
+}
+
 model Index {
-  id          Int       @id @default(autoincrement())
+  id          Int       @id
+  code        String
   name        String
   valueType   ValueType @map("value_type")
   description String?
@@ -460,6 +669,11 @@ enum EntityPosition {
 enum ValueType {
   INT
   FLOAT
+}
+
+enum ActivityStyle {
+  ONSITE
+  OFFSITE
 }
 
 // Views
@@ -491,4 +705,18 @@ view EventStatView {
   totalMinutes Int   @map("total_minutes")
 
   @@map("v_events_stats")
+}
+
+view IssueStatView {
+  id              String    @unique
+  isPublic        Boolean   @map("is_public")
+  startsAt        DateTime  @map("starts_at")
+  endsAt          DateTime  @map("ends_at")
+  plannedStartsAt DateTime? @map("planned_starts_at")
+  plannedEndsAt   DateTime? @map("planned_ends_at")
+
+  issue        Issue @relation(fields: [id], references: [id])
+  totalMinutes Int   @map("total_minutes")
+
+  @@map("v_issues_stats")
 }
