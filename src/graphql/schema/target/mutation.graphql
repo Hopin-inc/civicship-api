@@ -1,0 +1,14 @@
+# Queries/Mutations-related type definitions
+
+input CreateTargetInput {
+    name: String!
+    value: Float!
+    validFrom: Datetime!
+    validTo: Datetime!
+
+    organizationId: String!
+    groupId: String!
+    indexId: String!
+}
+
+# Type definitions
