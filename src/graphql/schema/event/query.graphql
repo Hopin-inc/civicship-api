@@ -141,25 +141,3 @@ type Comment {
     createdAt: Datetime!
     updatedAt: Datetime
 }
-
-type Activities {
-    total: Int!
-    data: [Activity!]!
-}
-
-type Activity {
-    id: ID!
-    description: String
-    remark: String
-    isPublic: Boolean!
-    images: [String!]
-    startsAt: Datetime!
-    endsAt: Datetime!
-    totalMinutes: Int!
-
-    user: User!
-    event: Event!
-
-    createdAt: Datetime!
-    updatedAt: Datetime
-}

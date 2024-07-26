@@ -1,0 +1,94 @@
+# Queries/Mutations-related type definitions
+
+input CreateUserInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    isPublic: Boolean!
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    groupIds: [String!]
+    organizationIds: [String!]
+}
+
+input UpdateUserProfileInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+input UpdateUserPrivacyInput {
+    isPublic: Boolean!
+}
+
+input AddGroupToUserInput {
+    groupId: String!
+}
+
+input RemoveGroupFromUserInput {
+    groupId: String!
+}
+
+input AddOrganizationToUserInput {
+    organizationId: String!
+}
+
+input RemoveOrganizationFromUserInput {
+    organizationId: String!
+}
+
+input AddActivityToUserInput {
+    activityId: String!
+}
+
+input RemoveActivityFromUserInput {
+    activityId: String!
+}
+
+# Type definitions
+
+type UpdateUserProfilePayload {
+    user: User!
+}
+
+type UpdateUserPrivacyPayload {
+    user: User!
+}
+
+type AddGroupToUserPayload {
+    user: User!
+    group: Group!
+}
+
+type RemoveGroupFromUserPayload {
+    user: User!
+    group: Group!
+}
+
+type AddOrganizationToUserPayload {
+    user: User!
+    organization: Organization!
+}
+
+type RemoveOrganizationFromUserPayload {
+    user: User!
+    organization: Organization!
+}
+
+type AddActivityToUserPayload {
+    user: User
+    activity: Activity!
+}
+
+type RemoveActivityFromUserPayload {
+    user: User!
+    activity: Activity!
+}
