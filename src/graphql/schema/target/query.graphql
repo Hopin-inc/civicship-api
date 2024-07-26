@@ -40,8 +40,8 @@ input TargetSortInput {
 input CreateTargetInput {
     name: String!
     value: Float!
-    validFrom: String!
-    validTo: String!
+    validFrom: Datetime!
+    validTo: Datetime!
 
     organizationId: String!
     groupId: String!
@@ -53,13 +53,13 @@ type Target {
     id: ID!
     name: String!
     value: Float!
-    validFrom: String!
-    validTo: String!
+    validFrom: Datetime!
+    validTo: Datetime!
 
     organization: Organization
     group: Group
     index: Index
 
-    createdAt: String!
-    updatedAt: String
+    createdAt: Datetime!
+    updatedAt: Datetime
 }
