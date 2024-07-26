@@ -165,8 +165,8 @@ export type GqlCreateTargetInput = {
   indexId: Scalars['String']['input'];
   name: Scalars['String']['input'];
   organizationId: Scalars['String']['input'];
-  validFrom: Scalars['Datetime']['input'];
-  validTo: Scalars['Datetime']['input'];
+  validFrom: Scalars['String']['input'];
+  validTo: Scalars['String']['input'];
   value: Scalars['Float']['input'];
 };
 
@@ -813,15 +813,15 @@ export type GqlState = {
 
 export type GqlTarget = {
   __typename?: 'Target';
-  createdAt: Scalars['Datetime']['output'];
+  createdAt: Scalars['String']['output'];
   group?: Maybe<GqlGroup>;
   id: Scalars['ID']['output'];
   index?: Maybe<GqlIndex>;
   name: Scalars['String']['output'];
   organization?: Maybe<GqlOrganization>;
-  updatedAt?: Maybe<Scalars['Datetime']['output']>;
-  validFrom: Scalars['Datetime']['output'];
-  validTo: Scalars['Datetime']['output'];
+  updatedAt?: Maybe<Scalars['String']['output']>;
+  validFrom: Scalars['String']['output'];
+  validTo: Scalars['String']['output'];
   value: Scalars['Float']['output'];
 };
 
@@ -1482,15 +1482,15 @@ export type GqlStateResolvers<ContextType = Context, ParentType extends GqlResol
 }>;
 
 export type GqlTargetResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Target'] = GqlResolversParentTypes['Target']> = ResolversObject<{
-  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  createdAt?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   group?: Resolver<Maybe<GqlResolversTypes['Group']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   index?: Resolver<Maybe<GqlResolversTypes['Index']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   organization?: Resolver<Maybe<GqlResolversTypes['Organization']>, ParentType, ContextType>;
-  updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  validFrom?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  validTo?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  validFrom?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  validTo?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   value?: Resolver<GqlResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
