@@ -21,6 +21,7 @@ import {
   GqlUpdateUserProfilePayload,
   GqlUser,
   GqlUsersConnection,
+  GqlEvent,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -342,8 +343,8 @@ export default class UserService {
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
-        },
+          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+        } as GqlEvent,
       },
     };
   }
@@ -388,8 +389,8 @@ export default class UserService {
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
-        },
+          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+        } as GqlEvent,
       },
     };
   }
