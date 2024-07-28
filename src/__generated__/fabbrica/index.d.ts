@@ -4,9 +4,14 @@ import type { UsersOnGroups } from "@prisma/client";
 import type { Organization } from "@prisma/client";
 import type { UsersOnOrganizations } from "@prisma/client";
 import type { Activity } from "@prisma/client";
+import type { Application } from "@prisma/client";
+import type { ApplicationConfirmation } from "@prisma/client";
 import type { Event } from "@prisma/client";
 import type { EventsOnGroups } from "@prisma/client";
 import type { EventsOnOrganizations } from "@prisma/client";
+import type { Issue } from "@prisma/client";
+import type { IssuesOnGroups } from "@prisma/client";
+import type { IssuesOnOrganizations } from "@prisma/client";
 import type { Like } from "@prisma/client";
 import type { Comment } from "@prisma/client";
 import type { Target } from "@prisma/client";
@@ -15,16 +20,26 @@ import type { AgendasOnUsers } from "@prisma/client";
 import type { AgendasOnGroups } from "@prisma/client";
 import type { AgendasOnOrganizations } from "@prisma/client";
 import type { AgendasOnEvents } from "@prisma/client";
+import type { IssueCategory } from "@prisma/client";
+import type { IssueCategoriesOnIssues } from "@prisma/client";
+import type { IssueCategoriesOnUsers } from "@prisma/client";
+import type { Skillset } from "@prisma/client";
+import type { SkillsetsOnUsers } from "@prisma/client";
+import type { SkillsetsOnEvents } from "@prisma/client";
+import type { SkillsetsOnIssues } from "@prisma/client";
 import type { City } from "@prisma/client";
 import type { State } from "@prisma/client";
 import type { CitiesOnUsers } from "@prisma/client";
 import type { CitiesOnGroups } from "@prisma/client";
 import type { CitiesOnOrganizations } from "@prisma/client";
 import type { CitiesOnEvents } from "@prisma/client";
+import type { CitiesOnIssues } from "@prisma/client";
 import type { Index } from "@prisma/client";
 import type { ActivityStatView } from "@prisma/client";
 import type { EventStatView } from "@prisma/client";
+import type { IssueStatView } from "@prisma/client";
 import type { EntityPosition } from "@prisma/client";
+import type { ActivityStyle } from "@prisma/client";
 import type { ValueType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { Resolver } from "@quramy/prisma-fabbrica/lib/internal";
@@ -51,9 +66,13 @@ type UserFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     agendas?: Prisma.AgendasOnUsersCreateNestedManyWithoutUserInput;
+    skillsets?: Prisma.SkillsetsOnUsersCreateNestedManyWithoutUserInput;
+    issueCategories?: Prisma.IssueCategoriesOnUsersCreateNestedManyWithoutUserInput;
     cities?: Prisma.CitiesOnUsersCreateNestedManyWithoutUserInput;
     groups?: Prisma.UsersOnGroupsCreateNestedManyWithoutUserInput;
     organizations?: Prisma.UsersOnOrganizationsCreateNestedManyWithoutUserInput;
+    applications?: Prisma.ApplicationCreateNestedManyWithoutUserInput;
+    confirmations?: Prisma.ApplicationConfirmationCreateNestedManyWithoutConfirmedByInput;
     activities?: Prisma.ActivityCreateNestedManyWithoutUserInput;
     likes?: Prisma.LikeCreateNestedManyWithoutUserInput;
     comments?: Prisma.CommentCreateNestedManyWithoutUserInput;
@@ -112,6 +131,7 @@ type GroupFactoryDefineInput = {
     updatedAt?: Date | null;
     users?: Prisma.UsersOnGroupsCreateNestedManyWithoutGroupInput;
     events?: Prisma.EventsOnGroupsCreateNestedManyWithoutGroupInput;
+    issues?: Prisma.IssuesOnGroupsCreateNestedManyWithoutGroupInput;
     agendas?: Prisma.AgendasOnGroupsCreateNestedManyWithoutGroupInput;
     cities?: Prisma.CitiesOnGroupsCreateNestedManyWithoutGroupInput;
     targets?: Prisma.TargetCreateNestedManyWithoutGroupInput;
@@ -227,6 +247,7 @@ type OrganizationFactoryDefineInput = {
     bio?: string | null;
     establishedAt?: Date | null;
     website?: string | null;
+    isPublic?: boolean;
     zipcode?: string;
     address1?: string;
     address2?: string | null;
@@ -237,6 +258,7 @@ type OrganizationFactoryDefineInput = {
     groups?: Prisma.GroupCreateNestedManyWithoutOrganizationInput;
     users?: Prisma.UsersOnOrganizationsCreateNestedManyWithoutOrganizationInput;
     events?: Prisma.EventsOnOrganizationsCreateNestedManyWithoutOrganizationInput;
+    issues?: Prisma.IssuesOnOrganizationsCreateNestedManyWithoutOrganizationInput;
     agendas?: Prisma.AgendasOnOrganizationsCreateNestedManyWithoutOrganizationInput;
     cities?: Prisma.CitiesOnOrganizationsCreateNestedManyWithoutOrganizationInput;
     targets?: Prisma.TargetCreateNestedManyWithoutOrganizationInput;
@@ -342,6 +364,14 @@ type ActivityeventFactory = {
     _factoryFor: "Event";
     build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutActivitiesInput["create"]>;
 };
+type ActivityissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutActivitiesInput["create"]>;
+};
+type ActivityapplicationFactory = {
+    _factoryFor: "Application";
+    build: () => PromiseLike<Prisma.ApplicationCreateNestedOneWithoutActivitiesInput["create"]>;
+};
 type ActivitystatFactory = {
     _factoryFor: "ActivityStatView";
     build: () => PromiseLike<Prisma.ActivityStatViewCreateNestedOneWithoutActivityInput["create"]>;
@@ -351,13 +381,16 @@ type ActivityFactoryDefineInput = {
     description?: string | null;
     remark?: string | null;
     isPublic?: boolean;
+    activityStyle?: ActivityStyle;
     images?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
     startsAt?: Date;
     endsAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
     user: ActivityuserFactory | Prisma.UserCreateNestedOneWithoutActivitiesInput;
-    event: ActivityeventFactory | Prisma.EventCreateNestedOneWithoutActivitiesInput;
+    event?: ActivityeventFactory | Prisma.EventCreateNestedOneWithoutActivitiesInput;
+    issue?: ActivityissueFactory | Prisma.IssueCreateNestedOneWithoutActivitiesInput;
+    application?: ActivityapplicationFactory | Prisma.ApplicationCreateNestedOneWithoutActivitiesInput;
     stat?: ActivitystatFactory | Prisma.ActivityStatViewCreateNestedOneWithoutActivityInput;
 };
 type ActivityTransientFields = Record<string, unknown> & Partial<Record<keyof ActivityFactoryDefineInput, never>>;
@@ -397,6 +430,117 @@ interface ActivityFactoryBuilder {
  * @returns factory {@link ActivityFactoryInterface}
  */
 export declare const defineActivityFactory: ActivityFactoryBuilder;
+type ApplicationeventFactory = {
+    _factoryFor: "Event";
+    build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutApplicationsInput["create"]>;
+};
+type ApplicationuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutApplicationsInput["create"]>;
+};
+type ApplicationFactoryDefineInput = {
+    id?: string;
+    comment?: string | null;
+    isPublic?: boolean;
+    submittedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    event?: ApplicationeventFactory | Prisma.EventCreateNestedOneWithoutApplicationsInput;
+    user?: ApplicationuserFactory | Prisma.UserCreateNestedOneWithoutApplicationsInput;
+    activities?: Prisma.ActivityCreateNestedManyWithoutApplicationInput;
+    approvals?: Prisma.ApplicationConfirmationCreateNestedManyWithoutApplicationInput;
+};
+type ApplicationTransientFields = Record<string, unknown> & Partial<Record<keyof ApplicationFactoryDefineInput, never>>;
+type ApplicationFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ApplicationFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Application, Prisma.ApplicationCreateInput, TTransients>;
+type ApplicationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ApplicationFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ApplicationFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Application, Prisma.ApplicationCreateInput, TTransients>;
+type ApplicationTraitKeys<TOptions extends ApplicationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface ApplicationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Application";
+    build(inputData?: Partial<Prisma.ApplicationCreateInput & TTransients>): PromiseLike<Prisma.ApplicationCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ApplicationCreateInput & TTransients>): PromiseLike<Prisma.ApplicationCreateInput>;
+    buildList(list: readonly Partial<Prisma.ApplicationCreateInput & TTransients>[]): PromiseLike<Prisma.ApplicationCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ApplicationCreateInput & TTransients>): PromiseLike<Prisma.ApplicationCreateInput[]>;
+    pickForConnect(inputData: Application): Pick<Application, "id">;
+    create(inputData?: Partial<Prisma.ApplicationCreateInput & TTransients>): PromiseLike<Application>;
+    createList(list: readonly Partial<Prisma.ApplicationCreateInput & TTransients>[]): PromiseLike<Application[]>;
+    createList(count: number, item?: Partial<Prisma.ApplicationCreateInput & TTransients>): PromiseLike<Application[]>;
+    createForConnect(inputData?: Partial<Prisma.ApplicationCreateInput & TTransients>): PromiseLike<Pick<Application, "id">>;
+}
+export interface ApplicationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ApplicationFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ApplicationFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface ApplicationFactoryBuilder {
+    <TOptions extends ApplicationFactoryDefineOptions>(options?: TOptions): ApplicationFactoryInterface<{}, ApplicationTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ApplicationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ApplicationFactoryDefineOptions<TTransients>>(options?: TOptions) => ApplicationFactoryInterface<TTransients, ApplicationTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link Application} model.
+ *
+ * @param options
+ * @returns factory {@link ApplicationFactoryInterface}
+ */
+export declare const defineApplicationFactory: ApplicationFactoryBuilder;
+type ApplicationConfirmationapplicationFactory = {
+    _factoryFor: "Application";
+    build: () => PromiseLike<Prisma.ApplicationCreateNestedOneWithoutApprovalsInput["create"]>;
+};
+type ApplicationConfirmationconfirmedByFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutConfirmationsInput["create"]>;
+};
+type ApplicationConfirmationFactoryDefineInput = {
+    id?: string;
+    isApproved?: boolean;
+    comment?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    application: ApplicationConfirmationapplicationFactory | Prisma.ApplicationCreateNestedOneWithoutApprovalsInput;
+    confirmedBy?: ApplicationConfirmationconfirmedByFactory | Prisma.UserCreateNestedOneWithoutConfirmationsInput;
+};
+type ApplicationConfirmationTransientFields = Record<string, unknown> & Partial<Record<keyof ApplicationConfirmationFactoryDefineInput, never>>;
+type ApplicationConfirmationFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ApplicationConfirmationFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ApplicationConfirmation, Prisma.ApplicationConfirmationCreateInput, TTransients>;
+type ApplicationConfirmationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ApplicationConfirmationFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ApplicationConfirmationFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ApplicationConfirmation, Prisma.ApplicationConfirmationCreateInput, TTransients>;
+type ApplicationConfirmationTraitKeys<TOptions extends ApplicationConfirmationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface ApplicationConfirmationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ApplicationConfirmation";
+    build(inputData?: Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>): PromiseLike<Prisma.ApplicationConfirmationCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>): PromiseLike<Prisma.ApplicationConfirmationCreateInput>;
+    buildList(list: readonly Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>[]): PromiseLike<Prisma.ApplicationConfirmationCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>): PromiseLike<Prisma.ApplicationConfirmationCreateInput[]>;
+    pickForConnect(inputData: ApplicationConfirmation): Pick<ApplicationConfirmation, "id">;
+    create(inputData?: Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>): PromiseLike<ApplicationConfirmation>;
+    createList(list: readonly Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>[]): PromiseLike<ApplicationConfirmation[]>;
+    createList(count: number, item?: Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>): PromiseLike<ApplicationConfirmation[]>;
+    createForConnect(inputData?: Partial<Prisma.ApplicationConfirmationCreateInput & TTransients>): PromiseLike<Pick<ApplicationConfirmation, "id">>;
+}
+export interface ApplicationConfirmationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ApplicationConfirmationFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ApplicationConfirmationFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface ApplicationConfirmationFactoryBuilder {
+    <TOptions extends ApplicationConfirmationFactoryDefineOptions>(options: TOptions): ApplicationConfirmationFactoryInterface<{}, ApplicationConfirmationTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ApplicationConfirmationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ApplicationConfirmationFactoryDefineOptions<TTransients>>(options: TOptions) => ApplicationConfirmationFactoryInterface<TTransients, ApplicationConfirmationTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link ApplicationConfirmation} model.
+ *
+ * @param options
+ * @returns factory {@link ApplicationConfirmationFactoryInterface}
+ */
+export declare const defineApplicationConfirmationFactory: ApplicationConfirmationFactoryBuilder;
 type EventstatFactory = {
     _factoryFor: "EventStatView";
     build: () => PromiseLike<Prisma.EventStatViewCreateNestedOneWithoutEventInput["create"]>;
@@ -413,8 +557,10 @@ type EventFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     agendas?: Prisma.AgendasOnEventsCreateNestedManyWithoutEventInput;
+    skillsets?: Prisma.SkillsetsOnEventsCreateNestedManyWithoutEventInput;
     groups?: Prisma.EventsOnGroupsCreateNestedManyWithoutEventInput;
     organizations?: Prisma.EventsOnOrganizationsCreateNestedManyWithoutEventInput;
+    applications?: Prisma.ApplicationCreateNestedManyWithoutEventInput;
     likes?: Prisma.LikeCreateNestedManyWithoutEventInput;
     comments?: Prisma.CommentCreateNestedManyWithoutEventInput;
     activities?: Prisma.ActivityCreateNestedManyWithoutEventInput;
@@ -560,6 +706,166 @@ interface EventsOnOrganizationsFactoryBuilder {
  * @returns factory {@link EventsOnOrganizationsFactoryInterface}
  */
 export declare const defineEventsOnOrganizationsFactory: EventsOnOrganizationsFactoryBuilder;
+type IssuestatFactory = {
+    _factoryFor: "IssueStatView";
+    build: () => PromiseLike<Prisma.IssueStatViewCreateNestedOneWithoutIssueInput["create"]>;
+};
+type IssueFactoryDefineInput = {
+    id?: string;
+    description?: string | null;
+    isPublic?: boolean;
+    images?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    skillsets?: Prisma.SkillsetsOnIssuesCreateNestedManyWithoutIssueInput;
+    issueCategories?: Prisma.IssueCategoriesOnIssuesCreateNestedManyWithoutIssueInput;
+    groups?: Prisma.IssuesOnGroupsCreateNestedManyWithoutIssueInput;
+    organizations?: Prisma.IssuesOnOrganizationsCreateNestedManyWithoutIssueInput;
+    likes?: Prisma.LikeCreateNestedManyWithoutIssueInput;
+    comments?: Prisma.CommentCreateNestedManyWithoutIssueInput;
+    activities?: Prisma.ActivityCreateNestedManyWithoutIssueInput;
+    cities?: Prisma.CitiesOnIssuesCreateNestedManyWithoutIssueInput;
+    stat?: IssuestatFactory | Prisma.IssueStatViewCreateNestedOneWithoutIssueInput;
+};
+type IssueTransientFields = Record<string, unknown> & Partial<Record<keyof IssueFactoryDefineInput, never>>;
+type IssueFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssueFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Issue, Prisma.IssueCreateInput, TTransients>;
+type IssueFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<IssueFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: IssueFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Issue, Prisma.IssueCreateInput, TTransients>;
+type IssueTraitKeys<TOptions extends IssueFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssueFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Issue";
+    build(inputData?: Partial<Prisma.IssueCreateInput & TTransients>): PromiseLike<Prisma.IssueCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssueCreateInput & TTransients>): PromiseLike<Prisma.IssueCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssueCreateInput & TTransients>[]): PromiseLike<Prisma.IssueCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssueCreateInput & TTransients>): PromiseLike<Prisma.IssueCreateInput[]>;
+    pickForConnect(inputData: Issue): Pick<Issue, "id">;
+    create(inputData?: Partial<Prisma.IssueCreateInput & TTransients>): PromiseLike<Issue>;
+    createList(list: readonly Partial<Prisma.IssueCreateInput & TTransients>[]): PromiseLike<Issue[]>;
+    createList(count: number, item?: Partial<Prisma.IssueCreateInput & TTransients>): PromiseLike<Issue[]>;
+    createForConnect(inputData?: Partial<Prisma.IssueCreateInput & TTransients>): PromiseLike<Pick<Issue, "id">>;
+}
+export interface IssueFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssueFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssueFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssueFactoryBuilder {
+    <TOptions extends IssueFactoryDefineOptions>(options?: TOptions): IssueFactoryInterface<{}, IssueTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssueTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssueFactoryDefineOptions<TTransients>>(options?: TOptions) => IssueFactoryInterface<TTransients, IssueTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link Issue} model.
+ *
+ * @param options
+ * @returns factory {@link IssueFactoryInterface}
+ */
+export declare const defineIssueFactory: IssueFactoryBuilder;
+type IssuesOnGroupsgroupFactory = {
+    _factoryFor: "Group";
+    build: () => PromiseLike<Prisma.GroupCreateNestedOneWithoutIssuesInput["create"]>;
+};
+type IssuesOnGroupsissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutGroupsInput["create"]>;
+};
+type IssuesOnGroupsFactoryDefineInput = {
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    group: IssuesOnGroupsgroupFactory | Prisma.GroupCreateNestedOneWithoutIssuesInput;
+    issue: IssuesOnGroupsissueFactory | Prisma.IssueCreateNestedOneWithoutGroupsInput;
+};
+type IssuesOnGroupsTransientFields = Record<string, unknown> & Partial<Record<keyof IssuesOnGroupsFactoryDefineInput, never>>;
+type IssuesOnGroupsFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssuesOnGroupsFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssuesOnGroups, Prisma.IssuesOnGroupsCreateInput, TTransients>;
+type IssuesOnGroupsFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IssuesOnGroupsFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IssuesOnGroupsFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssuesOnGroups, Prisma.IssuesOnGroupsCreateInput, TTransients>;
+type IssuesOnGroupsTraitKeys<TOptions extends IssuesOnGroupsFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssuesOnGroupsFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssuesOnGroups";
+    build(inputData?: Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>): PromiseLike<Prisma.IssuesOnGroupsCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>): PromiseLike<Prisma.IssuesOnGroupsCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>[]): PromiseLike<Prisma.IssuesOnGroupsCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>): PromiseLike<Prisma.IssuesOnGroupsCreateInput[]>;
+    pickForConnect(inputData: IssuesOnGroups): Pick<IssuesOnGroups, "groupId" | "issueId">;
+    create(inputData?: Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>): PromiseLike<IssuesOnGroups>;
+    createList(list: readonly Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>[]): PromiseLike<IssuesOnGroups[]>;
+    createList(count: number, item?: Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>): PromiseLike<IssuesOnGroups[]>;
+    createForConnect(inputData?: Partial<Prisma.IssuesOnGroupsCreateInput & TTransients>): PromiseLike<Pick<IssuesOnGroups, "groupId" | "issueId">>;
+}
+export interface IssuesOnGroupsFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssuesOnGroupsFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssuesOnGroupsFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssuesOnGroupsFactoryBuilder {
+    <TOptions extends IssuesOnGroupsFactoryDefineOptions>(options: TOptions): IssuesOnGroupsFactoryInterface<{}, IssuesOnGroupsTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssuesOnGroupsTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssuesOnGroupsFactoryDefineOptions<TTransients>>(options: TOptions) => IssuesOnGroupsFactoryInterface<TTransients, IssuesOnGroupsTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link IssuesOnGroups} model.
+ *
+ * @param options
+ * @returns factory {@link IssuesOnGroupsFactoryInterface}
+ */
+export declare const defineIssuesOnGroupsFactory: IssuesOnGroupsFactoryBuilder;
+type IssuesOnOrganizationsorganizationFactory = {
+    _factoryFor: "Organization";
+    build: () => PromiseLike<Prisma.OrganizationCreateNestedOneWithoutIssuesInput["create"]>;
+};
+type IssuesOnOrganizationsissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutOrganizationsInput["create"]>;
+};
+type IssuesOnOrganizationsFactoryDefineInput = {
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    organization: IssuesOnOrganizationsorganizationFactory | Prisma.OrganizationCreateNestedOneWithoutIssuesInput;
+    issue: IssuesOnOrganizationsissueFactory | Prisma.IssueCreateNestedOneWithoutOrganizationsInput;
+};
+type IssuesOnOrganizationsTransientFields = Record<string, unknown> & Partial<Record<keyof IssuesOnOrganizationsFactoryDefineInput, never>>;
+type IssuesOnOrganizationsFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssuesOnOrganizationsFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssuesOnOrganizations, Prisma.IssuesOnOrganizationsCreateInput, TTransients>;
+type IssuesOnOrganizationsFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IssuesOnOrganizationsFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IssuesOnOrganizationsFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssuesOnOrganizations, Prisma.IssuesOnOrganizationsCreateInput, TTransients>;
+type IssuesOnOrganizationsTraitKeys<TOptions extends IssuesOnOrganizationsFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssuesOnOrganizationsFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssuesOnOrganizations";
+    build(inputData?: Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>): PromiseLike<Prisma.IssuesOnOrganizationsCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>): PromiseLike<Prisma.IssuesOnOrganizationsCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>[]): PromiseLike<Prisma.IssuesOnOrganizationsCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>): PromiseLike<Prisma.IssuesOnOrganizationsCreateInput[]>;
+    pickForConnect(inputData: IssuesOnOrganizations): Pick<IssuesOnOrganizations, "organizationId" | "issueId">;
+    create(inputData?: Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>): PromiseLike<IssuesOnOrganizations>;
+    createList(list: readonly Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>[]): PromiseLike<IssuesOnOrganizations[]>;
+    createList(count: number, item?: Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>): PromiseLike<IssuesOnOrganizations[]>;
+    createForConnect(inputData?: Partial<Prisma.IssuesOnOrganizationsCreateInput & TTransients>): PromiseLike<Pick<IssuesOnOrganizations, "organizationId" | "issueId">>;
+}
+export interface IssuesOnOrganizationsFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssuesOnOrganizationsFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssuesOnOrganizationsFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssuesOnOrganizationsFactoryBuilder {
+    <TOptions extends IssuesOnOrganizationsFactoryDefineOptions>(options: TOptions): IssuesOnOrganizationsFactoryInterface<{}, IssuesOnOrganizationsTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssuesOnOrganizationsTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssuesOnOrganizationsFactoryDefineOptions<TTransients>>(options: TOptions) => IssuesOnOrganizationsFactoryInterface<TTransients, IssuesOnOrganizationsTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link IssuesOnOrganizations} model.
+ *
+ * @param options
+ * @returns factory {@link IssuesOnOrganizationsFactoryInterface}
+ */
+export declare const defineIssuesOnOrganizationsFactory: IssuesOnOrganizationsFactoryBuilder;
 type LikeuserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutLikesInput["create"]>;
@@ -568,12 +874,18 @@ type LikeeventFactory = {
     _factoryFor: "Event";
     build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutLikesInput["create"]>;
 };
+type LikeissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutLikesInput["create"]>;
+};
 type LikeFactoryDefineInput = {
+    id?: string;
     postedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
     user: LikeuserFactory | Prisma.UserCreateNestedOneWithoutLikesInput;
-    event: LikeeventFactory | Prisma.EventCreateNestedOneWithoutLikesInput;
+    event?: LikeeventFactory | Prisma.EventCreateNestedOneWithoutLikesInput;
+    issue?: LikeissueFactory | Prisma.IssueCreateNestedOneWithoutLikesInput;
 };
 type LikeTransientFields = Record<string, unknown> & Partial<Record<keyof LikeFactoryDefineInput, never>>;
 type LikeFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -592,11 +904,11 @@ export interface LikeFactoryInterfaceWithoutTraits<TTransients extends Record<st
     buildCreateInput(inputData?: Partial<Prisma.LikeCreateInput & TTransients>): PromiseLike<Prisma.LikeCreateInput>;
     buildList(list: readonly Partial<Prisma.LikeCreateInput & TTransients>[]): PromiseLike<Prisma.LikeCreateInput[]>;
     buildList(count: number, item?: Partial<Prisma.LikeCreateInput & TTransients>): PromiseLike<Prisma.LikeCreateInput[]>;
-    pickForConnect(inputData: Like): Pick<Like, "userId" | "eventId">;
+    pickForConnect(inputData: Like): Pick<Like, "id">;
     create(inputData?: Partial<Prisma.LikeCreateInput & TTransients>): PromiseLike<Like>;
     createList(list: readonly Partial<Prisma.LikeCreateInput & TTransients>[]): PromiseLike<Like[]>;
     createList(count: number, item?: Partial<Prisma.LikeCreateInput & TTransients>): PromiseLike<Like[]>;
-    createForConnect(inputData?: Partial<Prisma.LikeCreateInput & TTransients>): PromiseLike<Pick<Like, "userId" | "eventId">>;
+    createForConnect(inputData?: Partial<Prisma.LikeCreateInput & TTransients>): PromiseLike<Pick<Like, "id">>;
 }
 export interface LikeFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends LikeFactoryInterfaceWithoutTraits<TTransients> {
     use(name: TTraitName, ...names: readonly TTraitName[]): LikeFactoryInterfaceWithoutTraits<TTransients>;
@@ -620,6 +932,10 @@ type CommenteventFactory = {
     _factoryFor: "Event";
     build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutCommentsInput["create"]>;
 };
+type CommentissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutCommentsInput["create"]>;
+};
 type CommentFactoryDefineInput = {
     id?: string;
     content?: string;
@@ -627,7 +943,8 @@ type CommentFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     user: CommentuserFactory | Prisma.UserCreateNestedOneWithoutCommentsInput;
-    event: CommenteventFactory | Prisma.EventCreateNestedOneWithoutCommentsInput;
+    event?: CommenteventFactory | Prisma.EventCreateNestedOneWithoutCommentsInput;
+    issue?: CommentissueFactory | Prisma.IssueCreateNestedOneWithoutCommentsInput;
 };
 type CommentTransientFields = Record<string, unknown> & Partial<Record<keyof CommentFactoryDefineInput, never>>;
 type CommentFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -978,6 +1295,348 @@ interface AgendasOnEventsFactoryBuilder {
  * @returns factory {@link AgendasOnEventsFactoryInterface}
  */
 export declare const defineAgendasOnEventsFactory: AgendasOnEventsFactoryBuilder;
+type IssueCategoryFactoryDefineInput = {
+    id?: number;
+    code?: string;
+    name?: string;
+    description?: string | null;
+    issues?: Prisma.IssueCategoriesOnIssuesCreateNestedManyWithoutIssueCategoryInput;
+    users?: Prisma.IssueCategoriesOnUsersCreateNestedManyWithoutIssueCategoryInput;
+};
+type IssueCategoryTransientFields = Record<string, unknown> & Partial<Record<keyof IssueCategoryFactoryDefineInput, never>>;
+type IssueCategoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssueCategoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssueCategory, Prisma.IssueCategoryCreateInput, TTransients>;
+type IssueCategoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<IssueCategoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: IssueCategoryFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssueCategory, Prisma.IssueCategoryCreateInput, TTransients>;
+type IssueCategoryTraitKeys<TOptions extends IssueCategoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssueCategoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssueCategory";
+    build(inputData?: Partial<Prisma.IssueCategoryCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssueCategoryCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssueCategoryCreateInput & TTransients>[]): PromiseLike<Prisma.IssueCategoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssueCategoryCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoryCreateInput[]>;
+    pickForConnect(inputData: IssueCategory): Pick<IssueCategory, "id">;
+    create(inputData?: Partial<Prisma.IssueCategoryCreateInput & TTransients>): PromiseLike<IssueCategory>;
+    createList(list: readonly Partial<Prisma.IssueCategoryCreateInput & TTransients>[]): PromiseLike<IssueCategory[]>;
+    createList(count: number, item?: Partial<Prisma.IssueCategoryCreateInput & TTransients>): PromiseLike<IssueCategory[]>;
+    createForConnect(inputData?: Partial<Prisma.IssueCategoryCreateInput & TTransients>): PromiseLike<Pick<IssueCategory, "id">>;
+}
+export interface IssueCategoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssueCategoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssueCategoryFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssueCategoryFactoryBuilder {
+    <TOptions extends IssueCategoryFactoryDefineOptions>(options?: TOptions): IssueCategoryFactoryInterface<{}, IssueCategoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssueCategoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssueCategoryFactoryDefineOptions<TTransients>>(options?: TOptions) => IssueCategoryFactoryInterface<TTransients, IssueCategoryTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link IssueCategory} model.
+ *
+ * @param options
+ * @returns factory {@link IssueCategoryFactoryInterface}
+ */
+export declare const defineIssueCategoryFactory: IssueCategoryFactoryBuilder;
+type IssueCategoriesOnIssuesissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutIssueCategoriesInput["create"]>;
+};
+type IssueCategoriesOnIssuesissueCategoryFactory = {
+    _factoryFor: "IssueCategory";
+    build: () => PromiseLike<Prisma.IssueCategoryCreateNestedOneWithoutIssuesInput["create"]>;
+};
+type IssueCategoriesOnIssuesFactoryDefineInput = {
+    issue: IssueCategoriesOnIssuesissueFactory | Prisma.IssueCreateNestedOneWithoutIssueCategoriesInput;
+    issueCategory: IssueCategoriesOnIssuesissueCategoryFactory | Prisma.IssueCategoryCreateNestedOneWithoutIssuesInput;
+};
+type IssueCategoriesOnIssuesTransientFields = Record<string, unknown> & Partial<Record<keyof IssueCategoriesOnIssuesFactoryDefineInput, never>>;
+type IssueCategoriesOnIssuesFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssueCategoriesOnIssuesFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssueCategoriesOnIssues, Prisma.IssueCategoriesOnIssuesCreateInput, TTransients>;
+type IssueCategoriesOnIssuesFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IssueCategoriesOnIssuesFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IssueCategoriesOnIssuesFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssueCategoriesOnIssues, Prisma.IssueCategoriesOnIssuesCreateInput, TTransients>;
+type IssueCategoriesOnIssuesTraitKeys<TOptions extends IssueCategoriesOnIssuesFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssueCategoriesOnIssuesFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssueCategoriesOnIssues";
+    build(inputData?: Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoriesOnIssuesCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoriesOnIssuesCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>[]): PromiseLike<Prisma.IssueCategoriesOnIssuesCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoriesOnIssuesCreateInput[]>;
+    pickForConnect(inputData: IssueCategoriesOnIssues): Pick<IssueCategoriesOnIssues, "issueId" | "issueCategoryId">;
+    create(inputData?: Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>): PromiseLike<IssueCategoriesOnIssues>;
+    createList(list: readonly Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>[]): PromiseLike<IssueCategoriesOnIssues[]>;
+    createList(count: number, item?: Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>): PromiseLike<IssueCategoriesOnIssues[]>;
+    createForConnect(inputData?: Partial<Prisma.IssueCategoriesOnIssuesCreateInput & TTransients>): PromiseLike<Pick<IssueCategoriesOnIssues, "issueId" | "issueCategoryId">>;
+}
+export interface IssueCategoriesOnIssuesFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssueCategoriesOnIssuesFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssueCategoriesOnIssuesFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssueCategoriesOnIssuesFactoryBuilder {
+    <TOptions extends IssueCategoriesOnIssuesFactoryDefineOptions>(options: TOptions): IssueCategoriesOnIssuesFactoryInterface<{}, IssueCategoriesOnIssuesTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssueCategoriesOnIssuesTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssueCategoriesOnIssuesFactoryDefineOptions<TTransients>>(options: TOptions) => IssueCategoriesOnIssuesFactoryInterface<TTransients, IssueCategoriesOnIssuesTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link IssueCategoriesOnIssues} model.
+ *
+ * @param options
+ * @returns factory {@link IssueCategoriesOnIssuesFactoryInterface}
+ */
+export declare const defineIssueCategoriesOnIssuesFactory: IssueCategoriesOnIssuesFactoryBuilder;
+type IssueCategoriesOnUsersuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIssueCategoriesInput["create"]>;
+};
+type IssueCategoriesOnUsersissueCategoryFactory = {
+    _factoryFor: "IssueCategory";
+    build: () => PromiseLike<Prisma.IssueCategoryCreateNestedOneWithoutUsersInput["create"]>;
+};
+type IssueCategoriesOnUsersFactoryDefineInput = {
+    user: IssueCategoriesOnUsersuserFactory | Prisma.UserCreateNestedOneWithoutIssueCategoriesInput;
+    issueCategory: IssueCategoriesOnUsersissueCategoryFactory | Prisma.IssueCategoryCreateNestedOneWithoutUsersInput;
+};
+type IssueCategoriesOnUsersTransientFields = Record<string, unknown> & Partial<Record<keyof IssueCategoriesOnUsersFactoryDefineInput, never>>;
+type IssueCategoriesOnUsersFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssueCategoriesOnUsersFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssueCategoriesOnUsers, Prisma.IssueCategoriesOnUsersCreateInput, TTransients>;
+type IssueCategoriesOnUsersFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IssueCategoriesOnUsersFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IssueCategoriesOnUsersFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssueCategoriesOnUsers, Prisma.IssueCategoriesOnUsersCreateInput, TTransients>;
+type IssueCategoriesOnUsersTraitKeys<TOptions extends IssueCategoriesOnUsersFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssueCategoriesOnUsersFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssueCategoriesOnUsers";
+    build(inputData?: Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoriesOnUsersCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoriesOnUsersCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>[]): PromiseLike<Prisma.IssueCategoriesOnUsersCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>): PromiseLike<Prisma.IssueCategoriesOnUsersCreateInput[]>;
+    pickForConnect(inputData: IssueCategoriesOnUsers): Pick<IssueCategoriesOnUsers, "userId" | "issueCategoryId">;
+    create(inputData?: Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>): PromiseLike<IssueCategoriesOnUsers>;
+    createList(list: readonly Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>[]): PromiseLike<IssueCategoriesOnUsers[]>;
+    createList(count: number, item?: Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>): PromiseLike<IssueCategoriesOnUsers[]>;
+    createForConnect(inputData?: Partial<Prisma.IssueCategoriesOnUsersCreateInput & TTransients>): PromiseLike<Pick<IssueCategoriesOnUsers, "userId" | "issueCategoryId">>;
+}
+export interface IssueCategoriesOnUsersFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssueCategoriesOnUsersFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssueCategoriesOnUsersFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssueCategoriesOnUsersFactoryBuilder {
+    <TOptions extends IssueCategoriesOnUsersFactoryDefineOptions>(options: TOptions): IssueCategoriesOnUsersFactoryInterface<{}, IssueCategoriesOnUsersTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssueCategoriesOnUsersTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssueCategoriesOnUsersFactoryDefineOptions<TTransients>>(options: TOptions) => IssueCategoriesOnUsersFactoryInterface<TTransients, IssueCategoriesOnUsersTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link IssueCategoriesOnUsers} model.
+ *
+ * @param options
+ * @returns factory {@link IssueCategoriesOnUsersFactoryInterface}
+ */
+export declare const defineIssueCategoriesOnUsersFactory: IssueCategoriesOnUsersFactoryBuilder;
+type SkillsetFactoryDefineInput = {
+    id?: number;
+    code?: string;
+    name?: string;
+    description?: string | null;
+    users?: Prisma.SkillsetsOnUsersCreateNestedManyWithoutSkillsetInput;
+    events?: Prisma.SkillsetsOnEventsCreateNestedManyWithoutSkillsetInput;
+    issues?: Prisma.SkillsetsOnIssuesCreateNestedManyWithoutSkillsetInput;
+};
+type SkillsetTransientFields = Record<string, unknown> & Partial<Record<keyof SkillsetFactoryDefineInput, never>>;
+type SkillsetFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<SkillsetFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Skillset, Prisma.SkillsetCreateInput, TTransients>;
+type SkillsetFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<SkillsetFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: SkillsetFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Skillset, Prisma.SkillsetCreateInput, TTransients>;
+type SkillsetTraitKeys<TOptions extends SkillsetFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface SkillsetFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Skillset";
+    build(inputData?: Partial<Prisma.SkillsetCreateInput & TTransients>): PromiseLike<Prisma.SkillsetCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.SkillsetCreateInput & TTransients>): PromiseLike<Prisma.SkillsetCreateInput>;
+    buildList(list: readonly Partial<Prisma.SkillsetCreateInput & TTransients>[]): PromiseLike<Prisma.SkillsetCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.SkillsetCreateInput & TTransients>): PromiseLike<Prisma.SkillsetCreateInput[]>;
+    pickForConnect(inputData: Skillset): Pick<Skillset, "id">;
+    create(inputData?: Partial<Prisma.SkillsetCreateInput & TTransients>): PromiseLike<Skillset>;
+    createList(list: readonly Partial<Prisma.SkillsetCreateInput & TTransients>[]): PromiseLike<Skillset[]>;
+    createList(count: number, item?: Partial<Prisma.SkillsetCreateInput & TTransients>): PromiseLike<Skillset[]>;
+    createForConnect(inputData?: Partial<Prisma.SkillsetCreateInput & TTransients>): PromiseLike<Pick<Skillset, "id">>;
+}
+export interface SkillsetFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends SkillsetFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): SkillsetFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface SkillsetFactoryBuilder {
+    <TOptions extends SkillsetFactoryDefineOptions>(options?: TOptions): SkillsetFactoryInterface<{}, SkillsetTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends SkillsetTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends SkillsetFactoryDefineOptions<TTransients>>(options?: TOptions) => SkillsetFactoryInterface<TTransients, SkillsetTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link Skillset} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetFactoryInterface}
+ */
+export declare const defineSkillsetFactory: SkillsetFactoryBuilder;
+type SkillsetsOnUsersuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutSkillsetsInput["create"]>;
+};
+type SkillsetsOnUsersskillsetFactory = {
+    _factoryFor: "Skillset";
+    build: () => PromiseLike<Prisma.SkillsetCreateNestedOneWithoutUsersInput["create"]>;
+};
+type SkillsetsOnUsersFactoryDefineInput = {
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: SkillsetsOnUsersuserFactory | Prisma.UserCreateNestedOneWithoutSkillsetsInput;
+    skillset: SkillsetsOnUsersskillsetFactory | Prisma.SkillsetCreateNestedOneWithoutUsersInput;
+};
+type SkillsetsOnUsersTransientFields = Record<string, unknown> & Partial<Record<keyof SkillsetsOnUsersFactoryDefineInput, never>>;
+type SkillsetsOnUsersFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<SkillsetsOnUsersFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<SkillsetsOnUsers, Prisma.SkillsetsOnUsersCreateInput, TTransients>;
+type SkillsetsOnUsersFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<SkillsetsOnUsersFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: SkillsetsOnUsersFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<SkillsetsOnUsers, Prisma.SkillsetsOnUsersCreateInput, TTransients>;
+type SkillsetsOnUsersTraitKeys<TOptions extends SkillsetsOnUsersFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface SkillsetsOnUsersFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "SkillsetsOnUsers";
+    build(inputData?: Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnUsersCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnUsersCreateInput>;
+    buildList(list: readonly Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>[]): PromiseLike<Prisma.SkillsetsOnUsersCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnUsersCreateInput[]>;
+    pickForConnect(inputData: SkillsetsOnUsers): Pick<SkillsetsOnUsers, "userId" | "skillsetId">;
+    create(inputData?: Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>): PromiseLike<SkillsetsOnUsers>;
+    createList(list: readonly Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>[]): PromiseLike<SkillsetsOnUsers[]>;
+    createList(count: number, item?: Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>): PromiseLike<SkillsetsOnUsers[]>;
+    createForConnect(inputData?: Partial<Prisma.SkillsetsOnUsersCreateInput & TTransients>): PromiseLike<Pick<SkillsetsOnUsers, "userId" | "skillsetId">>;
+}
+export interface SkillsetsOnUsersFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends SkillsetsOnUsersFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): SkillsetsOnUsersFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface SkillsetsOnUsersFactoryBuilder {
+    <TOptions extends SkillsetsOnUsersFactoryDefineOptions>(options: TOptions): SkillsetsOnUsersFactoryInterface<{}, SkillsetsOnUsersTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends SkillsetsOnUsersTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends SkillsetsOnUsersFactoryDefineOptions<TTransients>>(options: TOptions) => SkillsetsOnUsersFactoryInterface<TTransients, SkillsetsOnUsersTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link SkillsetsOnUsers} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetsOnUsersFactoryInterface}
+ */
+export declare const defineSkillsetsOnUsersFactory: SkillsetsOnUsersFactoryBuilder;
+type SkillsetsOnEventseventFactory = {
+    _factoryFor: "Event";
+    build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutSkillsetsInput["create"]>;
+};
+type SkillsetsOnEventsskillsetFactory = {
+    _factoryFor: "Skillset";
+    build: () => PromiseLike<Prisma.SkillsetCreateNestedOneWithoutEventsInput["create"]>;
+};
+type SkillsetsOnEventsFactoryDefineInput = {
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    event: SkillsetsOnEventseventFactory | Prisma.EventCreateNestedOneWithoutSkillsetsInput;
+    skillset: SkillsetsOnEventsskillsetFactory | Prisma.SkillsetCreateNestedOneWithoutEventsInput;
+};
+type SkillsetsOnEventsTransientFields = Record<string, unknown> & Partial<Record<keyof SkillsetsOnEventsFactoryDefineInput, never>>;
+type SkillsetsOnEventsFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<SkillsetsOnEventsFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<SkillsetsOnEvents, Prisma.SkillsetsOnEventsCreateInput, TTransients>;
+type SkillsetsOnEventsFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<SkillsetsOnEventsFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: SkillsetsOnEventsFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<SkillsetsOnEvents, Prisma.SkillsetsOnEventsCreateInput, TTransients>;
+type SkillsetsOnEventsTraitKeys<TOptions extends SkillsetsOnEventsFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface SkillsetsOnEventsFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "SkillsetsOnEvents";
+    build(inputData?: Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnEventsCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnEventsCreateInput>;
+    buildList(list: readonly Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>[]): PromiseLike<Prisma.SkillsetsOnEventsCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnEventsCreateInput[]>;
+    pickForConnect(inputData: SkillsetsOnEvents): Pick<SkillsetsOnEvents, "eventId" | "skillsetId">;
+    create(inputData?: Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>): PromiseLike<SkillsetsOnEvents>;
+    createList(list: readonly Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>[]): PromiseLike<SkillsetsOnEvents[]>;
+    createList(count: number, item?: Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>): PromiseLike<SkillsetsOnEvents[]>;
+    createForConnect(inputData?: Partial<Prisma.SkillsetsOnEventsCreateInput & TTransients>): PromiseLike<Pick<SkillsetsOnEvents, "eventId" | "skillsetId">>;
+}
+export interface SkillsetsOnEventsFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends SkillsetsOnEventsFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): SkillsetsOnEventsFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface SkillsetsOnEventsFactoryBuilder {
+    <TOptions extends SkillsetsOnEventsFactoryDefineOptions>(options: TOptions): SkillsetsOnEventsFactoryInterface<{}, SkillsetsOnEventsTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends SkillsetsOnEventsTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends SkillsetsOnEventsFactoryDefineOptions<TTransients>>(options: TOptions) => SkillsetsOnEventsFactoryInterface<TTransients, SkillsetsOnEventsTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link SkillsetsOnEvents} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetsOnEventsFactoryInterface}
+ */
+export declare const defineSkillsetsOnEventsFactory: SkillsetsOnEventsFactoryBuilder;
+type SkillsetsOnIssuesissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutSkillsetsInput["create"]>;
+};
+type SkillsetsOnIssuesskillsetFactory = {
+    _factoryFor: "Skillset";
+    build: () => PromiseLike<Prisma.SkillsetCreateNestedOneWithoutIssuesInput["create"]>;
+};
+type SkillsetsOnIssuesFactoryDefineInput = {
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    issue: SkillsetsOnIssuesissueFactory | Prisma.IssueCreateNestedOneWithoutSkillsetsInput;
+    skillset: SkillsetsOnIssuesskillsetFactory | Prisma.SkillsetCreateNestedOneWithoutIssuesInput;
+};
+type SkillsetsOnIssuesTransientFields = Record<string, unknown> & Partial<Record<keyof SkillsetsOnIssuesFactoryDefineInput, never>>;
+type SkillsetsOnIssuesFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<SkillsetsOnIssuesFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<SkillsetsOnIssues, Prisma.SkillsetsOnIssuesCreateInput, TTransients>;
+type SkillsetsOnIssuesFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<SkillsetsOnIssuesFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: SkillsetsOnIssuesFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<SkillsetsOnIssues, Prisma.SkillsetsOnIssuesCreateInput, TTransients>;
+type SkillsetsOnIssuesTraitKeys<TOptions extends SkillsetsOnIssuesFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface SkillsetsOnIssuesFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "SkillsetsOnIssues";
+    build(inputData?: Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnIssuesCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnIssuesCreateInput>;
+    buildList(list: readonly Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>[]): PromiseLike<Prisma.SkillsetsOnIssuesCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.SkillsetsOnIssuesCreateInput[]>;
+    pickForConnect(inputData: SkillsetsOnIssues): Pick<SkillsetsOnIssues, "issueId" | "skillsetId">;
+    create(inputData?: Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>): PromiseLike<SkillsetsOnIssues>;
+    createList(list: readonly Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>[]): PromiseLike<SkillsetsOnIssues[]>;
+    createList(count: number, item?: Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>): PromiseLike<SkillsetsOnIssues[]>;
+    createForConnect(inputData?: Partial<Prisma.SkillsetsOnIssuesCreateInput & TTransients>): PromiseLike<Pick<SkillsetsOnIssues, "issueId" | "skillsetId">>;
+}
+export interface SkillsetsOnIssuesFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends SkillsetsOnIssuesFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): SkillsetsOnIssuesFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface SkillsetsOnIssuesFactoryBuilder {
+    <TOptions extends SkillsetsOnIssuesFactoryDefineOptions>(options: TOptions): SkillsetsOnIssuesFactoryInterface<{}, SkillsetsOnIssuesTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends SkillsetsOnIssuesTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends SkillsetsOnIssuesFactoryDefineOptions<TTransients>>(options: TOptions) => SkillsetsOnIssuesFactoryInterface<TTransients, SkillsetsOnIssuesTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link SkillsetsOnIssues} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetsOnIssuesFactoryInterface}
+ */
+export declare const defineSkillsetsOnIssuesFactory: SkillsetsOnIssuesFactoryBuilder;
 type CitystateFactory = {
     _factoryFor: "State";
     build: () => PromiseLike<Prisma.StateCreateNestedOneWithoutCitiesInput["create"]>;
@@ -990,7 +1649,8 @@ type CityFactoryDefineInput = {
     groups?: Prisma.CitiesOnGroupsCreateNestedManyWithoutCityInput;
     organizations?: Prisma.CitiesOnOrganizationsCreateNestedManyWithoutCityInput;
     addressedOrganizations?: Prisma.OrganizationCreateNestedManyWithoutCityInput;
-    citiesOnEvents?: Prisma.CitiesOnEventsCreateNestedManyWithoutCityInput;
+    events?: Prisma.CitiesOnEventsCreateNestedManyWithoutCityInput;
+    issues?: Prisma.CitiesOnIssuesCreateNestedManyWithoutCityInput;
 };
 type CityTransientFields = Record<string, unknown> & Partial<Record<keyof CityFactoryDefineInput, never>>;
 type CityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -1232,13 +1892,13 @@ type CitiesOnEventseventFactory = {
 };
 type CitiesOnEventscityFactory = {
     _factoryFor: "City";
-    build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutCitiesOnEventsInput["create"]>;
+    build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutEventsInput["create"]>;
 };
 type CitiesOnEventsFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     event: CitiesOnEventseventFactory | Prisma.EventCreateNestedOneWithoutCitiesInput;
-    city: CitiesOnEventscityFactory | Prisma.CityCreateNestedOneWithoutCitiesOnEventsInput;
+    city: CitiesOnEventscityFactory | Prisma.CityCreateNestedOneWithoutEventsInput;
 };
 type CitiesOnEventsTransientFields = Record<string, unknown> & Partial<Record<keyof CitiesOnEventsFactoryDefineInput, never>>;
 type CitiesOnEventsFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -1277,7 +1937,60 @@ interface CitiesOnEventsFactoryBuilder {
  * @returns factory {@link CitiesOnEventsFactoryInterface}
  */
 export declare const defineCitiesOnEventsFactory: CitiesOnEventsFactoryBuilder;
+type CitiesOnIssuesissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutCitiesInput["create"]>;
+};
+type CitiesOnIssuescityFactory = {
+    _factoryFor: "City";
+    build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutIssuesInput["create"]>;
+};
+type CitiesOnIssuesFactoryDefineInput = {
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    issue: CitiesOnIssuesissueFactory | Prisma.IssueCreateNestedOneWithoutCitiesInput;
+    city: CitiesOnIssuescityFactory | Prisma.CityCreateNestedOneWithoutIssuesInput;
+};
+type CitiesOnIssuesTransientFields = Record<string, unknown> & Partial<Record<keyof CitiesOnIssuesFactoryDefineInput, never>>;
+type CitiesOnIssuesFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CitiesOnIssuesFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CitiesOnIssues, Prisma.CitiesOnIssuesCreateInput, TTransients>;
+type CitiesOnIssuesFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CitiesOnIssuesFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CitiesOnIssuesFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CitiesOnIssues, Prisma.CitiesOnIssuesCreateInput, TTransients>;
+type CitiesOnIssuesTraitKeys<TOptions extends CitiesOnIssuesFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface CitiesOnIssuesFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CitiesOnIssues";
+    build(inputData?: Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.CitiesOnIssuesCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.CitiesOnIssuesCreateInput>;
+    buildList(list: readonly Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>[]): PromiseLike<Prisma.CitiesOnIssuesCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>): PromiseLike<Prisma.CitiesOnIssuesCreateInput[]>;
+    pickForConnect(inputData: CitiesOnIssues): Pick<CitiesOnIssues, "issueId" | "cityCode">;
+    create(inputData?: Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>): PromiseLike<CitiesOnIssues>;
+    createList(list: readonly Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>[]): PromiseLike<CitiesOnIssues[]>;
+    createList(count: number, item?: Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>): PromiseLike<CitiesOnIssues[]>;
+    createForConnect(inputData?: Partial<Prisma.CitiesOnIssuesCreateInput & TTransients>): PromiseLike<Pick<CitiesOnIssues, "issueId" | "cityCode">>;
+}
+export interface CitiesOnIssuesFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CitiesOnIssuesFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CitiesOnIssuesFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface CitiesOnIssuesFactoryBuilder {
+    <TOptions extends CitiesOnIssuesFactoryDefineOptions>(options: TOptions): CitiesOnIssuesFactoryInterface<{}, CitiesOnIssuesTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CitiesOnIssuesTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CitiesOnIssuesFactoryDefineOptions<TTransients>>(options: TOptions) => CitiesOnIssuesFactoryInterface<TTransients, CitiesOnIssuesTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link CitiesOnIssues} model.
+ *
+ * @param options
+ * @returns factory {@link CitiesOnIssuesFactoryInterface}
+ */
+export declare const defineCitiesOnIssuesFactory: CitiesOnIssuesFactoryBuilder;
 type IndexFactoryDefineInput = {
+    id?: number;
+    code?: string;
     name?: string;
     valueType?: ValueType;
     description?: string | null;
@@ -1420,3 +2133,53 @@ interface EventStatViewFactoryBuilder {
  * @returns factory {@link EventStatViewFactoryInterface}
  */
 export declare const defineEventStatViewFactory: EventStatViewFactoryBuilder;
+type IssueStatViewissueFactory = {
+    _factoryFor: "Issue";
+    build: () => PromiseLike<Prisma.IssueCreateNestedOneWithoutStatInput["create"]>;
+};
+type IssueStatViewFactoryDefineInput = {
+    isPublic?: boolean;
+    startsAt?: Date;
+    endsAt?: Date;
+    plannedStartsAt?: Date | null;
+    plannedEndsAt?: Date | null;
+    totalMinutes?: number;
+    issue: IssueStatViewissueFactory | Prisma.IssueCreateNestedOneWithoutStatInput;
+};
+type IssueStatViewTransientFields = Record<string, unknown> & Partial<Record<keyof IssueStatViewFactoryDefineInput, never>>;
+type IssueStatViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IssueStatViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<IssueStatView, Prisma.IssueStatViewCreateInput, TTransients>;
+type IssueStatViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IssueStatViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IssueStatViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<IssueStatView, Prisma.IssueStatViewCreateInput, TTransients>;
+type IssueStatViewTraitKeys<TOptions extends IssueStatViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface IssueStatViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "IssueStatView";
+    build(inputData?: Partial<Prisma.IssueStatViewCreateInput & TTransients>): PromiseLike<Prisma.IssueStatViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IssueStatViewCreateInput & TTransients>): PromiseLike<Prisma.IssueStatViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.IssueStatViewCreateInput & TTransients>[]): PromiseLike<Prisma.IssueStatViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IssueStatViewCreateInput & TTransients>): PromiseLike<Prisma.IssueStatViewCreateInput[]>;
+    pickForConnect(inputData: IssueStatView): Pick<IssueStatView, "id">;
+    create(inputData?: Partial<Prisma.IssueStatViewCreateInput & TTransients>): PromiseLike<IssueStatView>;
+    createList(list: readonly Partial<Prisma.IssueStatViewCreateInput & TTransients>[]): PromiseLike<IssueStatView[]>;
+    createList(count: number, item?: Partial<Prisma.IssueStatViewCreateInput & TTransients>): PromiseLike<IssueStatView[]>;
+    createForConnect(inputData?: Partial<Prisma.IssueStatViewCreateInput & TTransients>): PromiseLike<Pick<IssueStatView, "id">>;
+}
+export interface IssueStatViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IssueStatViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IssueStatViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface IssueStatViewFactoryBuilder {
+    <TOptions extends IssueStatViewFactoryDefineOptions>(options: TOptions): IssueStatViewFactoryInterface<{}, IssueStatViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IssueStatViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IssueStatViewFactoryDefineOptions<TTransients>>(options: TOptions) => IssueStatViewFactoryInterface<TTransients, IssueStatViewTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link IssueStatView} model.
+ *
+ * @param options
+ * @returns factory {@link IssueStatViewFactoryInterface}
+ */
+export declare const defineIssueStatViewFactory: IssueStatViewFactoryBuilder;

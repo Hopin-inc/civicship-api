@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineEventStatViewFactory = exports.defineActivityStatViewFactory = exports.defineIndexFactory = exports.defineCitiesOnEventsFactory = exports.defineCitiesOnOrganizationsFactory = exports.defineCitiesOnGroupsFactory = exports.defineCitiesOnUsersFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineAgendasOnEventsFactory = exports.defineAgendasOnOrganizationsFactory = exports.defineAgendasOnGroupsFactory = exports.defineAgendasOnUsersFactory = exports.defineAgendaFactory = exports.defineTargetFactory = exports.defineCommentFactory = exports.defineLikeFactory = exports.defineEventsOnOrganizationsFactory = exports.defineEventsOnGroupsFactory = exports.defineEventFactory = exports.defineActivityFactory = exports.defineUsersOnOrganizationsFactory = exports.defineOrganizationFactory = exports.defineUsersOnGroupsFactory = exports.defineGroupFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineIssueStatViewFactory = exports.defineEventStatViewFactory = exports.defineActivityStatViewFactory = exports.defineIndexFactory = exports.defineCitiesOnIssuesFactory = exports.defineCitiesOnEventsFactory = exports.defineCitiesOnOrganizationsFactory = exports.defineCitiesOnGroupsFactory = exports.defineCitiesOnUsersFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineSkillsetsOnIssuesFactory = exports.defineSkillsetsOnEventsFactory = exports.defineSkillsetsOnUsersFactory = exports.defineSkillsetFactory = exports.defineIssueCategoriesOnUsersFactory = exports.defineIssueCategoriesOnIssuesFactory = exports.defineIssueCategoryFactory = exports.defineAgendasOnEventsFactory = exports.defineAgendasOnOrganizationsFactory = exports.defineAgendasOnGroupsFactory = exports.defineAgendasOnUsersFactory = exports.defineAgendaFactory = exports.defineTargetFactory = exports.defineCommentFactory = exports.defineLikeFactory = exports.defineIssuesOnOrganizationsFactory = exports.defineIssuesOnGroupsFactory = exports.defineIssueFactory = exports.defineEventsOnOrganizationsFactory = exports.defineEventsOnGroupsFactory = exports.defineEventFactory = exports.defineApplicationConfirmationFactory = exports.defineApplicationFactory = exports.defineActivityFactory = exports.defineUsersOnOrganizationsFactory = exports.defineOrganizationFactory = exports.defineUsersOnGroupsFactory = exports.defineGroupFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -16,6 +16,14 @@ const modelFieldDefinitions = [{
                 type: "AgendasOnUsers",
                 relationName: "AgendasOnUsersToUser"
             }, {
+                name: "skillsets",
+                type: "SkillsetsOnUsers",
+                relationName: "SkillsetsOnUsersToUser"
+            }, {
+                name: "issueCategories",
+                type: "IssueCategoriesOnUsers",
+                relationName: "IssueCategoriesOnUsersToUser"
+            }, {
                 name: "cities",
                 type: "CitiesOnUsers",
                 relationName: "CitiesOnUsersToUser"
@@ -27,6 +35,14 @@ const modelFieldDefinitions = [{
                 name: "organizations",
                 type: "UsersOnOrganizations",
                 relationName: "UserToUsersOnOrganizations"
+            }, {
+                name: "applications",
+                type: "Application",
+                relationName: "ApplicationToUser"
+            }, {
+                name: "confirmations",
+                type: "ApplicationConfirmation",
+                relationName: "ApplicationConfirmationToUser"
             }, {
                 name: "activities",
                 type: "Activity",
@@ -50,6 +66,10 @@ const modelFieldDefinitions = [{
                 name: "events",
                 type: "EventsOnGroups",
                 relationName: "EventsOnGroupsToGroup"
+            }, {
+                name: "issues",
+                type: "IssuesOnGroups",
+                relationName: "GroupToIssuesOnGroups"
             }, {
                 name: "agendas",
                 type: "AgendasOnGroups",
@@ -109,6 +129,10 @@ const modelFieldDefinitions = [{
                 type: "EventsOnOrganizations",
                 relationName: "EventsOnOrganizationsToOrganization"
             }, {
+                name: "issues",
+                type: "IssuesOnOrganizations",
+                relationName: "IssuesOnOrganizationsToOrganization"
+            }, {
                 name: "agendas",
                 type: "AgendasOnOrganizations",
                 relationName: "AgendasOnOrganizationsToOrganization"
@@ -143,9 +167,47 @@ const modelFieldDefinitions = [{
                 type: "Event",
                 relationName: "ActivityToEvent"
             }, {
+                name: "issue",
+                type: "Issue",
+                relationName: "ActivityToIssue"
+            }, {
+                name: "application",
+                type: "Application",
+                relationName: "ActivityToApplication"
+            }, {
                 name: "stat",
                 type: "ActivityStatView",
                 relationName: "ActivityToActivityStatView"
+            }]
+    }, {
+        name: "Application",
+        fields: [{
+                name: "event",
+                type: "Event",
+                relationName: "ApplicationToEvent"
+            }, {
+                name: "user",
+                type: "User",
+                relationName: "ApplicationToUser"
+            }, {
+                name: "activities",
+                type: "Activity",
+                relationName: "ActivityToApplication"
+            }, {
+                name: "approvals",
+                type: "ApplicationConfirmation",
+                relationName: "ApplicationToApplicationConfirmation"
+            }]
+    }, {
+        name: "ApplicationConfirmation",
+        fields: [{
+                name: "application",
+                type: "Application",
+                relationName: "ApplicationToApplicationConfirmation"
+            }, {
+                name: "confirmedBy",
+                type: "User",
+                relationName: "ApplicationConfirmationToUser"
             }]
     }, {
         name: "Event",
@@ -154,6 +216,10 @@ const modelFieldDefinitions = [{
                 type: "AgendasOnEvents",
                 relationName: "AgendasOnEventsToEvent"
             }, {
+                name: "skillsets",
+                type: "SkillsetsOnEvents",
+                relationName: "EventToSkillsetsOnEvents"
+            }, {
                 name: "groups",
                 type: "EventsOnGroups",
                 relationName: "EventToEventsOnGroups"
@@ -161,6 +227,10 @@ const modelFieldDefinitions = [{
                 name: "organizations",
                 type: "EventsOnOrganizations",
                 relationName: "EventToEventsOnOrganizations"
+            }, {
+                name: "applications",
+                type: "Application",
+                relationName: "ApplicationToEvent"
             }, {
                 name: "likes",
                 type: "Like",
@@ -205,6 +275,67 @@ const modelFieldDefinitions = [{
                 relationName: "EventToEventsOnOrganizations"
             }]
     }, {
+        name: "Issue",
+        fields: [{
+                name: "skillsets",
+                type: "SkillsetsOnIssues",
+                relationName: "IssueToSkillsetsOnIssues"
+            }, {
+                name: "issueCategories",
+                type: "IssueCategoriesOnIssues",
+                relationName: "IssueToIssueCategoriesOnIssues"
+            }, {
+                name: "groups",
+                type: "IssuesOnGroups",
+                relationName: "IssueToIssuesOnGroups"
+            }, {
+                name: "organizations",
+                type: "IssuesOnOrganizations",
+                relationName: "IssueToIssuesOnOrganizations"
+            }, {
+                name: "likes",
+                type: "Like",
+                relationName: "IssueToLike"
+            }, {
+                name: "comments",
+                type: "Comment",
+                relationName: "CommentToIssue"
+            }, {
+                name: "activities",
+                type: "Activity",
+                relationName: "ActivityToIssue"
+            }, {
+                name: "cities",
+                type: "CitiesOnIssues",
+                relationName: "CitiesOnIssuesToIssue"
+            }, {
+                name: "stat",
+                type: "IssueStatView",
+                relationName: "IssueToIssueStatView"
+            }]
+    }, {
+        name: "IssuesOnGroups",
+        fields: [{
+                name: "group",
+                type: "Group",
+                relationName: "GroupToIssuesOnGroups"
+            }, {
+                name: "issue",
+                type: "Issue",
+                relationName: "IssueToIssuesOnGroups"
+            }]
+    }, {
+        name: "IssuesOnOrganizations",
+        fields: [{
+                name: "organization",
+                type: "Organization",
+                relationName: "IssuesOnOrganizationsToOrganization"
+            }, {
+                name: "issue",
+                type: "Issue",
+                relationName: "IssueToIssuesOnOrganizations"
+            }]
+    }, {
         name: "Like",
         fields: [{
                 name: "user",
@@ -214,6 +345,10 @@ const modelFieldDefinitions = [{
                 name: "event",
                 type: "Event",
                 relationName: "EventToLike"
+            }, {
+                name: "issue",
+                type: "Issue",
+                relationName: "IssueToLike"
             }]
     }, {
         name: "Comment",
@@ -225,6 +360,10 @@ const modelFieldDefinitions = [{
                 name: "event",
                 type: "Event",
                 relationName: "CommentToEvent"
+            }, {
+                name: "issue",
+                type: "Issue",
+                relationName: "CommentToIssue"
             }]
     }, {
         name: "Target",
@@ -305,6 +444,87 @@ const modelFieldDefinitions = [{
                 relationName: "AgendaToAgendasOnEvents"
             }]
     }, {
+        name: "IssueCategory",
+        fields: [{
+                name: "issues",
+                type: "IssueCategoriesOnIssues",
+                relationName: "IssueCategoriesOnIssuesToIssueCategory"
+            }, {
+                name: "users",
+                type: "IssueCategoriesOnUsers",
+                relationName: "IssueCategoriesOnUsersToIssueCategory"
+            }]
+    }, {
+        name: "IssueCategoriesOnIssues",
+        fields: [{
+                name: "issue",
+                type: "Issue",
+                relationName: "IssueToIssueCategoriesOnIssues"
+            }, {
+                name: "issueCategory",
+                type: "IssueCategory",
+                relationName: "IssueCategoriesOnIssuesToIssueCategory"
+            }]
+    }, {
+        name: "IssueCategoriesOnUsers",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "IssueCategoriesOnUsersToUser"
+            }, {
+                name: "issueCategory",
+                type: "IssueCategory",
+                relationName: "IssueCategoriesOnUsersToIssueCategory"
+            }]
+    }, {
+        name: "Skillset",
+        fields: [{
+                name: "users",
+                type: "SkillsetsOnUsers",
+                relationName: "SkillsetToSkillsetsOnUsers"
+            }, {
+                name: "events",
+                type: "SkillsetsOnEvents",
+                relationName: "SkillsetToSkillsetsOnEvents"
+            }, {
+                name: "issues",
+                type: "SkillsetsOnIssues",
+                relationName: "SkillsetToSkillsetsOnIssues"
+            }]
+    }, {
+        name: "SkillsetsOnUsers",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "SkillsetsOnUsersToUser"
+            }, {
+                name: "skillset",
+                type: "Skillset",
+                relationName: "SkillsetToSkillsetsOnUsers"
+            }]
+    }, {
+        name: "SkillsetsOnEvents",
+        fields: [{
+                name: "event",
+                type: "Event",
+                relationName: "EventToSkillsetsOnEvents"
+            }, {
+                name: "skillset",
+                type: "Skillset",
+                relationName: "SkillsetToSkillsetsOnEvents"
+            }]
+    }, {
+        name: "SkillsetsOnIssues",
+        fields: [{
+                name: "issue",
+                type: "Issue",
+                relationName: "IssueToSkillsetsOnIssues"
+            }, {
+                name: "skillset",
+                type: "Skillset",
+                relationName: "SkillsetToSkillsetsOnIssues"
+            }]
+    }, {
         name: "City",
         fields: [{
                 name: "state",
@@ -327,9 +547,13 @@ const modelFieldDefinitions = [{
                 type: "Organization",
                 relationName: "CityToOrganization"
             }, {
-                name: "citiesOnEvents",
+                name: "events",
                 type: "CitiesOnEvents",
                 relationName: "CitiesOnEventsToCity"
+            }, {
+                name: "issues",
+                type: "CitiesOnIssues",
+                relationName: "CitiesOnIssuesToCity"
             }]
     }, {
         name: "State",
@@ -387,6 +611,17 @@ const modelFieldDefinitions = [{
                 relationName: "CitiesOnEventsToCity"
             }]
     }, {
+        name: "CitiesOnIssues",
+        fields: [{
+                name: "issue",
+                type: "Issue",
+                relationName: "CitiesOnIssuesToIssue"
+            }, {
+                name: "city",
+                type: "City",
+                relationName: "CitiesOnIssuesToCity"
+            }]
+    }, {
         name: "Index",
         fields: [{
                 name: "targets",
@@ -406,6 +641,13 @@ const modelFieldDefinitions = [{
                 name: "event",
                 type: "Event",
                 relationName: "EventToEventStatView"
+            }]
+    }, {
+        name: "IssueStatView",
+        fields: [{
+                name: "issue",
+                type: "Issue",
+                relationName: "IssueToIssueStatView"
             }]
     }];
 function autoGenerateUserScalarsOrEnums({ seq }) {
@@ -897,6 +1139,12 @@ function isActivityuserFactory(x) {
 function isActivityeventFactory(x) {
     return x?._factoryFor === "Event";
 }
+function isActivityissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function isActivityapplicationFactory(x) {
+    return x?._factoryFor === "Application";
+}
 function isActivitystatFactory(x) {
     return x?._factoryFor === "ActivityStatView";
 }
@@ -945,6 +1193,12 @@ function defineActivityFactoryInternal({ defaultData: defaultDataResolver, onAft
                 event: isActivityeventFactory(defaultData.event) ? {
                     create: await defaultData.event.build()
                 } : defaultData.event,
+                issue: isActivityissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue,
+                application: isActivityapplicationFactory(defaultData.application) ? {
+                    create: await defaultData.application.build()
+                } : defaultData.application,
                 stat: isActivitystatFactory(defaultData.stat) ? {
                     create: await defaultData.stat.build()
                 } : defaultData.stat
@@ -997,6 +1251,202 @@ exports.defineActivityFactory = ((options) => {
     return defineActivityFactoryInternal(options, {});
 });
 exports.defineActivityFactory.withTransientFields = defaultTransientFieldValues => options => defineActivityFactoryInternal(options, defaultTransientFieldValues);
+function isApplicationeventFactory(x) {
+    return x?._factoryFor === "Event";
+}
+function isApplicationuserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateApplicationScalarsOrEnums({ seq }) {
+    return {
+        submittedAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "Application", fieldName: "submittedAt", isId: false, isUnique: false, seq })
+    };
+}
+function defineApplicationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Application", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateApplicationScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                event: isApplicationeventFactory(defaultData.event) ? {
+                    create: await defaultData.event.build()
+                } : defaultData.event,
+                user: isApplicationuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().application.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Application",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Application} model.
+ *
+ * @param options
+ * @returns factory {@link ApplicationFactoryInterface}
+ */
+exports.defineApplicationFactory = ((options) => {
+    return defineApplicationFactoryInternal(options ?? {}, {});
+});
+exports.defineApplicationFactory.withTransientFields = defaultTransientFieldValues => options => defineApplicationFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isApplicationConfirmationapplicationFactory(x) {
+    return x?._factoryFor === "Application";
+}
+function isApplicationConfirmationconfirmedByFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateApplicationConfirmationScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineApplicationConfirmationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("ApplicationConfirmation", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateApplicationConfirmationScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                application: isApplicationConfirmationapplicationFactory(defaultData.application) ? {
+                    create: await defaultData.application.build()
+                } : defaultData.application,
+                confirmedBy: isApplicationConfirmationconfirmedByFactory(defaultData.confirmedBy) ? {
+                    create: await defaultData.confirmedBy.build()
+                } : defaultData.confirmedBy
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().applicationConfirmation.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ApplicationConfirmation",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link ApplicationConfirmation} model.
+ *
+ * @param options
+ * @returns factory {@link ApplicationConfirmationFactoryInterface}
+ */
+exports.defineApplicationConfirmationFactory = ((options) => {
+    return defineApplicationConfirmationFactoryInternal(options, {});
+});
+exports.defineApplicationConfirmationFactory.withTransientFields = defaultTransientFieldValues => options => defineApplicationConfirmationFactoryInternal(options, defaultTransientFieldValues);
 function isEventstatFactory(x) {
     return x?._factoryFor === "EventStatView";
 }
@@ -1287,11 +1737,301 @@ exports.defineEventsOnOrganizationsFactory = ((options) => {
     return defineEventsOnOrganizationsFactoryInternal(options, {});
 });
 exports.defineEventsOnOrganizationsFactory.withTransientFields = defaultTransientFieldValues => options => defineEventsOnOrganizationsFactoryInternal(options, defaultTransientFieldValues);
+function isIssuestatFactory(x) {
+    return x?._factoryFor === "IssueStatView";
+}
+function autoGenerateIssueScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineIssueFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Issue", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssueScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                stat: isIssuestatFactory(defaultData.stat) ? {
+                    create: await defaultData.stat.build()
+                } : defaultData.stat
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issue.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Issue",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Issue} model.
+ *
+ * @param options
+ * @returns factory {@link IssueFactoryInterface}
+ */
+exports.defineIssueFactory = ((options) => {
+    return defineIssueFactoryInternal(options ?? {}, {});
+});
+exports.defineIssueFactory.withTransientFields = defaultTransientFieldValues => options => defineIssueFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isIssuesOnGroupsgroupFactory(x) {
+    return x?._factoryFor === "Group";
+}
+function isIssuesOnGroupsissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function autoGenerateIssuesOnGroupsScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineIssuesOnGroupsFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("IssuesOnGroups", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssuesOnGroupsScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                group: isIssuesOnGroupsgroupFactory(defaultData.group) ? {
+                    create: await defaultData.group.build()
+                } : defaultData.group,
+                issue: isIssuesOnGroupsissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            groupId: inputData.groupId,
+            issueId: inputData.issueId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issuesOnGroups.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssuesOnGroups",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link IssuesOnGroups} model.
+ *
+ * @param options
+ * @returns factory {@link IssuesOnGroupsFactoryInterface}
+ */
+exports.defineIssuesOnGroupsFactory = ((options) => {
+    return defineIssuesOnGroupsFactoryInternal(options, {});
+});
+exports.defineIssuesOnGroupsFactory.withTransientFields = defaultTransientFieldValues => options => defineIssuesOnGroupsFactoryInternal(options, defaultTransientFieldValues);
+function isIssuesOnOrganizationsorganizationFactory(x) {
+    return x?._factoryFor === "Organization";
+}
+function isIssuesOnOrganizationsissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function autoGenerateIssuesOnOrganizationsScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineIssuesOnOrganizationsFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("IssuesOnOrganizations", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssuesOnOrganizationsScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                organization: isIssuesOnOrganizationsorganizationFactory(defaultData.organization) ? {
+                    create: await defaultData.organization.build()
+                } : defaultData.organization,
+                issue: isIssuesOnOrganizationsissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            organizationId: inputData.organizationId,
+            issueId: inputData.issueId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issuesOnOrganizations.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssuesOnOrganizations",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link IssuesOnOrganizations} model.
+ *
+ * @param options
+ * @returns factory {@link IssuesOnOrganizationsFactoryInterface}
+ */
+exports.defineIssuesOnOrganizationsFactory = ((options) => {
+    return defineIssuesOnOrganizationsFactoryInternal(options, {});
+});
+exports.defineIssuesOnOrganizationsFactory.withTransientFields = defaultTransientFieldValues => options => defineIssuesOnOrganizationsFactoryInternal(options, defaultTransientFieldValues);
 function isLikeuserFactory(x) {
     return x?._factoryFor === "User";
 }
 function isLikeeventFactory(x) {
     return x?._factoryFor === "Event";
+}
+function isLikeissueFactory(x) {
+    return x?._factoryFor === "Issue";
 }
 function autoGenerateLikeScalarsOrEnums({ seq }) {
     return {
@@ -1336,7 +2076,10 @@ function defineLikeFactoryInternal({ defaultData: defaultDataResolver, onAfterBu
                 } : defaultData.user,
                 event: isLikeeventFactory(defaultData.event) ? {
                     create: await defaultData.event.build()
-                } : defaultData.event
+                } : defaultData.event,
+                issue: isLikeissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1344,8 +2087,7 @@ function defineLikeFactoryInternal({ defaultData: defaultDataResolver, onAfterBu
         };
         const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
         const pickForConnect = (inputData) => ({
-            userId: inputData.userId,
-            eventId: inputData.eventId
+            id: inputData.id
         });
         const create = async (inputData = {}) => {
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
@@ -1393,6 +2135,9 @@ function isCommentuserFactory(x) {
 function isCommenteventFactory(x) {
     return x?._factoryFor === "Event";
 }
+function isCommentissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
 function autoGenerateCommentScalarsOrEnums({ seq }) {
     return {
         content: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Comment", fieldName: "content", isId: false, isUnique: false, seq }),
@@ -1437,7 +2182,10 @@ function defineCommentFactoryInternal({ defaultData: defaultDataResolver, onAfte
                 } : defaultData.user,
                 event: isCommenteventFactory(defaultData.event) ? {
                     create: await defaultData.event.build()
-                } : defaultData.event
+                } : defaultData.event,
+                issue: isCommentissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -2075,6 +2823,672 @@ exports.defineAgendasOnEventsFactory = ((options) => {
     return defineAgendasOnEventsFactoryInternal(options, {});
 });
 exports.defineAgendasOnEventsFactory.withTransientFields = defaultTransientFieldValues => options => defineAgendasOnEventsFactoryInternal(options, defaultTransientFieldValues);
+function autoGenerateIssueCategoryScalarsOrEnums({ seq }) {
+    return {
+        id: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "IssueCategory", fieldName: "id", isId: true, isUnique: false, seq }),
+        code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "IssueCategory", fieldName: "code", isId: false, isUnique: false, seq }),
+        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "IssueCategory", fieldName: "name", isId: false, isUnique: false, seq })
+    };
+}
+function defineIssueCategoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("IssueCategory", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssueCategoryScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {};
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issueCategory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssueCategory",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link IssueCategory} model.
+ *
+ * @param options
+ * @returns factory {@link IssueCategoryFactoryInterface}
+ */
+exports.defineIssueCategoryFactory = ((options) => {
+    return defineIssueCategoryFactoryInternal(options ?? {}, {});
+});
+exports.defineIssueCategoryFactory.withTransientFields = defaultTransientFieldValues => options => defineIssueCategoryFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isIssueCategoriesOnIssuesissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function isIssueCategoriesOnIssuesissueCategoryFactory(x) {
+    return x?._factoryFor === "IssueCategory";
+}
+function autoGenerateIssueCategoriesOnIssuesScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineIssueCategoriesOnIssuesFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("IssueCategoriesOnIssues", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssueCategoriesOnIssuesScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                issue: isIssueCategoriesOnIssuesissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue,
+                issueCategory: isIssueCategoriesOnIssuesissueCategoryFactory(defaultData.issueCategory) ? {
+                    create: await defaultData.issueCategory.build()
+                } : defaultData.issueCategory
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            issueId: inputData.issueId,
+            issueCategoryId: inputData.issueCategoryId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issueCategoriesOnIssues.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssueCategoriesOnIssues",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link IssueCategoriesOnIssues} model.
+ *
+ * @param options
+ * @returns factory {@link IssueCategoriesOnIssuesFactoryInterface}
+ */
+exports.defineIssueCategoriesOnIssuesFactory = ((options) => {
+    return defineIssueCategoriesOnIssuesFactoryInternal(options, {});
+});
+exports.defineIssueCategoriesOnIssuesFactory.withTransientFields = defaultTransientFieldValues => options => defineIssueCategoriesOnIssuesFactoryInternal(options, defaultTransientFieldValues);
+function isIssueCategoriesOnUsersuserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function isIssueCategoriesOnUsersissueCategoryFactory(x) {
+    return x?._factoryFor === "IssueCategory";
+}
+function autoGenerateIssueCategoriesOnUsersScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineIssueCategoriesOnUsersFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("IssueCategoriesOnUsers", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssueCategoriesOnUsersScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isIssueCategoriesOnUsersuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user,
+                issueCategory: isIssueCategoriesOnUsersissueCategoryFactory(defaultData.issueCategory) ? {
+                    create: await defaultData.issueCategory.build()
+                } : defaultData.issueCategory
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            userId: inputData.userId,
+            issueCategoryId: inputData.issueCategoryId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issueCategoriesOnUsers.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssueCategoriesOnUsers",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link IssueCategoriesOnUsers} model.
+ *
+ * @param options
+ * @returns factory {@link IssueCategoriesOnUsersFactoryInterface}
+ */
+exports.defineIssueCategoriesOnUsersFactory = ((options) => {
+    return defineIssueCategoriesOnUsersFactoryInternal(options, {});
+});
+exports.defineIssueCategoriesOnUsersFactory.withTransientFields = defaultTransientFieldValues => options => defineIssueCategoriesOnUsersFactoryInternal(options, defaultTransientFieldValues);
+function autoGenerateSkillsetScalarsOrEnums({ seq }) {
+    return {
+        id: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Skillset", fieldName: "id", isId: true, isUnique: false, seq }),
+        code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Skillset", fieldName: "code", isId: false, isUnique: false, seq }),
+        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Skillset", fieldName: "name", isId: false, isUnique: false, seq })
+    };
+}
+function defineSkillsetFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Skillset", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateSkillsetScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {};
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().skillset.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Skillset",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Skillset} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetFactoryInterface}
+ */
+exports.defineSkillsetFactory = ((options) => {
+    return defineSkillsetFactoryInternal(options ?? {}, {});
+});
+exports.defineSkillsetFactory.withTransientFields = defaultTransientFieldValues => options => defineSkillsetFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isSkillsetsOnUsersuserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function isSkillsetsOnUsersskillsetFactory(x) {
+    return x?._factoryFor === "Skillset";
+}
+function autoGenerateSkillsetsOnUsersScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineSkillsetsOnUsersFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("SkillsetsOnUsers", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateSkillsetsOnUsersScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isSkillsetsOnUsersuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user,
+                skillset: isSkillsetsOnUsersskillsetFactory(defaultData.skillset) ? {
+                    create: await defaultData.skillset.build()
+                } : defaultData.skillset
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            userId: inputData.userId,
+            skillsetId: inputData.skillsetId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().skillsetsOnUsers.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "SkillsetsOnUsers",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link SkillsetsOnUsers} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetsOnUsersFactoryInterface}
+ */
+exports.defineSkillsetsOnUsersFactory = ((options) => {
+    return defineSkillsetsOnUsersFactoryInternal(options, {});
+});
+exports.defineSkillsetsOnUsersFactory.withTransientFields = defaultTransientFieldValues => options => defineSkillsetsOnUsersFactoryInternal(options, defaultTransientFieldValues);
+function isSkillsetsOnEventseventFactory(x) {
+    return x?._factoryFor === "Event";
+}
+function isSkillsetsOnEventsskillsetFactory(x) {
+    return x?._factoryFor === "Skillset";
+}
+function autoGenerateSkillsetsOnEventsScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineSkillsetsOnEventsFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("SkillsetsOnEvents", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateSkillsetsOnEventsScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                event: isSkillsetsOnEventseventFactory(defaultData.event) ? {
+                    create: await defaultData.event.build()
+                } : defaultData.event,
+                skillset: isSkillsetsOnEventsskillsetFactory(defaultData.skillset) ? {
+                    create: await defaultData.skillset.build()
+                } : defaultData.skillset
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            eventId: inputData.eventId,
+            skillsetId: inputData.skillsetId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().skillsetsOnEvents.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "SkillsetsOnEvents",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link SkillsetsOnEvents} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetsOnEventsFactoryInterface}
+ */
+exports.defineSkillsetsOnEventsFactory = ((options) => {
+    return defineSkillsetsOnEventsFactoryInternal(options, {});
+});
+exports.defineSkillsetsOnEventsFactory.withTransientFields = defaultTransientFieldValues => options => defineSkillsetsOnEventsFactoryInternal(options, defaultTransientFieldValues);
+function isSkillsetsOnIssuesissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function isSkillsetsOnIssuesskillsetFactory(x) {
+    return x?._factoryFor === "Skillset";
+}
+function autoGenerateSkillsetsOnIssuesScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineSkillsetsOnIssuesFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("SkillsetsOnIssues", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateSkillsetsOnIssuesScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                issue: isSkillsetsOnIssuesissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue,
+                skillset: isSkillsetsOnIssuesskillsetFactory(defaultData.skillset) ? {
+                    create: await defaultData.skillset.build()
+                } : defaultData.skillset
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            issueId: inputData.issueId,
+            skillsetId: inputData.skillsetId
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().skillsetsOnIssues.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "SkillsetsOnIssues",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link SkillsetsOnIssues} model.
+ *
+ * @param options
+ * @returns factory {@link SkillsetsOnIssuesFactoryInterface}
+ */
+exports.defineSkillsetsOnIssuesFactory = ((options) => {
+    return defineSkillsetsOnIssuesFactoryInternal(options, {});
+});
+exports.defineSkillsetsOnIssuesFactory.withTransientFields = defaultTransientFieldValues => options => defineSkillsetsOnIssuesFactoryInternal(options, defaultTransientFieldValues);
 function isCitystateFactory(x) {
     return x?._factoryFor === "State";
 }
@@ -2650,8 +4064,108 @@ exports.defineCitiesOnEventsFactory = ((options) => {
     return defineCitiesOnEventsFactoryInternal(options, {});
 });
 exports.defineCitiesOnEventsFactory.withTransientFields = defaultTransientFieldValues => options => defineCitiesOnEventsFactoryInternal(options, defaultTransientFieldValues);
+function isCitiesOnIssuesissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function isCitiesOnIssuescityFactory(x) {
+    return x?._factoryFor === "City";
+}
+function autoGenerateCitiesOnIssuesScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineCitiesOnIssuesFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("CitiesOnIssues", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCitiesOnIssuesScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                issue: isCitiesOnIssuesissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue,
+                city: isCitiesOnIssuescityFactory(defaultData.city) ? {
+                    create: await defaultData.city.build()
+                } : defaultData.city
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            issueId: inputData.issueId,
+            cityCode: inputData.cityCode
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().citiesOnIssues.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CitiesOnIssues",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link CitiesOnIssues} model.
+ *
+ * @param options
+ * @returns factory {@link CitiesOnIssuesFactoryInterface}
+ */
+exports.defineCitiesOnIssuesFactory = ((options) => {
+    return defineCitiesOnIssuesFactoryInternal(options, {});
+});
+exports.defineCitiesOnIssuesFactory.withTransientFields = defaultTransientFieldValues => options => defineCitiesOnIssuesFactoryInternal(options, defaultTransientFieldValues);
 function autoGenerateIndexScalarsOrEnums({ seq }) {
     return {
+        id: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Index", fieldName: "id", isId: true, isUnique: false, seq }),
+        code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Index", fieldName: "code", isId: false, isUnique: false, seq }),
         name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Index", fieldName: "name", isId: false, isUnique: false, seq }),
         valueType: "INT"
     };
@@ -2931,3 +4445,99 @@ exports.defineEventStatViewFactory = ((options) => {
     return defineEventStatViewFactoryInternal(options, {});
 });
 exports.defineEventStatViewFactory.withTransientFields = defaultTransientFieldValues => options => defineEventStatViewFactoryInternal(options, defaultTransientFieldValues);
+function isIssueStatViewissueFactory(x) {
+    return x?._factoryFor === "Issue";
+}
+function autoGenerateIssueStatViewScalarsOrEnums({ seq }) {
+    return {
+        isPublic: (0, internal_1.getScalarFieldValueGenerator)().Boolean({ modelName: "IssueStatView", fieldName: "isPublic", isId: false, isUnique: false, seq }),
+        startsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "IssueStatView", fieldName: "startsAt", isId: false, isUnique: false, seq }),
+        endsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "IssueStatView", fieldName: "endsAt", isId: false, isUnique: false, seq }),
+        totalMinutes: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "IssueStatView", fieldName: "totalMinutes", isId: false, isUnique: false, seq })
+    };
+}
+function defineIssueStatViewFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("IssueStatView", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIssueStatViewScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                issue: isIssueStatViewissueFactory(defaultData.issue) ? {
+                    create: await defaultData.issue.build()
+                } : defaultData.issue
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().issueStatView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "IssueStatView",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link IssueStatView} model.
+ *
+ * @param options
+ * @returns factory {@link IssueStatViewFactoryInterface}
+ */
+exports.defineIssueStatViewFactory = ((options) => {
+    return defineIssueStatViewFactoryInternal(options, {});
+});
+exports.defineIssueStatViewFactory.withTransientFields = defaultTransientFieldValues => options => defineIssueStatViewFactoryInternal(options, defaultTransientFieldValues);
