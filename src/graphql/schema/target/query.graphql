@@ -13,7 +13,7 @@ type TargetEdge implements Edge {
 
 input TargetFilterInput {
     keyword: String
-    agendaId: Int
+    organizationId: String
 }
 
 input TargetSortInput {

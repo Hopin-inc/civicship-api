@@ -8,7 +8,77 @@ input CreateTargetInput {
 
     organizationId: String!
     groupId: String!
-    indexId: String!
+    indexId: Int!
+}
+
+input UpdateTargetInput {
+    name: String
+    value: Float
+    validFrom: Datetime
+    validTo: Datetime
+    indexId: Int
+}
+
+input AddGroupToTargetInput {
+    groupId: String!
+}
+
+input RemoveGroupFromTargetInput {
+    groupId: String!
+}
+
+input AddOrganizationToTargetInput {
+    organizationId: String!
+}
+
+input RemoveOrganizationFromTargetInput {
+    organizationId: String!
+}
+
+input AddIndexToTargetInput {
+    indexId: Int!
+}
+
+input RemoveIndexFromTargetInput {
+    indexId: Int!
 }
 
 # Type definitions
+
+type UpdateTargetPayload {
+    name: String
+    value: Float
+    validFrom: Datetime
+    validTo: Datetime
+    indexId: Int
+}
+
+type AddGroupToTargetPayload {
+    target: Target!
+    group: Group!
+}
+
+type RemoveGroupFromTargetPayload {
+    target: Target!
+    group: Group!
+}
+
+type AddOrganizationToTargetPayload {
+    target: Target!
+    organization: Organization!
+}
+
+type RemoveOrganizationFromTargetPayload {
+    target: Target!
+    organization: Organization!
+}
+
+type AddIndexToTargetPayload {
+    target: Target!
+    index: Index!
+}
+
+type RemoveIndexFromTargetPayload {
+    target: Target!
+    index: Index!
+}
