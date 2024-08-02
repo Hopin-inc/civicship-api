@@ -39,10 +39,6 @@ input AddIndexToTargetInput {
     indexId: Int!
 }
 
-input RemoveIndexFromTargetInput {
-    indexId: Int!
-}
-
 # Type definitions
 
 type UpdateTargetPayload {
@@ -74,11 +70,6 @@ type RemoveOrganizationFromTargetPayload {
 }
 
 type AddIndexToTargetPayload {
-    target: Target!
-    index: Index!
-}
-
-type RemoveIndexFromTargetPayload {
     target: Target!
     index: Index!
 }

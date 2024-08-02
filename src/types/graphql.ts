@@ -364,7 +364,7 @@ export type GqlGroupsConnection = {
 export type GqlIndex = {
   __typename?: 'Index';
   description?: Maybe<Scalars['String']['output']>;
-  id: Scalars['ID']['output'];
+  id: Scalars['Int']['output'];
   name: Scalars['String']['output'];
   valueType: GqlValueType;
 };
@@ -417,7 +417,6 @@ export type GqlMutation = {
   removeActivityFromUser?: Maybe<GqlRemoveActivityFromUserPayload>;
   removeGroupFromTarget?: Maybe<GqlRemoveGroupFromTargetPayload>;
   removeGroupFromUser?: Maybe<GqlRemoveGroupFromUserPayload>;
-  removeIndexFromTarget?: Maybe<GqlRemoveIndexFromTargetPayload>;
   removeLike?: Maybe<GqlLike>;
   removeOrganizationFromTarget?: Maybe<GqlRemoveOrganizationFromTargetPayload>;
   removeOrganizationFromUser?: Maybe<GqlRemoveOrganizationFromUserPayload>;
@@ -558,12 +557,6 @@ export type GqlMutationRemoveGroupFromTargetArgs = {
 export type GqlMutationRemoveGroupFromUserArgs = {
   id: Scalars['ID']['input'];
   input: GqlRemoveGroupFromUserInput;
-};
-
-
-export type GqlMutationRemoveIndexFromTargetArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlRemoveIndexFromTargetInput;
 };
 
 
@@ -877,16 +870,6 @@ export type GqlRemoveGroupFromUserPayload = {
   user: GqlUser;
 };
 
-export type GqlRemoveIndexFromTargetInput = {
-  indexId: Scalars['Int']['input'];
-};
-
-export type GqlRemoveIndexFromTargetPayload = {
-  __typename?: 'RemoveIndexFromTargetPayload';
-  index: GqlIndex;
-  target: GqlTarget;
-};
-
 export type GqlRemoveOrganizationFromTargetInput = {
   organizationId: Scalars['String']['input'];
 };
@@ -1196,8 +1179,6 @@ export type GqlResolversTypes = ResolversObject<{
   RemoveGroupFromTargetPayload: ResolverTypeWrapper<Omit<GqlRemoveGroupFromTargetPayload, 'group' | 'target'> & { group: GqlResolversTypes['Group'], target: GqlResolversTypes['Target'] }>;
   RemoveGroupFromUserInput: GqlRemoveGroupFromUserInput;
   RemoveGroupFromUserPayload: ResolverTypeWrapper<Omit<GqlRemoveGroupFromUserPayload, 'group' | 'user'> & { group: GqlResolversTypes['Group'], user: GqlResolversTypes['User'] }>;
-  RemoveIndexFromTargetInput: GqlRemoveIndexFromTargetInput;
-  RemoveIndexFromTargetPayload: ResolverTypeWrapper<Omit<GqlRemoveIndexFromTargetPayload, 'index' | 'target'> & { index: GqlResolversTypes['Index'], target: GqlResolversTypes['Target'] }>;
   RemoveOrganizationFromTargetInput: GqlRemoveOrganizationFromTargetInput;
   RemoveOrganizationFromTargetPayload: ResolverTypeWrapper<Omit<GqlRemoveOrganizationFromTargetPayload, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   RemoveOrganizationFromUserInput: GqlRemoveOrganizationFromUserInput;
@@ -1296,8 +1277,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   RemoveGroupFromTargetPayload: Omit<GqlRemoveGroupFromTargetPayload, 'group' | 'target'> & { group: GqlResolversParentTypes['Group'], target: GqlResolversParentTypes['Target'] };
   RemoveGroupFromUserInput: GqlRemoveGroupFromUserInput;
   RemoveGroupFromUserPayload: Omit<GqlRemoveGroupFromUserPayload, 'group' | 'user'> & { group: GqlResolversParentTypes['Group'], user: GqlResolversParentTypes['User'] };
-  RemoveIndexFromTargetInput: GqlRemoveIndexFromTargetInput;
-  RemoveIndexFromTargetPayload: Omit<GqlRemoveIndexFromTargetPayload, 'index' | 'target'> & { index: GqlResolversParentTypes['Index'], target: GqlResolversParentTypes['Target'] };
   RemoveOrganizationFromTargetInput: GqlRemoveOrganizationFromTargetInput;
   RemoveOrganizationFromTargetPayload: Omit<GqlRemoveOrganizationFromTargetPayload, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   RemoveOrganizationFromUserInput: GqlRemoveOrganizationFromUserInput;
@@ -1498,7 +1477,7 @@ export type GqlGroupsConnectionResolvers<ContextType = Context, ParentType exten
 
 export type GqlIndexResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Index'] = GqlResolversParentTypes['Index']> = ResolversObject<{
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   valueType?: Resolver<GqlResolversTypes['ValueType'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1545,7 +1524,6 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   removeActivityFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveActivityFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveActivityFromUserArgs, 'id' | 'input'>>;
   removeGroupFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromTargetArgs, 'id' | 'input'>>;
   removeGroupFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromUserArgs, 'id' | 'input'>>;
-  removeIndexFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveIndexFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveIndexFromTargetArgs, 'id' | 'input'>>;
   removeLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationRemoveLikeArgs, 'eventId' | 'userId'>>;
   removeOrganizationFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromTargetArgs, 'id' | 'input'>>;
   removeOrganizationFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromUserArgs, 'id' | 'input'>>;
@@ -1651,12 +1629,6 @@ export type GqlRemoveGroupFromTargetPayloadResolvers<ContextType = Context, Pare
 export type GqlRemoveGroupFromUserPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['RemoveGroupFromUserPayload'] = GqlResolversParentTypes['RemoveGroupFromUserPayload']> = ResolversObject<{
   group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlRemoveIndexFromTargetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['RemoveIndexFromTargetPayload'] = GqlResolversParentTypes['RemoveIndexFromTargetPayload']> = ResolversObject<{
-  index?: Resolver<GqlResolversTypes['Index'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1796,7 +1768,6 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   RemoveActivityFromUserPayload?: GqlRemoveActivityFromUserPayloadResolvers<ContextType>;
   RemoveGroupFromTargetPayload?: GqlRemoveGroupFromTargetPayloadResolvers<ContextType>;
   RemoveGroupFromUserPayload?: GqlRemoveGroupFromUserPayloadResolvers<ContextType>;
-  RemoveIndexFromTargetPayload?: GqlRemoveIndexFromTargetPayloadResolvers<ContextType>;
   RemoveOrganizationFromTargetPayload?: GqlRemoveOrganizationFromTargetPayloadResolvers<ContextType>;
   RemoveOrganizationFromUserPayload?: GqlRemoveOrganizationFromUserPayloadResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
