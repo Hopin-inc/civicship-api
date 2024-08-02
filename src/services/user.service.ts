@@ -115,11 +115,11 @@ export default class UserService {
 
   static async updateUserProfile({
     id,
-    input,
+    content,
   }: GqlMutationUpdateUserProfileArgs): Promise<GqlUpdateUserProfilePayload> {
     const user = await this.db.user.update({
       where: { id },
-      data: input,
+      data: content,
     });
 
     return {
@@ -129,11 +129,11 @@ export default class UserService {
 
   static async updateUserPrivacy({
     id,
-    input,
+    content,
   }: GqlMutationUpdateUserPrivacyArgs): Promise<GqlUpdateUserPrivacyPayload> {
     const user = await this.db.user.update({
       where: { id },
-      data: input,
+      data: content,
     });
 
     return {
@@ -143,7 +143,7 @@ export default class UserService {
 
   static async addGroupToUser({
     id,
-    input,
+    content,
   }: GqlMutationAddGroupToUserArgs): Promise<GqlAddGroupToUserPayload> {
     const [user, group] = await this.db.$transaction([
       this.db.user.update({
@@ -153,19 +153,19 @@ export default class UserService {
             connect: {
               userId_groupId: {
                 userId: id,
-                groupId: input.groupId,
+                groupId: content.groupId,
               },
             },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: input.groupId },
+        where: { id: content.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+      throw new Error(`Group with ID ${content.groupId} not found`);
     }
 
     return {
@@ -176,7 +176,7 @@ export default class UserService {
 
   static async removeGroupFromUser({
     id,
-    input,
+    content,
   }: GqlMutationRemoveGroupFromUserArgs): Promise<GqlRemoveGroupFromUserPayload> {
     const [user, group] = await this.db.$transaction([
       this.db.user.update({
@@ -186,19 +186,19 @@ export default class UserService {
             disconnect: {
               userId_groupId: {
                 userId: id,
-                groupId: input.groupId,
+                groupId: content.groupId,
               },
             },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: input.groupId },
+        where: { id: content.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+      throw new Error(`Group with ID ${content.groupId} not found`);
     }
 
     return {
@@ -209,7 +209,7 @@ export default class UserService {
 
   static async addOrganizationToUser({
     id,
-    input,
+    content,
   }: GqlMutationAddOrganizationToUserArgs): Promise<GqlAddOrganizationToUserPayload> {
     const [user, organization] = await this.db.$transaction([
       this.db.user.update({
@@ -219,14 +219,14 @@ export default class UserService {
             connect: {
               userId_organizationId: {
                 userId: id,
-                organizationId: input.organizationId,
+                organizationId: content.organizationId,
               },
             },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: input.organizationId },
+        where: { id: content.organizationId },
         include: {
           city: {
             include: {
@@ -239,7 +239,9 @@ export default class UserService {
     ]);
 
     if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
+      throw new Error(
+        `Organization with ID ${content.organizationId} not found`,
+      );
     }
 
     return {
@@ -250,7 +252,7 @@ export default class UserService {
 
   static async removeOrganizationFromUser({
     id,
-    input,
+    content,
   }: GqlMutationRemoveOrganizationFromUserArgs): Promise<GqlRemoveOrganizationFromUserPayload> {
     const [user, organization] = await this.db.$transaction([
       this.db.user.update({
@@ -260,14 +262,14 @@ export default class UserService {
             disconnect: {
               userId_organizationId: {
                 userId: id,
-                organizationId: input.organizationId,
+                organizationId: content.organizationId,
               },
             },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: input.organizationId },
+        where: { id: content.organizationId },
         include: {
           city: {
             include: {
@@ -280,7 +282,9 @@ export default class UserService {
     ]);
 
     if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
+      throw new Error(
+        `Organization with ID ${content.organizationId} not found`,
+      );
     }
 
     return {
@@ -291,7 +295,7 @@ export default class UserService {
 
   static async addActivityToUser({
     id,
-    input,
+    content,
   }: GqlMutationAddActivityToUserArgs): Promise<GqlAddActivityToUserPayload> {
     const [user, activity] = await this.db.$transaction([
       this.db.user.update({
@@ -299,13 +303,13 @@ export default class UserService {
         data: {
           activities: {
             connect: {
-              id: input.activityId,
+              id: content.activityId,
             },
           },
         },
       }),
       this.db.activity.findUnique({
-        where: { id: input.activityId },
+        where: { id: content.activityId },
         include: {
           user: true,
           event: {
@@ -319,7 +323,7 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${input.activityId} not found`);
+      throw new Error(`Activity with ID ${content.activityId} not found`);
     }
 
     return {
@@ -337,7 +341,7 @@ export default class UserService {
 
   static async removeActivityFromUser({
     id,
-    input,
+    content,
   }: GqlMutationRemoveActivityFromUserArgs): Promise<GqlRemoveActivityFromUserPayload> {
     const [user, activity] = await this.db.$transaction([
       this.db.user.update({
@@ -345,13 +349,13 @@ export default class UserService {
         data: {
           activities: {
             disconnect: {
-              id: input.activityId,
+              id: content.activityId,
             },
           },
         },
       }),
       this.db.activity.findUnique({
-        where: { id: input.activityId },
+        where: { id: content.activityId },
         include: {
           user: true,
           event: {
@@ -365,7 +369,7 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${input.activityId} not found`);
+      throw new Error(`Activity with ID ${content.activityId} not found`);
     }
 
     return {

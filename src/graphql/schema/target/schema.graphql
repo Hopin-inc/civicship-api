@@ -14,11 +14,11 @@ extend type Mutation {
     createTarget(content: CreateTargetInput!): Target
     deleteTarget(id: ID!): Target
     updateTarget(id: ID!, content: UpdateTargetInput!): UpdateTargetPayload
-    addGroupToTarget(id: ID!, input: AddGroupToTargetInput!): AddGroupToTargetPayload
-    removeGroupFromTarget(id: ID!, input: RemoveGroupFromTargetInput!): RemoveGroupFromTargetPayload
-    addOrganizationToTarget(id: ID!, input: AddOrganizationToTargetInput!): AddOrganizationToTargetPayload
-    removeOrganizationFromTarget(id: ID!, input: RemoveOrganizationFromTargetInput!): RemoveOrganizationFromTargetPayload
-    updateIndexOfTarget(id: ID!, input: UpdateIndexOfTargetInput!): UpdateIndexOfTargetPayload
+    addGroupToTarget(id: ID!, content: AddGroupToTargetInput!): AddGroupToTargetPayload
+    removeGroupFromTarget(id: ID!, content: RemoveGroupFromTargetInput!): RemoveGroupFromTargetPayload
+    addOrganizationToTarget(id: ID!, content: AddOrganizationToTargetInput!): AddOrganizationToTargetPayload
+    removeOrganizationFromTarget(id: ID!, content: RemoveOrganizationFromTargetInput!): RemoveOrganizationFromTargetPayload
+    updateIndexOfTarget(id: ID!, content: UpdateIndexOfTargetInput!): UpdateIndexOfTargetPayload
 }
 
 # Type definitions

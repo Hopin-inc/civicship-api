@@ -118,7 +118,7 @@ class TargetService {
 
   static async addGroupToTarget({
     id,
-    input,
+    content,
   }: GqlMutationAddGroupToTargetArgs): Promise<GqlAddGroupToTargetPayload> {
     const [target, group] = await this.db.$transaction([
       this.db.target.update({
@@ -126,18 +126,18 @@ class TargetService {
         data: {
           group: {
             connect: {
-              id: input.groupId,
+              id: content.groupId,
             },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: input.groupId },
+        where: { id: content.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+      throw new Error(`Group with ID ${content.groupId} not found`);
     }
 
     return {
@@ -148,24 +148,24 @@ class TargetService {
 
   static async removeGroupFromTarget({
     id,
-    input,
+    content,
   }: GqlMutationRemoveGroupFromTargetArgs): Promise<GqlRemoveGroupFromTargetPayload> {
     const [target, group] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           group: {
-            disconnect: { id: input.groupId },
+            disconnect: { id: content.groupId },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: input.groupId },
+        where: { id: content.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+      throw new Error(`Group with ID ${content.groupId} not found`);
     }
 
     return {
@@ -176,19 +176,19 @@ class TargetService {
 
   static async addOrganizationToTarget({
     id,
-    input,
+    content,
   }: GqlMutationAddOrganizationToTargetArgs): Promise<GqlAddOrganizationToTargetPayload> {
     const [target, organization] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           organization: {
-            connect: { id: input.organizationId },
+            connect: { id: content.organizationId },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: input.organizationId },
+        where: { id: content.organizationId },
         include: {
           state: true,
           city: {
@@ -201,7 +201,9 @@ class TargetService {
     ]);
 
     if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
+      throw new Error(
+        `Organization with ID ${content.organizationId} not found`,
+      );
     }
 
     return {
@@ -212,19 +214,19 @@ class TargetService {
 
   static async removeOrganizationFromTarget({
     id,
-    input,
+    content,
   }: GqlMutationRemoveOrganizationFromTargetArgs): Promise<GqlRemoveOrganizationFromTargetPayload> {
     const [target, organization] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           organization: {
-            disconnect: { id: input.organizationId },
+            disconnect: { id: content.organizationId },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: input.organizationId },
+        where: { id: content.organizationId },
         include: {
           state: true,
           city: {
@@ -237,7 +239,9 @@ class TargetService {
     ]);
 
     if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
+      throw new Error(
+        `Organization with ID ${content.organizationId} not found`,
+      );
     }
 
     return {
@@ -248,24 +252,24 @@ class TargetService {
 
   static async updateIndexToTarget({
     id,
-    input,
+    content,
   }: GqlMutationUpdateIndexOfTargetArgs): Promise<GqlUpdateIndexOfTargetPayload> {
     const [target, index] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           index: {
-            connect: { id: input.indexId },
+            connect: { id: content.indexId },
           },
         },
       }),
       this.db.index.findUnique({
-        where: { id: input.indexId },
+        where: { id: content.indexId },
       }),
     ]);
 
     if (!index) {
-      throw new Error(`Index with ID ${input.indexId} not found`);
+      throw new Error(`Index with ID ${content.indexId} not found`);
     }
 
     return {
