@@ -150,19 +150,12 @@ export default class UserService {
         where: { id },
         data: {
           groups: {
-            connectOrCreate: [
-              {
-                create: {
-                  groupId: input.groupId,
-                },
-                where: {
-                  userId_groupId: {
-                    userId: id,
-                    groupId: input.groupId,
-                  },
-                },
+            connect: {
+              userId_groupId: {
+                userId: id,
+                groupId: input.groupId,
               },
-            ],
+            },
           },
         },
       }),
@@ -223,19 +216,12 @@ export default class UserService {
         where: { id },
         data: {
           organizations: {
-            connectOrCreate: [
-              {
-                create: {
-                  organizationId: input.organizationId,
-                },
-                where: {
-                  userId_organizationId: {
-                    userId: id,
-                    organizationId: input.organizationId,
-                  },
-                },
+            connect: {
+              userId_organizationId: {
+                userId: id,
+                organizationId: input.organizationId,
               },
-            ],
+            },
           },
         },
       }),
