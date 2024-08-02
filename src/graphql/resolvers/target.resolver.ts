@@ -7,9 +7,9 @@ import {
   GqlMutationRemoveGroupFromTargetArgs,
   GqlMutationAddOrganizationToTargetArgs,
   GqlMutationRemoveOrganizationFromTargetArgs,
-  GqlMutationAddIndexToTargetArgs,
   GqlQueryTargetsArgs,
   GqlQueryTargetArgs,
+  GqlMutationUpdateIndexOfTargetArgs,
 } from "@/types/graphql";
 
 const targetResolver = {
@@ -42,10 +42,10 @@ const targetResolver = {
       _: unknown,
       args: GqlMutationRemoveOrganizationFromTargetArgs,
     ) => TargetService.removeOrganizationFromTarget(args),
-    addIndexToTarget: async (
+    updateIndexToTarget: async (
       _: unknown,
-      args: GqlMutationAddIndexToTargetArgs,
-    ) => TargetService.addIndexToTarget(args),
+      args: GqlMutationUpdateIndexOfTargetArgs,
+    ) => TargetService.updateIndexToTarget(args),
   },
 };
 

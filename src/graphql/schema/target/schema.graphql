@@ -18,7 +18,7 @@ extend type Mutation {
     removeGroupFromTarget(id: ID!, input: RemoveGroupFromTargetInput!): RemoveGroupFromTargetPayload
     addOrganizationToTarget(id: ID!, input: AddOrganizationToTargetInput!): AddOrganizationToTargetPayload
     removeOrganizationFromTarget(id: ID!, input: RemoveOrganizationFromTargetInput!): RemoveOrganizationFromTargetPayload
-    addIndexToTarget(id: ID!, input: AddIndexToTargetInput!): AddIndexToTargetPayload
+    updateIndexOfTarget(id: ID!, input: UpdateIndexOfTargetInput!): UpdateIndexOfTargetPayload
 }
 
 # Type definitions

@@ -35,7 +35,7 @@ input RemoveOrganizationFromTargetInput {
     organizationId: String!
 }
 
-input AddIndexToTargetInput {
+input UpdateIndexOfTargetInput {
     indexId: Int!
 }
 
@@ -69,7 +69,7 @@ type RemoveOrganizationFromTargetPayload {
     organization: Organization!
 }
 
-type AddIndexToTargetPayload {
+type UpdateIndexOfTargetPayload {
     target: Target!
     index: Index!
 }

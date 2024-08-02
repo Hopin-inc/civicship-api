@@ -1,9 +1,7 @@
 import {
   GqlAddGroupToTargetPayload,
-  GqlAddIndexToTargetPayload,
   GqlAddOrganizationToTargetPayload,
   GqlMutationAddGroupToTargetArgs,
-  GqlMutationAddIndexToTargetArgs,
   GqlMutationAddOrganizationToTargetArgs,
   GqlMutationCreateTargetArgs,
   GqlMutationDeleteTargetArgs,
@@ -15,6 +13,8 @@ import {
   GqlRemoveGroupFromTargetPayload,
   GqlRemoveOrganizationFromTargetPayload,
   GqlTarget,
+  GqlMutationUpdateIndexOfTargetArgs,
+  GqlUpdateIndexOfTargetPayload,
   GqlUpdateTargetPayload,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
@@ -246,10 +246,10 @@ class TargetService {
     };
   }
 
-  static async addIndexToTarget({
+  static async updateIndexToTarget({
     id,
     input,
-  }: GqlMutationAddIndexToTargetArgs): Promise<GqlAddIndexToTargetPayload> {
+  }: GqlMutationUpdateIndexOfTargetArgs): Promise<GqlUpdateIndexOfTargetPayload> {
     const [target, index] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
