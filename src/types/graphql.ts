@@ -142,8 +142,20 @@ export type GqlAddTargetInOrganizationInput = {
   targetId: Scalars['String']['input'];
 };
 
+export type GqlAddTargetInOrganizationPayload = {
+  __typename?: 'AddTargetInOrganizationPayload';
+  organization: GqlOrganization;
+  target: GqlTarget;
+};
+
 export type GqlAddUserInOrganizationInput = {
   userId: Scalars['String']['input'];
+};
+
+export type GqlAddUserInOrganizationPayload = {
+  __typename?: 'AddUserInOrganizationPayload';
+  organization: GqlOrganization;
+  user: GqlUser;
 };
 
 export type GqlAgenda = {
@@ -228,14 +240,6 @@ export type GqlCreateUserInput = {
   lastName: Scalars['String']['input'];
   middleName?: InputMaybe<Scalars['String']['input']>;
   organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
-};
-
-export type GqlDeleteTargetFromOrganizationInput = {
-  targetId: Scalars['String']['input'];
-};
-
-export type GqlDeleteUserFromOrganizationInput = {
-  userId: Scalars['String']['input'];
 };
 
 export type GqlEdge = {
@@ -422,6 +426,8 @@ export type GqlMutation = {
   addLike?: Maybe<GqlLike>;
   addOrganizationToTarget?: Maybe<GqlAddOrganizationToTargetPayload>;
   addOrganizationToUser?: Maybe<GqlAddOrganizationToUserPayload>;
+  addTargetInOrganization?: Maybe<GqlAddTargetInOrganizationPayload>;
+  addUserInOrganization?: Maybe<GqlAddUserInOrganizationPayload>;
   createActivity?: Maybe<GqlActivity>;
   createComment?: Maybe<GqlComment>;
   createEvent?: Maybe<GqlEvent>;
@@ -443,11 +449,16 @@ export type GqlMutation = {
   removeLike?: Maybe<GqlLike>;
   removeOrganizationFromTarget?: Maybe<GqlRemoveOrganizationFromTargetPayload>;
   removeOrganizationFromUser?: Maybe<GqlRemoveOrganizationFromUserPayload>;
+  removeTargetFromOrganization?: Maybe<GqlRemoveTargetFromOrganizationPayload>;
+  removeUserFromOrganization?: Maybe<GqlRemoveUserFromOrganizationPayload>;
   updateActivity?: Maybe<GqlActivity>;
   updateComment?: Maybe<GqlComment>;
   updateEvent?: Maybe<GqlEvent>;
   updateGroup?: Maybe<GqlGroup>;
+  updateGroupOfOrganization?: Maybe<GqlUpdateGroupOfOrganizationPayload>;
   updateIndexOfTarget?: Maybe<GqlUpdateIndexOfTargetPayload>;
+  updateOrganizationDefaultInfo?: Maybe<GqlUpdateOrganizationDefaultInfoPayload>;
+  updateOrganizationOverview?: Maybe<GqlUpdateOrganizationOverviewPayload>;
   updateTarget?: Maybe<GqlUpdateTargetPayload>;
   updateUserPrivacy?: Maybe<GqlUpdateUserPrivacyPayload>;
   updateUserProfile?: Maybe<GqlUpdateUserProfilePayload>;
@@ -455,20 +466,20 @@ export type GqlMutation = {
 
 
 export type GqlMutationAddActivityToUserArgs = {
+  content: GqlAddActivityToUserInput;
   id: Scalars['ID']['input'];
-  input: GqlAddActivityToUserInput;
 };
 
 
 export type GqlMutationAddGroupToTargetArgs = {
+  content: GqlAddGroupToTargetInput;
   id: Scalars['ID']['input'];
-  input: GqlAddGroupToTargetInput;
 };
 
 
 export type GqlMutationAddGroupToUserArgs = {
+  content: GqlAddGroupToUserInput;
   id: Scalars['ID']['input'];
-  input: GqlAddGroupToUserInput;
 };
 
 
@@ -478,14 +489,26 @@ export type GqlMutationAddLikeArgs = {
 
 
 export type GqlMutationAddOrganizationToTargetArgs = {
+  content: GqlAddOrganizationToTargetInput;
   id: Scalars['ID']['input'];
-  input: GqlAddOrganizationToTargetInput;
 };
 
 
 export type GqlMutationAddOrganizationToUserArgs = {
+  content: GqlAddOrganizationToUserInput;
   id: Scalars['ID']['input'];
-  input: GqlAddOrganizationToUserInput;
+};
+
+
+export type GqlMutationAddTargetInOrganizationArgs = {
+  content: GqlAddTargetInOrganizationInput;
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationAddUserInOrganizationArgs = {
+  content: GqlAddUserInOrganizationInput;
+  id: Scalars['ID']['input'];
 };
 
 
@@ -560,20 +583,20 @@ export type GqlMutationDeleteUserArgs = {
 
 
 export type GqlMutationRemoveActivityFromUserArgs = {
+  content: GqlRemoveActivityFromUserInput;
   id: Scalars['ID']['input'];
-  input: GqlRemoveActivityFromUserInput;
 };
 
 
 export type GqlMutationRemoveGroupFromTargetArgs = {
+  content: GqlRemoveGroupFromTargetInput;
   id: Scalars['ID']['input'];
-  input: GqlRemoveGroupFromTargetInput;
 };
 
 
 export type GqlMutationRemoveGroupFromUserArgs = {
+  content: GqlRemoveGroupFromUserInput;
   id: Scalars['ID']['input'];
-  input: GqlRemoveGroupFromUserInput;
 };
 
 
@@ -584,14 +607,26 @@ export type GqlMutationRemoveLikeArgs = {
 
 
 export type GqlMutationRemoveOrganizationFromTargetArgs = {
+  content: GqlRemoveOrganizationFromTargetInput;
   id: Scalars['ID']['input'];
-  input: GqlRemoveOrganizationFromTargetInput;
 };
 
 
 export type GqlMutationRemoveOrganizationFromUserArgs = {
+  content: GqlRemoveOrganizationFromUserInput;
   id: Scalars['ID']['input'];
-  input: GqlRemoveOrganizationFromUserInput;
+};
+
+
+export type GqlMutationRemoveTargetFromOrganizationArgs = {
+  content: GqlRemoveTargetFromOrganizationInput;
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationRemoveUserFromOrganizationArgs = {
+  content: GqlRemoveUserFromOrganizationInput;
+  id: Scalars['ID']['input'];
 };
 
 
@@ -619,9 +654,27 @@ export type GqlMutationUpdateGroupArgs = {
 };
 
 
-export type GqlMutationUpdateIndexOfTargetArgs = {
+export type GqlMutationUpdateGroupOfOrganizationArgs = {
+  content: GqlUpdateGroupOfOrganizationInput;
   id: Scalars['ID']['input'];
-  input: GqlUpdateIndexOfTargetInput;
+};
+
+
+export type GqlMutationUpdateIndexOfTargetArgs = {
+  content: GqlUpdateIndexOfTargetInput;
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationUpdateOrganizationDefaultInfoArgs = {
+  content: GqlUpdateOrganizationDefaultInfoInput;
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationUpdateOrganizationOverviewArgs = {
+  content: GqlUpdateOrganizationOverviewInput;
+  id: Scalars['ID']['input'];
 };
 
 
@@ -632,14 +685,14 @@ export type GqlMutationUpdateTargetArgs = {
 
 
 export type GqlMutationUpdateUserPrivacyArgs = {
+  content: GqlUpdateUserPrivacyInput;
   id: Scalars['ID']['input'];
-  input: GqlUpdateUserPrivacyInput;
 };
 
 
 export type GqlMutationUpdateUserProfileArgs = {
+  content: GqlUpdateUserProfileInput;
   id: Scalars['ID']['input'];
-  input: GqlUpdateUserProfileInput;
 };
 
 export type GqlOrganization = {
@@ -676,14 +729,6 @@ export type GqlOrganizationEdge = GqlEdge & {
 export type GqlOrganizationFilterInput = {
   agendaId?: InputMaybe<Scalars['Int']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type GqlOrganizationOverviewUpdateInput = {
-  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
-  bio?: InputMaybe<Scalars['String']['input']>;
-  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
-  image?: InputMaybe<Scalars['String']['input']>;
-  website?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlOrganizationSortInput = {
@@ -875,6 +920,26 @@ export type GqlRemoveOrganizationFromUserPayload = {
   user: GqlUser;
 };
 
+export type GqlRemoveTargetFromOrganizationInput = {
+  targetId: Scalars['String']['input'];
+};
+
+export type GqlRemoveTargetFromOrganizationPayload = {
+  __typename?: 'RemoveTargetFromOrganizationPayload';
+  organization: GqlOrganization;
+  target: GqlTarget;
+};
+
+export type GqlRemoveUserFromOrganizationInput = {
+  userId: Scalars['String']['input'];
+};
+
+export type GqlRemoveUserFromOrganizationPayload = {
+  __typename?: 'RemoveUserFromOrganizationPayload';
+  organization: GqlOrganization;
+  user: GqlUser;
+};
+
 export const GqlSortDirection = {
   Asc: 'asc',
   Desc: 'desc'
@@ -924,6 +989,16 @@ export type GqlTargetsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlUpdateGroupOfOrganizationInput = {
+  groupId: Scalars['String']['input'];
+};
+
+export type GqlUpdateGroupOfOrganizationPayload = {
+  __typename?: 'UpdateGroupOfOrganizationPayload';
+  group: GqlGroup;
+  organization: GqlOrganization;
+};
+
 export type GqlUpdateIndexOfTargetInput = {
   indexId: Scalars['Int']['input'];
 };
@@ -947,8 +1022,22 @@ export type GqlUpdateOrganizationDefaultInfoInput = {
   zipcode: Scalars['String']['input'];
 };
 
-export type GqlUpdateOrganizationOfGroupInput = {
-  organizationId: Scalars['String']['input'];
+export type GqlUpdateOrganizationDefaultInfoPayload = {
+  __typename?: 'UpdateOrganizationDefaultInfoPayload';
+  organization: GqlOrganization;
+};
+
+export type GqlUpdateOrganizationOverviewInput = {
+  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  bio?: InputMaybe<Scalars['String']['input']>;
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  website?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type GqlUpdateOrganizationOverviewPayload = {
+  __typename?: 'UpdateOrganizationOverviewPayload';
+  organization: GqlOrganization;
 };
 
 export type GqlUpdateTargetInput = {
@@ -1139,7 +1228,9 @@ export type GqlResolversTypes = ResolversObject<{
   AddOrganizationToUserInput: GqlAddOrganizationToUserInput;
   AddOrganizationToUserPayload: ResolverTypeWrapper<Omit<GqlAddOrganizationToUserPayload, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
   AddTargetInOrganizationInput: GqlAddTargetInOrganizationInput;
+  AddTargetInOrganizationPayload: ResolverTypeWrapper<Omit<GqlAddTargetInOrganizationPayload, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   AddUserInOrganizationInput: GqlAddUserInOrganizationInput;
+  AddUserInOrganizationPayload: ResolverTypeWrapper<Omit<GqlAddUserInOrganizationPayload, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
   Agenda: ResolverTypeWrapper<Agenda>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   City: ResolverTypeWrapper<City>;
@@ -1151,8 +1242,6 @@ export type GqlResolversTypes = ResolversObject<{
   CreateTargetInput: GqlCreateTargetInput;
   CreateUserInput: GqlCreateUserInput;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
-  DeleteTargetFromOrganizationInput: GqlDeleteTargetFromOrganizationInput;
-  DeleteUserFromOrganizationInput: GqlDeleteUserFromOrganizationInput;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
   EntityPosition: GqlEntityPosition;
   Event: ResolverTypeWrapper<Event>;
@@ -1180,7 +1269,6 @@ export type GqlResolversTypes = ResolversObject<{
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationEdge: ResolverTypeWrapper<Omit<GqlOrganizationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Organization']> }>;
   OrganizationFilterInput: GqlOrganizationFilterInput;
-  OrganizationOverviewUpdateInput: GqlOrganizationOverviewUpdateInput;
   OrganizationSortInput: GqlOrganizationSortInput;
   Organizations: ResolverTypeWrapper<Omit<GqlOrganizations, 'data'> & { data: Array<GqlResolversTypes['Organization']> }>;
   OrganizationsConnection: ResolverTypeWrapper<Omit<GqlOrganizationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OrganizationEdge']>>> }>;
@@ -1197,6 +1285,10 @@ export type GqlResolversTypes = ResolversObject<{
   RemoveOrganizationFromTargetPayload: ResolverTypeWrapper<Omit<GqlRemoveOrganizationFromTargetPayload, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   RemoveOrganizationFromUserInput: GqlRemoveOrganizationFromUserInput;
   RemoveOrganizationFromUserPayload: ResolverTypeWrapper<Omit<GqlRemoveOrganizationFromUserPayload, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
+  RemoveTargetFromOrganizationInput: GqlRemoveTargetFromOrganizationInput;
+  RemoveTargetFromOrganizationPayload: ResolverTypeWrapper<Omit<GqlRemoveTargetFromOrganizationPayload, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
+  RemoveUserFromOrganizationInput: GqlRemoveUserFromOrganizationInput;
+  RemoveUserFromOrganizationPayload: ResolverTypeWrapper<Omit<GqlRemoveUserFromOrganizationPayload, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
   SortDirection: GqlSortDirection;
   State: ResolverTypeWrapper<State>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -1205,10 +1297,14 @@ export type GqlResolversTypes = ResolversObject<{
   TargetFilterInput: GqlTargetFilterInput;
   TargetSortInput: GqlTargetSortInput;
   TargetsConnection: ResolverTypeWrapper<Omit<GqlTargetsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TargetEdge']>>> }>;
+  UpdateGroupOfOrganizationInput: GqlUpdateGroupOfOrganizationInput;
+  UpdateGroupOfOrganizationPayload: ResolverTypeWrapper<Omit<GqlUpdateGroupOfOrganizationPayload, 'group' | 'organization'> & { group: GqlResolversTypes['Group'], organization: GqlResolversTypes['Organization'] }>;
   UpdateIndexOfTargetInput: GqlUpdateIndexOfTargetInput;
   UpdateIndexOfTargetPayload: ResolverTypeWrapper<Omit<GqlUpdateIndexOfTargetPayload, 'index' | 'target'> & { index: GqlResolversTypes['Index'], target: GqlResolversTypes['Target'] }>;
   UpdateOrganizationDefaultInfoInput: GqlUpdateOrganizationDefaultInfoInput;
-  UpdateOrganizationOfGroupInput: GqlUpdateOrganizationOfGroupInput;
+  UpdateOrganizationDefaultInfoPayload: ResolverTypeWrapper<Omit<GqlUpdateOrganizationDefaultInfoPayload, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
+  UpdateOrganizationOverviewInput: GqlUpdateOrganizationOverviewInput;
+  UpdateOrganizationOverviewPayload: ResolverTypeWrapper<Omit<GqlUpdateOrganizationOverviewPayload, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
   UpdateTargetInput: GqlUpdateTargetInput;
   UpdateTargetPayload: ResolverTypeWrapper<GqlUpdateTargetPayload>;
   UpdateUserPrivacyInput: GqlUpdateUserPrivacyInput;
@@ -1244,7 +1340,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   AddOrganizationToUserInput: GqlAddOrganizationToUserInput;
   AddOrganizationToUserPayload: Omit<GqlAddOrganizationToUserPayload, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
   AddTargetInOrganizationInput: GqlAddTargetInOrganizationInput;
+  AddTargetInOrganizationPayload: Omit<GqlAddTargetInOrganizationPayload, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   AddUserInOrganizationInput: GqlAddUserInOrganizationInput;
+  AddUserInOrganizationPayload: Omit<GqlAddUserInOrganizationPayload, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
   Agenda: Agenda;
   Boolean: Scalars['Boolean']['output'];
   City: City;
@@ -1256,8 +1354,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   CreateTargetInput: GqlCreateTargetInput;
   CreateUserInput: GqlCreateUserInput;
   Datetime: Scalars['Datetime']['output'];
-  DeleteTargetFromOrganizationInput: GqlDeleteTargetFromOrganizationInput;
-  DeleteUserFromOrganizationInput: GqlDeleteUserFromOrganizationInput;
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
   Event: Event;
   EventCreateInput: GqlEventCreateInput;
@@ -1284,7 +1380,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   Organization: Organization;
   OrganizationEdge: Omit<GqlOrganizationEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Organization']> };
   OrganizationFilterInput: GqlOrganizationFilterInput;
-  OrganizationOverviewUpdateInput: GqlOrganizationOverviewUpdateInput;
   OrganizationSortInput: GqlOrganizationSortInput;
   Organizations: Omit<GqlOrganizations, 'data'> & { data: Array<GqlResolversParentTypes['Organization']> };
   OrganizationsConnection: Omit<GqlOrganizationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['OrganizationEdge']>>> };
@@ -1301,6 +1396,10 @@ export type GqlResolversParentTypes = ResolversObject<{
   RemoveOrganizationFromTargetPayload: Omit<GqlRemoveOrganizationFromTargetPayload, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   RemoveOrganizationFromUserInput: GqlRemoveOrganizationFromUserInput;
   RemoveOrganizationFromUserPayload: Omit<GqlRemoveOrganizationFromUserPayload, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
+  RemoveTargetFromOrganizationInput: GqlRemoveTargetFromOrganizationInput;
+  RemoveTargetFromOrganizationPayload: Omit<GqlRemoveTargetFromOrganizationPayload, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
+  RemoveUserFromOrganizationInput: GqlRemoveUserFromOrganizationInput;
+  RemoveUserFromOrganizationPayload: Omit<GqlRemoveUserFromOrganizationPayload, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
   State: State;
   String: Scalars['String']['output'];
   Target: Target;
@@ -1308,10 +1407,14 @@ export type GqlResolversParentTypes = ResolversObject<{
   TargetFilterInput: GqlTargetFilterInput;
   TargetSortInput: GqlTargetSortInput;
   TargetsConnection: Omit<GqlTargetsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TargetEdge']>>> };
+  UpdateGroupOfOrganizationInput: GqlUpdateGroupOfOrganizationInput;
+  UpdateGroupOfOrganizationPayload: Omit<GqlUpdateGroupOfOrganizationPayload, 'group' | 'organization'> & { group: GqlResolversParentTypes['Group'], organization: GqlResolversParentTypes['Organization'] };
   UpdateIndexOfTargetInput: GqlUpdateIndexOfTargetInput;
   UpdateIndexOfTargetPayload: Omit<GqlUpdateIndexOfTargetPayload, 'index' | 'target'> & { index: GqlResolversParentTypes['Index'], target: GqlResolversParentTypes['Target'] };
   UpdateOrganizationDefaultInfoInput: GqlUpdateOrganizationDefaultInfoInput;
-  UpdateOrganizationOfGroupInput: GqlUpdateOrganizationOfGroupInput;
+  UpdateOrganizationDefaultInfoPayload: Omit<GqlUpdateOrganizationDefaultInfoPayload, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
+  UpdateOrganizationOverviewInput: GqlUpdateOrganizationOverviewInput;
+  UpdateOrganizationOverviewPayload: Omit<GqlUpdateOrganizationOverviewPayload, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
   UpdateTargetInput: GqlUpdateTargetInput;
   UpdateTargetPayload: GqlUpdateTargetPayload;
   UpdateUserPrivacyInput: GqlUpdateUserPrivacyInput;
@@ -1385,6 +1488,18 @@ export type GqlAddOrganizationToTargetPayloadResolvers<ContextType = Context, Pa
 }>;
 
 export type GqlAddOrganizationToUserPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['AddOrganizationToUserPayload'] = GqlResolversParentTypes['AddOrganizationToUserPayload']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlAddTargetInOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['AddTargetInOrganizationPayload'] = GqlResolversParentTypes['AddTargetInOrganizationPayload']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlAddUserInOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['AddUserInOrganizationPayload'] = GqlResolversParentTypes['AddUserInOrganizationPayload']> = ResolversObject<{
   organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -1517,12 +1632,14 @@ export type GqlLikesResolvers<ContextType = Context, ParentType extends GqlResol
 }>;
 
 export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Mutation'] = GqlResolversParentTypes['Mutation']> = ResolversObject<{
-  addActivityToUser?: Resolver<Maybe<GqlResolversTypes['AddActivityToUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddActivityToUserArgs, 'id' | 'input'>>;
-  addGroupToTarget?: Resolver<Maybe<GqlResolversTypes['AddGroupToTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddGroupToTargetArgs, 'id' | 'input'>>;
-  addGroupToUser?: Resolver<Maybe<GqlResolversTypes['AddGroupToUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddGroupToUserArgs, 'id' | 'input'>>;
+  addActivityToUser?: Resolver<Maybe<GqlResolversTypes['AddActivityToUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddActivityToUserArgs, 'content' | 'id'>>;
+  addGroupToTarget?: Resolver<Maybe<GqlResolversTypes['AddGroupToTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddGroupToTargetArgs, 'content' | 'id'>>;
+  addGroupToUser?: Resolver<Maybe<GqlResolversTypes['AddGroupToUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddGroupToUserArgs, 'content' | 'id'>>;
   addLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationAddLikeArgs, 'content'>>;
-  addOrganizationToTarget?: Resolver<Maybe<GqlResolversTypes['AddOrganizationToTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddOrganizationToTargetArgs, 'id' | 'input'>>;
-  addOrganizationToUser?: Resolver<Maybe<GqlResolversTypes['AddOrganizationToUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddOrganizationToUserArgs, 'id' | 'input'>>;
+  addOrganizationToTarget?: Resolver<Maybe<GqlResolversTypes['AddOrganizationToTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddOrganizationToTargetArgs, 'content' | 'id'>>;
+  addOrganizationToUser?: Resolver<Maybe<GqlResolversTypes['AddOrganizationToUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddOrganizationToUserArgs, 'content' | 'id'>>;
+  addTargetInOrganization?: Resolver<Maybe<GqlResolversTypes['AddTargetInOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddTargetInOrganizationArgs, 'content' | 'id'>>;
+  addUserInOrganization?: Resolver<Maybe<GqlResolversTypes['AddUserInOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationAddUserInOrganizationArgs, 'content' | 'id'>>;
   createActivity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlMutationCreateActivityArgs, 'content'>>;
   createComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationCreateCommentArgs, 'content'>>;
   createEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationCreateEventArgs, 'content'>>;
@@ -1538,20 +1655,25 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   deleteTarget?: Resolver<Maybe<GqlResolversTypes['Target']>, ParentType, ContextType, RequireFields<GqlMutationDeleteTargetArgs, 'id'>>;
   deleteUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType, RequireFields<GqlMutationDeleteUserArgs, 'id'>>;
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  removeActivityFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveActivityFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveActivityFromUserArgs, 'id' | 'input'>>;
-  removeGroupFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromTargetArgs, 'id' | 'input'>>;
-  removeGroupFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromUserArgs, 'id' | 'input'>>;
+  removeActivityFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveActivityFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveActivityFromUserArgs, 'content' | 'id'>>;
+  removeGroupFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromTargetArgs, 'content' | 'id'>>;
+  removeGroupFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromUserArgs, 'content' | 'id'>>;
   removeLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationRemoveLikeArgs, 'eventId' | 'userId'>>;
-  removeOrganizationFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromTargetArgs, 'id' | 'input'>>;
-  removeOrganizationFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromUserArgs, 'id' | 'input'>>;
+  removeOrganizationFromTarget?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromTargetArgs, 'content' | 'id'>>;
+  removeOrganizationFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromUserArgs, 'content' | 'id'>>;
+  removeTargetFromOrganization?: Resolver<Maybe<GqlResolversTypes['RemoveTargetFromOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveTargetFromOrganizationArgs, 'content' | 'id'>>;
+  removeUserFromOrganization?: Resolver<Maybe<GqlResolversTypes['RemoveUserFromOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveUserFromOrganizationArgs, 'content' | 'id'>>;
   updateActivity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlMutationUpdateActivityArgs, 'content' | 'id'>>;
   updateComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationUpdateCommentArgs, 'content' | 'id'>>;
   updateEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationUpdateEventArgs, 'content' | 'id'>>;
   updateGroup?: Resolver<Maybe<GqlResolversTypes['Group']>, ParentType, ContextType, RequireFields<GqlMutationUpdateGroupArgs, 'content' | 'id'>>;
-  updateIndexOfTarget?: Resolver<Maybe<GqlResolversTypes['UpdateIndexOfTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateIndexOfTargetArgs, 'id' | 'input'>>;
+  updateGroupOfOrganization?: Resolver<Maybe<GqlResolversTypes['UpdateGroupOfOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateGroupOfOrganizationArgs, 'content' | 'id'>>;
+  updateIndexOfTarget?: Resolver<Maybe<GqlResolversTypes['UpdateIndexOfTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateIndexOfTargetArgs, 'content' | 'id'>>;
+  updateOrganizationDefaultInfo?: Resolver<Maybe<GqlResolversTypes['UpdateOrganizationDefaultInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateOrganizationDefaultInfoArgs, 'content' | 'id'>>;
+  updateOrganizationOverview?: Resolver<Maybe<GqlResolversTypes['UpdateOrganizationOverviewPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateOrganizationOverviewArgs, 'content' | 'id'>>;
   updateTarget?: Resolver<Maybe<GqlResolversTypes['UpdateTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateTargetArgs, 'content' | 'id'>>;
-  updateUserPrivacy?: Resolver<Maybe<GqlResolversTypes['UpdateUserPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateUserPrivacyArgs, 'id' | 'input'>>;
-  updateUserProfile?: Resolver<Maybe<GqlResolversTypes['UpdateUserProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateUserProfileArgs, 'id' | 'input'>>;
+  updateUserPrivacy?: Resolver<Maybe<GqlResolversTypes['UpdateUserPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateUserPrivacyArgs, 'content' | 'id'>>;
+  updateUserProfile?: Resolver<Maybe<GqlResolversTypes['UpdateUserProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateUserProfileArgs, 'content' | 'id'>>;
 }>;
 
 export type GqlOrganizationResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Organization'] = GqlResolversParentTypes['Organization']> = ResolversObject<{
@@ -1661,6 +1783,18 @@ export type GqlRemoveOrganizationFromUserPayloadResolvers<ContextType = Context,
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlRemoveTargetFromOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['RemoveTargetFromOrganizationPayload'] = GqlResolversParentTypes['RemoveTargetFromOrganizationPayload']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlRemoveUserFromOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['RemoveUserFromOrganizationPayload'] = GqlResolversParentTypes['RemoveUserFromOrganizationPayload']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlStateResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['State'] = GqlResolversParentTypes['State']> = ResolversObject<{
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   countryCode?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
@@ -1695,9 +1829,25 @@ export type GqlTargetsConnectionResolvers<ContextType = Context, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlUpdateGroupOfOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UpdateGroupOfOrganizationPayload'] = GqlResolversParentTypes['UpdateGroupOfOrganizationPayload']> = ResolversObject<{
+  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlUpdateIndexOfTargetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UpdateIndexOfTargetPayload'] = GqlResolversParentTypes['UpdateIndexOfTargetPayload']> = ResolversObject<{
   index?: Resolver<GqlResolversTypes['Index'], ParentType, ContextType>;
   target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlUpdateOrganizationDefaultInfoPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UpdateOrganizationDefaultInfoPayload'] = GqlResolversParentTypes['UpdateOrganizationDefaultInfoPayload']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlUpdateOrganizationOverviewPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UpdateOrganizationOverviewPayload'] = GqlResolversParentTypes['UpdateOrganizationOverviewPayload']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1764,6 +1914,8 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   AddGroupToUserPayload?: GqlAddGroupToUserPayloadResolvers<ContextType>;
   AddOrganizationToTargetPayload?: GqlAddOrganizationToTargetPayloadResolvers<ContextType>;
   AddOrganizationToUserPayload?: GqlAddOrganizationToUserPayloadResolvers<ContextType>;
+  AddTargetInOrganizationPayload?: GqlAddTargetInOrganizationPayloadResolvers<ContextType>;
+  AddUserInOrganizationPayload?: GqlAddUserInOrganizationPayloadResolvers<ContextType>;
   Agenda?: GqlAgendaResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
   Comment?: GqlCommentResolvers<ContextType>;
@@ -1792,11 +1944,16 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   RemoveGroupFromUserPayload?: GqlRemoveGroupFromUserPayloadResolvers<ContextType>;
   RemoveOrganizationFromTargetPayload?: GqlRemoveOrganizationFromTargetPayloadResolvers<ContextType>;
   RemoveOrganizationFromUserPayload?: GqlRemoveOrganizationFromUserPayloadResolvers<ContextType>;
+  RemoveTargetFromOrganizationPayload?: GqlRemoveTargetFromOrganizationPayloadResolvers<ContextType>;
+  RemoveUserFromOrganizationPayload?: GqlRemoveUserFromOrganizationPayloadResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
   Target?: GqlTargetResolvers<ContextType>;
   TargetEdge?: GqlTargetEdgeResolvers<ContextType>;
   TargetsConnection?: GqlTargetsConnectionResolvers<ContextType>;
+  UpdateGroupOfOrganizationPayload?: GqlUpdateGroupOfOrganizationPayloadResolvers<ContextType>;
   UpdateIndexOfTargetPayload?: GqlUpdateIndexOfTargetPayloadResolvers<ContextType>;
+  UpdateOrganizationDefaultInfoPayload?: GqlUpdateOrganizationDefaultInfoPayloadResolvers<ContextType>;
+  UpdateOrganizationOverviewPayload?: GqlUpdateOrganizationOverviewPayloadResolvers<ContextType>;
   UpdateTargetPayload?: GqlUpdateTargetPayloadResolvers<ContextType>;
   UpdateUserPrivacyPayload?: GqlUpdateUserPrivacyPayloadResolvers<ContextType>;
   UpdateUserProfilePayload?: GqlUpdateUserProfilePayloadResolvers<ContextType>;

@@ -1,0 +1,98 @@
+# Queries/Mutations-related type definitions
+
+input CreateOrganizationInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+input UpdateOrganizationDefaultInfoInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    establishedAt: Datetime
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+}
+
+input UpdateOrganizationOverviewInput {
+    image: String
+    bio: String
+    website: String
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+input UpdateGroupOfOrganizationInput {
+    groupId: String!
+}
+
+input AddUserInOrganizationInput {
+    userId: String!
+}
+
+input RemoveUserFromOrganizationInput {
+    userId: String!
+}
+
+input AddTargetInOrganizationInput {
+    targetId: String!
+}
+
+input RemoveTargetFromOrganizationInput {
+    targetId: String!
+}
+
+# Type definitions
+
+type UpdateOrganizationDefaultInfoPayload {
+    organization: Organization!
+}
+
+type UpdateOrganizationOverviewPayload {
+    organization: Organization!
+}
+
+type UpdateGroupOfOrganizationPayload {
+    group: Group!
+    organization: Organization!
+}
+
+type AddUserInOrganizationPayload {
+    organization: Organization!
+    user: User!
+}
+
+type RemoveUserFromOrganizationPayload {
+    organization: Organization!
+    user: User!
+}
+
+type AddTargetInOrganizationPayload {
+    organization: Organization!
+    target: Target!
+}
+
+type RemoveTargetFromOrganizationPayload {
+    organization: Organization!
+    target: Target!
+}
