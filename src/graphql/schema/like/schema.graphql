@@ -1,0 +1,22 @@
+# Queries and Mutations
+
+extend type Mutation {
+    addLikeToEvent(content: AddLikeToEventInput!): AddLikeToEventPayload
+    removeLikeFromEvent(id: ID!): RemoveLikeFromEventPayload
+}
+
+# Type definitions
+
+type Likes {
+    total: Int!
+    data: [Like!]!
+}
+
+type Like {
+    user: User!
+    event: Event!
+
+    postedAt: Datetime!
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
