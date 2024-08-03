@@ -38,6 +38,7 @@ input UpdateOrganizationOverviewInput {
     image: String
     bio: String
     website: String
+
     agendaIds: [Int!]
     cityCodes: [String!]
 }
