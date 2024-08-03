@@ -27,7 +27,7 @@ const targetResolver = {
     updateInfoTarget: async (
       _: unknown,
       args: GqlMutationUpdateTargetInfoArgs,
-    ) => TargetService.updateInfoTarget(args),
+    ) => TargetService.updateTargetInfo(args),
     addGroupToTarget: async (
       _: unknown,
       args: GqlMutationAddGroupToTargetArgs,
