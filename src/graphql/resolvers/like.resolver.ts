@@ -6,10 +6,12 @@ import {
 
 const likeResolver = {
   Mutation: {
-    addLike: async (_: unknown, args: GqlMutationAddLikeToEventArgs) =>
+    addLikeToEvent: async (_: unknown, args: GqlMutationAddLikeToEventArgs) =>
       LikeService.addLikeToEvent(args),
-    removeLike: async (_: unknown, args: GqlMutationRemoveLikeFromEventArgs) =>
-      LikeService.removeLikeFromEvent(args),
+    removeLikeFromEvent: async (
+      _: unknown,
+      args: GqlMutationRemoveLikeFromEventArgs,
+    ) => LikeService.removeLikeFromEvent(args),
   },
 };
 
