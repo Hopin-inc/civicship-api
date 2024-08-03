@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src"],
+  "entryPointStrategy": "expand",
+  "out": "docs/typedoc",
+  "exclude": ["**/__tests__/**", "**/__generated__/**"],
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "categorizeByGroup": false,
+  "theme": "default",
+  "disableSources": true,
+  "includeVersion": true,
+  "name": "Civicship Api Documentation",
+  "hideGenerator": true,
+  "commentStyle": "all"
+}
