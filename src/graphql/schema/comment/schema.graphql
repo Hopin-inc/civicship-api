@@ -1,0 +1,26 @@
+# Queries and Mutations
+
+extend type Mutation {
+    addCommentToEvent(id: ID!, content: AddCommentToEventInput!): AddCommentToEventPayload
+    updateCommentOfEvent(id: ID!, content: UpdateCommentOfEventInput!): UpdateCommentOfEventPayload
+    deleteCommentFromEvent(id: ID!): DeleteCommentFromEventPayload
+}
+
+# Type definitions
+
+type Comments {
+    total: Int!
+    data: [Comment!]!
+}
+
+type Comment {
+    id: ID!
+    content: String!
+
+    user: User!
+    event: Event!
+
+    postedAt: Datetime!
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
