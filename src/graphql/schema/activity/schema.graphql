@@ -1,0 +1,46 @@
+# Queries and Mutations
+
+extend type Query {
+    activities(
+        filter: ActivityFilterInput
+        sort: ActivitySortInput
+        cursor: String
+        first: Int
+    ): ActivitiesConnection!
+    activity(id: ID!): Activity
+}
+
+extend type Mutation {
+    createActivity(content: CreateActivityInput!): Activity
+    deleteActivity(id: ID!): Activity
+    updateActivityInfo(id: ID!, content: UpdateActivityInfoInput!): UpdateActivityInfoPayload
+    updateActivityPrivacy(id: ID!, content: UpdateActivityPrivacyInput!): UpdateActivityPrivacyPayload
+    addUserToActivity(id: ID!, content: AddUserToActivityInput!): AddUserToActivityPayload
+    UpdateUserOfActivity(id: ID!, content: UpdateUserOfActivityInput!): UpdateUserOfActivityPayload
+    addEventToActivity(id: ID!, content: AddEventToActivityInput!): AddEventToActivityPayload
+    removeEventFromActivity(id: ID!, content: RemoveEventFromActivityInput!): RemoveEventFromActivityPayload
+}
+
+# Type definitions
+
+type Activities {
+    total: Int!
+    data: [Activity!]!
+}
+
+type Activity {
+    id: ID!
+    description: String
+    remark: String
+    isPublic: Boolean!
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+    totalMinutes: Int!
+
+    user: User!
+    event: Event!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

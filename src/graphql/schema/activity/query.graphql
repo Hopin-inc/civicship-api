@@ -1,21 +1,3 @@
-# Queries and Mutations
-
-extend type Query {
-    activities(
-        filter: ActivityFilterInput
-        sort: ActivitySortInput
-        cursor: String
-        first: Int
-    ): ActivitiesConnection!
-    activity(id: ID!): Activity
-}
-
-extend type Mutation {
-    createActivity(content: ActivityCreateInput!): Activity
-    updateActivity(id: ID!, content: ActivityUpdateInput!): Activity
-    deleteActivity(id: ID!): Activity
-}
-
 # Queries/Mutations-related type definitions
 
 type ActivitiesConnection {
@@ -38,52 +20,4 @@ input ActivityFilterInput {
 input ActivitySortInput {
     startsAt: SortDirection,
     createdAt: SortDirection
-}
-
-input ActivityCreateInput {
-    description: String
-    remark: String
-    isPublic: Boolean!
-    images: [String!]
-    startsAt: Datetime!
-    endsAt: Datetime!
-
-    userId: String!
-    eventId: String!
-}
-
-input ActivityUpdateInput {
-    description: String
-    remark: String
-    isPublic: Boolean!
-    images: [String!]
-    startsAt: Datetime!
-    endsAt: Datetime!
-
-    userId: String!
-    eventId: String!
-}
-
-# Type definitions
-
-type Activities {
-    total: Int!
-    data: [Activity!]!
-}
-
-type Activity {
-    id: ID!
-    description: String
-    remark: String
-    isPublic: Boolean!
-    images: [String!]
-    startsAt: Datetime!
-    endsAt: Datetime!
-    totalMinutes: Int!
-
-    user: User!
-    event: Event!
-
-    createdAt: Datetime!
-    updatedAt: Datetime
 }
