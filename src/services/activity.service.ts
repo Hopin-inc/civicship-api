@@ -4,7 +4,6 @@ import {
   GqlActivity,
   GqlMutationCreateActivityArgs,
   GqlMutationDeleteActivityArgs,
-  GqlMutationUpdateActivityArgs,
   GqlQueryActivitiesArgs,
   GqlQueryActivityArgs,
 } from "@/types/graphql";
@@ -60,10 +59,10 @@ export default class ActivityService {
       ...record,
       event: {
         ...record.event,
-        totalMinutes: record.event.stat?.totalMinutes ?? 0,
+        totalMinutes: record.event?.stat?.totalMinutes ?? 0,
       },
       totalMinutes: record.stat?.totalMinutes ?? 0,
-    }));
+    })) as GqlActivity[];
     return {
       totalCount: data.length,
       pageInfo: {
@@ -98,14 +97,14 @@ export default class ActivityService {
     });
 
     return activity
-      ? {
+      ? ({
           ...activity,
           totalMinutes: activity.stat?.totalMinutes ?? 0,
           event: {
             ...activity.event,
-            totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+            totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
           },
-        }
+        } as GqlActivity)
       : null;
   }
 
@@ -141,36 +140,7 @@ export default class ActivityService {
         ...activity.event,
         totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
       },
-    };
-  }
-
-  // TODO add role -> update user & event
-  static async updateActivity({
-    id,
-    content,
-  }: GqlMutationUpdateActivityArgs): Promise<GqlActivity> {
-    const activity = await this.db.activity.update({
-      where: { id },
-      data: content,
-      include: {
-        user: true,
-        event: {
-          include: {
-            stat: { select: { totalMinutes: true } },
-          },
-        },
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-
-    return {
-      ...activity,
-      totalMinutes: activity.stat?.totalMinutes ?? 0,
-      event: {
-        ...activity.event,
-        totalMinutes: activity.event.stat?.totalMinutes ?? 0,
-      },
-    };
+    } as GqlActivity;
   }
 
   static async deleteActivity({
@@ -194,8 +164,8 @@ export default class ActivityService {
       totalMinutes: activity.stat?.totalMinutes ?? 0,
       event: {
         ...activity.event,
-        totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+        totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
       },
-    };
+    } as GqlActivity;
   }
 }
