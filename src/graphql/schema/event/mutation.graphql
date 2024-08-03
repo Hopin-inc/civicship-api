@@ -1,0 +1,37 @@
+# Queries/Mutations-related type definitions
+
+input CreateEventInput {
+    description: String
+    isPublic: Boolean
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+    plannedStartsAt: Datetime
+    plannedEndsAt: Datetime
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    groupIds: [String!]
+    organizationIds: [String!]
+}
+
+input UpdateEventInfoInput {
+    description: String
+    isPublic: Boolean
+    images: [String!]
+    startsAt: Datetime
+    endsAt: Datetime
+    plannedStartsAt: Datetime
+    plannedEndsAt: Datetime
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    groupIds: [String!]
+    organizationIds: [String!]
+}
+
+# Type definitions
+
+type UpdateEventInfoPayload {
+    event: Event!
+}
