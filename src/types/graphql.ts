@@ -459,7 +459,7 @@ export type GqlMutation = {
   updateIndexOfTarget?: Maybe<GqlUpdateIndexOfTargetPayload>;
   updateOrganizationDefaultInfo?: Maybe<GqlUpdateOrganizationDefaultInfoPayload>;
   updateOrganizationOverview?: Maybe<GqlUpdateOrganizationOverviewPayload>;
-  updateTarget?: Maybe<GqlUpdateTargetPayload>;
+  updateTargetInfo?: Maybe<GqlUpdateTargetInfoPayload>;
   updateUserPrivacy?: Maybe<GqlUpdateUserPrivacyPayload>;
   updateUserProfile?: Maybe<GqlUpdateUserProfilePayload>;
 };
@@ -678,8 +678,8 @@ export type GqlMutationUpdateOrganizationOverviewArgs = {
 };
 
 
-export type GqlMutationUpdateTargetArgs = {
-  content: GqlUpdateTargetInput;
+export type GqlMutationUpdateTargetInfoArgs = {
+  content: GqlUpdateTargetInfoInput;
   id: Scalars['ID']['input'];
 };
 
@@ -1040,7 +1040,7 @@ export type GqlUpdateOrganizationOverviewPayload = {
   organization: GqlOrganization;
 };
 
-export type GqlUpdateTargetInput = {
+export type GqlUpdateTargetInfoInput = {
   indexId?: InputMaybe<Scalars['Int']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
   validFrom?: InputMaybe<Scalars['Datetime']['input']>;
@@ -1048,8 +1048,8 @@ export type GqlUpdateTargetInput = {
   value?: InputMaybe<Scalars['Float']['input']>;
 };
 
-export type GqlUpdateTargetPayload = {
-  __typename?: 'UpdateTargetPayload';
+export type GqlUpdateTargetInfoPayload = {
+  __typename?: 'UpdateTargetInfoPayload';
   indexId?: Maybe<Scalars['Int']['output']>;
   name?: Maybe<Scalars['String']['output']>;
   validFrom?: Maybe<Scalars['Datetime']['output']>;
@@ -1305,8 +1305,8 @@ export type GqlResolversTypes = ResolversObject<{
   UpdateOrganizationDefaultInfoPayload: ResolverTypeWrapper<Omit<GqlUpdateOrganizationDefaultInfoPayload, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
   UpdateOrganizationOverviewInput: GqlUpdateOrganizationOverviewInput;
   UpdateOrganizationOverviewPayload: ResolverTypeWrapper<Omit<GqlUpdateOrganizationOverviewPayload, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
-  UpdateTargetInput: GqlUpdateTargetInput;
-  UpdateTargetPayload: ResolverTypeWrapper<GqlUpdateTargetPayload>;
+  UpdateTargetInfoInput: GqlUpdateTargetInfoInput;
+  UpdateTargetInfoPayload: ResolverTypeWrapper<GqlUpdateTargetInfoPayload>;
   UpdateUserPrivacyInput: GqlUpdateUserPrivacyInput;
   UpdateUserPrivacyPayload: ResolverTypeWrapper<Omit<GqlUpdateUserPrivacyPayload, 'user'> & { user: GqlResolversTypes['User'] }>;
   UpdateUserProfileInput: GqlUpdateUserProfileInput;
@@ -1415,8 +1415,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   UpdateOrganizationDefaultInfoPayload: Omit<GqlUpdateOrganizationDefaultInfoPayload, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
   UpdateOrganizationOverviewInput: GqlUpdateOrganizationOverviewInput;
   UpdateOrganizationOverviewPayload: Omit<GqlUpdateOrganizationOverviewPayload, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
-  UpdateTargetInput: GqlUpdateTargetInput;
-  UpdateTargetPayload: GqlUpdateTargetPayload;
+  UpdateTargetInfoInput: GqlUpdateTargetInfoInput;
+  UpdateTargetInfoPayload: GqlUpdateTargetInfoPayload;
   UpdateUserPrivacyInput: GqlUpdateUserPrivacyInput;
   UpdateUserPrivacyPayload: Omit<GqlUpdateUserPrivacyPayload, 'user'> & { user: GqlResolversParentTypes['User'] };
   UpdateUserProfileInput: GqlUpdateUserProfileInput;
@@ -1671,7 +1671,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   updateIndexOfTarget?: Resolver<Maybe<GqlResolversTypes['UpdateIndexOfTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateIndexOfTargetArgs, 'content' | 'id'>>;
   updateOrganizationDefaultInfo?: Resolver<Maybe<GqlResolversTypes['UpdateOrganizationDefaultInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateOrganizationDefaultInfoArgs, 'content' | 'id'>>;
   updateOrganizationOverview?: Resolver<Maybe<GqlResolversTypes['UpdateOrganizationOverviewPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateOrganizationOverviewArgs, 'content' | 'id'>>;
-  updateTarget?: Resolver<Maybe<GqlResolversTypes['UpdateTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateTargetArgs, 'content' | 'id'>>;
+  updateTargetInfo?: Resolver<Maybe<GqlResolversTypes['UpdateTargetInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateTargetInfoArgs, 'content' | 'id'>>;
   updateUserPrivacy?: Resolver<Maybe<GqlResolversTypes['UpdateUserPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateUserPrivacyArgs, 'content' | 'id'>>;
   updateUserProfile?: Resolver<Maybe<GqlResolversTypes['UpdateUserProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUpdateUserProfileArgs, 'content' | 'id'>>;
 }>;
@@ -1851,7 +1851,7 @@ export type GqlUpdateOrganizationOverviewPayloadResolvers<ContextType = Context,
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlUpdateTargetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UpdateTargetPayload'] = GqlResolversParentTypes['UpdateTargetPayload']> = ResolversObject<{
+export type GqlUpdateTargetInfoPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UpdateTargetInfoPayload'] = GqlResolversParentTypes['UpdateTargetInfoPayload']> = ResolversObject<{
   indexId?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   validFrom?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -1954,7 +1954,7 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   UpdateIndexOfTargetPayload?: GqlUpdateIndexOfTargetPayloadResolvers<ContextType>;
   UpdateOrganizationDefaultInfoPayload?: GqlUpdateOrganizationDefaultInfoPayloadResolvers<ContextType>;
   UpdateOrganizationOverviewPayload?: GqlUpdateOrganizationOverviewPayloadResolvers<ContextType>;
-  UpdateTargetPayload?: GqlUpdateTargetPayloadResolvers<ContextType>;
+  UpdateTargetInfoPayload?: GqlUpdateTargetInfoPayloadResolvers<ContextType>;
   UpdateUserPrivacyPayload?: GqlUpdateUserPrivacyPayloadResolvers<ContextType>;
   UpdateUserProfilePayload?: GqlUpdateUserProfilePayloadResolvers<ContextType>;
   User?: GqlUserResolvers<ContextType>;

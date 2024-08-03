@@ -13,7 +13,7 @@ extend type Query {
 extend type Mutation {
     createTarget(content: CreateTargetInput!): Target
     deleteTarget(id: ID!): Target
-    updateTarget(id: ID!, content: UpdateTargetInput!): UpdateTargetPayload
+    updateTargetInfo(id: ID!, content: UpdateTargetInfoInput!): UpdateTargetInfoPayload
     addGroupToTarget(id: ID!, content: AddGroupToTargetInput!): AddGroupToTargetPayload
     removeGroupFromTarget(id: ID!, content: RemoveGroupFromTargetInput!): RemoveGroupFromTargetPayload
     addOrganizationToTarget(id: ID!, content: AddOrganizationToTargetInput!): AddOrganizationToTargetPayload

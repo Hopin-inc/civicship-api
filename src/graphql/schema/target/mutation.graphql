@@ -11,7 +11,7 @@ input CreateTargetInput {
     indexId: Int!
 }
 
-input UpdateTargetInput {
+input UpdateTargetInfoInput {
     name: String
     value: Float
     validFrom: Datetime
@@ -41,7 +41,7 @@ input UpdateIndexOfTargetInput {
 
 # Type definitions
 
-type UpdateTargetPayload {
+type UpdateTargetInfoPayload {
     name: String
     value: Float
     validFrom: Datetime

@@ -7,7 +7,6 @@ import {
   GqlMutationDeleteTargetArgs,
   GqlMutationRemoveGroupFromTargetArgs,
   GqlMutationRemoveOrganizationFromTargetArgs,
-  GqlMutationUpdateTargetArgs,
   GqlQueryTargetArgs,
   GqlQueryTargetsArgs,
   GqlRemoveGroupFromTargetPayload,
@@ -15,7 +14,8 @@ import {
   GqlTarget,
   GqlMutationUpdateIndexOfTargetArgs,
   GqlUpdateIndexOfTargetPayload,
-  GqlUpdateTargetPayload,
+  GqlUpdateTargetInfoPayload,
+  GqlMutationUpdateTargetInfoArgs,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -99,10 +99,10 @@ class TargetService {
     });
   }
 
-  static async updateTarget({
+  static async updateTargetInfo({
     id,
     content,
-  }: GqlMutationUpdateTargetArgs): Promise<GqlUpdateTargetPayload> {
+  }: GqlMutationUpdateTargetInfoArgs): Promise<GqlUpdateTargetInfoPayload> {
     const { indexId, ...properties } = content;
     const data: Prisma.TargetUpdateInput = {
       ...properties,

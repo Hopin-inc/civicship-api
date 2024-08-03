@@ -2,7 +2,6 @@ import TargetService from "@/services/target.service";
 import {
   GqlMutationCreateTargetArgs,
   GqlMutationDeleteTargetArgs,
-  GqlMutationUpdateTargetArgs,
   GqlMutationAddGroupToTargetArgs,
   GqlMutationRemoveGroupFromTargetArgs,
   GqlMutationAddOrganizationToTargetArgs,
@@ -10,6 +9,7 @@ import {
   GqlQueryTargetsArgs,
   GqlQueryTargetArgs,
   GqlMutationUpdateIndexOfTargetArgs,
+  GqlMutationUpdateTargetInfoArgs,
 } from "@/types/graphql";
 
 const targetResolver = {
@@ -24,8 +24,10 @@ const targetResolver = {
       TargetService.createTarget(args),
     deleteTarget: async (_: unknown, args: GqlMutationDeleteTargetArgs) =>
       TargetService.deleteTarget(args),
-    updateTarget: async (_: unknown, args: GqlMutationUpdateTargetArgs) =>
-      TargetService.updateTarget(args),
+    updateInfoTarget: async (
+      _: unknown,
+      args: GqlMutationUpdateTargetInfoArgs,
+    ) => TargetService.updateInfoTarget(args),
     addGroupToTarget: async (
       _: unknown,
       args: GqlMutationAddGroupToTargetArgs,
