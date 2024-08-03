@@ -1,21 +1,3 @@
-# Queries and Mutations
-
-extend type Query {
-    groups(
-        filter: GroupFilterInput
-        sort: GroupSortInput
-        cursor: String
-        first: Int
-    ): GroupsConnection!
-    group(id: ID!): Group
-}
-
-extend type Mutation {
-    createGroup(content: GroupCreateInput!): Group
-    updateGroup(id: ID!, content: GroupUpdateInput!): Group
-    deleteGroup(id: ID!): Group
-}
-
 # Queries/Mutations-related type definitions
 
 type GroupsConnection {
@@ -38,52 +20,4 @@ input GroupFilterInput {
 input GroupSortInput {
     createdAt: SortDirection
     updatedAt: SortDirection
-}
-
-input GroupCreateInput {
-    name:  String!
-    image: String
-    bio: String
-
-    userIds: [String!]
-    agendaIds: [Int!]
-    parentId: String
-    childrenIds: [String!]
-    organizationId: String
-}
-
-input GroupUpdateInput {
-    name:  String!
-    image: String
-    bio: String
-
-    userIds: [String!]
-    eventIds: [String!]
-    agendaIds: [Int!]
-    cityCodes: [String!]
-    targetIds: [String!]
-    parentId: String
-    childrenIds: [String!]
-    organizationId: String
-}
-
-# Type definitions
-
-type Group {
-    id: ID!
-    name:  String!
-    image: String
-    bio: String
-
-    users: [User!]
-    events: [Event!]
-    agendas: [Agenda!]
-    cities: [City!]
-    targets: [Target!]
-    parent: Group
-    children: [Group!]
-    organization: Organization
-
-    createdAt: Datetime!
-    updatedAt: Datetime
 }

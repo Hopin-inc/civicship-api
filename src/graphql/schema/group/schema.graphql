@@ -1,0 +1,48 @@
+# Queries and Mutations
+
+extend type Query {
+    groups(
+        filter: GroupFilterInput
+        sort: GroupSortInput
+        cursor: String
+        first: Int
+    ): GroupsConnection!
+    group(id: ID!): Group
+}
+
+extend type Mutation {
+    createGroup(content: CreateGroupInput!): Group
+    deleteGroup(id: ID!): Group
+    updateGroupInfo(id: ID!, content: UpdateGroupInfoInput!):UpdateGroupInfoPayload
+    addUserToGroup(id: ID!, content: AddUserToGroupInput!): AddUserToGroupPayload
+    removeUserFromGroup(id: ID!, content: RemoveUserFromGroupInput!): RemoveUserFromGroupPayload
+    addEventOfGroup(id: ID!, content: AddEventOfGroupInput!): AddEventOfGroupPayload
+    removeEventFromGroup(id: ID!, content: RemoveEventFromGroupInput!): RemoveEventFromGroupPayload
+    addTargetToGroup(id: ID!, content: AddTargetToGroupInput!): AddTargetToGroupPayload
+    removeTargetFromGroup(id: ID!, content: RemoveTargetFromGroupInput!): RemoveTargetFromGroupPayload
+    addParentGroupToGroup(id: ID!, content: AddParentGroupToGroupInput!): AddParentGroupToGroupPayload
+    removeParentGroupFromParent(id: ID!, content: RemoveParentGroupFromParentInput!): RemoveParentGroupFromParentPayload
+    addChildGroupToGroup(id: ID!, content: AddChildGroupToGroupInput!): AddChildGroupToGroupPayload
+    removeChildGroupFromParent(id: ID!, content: RemoveChildGroupFromParentInput!): RemoveChildGroupFromParentPayload
+}
+
+# Type definitions
+
+type Group {
+    id: ID!
+    name:  String!
+    image: String
+    bio: String
+
+    users: [User!]
+    events: [Event!]
+    agendas: [Agenda!]
+    cities: [City!]
+    targets: [Target!]
+    parent: Group
+    children: [Group!]
+    organization: Organization
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
