@@ -102,11 +102,15 @@ export default class EventService {
   static async createEvent({
     content,
   }: GqlMutationCreateEventArgs): Promise<GqlEvent> {
-    const { organizationIds, agendaIds, cityCodes, ...properties } = content;
+    const { organizationIds, agendaIds, groupIds, cityCodes, ...properties } =
+      content;
     const data: Prisma.EventCreateInput = {
       ...properties,
       organizations: {
         create: organizationIds?.map((organizationId) => ({ organizationId })),
+      },
+      groups: {
+        create: groupIds?.map((groupId) => ({ groupId })),
       },
       agendas: {
         create: agendaIds?.map((agendaId) => ({ agendaId })),
