@@ -18,7 +18,7 @@
     "db:mark-rolled-back": "prisma migrate resolve --schema src/prisma/schema.prisma --rolled-back",
     "db:studio": "prisma studio --schema src/prisma/schema.prisma",
     "gql:generate": "graphql-codegen --config codegen.yaml",
-    "docs": "typedoc"
+    "docs": "typedoc && http-server docs/typedoc -p 8080 & sleep 5 && open http://localhost:8080"
   },
   "keywords": [],
   "author": "",
@@ -55,7 +55,6 @@
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.16.2",
     "typedoc": "^0.26.5",
-    "typedoc-plugin-markdown": "^4.2.3",
     "typescript": "^5.5.4",
     "typescript-eslint": "^7.17.0"
   },

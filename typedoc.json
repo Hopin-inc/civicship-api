@@ -11,7 +11,7 @@
   "theme": "default",
   "disableSources": true,
   "includeVersion": true,
-  "name": "Civicship Api Documentation",
+  "name": "civicship API Documentation",
   "hideGenerator": true,
   "commentStyle": "all"
 }
