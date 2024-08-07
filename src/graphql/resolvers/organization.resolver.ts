@@ -53,10 +53,10 @@ const organizationResolver = {
       _: unknown,
       args: GqlMutationRemoveTargetFromOrganizationArgs,
     ) => OrganizationService.removeTargetFromOrganization(args),
-    updateOrganizationOfGroup: async (
+    updateGroupOfOrganization: async (
       _: unknown,
       args: GqlMutationUpdateGroupOfOrganizationArgs,
-    ) => OrganizationService.updateOrganizationOfGroup(args),
+    ) => OrganizationService.updateGroupOfOrganization(args),
   },
 };
 

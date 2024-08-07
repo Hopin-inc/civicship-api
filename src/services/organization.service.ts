@@ -342,7 +342,7 @@ export default class OrganizationService {
     };
   }
 
-  static async updateOrganizationOfGroup({
+  static async updateGroupOfOrganization({
     id,
     content,
   }: GqlMutationUpdateGroupOfOrganizationArgs): Promise<GqlUpdateGroupOfOrganizationPayload> {

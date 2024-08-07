@@ -24,7 +24,7 @@ const targetResolver = {
       TargetService.createTarget(args),
     deleteTarget: async (_: unknown, args: GqlMutationDeleteTargetArgs) =>
       TargetService.deleteTarget(args),
-    updateInfoTarget: async (
+    updateTargetInfo: async (
       _: unknown,
       args: GqlMutationUpdateTargetInfoArgs,
     ) => TargetService.updateTargetInfo(args),
@@ -44,10 +44,10 @@ const targetResolver = {
       _: unknown,
       args: GqlMutationRemoveOrganizationFromTargetArgs,
     ) => TargetService.removeOrganizationFromTarget(args),
-    updateIndexToTarget: async (
+    updateIndexOfTarget: async (
       _: unknown,
       args: GqlMutationUpdateIndexOfTargetArgs,
-    ) => TargetService.updateIndexToTarget(args),
+    ) => TargetService.updateIndexOfTarget(args),
   },
 };
 

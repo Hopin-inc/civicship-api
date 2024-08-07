@@ -250,7 +250,7 @@ class TargetService {
     };
   }
 
-  static async updateIndexToTarget({
+  static async updateIndexOfTarget({
     id,
     content,
   }: GqlMutationUpdateIndexOfTargetArgs): Promise<GqlUpdateIndexOfTargetPayload> {
