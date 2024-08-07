@@ -1,0 +1,716 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table t_users {
+  id String [pk]
+  lastName String [not null]
+  middleName String
+  firstName String [not null]
+  email String
+  image String
+  bio String
+  isPublic Boolean [not null, default: false]
+  agendas t_agendas_on_users [not null]
+  skillsets t_skillsets_on_users [not null]
+  issueCategories m_issue_categories_on_users [not null]
+  cities t_cities_on_users [not null]
+  groups t_users_on_groups [not null]
+  organizations t_users_on_organizations [not null]
+  applications t_applications [not null]
+  confirmations t_application_confirmations [not null]
+  activities t_activities [not null]
+  likes t_likes [not null]
+  comments t_comments [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_groups {
+  id String [pk]
+  name String [not null]
+  image String
+  bio String
+  users t_users_on_groups [not null]
+  events t_events_on_groups [not null]
+  issues t_issues_on_groups [not null]
+  agendas t_agendas_on_groups [not null]
+  cities t_cities_on_groups [not null]
+  targets t_targets [not null]
+  parentId String
+  parent t_groups
+  children t_groups [not null]
+  organizationId String [not null]
+  organization t_organizations [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_users_on_groups {
+  userId String [not null]
+  user t_users [not null]
+  groupId String [not null]
+  group t_groups [not null]
+  addedAt DateTime
+  removedAt DateTime
+  isPublic Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (userId, groupId) [pk]
+  }
+}
+
+Table t_organizations {
+  id String [pk]
+  name String [not null]
+  entity String
+  entityPosition EntityPosition
+  image String
+  bio String
+  establishedAt DateTime
+  website String
+  isPublic Boolean [not null, default: false]
+  zipcode String [not null]
+  stateCode String [not null]
+  stateCountryCode String [not null]
+  cityCode String [not null]
+  state m_states [not null]
+  city m_cities [not null]
+  address1 String [not null]
+  address2 String
+  groups t_groups [not null]
+  users t_users_on_organizations [not null]
+  events t_events_on_organizations [not null]
+  issues t_issues_on_organizations [not null]
+  agendas t_agendas_on_organizations [not null]
+  cities t_cities_on_organizations [not null]
+  targets t_targets [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_users_on_organizations {
+  userId String [not null]
+  user t_users [not null]
+  organizationId String [not null]
+  organization t_organizations [not null]
+  displayName String
+  displayImage String
+  addedAt DateTime
+  removedAt DateTime
+  isPublic Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (userId, organizationId) [pk]
+  }
+}
+
+Table t_activities {
+  id String [pk]
+  description String
+  remark String
+  isPublic Boolean [not null, default: false]
+  activityStyle ActivityStyle [not null, default: 'OFFSITE']
+  images Json [not null, default: '[]', note: '[ArrayOfString]']
+  startsAt DateTime [not null]
+  endsAt DateTime [not null]
+  userId String [not null]
+  user t_users [not null]
+  eventId String
+  event t_events
+  issueId String
+  issue t_issues
+  applicationId String
+  application t_applications
+  stat v_activities_stats
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_applications {
+  id String [pk]
+  comment String
+  isPublic Boolean [not null, default: false]
+  submittedAt DateTime [not null]
+  eventId String
+  event t_events
+  userId String
+  user t_users
+  activities t_activities [not null]
+  approvals t_application_confirmations [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_application_confirmations {
+  id String [pk]
+  isApproved Boolean [not null, default: true]
+  comment String
+  applicationId String [not null]
+  application t_applications [not null]
+  confirmerId String
+  confirmedBy t_users
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_events {
+  id String [pk]
+  description String
+  isPublic Boolean [not null, default: false]
+  images Json [not null, default: '[]', note: '[ArrayOfString]']
+  startsAt DateTime [not null]
+  endsAt DateTime [not null]
+  plannedStartsAt DateTime
+  plannedEndsAt DateTime
+  agendas t_agendas_on_events [not null]
+  skillsets t_skillsets_on_events [not null]
+  groups t_events_on_groups [not null]
+  organizations t_events_on_organizations [not null]
+  applications t_applications [not null]
+  likes t_likes [not null]
+  comments t_comments [not null]
+  activities t_activities [not null]
+  cities t_cities_on_events [not null]
+  stat v_events_stats
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_events_on_groups {
+  groupId String [not null]
+  group t_groups [not null]
+  eventId String [not null]
+  event t_events [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (groupId, eventId) [pk]
+  }
+}
+
+Table t_events_on_organizations {
+  organizationId String [not null]
+  organization t_organizations [not null]
+  eventId String [not null]
+  event t_events [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (organizationId, eventId) [pk]
+  }
+}
+
+Table t_issues {
+  id String [pk]
+  description String
+  isPublic Boolean [not null, default: false]
+  images Json [not null, default: '[]', note: '[ArrayOfString]']
+  skillsets t_skillsets_on_issues [not null]
+  issueCategories m_issue_categories_on_issues [not null]
+  groups t_issues_on_groups [not null]
+  organizations t_issues_on_organizations [not null]
+  likes t_likes [not null]
+  comments t_comments [not null]
+  activities t_activities [not null]
+  cities t_cities_on_issues [not null]
+  stat v_issues_stats
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_issues_on_groups {
+  groupId String [not null]
+  group t_groups [not null]
+  issueId String [not null]
+  issue t_issues [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (groupId, issueId) [pk]
+  }
+}
+
+Table t_issues_on_organizations {
+  organizationId String [not null]
+  organization t_organizations [not null]
+  issueId String [not null]
+  issue t_issues [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (organizationId, issueId) [pk]
+  }
+}
+
+Table t_likes {
+  id String [pk]
+  postedAt DateTime [not null]
+  userId String [not null]
+  user t_users [not null]
+  eventId String
+  event t_events
+  issueId String
+  issue t_issues
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_comments {
+  id String [pk]
+  content String [not null]
+  postedAt DateTime [not null]
+  userId String [not null]
+  user t_users [not null]
+  eventId String
+  event t_events
+  issueId String
+  issue t_issues
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_targets {
+  id String [pk]
+  name String [not null]
+  value Float [not null]
+  validFrom DateTime [not null]
+  validTo DateTime [not null]
+  organizationId String
+  organization t_organizations
+  groupId String
+  group t_groups
+  indexId Int [not null]
+  index t_indexes [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table m_agendas {
+  id Int [pk]
+  code String [not null]
+  name String [not null]
+  description String
+  users t_agendas_on_users [not null]
+  groups t_agendas_on_groups [not null]
+  organizations t_agendas_on_organizations [not null]
+  events t_agendas_on_events [not null]
+}
+
+Table t_agendas_on_users {
+  userId String [not null]
+  user t_users [not null]
+  agendaId Int [not null]
+  agenda m_agendas [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (userId, agendaId) [pk]
+  }
+}
+
+Table t_agendas_on_groups {
+  groupId String [not null]
+  group t_groups [not null]
+  agendaId Int [not null]
+  agenda m_agendas [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (groupId, agendaId) [pk]
+  }
+}
+
+Table t_agendas_on_organizations {
+  organizationId String [not null]
+  organization t_organizations [not null]
+  agendaId Int [not null]
+  agenda m_agendas [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (organizationId, agendaId) [pk]
+  }
+}
+
+Table t_agendas_on_events {
+  eventId String [not null]
+  event t_events [not null]
+  agendaId Int [not null]
+  agenda m_agendas [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (eventId, agendaId) [pk]
+  }
+}
+
+Table m_issue_categories {
+  id Int [pk]
+  code String [not null]
+  name String [not null]
+  description String
+  issues m_issue_categories_on_issues [not null]
+  users m_issue_categories_on_users [not null]
+}
+
+Table m_issue_categories_on_issues {
+  issueId String [not null]
+  issue t_issues [not null]
+  issueCategoryId Int [not null]
+  issueCategory m_issue_categories [not null]
+
+  indexes {
+    (issueId, issueCategoryId) [pk]
+  }
+}
+
+Table m_issue_categories_on_users {
+  userId String [not null]
+  user t_users [not null]
+  issueCategoryId Int [not null]
+  issueCategory m_issue_categories [not null]
+
+  indexes {
+    (userId, issueCategoryId) [pk]
+  }
+}
+
+Table m_skillsets {
+  id Int [pk]
+  code String [not null]
+  name String [not null]
+  description String
+  users t_skillsets_on_users [not null]
+  events t_skillsets_on_events [not null]
+  issues t_skillsets_on_issues [not null]
+}
+
+Table t_skillsets_on_users {
+  userId String [not null]
+  user t_users [not null]
+  skillsetId Int [not null]
+  skillset m_skillsets [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (userId, skillsetId) [pk]
+  }
+}
+
+Table t_skillsets_on_events {
+  eventId String [not null]
+  event t_events [not null]
+  skillsetId Int [not null]
+  skillset m_skillsets [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (eventId, skillsetId) [pk]
+  }
+}
+
+Table t_skillsets_on_issues {
+  issueId String [not null]
+  issue t_issues [not null]
+  skillsetId Int [not null]
+  skillset m_skillsets [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (issueId, skillsetId) [pk]
+  }
+}
+
+Table m_cities {
+  code String [pk]
+  name String [not null]
+  stateCode String [not null]
+  countryCode String [not null]
+  state m_states [not null]
+  cities t_cities_on_users [not null]
+  groups t_cities_on_groups [not null]
+  organizations t_cities_on_organizations [not null]
+  addressedOrganizations t_organizations [not null]
+  events t_cities_on_events [not null]
+  issues t_cities_on_issues [not null]
+}
+
+Table m_states {
+  code String [not null]
+  countryCode String [not null]
+  name String [not null]
+  cities m_cities [not null]
+  organization t_organizations [not null]
+
+  indexes {
+    (code, countryCode) [pk]
+  }
+}
+
+Table t_cities_on_users {
+  userId String [not null]
+  user t_users [not null]
+  cityCode String [not null]
+  city m_cities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (userId, cityCode) [pk]
+  }
+}
+
+Table t_cities_on_groups {
+  groupId String [not null]
+  group t_groups [not null]
+  cityCode String [not null]
+  city m_cities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (groupId, cityCode) [pk]
+  }
+}
+
+Table t_cities_on_organizations {
+  organizationId String [not null]
+  organization t_organizations [not null]
+  cityCode String [not null]
+  city m_cities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (organizationId, cityCode) [pk]
+  }
+}
+
+Table t_cities_on_events {
+  eventId String [not null]
+  event t_events [not null]
+  cityCode String [not null]
+  city m_cities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (eventId, cityCode) [pk]
+  }
+}
+
+Table t_cities_on_issues {
+  issueId String [not null]
+  issue t_issues [not null]
+  cityCode String [not null]
+  city m_cities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (issueId, cityCode) [pk]
+  }
+}
+
+Table t_indexes {
+  id Int [pk]
+  code String [not null]
+  name String [not null]
+  valueType ValueType [not null]
+  description String
+  targets t_targets [not null]
+}
+
+Table v_activities_stats {
+  id String [unique, not null]
+  isPublic Boolean [not null]
+  startsAt DateTime [not null]
+  endsAt DateTime [not null]
+  userId String [not null]
+  eventId String [not null]
+  activity t_activities [not null]
+  totalMinutes Int [not null]
+}
+
+Table v_events_stats {
+  id String [unique, not null]
+  isPublic Boolean [not null]
+  startsAt DateTime [not null]
+  endsAt DateTime [not null]
+  plannedStartsAt DateTime
+  plannedEndsAt DateTime
+  event t_events [not null]
+  totalMinutes Int [not null]
+}
+
+Table v_issues_stats {
+  id String [unique, not null]
+  isPublic Boolean [not null]
+  startsAt DateTime [not null]
+  endsAt DateTime [not null]
+  plannedStartsAt DateTime
+  plannedEndsAt DateTime
+  issue t_issues [not null]
+  totalMinutes Int [not null]
+}
+
+Enum EntityPosition {
+  PREFIX
+  SUFFIX
+}
+
+Enum ValueType {
+  INT
+  FLOAT
+}
+
+Enum ActivityStyle {
+  ONSITE
+  OFFSITE
+}
+
+Ref: t_groups.parentId - t_groups.id [delete: Set Null]
+
+Ref: t_groups.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_users_on_groups.userId > t_users.id [delete: Cascade]
+
+Ref: t_users_on_groups.groupId > t_groups.id [delete: Cascade]
+
+Ref: t_organizations.(stateCode, stateCountryCode) > m_states.(code, countryCode) [delete: Restrict]
+
+Ref: t_organizations.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_users_on_organizations.userId > t_users.id [delete: Cascade]
+
+Ref: t_users_on_organizations.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_activities.userId > t_users.id [delete: Cascade]
+
+Ref: t_activities.eventId > t_events.id [delete: Set Null]
+
+Ref: t_activities.issueId > t_issues.id [delete: Set Null]
+
+Ref: t_activities.applicationId > t_applications.id [delete: Set Null]
+
+Ref: t_applications.eventId > t_events.id [delete: Set Null]
+
+Ref: t_applications.userId > t_users.id [delete: Set Null]
+
+Ref: t_application_confirmations.applicationId > t_applications.id [delete: Cascade]
+
+Ref: t_application_confirmations.confirmerId > t_users.id [delete: Set Null]
+
+Ref: t_events_on_groups.groupId > t_groups.id [delete: Cascade]
+
+Ref: t_events_on_groups.eventId > t_events.id [delete: Cascade]
+
+Ref: t_events_on_organizations.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_events_on_organizations.eventId > t_events.id [delete: Cascade]
+
+Ref: t_issues_on_groups.groupId > t_groups.id [delete: Cascade]
+
+Ref: t_issues_on_groups.issueId > t_issues.id [delete: Cascade]
+
+Ref: t_issues_on_organizations.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_issues_on_organizations.issueId > t_issues.id [delete: Cascade]
+
+Ref: t_likes.userId > t_users.id [delete: Cascade]
+
+Ref: t_likes.eventId > t_events.id [delete: Cascade]
+
+Ref: t_likes.issueId > t_issues.id [delete: Cascade]
+
+Ref: t_comments.userId > t_users.id [delete: Cascade]
+
+Ref: t_comments.eventId > t_events.id [delete: Cascade]
+
+Ref: t_comments.issueId > t_issues.id [delete: Cascade]
+
+Ref: t_targets.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_targets.groupId > t_groups.id [delete: Cascade]
+
+Ref: t_targets.indexId > t_indexes.id [delete: Restrict]
+
+Ref: t_agendas_on_users.userId > t_users.id [delete: Cascade]
+
+Ref: t_agendas_on_users.agendaId > m_agendas.id [delete: Restrict]
+
+Ref: t_agendas_on_groups.groupId > t_groups.id [delete: Cascade]
+
+Ref: t_agendas_on_groups.agendaId > m_agendas.id [delete: Restrict]
+
+Ref: t_agendas_on_organizations.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_agendas_on_organizations.agendaId > m_agendas.id [delete: Restrict]
+
+Ref: t_agendas_on_events.eventId > t_events.id [delete: Cascade]
+
+Ref: t_agendas_on_events.agendaId > m_agendas.id [delete: Restrict]
+
+Ref: m_issue_categories_on_issues.issueId > t_issues.id [delete: Cascade]
+
+Ref: m_issue_categories_on_issues.issueCategoryId > m_issue_categories.id [delete: Restrict]
+
+Ref: m_issue_categories_on_users.userId > t_users.id [delete: Cascade]
+
+Ref: m_issue_categories_on_users.issueCategoryId > m_issue_categories.id [delete: Restrict]
+
+Ref: t_skillsets_on_users.userId > t_users.id [delete: Cascade]
+
+Ref: t_skillsets_on_users.skillsetId > m_skillsets.id [delete: Restrict]
+
+Ref: t_skillsets_on_events.eventId > t_events.id [delete: Cascade]
+
+Ref: t_skillsets_on_events.skillsetId > m_skillsets.id [delete: Restrict]
+
+Ref: t_skillsets_on_issues.issueId > t_issues.id [delete: Cascade]
+
+Ref: t_skillsets_on_issues.skillsetId > m_skillsets.id [delete: Restrict]
+
+Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
+
+Ref: t_cities_on_users.userId > t_users.id [delete: Cascade]
+
+Ref: t_cities_on_users.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_cities_on_groups.groupId > t_groups.id [delete: Cascade]
+
+Ref: t_cities_on_groups.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_cities_on_organizations.organizationId > t_organizations.id [delete: Cascade]
+
+Ref: t_cities_on_organizations.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_cities_on_events.eventId > t_events.id [delete: Cascade]
+
+Ref: t_cities_on_events.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_cities_on_issues.issueId > t_issues.id [delete: Cascade]
+
+Ref: t_cities_on_issues.cityCode > m_cities.code [delete: Restrict]
+
+Ref: v_activities_stats.id - t_activities.id
+
+Ref: v_events_stats.id - t_events.id
+
+Ref: v_issues_stats.id - t_issues.id

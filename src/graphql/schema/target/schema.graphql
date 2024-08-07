@@ -1,0 +1,39 @@
+# Queries and Mutations
+
+extend type Query {
+    targets(
+        filter: TargetFilterInput
+        sort: TargetSortInput
+        cursor: String
+        first: Int
+    ): TargetsConnection!
+    target(id: ID!): Target
+}
+
+extend type Mutation {
+    createTarget(content: CreateTargetInput!): Target
+    deleteTarget(id: ID!): Target
+    updateTargetInfo(id: ID!, content: UpdateTargetInfoInput!): UpdateTargetInfoPayload
+    addGroupToTarget(id: ID!, content: AddGroupToTargetInput!): AddGroupToTargetPayload
+    removeGroupFromTarget(id: ID!, content: RemoveGroupFromTargetInput!): RemoveGroupFromTargetPayload
+    addOrganizationToTarget(id: ID!, content: AddOrganizationToTargetInput!): AddOrganizationToTargetPayload
+    removeOrganizationFromTarget(id: ID!, content: RemoveOrganizationFromTargetInput!): RemoveOrganizationFromTargetPayload
+    updateIndexOfTarget(id: ID!, content: UpdateIndexOfTargetInput!): UpdateIndexOfTargetPayload
+}
+
+# Type definitions
+
+type Target {
+    id: ID!
+    name: String!
+    value: Float!
+    validFrom: Datetime!
+    validTo: Datetime!
+
+    organization: Organization
+    group: Group
+    index: Index
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

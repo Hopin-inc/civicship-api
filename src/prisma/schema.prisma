@@ -16,6 +16,11 @@ generator erd {
   includeRelationFromFields = true
 }
 
+generator dbml {
+  provider = "prisma-dbml-generator"
+  output   = "../../docs"
+}
+
 generator fabbrica {
   provider = "prisma-fabbrica"
   output   = "./../__generated__/fabbrica"

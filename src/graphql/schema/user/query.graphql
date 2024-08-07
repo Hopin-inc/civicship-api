@@ -15,6 +15,7 @@ input UserFilterInput {
     keyword: String
     agendaId: Int
     cityCode: String
+    isPublic: Boolean
 }
 
 input UserSortInput {

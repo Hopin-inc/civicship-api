@@ -1,0 +1,39 @@
+# Queries and Mutations
+
+extend type Query {
+    events(
+        filter: EventFilterInput
+        sort: EventSortInput
+        cursor: String
+        first: Int
+    ): EventsConnection!
+    event(id: ID!): Event
+}
+
+extend type Mutation {
+    createEvent(content: CreateEventInput!): Event
+    deleteEvent(id: ID!): Event
+    updateEventInfo(id: ID!, content: UpdateEventInfoInput!): UpdateEventInfoPayload
+}
+
+# Type definitions
+
+type Event {
+    id: ID!
+    description: String
+    isPublic: Boolean!
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+    plannedStartsAt: Datetime
+    plannedEndsAt: Datetime
+    totalMinutes: Int!
+
+    agendas: [Agenda!]
+    likes: Likes
+    comments: Comments
+    activities: Activities
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

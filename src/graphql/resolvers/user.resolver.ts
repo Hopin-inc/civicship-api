@@ -36,7 +36,7 @@ const userResolver = {
     ) => UserService.updateUserPrivacy(args),
     addGroupToUser: async (_: unknown, args: GqlMutationAddGroupToUserArgs) =>
       UserService.addGroupToUser(args),
-    deleteGroupFromUser: async (
+    removeGroupFromUser: async (
       _: unknown,
       args: GqlMutationRemoveGroupFromUserArgs,
     ) => UserService.removeGroupFromUser(args),
@@ -44,7 +44,7 @@ const userResolver = {
       _: unknown,
       args: GqlMutationAddOrganizationToUserArgs,
     ) => UserService.addOrganizationToUser(args),
-    deleteOrganizationFromUser: async (
+    removeOrganizationFromUser: async (
       _: unknown,
       args: GqlMutationRemoveOrganizationFromUserArgs,
     ) => UserService.removeOrganizationFromUser(args),
@@ -52,7 +52,7 @@ const userResolver = {
       _: unknown,
       args: GqlMutationAddActivityToUserArgs,
     ) => UserService.addActivityToUser(args),
-    deleteActivityFromUser: async (
+    removeActivityFromUser: async (
       _: unknown,
       args: GqlMutationRemoveActivityFromUserArgs,
     ) => UserService.removeActivityFromUser(args),
