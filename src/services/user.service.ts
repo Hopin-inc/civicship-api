@@ -1,27 +1,29 @@
 import {
-  GqlAddActivityToUserPayload,
-  GqlAddGroupToUserPayload,
-  GqlAddOrganizationToUserPayload,
-  GqlRemoveActivityFromUserPayload,
-  GqlRemoveGroupFromUserPayload,
-  GqlRemoveOrganizationFromUserPayload,
-  GqlMutationAddActivityToUserArgs,
-  GqlMutationAddGroupToUserArgs,
-  GqlMutationAddOrganizationToUserArgs,
-  GqlMutationCreateUserArgs,
-  GqlMutationRemoveActivityFromUserArgs,
-  GqlMutationRemoveGroupFromUserArgs,
-  GqlMutationRemoveOrganizationFromUserArgs,
-  GqlMutationDeleteUserArgs,
-  GqlMutationUpdateUserPrivacyArgs,
-  GqlMutationUpdateUserProfileArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
-  GqlUpdateUserPrivacyPayload,
-  GqlUpdateUserProfilePayload,
   GqlUser,
   GqlUsersConnection,
   GqlEvent,
+  GqlMutationUserCreateArgs,
+  GqlUserCreatePayload,
+  GqlMutationUserUpdateArgs,
+  GqlUserUpdatePayload,
+  GqlMutationUserPublishArgs,
+  GqlUserPrivacyPayload,
+  GqlUserRemoveGroupPayload,
+  GqlMutationUserRemoveGroupArgs,
+  GqlMutationUserAddOrganizationArgs,
+  GqlUserAddOrganizationPayload,
+  GqlMutationUserRemoveOrganizationArgs,
+  GqlUserRemoveOrganizationPayload,
+  GqlMutationUserAddActivityArgs,
+  GqlUserAddActivityPayload,
+  GqlUserRemoveActivityPayload,
+  GqlMutationUserRemoveActivityArgs,
+  GqlUserAddGroupPayload,
+  GqlUserDeletePayload,
+  GqlMutationUserDeleteArgs,
+  GqlMutationUserAddGroupArgs,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -90,15 +92,12 @@ export default class UserService {
     return this.db.user.findUnique({ where: { id } });
   }
 
-  static async createUser({
-    content,
-  }: GqlMutationCreateUserArgs): Promise<GqlUser> {
-    const { organizationIds, agendaIds, cityCodes, ...properties } = content;
+  static async userCreate({
+    input,
+  }: GqlMutationUserCreateArgs): Promise<GqlUserCreatePayload> {
+    const { agendaIds, cityCodes, ...properties } = input;
     const data: Prisma.UserCreateInput = {
       ...properties,
-      organizations: {
-        create: organizationIds?.map((organizationId) => ({ organizationId })),
-      },
       agendas: {
         create: agendaIds?.map((agendaId) => ({ agendaId })),
       },
@@ -106,20 +105,24 @@ export default class UserService {
         create: cityCodes?.map((cityCode) => ({ cityCode })),
       },
     };
-    return this.db.user.create({ data });
+    const user: GqlUser = await this.db.user.create({ data });
+    return { user: user };
   }
 
-  static async deleteUser({ id }: GqlMutationDeleteUserArgs): Promise<GqlUser> {
-    return this.db.user.delete({ where: { id } });
-  }
-
-  static async updateUserProfile({
+  static async userDelete({
     id,
-    content,
-  }: GqlMutationUpdateUserProfileArgs): Promise<GqlUpdateUserProfilePayload> {
+  }: GqlMutationUserDeleteArgs): Promise<GqlUserDeletePayload> {
+    this.db.user.delete({ where: { id } });
+    return { userId: id };
+  }
+
+  static async userUpdate({
+    id,
+    input,
+  }: GqlMutationUserUpdateArgs): Promise<GqlUserUpdatePayload> {
     const user = await this.db.user.update({
       where: { id },
-      data: content,
+      data: input,
     });
 
     return {
@@ -127,13 +130,13 @@ export default class UserService {
     };
   }
 
-  static async updateUserPrivacy({
+  static async userPublish({
     id,
-    content,
-  }: GqlMutationUpdateUserPrivacyArgs): Promise<GqlUpdateUserPrivacyPayload> {
+    input,
+  }: GqlMutationUserPublishArgs): Promise<GqlUserPrivacyPayload> {
     const user = await this.db.user.update({
       where: { id },
-      data: content,
+      data: input,
     });
 
     return {
@@ -141,10 +144,24 @@ export default class UserService {
     };
   }
 
-  static async addGroupToUser({
+  static async userUnpublish({
     id,
-    content,
-  }: GqlMutationAddGroupToUserArgs): Promise<GqlAddGroupToUserPayload> {
+    input,
+  }: GqlMutationUserPublishArgs): Promise<GqlUserPrivacyPayload> {
+    const user = await this.db.user.update({
+      where: { id },
+      data: input,
+    });
+
+    return {
+      user: user,
+    };
+  }
+
+  static async userAddGroup({
+    id,
+    input,
+  }: GqlMutationUserAddGroupArgs): Promise<GqlUserAddGroupPayload> {
     const [user, group] = await this.db.$transaction([
       this.db.user.update({
         where: { id },
@@ -153,19 +170,19 @@ export default class UserService {
             connect: {
               userId_groupId: {
                 userId: id,
-                groupId: content.groupId,
+                groupId: input.groupId,
               },
             },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.groupId },
+        where: { id: input.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${content.groupId} not found`);
+      throw new Error(`Group with ID ${input.groupId} not found`);
     }
 
     return {
@@ -174,10 +191,10 @@ export default class UserService {
     };
   }
 
-  static async removeGroupFromUser({
+  static async userRemoveGroup({
     id,
-    content,
-  }: GqlMutationRemoveGroupFromUserArgs): Promise<GqlRemoveGroupFromUserPayload> {
+    input,
+  }: GqlMutationUserRemoveGroupArgs): Promise<GqlUserRemoveGroupPayload> {
     const [user, group] = await this.db.$transaction([
       this.db.user.update({
         where: { id },
@@ -186,19 +203,19 @@ export default class UserService {
             disconnect: {
               userId_groupId: {
                 userId: id,
-                groupId: content.groupId,
+                groupId: input.groupId,
               },
             },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.groupId },
+        where: { id: input.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${content.groupId} not found`);
+      throw new Error(`Group with ID ${input.groupId} not found`);
     }
 
     return {
@@ -207,10 +224,10 @@ export default class UserService {
     };
   }
 
-  static async addOrganizationToUser({
+  static async userAddOrganization({
     id,
-    content,
-  }: GqlMutationAddOrganizationToUserArgs): Promise<GqlAddOrganizationToUserPayload> {
+    input,
+  }: GqlMutationUserAddOrganizationArgs): Promise<GqlUserAddOrganizationPayload> {
     const [user, organization] = await this.db.$transaction([
       this.db.user.update({
         where: { id },
@@ -219,14 +236,14 @@ export default class UserService {
             connect: {
               userId_organizationId: {
                 userId: id,
-                organizationId: content.organizationId,
+                organizationId: input.organizationId,
               },
             },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: content.organizationId },
+        where: { id: input.organizationId },
         include: {
           city: {
             include: {
@@ -239,9 +256,7 @@ export default class UserService {
     ]);
 
     if (!organization) {
-      throw new Error(
-        `Organization with ID ${content.organizationId} not found`,
-      );
+      throw new Error(`Organization with ID ${input.organizationId} not found`);
     }
 
     return {
@@ -250,10 +265,10 @@ export default class UserService {
     };
   }
 
-  static async removeOrganizationFromUser({
+  static async userRemoveOrganization({
     id,
-    content,
-  }: GqlMutationRemoveOrganizationFromUserArgs): Promise<GqlRemoveOrganizationFromUserPayload> {
+    input,
+  }: GqlMutationUserRemoveOrganizationArgs): Promise<GqlUserRemoveOrganizationPayload> {
     const [user, organization] = await this.db.$transaction([
       this.db.user.update({
         where: { id },
@@ -262,14 +277,14 @@ export default class UserService {
             disconnect: {
               userId_organizationId: {
                 userId: id,
-                organizationId: content.organizationId,
+                organizationId: input.organizationId,
               },
             },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: content.organizationId },
+        where: { id: input.organizationId },
         include: {
           city: {
             include: {
@@ -282,9 +297,7 @@ export default class UserService {
     ]);
 
     if (!organization) {
-      throw new Error(
-        `Organization with ID ${content.organizationId} not found`,
-      );
+      throw new Error(`Organization with ID ${input.organizationId} not found`);
     }
 
     return {
@@ -293,23 +306,23 @@ export default class UserService {
     };
   }
 
-  static async addActivityToUser({
+  static async userAddActivity({
     id,
-    content,
-  }: GqlMutationAddActivityToUserArgs): Promise<GqlAddActivityToUserPayload> {
+    input,
+  }: GqlMutationUserAddActivityArgs): Promise<GqlUserAddActivityPayload> {
     const [user, activity] = await this.db.$transaction([
       this.db.user.update({
         where: { id },
         data: {
           activities: {
             connect: {
-              id: content.activityId,
+              id: input.activityId,
             },
           },
         },
       }),
       this.db.activity.findUnique({
-        where: { id: content.activityId },
+        where: { id: input.activityId },
         include: {
           user: true,
           event: {
@@ -323,7 +336,7 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${content.activityId} not found`);
+      throw new Error(`Activity with ID ${input.activityId} not found`);
     }
 
     return {
@@ -339,23 +352,23 @@ export default class UserService {
     };
   }
 
-  static async removeActivityFromUser({
+  static async userRemoveActivity({
     id,
-    content,
-  }: GqlMutationRemoveActivityFromUserArgs): Promise<GqlRemoveActivityFromUserPayload> {
+    input,
+  }: GqlMutationUserRemoveActivityArgs): Promise<GqlUserRemoveActivityPayload> {
     const [user, activity] = await this.db.$transaction([
       this.db.user.update({
         where: { id },
         data: {
           activities: {
             disconnect: {
-              id: content.activityId,
+              id: input.activityId,
             },
           },
         },
       }),
       this.db.activity.findUnique({
-        where: { id: content.activityId },
+        where: { id: input.activityId },
         include: {
           user: true,
           event: {
@@ -369,7 +382,7 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${content.activityId} not found`);
+      throw new Error(`Activity with ID ${input.activityId} not found`);
     }
 
     return {

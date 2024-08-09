@@ -1,17 +1,18 @@
 import UserService from "@/services/user.service";
 import {
-  GqlMutationCreateUserArgs,
-  GqlMutationDeleteUserArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
-  GqlMutationUpdateUserProfileArgs,
-  GqlMutationUpdateUserPrivacyArgs,
-  GqlMutationAddGroupToUserArgs,
-  GqlMutationRemoveGroupFromUserArgs,
-  GqlMutationAddOrganizationToUserArgs,
-  GqlMutationRemoveOrganizationFromUserArgs,
-  GqlMutationAddActivityToUserArgs,
-  GqlMutationRemoveActivityFromUserArgs,
+  GqlMutationUserUpdateArgs,
+  GqlMutationUserCreateArgs,
+  GqlMutationUserDeleteArgs,
+  GqlMutationUserPublishArgs,
+  GqlMutationUserUnpublishArgs,
+  GqlMutationUserAddActivityArgs,
+  GqlMutationUserAddGroupArgs,
+  GqlMutationUserRemoveGroupArgs,
+  GqlMutationUserAddOrganizationArgs,
+  GqlMutationUserRemoveOrganizationArgs,
+  GqlMutationUserRemoveActivityArgs,
 } from "@/types/graphql";
 
 const userResolver = {
@@ -22,40 +23,34 @@ const userResolver = {
       UserService.getUser(args),
   },
   Mutation: {
-    createUser: async (_: unknown, args: GqlMutationCreateUserArgs) =>
-      UserService.createUser(args),
-    deleteUser: async (_: unknown, args: GqlMutationDeleteUserArgs) =>
-      UserService.deleteUser(args),
-    updateUserProfile: async (
+    userCreate: async (_: unknown, args: GqlMutationUserCreateArgs) =>
+      UserService.userCreate(args),
+    userDelete: async (_: unknown, args: GqlMutationUserDeleteArgs) =>
+      UserService.userDelete(args),
+    userUpdate: async (_: unknown, args: GqlMutationUserUpdateArgs) =>
+      UserService.userUpdate(args),
+    userPublish: async (_: unknown, args: GqlMutationUserPublishArgs) =>
+      UserService.userPublish(args),
+    userUnpublish: async (_: unknown, args: GqlMutationUserUnpublishArgs) =>
+      UserService.userUnpublish(args),
+    userAddGroup: async (_: unknown, args: GqlMutationUserAddGroupArgs) =>
+      UserService.userAddGroup(args),
+    userRemoveGroup: async (_: unknown, args: GqlMutationUserRemoveGroupArgs) =>
+      UserService.userRemoveGroup(args),
+    userAddOrganization: async (
       _: unknown,
-      args: GqlMutationUpdateUserProfileArgs,
-    ) => UserService.updateUserProfile(args),
-    updateUserPrivacy: async (
+      args: GqlMutationUserAddOrganizationArgs,
+    ) => UserService.userAddOrganization(args),
+    userRemoveOrganization: async (
       _: unknown,
-      args: GqlMutationUpdateUserPrivacyArgs,
-    ) => UserService.updateUserPrivacy(args),
-    addGroupToUser: async (_: unknown, args: GqlMutationAddGroupToUserArgs) =>
-      UserService.addGroupToUser(args),
-    removeGroupFromUser: async (
+      args: GqlMutationUserRemoveOrganizationArgs,
+    ) => UserService.userRemoveOrganization(args),
+    userAddActivity: async (_: unknown, args: GqlMutationUserAddActivityArgs) =>
+      UserService.userAddActivity(args),
+    userRemoveActivity: async (
       _: unknown,
-      args: GqlMutationRemoveGroupFromUserArgs,
-    ) => UserService.removeGroupFromUser(args),
-    addOrganizationToUser: async (
-      _: unknown,
-      args: GqlMutationAddOrganizationToUserArgs,
-    ) => UserService.addOrganizationToUser(args),
-    removeOrganizationFromUser: async (
-      _: unknown,
-      args: GqlMutationRemoveOrganizationFromUserArgs,
-    ) => UserService.removeOrganizationFromUser(args),
-    addActivityToUser: async (
-      _: unknown,
-      args: GqlMutationAddActivityToUserArgs,
-    ) => UserService.addActivityToUser(args),
-    removeActivityFromUser: async (
-      _: unknown,
-      args: GqlMutationRemoveActivityFromUserArgs,
-    ) => UserService.removeActivityFromUser(args),
+      args: GqlMutationUserRemoveActivityArgs,
+    ) => UserService.userRemoveActivity(args),
   },
 };
 
