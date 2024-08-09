@@ -33,3 +33,29 @@ enum SortDirection {
     asc
     desc
 }
+
+interface Error {
+    message: String!
+    path: [String!]!
+}
+
+type InvalidInputValueError implements Error {
+    message: String!
+    path: [String!]!
+    fields: [Field]!
+}
+
+type AuthError implements Error {
+    message: String!
+    path: [String!]!
+}
+
+type ComplexQueryError implements Error {
+    message: String!
+    path: [String!]!
+}
+
+type Field {
+    name: String!
+    message: String
+}
