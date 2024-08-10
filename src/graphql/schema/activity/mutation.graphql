@@ -1,9 +1,8 @@
 # Queries/Mutations-related type definitions
 
-input CreateActivityInput {
+input ActivityInput {
     description: String
     remark: String
-    isPublic: Boolean!
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
@@ -12,60 +11,110 @@ input CreateActivityInput {
     eventId: String!
 }
 
-input UpdateActivityInfoInput {
-    description: String
-    remark: String
-    images: [String!]
-    startsAt: Datetime!
-    endsAt: Datetime!
-}
-
-input UpdateActivityPrivacyInput {
+input ActivityPrivacyInput {
     isPublic: Boolean!
 }
 
-input AddUserToActivityInput {
+input ActivityAddUserInput {
     userId: String!
 }
 
-input UpdateUserOfActivityInput {
+input ActivityUpdateUserInput {
     userId: String!
 }
 
-input AddEventToActivityInput {
+input ActivityAddEventInput {
     eventId: String!
 }
 
-input RemoveEventFromActivityInput {
+input ActivityRemoveEventInput {
     eventId: String!
 }
 
 # Type definitions
 
-type UpdateActivityInfoPayload {
+type ActivityCreateSuccess {
+    activity: Activity
+}
+
+type ActivityDeleteSuccess {
+    activityId: ID!
+}
+
+type ActivityUpdateSuccess {
     activity: Activity!
 }
 
-type UpdateActivityPrivacyPayload {
+type ActivityUpdatePrivacySuccess {
     activity: Activity!
 }
 
-type AddUserToActivityPayload {
+type ActivityAddUserSuccess {
     activity: Activity!
     user: User!
 }
 
-type UpdateUserOfActivityPayload {
+type ActivityUpdateUserSuccess {
     activity: Activity!
     user: User!
 }
 
-type AddEventToActivityPayload {
+type ActivityAddEventSuccess {
     activity: Activity!
     event: Event!
 }
 
-type RemoveEventFromActivityPayload {
+type ActivityRemoveEventSuccess {
     activity: Activity!
     event: Event!
 }
+
+# union definitions
+
+union ActivityCreatePayload =
+ActivityCreateSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityDeletePayload =
+ActivityDeleteSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityUpdatePayload =
+ActivityUpdateSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityUpdatePrivacyPayload =
+ActivityUpdatePrivacySuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityAddUserPayload =
+ActivityAddUserSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityUpdateUserPayload =
+ActivityUpdateUserSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityAddEventPayload =
+ActivityAddEventSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityRemoveEventPayload =
+ActivityRemoveEventSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
