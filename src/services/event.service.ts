@@ -2,11 +2,25 @@ import { Prisma } from "@prisma/client";
 import {
   GqlEvent,
   GqlEventsConnection,
-  GqlMutationCreateEventArgs,
-  GqlMutationDeleteEventArgs,
-  GqlMutationUpdateEventInfoArgs,
   GqlQueryEventArgs,
   GqlQueryEventsArgs,
+  GqlMutationEventCreateArgs,
+  GqlMutationEventDeleteArgs,
+  GqlMutationEventUpdateArgs,
+  GqlMutationEventPublishArgs,
+  GqlMutationEventUnpublishArgs,
+  GqlMutationEventAddGroupArgs,
+  GqlMutationEventRemoveGroupArgs,
+  GqlMutationEventAddOrganizationArgs,
+  GqlMutationEventRemoveOrganizationArgs,
+  GqlEventCreatePayload,
+  GqlEventDeletePayload,
+  GqlEventUpdatePayload,
+  GqlEventUpdatePrivacyPayload,
+  GqlEventAddGroupPayload,
+  GqlEventRemoveGroupPayload,
+  GqlEventAddOrganizationPayload,
+  GqlEventRemoveOrganizationPayload,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 
@@ -99,19 +113,12 @@ export default class EventService {
       : null;
   }
 
-  static async createEvent({
-    content,
-  }: GqlMutationCreateEventArgs): Promise<GqlEvent> {
-    const { organizationIds, agendaIds, groupIds, cityCodes, ...properties } =
-      content;
+  static async eventCreate({
+    input,
+  }: GqlMutationEventCreateArgs): Promise<GqlEventCreatePayload> {
+    const { agendaIds, cityCodes, ...properties } = input;
     const data: Prisma.EventCreateInput = {
       ...properties,
-      organizations: {
-        create: organizationIds?.map((organizationId) => ({ organizationId })),
-      },
-      groups: {
-        create: groupIds?.map((groupId) => ({ groupId })),
-      },
       agendas: {
         create: agendaIds?.map((agendaId) => ({ agendaId })),
       },
@@ -127,45 +134,267 @@ export default class EventService {
       },
     });
     return {
-      ...event,
-      agendas: event.agendas.map((r) => r.agenda),
-      totalMinutes: event.stat?.totalMinutes ?? 0,
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
     };
   }
 
-  static async deleteEvent({
+  static async eventDelete({
     id,
-  }: GqlMutationDeleteEventArgs): Promise<GqlEvent> {
-    const event = await this.db.event.delete({
+  }: GqlMutationEventDeleteArgs): Promise<GqlEventDeletePayload> {
+    await this.db.event.delete({
       where: { id },
       include: {
         agendas: { include: { agenda: true } },
         stat: { select: { totalMinutes: true } },
       },
     });
-    return {
-      ...event,
-      agendas: event.agendas.map((r) => r.agenda),
-      totalMinutes: event.stat?.totalMinutes ?? 0,
-    };
+    return { eventId: id };
   }
 
-  static async updateEventInfo({
+  static async eventUpdate({
     id,
-    content,
-  }: GqlMutationUpdateEventInfoArgs): Promise<GqlEvent> {
+    input,
+  }: GqlMutationEventUpdateArgs): Promise<GqlEventUpdatePayload> {
     const event = await this.db.event.update({
       where: { id },
-      data: content,
+      data: input,
       include: {
         agendas: { include: { agenda: true } },
         stat: { select: { totalMinutes: true } },
       },
     });
     return {
-      ...event,
-      agendas: event.agendas.map((r) => r.agenda),
-      totalMinutes: event.stat?.totalMinutes ?? 0,
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+    };
+  }
+
+  static async eventPublish({
+    id,
+    input,
+  }: GqlMutationEventPublishArgs): Promise<GqlEventUpdatePrivacyPayload> {
+    const event = await this.db.event.update({
+      where: { id },
+      data: input,
+      include: {
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } },
+      },
+    });
+    return {
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+    };
+  }
+
+  static async eventUnpublish({
+    id,
+    input,
+  }: GqlMutationEventUnpublishArgs): Promise<GqlEventUpdatePrivacyPayload> {
+    const event = await this.db.event.update({
+      where: { id },
+      data: input,
+      include: {
+        agendas: { include: { agenda: true } },
+        stat: { select: { totalMinutes: true } },
+      },
+    });
+    return {
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+    };
+  }
+
+  static async eventAddGroup({
+    id,
+    input,
+  }: GqlMutationEventAddGroupArgs): Promise<GqlEventAddGroupPayload> {
+    const [event, group] = await this.db.$transaction([
+      this.db.event.update({
+        where: { id },
+        data: {
+          groups: {
+            connect: {
+              groupId_eventId: {
+                eventId: id,
+                groupId: input.groupId,
+              },
+            },
+          },
+        },
+        include: {
+          agendas: { include: { agenda: true } },
+          stat: { select: { totalMinutes: true } },
+        },
+      }),
+      this.db.group.findUnique({
+        where: { id: input.groupId },
+      }),
+    ]);
+
+    if (!group) {
+      throw new Error(`Group with ID ${input.groupId} not found`);
+    }
+
+    return {
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+      group,
+    };
+  }
+
+  static async eventRemoveGroup({
+    id,
+    input,
+  }: GqlMutationEventRemoveGroupArgs): Promise<GqlEventRemoveGroupPayload> {
+    const [event, group] = await this.db.$transaction([
+      this.db.event.update({
+        where: { id },
+        data: {
+          groups: {
+            disconnect: {
+              groupId_eventId: {
+                eventId: id,
+                groupId: input.groupId,
+              },
+            },
+          },
+        },
+        include: {
+          agendas: { include: { agenda: true } },
+          stat: { select: { totalMinutes: true } },
+        },
+      }),
+      this.db.group.findUnique({
+        where: { id: input.groupId },
+      }),
+    ]);
+
+    if (!group) {
+      throw new Error(`Group with ID ${input.groupId} not found`);
+    }
+
+    return {
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+      group,
+    };
+  }
+
+  static async eventAddOrganization({
+    id,
+    input,
+  }: GqlMutationEventAddOrganizationArgs): Promise<GqlEventAddOrganizationPayload> {
+    const [event, organization] = await this.db.$transaction([
+      this.db.event.update({
+        where: { id },
+        data: {
+          organizations: {
+            connect: {
+              organizationId_eventId: {
+                eventId: id,
+                organizationId: input.organizationId,
+              },
+            },
+          },
+        },
+        include: {
+          agendas: { include: { agenda: true } },
+          stat: { select: { totalMinutes: true } },
+        },
+      }),
+      this.db.organization.findUnique({
+        where: { id: input.organizationId },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+    ]);
+
+    if (!organization) {
+      throw new Error(`Organization with ID ${input.organizationId} not found`);
+    }
+
+    return {
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+      organization,
+    };
+  }
+
+  static async eventRemoveOrganization({
+    id,
+    input,
+  }: GqlMutationEventRemoveOrganizationArgs): Promise<GqlEventRemoveOrganizationPayload> {
+    const [event, organization] = await this.db.$transaction([
+      this.db.event.update({
+        where: { id },
+        data: {
+          organizations: {
+            disconnect: {
+              organizationId_eventId: {
+                eventId: id,
+                organizationId: input.organizationId,
+              },
+            },
+          },
+        },
+        include: {
+          agendas: { include: { agenda: true } },
+          stat: { select: { totalMinutes: true } },
+        },
+      }),
+      this.db.organization.findUnique({
+        where: { id: input.organizationId },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+    ]);
+
+    if (!organization) {
+      throw new Error(`Organization with ID ${input.organizationId} not found`);
+    }
+
+    return {
+      event: {
+        ...event,
+        agendas: event.agendas.map((r) => r.agenda),
+        totalMinutes: event.stat?.totalMinutes ?? 0,
+      },
+      organization,
     };
   }
 }
