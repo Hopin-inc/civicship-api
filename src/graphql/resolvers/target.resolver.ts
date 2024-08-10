@@ -1,15 +1,15 @@
 import TargetService from "@/services/target.service";
 import {
-  GqlMutationCreateTargetArgs,
-  GqlMutationDeleteTargetArgs,
-  GqlMutationAddGroupToTargetArgs,
-  GqlMutationRemoveGroupFromTargetArgs,
-  GqlMutationAddOrganizationToTargetArgs,
-  GqlMutationRemoveOrganizationFromTargetArgs,
+  GqlMutationTargetCreateArgs,
+  GqlMutationTargetDeleteArgs,
+  GqlMutationTargetAddGroupArgs,
+  GqlMutationTargetRemoveGroupArgs,
+  GqlMutationTargetAddOrganizationArgs,
+  GqlMutationTargetRemoveOrganizationArgs,
   GqlQueryTargetsArgs,
   GqlQueryTargetArgs,
-  GqlMutationUpdateIndexOfTargetArgs,
-  GqlMutationUpdateTargetInfoArgs,
+  GqlMutationTargetUpdateIndexArgs,
+  GqlMutationTargetUpdateArgs,
 } from "@/types/graphql";
 
 const targetResolver = {
@@ -20,34 +20,34 @@ const targetResolver = {
       TargetService.getTarget(args),
   },
   Mutation: {
-    createTarget: async (_: unknown, args: GqlMutationCreateTargetArgs) =>
-      TargetService.createTarget(args),
-    deleteTarget: async (_: unknown, args: GqlMutationDeleteTargetArgs) =>
-      TargetService.deleteTarget(args),
-    updateTargetInfo: async (
+    targetCreate: async (_: unknown, args: GqlMutationTargetCreateArgs) =>
+      TargetService.targetCreate(args),
+    targetDelete: async (_: unknown, args: GqlMutationTargetDeleteArgs) =>
+      TargetService.targetDelete(args),
+    targetUpdate: async (
       _: unknown,
-      args: GqlMutationUpdateTargetInfoArgs,
-    ) => TargetService.updateTargetInfo(args),
-    addGroupToTarget: async (
+      args: GqlMutationTargetUpdateArgs,
+    ) => TargetService.targetUpdate(args),
+    targetAddGroup: async (
       _: unknown,
-      args: GqlMutationAddGroupToTargetArgs,
-    ) => TargetService.addGroupToTarget(args),
-    removeGroupFromTarget: async (
+      args: GqlMutationTargetAddGroupArgs,
+    ) => TargetService.targetAddGroup(args),
+    targetRemoveGroup: async (
       _: unknown,
-      args: GqlMutationRemoveGroupFromTargetArgs,
-    ) => TargetService.removeGroupFromTarget(args),
-    addOrganizationToTarget: async (
+      args: GqlMutationTargetRemoveGroupArgs,
+    ) => TargetService.targetRemoveGroup(args),
+    targetAddOrganization: async (
       _: unknown,
-      args: GqlMutationAddOrganizationToTargetArgs,
-    ) => TargetService.addOrganizationToTarget(args),
-    removeOrganizationFromTarget: async (
+      args: GqlMutationTargetAddOrganizationArgs,
+    ) => TargetService.targetAddOrganization(args),
+    targetRemoveOrganization: async (
       _: unknown,
-      args: GqlMutationRemoveOrganizationFromTargetArgs,
-    ) => TargetService.removeOrganizationFromTarget(args),
-    updateIndexOfTarget: async (
+      args: GqlMutationTargetRemoveOrganizationArgs,
+    ) => TargetService.targetRemoveOrganization(args),
+    targetUpdateIndex: async (
       _: unknown,
-      args: GqlMutationUpdateIndexOfTargetArgs,
-    ) => TargetService.updateIndexOfTarget(args),
+      args: GqlMutationTargetUpdateIndexArgs,
+    ) => TargetService.targetUpdateIndex(args),
   },
 };
 

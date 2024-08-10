@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input CreateTargetInput {
+input TargetInput {
     name: String!
     value: Float!
     validFrom: Datetime!
@@ -11,65 +11,111 @@ input CreateTargetInput {
     indexId: Int!
 }
 
-input UpdateTargetInfoInput {
-    name: String
-    value: Float
-    validFrom: Datetime
-    validTo: Datetime
-    indexId: Int
-}
-
-input AddGroupToTargetInput {
+input TargetAddGroupInput {
     groupId: String!
 }
 
-input RemoveGroupFromTargetInput {
+input TargetRemoveGroupInput {
     groupId: String!
 }
 
-input AddOrganizationToTargetInput {
+input TargetAddOrganizationInput {
     organizationId: String!
 }
 
-input RemoveOrganizationFromTargetInput {
+input TargetRemoveOrganizationInput {
     organizationId: String!
 }
 
-input UpdateIndexOfTargetInput {
+input TargetUpdateIndexInput {
     indexId: Int!
 }
 
 # Type definitions
 
-type UpdateTargetInfoPayload {
-    name: String
-    value: Float
-    validFrom: Datetime
-    validTo: Datetime
-    indexId: Int
+type TargetCreateSuccess {
+    target: Target
 }
 
-type AddGroupToTargetPayload {
+type TargetDeleteSuccess {
+    targetId: ID!
+}
+
+type TargetUpdateSuccess {
+    target: Target
+}
+
+type TargetAddGroupSuccess {
     target: Target!
     group: Group!
 }
 
-type RemoveGroupFromTargetPayload {
+type TargetRemoveGroupSuccess {
     target: Target!
     group: Group!
 }
 
-type AddOrganizationToTargetPayload {
+type TargetAddOrganizationSuccess {
     target: Target!
     organization: Organization!
 }
 
-type RemoveOrganizationFromTargetPayload {
+type TargetRemoveOrganizationSuccess {
     target: Target!
     organization: Organization!
 }
 
-type UpdateIndexOfTargetPayload {
+type TargetUpdateIndexSuccess {
     target: Target!
     index: Index!
 }
+
+# union definitions
+
+union TargetCreatePayload =
+    TargetCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetDeletePayload =
+    TargetDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetUpdatePayload =
+    TargetUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetAddGroupPayload =
+    TargetAddGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetRemoveGroupPayload =
+    TargetRemoveGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetAddOrganizationPayload =
+    TargetAddOrganizationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetRemoveOrganizationPayload =
+    TargetRemoveOrganizationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TargetUpdateIndexPayload =
+    TargetUpdateIndexSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

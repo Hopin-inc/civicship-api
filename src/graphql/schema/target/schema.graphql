@@ -11,14 +11,14 @@ extend type Query {
 }
 
 extend type Mutation {
-    createTarget(content: CreateTargetInput!): Target
-    deleteTarget(id: ID!): Target
-    updateTargetInfo(id: ID!, content: UpdateTargetInfoInput!): UpdateTargetInfoPayload
-    addGroupToTarget(id: ID!, content: AddGroupToTargetInput!): AddGroupToTargetPayload
-    removeGroupFromTarget(id: ID!, content: RemoveGroupFromTargetInput!): RemoveGroupFromTargetPayload
-    addOrganizationToTarget(id: ID!, content: AddOrganizationToTargetInput!): AddOrganizationToTargetPayload
-    removeOrganizationFromTarget(id: ID!, content: RemoveOrganizationFromTargetInput!): RemoveOrganizationFromTargetPayload
-    updateIndexOfTarget(id: ID!, content: UpdateIndexOfTargetInput!): UpdateIndexOfTargetPayload
+    targetCreate(input: TargetInput!): TargetCreatePayload
+    targetDelete(id: ID!): TargetDeletePayload
+    targetUpdate(id: ID!, input: TargetInput!): TargetUpdatePayload
+    targetAddGroup(id: ID!, input: TargetAddGroupInput!): TargetAddGroupPayload
+    targetRemoveGroup(id: ID!, input: TargetRemoveGroupInput!): TargetRemoveGroupPayload
+    targetAddOrganization(id: ID!, input: TargetAddOrganizationInput!): TargetAddOrganizationPayload
+    targetRemoveOrganization(id: ID!, input: TargetRemoveOrganizationInput!): TargetRemoveOrganizationPayload
+    targetUpdateIndex(id: ID!, input: TargetUpdateIndexInput!): TargetUpdateIndexPayload
 }
 
 # Type definitions
