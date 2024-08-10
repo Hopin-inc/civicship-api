@@ -11,19 +11,19 @@ extend type Query {
 }
 
 extend type Mutation {
-    createGroup(content: CreateGroupInput!): Group
-    deleteGroup(id: ID!): Group
-    updateGroupInfo(id: ID!, content: UpdateGroupInfoInput!):UpdateGroupInfoPayload
-    addUserToGroup(id: ID!, content: AddUserToGroupInput!): AddUserToGroupPayload
-    removeUserFromGroup(id: ID!, content: RemoveUserFromGroupInput!): RemoveUserFromGroupPayload
-    addEventOfGroup(id: ID!, content: AddEventOfGroupInput!): AddEventOfGroupPayload
-    removeEventFromGroup(id: ID!, content: RemoveEventFromGroupInput!): RemoveEventFromGroupPayload
-    addTargetToGroup(id: ID!, content: AddTargetToGroupInput!): AddTargetToGroupPayload
-    removeTargetFromGroup(id: ID!, content: RemoveTargetFromGroupInput!): RemoveTargetFromGroupPayload
-    addParentGroupToGroup(id: ID!, content: AddParentGroupToGroupInput!): AddParentGroupToGroupPayload
-    removeParentGroupFromParent(id: ID!, content: RemoveParentGroupFromParentInput!): RemoveParentGroupFromParentPayload
-    addChildGroupToGroup(id: ID!, content: AddChildGroupToGroupInput!): AddChildGroupToGroupPayload
-    removeChildGroupFromParent(id: ID!, content: RemoveChildGroupFromParentInput!): RemoveChildGroupFromParentPayload
+    groupCreate(input: GroupInput!): GroupCreatePayload
+    groupDelete(id: ID!): GroupDeletePayload
+    groupUpdate(id: ID!, input: GroupInput!): GroupUpdatePayload
+    groupAddUser(id: ID!, input: GroupAddUserInput!): GroupAddUserPayload
+    groupRemoveUser(id: ID!, input: GroupRemoveUserInput!): GroupRemoveUserPayload
+    groupAddEvent(id: ID!, input: GroupAddEventInput!): GroupAddEventPayload
+    groupRemoveEvent(id: ID!, input: GroupRemoveEventInput!): GroupRemoveEventPayload
+    groupAddTarget(id: ID!, input: GroupAddTargetInput!): GroupAddTargetPayload
+    groupRemoveTarget(id: ID!, input: GroupRemoveTargetInput!): GroupRemoveTargetPayload
+    groupAddParent(id: ID!, input: GroupAddParentInput!): GroupAddParentPayload
+    groupRemoveParent(id: ID!, input: GroupRemoveParentInput!): GroupRemoveParentPayload
+    groupAddChild(id: ID!, input: GroupAddChildInput!): GroupAddChildPayload
+    groupRemoveChild(id: ID!, input: GroupRemoveChildInput!): GroupRemoveChildPayload
 }
 
 # Type definitions
