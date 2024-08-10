@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input CreateOrganizationInput {
+input OrganizationInput {
     name: String!
     entity: String
     entityPosition: EntityPosition
@@ -20,80 +20,140 @@ input CreateOrganizationInput {
     cityCodes: [String!]
 }
 
-input UpdateOrganizationDefaultInfoInput {
-    name: String!
-    entity: String
-    entityPosition: EntityPosition
-    establishedAt: Datetime
-
-    zipcode: String!
-    stateCode: String!
-    cityCode: String!
-    stateCountryCode: String!
-    address1: String!
-    address2: String
+input OrganizationPrivacyInput {
+    isPublic: Boolean!
 }
 
-input UpdateOrganizationOverviewInput {
-    image: String
-    bio: String
-    website: String
-
-    agendaIds: [Int!]
-    cityCodes: [String!]
-}
-
-input UpdateGroupOfOrganizationInput {
+input OrganizationAddGroupInput {
     groupId: String!
 }
 
-input AddUserInOrganizationInput {
+input OrganizationRemoveGroupInput {
+    groupId: String!
+}
+
+input OrganizationAddUserInput {
     userId: String!
 }
 
-input RemoveUserFromOrganizationInput {
+input OrganizationRemoveUserInput {
     userId: String!
 }
 
-input AddTargetInOrganizationInput {
+input OrganizationAddTargetInput {
     targetId: String!
 }
 
-input RemoveTargetFromOrganizationInput {
+input OrganizationRemoveTargetInput {
     targetId: String!
 }
 
 # Type definitions
 
-type UpdateOrganizationDefaultInfoPayload {
+type OrganizationCreateSuccess {
+    organization: Organization
+}
+
+type OrganizationDeleteSuccess {
+    organizationId: ID!
+}
+
+type OrganizationUpdateSuccess {
     organization: Organization!
 }
 
-type UpdateOrganizationOverviewPayload {
+type OrganizationUpdatePrivacySuccess {
     organization: Organization!
 }
 
-type UpdateGroupOfOrganizationPayload {
+type OrganizationAddGroupSuccess {
+    organization: Organization!
     group: Group!
-    organization: Organization!
 }
 
-type AddUserInOrganizationPayload {
+type OrganizationRemoveGroupSuccess {
+    organization: Organization!
+    group: Group!
+}
+
+type OrganizationAddUserSuccess {
     organization: Organization!
     user: User!
 }
 
-type RemoveUserFromOrganizationPayload {
+type OrganizationRemoveUserSuccess {
     organization: Organization!
     user: User!
 }
 
-type AddTargetInOrganizationPayload {
+type OrganizationAddTargetSuccess {
     organization: Organization!
     target: Target!
 }
 
-type RemoveTargetFromOrganizationPayload {
+type OrganizationRemoveTargetSuccess {
     organization: Organization!
     target: Target!
 }
+
+# union definitions
+
+union OrganizationCreatePayload =
+    OrganizationCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationDeletePayload =
+    OrganizationDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationUpdatePayload =
+    OrganizationUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationUpdatePrivacyPayload =
+    OrganizationUpdatePrivacySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationAddGroupPayload =
+    OrganizationAddGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationRemoveGroupPayload =
+    OrganizationRemoveGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationAddUserPayload =
+    OrganizationAddUserSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationRemoveUserPayload =
+    OrganizationRemoveUserSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationAddTargetPayload =
+    OrganizationAddTargetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationRemoveTargetPayload =
+    OrganizationRemoveTargetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

@@ -11,15 +11,17 @@ extend type Query {
 }
 
 extend type Mutation {
-    createOrganization(content: CreateOrganizationInput!): Organization
-    deleteOrganization(id: ID!): Organization
-    updateOrganizationDefaultInfo(id: ID!, content: UpdateOrganizationDefaultInfoInput!): UpdateOrganizationDefaultInfoPayload
-    updateOrganizationOverview(id: ID!, content: UpdateOrganizationOverviewInput!): UpdateOrganizationOverviewPayload
-    addUserInOrganization(id: ID!, content: AddUserInOrganizationInput!): AddUserInOrganizationPayload
-    removeUserFromOrganization(id: ID!, content: RemoveUserFromOrganizationInput!): RemoveUserFromOrganizationPayload
-    addTargetInOrganization(id: ID!, content: AddTargetInOrganizationInput!): AddTargetInOrganizationPayload
-    removeTargetFromOrganization(id: ID!, content: RemoveTargetFromOrganizationInput!): RemoveTargetFromOrganizationPayload
-    updateGroupOfOrganization(id: ID!, content: UpdateGroupOfOrganizationInput!): UpdateGroupOfOrganizationPayload
+    organizationCreate(input: OrganizationInput!): OrganizationCreatePayload
+    organizationDelete(id: ID!): OrganizationDeletePayload
+    organizationUpdate(id: ID!, input: OrganizationInput!): OrganizationUpdatePayload
+    organizationPublish(id: ID!, input: OrganizationPrivacyInput!): OrganizationUpdatePrivacyPayload
+    organizationUnpublish(id: ID!, input: OrganizationPrivacyInput!): OrganizationUpdatePrivacyPayload
+    organizationAddUser(id: ID!, input: OrganizationAddUserInput!): OrganizationAddUserPayload
+    organizationRemoveUser(id: ID!, input: OrganizationRemoveUserInput!): OrganizationRemoveUserPayload
+    organizationAddTarget(id: ID!, input: OrganizationAddTargetInput!): OrganizationAddTargetPayload
+    organizationRemoveTarget(id: ID!, input: OrganizationRemoveTargetInput!): OrganizationRemoveTargetPayload
+    organizationAddGroup(id: ID!, input: OrganizationAddGroupInput!): OrganizationAddGroupPayload
+    organizationRemoveGroup(id: ID!, input: OrganizationRemoveGroupInput!): OrganizationRemoveGroupPayload
 }
 
 # Type definitions
@@ -32,6 +34,7 @@ type Organizations {
 type Organization {
     id: ID!
     name: String!
+    isPublic: Boolean!
     entity: String
     entityPosition: EntityPosition
     image: String
