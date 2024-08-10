@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input AddLikeToEventInput {
+input LikeAddEventInput {
     eventId: String!
     userId: String!
     postedAt: Datetime!
@@ -8,10 +8,24 @@ input AddLikeToEventInput {
 
 # Type definitions
 
-type AddLikeToEventPayload {
+type LikeAddEventSuccess {
     like: Like!
 }
 
-type RemoveLikeFromEventPayload {
-    like: Like!
+type LikeDeleteSuccess {
+    likeId: String!
 }
+
+# union definitions
+
+union LikeAddEventPayload =
+    LikeAddEventSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union LikeDeletePayload =
+    LikeDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
