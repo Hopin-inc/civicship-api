@@ -9,7 +9,7 @@ import {
   GqlMutationUserUpdateArgs,
   GqlUserUpdatePayload,
   GqlMutationUserPublishArgs,
-  GqlUserPrivacyPayload,
+  GqlUserUpdatePrivacyPayload,
   GqlUserRemoveGroupPayload,
   GqlMutationUserRemoveGroupArgs,
   GqlMutationUserAddOrganizationArgs,
@@ -133,7 +133,7 @@ export default class UserService {
   static async userPublish({
     id,
     input,
-  }: GqlMutationUserPublishArgs): Promise<GqlUserPrivacyPayload> {
+  }: GqlMutationUserPublishArgs): Promise<GqlUserUpdatePrivacyPayload> {
     const user = await this.db.user.update({
       where: { id },
       data: input,
@@ -147,7 +147,7 @@ export default class UserService {
   static async userUnpublish({
     id,
     input,
-  }: GqlMutationUserPublishArgs): Promise<GqlUserPrivacyPayload> {
+  }: GqlMutationUserPublishArgs): Promise<GqlUserUpdatePrivacyPayload> {
     const user = await this.db.user.update({
       where: { id },
       data: input,

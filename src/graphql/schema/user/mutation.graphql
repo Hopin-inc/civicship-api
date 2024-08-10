@@ -7,7 +7,6 @@ input UserInput {
     email: String
     image: String
     bio: String
-    isPublic: Boolean!
     agendaIds: [Int!]
     cityCodes: [String!]
 }
@@ -54,7 +53,7 @@ type UserUpdateSuccess {
     user: User
 }
 
-type UserPrivacySuccess {
+type UserUpdatePrivacySuccess {
     user: User!
 }
 
@@ -108,8 +107,8 @@ union UserUpdatePayload =
     AuthError |
     ComplexQueryError
 
-union UserPrivacyPayload =
-    UserPrivacySuccess |
+union UserUpdatePrivacyPayload =
+    UserUpdatePrivacySuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

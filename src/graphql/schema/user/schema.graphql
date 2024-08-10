@@ -12,8 +12,8 @@ extend type Mutation {
     userCreate(input: UserInput!): UserCreatePayload
     userDelete(id: ID!): UserDeletePayload
     userUpdate(id: ID!, input: UserInput!): UserUpdatePayload
-    userPublish(id: ID!, input: UserPrivacyInput!): UserPrivacyPayload
-    userUnpublish(id: ID!, input: UserPrivacyInput!): UserPrivacyPayload
+    userPublish(id: ID!, input: UserPrivacyInput!): UserUpdatePrivacyPayload
+    userUnpublish(id: ID!, input: UserPrivacyInput!): UserUpdatePrivacyPayload
     userAddGroup(id: ID!, input: UserAddGroupInput!): UserAddGroupPayload
     userRemoveGroup(id: ID!, input: UserRemoveGroupInput!): UserRemoveGroupPayload
     userAddOrganization(id: ID!, input: UserAddOrganizationInput!): UserRemoveOrganizationPayload
