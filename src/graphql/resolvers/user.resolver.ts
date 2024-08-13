@@ -36,26 +36,26 @@ const userResolver = {
     ) => UserService.updateUserPrivacy(args),
     addGroupToUser: async (_: unknown, args: GqlMutationAddGroupToUserArgs) =>
       UserService.addGroupToUser(args),
-    deleteGroupFromUser: async (
-      _: unknown,
-      args: GqlMutationRemoveGroupFromUserArgs,
-    ) => UserService.removeGroupFromUser(args),
+    // deleteGroupFromUser: async (
+    //   _: unknown,
+    //   args: GqlMutationRemoveGroupFromUserArgs,
+    // ) => UserService.removeGroupFromUser(args),
     addOrganizationToUser: async (
       _: unknown,
       args: GqlMutationAddOrganizationToUserArgs,
     ) => UserService.addOrganizationToUser(args),
-    deleteOrganizationFromUser: async (
-      _: unknown,
-      args: GqlMutationRemoveOrganizationFromUserArgs,
-    ) => UserService.removeOrganizationFromUser(args),
+    // deleteOrganizationFromUser: async (
+    //   _: unknown,
+    //   args: GqlMutationRemoveOrganizationFromUserArgs,
+    // ) => UserService.removeOrganizationFromUser(args),
     addActivityToUser: async (
       _: unknown,
       args: GqlMutationAddActivityToUserArgs,
     ) => UserService.addActivityToUser(args),
-    deleteActivityFromUser: async (
-      _: unknown,
-      args: GqlMutationRemoveActivityFromUserArgs,
-    ) => UserService.removeActivityFromUser(args),
+    // deleteActivityFromUser: async (
+    //   _: unknown,
+    //   args: GqlMutationRemoveActivityFromUserArgs,
+    // ) => UserService.removeActivityFromUser(args),
   },
 };
 

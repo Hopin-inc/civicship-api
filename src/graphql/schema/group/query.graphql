@@ -74,6 +74,7 @@ type Group {
     name:  String!
     image: String
     bio: String
+    userRole: Role
 
     users: [User!]
     events: [Event!]

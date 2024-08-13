@@ -38,6 +38,8 @@ import type { Index } from "@prisma/client";
 import type { ActivityStatView } from "@prisma/client";
 import type { EventStatView } from "@prisma/client";
 import type { IssueStatView } from "@prisma/client";
+import type { SysRole } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import type { EntityPosition } from "@prisma/client";
 import type { ActivityStyle } from "@prisma/client";
 import type { ValueType } from "@prisma/client";
@@ -62,6 +64,7 @@ type UserFactoryDefineInput = {
     email?: string | null;
     image?: string | null;
     bio?: string | null;
+    sysRole?: SysRole;
     isPublic?: boolean;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -185,6 +188,7 @@ type UsersOnGroupsgroupFactory = {
     build: () => PromiseLike<Prisma.GroupCreateNestedOneWithoutUsersInput["create"]>;
 };
 type UsersOnGroupsFactoryDefineInput = {
+    role?: Role | null;
     addedAt?: Date | null;
     removedAt?: Date | null;
     isPublic?: boolean;
@@ -311,6 +315,7 @@ type UsersOnOrganizationsorganizationFactory = {
 type UsersOnOrganizationsFactoryDefineInput = {
     displayName?: string | null;
     displayImage?: string | null;
+    role?: Role;
     addedAt?: Date | null;
     removedAt?: Date | null;
     isPublic?: boolean;

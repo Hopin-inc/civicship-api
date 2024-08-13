@@ -98,6 +98,7 @@ type Organization {
     bio: String
     establishedAt: Datetime
     website: String
+    userRole: Role
 
     zipcode: String!
     state: State!

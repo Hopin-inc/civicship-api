@@ -798,6 +798,13 @@ export type GqlRemoveOrganizationFromUserPayload = {
   user: GqlUser;
 };
 
+export const GqlRole = {
+  Member: 'MEMBER',
+  Owner: 'OWNER',
+  SysAdmin: 'SYS_ADMIN'
+} as const;
+
+export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
 export const GqlSortDirection = {
   Asc: 'asc',
   Desc: 'desc'
@@ -890,6 +897,7 @@ export type GqlUser = {
   likes?: Maybe<Array<GqlLike>>;
   middleName?: Maybe<Scalars['String']['output']>;
   organizations?: Maybe<Array<GqlOrganization>>;
+  role: GqlRole;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -1063,6 +1071,7 @@ export type GqlResolversTypes = ResolversObject<{
   RemoveGroupFromUserPayload: ResolverTypeWrapper<Omit<GqlRemoveGroupFromUserPayload, 'group' | 'user'> & { group: GqlResolversTypes['Group'], user: GqlResolversTypes['User'] }>;
   RemoveOrganizationFromUserInput: GqlRemoveOrganizationFromUserInput;
   RemoveOrganizationFromUserPayload: ResolverTypeWrapper<Omit<GqlRemoveOrganizationFromUserPayload, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
+  Role: GqlRole;
   SortDirection: GqlSortDirection;
   State: ResolverTypeWrapper<State>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -1535,6 +1544,7 @@ export type GqlUserResolvers<ContextType = Context, ParentType extends GqlResolv
   likes?: Resolver<Maybe<Array<GqlResolversTypes['Like']>>, ParentType, ContextType>;
   middleName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   organizations?: Resolver<Maybe<Array<GqlResolversTypes['Organization']>>, ParentType, ContextType>;
+  role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
