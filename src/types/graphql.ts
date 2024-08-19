@@ -279,6 +279,7 @@ export type GqlGroup = {
   parent?: Maybe<GqlGroup>;
   targets?: Maybe<Array<GqlTarget>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+  userRole?: Maybe<GqlRole>;
   users?: Maybe<Array<GqlUser>>;
 };
 
@@ -343,6 +344,7 @@ export type GqlLike = {
   __typename?: 'Like';
   createdAt: Scalars['Datetime']['output'];
   event: GqlEvent;
+  id: Scalars['ID']['output'];
   postedAt: Scalars['Datetime']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user: GqlUser;
@@ -501,8 +503,7 @@ export type GqlMutationRemoveGroupFromUserArgs = {
 
 
 export type GqlMutationRemoveLikeArgs = {
-  eventId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
+  id: Scalars['ID']['input'];
 };
 
 
@@ -573,6 +574,7 @@ export type GqlOrganization = {
   state: GqlState;
   targets?: Maybe<Array<GqlTarget>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+  userRole?: Maybe<GqlRole>;
   users?: Maybe<Array<GqlUser>>;
   website?: Maybe<Scalars['String']['output']>;
   zipcode: Scalars['String']['output'];
@@ -799,9 +801,9 @@ export type GqlRemoveOrganizationFromUserPayload = {
 };
 
 export const GqlRole = {
+  Manager: 'MANAGER',
   Member: 'MEMBER',
-  Owner: 'OWNER',
-  SysAdmin: 'SYS_ADMIN'
+  Owner: 'OWNER'
 } as const;
 
 export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
@@ -818,6 +820,12 @@ export type GqlState = {
   name: Scalars['String']['output'];
 };
 
+export const GqlSysRole = {
+  SysAdmin: 'SYS_ADMIN',
+  User: 'USER'
+} as const;
+
+export type GqlSysRole = typeof GqlSysRole[keyof typeof GqlSysRole];
 export type GqlTarget = {
   __typename?: 'Target';
   createdAt: Scalars['String']['output'];
@@ -897,7 +905,7 @@ export type GqlUser = {
   likes?: Maybe<Array<GqlLike>>;
   middleName?: Maybe<Scalars['String']['output']>;
   organizations?: Maybe<Array<GqlOrganization>>;
-  role: GqlRole;
+  sysRole: GqlSysRole;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -1075,6 +1083,7 @@ export type GqlResolversTypes = ResolversObject<{
   SortDirection: GqlSortDirection;
   State: ResolverTypeWrapper<State>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
+  SysRole: GqlSysRole;
   Target: ResolverTypeWrapper<Target>;
   TargetEdge: ResolverTypeWrapper<Omit<GqlTargetEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Target']> }>;
   TargetFilterInput: GqlTargetFilterInput;
@@ -1315,6 +1324,7 @@ export type GqlGroupResolvers<ContextType = Context, ParentType extends GqlResol
   parent?: Resolver<Maybe<GqlResolversTypes['Group']>, ParentType, ContextType>;
   targets?: Resolver<Maybe<Array<GqlResolversTypes['Target']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  userRole?: Resolver<Maybe<GqlResolversTypes['Role']>, ParentType, ContextType>;
   users?: Resolver<Maybe<Array<GqlResolversTypes['User']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -1343,6 +1353,7 @@ export type GqlIndexResolvers<ContextType = Context, ParentType extends GqlResol
 export type GqlLikeResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Like'] = GqlResolversParentTypes['Like']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   event?: Resolver<GqlResolversTypes['Event'], ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   postedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
@@ -1377,7 +1388,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   removeActivityFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveActivityFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveActivityFromUserArgs, 'id' | 'input'>>;
   removeGroupFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveGroupFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveGroupFromUserArgs, 'id' | 'input'>>;
-  removeLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationRemoveLikeArgs, 'eventId' | 'userId'>>;
+  removeLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationRemoveLikeArgs, 'id'>>;
   removeOrganizationFromUser?: Resolver<Maybe<GqlResolversTypes['RemoveOrganizationFromUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationRemoveOrganizationFromUserArgs, 'id' | 'input'>>;
   updateActivity?: Resolver<Maybe<GqlResolversTypes['Activity']>, ParentType, ContextType, RequireFields<GqlMutationUpdateActivityArgs, 'content' | 'id'>>;
   updateComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationUpdateCommentArgs, 'content' | 'id'>>;
@@ -1407,6 +1418,7 @@ export type GqlOrganizationResolvers<ContextType = Context, ParentType extends G
   state?: Resolver<GqlResolversTypes['State'], ParentType, ContextType>;
   targets?: Resolver<Maybe<Array<GqlResolversTypes['Target']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  userRole?: Resolver<Maybe<GqlResolversTypes['Role']>, ParentType, ContextType>;
   users?: Resolver<Maybe<Array<GqlResolversTypes['User']>>, ParentType, ContextType>;
   website?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   zipcode?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -1544,7 +1556,7 @@ export type GqlUserResolvers<ContextType = Context, ParentType extends GqlResolv
   likes?: Resolver<Maybe<Array<GqlResolversTypes['Like']>>, ParentType, ContextType>;
   middleName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   organizations?: Resolver<Maybe<Array<GqlResolversTypes['Organization']>>, ParentType, ContextType>;
-  role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
+  sysRole?: Resolver<GqlResolversTypes['SysRole'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

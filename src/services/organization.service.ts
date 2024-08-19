@@ -28,11 +28,11 @@ export default class OrganizationService {
           : {},
         filter?.keyword
           ? {
-              OR: [
-                { name: { contains: filter?.keyword } },
-                { bio: { contains: filter?.keyword } },
-              ],
-            }
+            OR: [
+              { name: { contains: filter?.keyword } },
+              { bio: { contains: filter?.keyword } },
+            ],
+          }
           : {},
       ],
     };
@@ -46,6 +46,11 @@ export default class OrganizationService {
         city: {
           include: {
             state: true,
+          },
+        },
+        users: {
+          include: {
+            user: true,
           },
         },
         state: true,
@@ -66,7 +71,10 @@ export default class OrganizationService {
       },
       edges: data.slice(0, take).map((edge) => ({
         cursor: edge.id,
-        node: edge,
+        node: {
+          ...edge,
+          users: edge.users.map(u => u.user),
+        },
       })),
     };
   }

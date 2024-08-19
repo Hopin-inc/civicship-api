@@ -375,7 +375,7 @@ type ActivityissueFactory = {
 };
 type ActivityapplicationFactory = {
     _factoryFor: "Application";
-    build: () => PromiseLike<Prisma.ApplicationCreateNestedOneWithoutActivitiesInput["create"]>;
+    build: () => PromiseLike<Prisma.ApplicationCreateNestedOneWithoutActivityInput["create"]>;
 };
 type ActivitystatFactory = {
     _factoryFor: "ActivityStatView";
@@ -395,7 +395,7 @@ type ActivityFactoryDefineInput = {
     user: ActivityuserFactory | Prisma.UserCreateNestedOneWithoutActivitiesInput;
     event?: ActivityeventFactory | Prisma.EventCreateNestedOneWithoutActivitiesInput;
     issue?: ActivityissueFactory | Prisma.IssueCreateNestedOneWithoutActivitiesInput;
-    application?: ActivityapplicationFactory | Prisma.ApplicationCreateNestedOneWithoutActivitiesInput;
+    application?: ActivityapplicationFactory | Prisma.ApplicationCreateNestedOneWithoutActivityInput;
     stat?: ActivitystatFactory | Prisma.ActivityStatViewCreateNestedOneWithoutActivityInput;
 };
 type ActivityTransientFields = Record<string, unknown> & Partial<Record<keyof ActivityFactoryDefineInput, never>>;
@@ -443,6 +443,10 @@ type ApplicationuserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutApplicationsInput["create"]>;
 };
+type ApplicationactivityFactory = {
+    _factoryFor: "Activity";
+    build: () => PromiseLike<Prisma.ActivityCreateNestedOneWithoutApplicationInput["create"]>;
+};
 type ApplicationFactoryDefineInput = {
     id?: string;
     comment?: string | null;
@@ -452,7 +456,7 @@ type ApplicationFactoryDefineInput = {
     updatedAt?: Date | null;
     event?: ApplicationeventFactory | Prisma.EventCreateNestedOneWithoutApplicationsInput;
     user?: ApplicationuserFactory | Prisma.UserCreateNestedOneWithoutApplicationsInput;
-    activities?: Prisma.ActivityCreateNestedManyWithoutApplicationInput;
+    activity?: ApplicationactivityFactory | Prisma.ActivityCreateNestedOneWithoutApplicationInput;
     approvals?: Prisma.ApplicationConfirmationCreateNestedManyWithoutApplicationInput;
 };
 type ApplicationTransientFields = Record<string, unknown> & Partial<Record<keyof ApplicationFactoryDefineInput, never>>;

@@ -56,14 +56,19 @@ export default class ActivityService {
       cursor: cursor ? { id: cursor } : undefined,
     });
     const hasNextPage = data.length > take;
-    const formattedData = data.slice(0, take).map((record) => ({
-      ...record,
-      event: {
-        ...record.event,
-        totalMinutes: record.event.stat?.totalMinutes ?? 0,
-      },
-      totalMinutes: record.stat?.totalMinutes ?? 0,
-    }));
+    const formattedData = data.slice(0, take).map((record) => {
+      if (!record.event) {
+        throw new Error(`Activity with ID ${record.id} has no corresponding event`);
+      }
+      return {
+        ...record,
+        event: {
+          ...record.event,
+          totalMinutes: record.event?.stat?.totalMinutes ?? 0,
+        },
+        totalMinutes: record.stat?.totalMinutes ?? 0,
+      };
+    });
     return {
       totalCount: data.length,
       pageInfo: {
@@ -97,13 +102,14 @@ export default class ActivityService {
       },
     });
 
-    return activity
+    return activity && activity.event
       ? {
           ...activity,
           totalMinutes: activity.stat?.totalMinutes ?? 0,
           event: {
             ...activity.event,
-            totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+            createdAt: activity.createdAt,
+            totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
           },
         }
       : null;
@@ -133,6 +139,9 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       ...activity,
@@ -162,13 +171,16 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       ...activity,
       totalMinutes: activity.stat?.totalMinutes ?? 0,
       event: {
         ...activity.event,
-        totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+        totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
       },
     };
   }
@@ -188,13 +200,16 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       ...activity,
       totalMinutes: activity.stat?.totalMinutes ?? 0,
       event: {
         ...activity.event,
-        totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+        totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
       },
     };
   }

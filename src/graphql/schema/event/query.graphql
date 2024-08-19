@@ -15,7 +15,7 @@ extend type Mutation {
     updateEvent(id: ID!, content: EventUpdateInput!): Event
     deleteEvent(id: ID!): Event
     addLike(content: LikeCreateInput!): Like
-    removeLike(eventId: ID!, userId: ID!): Like
+    removeLike(id: ID!): Like
     createComment(content: CommentCreateInput!): Comment
     updateComment(id: ID!, content: CommentUpdateInput!): Comment
     deleteComment(id: ID!): Comment
@@ -117,6 +117,7 @@ type Likes {
 }
 
 type Like {
+    id: ID!
     user: User!
     event: Event!
     postedAt: Datetime!

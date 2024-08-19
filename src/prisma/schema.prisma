@@ -188,7 +188,7 @@ model Activity {
   issueId String? @map("issue_id")
   issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: SetNull)
 
-  applicationId String?      @map("application_id")
+  applicationId String?      @unique @map("application_id")
   application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   stat ActivityStatView?
@@ -211,8 +211,8 @@ model Application {
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  activities Activity[]
-  approvals  ApplicationConfirmation[]
+  activity  Activity?
+  approvals ApplicationConfirmation[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

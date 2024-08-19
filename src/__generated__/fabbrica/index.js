@@ -190,7 +190,7 @@ const modelFieldDefinitions = [{
                 type: "User",
                 relationName: "ApplicationToUser"
             }, {
-                name: "activities",
+                name: "activity",
                 type: "Activity",
                 relationName: "ActivityToApplication"
             }, {
@@ -1257,6 +1257,9 @@ function isApplicationeventFactory(x) {
 function isApplicationuserFactory(x) {
     return x?._factoryFor === "User";
 }
+function isApplicationactivityFactory(x) {
+    return x?._factoryFor === "Activity";
+}
 function autoGenerateApplicationScalarsOrEnums({ seq }) {
     return {
         submittedAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "Application", fieldName: "submittedAt", isId: false, isUnique: false, seq })
@@ -1300,7 +1303,10 @@ function defineApplicationFactoryInternal({ defaultData: defaultDataResolver, on
                 } : defaultData.event,
                 user: isApplicationuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
-                } : defaultData.user
+                } : defaultData.user,
+                activity: isApplicationactivityFactory(defaultData.activity) ? {
+                    create: await defaultData.activity.build()
+                } : defaultData.activity
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);

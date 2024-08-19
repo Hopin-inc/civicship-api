@@ -476,7 +476,7 @@ OFFSITE OFFSITE
     "t_activities" o{--}o "v_activities_stats" : "stat"
     "t_applications" o|--|o "t_events" : "event"
     "t_applications" o|--|o "t_users" : "user"
-    "t_applications" o{--}o "t_activities" : "activities"
+    "t_applications" o{--}o "t_activities" : "activity"
     "t_applications" o{--}o "t_application_confirmations" : "approvals"
     "t_application_confirmations" o|--|| "t_applications" : "application"
     "t_application_confirmations" o|--|o "t_users" : "confirmedBy"

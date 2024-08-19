@@ -7,11 +7,11 @@ import {
   GqlMutationUpdateUserProfileArgs,
   GqlMutationUpdateUserPrivacyArgs,
   GqlMutationAddGroupToUserArgs,
-  GqlMutationRemoveGroupFromUserArgs,
+  // GqlMutationRemoveGroupFromUserArgs,
   GqlMutationAddOrganizationToUserArgs,
-  GqlMutationRemoveOrganizationFromUserArgs,
+  // GqlMutationRemoveOrganizationFromUserArgs,
   GqlMutationAddActivityToUserArgs,
-  GqlMutationRemoveActivityFromUserArgs,
+  // GqlMutationRemoveActivityFromUserArgs,
 } from "@/types/graphql";
 
 const userResolver = {

@@ -1,7 +1,7 @@
 import { loadSchemaSync } from "@graphql-tools/load";
 import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { makeExecutableSchema, mergeSchemas } from "@graphql-tools/schema";
-import { typeDefs } from "graphql-scalars";
+import { DateTimeTypeDefinition } from "graphql-scalars";
 import { applyMiddleware } from "graphql-middleware";
 import { permissions } from "@/graphql/permissions";
 
@@ -12,7 +12,9 @@ const schema = applyMiddleware(
   mergeSchemas({
     schemas: [
       definedSchema,
-      makeExecutableSchema({ typeDefs })
+      makeExecutableSchema({
+        typeDefs: [DateTimeTypeDefinition],
+      })
     ]
   }),
   permissions

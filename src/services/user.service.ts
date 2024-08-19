@@ -333,6 +333,8 @@ export default class UserService {
 
     if (!activity) {
       throw new Error(`Activity with ID ${input.activityId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${input.activityId} has no corresponding event`);
     }
 
     return {
@@ -342,7 +344,7 @@ export default class UserService {
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
       },
     };
@@ -368,27 +370,27 @@ export default class UserService {
         include: {
           user: true,
           event: {
-            include: {
-              stat: { select: { totalMinutes: true } },
-            },
+            include: { stat: true },
           },
-          stat: { select: { totalMinutes: true } },
+          stat: true,
         },
       }),
     ]);
 
     if (!activity) {
       throw new Error(`Activity with ID ${input.activityId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${input.activityId} has no corresponding event`);
     }
 
     return {
-      user: user,
+      user,
       activity: {
         ...activity,
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
       },
     };

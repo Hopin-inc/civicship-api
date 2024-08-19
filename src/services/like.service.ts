@@ -24,6 +24,9 @@ export default class LikeService {
         },
       },
     });
+    if (!like.event) {
+      throw new Error(`Like with ID ${like.id} has no corresponding event`);
+    }
 
     return {
       ...like,
@@ -35,16 +38,10 @@ export default class LikeService {
   }
 
   static async removeLike({
-    eventId,
-    userId,
+    id
   }: GqlMutationRemoveLikeArgs): Promise<GqlLike> {
     const like = await this.db.like.delete({
-      where: {
-        userId_eventId: {
-          eventId,
-          userId,
-        },
-      },
+      where: { id },
       include: {
         user: true,
         event: {
@@ -54,6 +51,9 @@ export default class LikeService {
         },
       },
     });
+    if (!like.event) {
+      throw new Error(`Like with ID ${like.id} has no corresponding event`);
+    }
 
     return {
       ...like,
