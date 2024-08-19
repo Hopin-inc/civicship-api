@@ -10,6 +10,7 @@ Table t_users {
   email String
   image String
   bio String
+  sysRole SysRole [not null, default: 'USER']
   isPublic Boolean [not null, default: false]
   agendas t_agendas_on_users [not null]
   skillsets t_skillsets_on_users [not null]
@@ -51,6 +52,7 @@ Table t_users_on_groups {
   user t_users [not null]
   groupId String [not null]
   group t_groups [not null]
+  role Role
   addedAt DateTime
   removedAt DateTime
   isPublic Boolean [not null, default: true]
@@ -98,6 +100,7 @@ Table t_users_on_organizations {
   organization t_organizations [not null]
   displayName String
   displayImage String
+  role Role [not null, default: 'MEMBER']
   addedAt DateTime
   removedAt DateTime
   isPublic Boolean [not null, default: false]
@@ -124,7 +127,7 @@ Table t_activities {
   event t_events
   issueId String
   issue t_issues
-  applicationId String
+  applicationId String [unique]
   application t_applications
   stat v_activities_stats
   createdAt DateTime [default: `now()`, not null]
@@ -140,7 +143,7 @@ Table t_applications {
   event t_events
   userId String
   user t_users
-  activities t_activities [not null]
+  activity t_activities
   approvals t_application_confirmations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -570,6 +573,17 @@ Table v_issues_stats {
   totalMinutes Int [not null]
 }
 
+Enum SysRole {
+  SYS_ADMIN
+  USER
+}
+
+Enum Role {
+  OWNER
+  MANAGER
+  MEMBER
+}
+
 Enum EntityPosition {
   PREFIX
   SUFFIX
@@ -607,7 +621,7 @@ Ref: t_activities.eventId > t_events.id [delete: Set Null]
 
 Ref: t_activities.issueId > t_issues.id [delete: Set Null]
 
-Ref: t_activities.applicationId > t_applications.id [delete: Set Null]
+Ref: t_activities.applicationId - t_applications.id [delete: Set Null]
 
 Ref: t_applications.eventId > t_events.id [delete: Set Null]
 

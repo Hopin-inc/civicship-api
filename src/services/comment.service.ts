@@ -2,7 +2,6 @@ import { prismaClient } from "@/prisma/client";
 import {
   GqlAddCommentToEventPayload,
   GqlDeleteCommentFromEventPayload,
-  GqlEvent,
   GqlMutationAddCommentToEventArgs,
   GqlMutationDeleteCommentFromEventArgs,
   GqlMutationUpdateCommentOfEventArgs,
@@ -43,7 +42,7 @@ export default class CommentService {
         event: {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
       },
     };
   }
@@ -74,7 +73,7 @@ export default class CommentService {
         event: {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
       },
     };
   }
@@ -103,7 +102,7 @@ export default class CommentService {
         event: {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
       },
     };
   }
