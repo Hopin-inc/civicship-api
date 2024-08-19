@@ -1,21 +1,3 @@
-# Queries and Mutations
-
-extend type Query {
-    events(
-        filter: EventFilterInput
-        sort: EventSortInput
-        cursor: String
-        first: Int
-    ): EventsConnection!
-    event(id: ID!): Event
-}
-
-extend type Mutation {
-    createEvent(content: CreateEventInput!): Event
-    deleteEvent(id: ID!): Event
-    updateEventInfo(id: ID!, content: UpdateEventInfoInput!): UpdateEventInfoPayload
-}
-
 # Type definitions
 
 type Event {

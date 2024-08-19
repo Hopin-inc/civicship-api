@@ -48,25 +48,3 @@ input GroupUpdateInput {
     childrenIds: [String!]
     organizationId: String
 }
-
-# Type definitions
-
-type Group {
-    id: ID!
-    name:  String!
-    image: String
-    bio: String
-    userRole: Role
-
-    users: [User!]
-    events: [Event!]
-    agendas: [Agenda!]
-    cities: [City!]
-    targets: [Target!]
-    parent: Group
-    children: [Group!]
-    organization: Organization
-
-    createdAt: Datetime!
-    updatedAt: Datetime
-}

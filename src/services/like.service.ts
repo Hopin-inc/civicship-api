@@ -1,7 +1,6 @@
 import { prismaClient } from "@/prisma/client";
 import {
   GqlAddLikeToEventPayload,
-  GqlEvent,
   GqlMutationAddLikeToEventArgs,
   GqlMutationRemoveLikeFromEventArgs,
   GqlRemoveLikeFromEventPayload,

@@ -179,6 +179,9 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       ...activity,
@@ -207,6 +210,9 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       activity: {
@@ -284,6 +290,8 @@ export default class ActivityService {
 
     if (!user) {
       throw new Error(`User with ID ${content.userId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -330,6 +338,8 @@ export default class ActivityService {
 
     if (!user) {
       throw new Error(`User with ID ${content.userId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -341,7 +351,7 @@ export default class ActivityService {
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
       },
-      user: user,
+      user,
     };
   }
 
@@ -379,6 +389,8 @@ export default class ActivityService {
 
     if (!event) {
       throw new Error(`Event with ID ${content.eventId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -431,6 +443,8 @@ export default class ActivityService {
 
     if (!event) {
       throw new Error(`Event with ID ${content.eventId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {

@@ -21,7 +21,6 @@ import {
   GqlUpdateUserProfilePayload,
   GqlUser,
   GqlUsersConnection,
-  GqlEvent,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";

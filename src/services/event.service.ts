@@ -4,7 +4,7 @@ import {
   GqlEventsConnection,
   GqlMutationCreateEventArgs,
   GqlMutationDeleteEventArgs,
-  GqlMutationUpdateEventInfoArgs,
+  GqlMutationUpdateEventArgs,
   GqlQueryEventArgs,
   GqlQueryEventsArgs,
 } from "@/types/graphql";
@@ -153,7 +153,7 @@ export default class EventService {
   static async updateEventInfo({
     id,
     content,
-  }: GqlMutationUpdateEventInfoArgs): Promise<GqlEvent> {
+  }: GqlMutationUpdateEventArgs): Promise<GqlEvent> {
     const event = await this.db.event.update({
       where: { id },
       data: content,

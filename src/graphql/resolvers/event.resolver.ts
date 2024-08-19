@@ -4,7 +4,7 @@ import {
   GqlMutationCreateEventArgs,
   GqlQueryEventArgs,
   GqlMutationDeleteEventArgs,
-  GqlMutationUpdateEventInfoArgs,
+  GqlMutationUpdateEventArgs,
 } from "@/types/graphql";
 
 const eventResolver = {
@@ -19,7 +19,7 @@ const eventResolver = {
       EventService.createEvent(args),
     deleteEvent: async (_: unknown, args: GqlMutationDeleteEventArgs) =>
       EventService.deleteEvent(args),
-    updateEventInfo: async (_: unknown, args: GqlMutationUpdateEventInfoArgs) =>
+    updateEventInfo: async (_: unknown, args: GqlMutationUpdateEventArgs) =>
       EventService.updateEventInfo(args),
   },
 };
