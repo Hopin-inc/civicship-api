@@ -1,0 +1,57 @@
+# Queries and Mutations
+
+extend type Query {
+    organizations(
+        filter: OrganizationFilterInput
+        sort: OrganizationSortInput
+        cursor: String
+        first: Int
+    ): OrganizationsConnection!
+    organization(id: ID!): Organization
+}
+
+extend type Mutation {
+    createOrganization(content: CreateOrganizationInput!): Organization
+    deleteOrganization(id: ID!): Organization
+    updateOrganizationDefaultInfo(id: ID!, content: UpdateOrganizationDefaultInfoInput!): UpdateOrganizationDefaultInfoPayload
+    updateOrganizationOverview(id: ID!, content: UpdateOrganizationOverviewInput!): UpdateOrganizationOverviewPayload
+    addUserInOrganization(id: ID!, content: AddUserInOrganizationInput!): AddUserInOrganizationPayload
+    removeUserFromOrganization(id: ID!, content: RemoveUserFromOrganizationInput!): RemoveUserFromOrganizationPayload
+    addTargetInOrganization(id: ID!, content: AddTargetInOrganizationInput!): AddTargetInOrganizationPayload
+    removeTargetFromOrganization(id: ID!, content: RemoveTargetFromOrganizationInput!): RemoveTargetFromOrganizationPayload
+    updateGroupOfOrganization(id: ID!, content: UpdateGroupOfOrganizationInput!): UpdateGroupOfOrganizationPayload
+}
+
+# Type definitions
+
+type Organizations {
+    total: Int!
+    data: [Organization!]!
+}
+
+type Organization {
+    id: ID!
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    state: State!
+    city: City!
+    address1: String!
+    address2: String
+
+    groups: [Group!]
+    users: [User!]
+    events: [Event!]
+    agendas: [Agenda!]
+    cities: [City!]
+    targets: [Target!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

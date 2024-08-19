@@ -7,11 +7,11 @@ import {
   GqlMutationUpdateUserProfileArgs,
   GqlMutationUpdateUserPrivacyArgs,
   GqlMutationAddGroupToUserArgs,
-  // GqlMutationRemoveGroupFromUserArgs,
+  GqlMutationRemoveGroupFromUserArgs,
   GqlMutationAddOrganizationToUserArgs,
-  // GqlMutationRemoveOrganizationFromUserArgs,
+  GqlMutationRemoveOrganizationFromUserArgs,
   GqlMutationAddActivityToUserArgs,
-  // GqlMutationRemoveActivityFromUserArgs,
+  GqlMutationRemoveActivityFromUserArgs,
 } from "@/types/graphql";
 
 const userResolver = {
@@ -36,26 +36,26 @@ const userResolver = {
     ) => UserService.updateUserPrivacy(args),
     addGroupToUser: async (_: unknown, args: GqlMutationAddGroupToUserArgs) =>
       UserService.addGroupToUser(args),
-    // deleteGroupFromUser: async (
-    //   _: unknown,
-    //   args: GqlMutationRemoveGroupFromUserArgs,
-    // ) => UserService.removeGroupFromUser(args),
+    removeGroupFromUser: async (
+      _: unknown,
+      args: GqlMutationRemoveGroupFromUserArgs,
+    ) => UserService.removeGroupFromUser(args),
     addOrganizationToUser: async (
       _: unknown,
       args: GqlMutationAddOrganizationToUserArgs,
     ) => UserService.addOrganizationToUser(args),
-    // deleteOrganizationFromUser: async (
-    //   _: unknown,
-    //   args: GqlMutationRemoveOrganizationFromUserArgs,
-    // ) => UserService.removeOrganizationFromUser(args),
+    removeOrganizationFromUser: async (
+      _: unknown,
+      args: GqlMutationRemoveOrganizationFromUserArgs,
+    ) => UserService.removeOrganizationFromUser(args),
     addActivityToUser: async (
       _: unknown,
       args: GqlMutationAddActivityToUserArgs,
     ) => UserService.addActivityToUser(args),
-    // deleteActivityFromUser: async (
-    //   _: unknown,
-    //   args: GqlMutationRemoveActivityFromUserArgs,
-    // ) => UserService.removeActivityFromUser(args),
+    removeActivityFromUser: async (
+      _: unknown,
+      args: GqlMutationRemoveActivityFromUserArgs,
+    ) => UserService.removeActivityFromUser(args),
   },
 };
 

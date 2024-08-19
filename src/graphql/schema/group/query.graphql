@@ -1,21 +1,3 @@
-# Queries and Mutations
-
-extend type Query {
-    groups(
-        filter: GroupFilterInput
-        sort: GroupSortInput
-        cursor: String
-        first: Int
-    ): GroupsConnection!
-    group(id: ID!): Group
-}
-
-extend type Mutation {
-    createGroup(content: GroupCreateInput!): Group
-    updateGroup(id: ID!, content: GroupUpdateInput!): Group
-    deleteGroup(id: ID!): Group
-}
-
 # Queries/Mutations-related type definitions
 
 type GroupsConnection {

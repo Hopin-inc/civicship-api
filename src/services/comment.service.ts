@@ -1,17 +1,20 @@
 import { prismaClient } from "@/prisma/client";
 import {
-  GqlComment,
-  GqlMutationCreateCommentArgs,
-  GqlMutationDeleteCommentArgs,
-  GqlMutationUpdateCommentArgs,
+  GqlAddCommentToEventPayload,
+  GqlDeleteCommentFromEventPayload,
+  GqlEvent,
+  GqlMutationAddCommentToEventArgs,
+  GqlMutationDeleteCommentFromEventArgs,
+  GqlMutationUpdateCommentOfEventArgs,
+  GqlUpdateCommentOfEventPayload,
 } from "@/types/graphql";
 
 export default class CommentService {
   private static db = prismaClient;
 
-  static async createComment({
+  static async addCommentToEvent({
     content,
-  }: GqlMutationCreateCommentArgs): Promise<GqlComment> {
+  }: GqlMutationAddCommentToEventArgs): Promise<GqlAddCommentToEventPayload> {
     const { userId, eventId, postedAt, ...properties } = content;
 
     const comment = await this.db.comment.create({
@@ -35,18 +38,20 @@ export default class CommentService {
     }
 
     return {
-      ...comment,
-      event: {
-        ...comment.event,
-        totalMinutes: comment.event.stat?.totalMinutes ?? 0,
+      comment: {
+        ...comment,
+        event: {
+          ...comment.event,
+          totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
+        } as GqlEvent,
       },
     };
   }
 
-  static async updateComment({
+  static async updateCommentOfEvent({
     id,
     content,
-  }: GqlMutationUpdateCommentArgs): Promise<GqlComment> {
+  }: GqlMutationUpdateCommentOfEventArgs): Promise<GqlUpdateCommentOfEventPayload> {
     const comment = await this.db.comment.update({
       where: { id },
       data: content,
@@ -64,17 +69,19 @@ export default class CommentService {
     }
 
     return {
-      ...comment,
-      event: {
-        ...comment.event,
-        totalMinutes: comment.event.stat?.totalMinutes ?? 0,
+      comment: {
+        ...comment,
+        event: {
+          ...comment.event,
+          totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
+        } as GqlEvent,
       },
     };
   }
 
-  static async deleteComment({
+  static async deleteCommentFromEvent({
     id,
-  }: GqlMutationDeleteCommentArgs): Promise<GqlComment> {
+  }: GqlMutationDeleteCommentFromEventArgs): Promise<GqlDeleteCommentFromEventPayload> {
     const comment = await this.db.comment.delete({
       where: { id },
       include: {
@@ -91,10 +98,12 @@ export default class CommentService {
     }
 
     return {
-      ...comment,
-      event: {
-        ...comment.event,
-        totalMinutes: comment.event.stat?.totalMinutes ?? 0,
+      comment: {
+        ...comment,
+        event: {
+          ...comment.event,
+          totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
+        } as GqlEvent,
       },
     };
   }

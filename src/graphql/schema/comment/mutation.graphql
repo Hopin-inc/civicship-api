@@ -1,0 +1,26 @@
+# Queries/Mutations-related type definitions
+
+input AddCommentToEventInput {
+    eventId: String!
+    userId: String!
+    content: String!
+    postedAt: Datetime!
+}
+
+input UpdateCommentOfEventInput {
+    content: String
+}
+
+# Type definitions
+
+type AddCommentToEventPayload {
+    comment: Comment!
+}
+
+type UpdateCommentOfEventPayload {
+    comment: Comment!
+}
+
+type DeleteCommentFromEventPayload {
+    comment: Comment!
+}

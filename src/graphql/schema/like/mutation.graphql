@@ -1,0 +1,17 @@
+# Queries/Mutations-related type definitions
+
+input AddLikeToEventInput {
+    eventId: String!
+    userId: String!
+    postedAt: Datetime!
+}
+
+# Type definitions
+
+type AddLikeToEventPayload {
+    like: Like!
+}
+
+type RemoveLikeFromEventPayload {
+    like: Like!
+}

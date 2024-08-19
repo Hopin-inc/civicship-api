@@ -1,0 +1,119 @@
+# Queries/Mutations-related type definitions
+
+input CreateGroupInput {
+    name:  String!
+    image: String
+    bio: String
+
+    userIds: [String!]
+    agendaIds: [Int!]
+    parentId: String
+    childrenIds: [String!]
+    organizationId: String
+}
+
+input UpdateGroupInfoInput {
+    name:  String!
+    image: String
+    bio: String
+    organizationId: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+input AddUserToGroupInput {
+    userId: String!
+}
+
+input RemoveUserFromGroupInput {
+    userId: String!
+}
+
+input AddEventOfGroupInput {
+    eventId: String!
+}
+
+input RemoveEventFromGroupInput {
+    eventId: String!
+}
+
+input AddTargetToGroupInput {
+    targetId: String!
+}
+
+input RemoveTargetFromGroupInput {
+    targetId: String!
+}
+
+input AddParentGroupToGroupInput {
+    parentId: String!
+}
+
+input RemoveParentGroupFromParentInput {
+    parentId: String!
+}
+
+input AddChildGroupToGroupInput {
+    childId: String!
+}
+
+input RemoveChildGroupFromParentInput {
+    childId: String!
+}
+
+# Type definitions
+
+type UpdateGroupInfoPayload {
+    group: Group!
+}
+
+type AddUserToGroupPayload {
+    group: Group!
+    user: User!
+}
+
+type RemoveUserFromGroupPayload {
+    group: Group!
+    user: User!
+}
+
+type AddEventOfGroupPayload {
+    group: Group!
+    event: Event!
+}
+
+type RemoveEventFromGroupPayload {
+    group: Group!
+    event: Event!
+}
+
+type AddTargetToGroupPayload {
+    group: Group!
+    target: Target!
+}
+
+type RemoveTargetFromGroupPayload {
+    group: Group!
+    target: Target!
+}
+
+type AddParentGroupToGroupPayload {
+    group: Group!
+    parent: Group!
+}
+
+type RemoveParentGroupFromParentPayload {
+    group: Group!
+    parent: Group!
+}
+
+type AddChildGroupToGroupPayload {
+    group: Group!
+    child: Group!
+}
+
+type RemoveChildGroupFromParentPayload {
+    group: Group!
+    child: Group!
+}

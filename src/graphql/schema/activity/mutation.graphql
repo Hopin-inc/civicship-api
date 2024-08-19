@@ -1,0 +1,71 @@
+# Queries/Mutations-related type definitions
+
+input CreateActivityInput {
+    description: String
+    remark: String
+    isPublic: Boolean!
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+
+    userId: String!
+    eventId: String!
+}
+
+input UpdateActivityInfoInput {
+    description: String
+    remark: String
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+input UpdateActivityPrivacyInput {
+    isPublic: Boolean!
+}
+
+input AddUserToActivityInput {
+    userId: String!
+}
+
+input UpdateUserOfActivityInput {
+    userId: String!
+}
+
+input AddEventToActivityInput {
+    eventId: String!
+}
+
+input RemoveEventFromActivityInput {
+    eventId: String!
+}
+
+# Type definitions
+
+type UpdateActivityInfoPayload {
+    activity: Activity!
+}
+
+type UpdateActivityPrivacyPayload {
+    activity: Activity!
+}
+
+type AddUserToActivityPayload {
+    activity: Activity!
+    user: User!
+}
+
+type UpdateUserOfActivityPayload {
+    activity: Activity!
+    user: User!
+}
+
+type AddEventToActivityPayload {
+    activity: Activity!
+    event: Event!
+}
+
+type RemoveEventFromActivityPayload {
+    activity: Activity!
+    event: Event!
+}

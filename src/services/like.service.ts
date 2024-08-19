@@ -1,14 +1,18 @@
 import { prismaClient } from "@/prisma/client";
 import {
-  GqlLike,
-  GqlMutationAddLikeArgs,
-  GqlMutationRemoveLikeArgs,
+  GqlAddLikeToEventPayload,
+  GqlEvent,
+  GqlMutationAddLikeToEventArgs,
+  GqlMutationRemoveLikeFromEventArgs,
+  GqlRemoveLikeFromEventPayload,
 } from "@/types/graphql";
 
 export default class LikeService {
   private static db = prismaClient;
 
-  static async addLike({ content }: GqlMutationAddLikeArgs): Promise<GqlLike> {
+  static async addLikeToEvent({
+    content,
+  }: GqlMutationAddLikeToEventArgs): Promise<GqlAddLikeToEventPayload> {
     const like = await this.db.like.create({
       data: {
         event: { connect: { id: content.eventId } },
@@ -29,17 +33,19 @@ export default class LikeService {
     }
 
     return {
-      ...like,
-      event: {
-        ...like.event,
-        totalMinutes: like.event.stat?.totalMinutes ?? 0,
+      like: {
+        ...like,
+        event: {
+          ...like.event,
+          totalMinutes: like.event?.stat?.totalMinutes ?? 0,
+        },
       },
     };
   }
 
-  static async removeLike({
-    id
-  }: GqlMutationRemoveLikeArgs): Promise<GqlLike> {
+  static async removeLikeFromEvent({
+    id,
+  }: GqlMutationRemoveLikeFromEventArgs): Promise<GqlRemoveLikeFromEventPayload> {
     const like = await this.db.like.delete({
       where: { id },
       include: {
@@ -56,10 +62,12 @@ export default class LikeService {
     }
 
     return {
-      ...like,
-      event: {
-        ...like.event,
-        totalMinutes: like.event.stat?.totalMinutes ?? 0,
+      like: {
+        ...like,
+        event: {
+          ...like.event,
+          totalMinutes: like.event?.stat?.totalMinutes ?? 0,
+        },
       },
     };
   }

@@ -1,0 +1,75 @@
+# Queries/Mutations-related type definitions
+
+input CreateTargetInput {
+    name: String!
+    value: Float!
+    validFrom: Datetime!
+    validTo: Datetime!
+
+    organizationId: String!
+    groupId: String!
+    indexId: Int!
+}
+
+input UpdateTargetInfoInput {
+    name: String
+    value: Float
+    validFrom: Datetime
+    validTo: Datetime
+    indexId: Int
+}
+
+input AddGroupToTargetInput {
+    groupId: String!
+}
+
+input RemoveGroupFromTargetInput {
+    groupId: String!
+}
+
+input AddOrganizationToTargetInput {
+    organizationId: String!
+}
+
+input RemoveOrganizationFromTargetInput {
+    organizationId: String!
+}
+
+input UpdateIndexOfTargetInput {
+    indexId: Int!
+}
+
+# Type definitions
+
+type UpdateTargetInfoPayload {
+    name: String
+    value: Float
+    validFrom: Datetime
+    validTo: Datetime
+    indexId: Int
+}
+
+type AddGroupToTargetPayload {
+    target: Target!
+    group: Group!
+}
+
+type RemoveGroupFromTargetPayload {
+    target: Target!
+    group: Group!
+}
+
+type AddOrganizationToTargetPayload {
+    target: Target!
+    organization: Organization!
+}
+
+type RemoveOrganizationFromTargetPayload {
+    target: Target!
+    organization: Organization!
+}
+
+type UpdateIndexOfTargetPayload {
+    target: Target!
+    index: Index!
+}

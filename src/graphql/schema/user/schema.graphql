@@ -11,14 +11,14 @@ extend type Query {
 extend type Mutation {
     createUser(content: CreateUserInput!): User
     deleteUser(id: ID!): User
-    updateUserProfile(id: ID!, input: UpdateUserProfileInput!): UpdateUserProfilePayload
-    updateUserPrivacy(id: ID!, input: UpdateUserPrivacyInput!): UpdateUserPrivacyPayload
-    addGroupToUser(id: ID!, input: AddGroupToUserInput!): AddGroupToUserPayload
-    removeGroupFromUser(id: ID!, input: RemoveGroupFromUserInput!): RemoveGroupFromUserPayload
-    addOrganizationToUser(id: ID!, input: AddOrganizationToUserInput!): AddOrganizationToUserPayload
-    removeOrganizationFromUser(id: ID!, input: RemoveOrganizationFromUserInput!): RemoveOrganizationFromUserPayload
-    addActivityToUser(id: ID!, input: AddActivityToUserInput!): AddActivityToUserPayload
-    removeActivityFromUser(id: ID!, input: RemoveActivityFromUserInput!): RemoveActivityFromUserPayload
+    updateUserProfile(id: ID!, content: UpdateUserProfileInput!): UpdateUserProfilePayload
+    updateUserPrivacy(id: ID!, content: UpdateUserPrivacyInput!): UpdateUserPrivacyPayload
+    addGroupToUser(id: ID!, content: AddGroupToUserInput!): AddGroupToUserPayload
+    removeGroupFromUser(id: ID!, content: RemoveGroupFromUserInput!): RemoveGroupFromUserPayload
+    addOrganizationToUser(id: ID!, content: AddOrganizationToUserInput!): AddOrganizationToUserPayload
+    removeOrganizationFromUser(id: ID!, content: RemoveOrganizationFromUserInput!): RemoveOrganizationFromUserPayload
+    addActivityToUser(id: ID!, content: AddActivityToUserInput!): AddActivityToUserPayload
+    removeActivityFromUser(id: ID!, content: RemoveActivityFromUserInput!): RemoveActivityFromUserPayload
 }
 
 # Type definitions

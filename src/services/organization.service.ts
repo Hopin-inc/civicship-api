@@ -1,11 +1,24 @@
 import {
+  GqlAddTargetInOrganizationPayload,
+  GqlAddUserInOrganizationPayload,
+  GqlMutationAddTargetInOrganizationArgs,
+  GqlMutationAddUserInOrganizationArgs,
   GqlMutationCreateOrganizationArgs,
   GqlMutationDeleteOrganizationArgs,
-  GqlMutationUpdateOrganizationArgs,
+  GqlMutationRemoveTargetFromOrganizationArgs,
+  GqlMutationRemoveUserFromOrganizationArgs,
+  GqlMutationUpdateGroupOfOrganizationArgs,
+  GqlMutationUpdateOrganizationDefaultInfoArgs,
+  GqlMutationUpdateOrganizationOverviewArgs,
   GqlOrganization,
   GqlOrganizationsConnection,
   GqlQueryOrganizationArgs,
   GqlQueryOrganizationsArgs,
+  GqlRemoveTargetFromOrganizationPayload,
+  GqlRemoveUserFromOrganizationPayload,
+  GqlUpdateGroupOfOrganizationPayload,
+  GqlUpdateOrganizationDefaultInfoPayload,
+  GqlUpdateOrganizationOverviewPayload,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -123,90 +136,6 @@ export default class OrganizationService {
     });
   }
 
-  static async updateOrganization({
-    id,
-    content,
-  }: GqlMutationUpdateOrganizationArgs): Promise<GqlOrganization> {
-    const {
-      agendaIds,
-      cityCode,
-      stateCode,
-      stateCountryCode,
-      userIds,
-      cityCodes,
-      targetIds,
-      ...properties
-    } = content;
-
-    const data: Prisma.OrganizationUpdateInput = {
-      ...properties,
-      state: {
-        connect: {
-          code_countryCode: { code: stateCode, countryCode: stateCountryCode },
-        },
-      },
-      city: {
-        connect: { code: cityCode },
-      },
-      agendas: agendaIds
-        ? {
-            connectOrCreate: agendaIds.map((agendaId) => ({
-              create: {
-                agendaId,
-              },
-              where: {
-                organizationId_agendaId: { organizationId: id, agendaId },
-              },
-            })),
-          }
-        : undefined,
-      users: userIds
-        ? {
-            connectOrCreate: userIds.map((userId) => ({
-              create: {
-                userId,
-              },
-              where: {
-                userId_organizationId: {
-                  userId,
-                  organizationId: id,
-                },
-              },
-            })),
-          }
-        : undefined,
-      cities: cityCodes
-        ? {
-            connectOrCreate: cityCodes.map((cityCode) => ({
-              create: {
-                cityCode,
-              },
-              where: {
-                organizationId_cityCode: {
-                  organizationId: id,
-                  cityCode,
-                },
-              },
-            })),
-          }
-        : undefined,
-      targets: targetIds
-        ? {
-            connect: targetIds.map((targetId) => ({ id: targetId })),
-          }
-        : undefined,
-    };
-
-    return this.db.organization.update({
-      where: { id },
-      data,
-      include: {
-        city: { include: { state: true } },
-        state: true,
-      },
-    });
-  }
-
   static async deleteOrganization({
     id,
   }: GqlMutationDeleteOrganizationArgs): Promise<GqlOrganization> {
@@ -221,5 +150,239 @@ export default class OrganizationService {
         state: true,
       },
     });
+  }
+
+  static async updateOrganizationDefaultInfo({
+    id,
+    content,
+  }: GqlMutationUpdateOrganizationDefaultInfoArgs): Promise<GqlUpdateOrganizationDefaultInfoPayload> {
+    const organization = await this.db.organization.update({
+      where: { id },
+      data: content,
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    });
+
+    return {
+      organization,
+    };
+  }
+
+  static async updateOrganizationOverview({
+    id,
+    content,
+  }: GqlMutationUpdateOrganizationOverviewArgs): Promise<GqlUpdateOrganizationOverviewPayload> {
+    const organization = await this.db.organization.update({
+      where: { id },
+      data: content,
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    });
+
+    return {
+      organization,
+    };
+  }
+
+  static async addUserInOrganization({
+    id,
+    content,
+  }: GqlMutationAddUserInOrganizationArgs): Promise<GqlAddUserInOrganizationPayload> {
+    const [organization, user] = await this.db.$transaction([
+      this.db.organization.update({
+        where: { id },
+        data: {
+          users: {
+            connect: {
+              userId_organizationId: {
+                organizationId: id,
+                userId: content.userId,
+              },
+            },
+          },
+        },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+      this.db.user.findUnique({
+        where: { id: content.userId },
+      }),
+    ]);
+
+    if (!user) {
+      throw new Error(`User with ID ${content.userId} not found`);
+    }
+
+    return {
+      organization,
+      user,
+    };
+  }
+
+  static async removeUserFromOrganization({
+    id,
+    content,
+  }: GqlMutationRemoveUserFromOrganizationArgs): Promise<GqlRemoveUserFromOrganizationPayload> {
+    const [organization, user] = await this.db.$transaction([
+      this.db.organization.update({
+        where: { id },
+        data: {
+          users: {
+            disconnect: {
+              userId_organizationId: {
+                organizationId: id,
+                userId: content.userId,
+              },
+            },
+          },
+        },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+      this.db.user.findUnique({
+        where: { id: content.userId },
+      }),
+    ]);
+
+    if (!user) {
+      throw new Error(`User with ID ${content.userId} not found`);
+    }
+
+    return {
+      organization,
+      user,
+    };
+  }
+
+  static async addTargetInOrganization({
+    id,
+    content,
+  }: GqlMutationAddTargetInOrganizationArgs): Promise<GqlAddTargetInOrganizationPayload> {
+    const [organization, target] = await this.db.$transaction([
+      this.db.organization.update({
+        where: { id },
+        data: {
+          targets: {
+            connect: { id: content.targetId },
+          },
+        },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+      this.db.target.findUnique({
+        where: { id: content.targetId },
+      }),
+    ]);
+
+    if (!target) {
+      throw new Error(`Target with ID ${content.targetId} not found`);
+    }
+
+    return {
+      organization,
+      target,
+    };
+  }
+
+  static async removeTargetFromOrganization({
+    id,
+    content,
+  }: GqlMutationRemoveTargetFromOrganizationArgs): Promise<GqlRemoveTargetFromOrganizationPayload> {
+    const [organization, target] = await this.db.$transaction([
+      this.db.organization.update({
+        where: { id },
+        data: {
+          targets: {
+            disconnect: { id: content.targetId },
+          },
+        },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+      this.db.target.findUnique({
+        where: { id: content.targetId },
+      }),
+    ]);
+
+    if (!target) {
+      throw new Error(`Target with ID ${content.targetId} not found`);
+    }
+
+    return {
+      organization,
+      target,
+    };
+  }
+
+  static async updateGroupOfOrganization({
+    id,
+    content,
+  }: GqlMutationUpdateGroupOfOrganizationArgs): Promise<GqlUpdateGroupOfOrganizationPayload> {
+    const [organization, group] = await this.db.$transaction([
+      this.db.organization.update({
+        where: { id },
+        data: {
+          groups: {
+            connect: { id: content.groupId },
+          },
+        },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+      this.db.group.findUnique({
+        where: { id: content.groupId },
+      }),
+    ]);
+
+    if (!group) {
+      throw new Error(`Group with ID ${content.groupId} not found`);
+    }
+
+    return {
+      organization,
+      group,
+    };
   }
 }
