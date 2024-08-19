@@ -9,6 +9,8 @@ import resolvers from "@/graphql/resolvers";
 import { addResolversToSchema } from "@graphql-tools/schema";
 import { Context } from "@/types/server";
 import { auth } from "@/libs/firebase";
+import { createServer } from "https";
+import fs from "fs";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -16,7 +18,7 @@ const httpServer = http.createServer(app);
 const schemaWithResolvers = addResolversToSchema({ schema, resolvers });
 const graphqlServer = new ApolloServer<Context>({
   schema: schemaWithResolvers,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })]
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
 });
 await graphqlServer.start();
 
@@ -34,16 +36,31 @@ app.use(
       } else {
         return {
           idToken: null,
-          uid: null
+          uid: null,
         };
       }
-    }
-  })
+    },
+  }),
+  (req) => {
+    console.log(req);
+  },
 );
 
 const port = Number(process.env.PORT ?? 3000);
-await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
-console.log(`🚀 Server ready at http://localhost:${ port }/graphql`);
+const server = process.env.NODE_HTTPS === "true"
+  ? createServer({
+    key: fs.readFileSync("./certificates/localhost-key.pem"),
+    cert: fs.readFileSync("./certificates/localhost.pem"),
+  }, app)
+  : app;
+server.listen(port, () => {
+  const uri =
+    process.env.ENV === "LOCAL"
+      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${ port }/graphql`
+      : `${ process.env.HOST }/graphql`;
+  console.info(`🚀 Server ready at ${ uri }`);
+  console.info(`Environment ${ process.env.ENV }`);
+});
 
 function getIdTokenFromRequest(req: http.IncomingMessage) {
   const idToken: string | undefined = req.headers["authorization"];

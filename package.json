@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node -r tsconfig-paths/register dist/index.js",
-    "dev": "tsx watch src/index.ts -r tsconfig-paths/register",
+    "dev": "export NODE_HTTPS=false && tsx watch src/index.ts -r tsconfig-paths/register",
+    "dev:https": "export NODE_HTTPS=true && tsx watch src/index.ts -r tsconfig-paths/register",
     "build": "tsc && tsc-alias tsconfig.json",
     "lint": "eslint --fix src/ && prettier --write src/",
     "test": "jest",
