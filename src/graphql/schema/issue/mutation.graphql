@@ -1,0 +1,209 @@
+# Queries/Mutations-related type definitions
+
+input IssueInput {
+    description: String
+    images: [String!]
+
+    issueCategoryIds: [Int!]
+    skillsetIds: [Int!]
+    cityCodes: [String!]
+}
+
+input IssuePrivacyInput {
+    isPublic: Boolean!
+}
+
+input IssueAddGroupInput {
+    groupId: String!
+}
+
+input IssueRemoveGroupInput {
+    groupId: String!
+}
+
+input IssueAddOrganizationInput {
+    organizationId: String!
+}
+
+input IssueRemoveOrganizationInput {
+    organizationId: String!
+}
+
+input IssueAddSkillsetInput {
+    skillsetId: Int!
+}
+
+input IssueRemoveSkillsetInput {
+    skillsetId: Int!
+}
+
+input IssueAddCityInput {
+    cityId: String!
+}
+
+input IssueRemoveCityInput {
+    cityId: String!
+}
+
+input IssueAddCategoryInput {
+    categoryId: Int!
+}
+
+input IssueRemoveCategoryInput {
+    categoryId: Int!
+}
+
+# Type definitions
+
+type IssueCreateSuccess {
+    issue: Issue!
+}
+
+type IssueDeleteSuccess {
+    issueId: String!
+}
+
+type IssueUpdateSuccess {
+    issue: Issue!
+}
+
+type IssueUpdatePrivacySuccess {
+    issue: Issue!
+}
+
+type IssueAddGroupSuccess {
+    issue: Issue!
+    group: Group!
+}
+
+type IssueRemoveGroupSuccess {
+    issue: Issue!
+    group: Group!
+}
+
+type IssueAddOrganizationSuccess {
+    issue: Issue!
+    organization: Organization!
+}
+
+type IssueRemoveOrganizationSuccess {
+    issue: Issue!
+    organization: Organization!
+}
+
+type IssueAddSkillsetSuccess {
+    issue: Issue!
+    skillset: Skillset!
+}
+
+type IssueRemoveSkillsetSuccess {
+    issue: Issue!
+    skillset: Skillset!
+}
+
+type IssueAddCitySuccess {
+    issue: Issue!
+    city: City!
+}
+
+type IssueRemoveCitySuccess {
+    issue: Issue!
+    city: City!
+}
+
+type IssueAddCategorySuccess {
+    issue: Issue!
+    category: IssueCategory!
+}
+
+type IssueRemoveCategorySuccess {
+    issue: Issue!
+    category: IssueCategory!
+}
+
+
+# union definitions
+
+union IssueCreatePayload =
+    IssueCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueDeletePayload =
+    IssueDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueUpdatePayload =
+    IssueUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueUpdatePrivacyPayload =
+    IssueUpdatePrivacySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueAddGroupPayload =
+    IssueAddGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueRemoveGroupPayload =
+    IssueRemoveGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueAddOrganizationPayload =
+    IssueAddOrganizationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueRemoveOrganizationPayload =
+    IssueRemoveOrganizationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueAddSkillsetPayload =
+    IssueAddSkillsetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueRemoveSkillsetPayload =
+    IssueRemoveSkillsetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueAddCityPayload =
+    IssueAddCitySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueRemoveCityPayload =
+    IssueRemoveCitySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueAddCategoryPayload =
+    IssueAddCategorySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union IssueRemoveCategoryPayload =
+    IssueRemoveCategorySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

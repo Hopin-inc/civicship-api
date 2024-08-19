@@ -1,0 +1,21 @@
+# Queries/Mutations-related type definitions
+
+type IssuesConnection {
+    edges: [IssueEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type IssueEdge implements Edge {
+    cursor: String!
+    node: Issue
+}
+
+input IssueFilterInput {
+    keyword: String
+    cityCode: String
+}
+
+input IssueSortInput {
+    createdAt: SortDirection
+}
