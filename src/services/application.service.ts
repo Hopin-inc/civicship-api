@@ -51,6 +51,17 @@ export default class ApplicationService {
           },
         },
         user: true,
+        activity: {
+          include: {
+            event: {
+              include: {
+                stat: { select: { totalMinutes: true } },
+              },
+            },
+            user: true,
+            stat: { select: { totalMinutes: true } },
+          },
+        },
       },
       take: take + 1,
       skip: cursor ? 1 : 0,
@@ -60,10 +71,26 @@ export default class ApplicationService {
     const hasNextPage = data.length > take;
     const formattedData = data.slice(0, take).map((application) => ({
       ...application,
-      event: {
-        ...application.event!,
-        totalMinutes: application.event?.stat?.totalMinutes ?? 0,
-      },
+      event: application.event
+        ? {
+            ...application.event,
+            totalMinutes: application.event.stat?.totalMinutes ?? 0,
+          }
+        : null,
+      activity: application.activity
+        ? {
+            ...application.activity,
+            event: application.activity.event
+              ? {
+                  ...application.activity.event,
+                  totalMinutes: application.activity.event.stat?.totalMinutes ?? 0,
+                }
+              : null,
+            user: application.activity.user,
+            totalMinutes: application.activity.stat?.totalMinutes ?? 0,
+          }
+        : null,
+      user: application.user ?? null,
     }));
 
     return {
@@ -72,9 +99,7 @@ export default class ApplicationService {
         hasNextPage,
         hasPreviousPage: Boolean(cursor),
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -83,9 +108,7 @@ export default class ApplicationService {
     };
   }
 
-  static async getApplication({
-    id,
-  }: GqlQueryApplicationArgs): Promise<GqlApplication | null> {
+  static async getApplication({ id }: GqlQueryApplicationArgs): Promise<GqlApplication | null> {
     const application = await this.db.application.findUnique({
       where: { id },
       include: {
@@ -95,20 +118,46 @@ export default class ApplicationService {
           },
         },
         user: true,
+        activity: {
+          include: {
+            event: {
+              include: {
+                stat: { select: { totalMinutes: true } },
+              },
+            },
+            user: true,
+            stat: { select: { totalMinutes: true } },
+          },
+        },
       },
     });
 
-    if (!application || !application.event || !application.user) {
+    if (!application) {
       return null;
     }
 
     return {
       ...application,
-      event: {
-        ...application.event,
-        totalMinutes: application.event.stat?.totalMinutes ?? 0,
-      },
-      user: application.user,
+      event: application.event
+        ? {
+            ...application.event,
+            totalMinutes: application.event.stat?.totalMinutes ?? 0,
+          }
+        : null,
+      activity: application.activity
+        ? {
+            ...application.activity,
+            event: application.activity.event
+              ? {
+                  ...application.activity.event,
+                  totalMinutes: application.activity.event.stat?.totalMinutes ?? 0,
+                }
+              : null,
+            user: application.activity.user,
+            totalMinutes: application.activity.stat?.totalMinutes ?? 0,
+          }
+        : null,
+      user: application.user ?? null,
     };
   }
 
@@ -122,16 +171,7 @@ export default class ApplicationService {
         ...properties,
         event: { connect: { id: eventId } },
         user: { connect: { id: userId } },
-        activities: properties.activities
-          ? {
-              create: properties.activities.map((activity) => ({
-                ...activity,
-              })),
-            }
-          : undefined,
-        submittedAt: new Date(
-          properties.submittedAt ?? Date.now(),
-        ).toISOString(),
+        submittedAt: new Date(properties.submittedAt ?? Date.now()).toISOString(),
       },
       include: {
         event: {
@@ -191,6 +231,13 @@ export default class ApplicationService {
       },
     });
 
+    if (!application.event) {
+      throw new Error("Event cannot be null");
+    }
+    if (!application.user) {
+      throw new Error("User cannot be null");
+    }
+
     return {
       application: {
         ...application,
@@ -198,18 +245,17 @@ export default class ApplicationService {
           ...application.event,
           totalMinutes: application.event.stat?.totalMinutes ?? 0,
         },
-        user: application.userId,
+        user: application.user,
       },
     };
   }
 
   static async applicationPublish({
     id,
-    input,
   }: GqlMutationApplicationPublishArgs): Promise<GqlApplicationUpdatePrivacyPayload> {
     const application = await this.db.application.update({
       where: { id },
-      data: { isPublic: input.isPublic },
+      data: { isPublic: true },
       include: {
         event: {
           include: {
@@ -220,8 +266,10 @@ export default class ApplicationService {
       },
     });
 
-    if (!application.event || !application.user) {
-      return null;
+    if (!application.event) {
+      throw new Error("Event cannot be null");
+    } else if (!application.user) {
+      throw new Error("User cannot be null");
     }
 
     return {
@@ -231,17 +279,17 @@ export default class ApplicationService {
           ...application.event,
           totalMinutes: application.event.stat?.totalMinutes ?? 0,
         },
+        user: application.user,
       },
     };
   }
 
   static async applicationUnpublish({
     id,
-    input,
   }: GqlMutationApplicationUnpublishArgs): Promise<GqlApplicationUpdatePrivacyPayload> {
     const application = await this.db.application.update({
       where: { id },
-      data: { isPublic: input.isPublic },
+      data: { isPublic: false },
       include: {
         event: {
           include: {
@@ -252,8 +300,10 @@ export default class ApplicationService {
       },
     });
 
-    if (!application.event || !application.user) {
-      return null;
+    if (!application.event) {
+      throw new Error("Event cannot be null");
+    } else if (!application.user) {
+      throw new Error("User cannot be null");
     }
 
     return {
@@ -263,6 +313,7 @@ export default class ApplicationService {
           ...application.event,
           totalMinutes: application.event.stat?.totalMinutes ?? 0,
         },
+        user: application.user,
       },
     };
   }

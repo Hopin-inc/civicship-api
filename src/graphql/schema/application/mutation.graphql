@@ -1,15 +1,10 @@
 # Queries/Mutations-related type definitions
 
 input ApplicationInput {
-    eventId: String!
     userId: String!
-    activityId: String!
+    eventId: String
     comment: String
     submittedAt: Datetime!
-}
-
-input ApplicationPrivacyInput {
-    isPublic: Boolean!
 }
 
 # Type definitions
