@@ -39,8 +39,8 @@ type Activity {
     endsAt: Datetime!
     totalMinutes: Int!
 
-    user: User!
-    event: Event!
+    user: User
+    event: Event
 
     createdAt: Datetime!
     updatedAt: Datetime
