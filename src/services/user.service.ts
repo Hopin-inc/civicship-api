@@ -3,7 +3,6 @@ import {
   GqlQueryUsersArgs,
   GqlUser,
   GqlUsersConnection,
-  GqlEvent,
   GqlMutationUserCreateArgs,
   GqlUserCreatePayload,
   GqlMutationUserUpdateArgs,
@@ -41,9 +40,7 @@ export default class UserService {
     const take = first ?? 10;
     const where: Prisma.UserWhereInput = {
       AND: [
-        filter?.agendaId
-          ? { agendas: { some: { agendaId: filter?.agendaId } } }
-          : {},
+        filter?.agendaId ? { agendas: { some: { agendaId: filter?.agendaId } } } : {},
         filter?.keyword
           ? {
               OR: [
@@ -77,9 +74,7 @@ export default class UserService {
         hasNextPage,
         hasPreviousPage: true,
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -92,9 +87,7 @@ export default class UserService {
     return this.db.user.findUnique({ where: { id } });
   }
 
-  static async userCreate({
-    input,
-  }: GqlMutationUserCreateArgs): Promise<GqlUserCreatePayload> {
+  static async userCreate({ input }: GqlMutationUserCreateArgs): Promise<GqlUserCreatePayload> {
     const { agendaIds, cityCodes, ...properties } = input;
     const data: Prisma.UserCreateInput = {
       ...properties,
@@ -109,17 +102,12 @@ export default class UserService {
     return { user: user };
   }
 
-  static async userDelete({
-    id,
-  }: GqlMutationUserDeleteArgs): Promise<GqlUserDeletePayload> {
+  static async userDelete({ id }: GqlMutationUserDeleteArgs): Promise<GqlUserDeletePayload> {
     this.db.user.delete({ where: { id } });
     return { userId: id };
   }
 
-  static async userUpdate({
-    id,
-    input,
-  }: GqlMutationUserUpdateArgs): Promise<GqlUserUpdatePayload> {
+  static async userUpdate({ id, input }: GqlMutationUserUpdateArgs): Promise<GqlUserUpdatePayload> {
     const user = await this.db.user.update({
       where: { id },
       data: input,
@@ -336,9 +324,9 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${content.activityId} not found`);
+      throw new Error(`Activity with ID ${input.activityId} not found`);
     } else if (!activity.event) {
-      throw new Error(`Activity with ID ${content.activityId} has no corresponding event`);
+      throw new Error(`Activity with ID ${activity.eventId} has no corresponding event`);
     }
 
     return {
@@ -384,9 +372,9 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${content.activityId} not found`);
+      throw new Error(`Activity with ID ${input.activityId} not found`);
     } else if (!activity.event) {
-      throw new Error(`Activity with ID ${content.activityId} has no corresponding event`);
+      throw new Error(`Activity with ID ${activity.eventId} has no corresponding event`);
     }
 
     return {
