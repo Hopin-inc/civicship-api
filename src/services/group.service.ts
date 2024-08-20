@@ -95,13 +95,20 @@ export default class GroupService {
   }
 
   static async getGroup({ id }: GqlQueryGroupArgs): Promise<GqlGroup | null> {
-    return (await this.db.group.findUnique({
+    return this.db.group.findUnique({
       where: { id },
       include: {
         parent: true,
-        organization: true,
+        organization: {
+          include: {
+            city: {
+              include: { state: true },
+            },
+            state: true,
+          },
+        },
       },
-    })) as GqlGroup | null;
+    });
   }
 
   static async groupCreate({

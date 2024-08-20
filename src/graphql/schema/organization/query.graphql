@@ -19,3 +19,47 @@ input OrganizationFilterInput {
 input OrganizationSortInput {
     updatedAt: SortDirection
 }
+
+input OrganizationCreateInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+}
+
+input OrganizationUpdateInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+
+    groupIds: [String!]
+    userIds: [String!]
+    eventIds: [String!]
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    targetIds: [String!]
+}

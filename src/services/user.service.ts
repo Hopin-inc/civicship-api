@@ -336,7 +336,9 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${input.activityId} not found`);
+      throw new Error(`Activity with ID ${content.activityId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${content.activityId} has no corresponding event`);
     }
 
     return {
@@ -347,7 +349,7 @@ export default class UserService {
         event: {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
       },
     };
   }
@@ -382,7 +384,9 @@ export default class UserService {
     ]);
 
     if (!activity) {
-      throw new Error(`Activity with ID ${input.activityId} not found`);
+      throw new Error(`Activity with ID ${content.activityId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${content.activityId} has no corresponding event`);
     }
 
     return {
@@ -393,7 +397,7 @@ export default class UserService {
         event: {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
       },
     };
   }

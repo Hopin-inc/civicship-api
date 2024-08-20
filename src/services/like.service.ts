@@ -28,6 +28,9 @@ export default class LikeService {
         },
       },
     });
+    if (!like.event) {
+      throw new Error(`Like with ID ${like.id} has no corresponding event`);
+    }
 
     return {
       like: {

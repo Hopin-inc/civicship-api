@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node -r tsconfig-paths/register dist/index.js",
-    "dev": "tsx watch src/index.ts -r tsconfig-paths/register",
+    "dev": "export NODE_HTTPS=false && tsx watch src/index.ts -r tsconfig-paths/register",
+    "dev:https": "export NODE_HTTPS=true && tsx watch src/index.ts -r tsconfig-paths/register",
     "build": "tsc && tsc-alias tsconfig.json",
     "lint": "eslint --fix src/ && prettier --write src/",
     "test": "jest",
@@ -38,6 +39,8 @@
     "@prisma/generator-helper": "^5.17.0",
     "@quramy/jest-prisma": "^1.8.1",
     "@quramy/prisma-fabbrica": "^2.2.1",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.11",
     "babel-jest": "^29.7.0",
@@ -70,9 +73,14 @@
     "@graphql-tools/merge": "^9.0.4",
     "@graphql-tools/schema": "^10.0.4",
     "@prisma/client": "^5.17.0",
+    "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.12",
+    "express": "^4.19.2",
+    "firebase-admin": "^12.3.0",
     "graphql": "^16.9.0",
-    "graphql-scalars": "^1.23.0"
+    "graphql-middleware": "^6.1.35",
+    "graphql-scalars": "^1.23.0",
+    "graphql-shield": "^7.6.5"
   }
 }

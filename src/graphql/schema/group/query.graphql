@@ -21,3 +21,30 @@ input GroupSortInput {
     createdAt: SortDirection
     updatedAt: SortDirection
 }
+
+input GroupCreateInput {
+    name:  String!
+    image: String
+    bio: String
+
+    userIds: [String!]
+    agendaIds: [Int!]
+    parentId: String
+    childrenIds: [String!]
+    organizationId: String
+}
+
+input GroupUpdateInput {
+    name:  String!
+    image: String
+    bio: String
+
+    userIds: [String!]
+    eventIds: [String!]
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    targetIds: [String!]
+    parentId: String
+    childrenIds: [String!]
+    organizationId: String
+}

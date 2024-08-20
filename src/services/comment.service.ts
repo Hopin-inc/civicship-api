@@ -33,6 +33,9 @@ export default class CommentService {
         },
       },
     });
+    if (!comment.event) {
+      throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
+    }
 
     return {
       comment: {
@@ -61,6 +64,9 @@ export default class CommentService {
         },
       },
     });
+    if (!comment.event) {
+      throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
+    }
 
     return {
       comment: {

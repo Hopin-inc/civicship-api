@@ -70,14 +70,19 @@ export default class ActivityService {
       cursor: cursor ? { id: cursor } : undefined,
     });
     const hasNextPage = data.length > take;
-    const formattedData = data.slice(0, take).map((record) => ({
-      ...record,
-      event: {
-        ...record.event,
-        totalMinutes: record.event?.stat?.totalMinutes ?? 0,
-      },
-      totalMinutes: record.stat?.totalMinutes ?? 0,
-    })) as GqlActivity[];
+    const formattedData = data.slice(0, take).map((record) => {
+      if (!record.event) {
+        throw new Error(`Activity with ID ${record.id} has no corresponding event`);
+      }
+      return {
+        ...record,
+        event: {
+          ...record.event,
+          totalMinutes: record.event?.stat?.totalMinutes ?? 0,
+        },
+        totalMinutes: record.stat?.totalMinutes ?? 0,
+      };
+    });
     return {
       totalCount: data.length,
       pageInfo: {
@@ -111,15 +116,16 @@ export default class ActivityService {
       },
     });
 
-    return activity
-      ? ({
+    return activity && activity.event
+      ? {
           ...activity,
           totalMinutes: activity.stat?.totalMinutes ?? 0,
           event: {
             ...activity.event,
+            createdAt: activity.createdAt,
             totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
           },
-        } as GqlActivity)
+        }
       : null;
   }
 
@@ -147,6 +153,9 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       activity: {
@@ -196,6 +205,9 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
 
     return {
       activity: {
@@ -235,7 +247,7 @@ export default class ActivityService {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
     };
   }
 
@@ -299,7 +311,9 @@ export default class ActivityService {
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${input.userId} not found`);
+      throw new Error(`User with ID ${content.userId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -310,7 +324,7 @@ export default class ActivityService {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
       user: user,
     };
   }
@@ -345,7 +359,9 @@ export default class ActivityService {
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${input.userId} not found`);
+      throw new Error(`User with ID ${content.userId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -394,7 +410,9 @@ export default class ActivityService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${input.eventId} not found`);
+      throw new Error(`Event with ID ${content.eventId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -405,7 +423,7 @@ export default class ActivityService {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
       event: {
         ...event,
         totalMinutes: event.stat?.totalMinutes ?? 0,
@@ -446,7 +464,9 @@ export default class ActivityService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${input.eventId} not found`);
+      throw new Error(`Event with ID ${content.eventId} not found`);
+    } else if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
     return {
@@ -457,7 +477,7 @@ export default class ActivityService {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
       event: {
         ...event,
         totalMinutes: event.stat?.totalMinutes ?? 0,

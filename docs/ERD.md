@@ -1,6 +1,21 @@
 ```mermaid
 erDiagram
 
+        SysRole {
+            SYS_ADMIN SYS_ADMIN
+USER USER
+        }
+    
+
+
+        Role {
+            OWNER OWNER
+MANAGER MANAGER
+MEMBER MEMBER
+        }
+    
+
+
         EntityPosition {
             PREFIX PREFIX
 SUFFIX SUFFIX
@@ -28,6 +43,7 @@ OFFSITE OFFSITE
     String email "❓"
     String image "❓"
     String bio "❓"
+    SysRole sys_role 
     Boolean is_public 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -49,6 +65,7 @@ OFFSITE OFFSITE
   "t_users_on_groups" {
     String user_id 
     String group_id 
+    Role role "❓"
     DateTime added_at "❓"
     DateTime removed_at "❓"
     Boolean is_public 
@@ -83,6 +100,7 @@ OFFSITE OFFSITE
     String organization_id 
     String display_name "❓"
     String display_image "❓"
+    Role role 
     DateTime added_at "❓"
     DateTime removed_at "❓"
     Boolean is_public 
@@ -413,6 +431,7 @@ OFFSITE OFFSITE
     Int totalMinutes 
     }
   
+    "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o{--}o "t_agendas_on_users" : "agendas"
     "t_users" o{--}o "t_skillsets_on_users" : "skillsets"
     "t_users" o{--}o "m_issue_categories_on_users" : "issueCategories"
@@ -435,6 +454,7 @@ OFFSITE OFFSITE
     "t_groups" o|--|| "t_organizations" : "organization"
     "t_users_on_groups" o|--|| "t_users" : "user"
     "t_users_on_groups" o|--|| "t_groups" : "group"
+    "t_users_on_groups" o|--|o "Role" : "enum:role"
     "t_organizations" o|--|o "EntityPosition" : "enum:entity_position"
     "t_organizations" o|--|| "m_states" : "state"
     "t_organizations" o|--|| "m_cities" : "city"
@@ -447,6 +467,7 @@ OFFSITE OFFSITE
     "t_organizations" o{--}o "t_targets" : "targets"
     "t_users_on_organizations" o|--|| "t_users" : "user"
     "t_users_on_organizations" o|--|| "t_organizations" : "organization"
+    "t_users_on_organizations" o|--|| "Role" : "enum:role"
     "t_activities" o|--|| "ActivityStyle" : "enum:activity_style"
     "t_activities" o|--|| "t_users" : "user"
     "t_activities" o|--|o "t_events" : "event"
@@ -455,7 +476,7 @@ OFFSITE OFFSITE
     "t_activities" o{--}o "v_activities_stats" : "stat"
     "t_applications" o|--|o "t_events" : "event"
     "t_applications" o|--|o "t_users" : "user"
-    "t_applications" o{--}o "t_activities" : "activities"
+    "t_applications" o{--}o "t_activities" : "activity"
     "t_applications" o{--}o "t_application_confirmations" : "approvals"
     "t_application_confirmations" o|--|| "t_applications" : "application"
     "t_application_confirmations" o|--|o "t_users" : "confirmedBy"

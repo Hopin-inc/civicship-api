@@ -47,6 +47,7 @@ model User {
   email      String?
   image      String?
   bio        String?
+  sysRole    SysRole @default(USER) @map("sys_role")
   isPublic   Boolean @default(false) @map("is_public")
 
   agendas         AgendasOnUsers[]
@@ -103,6 +104,7 @@ model UsersOnGroups {
   groupId String @map("group_id")
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
+  role      Role?
   addedAt   DateTime? @map("added_at")
   removedAt DateTime? @map("removed_at")
   isPublic  Boolean   @default(true) @map("is_public")
@@ -157,6 +159,7 @@ model UsersOnOrganizations {
 
   displayName  String?   @map("display_name")
   displayImage String?   @map("display_image")
+  role         Role      @default(MEMBER)
   addedAt      DateTime? @map("added_at")
   removedAt    DateTime? @map("removed_at")
   isPublic     Boolean   @default(false) @map("is_public")
@@ -190,7 +193,7 @@ model Activity {
   issueId String? @map("issue_id")
   issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: SetNull)
 
-  applicationId String?      @map("application_id")
+  applicationId String?      @unique @map("application_id")
   application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   stat ActivityStatView?
@@ -213,8 +216,8 @@ model Application {
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  activities Activity[]
-  approvals  ApplicationConfirmation[]
+  activity  Activity?
+  approvals ApplicationConfirmation[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -665,6 +668,17 @@ model Index {
 }
 
 // Enums
+
+enum SysRole {
+  SYS_ADMIN
+  USER
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  MEMBER
+}
 
 enum EntityPosition {
   PREFIX

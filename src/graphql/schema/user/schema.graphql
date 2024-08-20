@@ -32,6 +32,7 @@ type User {
     email: String
     image: String
     bio: String
+    sysRole: SysRole!
     isPublic: Boolean!
 
     agendas: [Agenda!]

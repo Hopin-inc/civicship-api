@@ -29,6 +29,17 @@ interface Edge {
     cursor: String!
 }
 
+enum SysRole {
+    SYS_ADMIN
+    USER
+}
+
+enum Role {
+    OWNER
+    MANAGER
+    MEMBER
+}
+
 enum SortDirection {
     asc
     desc
