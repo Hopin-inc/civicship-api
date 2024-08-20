@@ -89,9 +89,7 @@ export default class ActivityService {
         hasNextPage,
         hasPreviousPage: true,
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -100,9 +98,7 @@ export default class ActivityService {
     };
   }
 
-  static async getActivity({
-    id,
-  }: GqlQueryActivityArgs): Promise<GqlActivity | null> {
+  static async getActivity({ id }: GqlQueryActivityArgs): Promise<GqlActivity | null> {
     const activity = await this.db.activity.findUnique({
       where: { id },
       include: {
@@ -217,7 +213,7 @@ export default class ActivityService {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
     };
   }
 
@@ -239,13 +235,17 @@ export default class ActivityService {
       },
     });
 
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
+
     return {
       activity: {
         ...activity,
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
         },
       },
     };
@@ -269,15 +269,19 @@ export default class ActivityService {
       },
     });
 
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
+
     return {
       activity: {
         ...activity,
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
     };
   }
 
@@ -311,7 +315,7 @@ export default class ActivityService {
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -359,7 +363,7 @@ export default class ActivityService {
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -372,7 +376,7 @@ export default class ActivityService {
           ...activity.event,
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
-      } as GqlActivity,
+      },
       user: user,
     };
   }
@@ -410,7 +414,7 @@ export default class ActivityService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${content.eventId} not found`);
+      throw new Error(`Event with ID ${input.eventId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -421,7 +425,7 @@ export default class ActivityService {
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
         },
       },
       event: {
@@ -464,7 +468,7 @@ export default class ActivityService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${content.eventId} not found`);
+      throw new Error(`Event with ID ${input.eventId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
