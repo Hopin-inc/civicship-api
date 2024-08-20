@@ -14,8 +14,8 @@ extend type Mutation {
     applicationCreate(input: ApplicationInput!): ApplicationCreatePayload
     applicationDelete(id: ID!): ApplicationDeletePayload
     applicationUpdate(id: ID!, input: ApplicationInput!): ApplicationUpdatePayload
-    applicationPublish(id: ID!, input: ApplicationPrivacyInput!): ApplicationUpdatePrivacyPayload
-    applicationUnpublish(id: ID!, input: ApplicationPrivacyInput!): ApplicationUpdatePrivacyPayload
+    applicationPublish(id: ID!): ApplicationUpdatePrivacyPayload
+    applicationUnpublish(id: ID!): ApplicationUpdatePrivacyPayload
 }
 
 # Type definitions
@@ -24,9 +24,9 @@ type Application {
     comment: String
     isPublic: Boolean!
 
-    event: Event!
-    user: User!
-    activity: Activity!
+    event: Event
+    user: User
+    activity: Activity
     approvals: [ApplicationConfirmation!]
     submittedAt: Datetime!
 
