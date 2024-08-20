@@ -1,0 +1,8 @@
+{
+  "schema": "src/graphql/schema/**/*.graphql",
+  "extensions": {
+    "graphql-schema-linter": {
+      "rules": ["all"]
+    }
+  }
+}
