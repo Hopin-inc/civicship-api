@@ -11,9 +11,9 @@ extend type Query {
 }
 
 extend type Mutation {
-    groupCreate(input: GroupInput!): GroupCreatePayload
+    groupCreate(input: GroupCreateInput!): GroupCreatePayload
     groupDelete(id: ID!): GroupDeletePayload
-    groupUpdate(id: ID!, input: GroupInput!): GroupUpdatePayload
+    groupUpdateContent(id: ID!, input: GroupUpdateContentInput!): GroupUpdateContentPayload
     groupAddUser(id: ID!, input: GroupAddUserInput!): GroupAddUserPayload
     groupRemoveUser(id: ID!, input: GroupRemoveUserInput!): GroupRemoveUserPayload
     groupAddEvent(id: ID!, input: GroupAddEventInput!): GroupAddEventPayload

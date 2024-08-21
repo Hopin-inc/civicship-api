@@ -1,11 +1,24 @@
 # Queries/Mutations-related type definitions
 
-input GroupInput {
+input GroupCreateInput {
     name:  String!
     image: String
     bio: String
 
+    agendaIds: [Int!]
+    cityCodes: [String!]
+
+    userIds: [String!]
     organizationId: String
+    parentId: String
+    childrenIds: [String!]
+}
+
+input GroupUpdateContentInput {
+    name:  String!
+    image: String
+    bio: String
+
     agendaIds: [Int!]
     cityCodes: [String!]
 }
@@ -60,7 +73,7 @@ type GroupDeleteSuccess {
     groupId: ID!
 }
 
-type GroupUpdateSuccess {
+type GroupUpdateContentSuccess {
     group: Group!
 }
 
@@ -128,8 +141,8 @@ union GroupDeletePayload =
     AuthError |
     ComplexQueryError
 
-union GroupUpdatePayload =
-    GroupUpdateSuccess |
+union GroupUpdateContentPayload =
+    GroupUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

@@ -6,7 +6,7 @@ import {
   GqlQueryGroupArgs,
   GqlMutationGroupCreateArgs,
   GqlMutationGroupDeleteArgs,
-  GqlMutationGroupUpdateArgs,
+  GqlMutationGroupUpdateContentArgs,
   GqlMutationGroupAddUserArgs,
   GqlMutationGroupRemoveUserArgs,
   GqlMutationGroupAddEventArgs,
@@ -29,7 +29,7 @@ import {
   GqlGroupRemoveChildPayload,
   GqlGroupCreatePayload,
   GqlGroupDeletePayload,
-  GqlGroupUpdatePayload,
+  GqlGroupUpdateContentPayload,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
@@ -45,18 +45,11 @@ export default class GroupService {
     const take = first ?? 10;
     const where: Prisma.GroupWhereInput = {
       AND: [
-        filter?.agendaId
-          ? { agendas: { some: { agendaId: filter?.agendaId } } }
-          : {},
-        filter?.organizationId
-          ? { organizationId: filter?.organizationId }
-          : {},
+        filter?.agendaId ? { agendas: { some: { agendaId: filter?.agendaId } } } : {},
+        filter?.organizationId ? { organizationId: filter?.organizationId } : {},
         filter?.keyword
           ? {
-              OR: [
-                { name: { contains: filter?.keyword } },
-                { bio: { contains: filter?.keyword } },
-              ],
+              OR: [{ name: { contains: filter?.keyword } }, { bio: { contains: filter?.keyword } }],
             }
           : {},
       ],
@@ -83,9 +76,7 @@ export default class GroupService {
         hasNextPage,
         hasPreviousPage: true,
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -111,21 +102,23 @@ export default class GroupService {
     });
   }
 
-  static async groupCreate({
-    input,
-  }: GqlMutationGroupCreateArgs): Promise<GqlGroupCreatePayload> {
-    const { organizationId, agendaIds, cityCodes, ...properties } = input;
+  static async groupCreate({ input }: GqlMutationGroupCreateArgs): Promise<GqlGroupCreatePayload> {
+    const { organizationId, agendaIds, cityCodes, parentId, childrenIds, ...properties } = input;
 
     const data: Prisma.GroupCreateInput = {
       ...properties,
+      agendas: {
+        create: agendaIds?.map((agendaId) => ({ agenda: { connect: { id: agendaId } } })),
+      },
+      cities: {
+        create: cityCodes?.map((cityCode) => ({ city: { connect: { code: cityCode } } })),
+      },
       organization: {
         connect: { id: organizationId },
       },
-      agendas: {
-        create: agendaIds?.map((agendaId) => ({ agendaId })),
-      },
-      cities: {
-        create: cityCodes?.map((cityCode) => ({ cityCode })),
+      parent: { connect: { id: parentId } },
+      children: {
+        connect: childrenIds?.map((childId) => ({ id: childId })),
       },
     };
 
@@ -136,9 +129,7 @@ export default class GroupService {
     return { group };
   }
 
-  static async groupDelete({
-    id,
-  }: GqlMutationGroupDeleteArgs): Promise<GqlGroupDeletePayload> {
+  static async groupDelete({ id }: GqlMutationGroupDeleteArgs): Promise<GqlGroupDeletePayload> {
     await this.db.group.delete({
       where: { id },
     });
@@ -146,10 +137,10 @@ export default class GroupService {
     return { groupId: id };
   }
 
-  static async groupUpdate({
+  static async groupUpdateContent({
     id,
     input,
-  }: GqlMutationGroupUpdateArgs): Promise<GqlGroupUpdatePayload> {
+  }: GqlMutationGroupUpdateContentArgs): Promise<GqlGroupUpdateContentPayload> {
     const group = await this.db.group.update({
       where: { id },
       data: input,
