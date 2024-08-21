@@ -4,7 +4,7 @@ import {
   GqlQueryIssueArgs,
   GqlMutationIssueCreateArgs,
   GqlMutationIssueDeleteArgs,
-  GqlMutationIssueUpdateArgs,
+  GqlMutationIssueUpdateContentArgs,
   GqlMutationIssuePublishArgs,
   GqlMutationIssueUnpublishArgs,
   GqlMutationIssueAddGroupArgs,
@@ -19,7 +19,7 @@ import {
   GqlMutationIssueRemoveCategoryArgs,
   GqlIssueCreatePayload,
   GqlIssueDeletePayload,
-  GqlIssueUpdatePayload,
+  GqlIssueUpdateContentPayload,
   GqlIssueUpdatePrivacyPayload,
   GqlIssuesConnection,
   GqlIssue,
@@ -78,9 +78,7 @@ export default class IssueService {
         hasNextPage,
         hasPreviousPage: Boolean(cursor),
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -105,9 +103,7 @@ export default class IssueService {
       : null;
   }
 
-  static async issueCreate({
-    input,
-  }: GqlMutationIssueCreateArgs): Promise<GqlIssueCreatePayload> {
+  static async issueCreate({ input }: GqlMutationIssueCreateArgs): Promise<GqlIssueCreatePayload> {
     const { skillsetIds, cityCodes, issueCategoryIds, ...properties } = input;
 
     const data: Prisma.IssueCreateInput = {
@@ -142,9 +138,7 @@ export default class IssueService {
     };
   }
 
-  static async issueDelete({
-    id,
-  }: GqlMutationIssueDeleteArgs): Promise<GqlIssueDeletePayload> {
+  static async issueDelete({ id }: GqlMutationIssueDeleteArgs): Promise<GqlIssueDeletePayload> {
     await this.db.issue.delete({
       where: { id },
     });
@@ -152,10 +146,10 @@ export default class IssueService {
     return { issueId: id };
   }
 
-  static async issueUpdate({
+  static async issueUpdateContent({
     id,
     input,
-  }: GqlMutationIssueUpdateArgs): Promise<GqlIssueUpdatePayload> {
+  }: GqlMutationIssueUpdateContentArgs): Promise<GqlIssueUpdateContentPayload> {
     const { skillsetIds, cityCodes, issueCategoryIds, ...properties } = input;
 
     const data: Prisma.IssueUpdateInput = {

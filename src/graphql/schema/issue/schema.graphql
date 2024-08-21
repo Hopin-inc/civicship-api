@@ -11,9 +11,9 @@ extend type Query {
 }
 
 extend type Mutation {
-    issueCreate(input: IssueInput!): IssueCreatePayload
+    issueCreate(input: IssueCreateInput!): IssueCreatePayload
     issueDelete(id: ID!): IssueDeletePayload
-    issueUpdate(id: ID!, input: IssueInput!): IssueUpdatePayload
+    issueUpdateContent(id: ID!, input: IssueUpdateContentInput!): IssueUpdateContentPayload
     issuePublish(id: ID!, input: IssuePrivacyInput!): IssueUpdatePrivacyPayload
     issueUnpublish(id: ID!, input: IssuePrivacyInput!): IssueUpdatePrivacyPayload
     issueAddGroup(id: ID!, input: IssueAddGroupInput!): IssueAddGroupPayload

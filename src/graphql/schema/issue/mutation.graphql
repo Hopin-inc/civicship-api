@@ -1,6 +1,18 @@
 # Queries/Mutations-related type definitions
 
-input IssueInput {
+input IssueCreateInput {
+    description: String
+    images: [String!]
+
+    issueCategoryIds: [Int!]
+    skillsetIds: [Int!]
+    cityCodes: [String!]
+
+    organizationIds: [String!]
+    groupIds: [String!]
+}
+
+input IssueUpdateContentInput {
     description: String
     images: [String!]
 
@@ -63,7 +75,7 @@ type IssueDeleteSuccess {
     issueId: String!
 }
 
-type IssueUpdateSuccess {
+type IssueUpdateContentSuccess {
     issue: Issue!
 }
 
@@ -136,8 +148,8 @@ union IssueDeletePayload =
     AuthError |
     ComplexQueryError
 
-union IssueUpdatePayload =
-    IssueUpdateSuccess |
+union IssueUpdateContentPayload =
+    IssueUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
