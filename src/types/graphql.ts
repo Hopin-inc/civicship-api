@@ -293,7 +293,7 @@ export type GqlApplicationsConnection = {
 export type GqlAuthError = GqlError & {
   __typename?: 'AuthError';
   message: Scalars['String']['output'];
-  path?: Maybe<Array<Scalars['String']['output']>>;
+  statusCode: Scalars['Int']['output'];
 };
 
 export type GqlCity = {
@@ -355,7 +355,7 @@ export type GqlComments = {
 export type GqlComplexQueryError = GqlError & {
   __typename?: 'ComplexQueryError';
   message: Scalars['String']['output'];
-  path?: Maybe<Array<Scalars['String']['output']>>;
+  statusCode: Scalars['Int']['output'];
 };
 
 export type GqlEdge = {
@@ -370,7 +370,7 @@ export const GqlEntityPosition = {
 export type GqlEntityPosition = typeof GqlEntityPosition[keyof typeof GqlEntityPosition];
 export type GqlError = {
   message: Scalars['String']['output'];
-  path?: Maybe<Array<Scalars['String']['output']>>;
+  statusCode: Scalars['Int']['output'];
 };
 
 export type GqlEvent = {
@@ -522,6 +522,8 @@ export type GqlEventsConnection = {
   pageInfo: GqlPageInfo;
   totalCount: Scalars['Int']['output'];
 };
+
+export type GqlExecutionFailure = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError;
 
 export type GqlField = {
   __typename?: 'Field';
@@ -756,9 +758,9 @@ export type GqlIndex = {
 
 export type GqlInvalidInputValueError = GqlError & {
   __typename?: 'InvalidInputValueError';
-  fields?: Maybe<Array<Maybe<GqlField>>>;
+  fields?: Maybe<Array<GqlField>>;
   message: Scalars['String']['output'];
-  path?: Maybe<Array<Scalars['String']['output']>>;
+  statusCode: Scalars['Int']['output'];
 };
 
 export type GqlIssue = {
@@ -2441,6 +2443,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   EventRemoveOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventRemoveOrganizationSuccess, 'event' | 'organization'> & { event: _RefType['Event'], organization: _RefType['Organization'] } ) | ( GqlInvalidInputValueError );
   EventUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventUpdateContentSuccess, 'event'> & { event: _RefType['Event'] } ) | ( GqlInvalidInputValueError );
   EventUpdatePrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: _RefType['Event'] } ) | ( GqlInvalidInputValueError );
+  ExecutionFailure: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   GroupAddChildPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupAddChildSuccess, 'child' | 'group'> & { child: _RefType['Group'], group: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
   GroupAddEventPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupAddEventSuccess, 'event' | 'group'> & { event: _RefType['Event'], group: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
   GroupAddParentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupAddParentSuccess, 'group' | 'parent'> & { group: _RefType['Group'], parent: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
@@ -2607,6 +2610,7 @@ export type GqlResolversTypes = ResolversObject<{
   EventUpdatePrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventUpdatePrivacyPayload']>;
   EventUpdatePrivacySuccess: ResolverTypeWrapper<Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: GqlResolversTypes['Event'] }>;
   EventsConnection: ResolverTypeWrapper<Omit<GqlEventsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['EventEdge']>>> }>;
+  ExecutionFailure: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ExecutionFailure']>;
   Field: ResolverTypeWrapper<GqlField>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   Group: ResolverTypeWrapper<Group>;
@@ -2923,6 +2927,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   EventUpdatePrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventUpdatePrivacyPayload'];
   EventUpdatePrivacySuccess: Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: GqlResolversParentTypes['Event'] };
   EventsConnection: Omit<GqlEventsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['EventEdge']>>> };
+  ExecutionFailure: GqlResolversUnionTypes<GqlResolversParentTypes>['ExecutionFailure'];
   Field: GqlField;
   Float: Scalars['Float']['output'];
   Group: Group;
@@ -3351,7 +3356,7 @@ export type GqlApplicationsConnectionResolvers<ContextType = Context, ParentType
 
 export type GqlAuthErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['AuthError'] = GqlResolversParentTypes['AuthError']> = ResolversObject<{
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
+  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3408,7 +3413,7 @@ export type GqlCommentsResolvers<ContextType = Context, ParentType extends GqlRe
 
 export type GqlComplexQueryErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ComplexQueryError'] = GqlResolversParentTypes['ComplexQueryError']> = ResolversObject<{
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
+  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3424,7 +3429,7 @@ export type GqlEdgeResolvers<ContextType = Context, ParentType extends GqlResolv
 export type GqlErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Error'] = GqlResolversParentTypes['Error']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
+  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
 }>;
 
 export type GqlEventResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Event'] = GqlResolversParentTypes['Event']> = ResolversObject<{
@@ -3537,6 +3542,10 @@ export type GqlEventsConnectionResolvers<ContextType = Context, ParentType exten
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlExecutionFailureResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ExecutionFailure'] = GqlResolversParentTypes['ExecutionFailure']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
 }>;
 
 export type GqlFieldResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Field'] = GqlResolversParentTypes['Field']> = ResolversObject<{
@@ -3712,9 +3721,9 @@ export type GqlIndexResolvers<ContextType = Context, ParentType extends GqlResol
 }>;
 
 export type GqlInvalidInputValueErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['InvalidInputValueError'] = GqlResolversParentTypes['InvalidInputValueError']> = ResolversObject<{
-  fields?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['Field']>>>, ParentType, ContextType>;
+  fields?: Resolver<Maybe<Array<GqlResolversTypes['Field']>>, ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
+  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4529,6 +4538,7 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   EventUpdatePrivacyPayload?: GqlEventUpdatePrivacyPayloadResolvers<ContextType>;
   EventUpdatePrivacySuccess?: GqlEventUpdatePrivacySuccessResolvers<ContextType>;
   EventsConnection?: GqlEventsConnectionResolvers<ContextType>;
+  ExecutionFailure?: GqlExecutionFailureResolvers<ContextType>;
   Field?: GqlFieldResolvers<ContextType>;
   Group?: GqlGroupResolvers<ContextType>;
   GroupAddChildPayload?: GqlGroupAddChildPayloadResolvers<ContextType>;

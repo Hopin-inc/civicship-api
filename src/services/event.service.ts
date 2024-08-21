@@ -23,6 +23,7 @@ import {
   GqlEventRemoveOrganizationPayload,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
+import { handleError } from "@/utils/error";
 
 export default class EventService {
   private static db = prismaClient;
@@ -89,21 +90,21 @@ export default class EventService {
     const hasNextPage = data.length > take;
     const formattedData: GqlEvent[] = data.slice(0, take).map((record) => ({
       ...record,
-      agendas: record.agendas.map((r) => r.agenda),
-      cities: record.cities.map((r) => ({
+      agendas: record.agendas?.map((r) => r.agenda),
+      cities: record.cities?.map((r) => ({
         ...r.city,
-        state: r.city.state,
+        state: r.city?.state,
       })),
-      skillsets: record.skillsets.map((r) => r.skillset),
-      organizations: record.organizations.map((r) => ({
+      skillsets: record.skillsets?.map((r) => r.skillset),
+      organizations: record.organizations?.map((r) => ({
         ...r.organization,
         city: {
           ...r.organization.city,
-          state: r.organization.city.state,
+          state: r.organization.city?.state,
         },
         state: r.organization.state,
       })),
-      groups: record.groups.map((r) => r.group),
+      groups: record.groups?.map((r) => r.group),
       totalMinutes: record.stat?.totalMinutes ?? 0,
     }));
     return {
@@ -170,74 +171,81 @@ export default class EventService {
   }
 
   static async eventCreate({ input }: GqlMutationEventCreateArgs): Promise<GqlEventCreatePayload> {
-    const { agendaIds, cityCodes, skillsets, organizationIds, groupIds, ...properties } = input;
-    const data: Prisma.EventCreateInput = {
-      ...properties,
-      agendas: {
-        create: agendaIds?.map((agendaId) => ({ agenda: { connect: { id: agendaId } } })),
-      },
-      cities: {
-        create: cityCodes?.map((cityCode) => ({ city: { connect: { code: cityCode } } })),
-      },
-      skillsets: {
-        create: skillsets?.map((skillsetId) => ({
-          skillset: { connect: { id: skillsetId } },
-        })),
-      },
-      organizations: {
-        create: organizationIds?.map((organizationId) => ({
-          organization: { connect: { id: organizationId } },
-        })),
-      },
-      groups: {
-        create: groupIds?.map((groupId) => ({
-          group: { connect: { id: groupId } },
-        })),
-      },
-    };
-    const event = await this.db.event.create({
-      data,
-      include: {
-        agendas: { include: { agenda: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        skillsets: { include: { skillset: true } },
+    try {
+      const { agendaIds, cityCodes, skillsets, organizationIds, groupIds, ...properties } = input;
+      const data: Prisma.EventCreateInput = {
+        ...properties,
+        agendas: {
+          create: agendaIds?.map((agendaId) => ({ agenda: { connect: { id: agendaId } } })),
+        },
+        cities: {
+          create: cityCodes?.map((cityCode) => ({ city: { connect: { code: cityCode } } })),
+        },
+        skillsets: {
+          create: skillsets?.map((skillsetId) => ({
+            skillset: { connect: { id: skillsetId } },
+          })),
+        },
         organizations: {
-          include: {
-            organization: {
-              include: {
-                city: {
-                  include: {
-                    state: true,
+          create: organizationIds?.map((organizationId) => ({
+            organization: { connect: { id: organizationId } },
+          })),
+        },
+        groups: {
+          create: groupIds?.map((groupId) => ({
+            group: { connect: { id: groupId } },
+          })),
+        },
+      };
+
+      const event = await this.db.event.create({
+        data,
+        include: {
+          agendas: { include: { agenda: true } },
+          cities: { include: { city: { include: { state: true } } } },
+          skillsets: { include: { skillset: true } },
+          organizations: {
+            include: {
+              organization: {
+                include: {
+                  city: {
+                    include: {
+                      state: true,
+                    },
                   },
+                  state: true,
                 },
-                state: true,
               },
             },
           },
+          groups: { include: { group: true } },
         },
-        groups: { include: { group: true } },
-      },
-    });
-    return {
-      event: {
-        ...event,
-        agendas: event.agendas.map((r) => r.agenda),
-        cities: event.cities.map((r) => ({
-          ...r.city,
-          state: r.city.state,
-        })),
-        skillsets: event.skillsets.map((r) => r.skillset),
-        organizations: event.organizations.map((r) => ({
-          ...r.organization,
-          city: {
-            ...r.organization.city,
-            state: r.organization.city.state,
-          },
-          state: r.organization.state,
-        })),
-        groups: event.groups.map((r) => r.group),
-      },
-    };
+      });
+
+      return {
+        __typename: "EventCreateSuccess",
+        event: {
+          ...event,
+          agendas: event.agendas.map((r) => r.agenda),
+          cities: event.cities.map((r) => ({
+            ...r.city,
+            state: r.city.state,
+          })),
+          skillsets: event.skillsets.map((r) => r.skillset),
+          organizations: event.organizations.map((r) => ({
+            ...r.organization,
+            city: {
+              ...r.organization.city,
+              state: r.organization.city.state,
+            },
+            state: r.organization.state,
+          })),
+          groups: event.groups.map((r) => r.group),
+        },
+      };
+    } catch (error) {
+      return await handleError(error);
+    }
   }
 
   static async eventDelete({ id }: GqlMutationEventDeleteArgs): Promise<GqlEventDeletePayload> {
