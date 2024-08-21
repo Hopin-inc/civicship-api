@@ -1,0 +1,20 @@
+# Queries/Mutations-related type definitions
+
+type ApplicationConfirmationsConnection {
+    edges: [ApplicationConfirmationEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ApplicationConfirmationEdge implements Edge {
+    cursor: String!
+    node: ApplicationConfirmation
+}
+
+input ApplicationConfirmationFilterInput {
+    keyword: String
+}
+
+input ApplicationConfirmationSortInput {
+    createdAt: SortDirection
+}

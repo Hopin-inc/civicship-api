@@ -2,31 +2,34 @@ import { prismaClient } from "@/prisma/client";
 import {
   GqlGroupsConnection,
   GqlGroup,
-  GqlMutationCreateGroupArgs,
-  GqlMutationDeleteGroupArgs,
   GqlQueryGroupsArgs,
   GqlQueryGroupArgs,
-  GqlRemoveChildGroupFromParentPayload,
-  GqlMutationAddUserToGroupArgs,
-  GqlAddUserToGroupPayload,
-  GqlMutationRemoveUserFromGroupArgs,
-  GqlRemoveUserFromGroupPayload,
-  GqlMutationAddEventOfGroupArgs,
-  GqlAddEventOfGroupPayload,
-  GqlMutationRemoveEventFromGroupArgs,
-  GqlRemoveEventFromGroupPayload,
-  GqlMutationAddTargetToGroupArgs,
-  GqlAddTargetToGroupPayload,
-  GqlMutationRemoveTargetFromGroupArgs,
-  GqlRemoveTargetFromGroupPayload,
-  GqlMutationAddParentGroupToGroupArgs,
-  GqlAddParentGroupToGroupPayload,
-  GqlMutationRemoveParentGroupFromParentArgs,
-  GqlRemoveParentGroupFromParentPayload,
-  GqlMutationAddChildGroupToGroupArgs,
-  GqlAddChildGroupToGroupPayload,
-  GqlMutationRemoveChildGroupFromParentArgs,
-  GqlMutationUpdateGroupInfoArgs,
+  GqlMutationGroupCreateArgs,
+  GqlMutationGroupDeleteArgs,
+  GqlMutationGroupUpdateArgs,
+  GqlMutationGroupAddUserArgs,
+  GqlMutationGroupRemoveUserArgs,
+  GqlMutationGroupAddEventArgs,
+  GqlMutationGroupRemoveEventArgs,
+  GqlMutationGroupAddTargetArgs,
+  GqlMutationGroupRemoveTargetArgs,
+  GqlMutationGroupAddParentArgs,
+  GqlMutationGroupRemoveParentArgs,
+  GqlMutationGroupAddChildArgs,
+  GqlMutationGroupRemoveChildArgs,
+  GqlGroupAddUserPayload,
+  GqlGroupRemoveUserPayload,
+  GqlGroupAddEventPayload,
+  GqlGroupRemoveEventPayload,
+  GqlGroupAddTargetPayload,
+  GqlGroupRemoveTargetPayload,
+  GqlGroupAddParentPayload,
+  GqlGroupRemoveParentPayload,
+  GqlGroupAddChildPayload,
+  GqlGroupRemoveChildPayload,
+  GqlGroupCreatePayload,
+  GqlGroupDeletePayload,
+  GqlGroupUpdatePayload,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
@@ -108,55 +111,57 @@ export default class GroupService {
     });
   }
 
-  static async createGroup({
-    content,
-  }: GqlMutationCreateGroupArgs): Promise<GqlGroup> {
-    const { userIds, agendaIds, parentId, organizationId, ...properties } =
-      content;
+  static async groupCreate({
+    input,
+  }: GqlMutationGroupCreateArgs): Promise<GqlGroupCreatePayload> {
+    const { organizationId, agendaIds, cityCodes, ...properties } = input;
 
     const data: Prisma.GroupCreateInput = {
       ...properties,
-      users: {
-        create: userIds?.map((userId) => ({ userId })),
+      organization: {
+        connect: { id: organizationId },
       },
       agendas: {
         create: agendaIds?.map((agendaId) => ({ agendaId })),
       },
-      parent: {
-        connect: { id: parentId },
-      },
-      organization: {
-        connect: { id: organizationId },
+      cities: {
+        create: cityCodes?.map((cityCode) => ({ cityCode })),
       },
     };
 
-    return this.db.group.create({
+    const group = await this.db.group.create({
       data,
     });
+
+    return { group };
   }
 
-  static async deleteGroup({
+  static async groupDelete({
     id,
-  }: GqlMutationDeleteGroupArgs): Promise<GqlGroup> {
-    return this.db.group.delete({
+  }: GqlMutationGroupDeleteArgs): Promise<GqlGroupDeletePayload> {
+    await this.db.group.delete({
       where: { id },
     });
+
+    return { groupId: id };
   }
 
-  static async updateGroupInfo({
+  static async groupUpdate({
     id,
-    content,
-  }: GqlMutationUpdateGroupInfoArgs): Promise<GqlGroup> {
-    return this.db.group.update({
+    input,
+  }: GqlMutationGroupUpdateArgs): Promise<GqlGroupUpdatePayload> {
+    const group = await this.db.group.update({
       where: { id },
-      data: content,
+      data: input,
     });
+
+    return { group };
   }
 
-  static async addUserToGroup({
+  static async groupAddUser({
     id,
-    content,
-  }: GqlMutationAddUserToGroupArgs): Promise<GqlAddUserToGroupPayload> {
+    input,
+  }: GqlMutationGroupAddUserArgs): Promise<GqlGroupAddUserPayload> {
     const [group, user] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
@@ -164,7 +169,7 @@ export default class GroupService {
           users: {
             connect: {
               userId_groupId: {
-                userId: content.userId,
+                userId: input.userId,
                 groupId: id,
               },
             },
@@ -172,21 +177,21 @@ export default class GroupService {
         },
       }),
       this.db.user.findUnique({
-        where: { id: content.userId },
+        where: { id: input.userId },
       }),
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     }
 
     return { group, user };
   }
 
-  static async removeUserFromGroup({
+  static async groupRemoveUser({
     id,
-    content,
-  }: GqlMutationRemoveUserFromGroupArgs): Promise<GqlRemoveUserFromGroupPayload> {
+    input,
+  }: GqlMutationGroupRemoveUserArgs): Promise<GqlGroupRemoveUserPayload> {
     const [group, user] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
@@ -194,7 +199,7 @@ export default class GroupService {
           users: {
             disconnect: {
               userId_groupId: {
-                userId: content.userId,
+                userId: input.userId,
                 groupId: id,
               },
             },
@@ -202,21 +207,21 @@ export default class GroupService {
         },
       }),
       this.db.user.findUnique({
-        where: { id: content.userId },
+        where: { id: input.userId },
       }),
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     }
 
     return { group, user };
   }
 
-  static async addEventOfGroup({
+  static async groupAddEvent({
     id,
-    content,
-  }: GqlMutationAddEventOfGroupArgs): Promise<GqlAddEventOfGroupPayload> {
+    input,
+  }: GqlMutationGroupAddEventArgs): Promise<GqlGroupAddEventPayload> {
     const [group, event] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
@@ -225,14 +230,14 @@ export default class GroupService {
             connect: {
               groupId_eventId: {
                 groupId: id,
-                eventId: content.eventId,
+                eventId: input.eventId,
               },
             },
           },
         },
       }),
       this.db.event.findUnique({
-        where: { id: content.eventId },
+        where: { id: input.eventId },
         include: {
           stat: { select: { totalMinutes: true } },
         },
@@ -240,11 +245,11 @@ export default class GroupService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${content.eventId} not found`);
+      throw new Error(`Event with ID ${input.eventId} not found`);
     }
 
     return {
-      group: group,
+      group,
       event: {
         ...event,
         totalMinutes: event?.stat?.totalMinutes ?? 0,
@@ -252,10 +257,10 @@ export default class GroupService {
     };
   }
 
-  static async removeEventFromGroup({
+  static async groupRemoveEvent({
     id,
-    content,
-  }: GqlMutationRemoveEventFromGroupArgs): Promise<GqlRemoveEventFromGroupPayload> {
+    input,
+  }: GqlMutationGroupRemoveEventArgs): Promise<GqlGroupRemoveEventPayload> {
     const [group, event] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
@@ -264,14 +269,14 @@ export default class GroupService {
             disconnect: {
               groupId_eventId: {
                 groupId: id,
-                eventId: content.eventId,
+                eventId: input.eventId,
               },
             },
           },
         },
       }),
       this.db.event.findUnique({
-        where: { id: content.eventId },
+        where: { id: input.eventId },
         include: {
           stat: { select: { totalMinutes: true } },
         },
@@ -279,11 +284,11 @@ export default class GroupService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${content.eventId} not found`);
+      throw new Error(`Event with ID ${input.eventId} not found`);
     }
 
     return {
-      group: group,
+      group,
       event: {
         ...event,
         totalMinutes: event?.stat?.totalMinutes ?? 0,
@@ -291,85 +296,85 @@ export default class GroupService {
     };
   }
 
-  static async addTargetToGroup({
+  static async groupAddTarget({
     id,
-    content,
-  }: GqlMutationAddTargetToGroupArgs): Promise<GqlAddTargetToGroupPayload> {
+    input,
+  }: GqlMutationGroupAddTargetArgs): Promise<GqlGroupAddTargetPayload> {
     const [group, target] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
         data: {
           targets: {
-            connect: { id: content.targetId },
+            connect: { id: input.targetId },
           },
         },
       }),
       this.db.target.findUnique({
-        where: { id: content.targetId },
+        where: { id: input.targetId },
       }),
     ]);
 
     if (!target) {
-      throw new Error(`Target with ID ${content.targetId} not found`);
+      throw new Error(`Target with ID ${input.targetId} not found`);
     }
 
     return { group, target };
   }
 
-  static async removeTargetFromGroup({
+  static async groupRemoveTarget({
     id,
-    content,
-  }: GqlMutationRemoveTargetFromGroupArgs): Promise<GqlRemoveTargetFromGroupPayload> {
+    input,
+  }: GqlMutationGroupRemoveTargetArgs): Promise<GqlGroupRemoveTargetPayload> {
     const [group, target] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
         data: {
           targets: {
-            disconnect: { id: content.targetId },
+            disconnect: { id: input.targetId },
           },
         },
       }),
       this.db.target.findUnique({
-        where: { id: content.targetId },
+        where: { id: input.targetId },
       }),
     ]);
 
     if (!target) {
-      throw new Error(`Target with ID ${content.targetId} not found`);
+      throw new Error(`Target with ID ${input.targetId} not found`);
     }
 
     return { group, target };
   }
 
-  static async addParentGroupToGroup({
+  static async groupAddParent({
     id,
-    content,
-  }: GqlMutationAddParentGroupToGroupArgs): Promise<GqlAddParentGroupToGroupPayload> {
+    input,
+  }: GqlMutationGroupAddParentArgs): Promise<GqlGroupAddParentPayload> {
     const [group, parent] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
         data: {
           parent: {
-            connect: { id: content.parentId },
+            connect: { id: input.parentId },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.parentId },
+        where: { id: input.parentId },
       }),
     ]);
 
     if (!parent) {
-      throw new Error(`Parent group with ID ${content.parentId} not found`);
+      throw new Error(`Parent group with ID ${input.parentId} not found`);
     }
 
     return { group, parent };
   }
 
-  static async removeParentGroupFromParent({
+  static async groupRemoveParent({
     id,
-    content,
-  }: GqlMutationRemoveParentGroupFromParentArgs): Promise<GqlRemoveParentGroupFromParentPayload> {
+    input,
+  }: GqlMutationGroupRemoveParentArgs): Promise<GqlGroupRemoveParentPayload> {
     const [group, parent] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
@@ -380,62 +385,62 @@ export default class GroupService {
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.parentId },
+        where: { id: input.parentId },
       }),
     ]);
 
     if (!parent) {
-      throw new Error(`Parent group with ID ${content.parentId} not found`);
+      throw new Error(`Parent group with ID ${input.parentId} not found`);
     }
 
     return { group, parent };
   }
 
-  static async addChildGroupToGroup({
+  static async groupAddChild({
     id,
-    content,
-  }: GqlMutationAddChildGroupToGroupArgs): Promise<GqlAddChildGroupToGroupPayload> {
+    input,
+  }: GqlMutationGroupAddChildArgs): Promise<GqlGroupAddChildPayload> {
     const [group, child] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
         data: {
           children: {
-            connect: { id: content.childId },
+            connect: { id: input.childId },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.childId },
+        where: { id: input.childId },
       }),
     ]);
 
     if (!child) {
-      throw new Error(`Child group with ID ${content.childId} not found`);
+      throw new Error(`Child group with ID ${input.childId} not found`);
     }
 
     return { group, child };
   }
 
-  static async removeChildGroupFromParent({
+  static async groupRemoveChild({
     id,
-    content,
-  }: GqlMutationRemoveChildGroupFromParentArgs): Promise<GqlRemoveChildGroupFromParentPayload> {
+    input,
+  }: GqlMutationGroupRemoveChildArgs): Promise<GqlGroupRemoveChildPayload> {
     const [group, child] = await this.db.$transaction([
       this.db.group.update({
         where: { id },
         data: {
           children: {
-            disconnect: { id: content.childId },
+            disconnect: { id: input.childId },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.childId },
+        where: { id: input.childId },
       }),
     ]);
 
     if (!child) {
-      throw new Error(`Child group with ID ${content.childId} not found`);
+      throw new Error(`Child group with ID ${input.childId} not found`);
     }
 
     return { group, child };

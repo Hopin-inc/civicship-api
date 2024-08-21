@@ -1,0 +1,52 @@
+# Queries/Mutations-related type definitions
+
+input ApplicationInput {
+    userId: String!
+    eventId: String
+    comment: String
+    submittedAt: Datetime!
+}
+
+# Type definitions
+
+type ApplicationCreateSuccess {
+    application: Application!
+}
+
+type ApplicationDeleteSuccess {
+    applicationId: ID!
+}
+
+type ApplicationUpdateSuccess {
+    application: Application!
+}
+
+type ApplicationUpdatePrivacySuccess {
+    application: Application!
+}
+
+# union definitions
+
+union ApplicationCreatePayload =
+    ApplicationCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationDeletePayload =
+    ApplicationDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationUpdatePayload =
+    ApplicationUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationUpdatePrivacyPayload =
+    ApplicationUpdatePrivacySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

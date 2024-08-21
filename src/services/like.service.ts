@@ -1,34 +1,36 @@
 import { prismaClient } from "@/prisma/client";
 import {
-  GqlAddLikeToEventPayload,
-  GqlMutationAddLikeToEventArgs,
-  GqlMutationRemoveLikeFromEventArgs,
-  GqlRemoveLikeFromEventPayload,
+  GqlLikeAddEventPayload,
+  GqlMutationLikeAddEventArgs,
+  GqlMutationLikeDeleteArgs,
+  GqlLikeDeletePayload,
 } from "@/types/graphql";
 
 export default class LikeService {
   private static db = prismaClient;
 
-  static async addLikeToEvent({
-    content,
-  }: GqlMutationAddLikeToEventArgs): Promise<GqlAddLikeToEventPayload> {
+  static async likeAddEvent({
+    input,
+  }: GqlMutationLikeAddEventArgs): Promise<GqlLikeAddEventPayload> {
     const like = await this.db.like.create({
       data: {
-        event: { connect: { id: content.eventId } },
-        user: { connect: { id: content.userId } },
-        postedAt: new Date(content.postedAt ?? Date.now()).toISOString(),
+        event: { connect: { id: input.eventId } },
+        user: { connect: { id: input.userId } },
+        postedAt: new Date(input.postedAt ?? Date.now()).toISOString(),
       },
       include: {
         user: true,
         event: {
           include: {
-            stat: { select: { totalMinutes: true } },
+            stat: true,
           },
         },
       },
     });
     if (!like.event) {
       throw new Error(`Like with ID ${like.id} has no corresponding event`);
+    } else if (!like.user) {
+      throw new Error(`Like with ID ${like.id} has no corresponding user`);
     }
 
     return {
@@ -38,36 +40,17 @@ export default class LikeService {
           ...like.event,
           totalMinutes: like.event?.stat?.totalMinutes ?? 0,
         },
+        user: like.user,
       },
     };
   }
 
-  static async removeLikeFromEvent({
+  static async likeDelete({
     id,
-  }: GqlMutationRemoveLikeFromEventArgs): Promise<GqlRemoveLikeFromEventPayload> {
-    const like = await this.db.like.delete({
+  }: GqlMutationLikeDeleteArgs): Promise<GqlLikeDeletePayload> {
+    await this.db.like.delete({
       where: { id },
-      include: {
-        user: true,
-        event: {
-          include: {
-            stat: { select: { totalMinutes: true } },
-          },
-        },
-      },
     });
-    if (!like.event) {
-      throw new Error(`Like with ID ${like.id} has no corresponding event`);
-    }
-
-    return {
-      like: {
-        ...like,
-        event: {
-          ...like.event,
-          totalMinutes: like.event?.stat?.totalMinutes ?? 0,
-        },
-      },
-    };
+    return { likeId: id };
   }
 }

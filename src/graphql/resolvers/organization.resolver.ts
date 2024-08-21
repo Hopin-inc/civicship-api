@@ -1,16 +1,18 @@
 import OrganizationService from "@/services/organization.service";
 import {
-  GqlMutationCreateOrganizationArgs,
-  GqlMutationDeleteOrganizationArgs,
-  GqlMutationAddTargetInOrganizationArgs,
-  GqlMutationUpdateOrganizationDefaultInfoArgs,
-  GqlMutationUpdateOrganizationOverviewArgs,
-  GqlMutationAddUserInOrganizationArgs,
-  GqlMutationRemoveUserFromOrganizationArgs,
-  GqlMutationRemoveTargetFromOrganizationArgs,
+  GqlMutationOrganizationCreateArgs,
+  GqlMutationOrganizationDeleteArgs,
+  GqlMutationOrganizationAddTargetArgs,
+  GqlMutationOrganizationUpdateArgs,
+  GqlMutationOrganizationPublishArgs,
+  GqlMutationOrganizationUnpublishArgs,
+  GqlMutationOrganizationAddUserArgs,
+  GqlMutationOrganizationRemoveUserArgs,
+  GqlMutationOrganizationRemoveTargetArgs,
+  GqlMutationOrganizationAddGroupArgs,
+  GqlMutationOrganizationRemoveGroupArgs,
   GqlQueryOrganizationArgs,
   GqlQueryOrganizationsArgs,
-  GqlMutationUpdateGroupOfOrganizationArgs,
 } from "@/types/graphql";
 
 const organizationResolver = {
@@ -21,42 +23,50 @@ const organizationResolver = {
       OrganizationService.getOrganization(args),
   },
   Mutation: {
-    createOrganization: async (
+    organizationCreate: async (
       _: unknown,
-      args: GqlMutationCreateOrganizationArgs,
-    ) => OrganizationService.createOrganization(args),
-    deleteOrganization: async (
+      args: GqlMutationOrganizationCreateArgs,
+    ) => OrganizationService.organizationCreate(args),
+    organizationDelete: async (
       _: unknown,
-      args: GqlMutationDeleteOrganizationArgs,
-    ) => OrganizationService.deleteOrganization(args),
-    updateOrganizationDefaultInfo: async (
+      args: GqlMutationOrganizationDeleteArgs,
+    ) => OrganizationService.organizationDelete(args),
+    organizationUpdate: async (
       _: unknown,
-      args: GqlMutationUpdateOrganizationDefaultInfoArgs,
-    ) => OrganizationService.updateOrganizationDefaultInfo(args),
-    updateOrganizationOverview: async (
+      args: GqlMutationOrganizationUpdateArgs,
+    ) => OrganizationService.organizationUpdate(args),
+    organizationPublish: async (
       _: unknown,
-      args: GqlMutationUpdateOrganizationOverviewArgs,
-    ) => OrganizationService.updateOrganizationOverview(args),
-    addUserInOrganization: async (
+      args: GqlMutationOrganizationPublishArgs,
+    ) => OrganizationService.organizationPublish(args),
+    organizationUnpublish: async (
       _: unknown,
-      args: GqlMutationAddUserInOrganizationArgs,
-    ) => OrganizationService.addUserInOrganization(args),
-    removeUserFromOrganization: async (
+      args: GqlMutationOrganizationUnpublishArgs,
+    ) => OrganizationService.organizationUnpublish(args),
+    organizationAddUser: async (
       _: unknown,
-      args: GqlMutationRemoveUserFromOrganizationArgs,
-    ) => OrganizationService.removeUserFromOrganization(args),
-    addTargetInOrganization: async (
+      args: GqlMutationOrganizationAddUserArgs,
+    ) => OrganizationService.organizationAddUser(args),
+    organizationRemoveUser: async (
       _: unknown,
-      args: GqlMutationAddTargetInOrganizationArgs,
-    ) => OrganizationService.addTargetInOrganization(args),
-    removeTargetFromOrganization: async (
+      args: GqlMutationOrganizationRemoveUserArgs,
+    ) => OrganizationService.organizationRemoveUser(args),
+    organizationAddTarget: async (
       _: unknown,
-      args: GqlMutationRemoveTargetFromOrganizationArgs,
-    ) => OrganizationService.removeTargetFromOrganization(args),
-    updateGroupOfOrganization: async (
+      args: GqlMutationOrganizationAddTargetArgs,
+    ) => OrganizationService.organizationAddTarget(args),
+    organizationRemoveTarget: async (
       _: unknown,
-      args: GqlMutationUpdateGroupOfOrganizationArgs,
-    ) => OrganizationService.updateGroupOfOrganization(args),
+      args: GqlMutationOrganizationRemoveTargetArgs,
+    ) => OrganizationService.organizationRemoveTarget(args),
+    organizationAddGroup: async (
+      _: unknown,
+      args: GqlMutationOrganizationAddGroupArgs,
+    ) => OrganizationService.organizationAddGroup(args),
+    organizationRemoveGroup: async (
+      _: unknown,
+      args: GqlMutationOrganizationRemoveGroupArgs,
+    ) => OrganizationService.organizationRemoveGroup(args),
   },
 };
 

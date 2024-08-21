@@ -1,0 +1,51 @@
+# Queries and Mutations
+
+extend type Query {
+    issues(
+        filter: IssueFilterInput
+        sort: IssueSortInput
+        cursor: String
+        first: Int
+    ): IssuesConnection!
+    issue(id: ID!): Issue
+}
+
+extend type Mutation {
+    issueCreate(input: IssueInput!): IssueCreatePayload
+    issueDelete(id: ID!): IssueDeletePayload
+    issueUpdate(id: ID!, input: IssueInput!): IssueUpdatePayload
+    issuePublish(id: ID!, input: IssuePrivacyInput!): IssueUpdatePrivacyPayload
+    issueUnpublish(id: ID!, input: IssuePrivacyInput!): IssueUpdatePrivacyPayload
+    issueAddGroup(id: ID!, input: IssueAddGroupInput!): IssueAddGroupPayload
+    issueRemoveGroup(id: ID!, input: IssueRemoveGroupInput!): IssueRemoveGroupPayload
+    issueAddOrganization(id: ID!, input: IssueAddOrganizationInput!): IssueAddOrganizationPayload
+    issueRemoveOrganization(id: ID!, input: IssueRemoveOrganizationInput!): IssueRemoveOrganizationPayload
+    issueAddSkillset(id: ID!, input: IssueAddSkillsetInput!): IssueAddSkillsetPayload
+    issueRemoveSkillset(id: ID!, input: IssueRemoveSkillsetInput!): IssueRemoveSkillsetPayload
+    issueAddCity(id: ID!, input: IssueAddCityInput!): IssueAddCityPayload
+    issueRemoveCity(id: ID!, input: IssueRemoveCityInput!): IssueRemoveCityPayload
+    issueAddCategory(id: ID!, input: IssueAddCategoryInput!): IssueAddCategoryPayload
+    issueRemoveCategory(id: ID!, input: IssueRemoveCategoryInput!): IssueRemoveCategoryPayload
+}
+
+# Type definitions
+
+type Issue {
+    id: ID!
+    description: String
+    isPublic: Boolean!
+    images: [String!]
+    totalMinutes: Int!
+
+    issueCategories: [IssueCategory!]
+    skillsets: [Skillset!]
+    organizations: [Organization!]
+    groups: [Group!]
+    cities: [City!]
+    likes: Likes
+    comments: Comments
+    activities: Activities
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

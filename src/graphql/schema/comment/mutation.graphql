@@ -1,26 +1,46 @@
 # Queries/Mutations-related type definitions
 
-input AddCommentToEventInput {
+input CommentAddEventInput {
     eventId: String!
     userId: String!
     content: String!
-    postedAt: Datetime!
+    postedAt: Datetime
 }
 
-input UpdateCommentOfEventInput {
+input CommentUpdateInput {
     content: String
 }
 
 # Type definitions
 
-type AddCommentToEventPayload {
+type CommentAddEventSuccess {
     comment: Comment!
 }
 
-type UpdateCommentOfEventPayload {
+type CommentUpdateSuccess {
     comment: Comment!
 }
 
-type DeleteCommentFromEventPayload {
-    comment: Comment!
+type CommentDeleteSuccess {
+    commentId: String!
 }
+
+# union definitions
+
+union CommentAddEventPayload =
+    CommentAddEventSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union CommentUpdatePayload =
+    CommentUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union CommentDeletePayload =
+    CommentDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

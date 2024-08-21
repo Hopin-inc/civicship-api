@@ -1,24 +1,18 @@
 import CommentService from "@/services/comment.service";
 import {
-  GqlMutationAddCommentToEventArgs,
-  GqlMutationUpdateCommentOfEventArgs,
-  GqlMutationDeleteCommentFromEventArgs,
+  GqlMutationCommentAddEventArgs,
+  GqlMutationCommentUpdateArgs,
+  GqlMutationCommentDeleteArgs,
 } from "@/types/graphql";
 
 const commentResolver = {
   Mutation: {
-    addCommentToEvent: async (
-      _: unknown,
-      args: GqlMutationAddCommentToEventArgs,
-    ) => CommentService.addCommentToEvent(args),
-    updateCommentOfEvent: async (
-      _: unknown,
-      args: GqlMutationUpdateCommentOfEventArgs,
-    ) => CommentService.updateCommentOfEvent(args),
-    deleteCommentFromEvent: async (
-      _: unknown,
-      args: GqlMutationDeleteCommentFromEventArgs,
-    ) => CommentService.deleteCommentFromEvent(args),
+    commentAddEvent: async (_: unknown, args: GqlMutationCommentAddEventArgs) =>
+      CommentService.commentAddEvent(args),
+    commentUpdate: async (_: unknown, args: GqlMutationCommentUpdateArgs) =>
+      CommentService.commentUpdate(args),
+    commentDelete: async (_: unknown, args: GqlMutationCommentDeleteArgs) =>
+      CommentService.commentDelete(args),
   },
 };
 

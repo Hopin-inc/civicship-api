@@ -1,10 +1,16 @@
 import EventService from "@/services/event.service";
 import {
   GqlQueryEventsArgs,
-  GqlMutationCreateEventArgs,
+  GqlMutationEventCreateArgs,
   GqlQueryEventArgs,
-  GqlMutationDeleteEventArgs,
-  GqlMutationUpdateEventArgs,
+  GqlMutationEventDeleteArgs,
+  GqlMutationEventUpdateArgs,
+  GqlMutationEventPublishArgs,
+  GqlMutationEventUnpublishArgs,
+  GqlMutationEventAddGroupArgs,
+  GqlMutationEventRemoveGroupArgs,
+  GqlMutationEventAddOrganizationArgs,
+  GqlMutationEventRemoveOrganizationArgs,
 } from "@/types/graphql";
 
 const eventResolver = {
@@ -15,12 +21,30 @@ const eventResolver = {
       EventService.getEvent(args),
   },
   Mutation: {
-    createEvent: async (_: unknown, args: GqlMutationCreateEventArgs) =>
-      EventService.createEvent(args),
-    deleteEvent: async (_: unknown, args: GqlMutationDeleteEventArgs) =>
-      EventService.deleteEvent(args),
-    updateEventInfo: async (_: unknown, args: GqlMutationUpdateEventArgs) =>
-      EventService.updateEventInfo(args),
+    eventCreate: async (_: unknown, args: GqlMutationEventCreateArgs) =>
+      EventService.eventCreate(args),
+    eventDelete: async (_: unknown, args: GqlMutationEventDeleteArgs) =>
+      EventService.eventDelete(args),
+    eventUpdate: async (_: unknown, args: GqlMutationEventUpdateArgs) =>
+      EventService.eventUpdate(args),
+    eventPublish: async (_: unknown, args: GqlMutationEventPublishArgs) =>
+      EventService.eventPublish(args),
+    eventUnpublish: async (_: unknown, args: GqlMutationEventUnpublishArgs) =>
+      EventService.eventUnpublish(args),
+    eventAddGroup: async (_: unknown, args: GqlMutationEventAddGroupArgs) =>
+      EventService.eventAddGroup(args),
+    eventRemoveGroup: async (
+      _: unknown,
+      args: GqlMutationEventRemoveGroupArgs,
+    ) => EventService.eventRemoveGroup(args),
+    eventAddOrganization: async (
+      _: unknown,
+      args: GqlMutationEventAddOrganizationArgs,
+    ) => EventService.eventAddOrganization(args),
+    eventRemoveOrganization: async (
+      _: unknown,
+      args: GqlMutationEventRemoveOrganizationArgs,
+    ) => EventService.eventRemoveOrganization(args),
   },
 };
 

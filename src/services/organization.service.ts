@@ -1,24 +1,29 @@
 import {
-  GqlAddTargetInOrganizationPayload,
-  GqlAddUserInOrganizationPayload,
-  GqlMutationAddTargetInOrganizationArgs,
-  GqlMutationAddUserInOrganizationArgs,
-  GqlMutationCreateOrganizationArgs,
-  GqlMutationDeleteOrganizationArgs,
-  GqlMutationRemoveTargetFromOrganizationArgs,
-  GqlMutationRemoveUserFromOrganizationArgs,
-  GqlMutationUpdateGroupOfOrganizationArgs,
-  GqlMutationUpdateOrganizationDefaultInfoArgs,
-  GqlMutationUpdateOrganizationOverviewArgs,
   GqlOrganization,
   GqlOrganizationsConnection,
   GqlQueryOrganizationArgs,
   GqlQueryOrganizationsArgs,
-  GqlRemoveTargetFromOrganizationPayload,
-  GqlRemoveUserFromOrganizationPayload,
-  GqlUpdateGroupOfOrganizationPayload,
-  GqlUpdateOrganizationDefaultInfoPayload,
-  GqlUpdateOrganizationOverviewPayload,
+  GqlOrganizationAddTargetPayload,
+  GqlOrganizationAddUserPayload,
+  GqlMutationOrganizationAddTargetArgs,
+  GqlMutationOrganizationAddUserArgs,
+  GqlMutationOrganizationCreateArgs,
+  GqlMutationOrganizationDeleteArgs,
+  GqlMutationOrganizationRemoveTargetArgs,
+  GqlMutationOrganizationRemoveUserArgs,
+  GqlMutationOrganizationAddGroupArgs,
+  GqlMutationOrganizationRemoveGroupArgs,
+  GqlOrganizationDeletePayload,
+  GqlOrganizationCreatePayload,
+  GqlOrganizationRemoveTargetPayload,
+  GqlOrganizationRemoveUserPayload,
+  GqlMutationOrganizationUpdateArgs,
+  GqlOrganizationUpdatePayload,
+  GqlMutationOrganizationPublishArgs,
+  GqlMutationOrganizationUnpublishArgs,
+  GqlOrganizationRemoveGroupPayload,
+  GqlOrganizationAddGroupPayload,
+  GqlOrganizationUpdatePrivacyPayload,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -108,11 +113,11 @@ export default class OrganizationService {
     });
   }
 
-  static async createOrganization({
-    content,
-  }: GqlMutationCreateOrganizationArgs): Promise<GqlOrganization> {
+  static async organizationCreate({
+    input,
+  }: GqlMutationOrganizationCreateArgs): Promise<GqlOrganizationCreatePayload> {
     const { agendaIds, cityCode, stateCode, stateCountryCode, ...properties } =
-      content;
+      input;
     const data: Prisma.OrganizationCreateInput = {
       ...properties,
       state: {
@@ -127,38 +132,32 @@ export default class OrganizationService {
         create: agendaIds?.map((agendaId) => ({ agendaId })),
       },
     };
-    return this.db.organization.create({
+    const organization = await this.db.organization.create({
       data,
       include: {
         city: { include: { state: true } },
         state: true,
       },
     });
+    return { organization };
   }
 
-  static async deleteOrganization({
+  static async organizationDelete({
     id,
-  }: GqlMutationDeleteOrganizationArgs): Promise<GqlOrganization> {
-    return this.db.organization.delete({
+  }: GqlMutationOrganizationDeleteArgs): Promise<GqlOrganizationDeletePayload> {
+    await this.db.organization.delete({
       where: { id },
-      include: {
-        city: {
-          include: {
-            state: true,
-          },
-        },
-        state: true,
-      },
     });
+    return { organizationId: id };
   }
 
-  static async updateOrganizationDefaultInfo({
+  static async organizationUpdate({
     id,
-    content,
-  }: GqlMutationUpdateOrganizationDefaultInfoArgs): Promise<GqlUpdateOrganizationDefaultInfoPayload> {
+    input,
+  }: GqlMutationOrganizationUpdateArgs): Promise<GqlOrganizationUpdatePayload> {
     const organization = await this.db.organization.update({
       where: { id },
-      data: content,
+      data: input,
       include: {
         city: {
           include: {
@@ -168,38 +167,13 @@ export default class OrganizationService {
         state: true,
       },
     });
-
-    return {
-      organization,
-    };
+    return { organization };
   }
 
-  static async updateOrganizationOverview({
+  static async organizationAddUser({
     id,
-    content,
-  }: GqlMutationUpdateOrganizationOverviewArgs): Promise<GqlUpdateOrganizationOverviewPayload> {
-    const organization = await this.db.organization.update({
-      where: { id },
-      data: content,
-      include: {
-        city: {
-          include: {
-            state: true,
-          },
-        },
-        state: true,
-      },
-    });
-
-    return {
-      organization,
-    };
-  }
-
-  static async addUserInOrganization({
-    id,
-    content,
-  }: GqlMutationAddUserInOrganizationArgs): Promise<GqlAddUserInOrganizationPayload> {
+    input,
+  }: GqlMutationOrganizationAddUserArgs): Promise<GqlOrganizationAddUserPayload> {
     const [organization, user] = await this.db.$transaction([
       this.db.organization.update({
         where: { id },
@@ -208,7 +182,7 @@ export default class OrganizationService {
             connect: {
               userId_organizationId: {
                 organizationId: id,
-                userId: content.userId,
+                userId: input.userId,
               },
             },
           },
@@ -223,12 +197,12 @@ export default class OrganizationService {
         },
       }),
       this.db.user.findUnique({
-        where: { id: content.userId },
+        where: { id: input.userId },
       }),
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     }
 
     return {
@@ -237,10 +211,10 @@ export default class OrganizationService {
     };
   }
 
-  static async removeUserFromOrganization({
+  static async organizationRemoveUser({
     id,
-    content,
-  }: GqlMutationRemoveUserFromOrganizationArgs): Promise<GqlRemoveUserFromOrganizationPayload> {
+    input,
+  }: GqlMutationOrganizationRemoveUserArgs): Promise<GqlOrganizationRemoveUserPayload> {
     const [organization, user] = await this.db.$transaction([
       this.db.organization.update({
         where: { id },
@@ -249,7 +223,7 @@ export default class OrganizationService {
             disconnect: {
               userId_organizationId: {
                 organizationId: id,
-                userId: content.userId,
+                userId: input.userId,
               },
             },
           },
@@ -264,12 +238,12 @@ export default class OrganizationService {
         },
       }),
       this.db.user.findUnique({
-        where: { id: content.userId },
+        where: { id: input.userId },
       }),
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     }
 
     return {
@@ -278,16 +252,16 @@ export default class OrganizationService {
     };
   }
 
-  static async addTargetInOrganization({
+  static async organizationAddTarget({
     id,
-    content,
-  }: GqlMutationAddTargetInOrganizationArgs): Promise<GqlAddTargetInOrganizationPayload> {
+    input,
+  }: GqlMutationOrganizationAddTargetArgs): Promise<GqlOrganizationAddTargetPayload> {
     const [organization, target] = await this.db.$transaction([
       this.db.organization.update({
         where: { id },
         data: {
           targets: {
-            connect: { id: content.targetId },
+            connect: { id: input.targetId },
           },
         },
         include: {
@@ -300,12 +274,12 @@ export default class OrganizationService {
         },
       }),
       this.db.target.findUnique({
-        where: { id: content.targetId },
+        where: { id: input.targetId },
       }),
     ]);
 
     if (!target) {
-      throw new Error(`Target with ID ${content.targetId} not found`);
+      throw new Error(`Target with ID ${input.targetId} not found`);
     }
 
     return {
@@ -314,16 +288,16 @@ export default class OrganizationService {
     };
   }
 
-  static async removeTargetFromOrganization({
+  static async organizationRemoveTarget({
     id,
-    content,
-  }: GqlMutationRemoveTargetFromOrganizationArgs): Promise<GqlRemoveTargetFromOrganizationPayload> {
+    input,
+  }: GqlMutationOrganizationRemoveTargetArgs): Promise<GqlOrganizationRemoveTargetPayload> {
     const [organization, target] = await this.db.$transaction([
       this.db.organization.update({
         where: { id },
         data: {
           targets: {
-            disconnect: { id: content.targetId },
+            disconnect: { id: input.targetId },
           },
         },
         include: {
@@ -336,12 +310,12 @@ export default class OrganizationService {
         },
       }),
       this.db.target.findUnique({
-        where: { id: content.targetId },
+        where: { id: input.targetId },
       }),
     ]);
 
     if (!target) {
-      throw new Error(`Target with ID ${content.targetId} not found`);
+      throw new Error(`Target with ID ${input.targetId} not found`);
     }
 
     return {
@@ -350,16 +324,16 @@ export default class OrganizationService {
     };
   }
 
-  static async updateGroupOfOrganization({
+  static async organizationAddGroup({
     id,
-    content,
-  }: GqlMutationUpdateGroupOfOrganizationArgs): Promise<GqlUpdateGroupOfOrganizationPayload> {
+    input,
+  }: GqlMutationOrganizationAddGroupArgs): Promise<GqlOrganizationAddGroupPayload> {
     const [organization, group] = await this.db.$transaction([
       this.db.organization.update({
         where: { id },
         data: {
           groups: {
-            connect: { id: content.groupId },
+            connect: { id: input.groupId },
           },
         },
         include: {
@@ -372,17 +346,97 @@ export default class OrganizationService {
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.groupId },
+        where: { id: input.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${content.groupId} not found`);
+      throw new Error(`Group with ID ${input.groupId} not found`);
     }
 
     return {
       organization,
       group,
+    };
+  }
+
+  static async organizationRemoveGroup({
+    id,
+    input,
+  }: GqlMutationOrganizationRemoveGroupArgs): Promise<GqlOrganizationRemoveGroupPayload> {
+    const [organization, group] = await this.db.$transaction([
+      this.db.organization.update({
+        where: { id },
+        data: {
+          groups: {
+            disconnect: { id: input.groupId },
+          },
+        },
+        include: {
+          city: {
+            include: {
+              state: true,
+            },
+          },
+          state: true,
+        },
+      }),
+      this.db.group.findUnique({
+        where: { id: input.groupId },
+      }),
+    ]);
+
+    if (!group) {
+      throw new Error(`Group with ID ${input.groupId} not found`);
+    }
+
+    return {
+      organization,
+      group,
+    };
+  }
+
+  static async organizationPublish({
+    id,
+    input,
+  }: GqlMutationOrganizationPublishArgs): Promise<GqlOrganizationUpdatePrivacyPayload> {
+    const organization = await this.db.organization.update({
+      where: { id },
+      data: input,
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    });
+
+    return {
+      organization,
+    };
+  }
+
+  static async organizationUnpublish({
+    id,
+    input,
+  }: GqlMutationOrganizationUnpublishArgs): Promise<GqlOrganizationUpdatePrivacyPayload> {
+    const organization = await this.db.organization.update({
+      where: { id },
+      data: input,
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    });
+
+    return {
+      organization,
     };
   }
 }

@@ -1,9 +1,9 @@
 # Queries and Mutations
 
 extend type Mutation {
-    addCommentToEvent(id: ID!, content: AddCommentToEventInput!): AddCommentToEventPayload
-    updateCommentOfEvent(id: ID!, content: UpdateCommentOfEventInput!): UpdateCommentOfEventPayload
-    deleteCommentFromEvent(id: ID!): DeleteCommentFromEventPayload
+    commentAddEvent(input: CommentAddEventInput!): CommentAddEventPayload
+    commentUpdate(id: ID!, input: CommentUpdateInput!): CommentUpdatePayload
+    commentDelete(id: ID!): CommentDeletePayload
 }
 
 # Type definitions

@@ -1,20 +1,20 @@
 import { prismaClient } from "@/prisma/client";
 import {
-  GqlAddCommentToEventPayload,
-  GqlDeleteCommentFromEventPayload,
-  GqlMutationAddCommentToEventArgs,
-  GqlMutationDeleteCommentFromEventArgs,
-  GqlMutationUpdateCommentOfEventArgs,
-  GqlUpdateCommentOfEventPayload,
+  GqlCommentAddEventPayload,
+  GqlCommentDeletePayload,
+  GqlMutationCommentAddEventArgs,
+  GqlMutationCommentDeleteArgs,
+  GqlMutationCommentUpdateArgs,
+  GqlCommentUpdatePayload,
 } from "@/types/graphql";
 
 export default class CommentService {
   private static db = prismaClient;
 
-  static async addCommentToEvent({
-    content,
-  }: GqlMutationAddCommentToEventArgs): Promise<GqlAddCommentToEventPayload> {
-    const { userId, eventId, postedAt, ...properties } = content;
+  static async commentAddEvent({
+    input,
+  }: GqlMutationCommentAddEventArgs): Promise<GqlCommentAddEventPayload> {
+    const { userId, eventId, postedAt, ...properties } = input;
 
     const comment = await this.db.comment.create({
       data: {
@@ -34,6 +34,8 @@ export default class CommentService {
     });
     if (!comment.event) {
       throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
+    } else if (!comment.user) {
+      throw new Error(`Comment with ID ${comment.id} has no corresponding user`);
     }
 
     return {
@@ -43,17 +45,18 @@ export default class CommentService {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
         },
+        user: comment.user,
       },
     };
   }
 
-  static async updateCommentOfEvent({
+  static async commentUpdate({
     id,
-    content,
-  }: GqlMutationUpdateCommentOfEventArgs): Promise<GqlUpdateCommentOfEventPayload> {
+    input,
+  }: GqlMutationCommentUpdateArgs): Promise<GqlCommentUpdatePayload> {
     const comment = await this.db.comment.update({
       where: { id },
-      data: content,
+      data: input,
       include: {
         user: true,
         event: {
@@ -65,6 +68,8 @@ export default class CommentService {
     });
     if (!comment.event) {
       throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
+    } else if (!comment.user) {
+      throw new Error(`Comment with ID ${comment.id} has no corresponding user`);
     }
 
     return {
@@ -74,36 +79,18 @@ export default class CommentService {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
         },
+        user: comment.user,
       },
     };
   }
 
-  static async deleteCommentFromEvent({
+  static async commentDelete({
     id,
-  }: GqlMutationDeleteCommentFromEventArgs): Promise<GqlDeleteCommentFromEventPayload> {
-    const comment = await this.db.comment.delete({
+  }: GqlMutationCommentDeleteArgs): Promise<GqlCommentDeletePayload> {
+    await this.db.comment.delete({
       where: { id },
-      include: {
-        user: true,
-        event: {
-          include: {
-            stat: { select: { totalMinutes: true } },
-          },
-        },
-      },
     });
-    if (!comment.event) {
-      throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
-    }
 
-    return {
-      comment: {
-        ...comment,
-        event: {
-          ...comment.event,
-          totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
-        },
-      },
-    };
+    return { commentId: id };
   }
 }

@@ -1,20 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input CreateUserInput {
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
-    image: String
-    bio: String
-    isPublic: Boolean!
-    agendaIds: [Int!]
-    cityCodes: [String!]
-    groupIds: [String!]
-    organizationIds: [String!]
-}
-
-input UpdateUserProfileInput {
+input UserInput {
     lastName: String!
     middleName: String
     firstName: String!
@@ -25,70 +11,140 @@ input UpdateUserProfileInput {
     cityCodes: [String!]
 }
 
-input UpdateUserPrivacyInput {
+input UserPrivacyInput {
     isPublic: Boolean!
 }
 
-input AddGroupToUserInput {
+input UserAddGroupInput {
     groupId: String!
 }
 
-input RemoveGroupFromUserInput {
+input UserRemoveGroupInput {
     groupId: String!
 }
 
-input AddOrganizationToUserInput {
+input UserAddOrganizationInput {
     organizationId: String!
 }
 
-input RemoveOrganizationFromUserInput {
+input UserRemoveOrganizationInput {
     organizationId: String!
 }
 
-input AddActivityToUserInput {
+input UserAddActivityInput {
     activityId: String!
 }
 
-input RemoveActivityFromUserInput {
+input UserRemoveActivityInput {
     activityId: String!
 }
 
 # Type definitions
 
-type UpdateUserProfilePayload {
+type UserCreateSuccess {
+    user: User
+}
+
+type UserDeleteSuccess {
+    userId: ID!
+}
+
+type UserUpdateSuccess {
+    user: User
+}
+
+type UserUpdatePrivacySuccess {
     user: User!
 }
 
-type UpdateUserPrivacyPayload {
-    user: User!
-}
-
-type AddGroupToUserPayload {
+type UserAddGroupSuccess {
     user: User!
     group: Group!
 }
 
-type RemoveGroupFromUserPayload {
+type UserRemoveGroupSuccess {
     user: User!
     group: Group!
 }
 
-type AddOrganizationToUserPayload {
+type UserAddOrganizationSuccess {
     user: User!
     organization: Organization!
 }
 
-type RemoveOrganizationFromUserPayload {
+type UserRemoveOrganizationSuccess {
     user: User!
     organization: Organization!
 }
 
-type AddActivityToUserPayload {
+type UserAddActivitySuccess {
     user: User
     activity: Activity!
 }
 
-type RemoveActivityFromUserPayload {
+type UserRemoveActivitySuccess {
     user: User!
     activity: Activity!
 }
+
+# union definitions
+
+union UserCreatePayload =
+    UserCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserDeletePayload =
+    UserDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserUpdatePayload =
+    UserUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserUpdatePrivacyPayload =
+    UserUpdatePrivacySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserAddGroupPayload =
+    UserAddGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserRemoveGroupPayload =
+    UserRemoveGroupSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserAddOrganizationPayload =
+    UserAddOrganizationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserRemoveOrganizationPayload =
+    UserRemoveOrganizationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserAddActivityPayload =
+    UserAddActivitySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UserRemoveActivityPayload =
+    UserRemoveActivitySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

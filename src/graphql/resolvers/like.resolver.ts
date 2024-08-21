@@ -1,17 +1,15 @@
 import LikeService from "@/services/like.service";
 import {
-  GqlMutationAddLikeToEventArgs,
-  GqlMutationRemoveLikeFromEventArgs,
+  GqlMutationLikeAddEventArgs,
+  GqlMutationLikeDeleteArgs,
 } from "@/types/graphql";
 
 const likeResolver = {
   Mutation: {
-    addLikeToEvent: async (_: unknown, args: GqlMutationAddLikeToEventArgs) =>
-      LikeService.addLikeToEvent(args),
-    removeLikeFromEvent: async (
-      _: unknown,
-      args: GqlMutationRemoveLikeFromEventArgs,
-    ) => LikeService.removeLikeFromEvent(args),
+    likeAddEvent: async (_: unknown, args: GqlMutationLikeAddEventArgs) =>
+      LikeService.likeAddEvent(args),
+    likeDelete: async (_: unknown, args: GqlMutationLikeDeleteArgs) =>
+      LikeService.likeDelete(args),
   },
 };
 

@@ -1,119 +1,195 @@
 # Queries/Mutations-related type definitions
 
-input CreateGroupInput {
+input GroupInput {
     name:  String!
     image: String
     bio: String
 
-    userIds: [String!]
-    agendaIds: [Int!]
-    parentId: String
-    childrenIds: [String!]
     organizationId: String
-}
-
-input UpdateGroupInfoInput {
-    name:  String!
-    image: String
-    bio: String
-    organizationId: String
-
     agendaIds: [Int!]
     cityCodes: [String!]
 }
 
-input AddUserToGroupInput {
+input GroupAddUserInput {
     userId: String!
 }
 
-input RemoveUserFromGroupInput {
+input GroupRemoveUserInput {
     userId: String!
 }
 
-input AddEventOfGroupInput {
+input GroupAddEventInput {
     eventId: String!
 }
 
-input RemoveEventFromGroupInput {
+input GroupRemoveEventInput {
     eventId: String!
 }
 
-input AddTargetToGroupInput {
+input GroupAddTargetInput {
     targetId: String!
 }
 
-input RemoveTargetFromGroupInput {
+input GroupRemoveTargetInput {
     targetId: String!
 }
 
-input AddParentGroupToGroupInput {
+input GroupAddParentInput {
     parentId: String!
 }
 
-input RemoveParentGroupFromParentInput {
+input GroupRemoveParentInput {
     parentId: String!
 }
 
-input AddChildGroupToGroupInput {
+input GroupAddChildInput {
     childId: String!
 }
 
-input RemoveChildGroupFromParentInput {
+input GroupRemoveChildInput {
     childId: String!
 }
 
 # Type definitions
 
-type UpdateGroupInfoPayload {
+type GroupCreateSuccess {
+    group: Group
+}
+
+type GroupDeleteSuccess {
+    groupId: ID!
+}
+
+type GroupUpdateSuccess {
     group: Group!
 }
 
-type AddUserToGroupPayload {
+type GroupAddUserSuccess {
     group: Group!
     user: User!
 }
 
-type RemoveUserFromGroupPayload {
+type GroupRemoveUserSuccess {
     group: Group!
     user: User!
 }
 
-type AddEventOfGroupPayload {
+type GroupAddEventSuccess {
     group: Group!
     event: Event!
 }
 
-type RemoveEventFromGroupPayload {
+type GroupRemoveEventSuccess {
     group: Group!
     event: Event!
 }
 
-type AddTargetToGroupPayload {
+type GroupAddTargetSuccess {
     group: Group!
     target: Target!
 }
 
-type RemoveTargetFromGroupPayload {
+type GroupRemoveTargetSuccess {
     group: Group!
     target: Target!
 }
 
-type AddParentGroupToGroupPayload {
+type GroupAddParentSuccess {
     group: Group!
     parent: Group!
 }
 
-type RemoveParentGroupFromParentPayload {
+type GroupRemoveParentSuccess {
     group: Group!
     parent: Group!
 }
 
-type AddChildGroupToGroupPayload {
+type GroupAddChildSuccess {
     group: Group!
     child: Group!
 }
 
-type RemoveChildGroupFromParentPayload {
+type GroupRemoveChildSuccess {
     group: Group!
     child: Group!
 }
+
+# union definitions
+
+union GroupCreatePayload =
+    GroupCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupDeletePayload =
+    GroupDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupUpdatePayload =
+    GroupUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupAddUserPayload =
+    GroupAddUserSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupRemoveUserPayload =
+    GroupRemoveUserSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupAddEventPayload =
+    GroupAddEventSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupRemoveEventPayload =
+    GroupRemoveEventSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupAddTargetPayload =
+    GroupAddTargetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupRemoveTargetPayload =
+    GroupRemoveTargetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupAddParentPayload =
+    GroupAddParentSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupRemoveParentPayload =
+    GroupRemoveParentSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupAddChildPayload =
+    GroupAddChildSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union GroupRemoveChildPayload =
+    GroupRemoveChildSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

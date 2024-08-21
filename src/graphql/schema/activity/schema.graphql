@@ -11,14 +11,15 @@ extend type Query {
 }
 
 extend type Mutation {
-    createActivity(content: CreateActivityInput!): Activity
-    deleteActivity(id: ID!): Activity
-    updateActivityInfo(id: ID!, content: UpdateActivityInfoInput!): UpdateActivityInfoPayload
-    updateActivityPrivacy(id: ID!, content: UpdateActivityPrivacyInput!): UpdateActivityPrivacyPayload
-    addUserToActivity(id: ID!, content: AddUserToActivityInput!): AddUserToActivityPayload
-    UpdateUserOfActivity(id: ID!, content: UpdateUserOfActivityInput!): UpdateUserOfActivityPayload
-    addEventToActivity(id: ID!, content: AddEventToActivityInput!): AddEventToActivityPayload
-    removeEventFromActivity(id: ID!, content: RemoveEventFromActivityInput!): RemoveEventFromActivityPayload
+    activityCreate(input: ActivityInput!): ActivityCreatePayload
+    activityDelete(id: ID!): ActivityDeletePayload
+    activityUpdate(id: ID!, input: ActivityInput!): ActivityUpdatePayload
+    activityPublish(id: ID!, input: ActivityPrivacyInput!): ActivityUpdatePrivacyPayload
+    activityUnpublish(id: ID!, input: ActivityPrivacyInput!): ActivityUpdatePrivacyPayload
+    activityAddUser(id: ID!, input: ActivityAddUserInput!): ActivityAddUserPayload
+    activityUpdateUser(id: ID!, input: ActivityUpdateUserInput!): ActivityUpdateUserPayload
+    activityAddEvent(id: ID!, input: ActivityAddEventInput!): ActivityAddEventPayload
+    activityRemoveEvent(id: ID!, input: ActivityRemoveEventInput!): ActivityRemoveEventPayload
 }
 
 # Type definitions
@@ -38,8 +39,8 @@ type Activity {
     endsAt: Datetime!
     totalMinutes: Int!
 
-    user: User!
-    event: Event!
+    user: User
+    event: Event
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -1,15 +1,16 @@
 import ActivityService from "@/services/activity.service";
 import {
+  GqlMutationActivityCreateArgs,
+  GqlMutationActivityDeleteArgs,
+  GqlMutationActivityUpdateArgs,
+  GqlMutationActivityPublishArgs,
+  GqlMutationActivityUnpublishArgs,
+  GqlMutationActivityAddUserArgs,
+  GqlMutationActivityUpdateUserArgs,
+  GqlMutationActivityAddEventArgs,
+  GqlMutationActivityRemoveEventArgs,
   GqlQueryActivitiesArgs,
   GqlQueryActivityArgs,
-  GqlMutationDeleteActivityArgs,
-  GqlMutationCreateActivityArgs,
-  GqlMutationRemoveEventFromActivityArgs,
-  GqlMutationUpdateActivityInfoArgs,
-  GqlMutationUpdateActivityPrivacyArgs,
-  GqlMutationAddUserToActivityArgs,
-  GqlMutationAddEventToActivityArgs,
-  GqlMutationUpdateUserOfActivityArgs,
 } from "@/types/graphql";
 
 const activityResolver = {
@@ -20,34 +21,32 @@ const activityResolver = {
       ActivityService.getActivity(args),
   },
   Mutation: {
-    createActivity: async (_: unknown, args: GqlMutationCreateActivityArgs) =>
-      ActivityService.createActivity(args),
-    deleteActivity: async (_: unknown, args: GqlMutationDeleteActivityArgs) =>
-      ActivityService.deleteActivity(args),
-    updateActivityInfo: async (
+    activityCreate: async (_: unknown, args: GqlMutationActivityCreateArgs) =>
+      ActivityService.activityCreate(args),
+    activityDelete: async (_: unknown, args: GqlMutationActivityDeleteArgs) =>
+      ActivityService.activityDelete(args),
+    activityUpdate: async (_: unknown, args: GqlMutationActivityUpdateArgs) =>
+      ActivityService.activityUpdate(args),
+    activityPublish: async (_: unknown, args: GqlMutationActivityPublishArgs) =>
+      ActivityService.activityPublish(args),
+    activityUnpublish: async (
       _: unknown,
-      args: GqlMutationUpdateActivityInfoArgs,
-    ) => ActivityService.updateActivityInfo(args),
-    updateActivityPrivacy: async (
+      args: GqlMutationActivityUnpublishArgs,
+    ) => ActivityService.activityUnpublish(args),
+    activityAddUser: async (_: unknown, args: GqlMutationActivityAddUserArgs) =>
+      ActivityService.activityAddUser(args),
+    activityUpdateUser: async (
       _: unknown,
-      args: GqlMutationUpdateActivityPrivacyArgs,
-    ) => ActivityService.updateActivityPrivacy(args),
-    addUserToActivity: async (
+      args: GqlMutationActivityUpdateUserArgs,
+    ) => ActivityService.activityUpdateUser(args),
+    activityAddEvent: async (
       _: unknown,
-      args: GqlMutationAddUserToActivityArgs,
-    ) => ActivityService.addUserToActivity(args),
-    UpdateUserOfActivity: async (
+      args: GqlMutationActivityAddEventArgs,
+    ) => ActivityService.activityAddEvent(args),
+    activityRemoveEvent: async (
       _: unknown,
-      args: GqlMutationUpdateUserOfActivityArgs,
-    ) => ActivityService.updateUserOfActivity(args),
-    addEventToActivity: async (
-      _: unknown,
-      args: GqlMutationAddEventToActivityArgs,
-    ) => ActivityService.addEventToActivity(args),
-    removeEventFromActivity: async (
-      _: unknown,
-      args: GqlMutationRemoveEventFromActivityArgs,
-    ) => ActivityService.removeEventFromActivity(args),
+      args: GqlMutationActivityRemoveEventArgs,
+    ) => ActivityService.activityRemoveEvent(args),
   },
 };
 

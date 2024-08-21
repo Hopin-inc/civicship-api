@@ -1,0 +1,20 @@
+# Queries/Mutations-related type definitions
+
+type ApplicationsConnection {
+    edges: [ApplicationEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ApplicationEdge implements Edge {
+    cursor: String!
+    node: Application
+}
+
+input ApplicationFilterInput {
+    keyword: String
+}
+
+input ApplicationSortInput {
+    createdAt: SortDirection
+}

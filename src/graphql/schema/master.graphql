@@ -1,5 +1,20 @@
 type Agenda {
     id: Int!
+    code: String!
+    name: String!
+    description: String
+}
+
+type Skillset {
+    id: Int!
+    code: String!
+    name: String!
+    description: String
+}
+
+type IssueCategory {
+    id: Int!
+    code: String!
     name: String!
     description: String
 }

@@ -1,21 +1,23 @@
 import {
-  GqlAddGroupToTargetPayload,
-  GqlAddOrganizationToTargetPayload,
-  GqlMutationAddGroupToTargetArgs,
-  GqlMutationAddOrganizationToTargetArgs,
-  GqlMutationCreateTargetArgs,
-  GqlMutationDeleteTargetArgs,
-  GqlMutationRemoveGroupFromTargetArgs,
-  GqlMutationRemoveOrganizationFromTargetArgs,
+  GqlTargetAddGroupPayload,
+  GqlTargetAddOrganizationPayload,
+  GqlMutationTargetAddGroupArgs,
+  GqlMutationTargetAddOrganizationArgs,
+  GqlMutationTargetCreateArgs,
+  GqlMutationTargetDeleteArgs,
+  GqlMutationTargetRemoveGroupArgs,
+  GqlMutationTargetRemoveOrganizationArgs,
   GqlQueryTargetArgs,
   GqlQueryTargetsArgs,
-  GqlRemoveGroupFromTargetPayload,
-  GqlRemoveOrganizationFromTargetPayload,
+  GqlTargetRemoveGroupPayload,
+  GqlTargetRemoveOrganizationPayload,
   GqlTarget,
-  GqlMutationUpdateIndexOfTargetArgs,
-  GqlUpdateIndexOfTargetPayload,
-  GqlUpdateTargetInfoPayload,
-  GqlMutationUpdateTargetInfoArgs,
+  GqlMutationTargetUpdateIndexArgs,
+  GqlTargetUpdateIndexPayload,
+  GqlTargetUpdatePayload,
+  GqlMutationTargetUpdateArgs,
+  GqlTargetCreatePayload,
+  GqlTargetDeletePayload,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -74,8 +76,10 @@ class TargetService {
     return this.db.target.findUnique({ where: { id } });
   }
 
-  static async createTarget({ content }: GqlMutationCreateTargetArgs) {
-    const { organizationId, groupId, indexId, ...properties } = content;
+  static async targetCreate({
+    input,
+  }: GqlMutationTargetCreateArgs): Promise<GqlTargetCreatePayload> {
+    const { organizationId, groupId, indexId, ...properties } = input;
     const data: Prisma.TargetCreateInput = {
       ...properties,
       organization: {
@@ -88,56 +92,59 @@ class TargetService {
         connect: { id: indexId },
       },
     };
-    return this.db.target.create({ data });
+    const target: GqlTarget = await this.db.target.create({ data });
+    return { target };
   }
 
-  static async deleteTarget({
+  static async targetDelete({
     id,
-  }: GqlMutationDeleteTargetArgs): Promise<GqlTarget> {
-    return this.db.target.delete({
+  }: GqlMutationTargetDeleteArgs): Promise<GqlTargetDeletePayload> {
+    await this.db.target.delete({
       where: { id },
     });
+    return { targetId: id };
   }
 
-  static async updateTargetInfo({
+  static async targetUpdate({
     id,
-    content,
-  }: GqlMutationUpdateTargetInfoArgs): Promise<GqlUpdateTargetInfoPayload> {
-    const { indexId, ...properties } = content;
+    input,
+  }: GqlMutationTargetUpdateArgs): Promise<GqlTargetUpdatePayload> {
+    const { indexId, ...properties } = input;
     const data: Prisma.TargetUpdateInput = {
       ...properties,
       index: {
         connect: { id: indexId },
       },
     };
-    return this.db.target.update({
+    const target: GqlTarget = await this.db.target.update({
       where: { id },
       data,
     });
+    return { target };
   }
 
-  static async addGroupToTarget({
+  static async targetAddGroup({
     id,
-    content,
-  }: GqlMutationAddGroupToTargetArgs): Promise<GqlAddGroupToTargetPayload> {
+    input,
+  }: GqlMutationTargetAddGroupArgs): Promise<GqlTargetAddGroupPayload> {
     const [target, group] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           group: {
             connect: {
-              id: content.groupId,
+              id: input.groupId,
             },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.groupId },
+        where: { id: input.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${content.groupId} not found`);
+      throw new Error(`Group with ID ${input.groupId} not found`);
     }
 
     return {
@@ -146,26 +153,26 @@ class TargetService {
     };
   }
 
-  static async removeGroupFromTarget({
+  static async targetRemoveGroup({
     id,
-    content,
-  }: GqlMutationRemoveGroupFromTargetArgs): Promise<GqlRemoveGroupFromTargetPayload> {
+    input,
+  }: GqlMutationTargetRemoveGroupArgs): Promise<GqlTargetRemoveGroupPayload> {
     const [target, group] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           group: {
-            disconnect: { id: content.groupId },
+            disconnect: { id: input.groupId },
           },
         },
       }),
       this.db.group.findUnique({
-        where: { id: content.groupId },
+        where: { id: input.groupId },
       }),
     ]);
 
     if (!group) {
-      throw new Error(`Group with ID ${content.groupId} not found`);
+      throw new Error(`Group with ID ${input.groupId} not found`);
     }
 
     return {
@@ -174,21 +181,21 @@ class TargetService {
     };
   }
 
-  static async addOrganizationToTarget({
+  static async targetAddOrganization({
     id,
-    content,
-  }: GqlMutationAddOrganizationToTargetArgs): Promise<GqlAddOrganizationToTargetPayload> {
+    input,
+  }: GqlMutationTargetAddOrganizationArgs): Promise<GqlTargetAddOrganizationPayload> {
     const [target, organization] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           organization: {
-            connect: { id: content.organizationId },
+            connect: { id: input.organizationId },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: content.organizationId },
+        where: { id: input.organizationId },
         include: {
           state: true,
           city: {
@@ -201,9 +208,7 @@ class TargetService {
     ]);
 
     if (!organization) {
-      throw new Error(
-        `Organization with ID ${content.organizationId} not found`,
-      );
+      throw new Error(`Organization with ID ${input.organizationId} not found`);
     }
 
     return {
@@ -212,21 +217,21 @@ class TargetService {
     };
   }
 
-  static async removeOrganizationFromTarget({
+  static async targetRemoveOrganization({
     id,
-    content,
-  }: GqlMutationRemoveOrganizationFromTargetArgs): Promise<GqlRemoveOrganizationFromTargetPayload> {
+    input,
+  }: GqlMutationTargetRemoveOrganizationArgs): Promise<GqlTargetRemoveOrganizationPayload> {
     const [target, organization] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           organization: {
-            disconnect: { id: content.organizationId },
+            disconnect: { id: input.organizationId },
           },
         },
       }),
       this.db.organization.findUnique({
-        where: { id: content.organizationId },
+        where: { id: input.organizationId },
         include: {
           state: true,
           city: {
@@ -239,9 +244,7 @@ class TargetService {
     ]);
 
     if (!organization) {
-      throw new Error(
-        `Organization with ID ${content.organizationId} not found`,
-      );
+      throw new Error(`Organization with ID ${input.organizationId} not found`);
     }
 
     return {
@@ -250,26 +253,26 @@ class TargetService {
     };
   }
 
-  static async updateIndexOfTarget({
+  static async targetUpdateIndex({
     id,
-    content,
-  }: GqlMutationUpdateIndexOfTargetArgs): Promise<GqlUpdateIndexOfTargetPayload> {
+    input,
+  }: GqlMutationTargetUpdateIndexArgs): Promise<GqlTargetUpdateIndexPayload> {
     const [target, index] = await this.db.$transaction([
       this.db.target.update({
         where: { id },
         data: {
           index: {
-            connect: { id: content.indexId },
+            connect: { id: input.indexId },
           },
         },
       }),
       this.db.index.findUnique({
-        where: { id: content.indexId },
+        where: { id: input.indexId },
       }),
     ]);
 
     if (!index) {
-      throw new Error(`Index with ID ${content.indexId} not found`);
+      throw new Error(`Index with ID ${input.indexId} not found`);
     }
 
     return {

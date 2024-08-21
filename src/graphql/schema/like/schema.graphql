@@ -1,8 +1,8 @@
 # Queries and Mutations
 
 extend type Mutation {
-    addLikeToEvent(content: AddLikeToEventInput!): AddLikeToEventPayload
-    removeLikeFromEvent(id: ID!): RemoveLikeFromEventPayload
+    likeAddEvent(input: LikeAddEventInput!): LikeAddEventPayload
+    likeDelete(id: ID!): LikeDeletePayload
 }
 
 # Type definitions

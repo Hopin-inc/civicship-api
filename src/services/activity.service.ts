@@ -2,22 +2,25 @@ import { prismaClient } from "@/prisma/client";
 import {
   GqlActivitiesConnection,
   GqlActivity,
-  GqlAddEventToActivityPayload,
-  GqlAddUserToActivityPayload,
-  GqlMutationAddEventToActivityArgs,
-  GqlMutationAddUserToActivityArgs,
-  GqlMutationCreateActivityArgs,
-  GqlMutationDeleteActivityArgs,
-  GqlMutationRemoveEventFromActivityArgs,
-  GqlMutationUpdateActivityInfoArgs,
-  GqlMutationUpdateActivityPrivacyArgs,
-  GqlMutationUpdateUserOfActivityArgs,
   GqlQueryActivitiesArgs,
   GqlQueryActivityArgs,
-  GqlRemoveEventFromActivityPayload,
-  GqlUpdateActivityInfoPayload,
-  GqlUpdateActivityPrivacyPayload,
-  GqlUpdateUserOfActivityPayload,
+  GqlActivityAddEventPayload,
+  GqlActivityAddUserPayload,
+  GqlMutationActivityAddEventArgs,
+  GqlMutationActivityAddUserArgs,
+  GqlMutationActivityCreateArgs,
+  GqlMutationActivityDeleteArgs,
+  GqlMutationActivityRemoveEventArgs,
+  GqlMutationActivityUpdateArgs,
+  GqlMutationActivityPublishArgs,
+  GqlMutationActivityUnpublishArgs,
+  GqlMutationActivityUpdateUserArgs,
+  GqlActivityRemoveEventPayload,
+  GqlActivityUpdatePayload,
+  GqlActivityUpdateUserPayload,
+  GqlActivityCreatePayload,
+  GqlActivityDeletePayload,
+  GqlActivityUpdatePrivacyPayload,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
@@ -86,9 +89,7 @@ export default class ActivityService {
         hasNextPage,
         hasPreviousPage: true,
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -97,9 +98,7 @@ export default class ActivityService {
     };
   }
 
-  static async getActivity({
-    id,
-  }: GqlQueryActivityArgs): Promise<GqlActivity | null> {
+  static async getActivity({ id }: GqlQueryActivityArgs): Promise<GqlActivity | null> {
     const activity = await this.db.activity.findUnique({
       where: { id },
       include: {
@@ -126,10 +125,10 @@ export default class ActivityService {
       : null;
   }
 
-  static async createActivity({
-    content,
-  }: GqlMutationCreateActivityArgs): Promise<GqlActivity> {
-    const { userId, eventId, ...properties } = content;
+  static async activityCreate({
+    input,
+  }: GqlMutationActivityCreateArgs): Promise<GqlActivityCreatePayload> {
+    const { userId, eventId, ...properties } = input;
     const activity = await this.db.activity.create({
       data: {
         ...properties,
@@ -155,19 +154,21 @@ export default class ActivityService {
     }
 
     return {
-      ...activity,
-      totalMinutes: activity.stat?.totalMinutes ?? 0,
-      event: {
-        ...activity.event,
-        totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-      },
+      activity: {
+        ...activity,
+        totalMinutes: activity.stat?.totalMinutes ?? 0,
+        event: {
+          ...activity.event,
+          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+        },
+      } as GqlActivity,
     };
   }
 
-  static async deleteActivity({
+  static async activityDelete({
     id,
-  }: GqlMutationDeleteActivityArgs): Promise<GqlActivity> {
-    const activity = await this.db.activity.delete({
+  }: GqlMutationActivityDeleteArgs): Promise<GqlActivityDeletePayload> {
+    await this.db.activity.delete({
       where: { id },
       include: {
         user: true,
@@ -179,27 +180,17 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
-    if (!activity.event) {
-      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
-    }
 
-    return {
-      ...activity,
-      totalMinutes: activity.stat?.totalMinutes ?? 0,
-      event: {
-        ...activity.event,
-        totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-      },
-    };
+    return { activityId: id };
   }
 
-  static async updateActivityInfo({
+  static async activityUpdate({
     id,
-    content,
-  }: GqlMutationUpdateActivityInfoArgs): Promise<GqlUpdateActivityInfoPayload> {
+    input,
+  }: GqlMutationActivityUpdateArgs): Promise<GqlActivityUpdatePayload> {
     const activity = await this.db.activity.update({
       where: { id },
-      data: content,
+      data: input,
       include: {
         user: true,
         event: {
@@ -226,13 +217,13 @@ export default class ActivityService {
     };
   }
 
-  static async updateActivityPrivacy({
+  static async activityPublish({
     id,
-    content,
-  }: GqlMutationUpdateActivityPrivacyArgs): Promise<GqlUpdateActivityPrivacyPayload> {
+    input,
+  }: GqlMutationActivityPublishArgs): Promise<GqlActivityUpdatePrivacyPayload> {
     const activity = await this.db.activity.update({
       where: { id },
-      data: content,
+      data: input,
       include: {
         user: true,
         event: {
@@ -243,6 +234,7 @@ export default class ActivityService {
         stat: { select: { totalMinutes: true } },
       },
     });
+
     if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -253,23 +245,57 @@ export default class ActivityService {
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
         },
       },
     };
   }
 
-  static async addUserToActivity({
+  static async activityUnpublish({
     id,
-    content,
-  }: GqlMutationAddUserToActivityArgs): Promise<GqlAddUserToActivityPayload> {
+    input,
+  }: GqlMutationActivityUnpublishArgs): Promise<GqlActivityUpdatePrivacyPayload> {
+    const activity = await this.db.activity.update({
+      where: { id },
+      data: input,
+      include: {
+        user: true,
+        event: {
+          include: {
+            stat: { select: { totalMinutes: true } },
+          },
+        },
+        stat: { select: { totalMinutes: true } },
+      },
+    });
+
+    if (!activity.event) {
+      throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
+    }
+
+    return {
+      activity: {
+        ...activity,
+        totalMinutes: activity.stat?.totalMinutes ?? 0,
+        event: {
+          ...activity.event,
+          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
+        },
+      },
+    };
+  }
+
+  static async activityAddUser({
+    id,
+    input,
+  }: GqlMutationActivityAddUserArgs): Promise<GqlActivityAddUserPayload> {
     const [activity, user] = await this.db.$transaction([
       this.db.activity.update({
         where: { id },
         data: {
           user: {
             connect: {
-              id: content.userId,
+              id: input.userId,
             },
           },
         },
@@ -284,12 +310,12 @@ export default class ActivityService {
         },
       }),
       this.db.user.findUnique({
-        where: { id: content.userId },
+        where: { id: input.userId },
       }),
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -307,17 +333,17 @@ export default class ActivityService {
     };
   }
 
-  static async updateUserOfActivity({
+  static async activityUpdateUser({
     id,
-    content,
-  }: GqlMutationUpdateUserOfActivityArgs): Promise<GqlUpdateUserOfActivityPayload> {
+    input,
+  }: GqlMutationActivityUpdateUserArgs): Promise<GqlActivityUpdateUserPayload> {
     const [activity, user] = await this.db.$transaction([
       this.db.activity.update({
         where: { id },
         data: {
           user: {
             update: {
-              id: content.userId,
+              id: input.userId,
             },
           },
         },
@@ -332,12 +358,12 @@ export default class ActivityService {
         },
       }),
       this.db.user.findUnique({
-        where: { id: content.userId },
+        where: { id: input.userId },
       }),
     ]);
 
     if (!user) {
-      throw new Error(`User with ID ${content.userId} not found`);
+      throw new Error(`User with ID ${input.userId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -351,21 +377,21 @@ export default class ActivityService {
           totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
         },
       },
-      user,
+      user: user,
     };
   }
 
-  static async addEventToActivity({
+  static async activityAddEvent({
     id,
-    content,
-  }: GqlMutationAddEventToActivityArgs): Promise<GqlAddEventToActivityPayload> {
+    input,
+  }: GqlMutationActivityAddEventArgs): Promise<GqlActivityAddEventPayload> {
     const [activity, event] = await this.db.$transaction([
       this.db.activity.update({
         where: { id },
         data: {
           event: {
             connect: {
-              id: content.eventId,
+              id: input.eventId,
             },
           },
         },
@@ -380,7 +406,7 @@ export default class ActivityService {
         },
       }),
       this.db.event.findUnique({
-        where: { id: content.eventId },
+        where: { id: input.eventId },
         include: {
           stat: { select: { totalMinutes: true } },
         },
@@ -388,7 +414,7 @@ export default class ActivityService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${content.eventId} not found`);
+      throw new Error(`Event with ID ${input.eventId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
@@ -399,7 +425,7 @@ export default class ActivityService {
         totalMinutes: activity.stat?.totalMinutes ?? 0,
         event: {
           ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
+          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
         },
       },
       event: {
@@ -409,17 +435,17 @@ export default class ActivityService {
     };
   }
 
-  static async removeEventFromActivity({
+  static async activityRemoveEvent({
     id,
-    content,
-  }: GqlMutationRemoveEventFromActivityArgs): Promise<GqlRemoveEventFromActivityPayload> {
+    input,
+  }: GqlMutationActivityRemoveEventArgs): Promise<GqlActivityRemoveEventPayload> {
     const [activity, event] = await this.db.$transaction([
       this.db.activity.update({
         where: { id },
         data: {
           event: {
             disconnect: {
-              id: content.eventId,
+              id: input.eventId,
             },
           },
         },
@@ -434,7 +460,7 @@ export default class ActivityService {
         },
       }),
       this.db.event.findUnique({
-        where: { id: content.eventId },
+        where: { id: input.eventId },
         include: {
           stat: { select: { totalMinutes: true } },
         },
@@ -442,7 +468,7 @@ export default class ActivityService {
     ]);
 
     if (!event) {
-      throw new Error(`Event with ID ${content.eventId} not found`);
+      throw new Error(`Event with ID ${input.eventId} not found`);
     } else if (!activity.event) {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
