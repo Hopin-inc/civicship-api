@@ -1,10 +1,14 @@
 # Queries/Mutations-related type definitions
 
-input ApplicationInput {
+input ApplicationCreateInput {
     userId: String!
     eventId: String
     comment: String
     submittedAt: Datetime!
+}
+
+input ApplicationUpdateCommentInput {
+    comment: String
 }
 
 # Type definitions
@@ -17,7 +21,7 @@ type ApplicationDeleteSuccess {
     applicationId: ID!
 }
 
-type ApplicationUpdateSuccess {
+type ApplicationUpdateCommentSuccess {
     application: Application!
 }
 
@@ -39,8 +43,8 @@ union ApplicationDeletePayload =
     AuthError |
     ComplexQueryError
 
-union ApplicationUpdatePayload =
-    ApplicationUpdateSuccess |
+union ApplicationUpdateCommentPayload =
+    ApplicationUpdateCommentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

@@ -4,12 +4,12 @@ import {
   GqlQueryApplicationArgs,
   GqlMutationApplicationCreateArgs,
   GqlMutationApplicationDeleteArgs,
-  GqlMutationApplicationUpdateArgs,
+  GqlMutationApplicationUpdateCommentArgs,
   GqlMutationApplicationPublishArgs,
   GqlMutationApplicationUnpublishArgs,
   GqlApplicationCreatePayload,
   GqlApplicationDeletePayload,
-  GqlApplicationUpdatePayload,
+  GqlApplicationUpdateCommentPayload,
   GqlApplicationUpdatePrivacyPayload,
   GqlApplicationsConnection,
   GqlApplication,
@@ -214,10 +214,10 @@ export default class ApplicationService {
     return { applicationId: id };
   }
 
-  static async applicationUpdate({
+  static async applicationUpdateComment({
     id,
     input,
-  }: GqlMutationApplicationUpdateArgs): Promise<GqlApplicationUpdatePayload> {
+  }: GqlMutationApplicationUpdateCommentArgs): Promise<GqlApplicationUpdateCommentPayload> {
     const application = await this.db.application.update({
       where: { id },
       data: input,

@@ -4,7 +4,7 @@ import {
   GqlMutationApplicationCreateArgs,
   GqlQueryApplicationArgs,
   GqlMutationApplicationDeleteArgs,
-  GqlMutationApplicationUpdateArgs,
+  GqlMutationApplicationUpdateCommentArgs,
   GqlMutationApplicationPublishArgs,
   GqlMutationApplicationUnpublishArgs,
 } from "@/types/graphql";
@@ -17,26 +17,16 @@ const applicationResolver = {
       ApplicationService.getApplication(args),
   },
   Mutation: {
-    applicationCreate: async (
-      _: unknown,
-      args: GqlMutationApplicationCreateArgs,
-    ) => ApplicationService.applicationCreate(args),
-    applicationDelete: async (
-      _: unknown,
-      args: GqlMutationApplicationDeleteArgs,
-    ) => ApplicationService.applicationDelete(args),
-    applicationUpdate: async (
-      _: unknown,
-      args: GqlMutationApplicationUpdateArgs,
-    ) => ApplicationService.applicationUpdate(args),
-    applicationPublish: async (
-      _: unknown,
-      args: GqlMutationApplicationPublishArgs,
-    ) => ApplicationService.applicationPublish(args),
-    applicationUnpublish: async (
-      _: unknown,
-      args: GqlMutationApplicationUnpublishArgs,
-    ) => ApplicationService.applicationUnpublish(args),
+    applicationCreate: async (_: unknown, args: GqlMutationApplicationCreateArgs) =>
+      ApplicationService.applicationCreate(args),
+    applicationDelete: async (_: unknown, args: GqlMutationApplicationDeleteArgs) =>
+      ApplicationService.applicationDelete(args),
+    applicationUpdateComment: async (_: unknown, args: GqlMutationApplicationUpdateCommentArgs) =>
+      ApplicationService.applicationUpdateComment(args),
+    applicationPublish: async (_: unknown, args: GqlMutationApplicationPublishArgs) =>
+      ApplicationService.applicationPublish(args),
+    applicationUnpublish: async (_: unknown, args: GqlMutationApplicationUnpublishArgs) =>
+      ApplicationService.applicationUnpublish(args),
   },
 };
 

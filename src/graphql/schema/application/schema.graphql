@@ -11,9 +11,9 @@ extend type Query {
 }
 
 extend type Mutation {
-    applicationCreate(input: ApplicationInput!): ApplicationCreatePayload
+    applicationCreate(input: ApplicationCreateInput!): ApplicationCreatePayload
     applicationDelete(id: ID!): ApplicationDeletePayload
-    applicationUpdate(id: ID!, input: ApplicationInput!): ApplicationUpdatePayload
+    applicationUpdateComment(id: ID!, input: ApplicationUpdateCommentInput!): ApplicationUpdateCommentPayload
     applicationPublish(id: ID!): ApplicationUpdatePrivacyPayload
     applicationUnpublish(id: ID!): ApplicationUpdatePrivacyPayload
 }
