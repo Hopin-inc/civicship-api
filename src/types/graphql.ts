@@ -293,7 +293,7 @@ export type GqlApplicationsConnection = {
 export type GqlAuthError = GqlError & {
   __typename?: 'AuthError';
   message: Scalars['String']['output'];
-  path: Array<Scalars['String']['output']>;
+  path?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type GqlCity = {
@@ -355,7 +355,7 @@ export type GqlComments = {
 export type GqlComplexQueryError = GqlError & {
   __typename?: 'ComplexQueryError';
   message: Scalars['String']['output'];
-  path: Array<Scalars['String']['output']>;
+  path?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type GqlEdge = {
@@ -370,7 +370,7 @@ export const GqlEntityPosition = {
 export type GqlEntityPosition = typeof GqlEntityPosition[keyof typeof GqlEntityPosition];
 export type GqlError = {
   message: Scalars['String']['output'];
-  path: Array<Scalars['String']['output']>;
+  path?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type GqlEvent = {
@@ -392,7 +392,7 @@ export type GqlEvent = {
   plannedStartsAt?: Maybe<Scalars['Datetime']['output']>;
   skillsets?: Maybe<Array<GqlSkillset>>;
   startsAt: Scalars['Datetime']['output'];
-  totalMinutes: Scalars['Int']['output'];
+  totalMinutes?: Maybe<Scalars['Int']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -756,9 +756,9 @@ export type GqlIndex = {
 
 export type GqlInvalidInputValueError = GqlError & {
   __typename?: 'InvalidInputValueError';
-  fields: Array<Maybe<GqlField>>;
+  fields?: Maybe<Array<Maybe<GqlField>>>;
   message: Scalars['String']['output'];
-  path: Array<Scalars['String']['output']>;
+  path?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type GqlIssue = {
@@ -3351,7 +3351,7 @@ export type GqlApplicationsConnectionResolvers<ContextType = Context, ParentType
 
 export type GqlAuthErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['AuthError'] = GqlResolversParentTypes['AuthError']> = ResolversObject<{
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
+  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3408,7 +3408,7 @@ export type GqlCommentsResolvers<ContextType = Context, ParentType extends GqlRe
 
 export type GqlComplexQueryErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ComplexQueryError'] = GqlResolversParentTypes['ComplexQueryError']> = ResolversObject<{
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
+  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3424,7 +3424,7 @@ export type GqlEdgeResolvers<ContextType = Context, ParentType extends GqlResolv
 export type GqlErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Error'] = GqlResolversParentTypes['Error']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
+  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
 }>;
 
 export type GqlEventResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Event'] = GqlResolversParentTypes['Event']> = ResolversObject<{
@@ -3445,7 +3445,7 @@ export type GqlEventResolvers<ContextType = Context, ParentType extends GqlResol
   plannedStartsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   skillsets?: Resolver<Maybe<Array<GqlResolversTypes['Skillset']>>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  totalMinutes?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3712,9 +3712,9 @@ export type GqlIndexResolvers<ContextType = Context, ParentType extends GqlResol
 }>;
 
 export type GqlInvalidInputValueErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['InvalidInputValueError'] = GqlResolversParentTypes['InvalidInputValueError']> = ResolversObject<{
-  fields?: Resolver<Array<Maybe<GqlResolversTypes['Field']>>, ParentType, ContextType>;
+  fields?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['Field']>>>, ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  path?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
+  path?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

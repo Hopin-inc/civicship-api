@@ -33,7 +33,7 @@ type Event {
     endsAt: Datetime!
     plannedStartsAt: Datetime
     plannedEndsAt: Datetime
-    totalMinutes: Int!
+    totalMinutes: Int
 
     agendas: [Agenda!]
     cities: [City!]

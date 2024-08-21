@@ -216,7 +216,6 @@ export default class EventService {
           },
         },
         groups: { include: { group: true } },
-        stat: { select: { totalMinutes: true } },
       },
     });
     return {
@@ -237,7 +236,6 @@ export default class EventService {
           state: r.organization.state,
         })),
         groups: event.groups.map((r) => r.group),
-        totalMinutes: event.stat?.totalMinutes ?? 0,
       },
     };
   }
