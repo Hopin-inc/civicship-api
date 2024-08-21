@@ -11,12 +11,12 @@ import {
   GqlMutationActivityCreateArgs,
   GqlMutationActivityDeleteArgs,
   GqlMutationActivityRemoveEventArgs,
-  GqlMutationActivityUpdateArgs,
+  GqlMutationActivityUpdateContentArgs,
   GqlMutationActivityPublishArgs,
   GqlMutationActivityUnpublishArgs,
   GqlMutationActivityUpdateUserArgs,
   GqlActivityRemoveEventPayload,
-  GqlActivityUpdatePayload,
+  GqlActivityUpdateContentPayload,
   GqlActivityUpdateUserPayload,
   GqlActivityCreatePayload,
   GqlActivityDeletePayload,
@@ -187,7 +187,7 @@ export default class ActivityService {
   static async activityUpdate({
     id,
     input,
-  }: GqlMutationActivityUpdateArgs): Promise<GqlActivityUpdatePayload> {
+  }: GqlMutationActivityUpdateContentArgs): Promise<GqlActivityUpdateContentPayload> {
     const activity = await this.db.activity.update({
       where: { id },
       data: input,

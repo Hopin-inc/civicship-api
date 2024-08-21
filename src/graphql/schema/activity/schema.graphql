@@ -11,9 +11,9 @@ extend type Query {
 }
 
 extend type Mutation {
-    activityCreate(input: ActivityInput!): ActivityCreatePayload
+    activityCreate(input: ActivityCreateInput!): ActivityCreatePayload
     activityDelete(id: ID!): ActivityDeletePayload
-    activityUpdate(id: ID!, input: ActivityInput!): ActivityUpdatePayload
+    activityUpdateContent(id: ID!, input: ActivityUpdateContentInput!): ActivityUpdateContentPayload
     activityPublish(id: ID!, input: ActivityPrivacyInput!): ActivityUpdatePrivacyPayload
     activityUnpublish(id: ID!, input: ActivityPrivacyInput!): ActivityUpdatePrivacyPayload
     activityAddUser(id: ID!, input: ActivityAddUserInput!): ActivityAddUserPayload
