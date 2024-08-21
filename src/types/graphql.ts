@@ -328,13 +328,6 @@ export type GqlCommentAddEventSuccess = {
   comment: GqlComment;
 };
 
-export type GqlCommentCreateInput = {
-  content: Scalars['String']['input'];
-  eventId: Scalars['ID']['input'];
-  postedAt?: InputMaybe<Scalars['Datetime']['input']>;
-  userId: Scalars['ID']['input'];
-};
-
 export type GqlCommentDeletePayload = GqlAuthError | GqlCommentDeleteSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
 
 export type GqlCommentDeleteSuccess = {
@@ -342,14 +335,14 @@ export type GqlCommentDeleteSuccess = {
   commentId: Scalars['String']['output'];
 };
 
-export type GqlCommentUpdateInput = {
+export type GqlCommentUpdateContentInput = {
   content?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCommentUpdatePayload = GqlAuthError | GqlCommentUpdateSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
+export type GqlCommentUpdateContentPayload = GqlAuthError | GqlCommentUpdateContentSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
 
-export type GqlCommentUpdateSuccess = {
-  __typename?: 'CommentUpdateSuccess';
+export type GqlCommentUpdateContentSuccess = {
+  __typename?: 'CommentUpdateContentSuccess';
   comment: GqlComment;
 };
 
@@ -426,20 +419,6 @@ export type GqlEventAddOrganizationSuccess = {
   organization: GqlOrganization;
 };
 
-export type GqlEventCreateInput = {
-  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
-  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  endsAt: Scalars['Datetime']['input'];
-  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
-  images?: InputMaybe<Array<Scalars['String']['input']>>;
-  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
-  organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
-  plannedEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  plannedStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  startsAt: Scalars['Datetime']['input'];
-};
-
 export type GqlEventCreatePayload = GqlAuthError | GqlComplexQueryError | GqlEventCreateSuccess | GqlInvalidInputValueError;
 
 export type GqlEventCreateSuccess = {
@@ -508,20 +487,6 @@ export type GqlEventRemoveOrganizationSuccess = {
 
 export type GqlEventSortInput = {
   startsAt?: InputMaybe<GqlSortDirection>;
-};
-
-export type GqlEventUpdateInput = {
-  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
-  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
-  images?: InputMaybe<Array<Scalars['String']['input']>>;
-  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
-  organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
-  plannedEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  plannedStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
 export type GqlEventUpdatePayload = GqlAuthError | GqlComplexQueryError | GqlEventUpdateSuccess | GqlInvalidInputValueError;
@@ -1014,12 +979,6 @@ export type GqlLikeAddEventSuccess = {
   like: GqlLike;
 };
 
-export type GqlLikeCreateInput = {
-  eventId: Scalars['ID']['input'];
-  postedAt?: InputMaybe<Scalars['Datetime']['input']>;
-  userId: Scalars['ID']['input'];
-};
-
 export type GqlLikeDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlLikeDeleteSuccess;
 
 export type GqlLikeDeleteSuccess = {
@@ -1044,7 +1003,6 @@ export type GqlMutation = {
   activityUnpublish?: Maybe<GqlActivityUpdatePrivacyPayload>;
   activityUpdateContent?: Maybe<GqlActivityUpdateContentPayload>;
   activityUpdateUser?: Maybe<GqlActivityUpdateUserPayload>;
-  addLike?: Maybe<GqlLike>;
   applicationConfirmationCreate?: Maybe<GqlApplicationConfirmationCreatePayload>;
   applicationCreate?: Maybe<GqlApplicationCreatePayload>;
   applicationDelete?: Maybe<GqlApplicationDeletePayload>;
@@ -1053,11 +1011,7 @@ export type GqlMutation = {
   applicationUpdateComment?: Maybe<GqlApplicationUpdateCommentPayload>;
   commentAddEvent?: Maybe<GqlCommentAddEventPayload>;
   commentDelete?: Maybe<GqlCommentDeletePayload>;
-  commentUpdate?: Maybe<GqlCommentUpdatePayload>;
-  createComment?: Maybe<GqlComment>;
-  createEvent?: Maybe<GqlEvent>;
-  deleteComment?: Maybe<GqlComment>;
-  deleteEvent?: Maybe<GqlEvent>;
+  commentUpdateContent?: Maybe<GqlCommentUpdateContentPayload>;
   eventAddGroup?: Maybe<GqlEventAddGroupPayload>;
   eventAddOrganization?: Maybe<GqlEventAddOrganizationPayload>;
   eventCreate?: Maybe<GqlEventCreatePayload>;
@@ -1109,7 +1063,6 @@ export type GqlMutation = {
   organizationRemoveUser?: Maybe<GqlOrganizationRemoveUserPayload>;
   organizationUnpublish?: Maybe<GqlOrganizationUpdatePrivacyPayload>;
   organizationUpdate?: Maybe<GqlOrganizationUpdatePayload>;
-  removeLike?: Maybe<GqlLike>;
   targetAddGroup?: Maybe<GqlTargetAddGroupPayload>;
   targetAddOrganization?: Maybe<GqlTargetAddOrganizationPayload>;
   targetCreate?: Maybe<GqlTargetCreatePayload>;
@@ -1118,8 +1071,6 @@ export type GqlMutation = {
   targetRemoveOrganization?: Maybe<GqlTargetRemoveOrganizationPayload>;
   targetUpdate?: Maybe<GqlTargetUpdatePayload>;
   targetUpdateIndex?: Maybe<GqlTargetUpdateIndexPayload>;
-  updateComment?: Maybe<GqlComment>;
-  updateEvent?: Maybe<GqlEvent>;
   userAddActivity?: Maybe<GqlUserAddActivityPayload>;
   userAddGroup?: Maybe<GqlUserAddGroupPayload>;
   userAddOrganization?: Maybe<GqlUserRemoveOrganizationPayload>;
@@ -1186,11 +1137,6 @@ export type GqlMutationActivityUpdateUserArgs = {
 };
 
 
-export type GqlMutationAddLikeArgs = {
-  content: GqlLikeCreateInput;
-};
-
-
 export type GqlMutationApplicationConfirmationCreateArgs = {
   input: GqlApplicationConfirmationInput;
 };
@@ -1232,29 +1178,9 @@ export type GqlMutationCommentDeleteArgs = {
 };
 
 
-export type GqlMutationCommentUpdateArgs = {
+export type GqlMutationCommentUpdateContentArgs = {
   id: Scalars['ID']['input'];
-  input: GqlCommentUpdateInput;
-};
-
-
-export type GqlMutationCreateCommentArgs = {
-  content: GqlCommentCreateInput;
-};
-
-
-export type GqlMutationCreateEventArgs = {
-  content: GqlEventCreateInput;
-};
-
-
-export type GqlMutationDeleteCommentArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type GqlMutationDeleteEventArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlCommentUpdateContentInput;
 };
 
 
@@ -1548,11 +1474,6 @@ export type GqlMutationOrganizationUpdateArgs = {
 };
 
 
-export type GqlMutationRemoveLikeArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
 export type GqlMutationTargetAddGroupArgs = {
   id: Scalars['ID']['input'];
   input: GqlTargetAddGroupInput;
@@ -1596,18 +1517,6 @@ export type GqlMutationTargetUpdateArgs = {
 export type GqlMutationTargetUpdateIndexArgs = {
   id: Scalars['ID']['input'];
   input: GqlTargetUpdateIndexInput;
-};
-
-
-export type GqlMutationUpdateCommentArgs = {
-  content: GqlCommentUpdateInput;
-  id: Scalars['ID']['input'];
-};
-
-
-export type GqlMutationUpdateEventArgs = {
-  content: GqlEventUpdateInput;
-  id: Scalars['ID']['input'];
 };
 
 
@@ -2470,7 +2379,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   ApplicationUpdatePrivacyPayload: ( Omit<GqlApplicationUpdatePrivacySuccess, 'application'> & { application: _RefType['Application'] } ) | ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommentAddEventPayload: ( GqlAuthError ) | ( Omit<GqlCommentAddEventSuccess, 'comment'> & { comment: _RefType['Comment'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommentDeletePayload: ( GqlAuthError ) | ( GqlCommentDeleteSuccess ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
-  CommentUpdatePayload: ( GqlAuthError ) | ( Omit<GqlCommentUpdateSuccess, 'comment'> & { comment: _RefType['Comment'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
+  CommentUpdateContentPayload: ( GqlAuthError ) | ( Omit<GqlCommentUpdateContentSuccess, 'comment'> & { comment: _RefType['Comment'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   EventAddGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventAddGroupSuccess, 'event' | 'group'> & { event: _RefType['Event'], group: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
   EventAddOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventAddOrganizationSuccess, 'event' | 'organization'> & { event: _RefType['Event'], organization: _RefType['Organization'] } ) | ( GqlInvalidInputValueError );
   EventCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventCreateSuccess, 'event'> & { event?: Maybe<_RefType['Event']> } ) | ( GqlInvalidInputValueError );
@@ -2606,12 +2515,11 @@ export type GqlResolversTypes = ResolversObject<{
   CommentAddEventInput: GqlCommentAddEventInput;
   CommentAddEventPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommentAddEventPayload']>;
   CommentAddEventSuccess: ResolverTypeWrapper<Omit<GqlCommentAddEventSuccess, 'comment'> & { comment: GqlResolversTypes['Comment'] }>;
-  CommentCreateInput: GqlCommentCreateInput;
   CommentDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommentDeletePayload']>;
   CommentDeleteSuccess: ResolverTypeWrapper<GqlCommentDeleteSuccess>;
-  CommentUpdateInput: GqlCommentUpdateInput;
-  CommentUpdatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommentUpdatePayload']>;
-  CommentUpdateSuccess: ResolverTypeWrapper<Omit<GqlCommentUpdateSuccess, 'comment'> & { comment: GqlResolversTypes['Comment'] }>;
+  CommentUpdateContentInput: GqlCommentUpdateContentInput;
+  CommentUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommentUpdateContentPayload']>;
+  CommentUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlCommentUpdateContentSuccess, 'comment'> & { comment: GqlResolversTypes['Comment'] }>;
   Comments: ResolverTypeWrapper<Omit<GqlComments, 'data'> & { data: Array<GqlResolversTypes['Comment']> }>;
   ComplexQueryError: ResolverTypeWrapper<GqlComplexQueryError>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
@@ -2625,7 +2533,6 @@ export type GqlResolversTypes = ResolversObject<{
   EventAddOrganizationInput: GqlEventAddOrganizationInput;
   EventAddOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventAddOrganizationPayload']>;
   EventAddOrganizationSuccess: ResolverTypeWrapper<Omit<GqlEventAddOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversTypes['Event'], organization: GqlResolversTypes['Organization'] }>;
-  EventCreateInput: GqlEventCreateInput;
   EventCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventCreatePayload']>;
   EventCreateSuccess: ResolverTypeWrapper<Omit<GqlEventCreateSuccess, 'event'> & { event?: Maybe<GqlResolversTypes['Event']> }>;
   EventDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventDeletePayload']>;
@@ -2641,7 +2548,6 @@ export type GqlResolversTypes = ResolversObject<{
   EventRemoveOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventRemoveOrganizationPayload']>;
   EventRemoveOrganizationSuccess: ResolverTypeWrapper<Omit<GqlEventRemoveOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversTypes['Event'], organization: GqlResolversTypes['Organization'] }>;
   EventSortInput: GqlEventSortInput;
-  EventUpdateInput: GqlEventUpdateInput;
   EventUpdatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventUpdatePayload']>;
   EventUpdatePrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventUpdatePrivacyPayload']>;
   EventUpdatePrivacySuccess: ResolverTypeWrapper<Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: GqlResolversTypes['Event'] }>;
@@ -2747,7 +2653,6 @@ export type GqlResolversTypes = ResolversObject<{
   LikeAddEventInput: GqlLikeAddEventInput;
   LikeAddEventPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['LikeAddEventPayload']>;
   LikeAddEventSuccess: ResolverTypeWrapper<Omit<GqlLikeAddEventSuccess, 'like'> & { like: GqlResolversTypes['Like'] }>;
-  LikeCreateInput: GqlLikeCreateInput;
   LikeDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['LikeDeletePayload']>;
   LikeDeleteSuccess: ResolverTypeWrapper<GqlLikeDeleteSuccess>;
   Likes: ResolverTypeWrapper<Omit<GqlLikes, 'data'> & { data: Array<GqlResolversTypes['Like']> }>;
@@ -2922,12 +2827,11 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommentAddEventInput: GqlCommentAddEventInput;
   CommentAddEventPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommentAddEventPayload'];
   CommentAddEventSuccess: Omit<GqlCommentAddEventSuccess, 'comment'> & { comment: GqlResolversParentTypes['Comment'] };
-  CommentCreateInput: GqlCommentCreateInput;
   CommentDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommentDeletePayload'];
   CommentDeleteSuccess: GqlCommentDeleteSuccess;
-  CommentUpdateInput: GqlCommentUpdateInput;
-  CommentUpdatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommentUpdatePayload'];
-  CommentUpdateSuccess: Omit<GqlCommentUpdateSuccess, 'comment'> & { comment: GqlResolversParentTypes['Comment'] };
+  CommentUpdateContentInput: GqlCommentUpdateContentInput;
+  CommentUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommentUpdateContentPayload'];
+  CommentUpdateContentSuccess: Omit<GqlCommentUpdateContentSuccess, 'comment'> & { comment: GqlResolversParentTypes['Comment'] };
   Comments: Omit<GqlComments, 'data'> & { data: Array<GqlResolversParentTypes['Comment']> };
   ComplexQueryError: GqlComplexQueryError;
   Datetime: Scalars['Datetime']['output'];
@@ -2940,7 +2844,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   EventAddOrganizationInput: GqlEventAddOrganizationInput;
   EventAddOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventAddOrganizationPayload'];
   EventAddOrganizationSuccess: Omit<GqlEventAddOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversParentTypes['Event'], organization: GqlResolversParentTypes['Organization'] };
-  EventCreateInput: GqlEventCreateInput;
   EventCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventCreatePayload'];
   EventCreateSuccess: Omit<GqlEventCreateSuccess, 'event'> & { event?: Maybe<GqlResolversParentTypes['Event']> };
   EventDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventDeletePayload'];
@@ -2956,7 +2859,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   EventRemoveOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventRemoveOrganizationPayload'];
   EventRemoveOrganizationSuccess: Omit<GqlEventRemoveOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversParentTypes['Event'], organization: GqlResolversParentTypes['Organization'] };
   EventSortInput: GqlEventSortInput;
-  EventUpdateInput: GqlEventUpdateInput;
   EventUpdatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventUpdatePayload'];
   EventUpdatePrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventUpdatePrivacyPayload'];
   EventUpdatePrivacySuccess: Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: GqlResolversParentTypes['Event'] };
@@ -3062,7 +2964,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   LikeAddEventInput: GqlLikeAddEventInput;
   LikeAddEventPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['LikeAddEventPayload'];
   LikeAddEventSuccess: Omit<GqlLikeAddEventSuccess, 'like'> & { like: GqlResolversParentTypes['Like'] };
-  LikeCreateInput: GqlLikeCreateInput;
   LikeDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['LikeDeletePayload'];
   LikeDeleteSuccess: GqlLikeDeleteSuccess;
   Likes: Omit<GqlLikes, 'data'> & { data: Array<GqlResolversParentTypes['Like']> };
@@ -3426,11 +3327,11 @@ export type GqlCommentDeleteSuccessResolvers<ContextType = Context, ParentType e
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlCommentUpdatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CommentUpdatePayload'] = GqlResolversParentTypes['CommentUpdatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'CommentUpdateSuccess' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
+export type GqlCommentUpdateContentPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CommentUpdateContentPayload'] = GqlResolversParentTypes['CommentUpdateContentPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'CommentUpdateContentSuccess' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
 }>;
 
-export type GqlCommentUpdateSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CommentUpdateSuccess'] = GqlResolversParentTypes['CommentUpdateSuccess']> = ResolversObject<{
+export type GqlCommentUpdateContentSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CommentUpdateContentSuccess'] = GqlResolversParentTypes['CommentUpdateContentSuccess']> = ResolversObject<{
   comment?: Resolver<GqlResolversTypes['Comment'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3971,7 +3872,6 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   activityUnpublish?: Resolver<Maybe<GqlResolversTypes['ActivityUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationActivityUnpublishArgs, 'id' | 'input'>>;
   activityUpdateContent?: Resolver<Maybe<GqlResolversTypes['ActivityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationActivityUpdateContentArgs, 'id' | 'input'>>;
   activityUpdateUser?: Resolver<Maybe<GqlResolversTypes['ActivityUpdateUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationActivityUpdateUserArgs, 'id' | 'input'>>;
-  addLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationAddLikeArgs, 'content'>>;
   applicationConfirmationCreate?: Resolver<Maybe<GqlResolversTypes['ApplicationConfirmationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationConfirmationCreateArgs, 'input'>>;
   applicationCreate?: Resolver<Maybe<GqlResolversTypes['ApplicationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationCreateArgs, 'input'>>;
   applicationDelete?: Resolver<Maybe<GqlResolversTypes['ApplicationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationDeleteArgs, 'id'>>;
@@ -3980,11 +3880,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   applicationUpdateComment?: Resolver<Maybe<GqlResolversTypes['ApplicationUpdateCommentPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationUpdateCommentArgs, 'id' | 'input'>>;
   commentAddEvent?: Resolver<Maybe<GqlResolversTypes['CommentAddEventPayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentAddEventArgs, 'input'>>;
   commentDelete?: Resolver<Maybe<GqlResolversTypes['CommentDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentDeleteArgs, 'id'>>;
-  commentUpdate?: Resolver<Maybe<GqlResolversTypes['CommentUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentUpdateArgs, 'id' | 'input'>>;
-  createComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationCreateCommentArgs, 'content'>>;
-  createEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationCreateEventArgs, 'content'>>;
-  deleteComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationDeleteCommentArgs, 'id'>>;
-  deleteEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationDeleteEventArgs, 'id'>>;
+  commentUpdateContent?: Resolver<Maybe<GqlResolversTypes['CommentUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentUpdateContentArgs, 'id' | 'input'>>;
   eventAddGroup?: Resolver<Maybe<GqlResolversTypes['EventAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddGroupArgs, 'id' | 'input'>>;
   eventAddOrganization?: Resolver<Maybe<GqlResolversTypes['EventAddOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddOrganizationArgs, 'id' | 'input'>>;
   eventCreate?: Resolver<Maybe<GqlResolversTypes['EventCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEventCreateArgs, 'input'>>;
@@ -4036,7 +3932,6 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   organizationRemoveUser?: Resolver<Maybe<GqlResolversTypes['OrganizationRemoveUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveUserArgs, 'id' | 'input'>>;
   organizationUnpublish?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationUnpublishArgs, 'id' | 'input'>>;
   organizationUpdate?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationUpdateArgs, 'id' | 'input'>>;
-  removeLike?: Resolver<Maybe<GqlResolversTypes['Like']>, ParentType, ContextType, RequireFields<GqlMutationRemoveLikeArgs, 'id'>>;
   targetAddGroup?: Resolver<Maybe<GqlResolversTypes['TargetAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetAddGroupArgs, 'id' | 'input'>>;
   targetAddOrganization?: Resolver<Maybe<GqlResolversTypes['TargetAddOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetAddOrganizationArgs, 'id' | 'input'>>;
   targetCreate?: Resolver<Maybe<GqlResolversTypes['TargetCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetCreateArgs, 'input'>>;
@@ -4045,8 +3940,6 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   targetRemoveOrganization?: Resolver<Maybe<GqlResolversTypes['TargetRemoveOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetRemoveOrganizationArgs, 'id' | 'input'>>;
   targetUpdate?: Resolver<Maybe<GqlResolversTypes['TargetUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetUpdateArgs, 'id' | 'input'>>;
   targetUpdateIndex?: Resolver<Maybe<GqlResolversTypes['TargetUpdateIndexPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetUpdateIndexArgs, 'id' | 'input'>>;
-  updateComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationUpdateCommentArgs, 'content' | 'id'>>;
-  updateEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationUpdateEventArgs, 'content' | 'id'>>;
   userAddActivity?: Resolver<Maybe<GqlResolversTypes['UserAddActivityPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserAddActivityArgs, 'id' | 'input'>>;
   userAddGroup?: Resolver<Maybe<GqlResolversTypes['UserAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserAddGroupArgs, 'id' | 'input'>>;
   userAddOrganization?: Resolver<Maybe<GqlResolversTypes['UserRemoveOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserAddOrganizationArgs, 'id' | 'input'>>;
@@ -4535,8 +4428,8 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   CommentAddEventSuccess?: GqlCommentAddEventSuccessResolvers<ContextType>;
   CommentDeletePayload?: GqlCommentDeletePayloadResolvers<ContextType>;
   CommentDeleteSuccess?: GqlCommentDeleteSuccessResolvers<ContextType>;
-  CommentUpdatePayload?: GqlCommentUpdatePayloadResolvers<ContextType>;
-  CommentUpdateSuccess?: GqlCommentUpdateSuccessResolvers<ContextType>;
+  CommentUpdateContentPayload?: GqlCommentUpdateContentPayloadResolvers<ContextType>;
+  CommentUpdateContentSuccess?: GqlCommentUpdateContentSuccessResolvers<ContextType>;
   Comments?: GqlCommentsResolvers<ContextType>;
   ComplexQueryError?: GqlComplexQueryErrorResolvers<ContextType>;
   Datetime?: GraphQLScalarType;

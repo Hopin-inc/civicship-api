@@ -4,8 +4,8 @@ import {
   GqlCommentDeletePayload,
   GqlMutationCommentAddEventArgs,
   GqlMutationCommentDeleteArgs,
-  GqlMutationCommentUpdateArgs,
-  GqlCommentUpdatePayload,
+  GqlMutationCommentUpdateContentArgs,
+  GqlCommentUpdateContentPayload,
 } from "@/types/graphql";
 
 export default class CommentService {
@@ -53,7 +53,7 @@ export default class CommentService {
   static async commentUpdate({
     id,
     input,
-  }: GqlMutationCommentUpdateArgs): Promise<GqlCommentUpdatePayload> {
+  }: GqlMutationCommentUpdateContentArgs): Promise<GqlCommentUpdateContentPayload> {
     const comment = await this.db.comment.update({
       where: { id },
       data: input,

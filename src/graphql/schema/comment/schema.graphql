@@ -2,7 +2,7 @@
 
 extend type Mutation {
     commentAddEvent(input: CommentAddEventInput!): CommentAddEventPayload
-    commentUpdate(id: ID!, input: CommentUpdateInput!): CommentUpdatePayload
+    commentUpdateContent(id: ID!, input: CommentUpdateContentInput!): CommentUpdateContentPayload
     commentDelete(id: ID!): CommentDeletePayload
 }
 
