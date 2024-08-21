@@ -47,23 +47,23 @@ enum SortDirection {
 
 interface Error {
     message: String!
-    path: [String!]!
+    path: [String!]
 }
 
 type InvalidInputValueError implements Error {
     message: String!
-    path: [String!]!
-    fields: [Field]!
+    path: [String!]
+    fields: [Field]
 }
 
 type AuthError implements Error {
     message: String!
-    path: [String!]!
+    path: [String!]
 }
 
 type ComplexQueryError implements Error {
     message: String!
-    path: [String!]!
+    path: [String!]
 }
 
 type Field {
