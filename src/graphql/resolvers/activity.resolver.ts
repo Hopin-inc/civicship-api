@@ -24,8 +24,8 @@ const activityResolver = {
       ActivityService.activityCreate(args),
     activityDelete: async (_: unknown, args: GqlMutationActivityDeleteArgs) =>
       ActivityService.activityDelete(args),
-    activityUpdate: async (_: unknown, args: GqlMutationActivityUpdateContentArgs) =>
-      ActivityService.activityUpdate(args),
+    activityUpdateContent: async (_: unknown, args: GqlMutationActivityUpdateContentArgs) =>
+      ActivityService.activityUpdateContent(args),
     activityPublish: async (_: unknown, args: GqlMutationActivityPublishArgs) =>
       ActivityService.activityPublish(args),
     activityUnpublish: async (_: unknown, args: GqlMutationActivityUnpublishArgs) =>

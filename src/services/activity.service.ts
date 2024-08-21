@@ -184,7 +184,7 @@ export default class ActivityService {
     return { activityId: id };
   }
 
-  static async activityUpdate({
+  static async activityUpdateContent({
     id,
     input,
   }: GqlMutationActivityUpdateContentArgs): Promise<GqlActivityUpdateContentPayload> {
