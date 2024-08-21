@@ -89,6 +89,7 @@ Table t_organizations {
   agendas t_agendas_on_organizations [not null]
   cities t_cities_on_organizations [not null]
   targets t_targets [not null]
+  activitiesNotInEvents t_activities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -121,8 +122,10 @@ Table t_activities {
   images Json [not null, default: '[]', note: '[ArrayOfString]']
   startsAt DateTime [not null]
   endsAt DateTime [not null]
-  userId String [not null]
-  user t_users [not null]
+  userId String
+  user t_users
+  organizationId String
+  organization t_organizations
   eventId String
   event t_events
   issueId String
@@ -257,8 +260,8 @@ Table t_issues_on_organizations {
 Table t_likes {
   id String [pk]
   postedAt DateTime [not null]
-  userId String [not null]
-  user t_users [not null]
+  userId String
+  user t_users
   eventId String
   event t_events
   issueId String
@@ -271,8 +274,8 @@ Table t_comments {
   id String [pk]
   content String [not null]
   postedAt DateTime [not null]
-  userId String [not null]
-  user t_users [not null]
+  userId String
+  user t_users
   eventId String
   event t_events
   issueId String
@@ -601,7 +604,7 @@ Enum ActivityStyle {
 
 Ref: t_groups.parentId - t_groups.id [delete: Set Null]
 
-Ref: t_groups.organizationId > t_organizations.id [delete: Cascade]
+Ref: t_groups.organizationId > t_organizations.id [delete: Restrict]
 
 Ref: t_users_on_groups.userId > t_users.id [delete: Cascade]
 
@@ -615,7 +618,9 @@ Ref: t_users_on_organizations.userId > t_users.id [delete: Cascade]
 
 Ref: t_users_on_organizations.organizationId > t_organizations.id [delete: Cascade]
 
-Ref: t_activities.userId > t_users.id [delete: Cascade]
+Ref: t_activities.userId > t_users.id [delete: Set Null]
+
+Ref: t_activities.organizationId > t_organizations.id [delete: Set Null]
 
 Ref: t_activities.eventId > t_events.id [delete: Set Null]
 
@@ -647,13 +652,13 @@ Ref: t_issues_on_organizations.organizationId > t_organizations.id [delete: Casc
 
 Ref: t_issues_on_organizations.issueId > t_issues.id [delete: Cascade]
 
-Ref: t_likes.userId > t_users.id [delete: Cascade]
+Ref: t_likes.userId > t_users.id [delete: Set Null]
 
 Ref: t_likes.eventId > t_events.id [delete: Cascade]
 
 Ref: t_likes.issueId > t_issues.id [delete: Cascade]
 
-Ref: t_comments.userId > t_users.id [delete: Cascade]
+Ref: t_comments.userId > t_users.id [delete: Set Null]
 
 Ref: t_comments.eventId > t_events.id [delete: Cascade]
 

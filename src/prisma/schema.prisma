@@ -89,7 +89,7 @@ model Group {
   children Group[] @relation("groups_on_groups")
 
   organizationId String       @map("organization_id")
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -136,13 +136,14 @@ model Organization {
   address1         String
   address2         String?
 
-  groups  Group[]
-  users   UsersOnOrganizations[]
-  events  EventsOnOrganizations[]
-  issues  IssuesOnOrganizations[]
-  agendas AgendasOnOrganizations[]
-  cities  CitiesOnOrganizations[]
-  targets Target[]
+  groups                Group[]
+  users                 UsersOnOrganizations[]
+  events                EventsOnOrganizations[]
+  issues                IssuesOnOrganizations[]
+  agendas               AgendasOnOrganizations[]
+  cities                CitiesOnOrganizations[]
+  targets               Target[]
+  activitiesNotInEvents Activity[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -184,8 +185,11 @@ model Activity {
   startsAt      DateTime      @map("starts_at")
   endsAt        DateTime      @map("ends_at")
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId String?       @map("organization_id")
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   eventId String? @map("event_id")
   event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
@@ -351,8 +355,8 @@ model Like {
   id       String   @id @default(cuid())
   postedAt DateTime @map("posted_at")
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   eventId String? @map("event_id")
   event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)
@@ -371,8 +375,8 @@ model Comment {
   content  String
   postedAt DateTime @map("posted_at")
 
-  userId String @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   eventId String? @map("event_id")
   event   Event?  @relation(fields: [eventId], references: [id], onDelete: Cascade)

@@ -144,6 +144,10 @@ const modelFieldDefinitions = [{
                 name: "targets",
                 type: "Target",
                 relationName: "OrganizationToTarget"
+            }, {
+                name: "activitiesNotInEvents",
+                type: "Activity",
+                relationName: "ActivityToOrganization"
             }]
     }, {
         name: "UsersOnOrganizations",
@@ -162,6 +166,10 @@ const modelFieldDefinitions = [{
                 name: "user",
                 type: "User",
                 relationName: "ActivityToUser"
+            }, {
+                name: "organization",
+                type: "Organization",
+                relationName: "ActivityToOrganization"
             }, {
                 name: "event",
                 type: "Event",
@@ -1136,6 +1144,9 @@ exports.defineUsersOnOrganizationsFactory.withTransientFields = defaultTransient
 function isActivityuserFactory(x) {
     return x?._factoryFor === "User";
 }
+function isActivityorganizationFactory(x) {
+    return x?._factoryFor === "Organization";
+}
 function isActivityeventFactory(x) {
     return x?._factoryFor === "Event";
 }
@@ -1174,7 +1185,7 @@ function defineActivityFactoryInternal({ defaultData: defaultDataResolver, onAft
         const build = async (inputData = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateActivityScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -1190,6 +1201,9 @@ function defineActivityFactoryInternal({ defaultData: defaultDataResolver, onAft
                 user: isActivityuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user,
+                organization: isActivityorganizationFactory(defaultData.organization) ? {
+                    create: await defaultData.organization.build()
+                } : defaultData.organization,
                 event: isActivityeventFactory(defaultData.event) ? {
                     create: await defaultData.event.build()
                 } : defaultData.event,
@@ -1248,9 +1262,9 @@ function defineActivityFactoryInternal({ defaultData: defaultDataResolver, onAft
  * @returns factory {@link ActivityFactoryInterface}
  */
 exports.defineActivityFactory = ((options) => {
-    return defineActivityFactoryInternal(options, {});
+    return defineActivityFactoryInternal(options ?? {}, {});
 });
-exports.defineActivityFactory.withTransientFields = defaultTransientFieldValues => options => defineActivityFactoryInternal(options, defaultTransientFieldValues);
+exports.defineActivityFactory.withTransientFields = defaultTransientFieldValues => options => defineActivityFactoryInternal(options ?? {}, defaultTransientFieldValues);
 function isApplicationeventFactory(x) {
     return x?._factoryFor === "Event";
 }
@@ -2064,7 +2078,7 @@ function defineLikeFactoryInternal({ defaultData: defaultDataResolver, onAfterBu
         const build = async (inputData = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateLikeScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -2132,9 +2146,9 @@ function defineLikeFactoryInternal({ defaultData: defaultDataResolver, onAfterBu
  * @returns factory {@link LikeFactoryInterface}
  */
 exports.defineLikeFactory = ((options) => {
-    return defineLikeFactoryInternal(options, {});
+    return defineLikeFactoryInternal(options ?? {}, {});
 });
-exports.defineLikeFactory.withTransientFields = defaultTransientFieldValues => options => defineLikeFactoryInternal(options, defaultTransientFieldValues);
+exports.defineLikeFactory.withTransientFields = defaultTransientFieldValues => options => defineLikeFactoryInternal(options ?? {}, defaultTransientFieldValues);
 function isCommentuserFactory(x) {
     return x?._factoryFor === "User";
 }
@@ -2170,7 +2184,7 @@ function defineCommentFactoryInternal({ defaultData: defaultDataResolver, onAfte
         const build = async (inputData = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateCommentScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -2238,9 +2252,9 @@ function defineCommentFactoryInternal({ defaultData: defaultDataResolver, onAfte
  * @returns factory {@link CommentFactoryInterface}
  */
 exports.defineCommentFactory = ((options) => {
-    return defineCommentFactoryInternal(options, {});
+    return defineCommentFactoryInternal(options ?? {}, {});
 });
-exports.defineCommentFactory.withTransientFields = defaultTransientFieldValues => options => defineCommentFactoryInternal(options, defaultTransientFieldValues);
+exports.defineCommentFactory.withTransientFields = defaultTransientFieldValues => options => defineCommentFactoryInternal(options ?? {}, defaultTransientFieldValues);
 function isTargetorganizationFactory(x) {
     return x?._factoryFor === "Organization";
 }

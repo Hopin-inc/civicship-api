@@ -118,7 +118,8 @@ OFFSITE OFFSITE
     Json images 
     DateTime starts_at 
     DateTime ends_at 
-    String user_id 
+    String user_id "❓"
+    String organization_id "❓"
     String event_id "❓"
     String issue_id "❓"
     String application_id "❓"
@@ -209,7 +210,7 @@ OFFSITE OFFSITE
   "t_likes" {
     String id "🗝️"
     DateTime posted_at 
-    String user_id 
+    String user_id "❓"
     String event_id "❓"
     String issue_id "❓"
     DateTime created_at 
@@ -221,7 +222,7 @@ OFFSITE OFFSITE
     String id "🗝️"
     String content 
     DateTime posted_at 
-    String user_id 
+    String user_id "❓"
     String event_id "❓"
     String issue_id "❓"
     DateTime created_at 
@@ -465,11 +466,13 @@ OFFSITE OFFSITE
     "t_organizations" o{--}o "t_agendas_on_organizations" : "agendas"
     "t_organizations" o{--}o "t_cities_on_organizations" : "cities"
     "t_organizations" o{--}o "t_targets" : "targets"
+    "t_organizations" o{--}o "t_activities" : "activitiesNotInEvents"
     "t_users_on_organizations" o|--|| "t_users" : "user"
     "t_users_on_organizations" o|--|| "t_organizations" : "organization"
     "t_users_on_organizations" o|--|| "Role" : "enum:role"
     "t_activities" o|--|| "ActivityStyle" : "enum:activity_style"
-    "t_activities" o|--|| "t_users" : "user"
+    "t_activities" o|--|o "t_users" : "user"
+    "t_activities" o|--|o "t_organizations" : "organization"
     "t_activities" o|--|o "t_events" : "event"
     "t_activities" o|--|o "t_issues" : "issue"
     "t_activities" o|--|o "t_applications" : "application"
@@ -507,10 +510,10 @@ OFFSITE OFFSITE
     "t_issues_on_groups" o|--|| "t_issues" : "issue"
     "t_issues_on_organizations" o|--|| "t_organizations" : "organization"
     "t_issues_on_organizations" o|--|| "t_issues" : "issue"
-    "t_likes" o|--|| "t_users" : "user"
+    "t_likes" o|--|o "t_users" : "user"
     "t_likes" o|--|o "t_events" : "event"
     "t_likes" o|--|o "t_issues" : "issue"
-    "t_comments" o|--|| "t_users" : "user"
+    "t_comments" o|--|o "t_users" : "user"
     "t_comments" o|--|o "t_events" : "event"
     "t_comments" o|--|o "t_issues" : "issue"
     "t_targets" o|--|o "t_organizations" : "organization"

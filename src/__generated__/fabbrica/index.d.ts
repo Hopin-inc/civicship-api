@@ -266,6 +266,7 @@ type OrganizationFactoryDefineInput = {
     agendas?: Prisma.AgendasOnOrganizationsCreateNestedManyWithoutOrganizationInput;
     cities?: Prisma.CitiesOnOrganizationsCreateNestedManyWithoutOrganizationInput;
     targets?: Prisma.TargetCreateNestedManyWithoutOrganizationInput;
+    activitiesNotInEvents?: Prisma.ActivityCreateNestedManyWithoutOrganizationInput;
 };
 type OrganizationTransientFields = Record<string, unknown> & Partial<Record<keyof OrganizationFactoryDefineInput, never>>;
 type OrganizationFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -365,6 +366,10 @@ type ActivityuserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutActivitiesInput["create"]>;
 };
+type ActivityorganizationFactory = {
+    _factoryFor: "Organization";
+    build: () => PromiseLike<Prisma.OrganizationCreateNestedOneWithoutActivitiesNotInEventsInput["create"]>;
+};
 type ActivityeventFactory = {
     _factoryFor: "Event";
     build: () => PromiseLike<Prisma.EventCreateNestedOneWithoutActivitiesInput["create"]>;
@@ -392,7 +397,8 @@ type ActivityFactoryDefineInput = {
     endsAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
-    user: ActivityuserFactory | Prisma.UserCreateNestedOneWithoutActivitiesInput;
+    user?: ActivityuserFactory | Prisma.UserCreateNestedOneWithoutActivitiesInput;
+    organization?: ActivityorganizationFactory | Prisma.OrganizationCreateNestedOneWithoutActivitiesNotInEventsInput;
     event?: ActivityeventFactory | Prisma.EventCreateNestedOneWithoutActivitiesInput;
     issue?: ActivityissueFactory | Prisma.IssueCreateNestedOneWithoutActivitiesInput;
     application?: ActivityapplicationFactory | Prisma.ApplicationCreateNestedOneWithoutActivityInput;
@@ -403,9 +409,9 @@ type ActivityFactoryTrait<TTransients extends Record<string, unknown>> = {
     data?: Resolver<Partial<ActivityFactoryDefineInput>, BuildDataOptions<TTransients>>;
 } & CallbackDefineOptions<Activity, Prisma.ActivityCreateInput, TTransients>;
 type ActivityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<ActivityFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData?: Resolver<ActivityFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: ActivityFactoryTrait<TTransients>;
+        [traitName: TraitName]: ActivityFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Activity, Prisma.ActivityCreateInput, TTransients>;
 type ActivityTraitKeys<TOptions extends ActivityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -425,8 +431,8 @@ export interface ActivityFactoryInterface<TTransients extends Record<string, unk
     use(name: TTraitName, ...names: readonly TTraitName[]): ActivityFactoryInterfaceWithoutTraits<TTransients>;
 }
 interface ActivityFactoryBuilder {
-    <TOptions extends ActivityFactoryDefineOptions>(options: TOptions): ActivityFactoryInterface<{}, ActivityTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ActivityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ActivityFactoryDefineOptions<TTransients>>(options: TOptions) => ActivityFactoryInterface<TTransients, ActivityTraitKeys<TOptions>>;
+    <TOptions extends ActivityFactoryDefineOptions>(options?: TOptions): ActivityFactoryInterface<{}, ActivityTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ActivityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ActivityFactoryDefineOptions<TTransients>>(options?: TOptions) => ActivityFactoryInterface<TTransients, ActivityTraitKeys<TOptions>>;
 }
 /**
  * Define factory for {@link Activity} model.
@@ -892,7 +898,7 @@ type LikeFactoryDefineInput = {
     postedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
-    user: LikeuserFactory | Prisma.UserCreateNestedOneWithoutLikesInput;
+    user?: LikeuserFactory | Prisma.UserCreateNestedOneWithoutLikesInput;
     event?: LikeeventFactory | Prisma.EventCreateNestedOneWithoutLikesInput;
     issue?: LikeissueFactory | Prisma.IssueCreateNestedOneWithoutLikesInput;
 };
@@ -901,9 +907,9 @@ type LikeFactoryTrait<TTransients extends Record<string, unknown>> = {
     data?: Resolver<Partial<LikeFactoryDefineInput>, BuildDataOptions<TTransients>>;
 } & CallbackDefineOptions<Like, Prisma.LikeCreateInput, TTransients>;
 type LikeFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<LikeFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData?: Resolver<LikeFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: LikeFactoryTrait<TTransients>;
+        [traitName: TraitName]: LikeFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Like, Prisma.LikeCreateInput, TTransients>;
 type LikeTraitKeys<TOptions extends LikeFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -923,8 +929,8 @@ export interface LikeFactoryInterface<TTransients extends Record<string, unknown
     use(name: TTraitName, ...names: readonly TTraitName[]): LikeFactoryInterfaceWithoutTraits<TTransients>;
 }
 interface LikeFactoryBuilder {
-    <TOptions extends LikeFactoryDefineOptions>(options: TOptions): LikeFactoryInterface<{}, LikeTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends LikeTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends LikeFactoryDefineOptions<TTransients>>(options: TOptions) => LikeFactoryInterface<TTransients, LikeTraitKeys<TOptions>>;
+    <TOptions extends LikeFactoryDefineOptions>(options?: TOptions): LikeFactoryInterface<{}, LikeTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends LikeTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends LikeFactoryDefineOptions<TTransients>>(options?: TOptions) => LikeFactoryInterface<TTransients, LikeTraitKeys<TOptions>>;
 }
 /**
  * Define factory for {@link Like} model.
@@ -951,7 +957,7 @@ type CommentFactoryDefineInput = {
     postedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
-    user: CommentuserFactory | Prisma.UserCreateNestedOneWithoutCommentsInput;
+    user?: CommentuserFactory | Prisma.UserCreateNestedOneWithoutCommentsInput;
     event?: CommenteventFactory | Prisma.EventCreateNestedOneWithoutCommentsInput;
     issue?: CommentissueFactory | Prisma.IssueCreateNestedOneWithoutCommentsInput;
 };
@@ -960,9 +966,9 @@ type CommentFactoryTrait<TTransients extends Record<string, unknown>> = {
     data?: Resolver<Partial<CommentFactoryDefineInput>, BuildDataOptions<TTransients>>;
 } & CallbackDefineOptions<Comment, Prisma.CommentCreateInput, TTransients>;
 type CommentFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<CommentFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData?: Resolver<CommentFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: CommentFactoryTrait<TTransients>;
+        [traitName: TraitName]: CommentFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Comment, Prisma.CommentCreateInput, TTransients>;
 type CommentTraitKeys<TOptions extends CommentFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -982,8 +988,8 @@ export interface CommentFactoryInterface<TTransients extends Record<string, unkn
     use(name: TTraitName, ...names: readonly TTraitName[]): CommentFactoryInterfaceWithoutTraits<TTransients>;
 }
 interface CommentFactoryBuilder {
-    <TOptions extends CommentFactoryDefineOptions>(options: TOptions): CommentFactoryInterface<{}, CommentTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends CommentTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommentFactoryDefineOptions<TTransients>>(options: TOptions) => CommentFactoryInterface<TTransients, CommentTraitKeys<TOptions>>;
+    <TOptions extends CommentFactoryDefineOptions>(options?: TOptions): CommentFactoryInterface<{}, CommentTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommentTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommentFactoryDefineOptions<TTransients>>(options?: TOptions) => CommentFactoryInterface<TTransients, CommentTraitKeys<TOptions>>;
 }
 /**
  * Define factory for {@link Comment} model.
