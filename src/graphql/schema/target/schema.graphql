@@ -11,9 +11,9 @@ extend type Query {
 }
 
 extend type Mutation {
-    targetCreate(input: TargetInput!): TargetCreatePayload
+    targetCreate(input: TargetCreateInput!): TargetCreatePayload
     targetDelete(id: ID!): TargetDeletePayload
-    targetUpdate(id: ID!, input: TargetInput!): TargetUpdatePayload
+    targetUpdateContent(id: ID!, input: TargetUpdateContentInput!): TargetUpdateContentPayload
     targetAddGroup(id: ID!, input: TargetAddGroupInput!): TargetAddGroupPayload
     targetRemoveGroup(id: ID!, input: TargetRemoveGroupInput!): TargetRemoveGroupPayload
     targetAddOrganization(id: ID!, input: TargetAddOrganizationInput!): TargetAddOrganizationPayload
@@ -30,9 +30,10 @@ type Target {
     validFrom: Datetime!
     validTo: Datetime!
 
+    index: Index
+
     organization: Organization
     group: Group
-    index: Index
 
     createdAt: Datetime!
     updatedAt: Datetime

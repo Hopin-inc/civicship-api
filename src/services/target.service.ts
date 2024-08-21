@@ -14,8 +14,8 @@ import {
   GqlTarget,
   GqlMutationTargetUpdateIndexArgs,
   GqlTargetUpdateIndexPayload,
-  GqlTargetUpdatePayload,
-  GqlMutationTargetUpdateArgs,
+  GqlTargetUpdateContentPayload,
+  GqlMutationTargetUpdateContentArgs,
   GqlTargetCreatePayload,
   GqlTargetDeletePayload,
 } from "@/types/graphql";
@@ -25,12 +25,7 @@ import { Prisma } from "@prisma/client";
 class TargetService {
   private static db = prismaClient;
 
-  static async queryTargets({
-    cursor,
-    filter,
-    sort,
-    first,
-  }: GqlQueryTargetsArgs) {
+  static async queryTargets({ cursor, filter, sort, first }: GqlQueryTargetsArgs) {
     const take = first ?? 10;
     const where: Prisma.TargetWhereInput = {
       AND: [
@@ -59,9 +54,7 @@ class TargetService {
         hasNextPage,
         hasPreviousPage: true,
         startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length
-          ? formattedData[formattedData.length - 1].id
-          : undefined,
+        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
       },
       edges: formattedData.map((edge) => ({
         cursor: edge.id,
@@ -70,9 +63,7 @@ class TargetService {
     };
   }
 
-  static async getTarget({
-    id,
-  }: GqlQueryTargetArgs): Promise<GqlTarget | null> {
+  static async getTarget({ id }: GqlQueryTargetArgs): Promise<GqlTarget | null> {
     return this.db.target.findUnique({ where: { id } });
   }
 
@@ -96,29 +87,20 @@ class TargetService {
     return { target };
   }
 
-  static async targetDelete({
-    id,
-  }: GqlMutationTargetDeleteArgs): Promise<GqlTargetDeletePayload> {
+  static async targetDelete({ id }: GqlMutationTargetDeleteArgs): Promise<GqlTargetDeletePayload> {
     await this.db.target.delete({
       where: { id },
     });
     return { targetId: id };
   }
 
-  static async targetUpdate({
+  static async targetUpdateContent({
     id,
     input,
-  }: GqlMutationTargetUpdateArgs): Promise<GqlTargetUpdatePayload> {
-    const { indexId, ...properties } = input;
-    const data: Prisma.TargetUpdateInput = {
-      ...properties,
-      index: {
-        connect: { id: indexId },
-      },
-    };
+  }: GqlMutationTargetUpdateContentArgs): Promise<GqlTargetUpdateContentPayload> {
     const target: GqlTarget = await this.db.target.update({
       where: { id },
-      data,
+      data: input,
     });
     return { target };
   }
