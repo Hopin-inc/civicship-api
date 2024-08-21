@@ -1,12 +1,28 @@
 # Queries/Mutations-related type definitions
 
-input UserInput {
+input UserCreateInput {
     lastName: String!
     middleName: String
     firstName: String!
     email: String
     image: String
     bio: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+
+    organizationIds: [String!]
+    groupIds: [String!]
+}
+
+input UserUpdateContentInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+
     agendaIds: [Int!]
     cityCodes: [String!]
 }
@@ -49,7 +65,7 @@ type UserDeleteSuccess {
     userId: ID!
 }
 
-type UserUpdateSuccess {
+type UserUpdateContentSuccess {
     user: User
 }
 
@@ -101,8 +117,8 @@ union UserDeletePayload =
     AuthError |
     ComplexQueryError
 
-union UserUpdatePayload =
-    UserUpdateSuccess |
+union UserUpdateContentPayload =
+    UserUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

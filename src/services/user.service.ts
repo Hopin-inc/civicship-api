@@ -5,8 +5,8 @@ import {
   GqlUsersConnection,
   GqlMutationUserCreateArgs,
   GqlUserCreatePayload,
-  GqlMutationUserUpdateArgs,
-  GqlUserUpdatePayload,
+  GqlMutationUserUpdateContentArgs,
+  GqlUserUpdateContentPayload,
   GqlMutationUserPublishArgs,
   GqlUserUpdatePrivacyPayload,
   GqlUserRemoveGroupPayload,
@@ -107,7 +107,10 @@ export default class UserService {
     return { userId: id };
   }
 
-  static async userUpdate({ id, input }: GqlMutationUserUpdateArgs): Promise<GqlUserUpdatePayload> {
+  static async userUpdateContent({
+    id,
+    input,
+  }: GqlMutationUserUpdateContentArgs): Promise<GqlUserUpdateContentPayload> {
     const user = await this.db.user.update({
       where: { id },
       data: input,
