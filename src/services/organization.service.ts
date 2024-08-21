@@ -17,13 +17,15 @@ import {
   GqlOrganizationCreatePayload,
   GqlOrganizationRemoveTargetPayload,
   GqlOrganizationRemoveUserPayload,
-  GqlMutationOrganizationUpdateArgs,
-  GqlOrganizationUpdatePayload,
+  GqlMutationOrganizationUpdateDefaultArgs,
+  GqlOrganizationUpdateDefaultPayload,
   GqlMutationOrganizationPublishArgs,
   GqlMutationOrganizationUnpublishArgs,
   GqlOrganizationRemoveGroupPayload,
   GqlOrganizationAddGroupPayload,
   GqlOrganizationUpdatePrivacyPayload,
+  GqlOrganizationUpdateContentPayload,
+  GqlMutationOrganizationUpdateContentArgs,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
@@ -41,16 +43,11 @@ export default class OrganizationService {
     const take = first ?? 10;
     const where: Prisma.OrganizationWhereInput = {
       AND: [
-        filter?.agendaId
-          ? { agendas: { some: { agendaId: filter?.agendaId } } }
-          : {},
+        filter?.agendaId ? { agendas: { some: { agendaId: filter?.agendaId } } } : {},
         filter?.keyword
           ? {
-            OR: [
-              { name: { contains: filter?.keyword } },
-              { bio: { contains: filter?.keyword } },
-            ],
-          }
+              OR: [{ name: { contains: filter?.keyword } }, { bio: { contains: filter?.keyword } }],
+            }
           : {},
       ],
     };
@@ -91,15 +88,13 @@ export default class OrganizationService {
         cursor: edge.id,
         node: {
           ...edge,
-          users: edge.users.map(u => u.user),
+          users: edge.users.map((u) => u.user),
         },
       })),
     };
   }
 
-  static async getOrganization({
-    id,
-  }: GqlQueryOrganizationArgs): Promise<GqlOrganization | null> {
+  static async getOrganization({ id }: GqlQueryOrganizationArgs): Promise<GqlOrganization | null> {
     return this.db.organization.findUnique({
       where: { id },
       include: {
@@ -116,8 +111,7 @@ export default class OrganizationService {
   static async organizationCreate({
     input,
   }: GqlMutationOrganizationCreateArgs): Promise<GqlOrganizationCreatePayload> {
-    const { agendaIds, cityCode, stateCode, stateCountryCode, ...properties } =
-      input;
+    const { agendaIds, cityCode, stateCode, stateCountryCode, ...properties } = input;
     const data: Prisma.OrganizationCreateInput = {
       ...properties,
       state: {
@@ -151,10 +145,29 @@ export default class OrganizationService {
     return { organizationId: id };
   }
 
-  static async organizationUpdate({
+  static async organizationUpdateDefault({
     id,
     input,
-  }: GqlMutationOrganizationUpdateArgs): Promise<GqlOrganizationUpdatePayload> {
+  }: GqlMutationOrganizationUpdateDefaultArgs): Promise<GqlOrganizationUpdateDefaultPayload> {
+    const organization = await this.db.organization.update({
+      where: { id },
+      data: input,
+      include: {
+        city: {
+          include: {
+            state: true,
+          },
+        },
+        state: true,
+      },
+    });
+    return { organization };
+  }
+
+  static async organizationUpdateContent({
+    id,
+    input,
+  }: GqlMutationOrganizationUpdateContentArgs): Promise<GqlOrganizationUpdateContentPayload> {
     const organization = await this.db.organization.update({
       where: { id },
       data: input,
@@ -398,11 +411,10 @@ export default class OrganizationService {
 
   static async organizationPublish({
     id,
-    input,
   }: GqlMutationOrganizationPublishArgs): Promise<GqlOrganizationUpdatePrivacyPayload> {
     const organization = await this.db.organization.update({
       where: { id },
-      data: input,
+      data: { isPublic: true },
       include: {
         city: {
           include: {
@@ -420,11 +432,10 @@ export default class OrganizationService {
 
   static async organizationUnpublish({
     id,
-    input,
   }: GqlMutationOrganizationUnpublishArgs): Promise<GqlOrganizationUpdatePrivacyPayload> {
     const organization = await this.db.organization.update({
       where: { id },
-      data: input,
+      data: { isPublic: false },
       include: {
         city: {
           include: {

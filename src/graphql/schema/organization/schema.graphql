@@ -11,11 +11,12 @@ extend type Query {
 }
 
 extend type Mutation {
-    organizationCreate(input: OrganizationInput!): OrganizationCreatePayload
+    organizationCreate(input: OrganizationCreateInput!): OrganizationCreatePayload
     organizationDelete(id: ID!): OrganizationDeletePayload
-    organizationUpdate(id: ID!, input: OrganizationInput!): OrganizationUpdatePayload
-    organizationPublish(id: ID!, input: OrganizationPrivacyInput!): OrganizationUpdatePrivacyPayload
-    organizationUnpublish(id: ID!, input: OrganizationPrivacyInput!): OrganizationUpdatePrivacyPayload
+    organizationUpdateDefault(id: ID!, input: OrganizationUpdateDefaultInput!): OrganizationUpdateDefaultPayload
+    organizationUpdateContent(id: ID!, input: OrganizationUpdateContentInput!): OrganizationUpdateContentPayload
+    organizationPublish(id: ID!): OrganizationUpdatePrivacyPayload
+    organizationUnpublish(id: ID!): OrganizationUpdatePrivacyPayload
     organizationAddUser(id: ID!, input: OrganizationAddUserInput!): OrganizationAddUserPayload
     organizationRemoveUser(id: ID!, input: OrganizationRemoveUserInput!): OrganizationRemoveUserPayload
     organizationAddTarget(id: ID!, input: OrganizationAddTargetInput!): OrganizationAddTargetPayload
@@ -48,12 +49,14 @@ type Organization {
     address1: String!
     address2: String
 
-    groups: [Group!]
-    users: [User!]
-    events: [Event!]
     agendas: [Agenda!]
     cities: [City!]
+
+    users: [User!]
+    groups: [Group!]
+
     targets: [Target!]
+    events: [Event!]
 
     createdAt: Datetime!
     updatedAt: Datetime

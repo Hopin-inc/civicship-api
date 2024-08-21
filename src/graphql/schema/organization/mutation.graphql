@@ -1,13 +1,10 @@
 # Queries/Mutations-related type definitions
 
-input OrganizationInput {
+input OrganizationCreateInput {
     name: String!
     entity: String
     entityPosition: EntityPosition
-    image: String
-    bio: String
     establishedAt: Datetime
-    website: String
 
     zipcode: String!
     stateCode: String!
@@ -16,12 +13,37 @@ input OrganizationInput {
     address1: String!
     address2: String
 
+    image: String
+    bio: String
+    website: String
+
     agendaIds: [Int!]
     cityCodes: [String!]
+
+    userIds: [String!]
 }
 
-input OrganizationPrivacyInput {
-    isPublic: Boolean!
+input OrganizationUpdateDefaultInput {
+    name: String!
+    entity: String
+    entityPosition: EntityPosition
+    establishedAt: Datetime
+
+    zipcode: String!
+    stateCode: String!
+    cityCode: String!
+    stateCountryCode: String!
+    address1: String!
+    address2: String
+}
+
+input OrganizationUpdateContentInput {
+    image: String
+    bio: String
+    website: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
 }
 
 input OrganizationAddGroupInput {
@@ -58,7 +80,11 @@ type OrganizationDeleteSuccess {
     organizationId: ID!
 }
 
-type OrganizationUpdateSuccess {
+type OrganizationUpdateDefaultSuccess {
+    organization: Organization!
+}
+
+type OrganizationUpdateContentSuccess {
     organization: Organization!
 }
 
@@ -110,8 +136,14 @@ union OrganizationDeletePayload =
     AuthError |
     ComplexQueryError
 
-union OrganizationUpdatePayload =
-    OrganizationUpdateSuccess |
+union OrganizationUpdateDefaultPayload =
+    OrganizationUpdateDefaultSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OrganizationUpdateContentPayload =
+    OrganizationUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
