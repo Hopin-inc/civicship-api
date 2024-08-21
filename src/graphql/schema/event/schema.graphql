@@ -11,11 +11,11 @@ extend type Query {
 }
 
 extend type Mutation {
-    eventCreate(input: EventInput!): EventCreatePayload
+    eventCreate(input: EventCreateInput!): EventCreatePayload
     eventDelete(id: ID!): EventDeletePayload
-    eventUpdate(id: ID!, input: EventInput!): EventUpdatePayload
-    eventPublish(id: ID!, input: EventPrivacyInput!): EventUpdatePrivacyPayload
-    eventUnpublish(id: ID!, input: EventPrivacyInput!): EventUpdatePrivacyPayload
+    eventUpdateContent(id: ID!, input: EventUpdateContentInput!): EventUpdateContentPayload
+    eventPublish(id: ID!): EventUpdatePrivacyPayload
+    eventUnpublish(id: ID!): EventUpdatePrivacyPayload
     eventAddGroup(id: ID!, input: EventAddGroupInput!): EventAddGroupPayload
     eventRemoveGroup(id: ID!, input: EventRemoveGroupInput!): EventRemoveGroupPayload
     eventAddOrganization(id: ID!, input: EventAddOrganizationInput!): EventAddOrganizationPayload
@@ -36,9 +36,12 @@ type Event {
     totalMinutes: Int!
 
     agendas: [Agenda!]
+    cities: [City!]
+    skillsets: [Skillset!]
+
     organizations: [Organization!]
     groups: [Group!]
-    cities: [City!]
+
     likes: Likes
     comments: Comments
     activities: Activities

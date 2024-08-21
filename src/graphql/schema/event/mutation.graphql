@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input EventInput {
+input EventCreateInput {
     description: String
     isPublic: Boolean
     images: [String!]
@@ -11,10 +11,24 @@ input EventInput {
 
     agendaIds: [Int!]
     cityCodes: [String!]
+    skillsets: [Int!]
+
+    organizationIds: [String!]
+    groupIds: [String!]
 }
 
-input EventPrivacyInput {
-    isPublic: Boolean!
+input EventUpdateContentInput {
+    description: String
+    isPublic: Boolean
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+    plannedStartsAt: Datetime
+    plannedEndsAt: Datetime
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    skillsets: [Int!]
 }
 
 input EventAddGroupInput {
@@ -43,7 +57,7 @@ type EventDeleteSuccess {
     eventId: ID!
 }
 
-type EventUpdateSuccess {
+type EventUpdateContentSuccess {
     event: Event!
 }
 
@@ -85,8 +99,8 @@ union EventDeletePayload =
     AuthError |
     ComplexQueryError
 
-union EventUpdatePayload =
-    EventUpdateSuccess |
+union EventUpdateContentPayload =
+    EventUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

@@ -390,6 +390,7 @@ export type GqlEvent = {
   organizations?: Maybe<Array<GqlOrganization>>;
   plannedEndsAt?: Maybe<Scalars['Datetime']['output']>;
   plannedStartsAt?: Maybe<Scalars['Datetime']['output']>;
+  skillsets?: Maybe<Array<GqlSkillset>>;
   startsAt: Scalars['Datetime']['output'];
   totalMinutes: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -419,6 +420,21 @@ export type GqlEventAddOrganizationSuccess = {
   organization: GqlOrganization;
 };
 
+export type GqlEventCreateInput = {
+  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  endsAt: Scalars['Datetime']['input'];
+  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  images?: InputMaybe<Array<Scalars['String']['input']>>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  plannedEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  plannedStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  skillsets?: InputMaybe<Array<Scalars['Int']['input']>>;
+  startsAt: Scalars['Datetime']['input'];
+};
+
 export type GqlEventCreatePayload = GqlAuthError | GqlComplexQueryError | GqlEventCreateSuccess | GqlInvalidInputValueError;
 
 export type GqlEventCreateSuccess = {
@@ -443,18 +459,6 @@ export type GqlEventFilterInput = {
   agendaId?: InputMaybe<Scalars['Int']['input']>;
   cityCode?: InputMaybe<Scalars['String']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type GqlEventInput = {
-  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
-  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
-  description?: InputMaybe<Scalars['String']['input']>;
-  endsAt: Scalars['Datetime']['input'];
-  images?: InputMaybe<Array<Scalars['String']['input']>>;
-  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
-  plannedEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  plannedStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  startsAt: Scalars['Datetime']['input'];
 };
 
 export type GqlEventPrivacyInput = {
@@ -489,17 +493,30 @@ export type GqlEventSortInput = {
   startsAt?: InputMaybe<GqlSortDirection>;
 };
 
-export type GqlEventUpdatePayload = GqlAuthError | GqlComplexQueryError | GqlEventUpdateSuccess | GqlInvalidInputValueError;
+export type GqlEventUpdateContentInput = {
+  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  endsAt: Scalars['Datetime']['input'];
+  images?: InputMaybe<Array<Scalars['String']['input']>>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  plannedEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  plannedStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  skillsets?: InputMaybe<Array<Scalars['Int']['input']>>;
+  startsAt: Scalars['Datetime']['input'];
+};
+
+export type GqlEventUpdateContentPayload = GqlAuthError | GqlComplexQueryError | GqlEventUpdateContentSuccess | GqlInvalidInputValueError;
+
+export type GqlEventUpdateContentSuccess = {
+  __typename?: 'EventUpdateContentSuccess';
+  event: GqlEvent;
+};
 
 export type GqlEventUpdatePrivacyPayload = GqlAuthError | GqlComplexQueryError | GqlEventUpdatePrivacySuccess | GqlInvalidInputValueError;
 
 export type GqlEventUpdatePrivacySuccess = {
   __typename?: 'EventUpdatePrivacySuccess';
-  event: GqlEvent;
-};
-
-export type GqlEventUpdateSuccess = {
-  __typename?: 'EventUpdateSuccess';
   event: GqlEvent;
 };
 
@@ -1020,7 +1037,7 @@ export type GqlMutation = {
   eventRemoveGroup?: Maybe<GqlEventRemoveGroupPayload>;
   eventRemoveOrganization?: Maybe<GqlEventRemoveOrganizationPayload>;
   eventUnpublish?: Maybe<GqlEventUpdatePrivacyPayload>;
-  eventUpdate?: Maybe<GqlEventUpdatePayload>;
+  eventUpdateContent?: Maybe<GqlEventUpdateContentPayload>;
   groupAddChild?: Maybe<GqlGroupAddChildPayload>;
   groupAddEvent?: Maybe<GqlGroupAddEventPayload>;
   groupAddParent?: Maybe<GqlGroupAddParentPayload>;
@@ -1197,7 +1214,7 @@ export type GqlMutationEventAddOrganizationArgs = {
 
 
 export type GqlMutationEventCreateArgs = {
-  input: GqlEventInput;
+  input: GqlEventCreateInput;
 };
 
 
@@ -1230,9 +1247,9 @@ export type GqlMutationEventUnpublishArgs = {
 };
 
 
-export type GqlMutationEventUpdateArgs = {
+export type GqlMutationEventUpdateContentArgs = {
   id: Scalars['ID']['input'];
-  input: GqlEventInput;
+  input: GqlEventUpdateContentInput;
 };
 
 
@@ -2386,7 +2403,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   EventDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlEventDeleteSuccess ) | ( GqlInvalidInputValueError );
   EventRemoveGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventRemoveGroupSuccess, 'event' | 'group'> & { event: _RefType['Event'], group: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
   EventRemoveOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventRemoveOrganizationSuccess, 'event' | 'organization'> & { event: _RefType['Event'], organization: _RefType['Organization'] } ) | ( GqlInvalidInputValueError );
-  EventUpdatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventUpdateSuccess, 'event'> & { event: _RefType['Event'] } ) | ( GqlInvalidInputValueError );
+  EventUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventUpdateContentSuccess, 'event'> & { event: _RefType['Event'] } ) | ( GqlInvalidInputValueError );
   EventUpdatePrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: _RefType['Event'] } ) | ( GqlInvalidInputValueError );
   GroupAddChildPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupAddChildSuccess, 'child' | 'group'> & { child: _RefType['Group'], group: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
   GroupAddEventPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupAddEventSuccess, 'event' | 'group'> & { event: _RefType['Event'], group: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
@@ -2533,13 +2550,13 @@ export type GqlResolversTypes = ResolversObject<{
   EventAddOrganizationInput: GqlEventAddOrganizationInput;
   EventAddOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventAddOrganizationPayload']>;
   EventAddOrganizationSuccess: ResolverTypeWrapper<Omit<GqlEventAddOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversTypes['Event'], organization: GqlResolversTypes['Organization'] }>;
+  EventCreateInput: GqlEventCreateInput;
   EventCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventCreatePayload']>;
   EventCreateSuccess: ResolverTypeWrapper<Omit<GqlEventCreateSuccess, 'event'> & { event?: Maybe<GqlResolversTypes['Event']> }>;
   EventDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventDeletePayload']>;
   EventDeleteSuccess: ResolverTypeWrapper<GqlEventDeleteSuccess>;
   EventEdge: ResolverTypeWrapper<Omit<GqlEventEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Event']> }>;
   EventFilterInput: GqlEventFilterInput;
-  EventInput: GqlEventInput;
   EventPrivacyInput: GqlEventPrivacyInput;
   EventRemoveGroupInput: GqlEventRemoveGroupInput;
   EventRemoveGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventRemoveGroupPayload']>;
@@ -2548,10 +2565,11 @@ export type GqlResolversTypes = ResolversObject<{
   EventRemoveOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventRemoveOrganizationPayload']>;
   EventRemoveOrganizationSuccess: ResolverTypeWrapper<Omit<GqlEventRemoveOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversTypes['Event'], organization: GqlResolversTypes['Organization'] }>;
   EventSortInput: GqlEventSortInput;
-  EventUpdatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventUpdatePayload']>;
+  EventUpdateContentInput: GqlEventUpdateContentInput;
+  EventUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventUpdateContentPayload']>;
+  EventUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlEventUpdateContentSuccess, 'event'> & { event: GqlResolversTypes['Event'] }>;
   EventUpdatePrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EventUpdatePrivacyPayload']>;
   EventUpdatePrivacySuccess: ResolverTypeWrapper<Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: GqlResolversTypes['Event'] }>;
-  EventUpdateSuccess: ResolverTypeWrapper<Omit<GqlEventUpdateSuccess, 'event'> & { event: GqlResolversTypes['Event'] }>;
   EventsConnection: ResolverTypeWrapper<Omit<GqlEventsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['EventEdge']>>> }>;
   Field: ResolverTypeWrapper<GqlField>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
@@ -2844,13 +2862,13 @@ export type GqlResolversParentTypes = ResolversObject<{
   EventAddOrganizationInput: GqlEventAddOrganizationInput;
   EventAddOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventAddOrganizationPayload'];
   EventAddOrganizationSuccess: Omit<GqlEventAddOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversParentTypes['Event'], organization: GqlResolversParentTypes['Organization'] };
+  EventCreateInput: GqlEventCreateInput;
   EventCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventCreatePayload'];
   EventCreateSuccess: Omit<GqlEventCreateSuccess, 'event'> & { event?: Maybe<GqlResolversParentTypes['Event']> };
   EventDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventDeletePayload'];
   EventDeleteSuccess: GqlEventDeleteSuccess;
   EventEdge: Omit<GqlEventEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Event']> };
   EventFilterInput: GqlEventFilterInput;
-  EventInput: GqlEventInput;
   EventPrivacyInput: GqlEventPrivacyInput;
   EventRemoveGroupInput: GqlEventRemoveGroupInput;
   EventRemoveGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventRemoveGroupPayload'];
@@ -2859,10 +2877,11 @@ export type GqlResolversParentTypes = ResolversObject<{
   EventRemoveOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventRemoveOrganizationPayload'];
   EventRemoveOrganizationSuccess: Omit<GqlEventRemoveOrganizationSuccess, 'event' | 'organization'> & { event: GqlResolversParentTypes['Event'], organization: GqlResolversParentTypes['Organization'] };
   EventSortInput: GqlEventSortInput;
-  EventUpdatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventUpdatePayload'];
+  EventUpdateContentInput: GqlEventUpdateContentInput;
+  EventUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventUpdateContentPayload'];
+  EventUpdateContentSuccess: Omit<GqlEventUpdateContentSuccess, 'event'> & { event: GqlResolversParentTypes['Event'] };
   EventUpdatePrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EventUpdatePrivacyPayload'];
   EventUpdatePrivacySuccess: Omit<GqlEventUpdatePrivacySuccess, 'event'> & { event: GqlResolversParentTypes['Event'] };
-  EventUpdateSuccess: Omit<GqlEventUpdateSuccess, 'event'> & { event: GqlResolversParentTypes['Event'] };
   EventsConnection: Omit<GqlEventsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['EventEdge']>>> };
   Field: GqlField;
   Float: Scalars['Float']['output'];
@@ -3379,6 +3398,7 @@ export type GqlEventResolvers<ContextType = Context, ParentType extends GqlResol
   organizations?: Resolver<Maybe<Array<GqlResolversTypes['Organization']>>, ParentType, ContextType>;
   plannedEndsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   plannedStartsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  skillsets?: Resolver<Maybe<Array<GqlResolversTypes['Skillset']>>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -3449,8 +3469,13 @@ export type GqlEventRemoveOrganizationSuccessResolvers<ContextType = Context, Pa
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlEventUpdatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['EventUpdatePayload'] = GqlResolversParentTypes['EventUpdatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'EventUpdateSuccess' | 'InvalidInputValueError', ParentType, ContextType>;
+export type GqlEventUpdateContentPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['EventUpdateContentPayload'] = GqlResolversParentTypes['EventUpdateContentPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'EventUpdateContentSuccess' | 'InvalidInputValueError', ParentType, ContextType>;
+}>;
+
+export type GqlEventUpdateContentSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['EventUpdateContentSuccess'] = GqlResolversParentTypes['EventUpdateContentSuccess']> = ResolversObject<{
+  event?: Resolver<GqlResolversTypes['Event'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlEventUpdatePrivacyPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['EventUpdatePrivacyPayload'] = GqlResolversParentTypes['EventUpdatePrivacyPayload']> = ResolversObject<{
@@ -3458,11 +3483,6 @@ export type GqlEventUpdatePrivacyPayloadResolvers<ContextType = Context, ParentT
 }>;
 
 export type GqlEventUpdatePrivacySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['EventUpdatePrivacySuccess'] = GqlResolversParentTypes['EventUpdatePrivacySuccess']> = ResolversObject<{
-  event?: Resolver<GqlResolversTypes['Event'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlEventUpdateSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['EventUpdateSuccess'] = GqlResolversParentTypes['EventUpdateSuccess']> = ResolversObject<{
   event?: Resolver<GqlResolversTypes['Event'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3889,7 +3909,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   eventRemoveGroup?: Resolver<Maybe<GqlResolversTypes['EventRemoveGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventRemoveGroupArgs, 'id' | 'input'>>;
   eventRemoveOrganization?: Resolver<Maybe<GqlResolversTypes['EventRemoveOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventRemoveOrganizationArgs, 'id' | 'input'>>;
   eventUnpublish?: Resolver<Maybe<GqlResolversTypes['EventUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventUnpublishArgs, 'id' | 'input'>>;
-  eventUpdate?: Resolver<Maybe<GqlResolversTypes['EventUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEventUpdateArgs, 'id' | 'input'>>;
+  eventUpdateContent?: Resolver<Maybe<GqlResolversTypes['EventUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventUpdateContentArgs, 'id' | 'input'>>;
   groupAddChild?: Resolver<Maybe<GqlResolversTypes['GroupAddChildPayload']>, ParentType, ContextType, RequireFields<GqlMutationGroupAddChildArgs, 'id' | 'input'>>;
   groupAddEvent?: Resolver<Maybe<GqlResolversTypes['GroupAddEventPayload']>, ParentType, ContextType, RequireFields<GqlMutationGroupAddEventArgs, 'id' | 'input'>>;
   groupAddParent?: Resolver<Maybe<GqlResolversTypes['GroupAddParentPayload']>, ParentType, ContextType, RequireFields<GqlMutationGroupAddParentArgs, 'id' | 'input'>>;
@@ -4449,10 +4469,10 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   EventRemoveGroupSuccess?: GqlEventRemoveGroupSuccessResolvers<ContextType>;
   EventRemoveOrganizationPayload?: GqlEventRemoveOrganizationPayloadResolvers<ContextType>;
   EventRemoveOrganizationSuccess?: GqlEventRemoveOrganizationSuccessResolvers<ContextType>;
-  EventUpdatePayload?: GqlEventUpdatePayloadResolvers<ContextType>;
+  EventUpdateContentPayload?: GqlEventUpdateContentPayloadResolvers<ContextType>;
+  EventUpdateContentSuccess?: GqlEventUpdateContentSuccessResolvers<ContextType>;
   EventUpdatePrivacyPayload?: GqlEventUpdatePrivacyPayloadResolvers<ContextType>;
   EventUpdatePrivacySuccess?: GqlEventUpdatePrivacySuccessResolvers<ContextType>;
-  EventUpdateSuccess?: GqlEventUpdateSuccessResolvers<ContextType>;
   EventsConnection?: GqlEventsConnectionResolvers<ContextType>;
   Field?: GqlFieldResolvers<ContextType>;
   Group?: GqlGroupResolvers<ContextType>;
