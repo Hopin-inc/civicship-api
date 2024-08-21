@@ -1,7 +1,6 @@
 import { prismaClient } from "@/prisma/client";
 import {
   GqlLikeAddEventPayload,
-  GqlEvent,
   GqlMutationLikeAddEventArgs,
   GqlMutationLikeDeleteArgs,
   GqlLikeDeletePayload,
@@ -23,13 +22,15 @@ export default class LikeService {
         user: true,
         event: {
           include: {
-            stat: { select: { totalMinutes: true } },
+            stat: true,
           },
         },
       },
     });
     if (!like.event) {
       throw new Error(`Like with ID ${like.id} has no corresponding event`);
+    } else if (!like.user) {
+      throw new Error(`Like with ID ${like.id} has no corresponding user`);
     }
 
     return {
@@ -38,7 +39,8 @@ export default class LikeService {
         event: {
           ...like.event,
           totalMinutes: like.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
+        user: like.user,
       },
     };
   }

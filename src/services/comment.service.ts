@@ -2,7 +2,6 @@ import { prismaClient } from "@/prisma/client";
 import {
   GqlCommentAddEventPayload,
   GqlCommentDeletePayload,
-  GqlEvent,
   GqlMutationCommentAddEventArgs,
   GqlMutationCommentDeleteArgs,
   GqlMutationCommentUpdateArgs,
@@ -35,6 +34,8 @@ export default class CommentService {
     });
     if (!comment.event) {
       throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
+    } else if (!comment.user) {
+      throw new Error(`Comment with ID ${comment.id} has no corresponding user`);
     }
 
     return {
@@ -43,7 +44,8 @@ export default class CommentService {
         event: {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
+        user: comment.user,
       },
     };
   }
@@ -66,6 +68,8 @@ export default class CommentService {
     });
     if (!comment.event) {
       throw new Error(`Comment with ID ${comment.id} has no corresponding event`);
+    } else if (!comment.user) {
+      throw new Error(`Comment with ID ${comment.id} has no corresponding user`);
     }
 
     return {
@@ -74,7 +78,8 @@ export default class CommentService {
         event: {
           ...comment.event,
           totalMinutes: comment.event?.stat?.totalMinutes ?? 0,
-        } as GqlEvent,
+        },
+        user: comment.user,
       },
     };
   }
