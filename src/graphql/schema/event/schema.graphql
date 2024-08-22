@@ -16,10 +16,10 @@ extend type Mutation {
     eventUpdateContent(id: ID!, input: EventUpdateContentInput!): EventUpdateContentPayload
     eventPublish(id: ID!): EventUpdatePrivacyPayload
     eventUnpublish(id: ID!): EventUpdatePrivacyPayload
-    eventAddGroup(id: ID!, input: EventAddGroupInput!): EventAddGroupPayload
-    eventRemoveGroup(id: ID!, input: EventRemoveGroupInput!): EventRemoveGroupPayload
-    eventAddOrganization(id: ID!, input: EventAddOrganizationInput!): EventAddOrganizationPayload
-    eventRemoveOrganization(id: ID!, input: EventRemoveOrganizationInput!): EventRemoveOrganizationPayload
+    eventAddGroup(id: ID!, input: EventAddGroupInput!): EventUpdateGroupPayload
+    eventRemoveGroup(id: ID!, input: EventRemoveGroupInput!): EventUpdateGroupPayload
+    eventAddOrganization(id: ID!, input: EventAddOrganizationInput!): EventUpdateOrganizationPayload
+    eventRemoveOrganization(id: ID!, input: EventRemoveOrganizationInput!): EventUpdateOrganizationPayload
 }
 
 # Type definitions

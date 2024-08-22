@@ -65,22 +65,12 @@ type EventUpdatePrivacySuccess {
     event: Event!
 }
 
-type EventAddGroupSuccess {
+type EventUpdateGroupSuccess {
     event: Event!
     group: Group!
 }
 
-type EventRemoveGroupSuccess {
-    event: Event!
-    group: Group!
-}
-
-type EventAddOrganizationSuccess {
-    event: Event!
-    organization: Organization!
-}
-
-type EventRemoveOrganizationSuccess {
+type EventUpdateOrganizationSuccess {
     event: Event!
     organization: Organization!
 }
@@ -111,26 +101,14 @@ union EventUpdatePrivacyPayload =
     AuthError |
     ComplexQueryError
 
-union EventAddGroupPayload =
-    EventAddGroupSuccess |
+union EventUpdateGroupPayload =
+    EventUpdateGroupSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union EventRemoveGroupPayload =
-    EventRemoveGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union EventAddOrganizationPayload =
-    EventAddOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union EventRemoveOrganizationPayload =
-    EventRemoveOrganizationSuccess |
+union EventUpdateOrganizationPayload =
+    EventUpdateOrganizationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
