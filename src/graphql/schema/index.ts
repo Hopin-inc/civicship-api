@@ -6,7 +6,7 @@ import { applyMiddleware } from "graphql-middleware";
 import { permissions } from "@/graphql/permissions";
 
 const definedSchema = loadSchemaSync("./**/*.graphql", {
-  loaders: [new GraphQLFileLoader()]
+  loaders: [new GraphQLFileLoader()],
 });
 const schema = applyMiddleware(
   mergeSchemas({
@@ -14,10 +14,10 @@ const schema = applyMiddleware(
       definedSchema,
       makeExecutableSchema({
         typeDefs: [DateTimeTypeDefinition],
-      })
-    ]
+      }),
+    ],
   }),
-  permissions
+  permissions,
 );
 
 export default schema;
