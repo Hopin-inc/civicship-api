@@ -1,46 +1,166 @@
 import { prismaClient } from "@/prisma/client";
 import {
+  GqlEventPlanPayload,
   GqlEventUpdateContentPayload,
   GqlEventUpdateGroupPayload,
   GqlEventUpdateOrganizationPayload,
   GqlEventUpdatePrivacyPayload,
+  GqlMutationEventPlanArgs,
   GqlMutationEventUpdateContentArgs,
 } from "@/types/graphql";
 import { RELATION_ACTION } from "@/consts";
 import { Prisma } from "@prisma/client";
 
-const eventExtensionConfig = Prisma.defineExtension({
+const eventExtension = Prisma.defineExtension({
   model: {
     event: {
-      async eventUpdateContent({
+      async plan({ input }: GqlMutationEventPlanArgs): Promise<GqlEventPlanPayload> {
+        {
+          const { agendaIds, cityCodes, skillsets, organizationIds, groupIds, ...properties } =
+            input;
+
+          const data: Prisma.EventCreateInput = {
+            ...properties,
+            agendas: {
+              create: agendaIds?.map((agendaId) => ({
+                agendaId: agendaId,
+              })),
+            },
+            cities: {
+              create: cityCodes?.map((cityCode) => ({
+                cityCode: cityCode,
+              })),
+            },
+            skillsets: {
+              create: skillsets?.map((skillsetId) => ({
+                skillsetId: skillsetId,
+              })),
+            },
+            organizations: {
+              create: organizationIds?.map((organizationId) => ({
+                organizationId: organizationId,
+              })),
+            },
+            groups: {
+              create: groupIds?.map((groupId) => ({
+                groupId: groupId,
+              })),
+            },
+          };
+
+          const event = await prismaClient.event.create({
+            data,
+            include: {
+              agendas: { include: { agenda: true } },
+              cities: { include: { city: { include: { state: true } } } },
+              skillsets: { include: { skillset: true } },
+              organizations: {
+                include: {
+                  organization: {
+                    include: {
+                      city: { include: { state: true } },
+                      state: true,
+                    },
+                  },
+                },
+              },
+              groups: { include: { group: true } },
+            },
+          });
+
+          return {
+            __typename: "EventPlanSuccess",
+            event: {
+              ...event,
+              agendas: event.agendas.map((r) => r.agenda),
+              cities: event.cities.map((r) => ({
+                ...r.city,
+                state: r.city.state,
+              })),
+              skillsets: event.skillsets.map((r) => r.skillset),
+              organizations: event.organizations.map((r) => ({
+                ...r.organization,
+                city: {
+                  ...r.organization.city,
+                  state: r.organization.city.state,
+                },
+                state: r.organization.state,
+              })),
+              groups: event.groups.map((r) => r.group),
+            },
+          };
+        }
+      },
+
+      async updateContent({
         id,
         input,
       }: GqlMutationEventUpdateContentArgs): Promise<GqlEventUpdateContentPayload> {
         const { agendaIds, cityCodes, skillsets, ...properties } = input;
+
+        const existingEvent = await prismaClient.event.findUnique({
+          where: { id },
+          include: {
+            agendas: true,
+            cities: true,
+            skillsets: true,
+          },
+        });
+
+        if (!existingEvent) {
+          throw new Error(`Event with ID ${id} not found`);
+        }
+
+        const [
+          { toAdd: agendasToAdd, toRemove: agendasToRemove },
+          { toAdd: citiesToAdd, toRemove: citiesToRemove },
+          { toAdd: skillsetsToAdd, toRemove: skillsetsToRemove },
+        ] = [
+          calculateDifferences(new Set(existingEvent.agendas.map((r) => r.agendaId)), agendaIds),
+          calculateDifferences(new Set(existingEvent.cities.map((r) => r.cityCode)), cityCodes),
+          calculateDifferences(
+            new Set(existingEvent.skillsets.map((r) => r.skillsetId)),
+            skillsets,
+          ),
+        ];
+
         const data: Prisma.EventUpdateInput = {
           ...properties,
           agendas: {
-            upsert: agendaIds?.map((agendaId) => ({
-              where: { eventId_agendaId: { agendaId, eventId: id } },
-              update: { agenda: { connect: { id: agendaId } } },
-              create: { agenda: { connect: { id: agendaId } } },
-            })),
+            createMany: {
+              data: agendasToAdd.map((agendaId) => ({
+                agendaId: agendaId,
+              })),
+              skipDuplicates: true,
+            },
+            deleteMany: {
+              agendaId: { in: agendasToRemove },
+            },
           },
           cities: {
-            upsert: cityCodes?.map((cityCode) => ({
-              where: { eventId_cityCode: { cityCode, eventId: id } },
-              update: { city: { connect: { code: cityCode } } },
-              create: { city: { connect: { code: cityCode } } },
-            })),
+            createMany: {
+              data: citiesToAdd.map((cityCode) => ({
+                cityCode: cityCode,
+              })),
+              skipDuplicates: true,
+            },
+            deleteMany: {
+              cityCode: { in: citiesToRemove },
+            },
           },
           skillsets: {
-            upsert: skillsets?.map((skillsetId) => ({
-              where: { eventId_skillsetId: { skillsetId, eventId: id } },
-              update: { skillset: { connect: { id: skillsetId } } },
-              create: { skillset: { connect: { id: skillsetId } } },
-            })),
+            createMany: {
+              data: skillsetsToAdd.map((skillsetId) => ({
+                skillsetId: skillsetId,
+              })),
+              skipDuplicates: true,
+            },
+            deleteMany: {
+              skillsetId: { in: skillsetsToRemove },
+            },
           },
         };
+
         const event = await prismaClient.event.update({
           where: { id },
           data,
@@ -48,10 +168,11 @@ const eventExtensionConfig = Prisma.defineExtension({
             agendas: { include: { agenda: true } },
             cities: { include: { city: { include: { state: true } } } },
             skillsets: { include: { skillset: true } },
-            stat: { select: { totalMinutes: true } },
           },
         });
+
         return {
+          __typename: "EventUpdateContentSuccess",
           event: {
             ...event,
             agendas: event.agendas.map((r) => r.agenda),
@@ -60,29 +181,19 @@ const eventExtensionConfig = Prisma.defineExtension({
               state: r.city.state,
             })),
             skillsets: event.skillsets.map((r) => r.skillset),
-            totalMinutes: event.stat?.totalMinutes ?? 0,
-            updatedAt: new Date(),
           },
         };
       },
 
-      async eventUpdatePrivacy(
-        id: string,
-        isPublic: boolean,
-      ): Promise<GqlEventUpdatePrivacyPayload> {
+      async updatePrivacy(id: string, isPublic: boolean): Promise<GqlEventUpdatePrivacyPayload> {
         const event = await prismaClient.event.update({
           where: { id },
-          data: { isPublic: isPublic, updatedAt: new Date() },
-          include: {
-            stat: { select: { totalMinutes: true } },
-          },
+          data: { isPublic: isPublic },
         });
 
         return {
-          event: {
-            ...event,
-            totalMinutes: event.stat?.totalMinutes ?? 0,
-          },
+          __typename: "EventUpdatePrivacySuccess",
+          event: event,
         };
       },
 
@@ -98,71 +209,52 @@ const eventExtensionConfig = Prisma.defineExtension({
             throw new Error(`Group with ID ${groupId} not found`);
           }
 
+          const data: Prisma.EventUpdateInput = {};
+
+          switch (action) {
+            case RELATION_ACTION.CONNECTORCREATE:
+              data.groups = {
+                connectOrCreate: {
+                  where: {
+                    groupId_eventId: { groupId, eventId: id },
+                  },
+                  create: { groupId },
+                },
+              };
+              break;
+
+            case RELATION_ACTION.DELETE:
+              data.groups = {
+                delete: {
+                  groupId_eventId: { groupId, eventId: id },
+                  groupId,
+                },
+              };
+              break;
+
+            default:
+              throw new Error(`Invalid action: ${action}`);
+          }
+
           const event = await tx.event.update({
             where: { id },
-            data: {
-              groups: {
-                [action]: {
-                  groupId_eventId: { eventId: id, groupId },
-                },
-              },
-              updatedAt: new Date(),
-            },
-            include: {
-              groups: { include: { group: true } },
-              stat: { select: { totalMinutes: true } },
-            },
+            data: data,
           });
 
           return {
-            event: {
-              ...event,
-              groups: event.groups.map((r) => r.group),
-              totalMinutes: event.stat?.totalMinutes ?? 0,
-            },
+            __typename: "EventUpdateGroupSuccess",
+            event,
             group,
           };
         });
       },
 
-      async eventUpdateOrganization(
+      async updateOrganization(
         id: string,
         organizationId: string,
         action: RELATION_ACTION,
       ): Promise<GqlEventUpdateOrganizationPayload> {
         return await prismaClient.$transaction(async (tx) => {
-          const event = await tx.event.update({
-            where: { id },
-            data: {
-              organizations: {
-                [action]: {
-                  organizationId_eventId: {
-                    eventId: id,
-                    organizationId,
-                  },
-                },
-              },
-              updatedAt: new Date(),
-            },
-            include: {
-              organizations: {
-                include: {
-                  organization: {
-                    include: {
-                      city: {
-                        include: {
-                          state: true,
-                        },
-                      },
-                      state: true,
-                    },
-                  },
-                },
-              },
-              stat: { select: { totalMinutes: true } },
-            },
-          });
-
           const organization = await tx.organization.findUnique({
             where: { id: organizationId },
             include: {
@@ -179,19 +271,41 @@ const eventExtensionConfig = Prisma.defineExtension({
             throw new Error(`Organization with ID ${organizationId} not found`);
           }
 
-          return {
-            event: {
-              ...event,
-              organizations: event.organizations.map((r) => ({
-                ...r.organization,
-                city: {
-                  ...r.organization.city,
-                  state: r.organization.city.state,
+          const data: Prisma.EventUpdateInput = {};
+
+          switch (action) {
+            case RELATION_ACTION.CONNECTORCREATE:
+              data.organizations = {
+                connectOrCreate: {
+                  where: {
+                    organizationId_eventId: { organizationId: organizationId, eventId: id },
+                  },
+                  create: { organizationId: organizationId },
                 },
-                state: r.organization.state,
-              })),
-              totalMinutes: event.stat?.totalMinutes ?? 0,
-            },
+              };
+              break;
+
+            case RELATION_ACTION.DELETE:
+              data.organizations = {
+                delete: {
+                  organizationId_eventId: { eventId: id, organizationId: organizationId },
+                  organizationId,
+                },
+              };
+              break;
+
+            default:
+              throw new Error(`Invalid action: ${action}`);
+          }
+
+          const event = await tx.event.update({
+            where: { id },
+            data: data,
+          });
+
+          return {
+            __typename: "EventUpdateOrganizationSuccess",
+            event,
             organization,
           };
         });
@@ -200,4 +314,10 @@ const eventExtensionConfig = Prisma.defineExtension({
   },
 });
 
-export { eventExtensionConfig };
+function calculateDifferences<T>(existingIds: Set<T>, newIds?: T[]) {
+  const toAdd = newIds?.filter((id) => !existingIds.has(id)) || [];
+  const toRemove = [...existingIds].filter((id) => !newIds?.includes(id));
+  return { toAdd, toRemove };
+}
+
+export { eventExtension };

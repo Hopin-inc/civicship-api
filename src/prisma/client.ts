@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { eventExtensionConfig } from "@/prisma/extension/event.extension";
+import { eventExtension } from "@/prisma/extension/event.extension";
 
 export const prismaClient = new PrismaClient({
   log: [
@@ -8,4 +8,4 @@ export const prismaClient = new PrismaClient({
     { emit: "stdout", level: "info" },
     { emit: "stdout", level: "warn" },
   ],
-}).$extends(eventExtensionConfig);
+}).$extends(eventExtension);
