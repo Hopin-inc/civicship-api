@@ -3,7 +3,6 @@ import {
   GqlEventsConnection,
   GqlQueryEventArgs,
   GqlQueryEventsArgs,
-  GqlMutationEventCreateArgs,
   GqlMutationEventDeleteArgs,
   GqlMutationEventUpdateContentArgs,
   GqlMutationEventPublishArgs,
@@ -12,27 +11,28 @@ import {
   GqlMutationEventRemoveGroupArgs,
   GqlMutationEventAddOrganizationArgs,
   GqlMutationEventRemoveOrganizationArgs,
-  GqlEventCreatePayload,
   GqlEventDeletePayload,
   GqlEventUpdateContentPayload,
   GqlEventUpdatePrivacyPayload,
   GqlEventUpdateGroupPayload,
   GqlEventUpdateOrganizationPayload,
+  GqlEventPlanPayload,
+  GqlMutationEventPlanArgs,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { handleError } from "@/utils/error";
 import { RELATION_ACTION } from "@/consts";
 import { Prisma } from "@prisma/client";
+import { GraphQLResolveInfo } from "graphql";
+import { doesPathExist } from "@/utils";
 
 export default class EventService {
   private static db = prismaClient;
 
-  static async queryEvents({
-    cursor,
-    filter,
-    sort,
-    first,
-  }: GqlQueryEventsArgs): Promise<GqlEventsConnection> {
+  static async queryEvents(
+    { cursor, filter, sort, first }: GqlQueryEventsArgs,
+    info: GraphQLResolveInfo,
+  ): Promise<GqlEventsConnection> {
     const take = first ?? 10;
     const where: Prisma.EventWhereInput = {
       AND: [
@@ -54,58 +54,121 @@ export default class EventService {
           : {},
       ],
     };
+
     const orderBy: Prisma.EventOrderByWithRelationInput = {
       startsAt: sort?.startsAt ?? Prisma.SortOrder.desc,
+    };
+
+    const include: Prisma.EventInclude = {
+      agendas: doesPathExist(info.fieldNodes, ["events", "edges", "node", "agendas"])
+        ? { include: { agenda: true } }
+        : undefined,
+      cities: doesPathExist(info.fieldNodes, ["events", "edges", "node", "cities"])
+        ? { include: { city: { include: { state: true } } } }
+        : undefined,
+      skillsets: doesPathExist(info.fieldNodes, ["events", "edges", "node", "skillsets"])
+        ? { include: { skillset: true } }
+        : undefined,
+      organizations: doesPathExist(info.fieldNodes, ["events", "edges", "node", "organizations"])
+        ? {
+            include: {
+              organization: {
+                include: {
+                  city: {
+                    include: {
+                      state: true,
+                    },
+                  },
+                  state: true,
+                },
+              },
+            },
+          }
+        : undefined,
+      groups: doesPathExist(info.fieldNodes, ["events", "edges", "node", "groups"])
+        ? { include: { group: true } }
+        : undefined,
+      activities: doesPathExist(info.fieldNodes, ["events", "edges", "node", "activities"])
+        ? {
+            include: {
+              stat: { select: { totalMinutes: true } },
+            },
+          }
+        : undefined,
+      likes: doesPathExist(info.fieldNodes, ["events", "edges", "node", "likes"])
+        ? { include: { event: true, user: true } }
+        : undefined,
+      comments: doesPathExist(info.fieldNodes, ["events", "edges", "node", "comments"])
+        ? { include: { event: true, user: true } }
+        : undefined,
+      stat: doesPathExist(info.fieldNodes, ["events", "edges", "node", "stat"])
+        ? { select: { totalMinutes: true } }
+        : undefined,
     };
 
     const data = await this.db.event.findMany({
       where,
       orderBy,
-      include: {
-        agendas: { include: { agenda: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        skillsets: { include: { skillset: true } },
-        organizations: {
-          include: {
-            organization: {
-              include: {
-                city: {
-                  include: {
-                    state: true,
-                  },
-                },
-                state: true,
-              },
-            },
-          },
-        },
-        groups: { include: { group: true } },
-        stat: { select: { totalMinutes: true } },
-      },
+      include,
       take: take + 1,
       skip: cursor ? 1 : 0,
       cursor: cursor ? { id: cursor } : undefined,
     });
+
     const hasNextPage = data.length > take;
-    const formattedData: GqlEvent[] = data.slice(0, take).map((record) => ({
-      ...record,
-      agendas: record.agendas?.map((r) => r.agenda),
-      cities: record.cities?.map((r) => ({
-        ...r.city,
-        state: r.city?.state,
-      })),
-      skillsets: record.skillsets?.map((r) => r.skillset),
-      organizations: record.organizations?.map((r) => ({
-        ...r.organization,
-        city: {
-          ...r.organization.city,
-          state: r.organization.city?.state,
-        },
-        state: r.organization.state,
-      })),
-      groups: record.groups?.map((r) => r.group),
-      totalMinutes: record.stat?.totalMinutes ?? 0,
-    }));
+    const formattedData: GqlEvent[] = data.slice(0, take).map((record) => {
+      return {
+        ...record,
+        agendas: record.agendas?.map((r) => r.agenda),
+        cities: record.cities?.map((r) => ({
+          ...r.city,
+          state: r.city?.state,
+        })),
+        skillsets: record.skillsets?.map((r) => r.skillset),
+        organizations: record.organizations?.map((r) => ({
+          ...r.organization,
+          city: {
+            ...r.organization.city,
+            state: r.organization.city?.state,
+          },
+          state: r.organization.state,
+        })),
+        groups: record.groups?.map((r) => r.group),
+        activities: record.activities
+          ? {
+              __typename: "Activities",
+              data: record.activities.map((activity) => ({
+                ...activity,
+                totalMinutes: 0,
+              })),
+              total: record.activities.length,
+            }
+          : undefined,
+        likes: record.likes
+          ? {
+              __typename: "Likes",
+              data: record.likes.map((like) => ({
+                ...like,
+                event: like.event,
+                user: like.user,
+              })),
+              total: record.likes.length,
+            }
+          : undefined,
+        comments: record.comments
+          ? {
+              __typename: "Comments",
+              data: record.comments.map((comment) => ({
+                ...comment,
+                event: comment.event,
+                user: comment.user,
+              })),
+              total: record.comments.length,
+            }
+          : undefined,
+      };
+    });
+
     return {
       totalCount: data.length,
       pageInfo: {
@@ -169,79 +232,9 @@ export default class EventService {
       : null;
   }
 
-  static async eventCreate({ input }: GqlMutationEventCreateArgs): Promise<GqlEventCreatePayload> {
+  static async eventPlan({ input }: GqlMutationEventPlanArgs): Promise<GqlEventPlanPayload> {
     try {
-      const { agendaIds, cityCodes, skillsets, organizationIds, groupIds, ...properties } = input;
-      const data: Prisma.EventCreateInput = {
-        ...properties,
-        agendas: {
-          create: agendaIds?.map((agendaId) => ({ agenda: { connect: { id: agendaId } } })),
-        },
-        cities: {
-          create: cityCodes?.map((cityCode) => ({ city: { connect: { code: cityCode } } })),
-        },
-        skillsets: {
-          create: skillsets?.map((skillsetId) => ({
-            skillset: { connect: { id: skillsetId } },
-          })),
-        },
-        organizations: {
-          create: organizationIds?.map((organizationId) => ({
-            organization: { connect: { id: organizationId } },
-          })),
-        },
-        groups: {
-          create: groupIds?.map((groupId) => ({
-            group: { connect: { id: groupId } },
-          })),
-        },
-      };
-
-      const event = await this.db.event.create({
-        data,
-        include: {
-          agendas: { include: { agenda: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          skillsets: { include: { skillset: true } },
-          organizations: {
-            include: {
-              organization: {
-                include: {
-                  city: {
-                    include: {
-                      state: true,
-                    },
-                  },
-                  state: true,
-                },
-              },
-            },
-          },
-          groups: { include: { group: true } },
-        },
-      });
-
-      return {
-        __typename: "EventCreateSuccess",
-        event: {
-          ...event,
-          agendas: event.agendas.map((r) => r.agenda),
-          cities: event.cities.map((r) => ({
-            ...r.city,
-            state: r.city.state,
-          })),
-          skillsets: event.skillsets.map((r) => r.skillset),
-          organizations: event.organizations.map((r) => ({
-            ...r.organization,
-            city: {
-              ...r.organization.city,
-              state: r.organization.city.state,
-            },
-            state: r.organization.state,
-          })),
-          groups: event.groups.map((r) => r.group),
-        },
-      };
+      return await this.db.event.plan({ input });
     } catch (error) {
       return await handleError(error);
     }
@@ -252,7 +245,7 @@ export default class EventService {
     input,
   }: GqlMutationEventUpdateContentArgs): Promise<GqlEventUpdateContentPayload> {
     try {
-      return await this.db.event.eventUpdateContent({ id: id, input: input });
+      return await this.db.event.updateContent({ id: id, input: input });
     } catch (error) {
       return await handleError(error);
     }
@@ -269,7 +262,7 @@ export default class EventService {
     id,
   }: GqlMutationEventPublishArgs): Promise<GqlEventUpdatePrivacyPayload> {
     try {
-      return await this.db.event.eventUpdatePrivacy(id, true);
+      return await this.db.event.updatePrivacy(id, true);
     } catch (error) {
       return await handleError(error);
     }
@@ -279,7 +272,7 @@ export default class EventService {
     id,
   }: GqlMutationEventUnpublishArgs): Promise<GqlEventUpdatePrivacyPayload> {
     try {
-      return await this.db.event.eventUpdatePrivacy(id, false);
+      return await this.db.event.updatePrivacy(id, false);
     } catch (error) {
       return await handleError(error);
     }
@@ -301,7 +294,7 @@ export default class EventService {
     input,
   }: GqlMutationEventRemoveGroupArgs): Promise<GqlEventUpdateGroupPayload> {
     try {
-      return await this.db.event.eventUpdateGroup(id, input.groupId, RELATION_ACTION.DISCONNECT);
+      return await this.db.event.eventUpdateGroup(id, input.groupId, RELATION_ACTION.DELETE);
     } catch (error) {
       return await handleError(error);
     }
@@ -312,10 +305,10 @@ export default class EventService {
     input,
   }: GqlMutationEventAddOrganizationArgs): Promise<GqlEventUpdateOrganizationPayload> {
     try {
-      return await this.db.event.eventUpdateOrganization(
+      return await this.db.event.updateOrganization(
         id,
         input.organizationId,
-        RELATION_ACTION.CONNECT,
+        RELATION_ACTION.CONNECTORCREATE,
       );
     } catch (error) {
       return await handleError(error);
@@ -327,10 +320,10 @@ export default class EventService {
     input,
   }: GqlMutationEventRemoveOrganizationArgs): Promise<GqlEventUpdateOrganizationPayload> {
     try {
-      return await this.db.event.eventUpdateOrganization(
+      return await this.db.event.updateOrganization(
         id,
         input.organizationId,
-        RELATION_ACTION.DISCONNECT,
+        RELATION_ACTION.DELETE,
       );
     } catch (error) {
       return await handleError(error);

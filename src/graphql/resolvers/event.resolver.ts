@@ -1,7 +1,7 @@
 import EventService from "@/services/event.service";
 import {
   GqlQueryEventsArgs,
-  GqlMutationEventCreateArgs,
+  GqlMutationEventPlanArgs,
   GqlQueryEventArgs,
   GqlMutationEventDeleteArgs,
   GqlMutationEventUpdateContentArgs,
@@ -12,15 +12,16 @@ import {
   GqlMutationEventAddOrganizationArgs,
   GqlMutationEventRemoveOrganizationArgs,
 } from "@/types/graphql";
+import { GraphQLResolveInfo } from "graphql";
 
 const eventResolver = {
   Query: {
-    events: async (_: unknown, args: GqlQueryEventsArgs) => EventService.queryEvents(args),
+    events: async (_: unknown, args: GqlQueryEventsArgs, info: GraphQLResolveInfo) =>
+      EventService.queryEvents(args, info),
     event: async (_: unknown, args: GqlQueryEventArgs) => EventService.getEvent(args),
   },
   Mutation: {
-    eventCreate: async (_: unknown, args: GqlMutationEventCreateArgs) =>
-      EventService.eventCreate(args),
+    eventPlan: async (_: unknown, args: GqlMutationEventPlanArgs) => EventService.eventPlan(args),
     eventDelete: async (_: unknown, args: GqlMutationEventDeleteArgs) =>
       EventService.eventDelete(args),
     eventUpdateContent: async (_: unknown, args: GqlMutationEventUpdateContentArgs) =>
