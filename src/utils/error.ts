@@ -1,41 +1,76 @@
 import { Prisma } from "@prisma/client";
-import { GqlExecutionFailure } from "@/types/graphql";
+import { GqlCommonError } from "@/types/graphql";
 
-export async function handleError(error: unknown): Promise<GqlExecutionFailure> {
+export async function handleError(error: unknown): Promise<GqlCommonError> {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
-      case "P2002":
+      case "P1001":
         return Promise.resolve({
-          __typename: "InvalidInputValueError",
-          message: `Unique constraint failed on the field: ${error.meta?.target}`,
-          fields: [{ name: error.meta?.target as string, message: "Unique constraint failed" }],
-          statusCode: 400,
+          __typename: "DatabaseConnectionError",
+          message: `Can't reach database server at ${error.meta?.database_host}:${error.meta?.database_port}. Please make sure your database server is running at ${error.meta?.database_host}:${error.meta?.database_port}.`,
+          statusCode: 500,
         });
-      case "P2003":
+      case "P1002":
         return Promise.resolve({
-          __typename: "InvalidInputValueError",
-          message: `Foreign key constraint failed on the field: ${error.meta?.field_name}`,
-          fields: [
-            { name: error.meta?.field_name as string, message: "Foreign key constraint failed" },
-          ],
-          statusCode: 400,
+          __typename: "DatabaseConnectionError",
+          message: `The database server at ${error.meta?.database_host}:${error.meta?.database_port} was reached but timed out. Please try again. Please make sure your database server is running at ${error.meta?.database_host}:${error.meta?.database_port}.`,
+          statusCode: 500,
+        });
+      case "P1008":
+        return Promise.resolve({
+          __typename: "DatabaseError",
+          message: `Operations timed out after ${error.meta?.time}.`,
+          statusCode: 500,
+        });
+      case "P1010":
+        return Promise.resolve({
+          __typename: "DatabaseConnectionError",
+          message: `User ${error.meta?.database_user} was denied access on the database ${error.meta?.database_name}.`,
+          statusCode: 403,
+        });
+      case "P1011":
+        return Promise.resolve({
+          __typename: "DatabaseConnectionError",
+          message: `Error opening a TLS connection: ${error.message}.`,
+          statusCode: 500,
+        });
+      case "P1017":
+        return Promise.resolve({
+          __typename: "DatabaseError",
+          message: `Server has closed the connection.`,
+          statusCode: 500,
+        });
+      case "P2034":
+        return Promise.resolve({
+          __typename: "TransactionWriteConflictError",
+          message: `Transaction failed due to a write conflict or a deadlock. Please retry your transaction. Error details: ${error.message}`,
+          statusCode: 500,
+        });
+      case "P2035":
+        return Promise.resolve({
+          __typename: "AssertionViolationError",
+          message: `Assertion violation on the database: ${error.message}`,
+          statusCode: 500,
+        });
+      case "P2036":
+        return Promise.resolve({
+          __typename: "ExternalConnectorError",
+          message: `Error in external connector (id ${error.message})`,
+          statusCode: 500,
+        });
+      case "P2037":
+        return Promise.resolve({
+          __typename: "TooManyConnectionsError",
+          message: `Too many database connections opened: ${error.message}`,
+          statusCode: 500,
         });
       default:
         return Promise.resolve({
           __typename: "ComplexQueryError",
           message: `An unknown Prisma client error occurred: ${error.message}`,
-          statusCode: 400,
+          statusCode: 500,
         });
     }
-  }
-
-  if (error instanceof Prisma.PrismaClientValidationError) {
-    return Promise.resolve({
-      __typename: "InvalidInputValueError",
-      message: `${error.message}`,
-      fields: [],
-      statusCode: 400,
-    });
   }
 
   if (error instanceof Prisma.PrismaClientInitializationError) {
