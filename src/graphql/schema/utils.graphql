@@ -71,4 +71,7 @@ type Field {
     message: String
 }
 
-union ExecutionFailure = InvalidInputValueError | AuthError | ComplexQueryError
+union CommonError =
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

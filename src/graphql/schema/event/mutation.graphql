@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input EventCreateInput {
+input EventPlanInput {
     description: String
     isPublic: Boolean
     images: [String!]
@@ -49,7 +49,7 @@ input EventRemoveOrganizationInput {
 
 # Type definitions
 
-type EventCreateSuccess {
+type EventPlanSuccess {
     event: Event
 }
 
@@ -77,8 +77,8 @@ type EventUpdateOrganizationSuccess {
 
 # union definitions
 
-union EventCreatePayload =
-    EventCreateSuccess |
+union EventPlanPayload =
+    EventPlanSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

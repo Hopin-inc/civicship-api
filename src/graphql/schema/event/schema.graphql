@@ -11,7 +11,7 @@ extend type Query {
 }
 
 extend type Mutation {
-    eventCreate(input: EventCreateInput!): EventCreatePayload
+    eventPlan(input: EventPlanInput!): EventPlanPayload
     eventDelete(id: ID!): EventDeletePayload
     eventUpdateContent(id: ID!, input: EventUpdateContentInput!): EventUpdateContentPayload
     eventPublish(id: ID!): EventUpdatePrivacyPayload
