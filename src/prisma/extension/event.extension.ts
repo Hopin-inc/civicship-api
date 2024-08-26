@@ -1,5 +1,6 @@
 import { prismaClient } from "@/prisma/client";
 import {
+  GqlEvent,
   GqlEventPlanPayload,
   GqlEventUpdateContentPayload,
   GqlEventUpdateGroupPayload,
@@ -14,6 +15,109 @@ import { Prisma } from "@prisma/client";
 const eventExtension = Prisma.defineExtension({
   model: {
     event: {
+      async getWithRelations(id: string): Promise<GqlEvent | null> {
+        const event = await prismaClient.event.findUnique({
+          where: { id },
+          include: {
+            agendas: { include: { agenda: true } },
+            cities: { include: { city: { include: { state: true } } } },
+            skillsets: { include: { skillset: true } },
+            organizations: {
+              include: {
+                organization: {
+                  include: {
+                    city: { include: { state: true } },
+                    state: true,
+                  },
+                },
+              },
+            },
+            groups: { include: { group: true } },
+            activities: {
+              include: {
+                stat: { select: { totalMinutes: true } },
+              },
+            },
+            likes: { include: { user: true, event: true } },
+            comments: { include: { user: true, event: true } },
+            stat: { select: { totalMinutes: true } },
+            _count: {
+              select: {
+                activities: true,
+                likes: true,
+                comments: true,
+              },
+            },
+          },
+        });
+        return event
+          ? {
+              ...event,
+              agendas: event.agendas?.map((r) => r.agenda),
+              cities: event.cities?.map((r) => ({
+                ...r.city,
+                state: r.city.state,
+              })),
+              skillsets: event.skillsets?.map((r) => r.skillset),
+              organizations: event.organizations?.map((r) => ({
+                ...r.organization,
+                city: {
+                  ...r.organization.city,
+                  state: r.organization.city.state,
+                },
+                state: r.organization.state,
+              })),
+              groups: event.groups?.map((r) => r.group),
+              activities: event.activities
+                ? {
+                    data: event.activities.map((activity) => ({
+                      ...activity,
+                      totalMinutes: activity.stat?.totalMinutes ?? 0,
+                    })),
+                    total: event._count.activities,
+                  }
+                : undefined,
+              likes: event.likes
+                ? {
+                    data: event.likes.map((like) => {
+                      if (!like.user) {
+                        throw new Error(`User for like with ID ${like.id} not found`);
+                      }
+                      if (!like.event) {
+                        throw new Error(`Event for like with ID ${like.id} not found`);
+                      }
+                      return {
+                        ...like,
+                        user: like.user,
+                        event: like.event,
+                      };
+                    }),
+                    total: event._count.likes,
+                  }
+                : undefined,
+              comments: event.comments
+                ? {
+                    data: event.comments.map((comment) => {
+                      if (!comment.event) {
+                        throw new Error(`Event with ID ${comment.eventId} not found`);
+                      }
+                      if (!comment.user) {
+                        throw new Error(`User for comment with ID ${comment.id} not found`);
+                      }
+                      return {
+                        ...comment,
+                        user: comment.user,
+                        event: comment.event,
+                      };
+                    }),
+                    total: event._count.comments,
+                  }
+                : undefined,
+              totalMinutes: event.stat?.totalMinutes ?? 0,
+            }
+          : null;
+      },
+
       async plan({ input }: GqlMutationEventPlanArgs): Promise<GqlEventPlanPayload> {
         {
           const { agendaIds, cityCodes, skillsets, organizationIds, groupIds, ...properties } =
@@ -22,29 +126,49 @@ const eventExtension = Prisma.defineExtension({
           const data: Prisma.EventCreateInput = {
             ...properties,
             agendas: {
-              create: agendaIds?.map((agendaId) => ({
-                agendaId: agendaId,
-              })),
+              createMany: {
+                data:
+                  agendaIds?.map((agendaId) => ({
+                    agendaId,
+                  })) ?? [],
+                skipDuplicates: true,
+              },
             },
             cities: {
-              create: cityCodes?.map((cityCode) => ({
-                cityCode: cityCode,
-              })),
+              createMany: {
+                data:
+                  cityCodes?.map((cityCode) => ({
+                    cityCode,
+                  })) ?? [],
+                skipDuplicates: true,
+              },
             },
             skillsets: {
-              create: skillsets?.map((skillsetId) => ({
-                skillsetId: skillsetId,
-              })),
+              createMany: {
+                data:
+                  skillsets?.map((skillsetId) => ({
+                    skillsetId: skillsetId,
+                  })) ?? [],
+                skipDuplicates: true,
+              },
             },
             organizations: {
-              create: organizationIds?.map((organizationId) => ({
-                organizationId: organizationId,
-              })),
+              createMany: {
+                data:
+                  organizationIds?.map((organizationId) => ({
+                    organizationId: organizationId,
+                  })) ?? [],
+                skipDuplicates: true,
+              },
             },
             groups: {
-              create: groupIds?.map((groupId) => ({
-                groupId: groupId,
-              })),
+              createMany: {
+                data:
+                  groupIds?.map((groupId) => ({
+                    groupId: groupId,
+                  })) ?? [],
+                skipDuplicates: true,
+              },
             },
           };
 
@@ -197,7 +321,7 @@ const eventExtension = Prisma.defineExtension({
         };
       },
 
-      async eventUpdateGroup(
+      async updateGroup(
         id: string,
         groupId: string,
         action: RELATION_ACTION,

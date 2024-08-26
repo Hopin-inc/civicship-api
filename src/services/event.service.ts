@@ -20,19 +20,19 @@ import {
   GqlMutationEventPlanArgs,
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
-import { handleError } from "@/utils/error";
+import { handlePrismaError } from "@/prisma/extension/error";
 import { RELATION_ACTION } from "@/consts";
 import { Prisma } from "@prisma/client";
-import { GraphQLResolveInfo } from "graphql";
-import { doesPathExist } from "@/utils";
 
 export default class EventService {
   private static db = prismaClient;
 
-  static async queryEvents(
-    { cursor, filter, sort, first }: GqlQueryEventsArgs,
-    info: GraphQLResolveInfo,
-  ): Promise<GqlEventsConnection> {
+  static async queryEvents({
+    cursor,
+    filter,
+    sort,
+    first,
+  }: GqlQueryEventsArgs): Promise<GqlEventsConnection> {
     const take = first ?? 10;
     const where: Prisma.EventWhereInput = {
       AND: [
@@ -59,56 +59,42 @@ export default class EventService {
       startsAt: sort?.startsAt ?? Prisma.SortOrder.desc,
     };
 
-    const include: Prisma.EventInclude = {
-      agendas: doesPathExist(info.fieldNodes, ["events", "edges", "node", "agendas"])
-        ? { include: { agenda: true } }
-        : undefined,
-      cities: doesPathExist(info.fieldNodes, ["events", "edges", "node", "cities"])
-        ? { include: { city: { include: { state: true } } } }
-        : undefined,
-      skillsets: doesPathExist(info.fieldNodes, ["events", "edges", "node", "skillsets"])
-        ? { include: { skillset: true } }
-        : undefined,
-      organizations: doesPathExist(info.fieldNodes, ["events", "edges", "node", "organizations"])
-        ? {
+    const include = Prisma.validator<Prisma.EventInclude>()({
+      agendas: { include: { agenda: true } },
+      cities: { include: { city: { include: { state: true } } } },
+      skillsets: { include: { skillset: true } },
+      organizations: {
+        include: {
+          organization: {
             include: {
-              organization: {
-                include: {
-                  city: {
-                    include: {
-                      state: true,
-                    },
-                  },
-                  state: true,
-                },
-              },
+              city: { include: { state: true } },
+              state: true,
             },
-          }
-        : undefined,
-      groups: doesPathExist(info.fieldNodes, ["events", "edges", "node", "groups"])
-        ? { include: { group: true } }
-        : undefined,
-      activities: doesPathExist(info.fieldNodes, ["events", "edges", "node", "activities"])
-        ? {
-            include: {
-              stat: { select: { totalMinutes: true } },
-            },
-          }
-        : undefined,
-      likes: doesPathExist(info.fieldNodes, ["events", "edges", "node", "likes"])
-        ? { include: { event: true, user: true } }
-        : undefined,
-      comments: doesPathExist(info.fieldNodes, ["events", "edges", "node", "comments"])
-        ? { include: { event: true, user: true } }
-        : undefined,
-      stat: doesPathExist(info.fieldNodes, ["events", "edges", "node", "stat"])
-        ? { select: { totalMinutes: true } }
-        : undefined,
-    };
+          },
+        },
+      },
+      groups: { include: { group: true } },
+      activities: {
+        include: {
+          stat: { select: { totalMinutes: true } },
+        },
+      },
+      likes: { include: { user: true, event: true } },
+      comments: { include: { user: true, event: true } },
+      stat: { select: { totalMinutes: true } },
+      _count: {
+        select: {
+          activities: true,
+          likes: true,
+          comments: true,
+        },
+      },
+    });
 
     const data = await this.db.event.findMany({
       where,
       orderBy,
+      relationLoadStrategy: "join",
       include,
       take: take + 1,
       skip: cursor ? 1 : 0,
@@ -134,36 +120,50 @@ export default class EventService {
           state: r.organization.state,
         })),
         groups: record.groups?.map((r) => r.group),
+        totalMinutes: record.stat?.totalMinutes ?? 0,
         activities: record.activities
           ? {
-              __typename: "Activities",
               data: record.activities.map((activity) => ({
                 ...activity,
-                totalMinutes: 0,
+                totalMinutes: activity.stat?.totalMinutes ?? 0,
               })),
-              total: record.activities.length,
+              total: record._count.activities,
             }
           : undefined,
         likes: record.likes
           ? {
-              __typename: "Likes",
-              data: record.likes.map((like) => ({
-                ...like,
-                event: like.event,
-                user: like.user,
-              })),
-              total: record.likes.length,
+              data: record.likes.map((like) => {
+                if (!like.user) {
+                  throw new Error(`User for like with ID ${like.id} not found`);
+                }
+                if (!like.event) {
+                  throw new Error(`Event for like with ID ${like.id} not found`);
+                }
+                return {
+                  ...like,
+                  user: like.user,
+                  event: like.event,
+                };
+              }),
+              total: record._count.likes,
             }
           : undefined,
         comments: record.comments
           ? {
-              __typename: "Comments",
-              data: record.comments.map((comment) => ({
-                ...comment,
-                event: comment.event,
-                user: comment.user,
-              })),
-              total: record.comments.length,
+              data: record.comments.map((comment) => {
+                if (!comment.event) {
+                  throw new Error(`Event with ID ${comment.eventId} not found`);
+                }
+                if (!comment.user) {
+                  throw new Error(`User for comment with ID ${comment.id} not found`);
+                }
+                return {
+                  ...comment,
+                  user: comment.user,
+                  event: comment.event,
+                };
+              }),
+              total: record._count.comments,
             }
           : undefined,
       };
@@ -184,59 +184,15 @@ export default class EventService {
     };
   }
 
-  static async getEvent({ id }: GqlQueryEventArgs): Promise<GqlEvent | null> {
-    const event = await this.db.event.findUnique({
-      where: { id },
-      include: {
-        agendas: { include: { agenda: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        skillsets: { include: { skillset: true } },
-        organizations: {
-          include: {
-            organization: {
-              include: {
-                city: {
-                  include: {
-                    state: true,
-                  },
-                },
-                state: true,
-              },
-            },
-          },
-        },
-        groups: { include: { group: true } },
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-    return event
-      ? {
-          ...event,
-          agendas: event.agendas.map((r) => r.agenda),
-          cities: event.cities.map((r) => ({
-            ...r.city,
-            state: r.city.state,
-          })),
-          skillsets: event.skillsets.map((r) => r.skillset),
-          organizations: event.organizations.map((r) => ({
-            ...r.organization,
-            city: {
-              ...r.organization.city,
-              state: r.organization.city.state,
-            },
-            state: r.organization.state,
-          })),
-          groups: event.groups.map((r) => r.group),
-          totalMinutes: event.stat?.totalMinutes ?? 0,
-        }
-      : null;
+  static async eventGet({ id }: GqlQueryEventArgs): Promise<GqlEvent | null> {
+    return await this.db.event.getWithRelations(id);
   }
 
   static async eventPlan({ input }: GqlMutationEventPlanArgs): Promise<GqlEventPlanPayload> {
     try {
       return await this.db.event.plan({ input });
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -247,7 +203,7 @@ export default class EventService {
     try {
       return await this.db.event.updateContent({ id: id, input: input });
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -264,7 +220,7 @@ export default class EventService {
     try {
       return await this.db.event.updatePrivacy(id, true);
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -274,7 +230,7 @@ export default class EventService {
     try {
       return await this.db.event.updatePrivacy(id, false);
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -283,9 +239,9 @@ export default class EventService {
     input,
   }: GqlMutationEventAddGroupArgs): Promise<GqlEventUpdateGroupPayload> {
     try {
-      return await this.db.event.eventUpdateGroup(id, input.groupId, RELATION_ACTION.CONNECT);
+      return await this.db.event.updateGroup(id, input.groupId, RELATION_ACTION.CONNECT);
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -294,9 +250,9 @@ export default class EventService {
     input,
   }: GqlMutationEventRemoveGroupArgs): Promise<GqlEventUpdateGroupPayload> {
     try {
-      return await this.db.event.eventUpdateGroup(id, input.groupId, RELATION_ACTION.DELETE);
+      return await this.db.event.updateGroup(id, input.groupId, RELATION_ACTION.DELETE);
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -311,7 +267,7 @@ export default class EventService {
         RELATION_ACTION.CONNECTORCREATE,
       );
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 
@@ -326,7 +282,7 @@ export default class EventService {
         RELATION_ACTION.DELETE,
       );
     } catch (error) {
-      return await handleError(error);
+      return await handlePrismaError(error);
     }
   }
 }

@@ -12,13 +12,11 @@ import {
   GqlMutationEventAddOrganizationArgs,
   GqlMutationEventRemoveOrganizationArgs,
 } from "@/types/graphql";
-import { GraphQLResolveInfo } from "graphql";
 
 const eventResolver = {
   Query: {
-    events: async (_: unknown, args: GqlQueryEventsArgs, info: GraphQLResolveInfo) =>
-      EventService.queryEvents(args, info),
-    event: async (_: unknown, args: GqlQueryEventArgs) => EventService.getEvent(args),
+    events: async (_: unknown, args: GqlQueryEventsArgs) => EventService.queryEvents(args),
+    event: async (_: unknown, args: GqlQueryEventArgs) => EventService.eventGet(args),
   },
   Mutation: {
     eventPlan: async (_: unknown, args: GqlMutationEventPlanArgs) => EventService.eventPlan(args),
