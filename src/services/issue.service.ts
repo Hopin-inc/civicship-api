@@ -95,12 +95,7 @@ export default class IssueService {
       },
     });
 
-    return issue
-      ? {
-          ...issue,
-          totalMinutes: issue.stat?.totalMinutes ?? 0,
-        }
-      : null;
+    return issue ?? null;
   }
 
   static async issueCreate({ input }: GqlMutationIssueCreateArgs): Promise<GqlIssueCreatePayload> {
@@ -130,7 +125,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -194,7 +188,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -220,7 +213,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -246,7 +238,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -290,7 +281,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -335,7 +325,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -381,7 +370,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -427,7 +415,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -472,7 +459,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -517,7 +503,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -563,7 +548,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -609,7 +593,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -654,7 +637,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),
@@ -699,7 +681,6 @@ export default class IssueService {
     return {
       issue: {
         ...issue,
-        totalMinutes: issue.stat?.totalMinutes ?? 0,
         skillsets: issue.skillsets.map((r) => r.skillset),
         cities: issue.cities.map((r) => r.city),
         issueCategories: issue.issueCategories.map((r) => r.issueCategory),

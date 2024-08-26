@@ -139,7 +139,6 @@ export default class EventService {
               __typename: "Activities",
               data: record.activities.map((activity) => ({
                 ...activity,
-                totalMinutes: 0,
               })),
               total: record.activities.length,
             }
@@ -227,7 +226,6 @@ export default class EventService {
             state: r.organization.state,
           })),
           groups: event.groups.map((r) => r.group),
-          totalMinutes: event.stat?.totalMinutes ?? 0,
         }
       : null;
   }

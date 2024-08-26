@@ -37,7 +37,7 @@ type Activity {
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
-    totalMinutes: Int!
+    stat: Stat
 
     user: User
     event: Event
