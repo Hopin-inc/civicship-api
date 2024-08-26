@@ -38,6 +38,10 @@ type Index {
     description: String
 }
 
+type Stat {
+    totalMinutes: Int!
+}
+
 enum EntityPosition {
     PREFIX
     SUFFIX

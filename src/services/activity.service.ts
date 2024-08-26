@@ -74,14 +74,7 @@ export default class ActivityService {
       if (!record.event) {
         throw new Error(`Activity with ID ${record.id} has no corresponding event`);
       }
-      return {
-        ...record,
-        event: {
-          ...record.event,
-          totalMinutes: record.event?.stat?.totalMinutes ?? 0,
-        },
-        totalMinutes: record.stat?.totalMinutes ?? 0,
-      };
+      return record;
     });
     return {
       totalCount: data.length,
@@ -112,17 +105,7 @@ export default class ActivityService {
       },
     });
 
-    return activity && activity.event
-      ? {
-          ...activity,
-          totalMinutes: activity.stat?.totalMinutes ?? 0,
-          event: {
-            ...activity.event,
-            createdAt: activity.createdAt,
-            totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-          },
-        }
-      : null;
+    return activity ?? null;
   }
 
   static async activityCreate({
@@ -153,16 +136,7 @@ export default class ActivityService {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
-    return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        },
-      } as GqlActivity,
-    };
+    return { activity };
   }
 
   static async activityDelete({
@@ -205,16 +179,7 @@ export default class ActivityService {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
-    return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        },
-      },
-    };
+    return { activity };
   }
 
   static async activityPublish({
@@ -239,16 +204,7 @@ export default class ActivityService {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
-    return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
-        },
-      },
-    };
+    return { activity };
   }
 
   static async activityUnpublish({
@@ -273,16 +229,7 @@ export default class ActivityService {
       throw new Error(`Activity with ID ${activity.id} has no corresponding event`);
     }
 
-    return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
-        },
-      },
-    };
+    return { activity };
   }
 
   static async activityAddUser({
@@ -321,15 +268,8 @@ export default class ActivityService {
     }
 
     return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        },
-      },
-      user: user,
+      activity,
+      user,
     };
   }
 
@@ -369,15 +309,8 @@ export default class ActivityService {
     }
 
     return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        },
-      },
-      user: user,
+      activity,
+      user,
     };
   }
 
@@ -420,18 +353,8 @@ export default class ActivityService {
     }
 
     return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event.stat?.totalMinutes ?? 0,
-        },
-      },
-      event: {
-        ...event,
-        totalMinutes: event.stat?.totalMinutes ?? 0,
-      },
+      activity,
+      event,
     };
   }
 
@@ -474,18 +397,8 @@ export default class ActivityService {
     }
 
     return {
-      activity: {
-        ...activity,
-        totalMinutes: activity.stat?.totalMinutes ?? 0,
-        event: {
-          ...activity.event,
-          totalMinutes: activity.event?.stat?.totalMinutes ?? 0,
-        },
-      },
-      event: {
-        ...event,
-        totalMinutes: event.stat?.totalMinutes ?? 0,
-      },
+      activity,
+      event,
     };
   }
 }

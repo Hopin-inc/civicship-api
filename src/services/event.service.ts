@@ -23,16 +23,16 @@ import { prismaClient } from "@/prisma/client";
 import { handlePrismaError } from "@/prisma/extension/error";
 import { RELATION_ACTION } from "@/consts";
 import { Prisma } from "@prisma/client";
+import { GraphQLResolveInfo } from "graphql";
+import { doesPathExist } from "@/utils";
 
 export default class EventService {
   private static db = prismaClient;
 
-  static async queryEvents({
-    cursor,
-    filter,
-    sort,
-    first,
-  }: GqlQueryEventsArgs): Promise<GqlEventsConnection> {
+  static async queryEvents(
+    { cursor, filter, sort, first }: GqlQueryEventsArgs,
+    info: GraphQLResolveInfo,
+  ): Promise<GqlEventsConnection> {
     const take = first ?? 10;
     const where: Prisma.EventWhereInput = {
       AND: [

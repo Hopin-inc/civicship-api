@@ -43,7 +43,7 @@ export type GqlActivity = {
   isPublic: Scalars['Boolean']['output'];
   remark?: Maybe<Scalars['String']['output']>;
   startsAt: Scalars['Datetime']['output'];
-  totalMinutes: Scalars['Int']['output'];
+  stat?: Maybe<GqlStat>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user?: Maybe<GqlUser>;
 };
@@ -393,7 +393,7 @@ export type GqlEvent = {
   plannedStartsAt?: Maybe<Scalars['Datetime']['output']>;
   skillsets?: Maybe<Array<GqlSkillset>>;
   startsAt: Scalars['Datetime']['output'];
-  totalMinutes?: Maybe<Scalars['Int']['output']>;
+  stat?: Maybe<GqlStat>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -710,6 +710,20 @@ export type GqlGroupUpdateContentSuccess = {
   group: GqlGroup;
 };
 
+export type GqlGroupUpdateInput = {
+  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  bio?: InputMaybe<Scalars['String']['input']>;
+  childrenIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  eventIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  organizationId?: InputMaybe<Scalars['String']['input']>;
+  parentId?: InputMaybe<Scalars['String']['input']>;
+  targetIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  userIds?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type GqlGroupsConnection = {
   __typename?: 'GroupsConnection';
   edges?: Maybe<Array<Maybe<GqlGroupEdge>>>;
@@ -747,7 +761,7 @@ export type GqlIssue = {
   likes?: Maybe<GqlLikes>;
   organizations?: Maybe<Array<GqlOrganization>>;
   skillsets?: Maybe<Array<GqlSkillset>>;
-  totalMinutes: Scalars['Int']['output'];
+  stat?: Maybe<GqlStat>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -1761,6 +1775,28 @@ export type GqlOrganizationUpdateDefaultSuccess = {
   organization: GqlOrganization;
 };
 
+export type GqlOrganizationUpdateInput = {
+  address1: Scalars['String']['input'];
+  address2?: InputMaybe<Scalars['String']['input']>;
+  agendaIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  bio?: InputMaybe<Scalars['String']['input']>;
+  cityCode: Scalars['String']['input'];
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  entity?: InputMaybe<Scalars['String']['input']>;
+  entityPosition?: InputMaybe<GqlEntityPosition>;
+  establishedAt?: InputMaybe<Scalars['Datetime']['input']>;
+  eventIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  stateCode: Scalars['String']['input'];
+  stateCountryCode: Scalars['String']['input'];
+  targetIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  userIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  website?: InputMaybe<Scalars['String']['input']>;
+  zipcode: Scalars['String']['input'];
+};
+
 export type GqlOrganizationUpdatePrivacyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationUpdatePrivacySuccess;
 
 export type GqlOrganizationUpdatePrivacySuccess = {
@@ -1969,6 +2005,11 @@ export const GqlSortDirection = {
 } as const;
 
 export type GqlSortDirection = typeof GqlSortDirection[keyof typeof GqlSortDirection];
+export type GqlStat = {
+  __typename?: 'Stat';
+  totalMinutes: Scalars['Int']['output'];
+};
+
 export type GqlState = {
   __typename?: 'State';
   code: Scalars['ID']['output'];
@@ -2596,6 +2637,7 @@ export type GqlResolversTypes = ResolversObject<{
   GroupUpdateContentInput: GqlGroupUpdateContentInput;
   GroupUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['GroupUpdateContentPayload']>;
   GroupUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlGroupUpdateContentSuccess, 'group'> & { group: GqlResolversTypes['Group'] }>;
+  GroupUpdateInput: GqlGroupUpdateInput;
   GroupsConnection: ResolverTypeWrapper<Omit<GqlGroupsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['GroupEdge']>>> }>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Index: ResolverTypeWrapper<Index>;
@@ -2689,6 +2731,7 @@ export type GqlResolversTypes = ResolversObject<{
   OrganizationUpdateDefaultInput: GqlOrganizationUpdateDefaultInput;
   OrganizationUpdateDefaultPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdateDefaultPayload']>;
   OrganizationUpdateDefaultSuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdateDefaultSuccess, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
+  OrganizationUpdateInput: GqlOrganizationUpdateInput;
   OrganizationUpdatePrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdatePrivacyPayload']>;
   OrganizationUpdatePrivacySuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdatePrivacySuccess, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
   Organizations: ResolverTypeWrapper<Omit<GqlOrganizations, 'data'> & { data: Array<GqlResolversTypes['Organization']> }>;
@@ -2699,6 +2742,7 @@ export type GqlResolversTypes = ResolversObject<{
   Role: GqlRole;
   Skillset: ResolverTypeWrapper<GqlSkillset>;
   SortDirection: GqlSortDirection;
+  Stat: ResolverTypeWrapper<GqlStat>;
   State: ResolverTypeWrapper<State>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SysRole: GqlSysRole;
@@ -2907,6 +2951,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   GroupUpdateContentInput: GqlGroupUpdateContentInput;
   GroupUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['GroupUpdateContentPayload'];
   GroupUpdateContentSuccess: Omit<GqlGroupUpdateContentSuccess, 'group'> & { group: GqlResolversParentTypes['Group'] };
+  GroupUpdateInput: GqlGroupUpdateInput;
   GroupsConnection: Omit<GqlGroupsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['GroupEdge']>>> };
   ID: Scalars['ID']['output'];
   Index: Index;
@@ -3000,6 +3045,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   OrganizationUpdateDefaultInput: GqlOrganizationUpdateDefaultInput;
   OrganizationUpdateDefaultPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdateDefaultPayload'];
   OrganizationUpdateDefaultSuccess: Omit<GqlOrganizationUpdateDefaultSuccess, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
+  OrganizationUpdateInput: GqlOrganizationUpdateInput;
   OrganizationUpdatePrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdatePrivacyPayload'];
   OrganizationUpdatePrivacySuccess: Omit<GqlOrganizationUpdatePrivacySuccess, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
   Organizations: Omit<GqlOrganizations, 'data'> & { data: Array<GqlResolversParentTypes['Organization']> };
@@ -3008,6 +3054,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   Paging: GqlPaging;
   Query: {};
   Skillset: GqlSkillset;
+  Stat: GqlStat;
   State: State;
   String: Scalars['String']['output'];
   Target: Target;
@@ -3097,7 +3144,7 @@ export type GqlActivityResolvers<ContextType = any, ParentType extends GqlResolv
   isPublic?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   remark?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  stat?: Resolver<Maybe<GqlResolversTypes['Stat']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3387,7 +3434,7 @@ export type GqlEventResolvers<ContextType = any, ParentType extends GqlResolvers
   plannedStartsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   skillsets?: Resolver<Maybe<Array<GqlResolversTypes['Skillset']>>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  totalMinutes?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  stat?: Resolver<Maybe<GqlResolversTypes['Stat']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3654,7 +3701,7 @@ export type GqlIssueResolvers<ContextType = any, ParentType extends GqlResolvers
   likes?: Resolver<Maybe<GqlResolversTypes['Likes']>, ParentType, ContextType>;
   organizations?: Resolver<Maybe<Array<GqlResolversTypes['Organization']>>, ParentType, ContextType>;
   skillsets?: Resolver<Maybe<Array<GqlResolversTypes['Skillset']>>, ParentType, ContextType>;
-  totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  stat?: Resolver<Maybe<GqlResolversTypes['Stat']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4138,6 +4185,11 @@ export type GqlSkillsetResolvers<ContextType = any, ParentType extends GqlResolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlStatResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Stat'] = GqlResolversParentTypes['Stat']> = ResolversObject<{
+  totalMinutes?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlStateResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['State'] = GqlResolversParentTypes['State']> = ResolversObject<{
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   countryCode?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
@@ -4549,6 +4601,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Paging?: GqlPagingResolvers<ContextType>;
   Query?: GqlQueryResolvers<ContextType>;
   Skillset?: GqlSkillsetResolvers<ContextType>;
+  Stat?: GqlStatResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
   Target?: GqlTargetResolvers<ContextType>;
   TargetAddGroupPayload?: GqlTargetAddGroupPayloadResolvers<ContextType>;
