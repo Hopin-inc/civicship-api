@@ -1,17 +1,27 @@
 {
   "$schema": "https://typedoc.org/schema.json",
+  "name": "civicship API Documentation",
+
   "entryPoints": ["./src"],
   "entryPointStrategy": "expand",
+  "tsconfig": "tsconfig.json",
+  "readme": "README.md",
+
   "out": "docs/typedoc",
+  "plugin": ["typedoc-plugin-merge-modules"],
+
+  "mergeModulesRenameDefaults": true,
+  "mergeModulesMergeMode": "module",
+
   "exclude": ["**/__tests__/**", "**/__generated__/**"],
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeExternals": true,
-  "categorizeByGroup": false,
+
   "theme": "default",
+  "categorizeByGroup": false,
   "disableSources": true,
   "includeVersion": true,
-  "name": "civicship API Documentation",
-  "hideGenerator": true,
-  "commentStyle": "all"
+  "commentStyle": "all",
+  "hideGenerator": true
 }
