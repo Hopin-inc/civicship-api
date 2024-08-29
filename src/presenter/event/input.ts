@@ -8,8 +8,8 @@ import { calculateDifferences } from "@/utils";
 import { EventUpdateContentPayloadWithArgs } from "@/types/include/event.type";
 import { RELATION_ACTION } from "@/consts";
 
-export default class EventPresenterInput {
-  static queryWhereInput({ filter }: GqlQueryEventsArgs): Prisma.EventWhereInput {
+export default class EventInputFormat {
+  static filter({ filter }: GqlQueryEventsArgs): Prisma.EventWhereInput {
     return {
       AND: [
         { isPublic: true },
@@ -33,13 +33,13 @@ export default class EventPresenterInput {
     };
   }
 
-  static queryOrderByInput({ sort }: GqlQueryEventsArgs): Prisma.EventOrderByWithRelationInput {
+  static sort({ sort }: GqlQueryEventsArgs): Prisma.EventOrderByWithRelationInput {
     return {
       startsAt: sort?.startsAt ?? Prisma.SortOrder.desc,
     };
   }
 
-  static createInput({ input }: GqlMutationEventPlanArgs): Prisma.EventCreateInput {
+  static create({ input }: GqlMutationEventPlanArgs): Prisma.EventCreateInput {
     const { agendaIds, cityCodes, skillsets, organizationIds, groupIds, ...properties } = input;
 
     return {
@@ -92,7 +92,7 @@ export default class EventPresenterInput {
     };
   }
 
-  static updateContentInput(
+  static updateContent(
     existingEvent: EventUpdateContentPayloadWithArgs,
     input: GqlEventUpdateContentInput,
   ): Prisma.EventUpdateInput {
@@ -146,7 +146,7 @@ export default class EventPresenterInput {
     };
   }
 
-  static updateGroupInput(
+  static updateGroup(
     id: string,
     groupId: string,
     action: RELATION_ACTION,
@@ -181,7 +181,7 @@ export default class EventPresenterInput {
     return data;
   }
 
-  static updateOrganizationInput(
+  static updateOrganization(
     id: string,
     organizationId: string,
     action: RELATION_ACTION,

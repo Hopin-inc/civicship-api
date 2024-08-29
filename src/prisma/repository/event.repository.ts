@@ -10,7 +10,7 @@ import { GqlMutationEventDeleteArgs } from "@/types/graphql";
 export default class EventRepository {
   private static db = prismaClient;
 
-  static async queryPublicEvents(
+  static async queryPublic(
     where: Prisma.EventWhereInput,
     orderBy: Prisma.EventOrderByWithRelationInput,
     take: number,
@@ -27,29 +27,29 @@ export default class EventRepository {
     });
   }
 
-  static async findEventWithRelations(id: string) {
+  static async find(id: string) {
     return this.db.event.findUnique({
       where: { id },
       include: eventGetInclude,
     });
   }
 
-  static async createEvent(data: Prisma.EventCreateInput) {
+  static async findForUpdate(id: string) {
+    return this.db.event.findUnique({
+      where: { id },
+      include: eventUpdateContentInclude,
+    });
+  }
+
+  static async create(data: Prisma.EventCreateInput) {
     return this.db.event.create({
       data,
       include: eventInclude,
     });
   }
 
-  static async deleteEvent({ id }: GqlMutationEventDeleteArgs) {
+  static async delete({ id }: GqlMutationEventDeleteArgs) {
     return this.db.event.delete({ where: { id } });
-  }
-
-  static async findEventByIdForUpdate(id: string) {
-    return this.db.event.findUnique({
-      where: { id },
-      include: eventUpdateContentInclude,
-    });
   }
 
   static async updateContent(id: string, data: Prisma.EventUpdateInput) {
@@ -60,7 +60,7 @@ export default class EventRepository {
     });
   }
 
-  static async updatePrivacy(id: string, isPublic: boolean) {
+  static async switchPrivacy(id: string, isPublic: boolean) {
     return this.db.event.update({
       where: { id },
       data: { isPublic: isPublic },

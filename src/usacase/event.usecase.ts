@@ -18,12 +18,12 @@ import {
   GqlQueryEventsArgs,
 } from "@/types/graphql";
 import EventService from "@/services/event.service";
-import EventPresenterResponse from "@/presenter/event/response";
+import EventResponseFormat from "@/presenter/event/response";
 import GroupService from "@/services/group.service";
 import OrganizationService from "@/services/organization.service";
 
 export default class EventUseCase {
-  static async userFetchPublicEvents({
+  static async userGetPublicEvents({
     cursor,
     filter,
     sort,
@@ -34,51 +34,51 @@ export default class EventUseCase {
     const hasNextPage = data.length > take;
 
     const events: GqlEvent[] = data.slice(0, take).map((record) => {
-      return EventPresenterResponse.getResponse(record);
+      return EventResponseFormat.get(record);
     });
-    return EventPresenterResponse.queryPublicResponse(events, hasNextPage);
+    return EventResponseFormat.queryPublic(events, hasNextPage);
   }
 
-  static async userGetEventWithRelations({ id }: GqlQueryEventArgs): Promise<GqlEvent | null> {
-    const event = await EventService.getEventWithRelations(id);
+  static async userGetEvent({ id }: GqlQueryEventArgs): Promise<GqlEvent | null> {
+    const event = await EventService.findEvent(id);
     if (!event) {
       return null;
     }
-    return EventPresenterResponse.getResponse(event);
+    return EventResponseFormat.get(event);
   }
 
   static async userPlanEvent({ input }: GqlMutationEventPlanArgs): Promise<GqlEventPlanPayload> {
     const event = await EventService.createEvent({ input });
-    return EventPresenterResponse.createResponse(event);
+    return EventResponseFormat.create(event);
   }
 
-  static async userUpdateEventContent({
+  static async userUpdateContentOfEvent({
     id,
     input,
   }: GqlMutationEventUpdateContentArgs): Promise<GqlEventUpdateContentPayload> {
-    const existingEvent = await EventService.getEventForUpdate(id);
+    const existingEvent = await EventService.checkIfEventExists(id);
 
-    const event = await EventService.eventUpdateContent({ id, input }, existingEvent);
-    return EventPresenterResponse.updateContentResponse(event);
+    const event = await EventService.updateContent({ id, input }, existingEvent);
+    return EventResponseFormat.updateContent(event);
   }
 
   static async userDeleteEvent({ id }: GqlMutationEventDeleteArgs): Promise<GqlEventDeletePayload> {
-    await EventService.eventDelete({ id });
-    return EventPresenterResponse.deleteResponse(id);
+    await EventService.deleteEvent({ id });
+    return EventResponseFormat.delete(id);
   }
 
   static async userPublishEvent({
     id,
   }: GqlMutationEventPublishArgs): Promise<GqlEventUpdatePrivacyPayload> {
     const event = await EventService.publishEvent({ id });
-    return EventPresenterResponse.updatePrivacyResponse(event);
+    return EventResponseFormat.switchPrivacy(event);
   }
 
   static async userUnpublishEvent({
     id,
   }: GqlMutationEventPublishArgs): Promise<GqlEventUpdatePrivacyPayload> {
     const event = await EventService.unpublishEvent({ id });
-    return EventPresenterResponse.updatePrivacyResponse(event);
+    return EventResponseFormat.switchPrivacy(event);
   }
 
   static async userAddGroupToEvent({
@@ -87,8 +87,8 @@ export default class EventUseCase {
   }: GqlMutationEventAddGroupArgs): Promise<GqlEventUpdateGroupPayload> {
     const group = await GroupService.checkIfGroupExists(input.groupId);
 
-    const event = await EventService.eventAddGroup({ id, input });
-    return EventPresenterResponse.updateGroupResponse(event, group);
+    const event = await EventService.addGroup({ id, input });
+    return EventResponseFormat.updateGroup(event, group);
   }
 
   static async userRemoveGroupFromEvent({
@@ -97,8 +97,8 @@ export default class EventUseCase {
   }: GqlMutationEventRemoveGroupArgs): Promise<GqlEventUpdateGroupPayload> {
     const group = await GroupService.checkIfGroupExists(input.groupId);
 
-    const event = await EventService.eventRemoveGroup({ id, input });
-    return EventPresenterResponse.updateGroupResponse(event, group);
+    const event = await EventService.removeGroup({ id, input });
+    return EventResponseFormat.updateGroup(event, group);
   }
 
   static async userAddOrganizationToEvent({
@@ -107,8 +107,8 @@ export default class EventUseCase {
   }: GqlMutationEventAddOrganizationArgs): Promise<GqlEventUpdateOrganizationPayload> {
     const organization = await OrganizationService.checkIfOrganizationExists(input.organizationId);
 
-    const event = await EventService.eventAddOrganization({ id, input });
-    return EventPresenterResponse.updateOrganizationResponse(event, organization);
+    const event = await EventService.addOrganization({ id, input });
+    return EventResponseFormat.updateOrganization(event, organization);
   }
 
   static async userRemoveOrganizationFromEvent({
@@ -117,7 +117,7 @@ export default class EventUseCase {
   }: GqlMutationEventAddOrganizationArgs): Promise<GqlEventUpdateOrganizationPayload> {
     const organization = await OrganizationService.checkIfOrganizationExists(input.organizationId);
 
-    const event = await EventService.eventRemoveOrganization({ id, input });
-    return EventPresenterResponse.updateOrganizationResponse(event, organization);
+    const event = await EventService.removeOrganization({ id, input });
+    return EventResponseFormat.updateOrganization(event, organization);
   }
 }

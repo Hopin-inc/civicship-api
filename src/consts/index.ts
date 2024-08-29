@@ -6,8 +6,3 @@ export enum RELATION_ACTION {
   SET = "set",
   DELETE = "delete",
 }
-
-export enum EVENT_INCLUDE {
-  NULL = "null",
-  UPDATE_CONTENT = "eventUpdateContent",
-}

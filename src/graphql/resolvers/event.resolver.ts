@@ -15,10 +15,8 @@ import EventUseCase from "@/usacase/event.usecase";
 
 const eventResolver = {
   Query: {
-    events: async (_: unknown, args: GqlQueryEventsArgs) =>
-      EventUseCase.userFetchPublicEvents(args),
-    event: async (_: unknown, args: GqlQueryEventArgs) =>
-      EventUseCase.userGetEventWithRelations(args),
+    events: async (_: unknown, args: GqlQueryEventsArgs) => EventUseCase.userGetPublicEvents(args),
+    event: async (_: unknown, args: GqlQueryEventArgs) => EventUseCase.userGetEvent(args),
   },
   Mutation: {
     eventPlan: async (_: unknown, args: GqlMutationEventPlanArgs) =>
@@ -26,7 +24,7 @@ const eventResolver = {
     eventDelete: async (_: unknown, args: GqlMutationEventDeleteArgs) =>
       EventUseCase.userDeleteEvent(args),
     eventUpdateContent: async (_: unknown, args: GqlMutationEventUpdateContentArgs) =>
-      EventUseCase.userUpdateEventContent(args),
+      EventUseCase.userUpdateContentOfEvent(args),
     eventPublish: async (_: unknown, args: GqlMutationEventPublishArgs) =>
       EventUseCase.userPublishEvent(args),
     eventUnpublish: async (_: unknown, args: GqlMutationEventUnpublishArgs) =>

@@ -16,8 +16,8 @@ import {
   EventUpdateContentPayloadWithArgs,
 } from "@/types/include/event.type";
 
-export default class EventPresenterResponse {
-  static queryPublicResponse(events: GqlEvent[], hasNextPage: boolean): GqlEventsConnection {
+export default class EventResponseFormat {
+  static queryPublic(events: GqlEvent[], hasNextPage: boolean): GqlEventsConnection {
     return {
       totalCount: events.length,
       pageInfo: {
@@ -33,7 +33,7 @@ export default class EventPresenterResponse {
     };
   }
 
-  static getResponse(event: EventGetPayloadWithArgs): GqlEvent {
+  static get(event: EventGetPayloadWithArgs): GqlEvent {
     return {
       ...event,
       agendas: event.agendas?.map((r) => r.agenda),
@@ -72,7 +72,7 @@ export default class EventPresenterResponse {
     };
   }
 
-  static createResponse(event: EventCreatePayloadWithArgs): GqlEventPlanSuccess {
+  static create(event: EventCreatePayloadWithArgs): GqlEventPlanSuccess {
     return {
       __typename: "EventPlanSuccess",
       event: {
@@ -96,9 +96,7 @@ export default class EventPresenterResponse {
     };
   }
 
-  static updateContentResponse(
-    event: EventUpdateContentPayloadWithArgs,
-  ): GqlEventUpdateContentSuccess {
+  static updateContent(event: EventUpdateContentPayloadWithArgs): GqlEventUpdateContentSuccess {
     return {
       __typename: "EventUpdateContentSuccess",
       event: {
@@ -113,18 +111,18 @@ export default class EventPresenterResponse {
     };
   }
 
-  static deleteResponse(id: string): GqlEventDeleteSuccess {
+  static delete(id: string): GqlEventDeleteSuccess {
     return { eventId: id };
   }
 
-  static updatePrivacyResponse(event: GqlEvent): GqlEventUpdatePrivacySuccess {
+  static switchPrivacy(event: GqlEvent): GqlEventUpdatePrivacySuccess {
     return {
       __typename: "EventUpdatePrivacySuccess",
       event,
     };
   }
 
-  static updateGroupResponse(event: GqlEvent, group: GqlGroup): GqlEventUpdateGroupSuccess {
+  static updateGroup(event: GqlEvent, group: GqlGroup): GqlEventUpdateGroupSuccess {
     return {
       __typename: "EventUpdateGroupSuccess",
       event,
@@ -132,7 +130,7 @@ export default class EventPresenterResponse {
     };
   }
 
-  static updateOrganizationResponse(
+  static updateOrganization(
     event: GqlEvent,
     organization: GqlOrganization,
   ): GqlEventUpdateOrganizationSuccess {
