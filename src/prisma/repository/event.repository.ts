@@ -5,7 +5,6 @@ import {
   eventInclude,
   eventUpdateContentInclude,
 } from "@/types/include/event.type";
-import { GqlMutationEventDeleteArgs } from "@/types/graphql";
 
 export default class EventRepository {
   private static db = prismaClient;
@@ -48,7 +47,7 @@ export default class EventRepository {
     });
   }
 
-  static async delete({ id }: GqlMutationEventDeleteArgs) {
+  static async delete(id: string) {
     return this.db.event.delete({ where: { id } });
   }
 

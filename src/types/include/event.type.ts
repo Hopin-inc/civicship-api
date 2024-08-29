@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 
-export const eventInclude = Prisma.validator<Prisma.EventInclude>()({
+const eventInclude = Prisma.validator<Prisma.EventInclude>()({
   agendas: { include: { agenda: true } },
   cities: { include: { city: { include: { state: true } } } },
   skillsets: { include: { skillset: true } },
@@ -17,13 +17,13 @@ export const eventInclude = Prisma.validator<Prisma.EventInclude>()({
   groups: { include: { group: true } },
 });
 
-export const eventUpdateContentInclude = Prisma.validator<Prisma.EventInclude>()({
+const eventUpdateContentInclude = Prisma.validator<Prisma.EventInclude>()({
   agendas: { include: { agenda: true } },
   cities: { include: { city: { include: { state: true } } } },
   skillsets: { include: { skillset: true } },
 });
 
-export const eventGetInclude = Prisma.validator<Prisma.EventInclude>()({
+const eventGetInclude = Prisma.validator<Prisma.EventInclude>()({
   agendas: { include: { agenda: true } },
   cities: { include: { city: { include: { state: true } } } },
   skillsets: { include: { skillset: true } },
@@ -50,14 +50,23 @@ export const eventGetInclude = Prisma.validator<Prisma.EventInclude>()({
   },
 });
 
-export type EventCreatePayloadWithArgs = Prisma.EventGetPayload<{
+type EventCreatePayloadWithArgs = Prisma.EventGetPayload<{
   include: typeof eventInclude;
 }>;
 
-export type EventGetPayloadWithArgs = Prisma.EventGetPayload<{
+type EventGetPayloadWithArgs = Prisma.EventGetPayload<{
   include: typeof eventGetInclude;
 }>;
 
-export type EventUpdateContentPayloadWithArgs = Prisma.EventGetPayload<{
+type EventUpdateContentPayloadWithArgs = Prisma.EventGetPayload<{
   include: typeof eventUpdateContentInclude;
 }>;
+
+export {
+  eventInclude,
+  eventUpdateContentInclude,
+  eventGetInclude,
+  EventCreatePayloadWithArgs,
+  EventGetPayloadWithArgs,
+  EventUpdateContentPayloadWithArgs,
+};
