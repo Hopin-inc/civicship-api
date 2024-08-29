@@ -20,6 +20,7 @@ export default class EventService {
   static async fetchPublicEvents({ cursor, filter, sort }: GqlQueryEventsArgs, take: number) {
     const where = EventInputFormat.filter({ filter });
     const orderBy = EventInputFormat.sort({ sort });
+
     return await EventRepository.queryPublic(where, orderBy, take, cursor);
   }
 
@@ -28,6 +29,7 @@ export default class EventService {
     if (!event) {
       throw new Error(`Event with ID ${id} not found`);
     }
+
     return event;
   }
 
@@ -49,7 +51,7 @@ export default class EventService {
   }
 
   static async deleteEvent({ id }: GqlMutationEventDeleteArgs) {
-    await EventRepository.delete({ id });
+    await EventRepository.delete(id);
   }
 
   static async publishEvent({ id }: GqlMutationEventPublishArgs) {
