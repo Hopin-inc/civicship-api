@@ -27,3 +27,4 @@ generates:
         Group: "@prisma/client/index.d#Group"
         Target: "@prisma/client/index.d#Target"
         User: "@prisma/client/index.d#User"
+      contextType: "@/prisma/client#Context"

@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { eventExtension } from "@/prisma/extension/event.extension";
 
 export const prismaClient = new PrismaClient({
   log: [
@@ -8,4 +7,12 @@ export const prismaClient = new PrismaClient({
     { emit: "stdout", level: "info" },
     { emit: "stdout", level: "warn" },
   ],
-}).$extends(eventExtension);
+});
+
+export interface Context {
+  prisma: PrismaClient;
+}
+
+export const createContext: () => Context = () => {
+  return { prisma: prismaClient };
+};
