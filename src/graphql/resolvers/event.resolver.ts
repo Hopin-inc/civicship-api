@@ -1,4 +1,3 @@
-import EventService from "@/services/event.service";
 import {
   GqlQueryEventsArgs,
   GqlMutationEventPlanArgs,
@@ -12,30 +11,34 @@ import {
   GqlMutationEventAddOrganizationArgs,
   GqlMutationEventRemoveOrganizationArgs,
 } from "@/types/graphql";
+import EventUseCase from "@/usacase/event.usecase";
 
 const eventResolver = {
   Query: {
-    events: async (_: unknown, args: GqlQueryEventsArgs) => EventService.queryEvents(args),
-    event: async (_: unknown, args: GqlQueryEventArgs) => EventService.eventGet(args),
+    events: async (_: unknown, args: GqlQueryEventsArgs) =>
+      EventUseCase.userFetchPublicEvents(args),
+    event: async (_: unknown, args: GqlQueryEventArgs) =>
+      EventUseCase.userGetEventWithRelations(args),
   },
   Mutation: {
-    eventPlan: async (_: unknown, args: GqlMutationEventPlanArgs) => EventService.eventPlan(args),
+    eventPlan: async (_: unknown, args: GqlMutationEventPlanArgs) =>
+      EventUseCase.userPlanEvent(args),
     eventDelete: async (_: unknown, args: GqlMutationEventDeleteArgs) =>
-      EventService.eventDelete(args),
+      EventUseCase.userDeleteEvent(args),
     eventUpdateContent: async (_: unknown, args: GqlMutationEventUpdateContentArgs) =>
-      EventService.eventUpdateContent(args),
+      EventUseCase.userUpdateEventContent(args),
     eventPublish: async (_: unknown, args: GqlMutationEventPublishArgs) =>
-      EventService.eventPublish(args),
+      EventUseCase.userPublishEvent(args),
     eventUnpublish: async (_: unknown, args: GqlMutationEventUnpublishArgs) =>
-      EventService.eventUnpublish(args),
+      EventUseCase.userUnpublishEvent(args),
     eventAddGroup: async (_: unknown, args: GqlMutationEventAddGroupArgs) =>
-      EventService.eventAddGroup(args),
+      EventUseCase.userAddGroupToEvent(args),
     eventRemoveGroup: async (_: unknown, args: GqlMutationEventRemoveGroupArgs) =>
-      EventService.eventRemoveGroup(args),
+      EventUseCase.userRemoveGroupFromEvent(args),
     eventAddOrganization: async (_: unknown, args: GqlMutationEventAddOrganizationArgs) =>
-      EventService.eventAddOrganization(args),
+      EventUseCase.userAddOrganizationToEvent(args),
     eventRemoveOrganization: async (_: unknown, args: GqlMutationEventRemoveOrganizationArgs) =>
-      EventService.eventRemoveOrganization(args),
+      EventUseCase.userRemoveOrganizationFromEvent(args),
   },
 };
 

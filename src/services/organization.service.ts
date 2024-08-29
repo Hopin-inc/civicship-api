@@ -29,9 +29,18 @@ import {
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
+import OrganizationRepository from "@/prisma/repository/organization.repository";
 
 export default class OrganizationService {
   private static db = prismaClient;
+
+  static async checkIfOrganizationExists(id: string): Promise<GqlOrganization> {
+    const organization = await OrganizationRepository.findOrganizationById(id);
+    if (!organization) {
+      throw new Error(`Group with ID ${id} not found`);
+    }
+    return organization;
+  }
 
   // TODO: check userId, cities, etc. -> filter
   static async queryOrganizations({

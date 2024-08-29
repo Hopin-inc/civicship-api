@@ -32,9 +32,18 @@ import {
   GqlGroupUpdateContentPayload,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import GroupRepository from "@/prisma/repository/group.repository";
 
 export default class GroupService {
   private static db = prismaClient;
+
+  static async checkIfGroupExists(id: string): Promise<GqlGroup> {
+    const group = await GroupRepository.findGroupById(id);
+    if (!group) {
+      throw new Error(`Group with ID ${id} not found`);
+    }
+    return group;
+  }
 
   static async queryGroups({
     cursor,
@@ -229,9 +238,6 @@ export default class GroupService {
       }),
       this.db.event.findUnique({
         where: { id: input.eventId },
-        include: {
-          stat: { select: { totalMinutes: true } },
-        },
       }),
     ]);
 
@@ -241,10 +247,7 @@ export default class GroupService {
 
     return {
       group,
-      event: {
-        ...event,
-        totalMinutes: event?.stat?.totalMinutes ?? 0,
-      },
+      event,
     };
   }
 
@@ -268,9 +271,6 @@ export default class GroupService {
       }),
       this.db.event.findUnique({
         where: { id: input.eventId },
-        include: {
-          stat: { select: { totalMinutes: true } },
-        },
       }),
     ]);
 
@@ -280,10 +280,7 @@ export default class GroupService {
 
     return {
       group,
-      event: {
-        ...event,
-        totalMinutes: event?.stat?.totalMinutes ?? 0,
-      },
+      event,
     };
   }
 
