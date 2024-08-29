@@ -17,8 +17,8 @@ type Comment {
     id: ID!
     content: String!
 
-    user: User!
-    event: Event!
+    user: User
+    event: Event
 
     postedAt: Datetime!
     createdAt: Datetime!

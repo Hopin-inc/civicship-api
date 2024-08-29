@@ -13,8 +13,8 @@ type Likes {
 }
 
 type Like {
-    user: User!
-    event: Event!
+    user: User
+    event: Event
 
     postedAt: Datetime!
     createdAt: Datetime!
