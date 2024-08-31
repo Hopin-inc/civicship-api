@@ -34,8 +34,8 @@ import OrganizationRepository from "@/prisma/repository/organization.repository"
 export default class OrganizationService {
   private static db = prismaClient;
 
-  static async checkIfOrganizationExists(id: string): Promise<GqlOrganization> {
-    const organization = await OrganizationRepository.findOrganizationById(id);
+  static async checkIfOrganizationExists(id: string) {
+    const organization = await OrganizationRepository.find(id);
     if (!organization) {
       throw new Error(`Group with ID ${id} not found`);
     }

@@ -2,7 +2,7 @@ import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
 import {
   eventGetInclude,
-  eventInclude,
+  eventCreateInclude,
   eventUpdateContentInclude,
 } from "@/types/include/event.type";
 
@@ -33,17 +33,23 @@ export default class EventRepository {
     });
   }
 
-  static async findForUpdate(id: string) {
+  static async findForUpdateContent(id: string) {
     return this.db.event.findUnique({
       where: { id },
       include: eventUpdateContentInclude,
     });
   }
 
+  static async findForUpdateRelation(id: string) {
+    return this.db.event.findUnique({
+      where: { id },
+    });
+  }
+
   static async create(data: Prisma.EventCreateInput) {
     return this.db.event.create({
       data,
-      include: eventInclude,
+      include: eventCreateInclude,
     });
   }
 

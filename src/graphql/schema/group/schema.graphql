@@ -14,16 +14,17 @@ extend type Mutation {
     groupCreate(input: GroupCreateInput!): GroupCreatePayload
     groupDelete(id: ID!): GroupDeletePayload
     groupUpdateContent(id: ID!, input: GroupUpdateContentInput!): GroupUpdateContentPayload
-    groupAddUser(id: ID!, input: GroupAddUserInput!): GroupAddUserPayload
-    groupRemoveUser(id: ID!, input: GroupRemoveUserInput!): GroupRemoveUserPayload
-    groupAddEvent(id: ID!, input: GroupAddEventInput!): GroupAddEventPayload
-    groupRemoveEvent(id: ID!, input: GroupRemoveEventInput!): GroupRemoveEventPayload
-    groupAddTarget(id: ID!, input: GroupAddTargetInput!): GroupAddTargetPayload
-    groupRemoveTarget(id: ID!, input: GroupRemoveTargetInput!): GroupRemoveTargetPayload
-    groupAddParent(id: ID!, input: GroupAddParentInput!): GroupAddParentPayload
-    groupRemoveParent(id: ID!, input: GroupRemoveParentInput!): GroupRemoveParentPayload
-    groupAddChild(id: ID!, input: GroupAddChildInput!): GroupAddChildPayload
-    groupRemoveChild(id: ID!, input: GroupRemoveChildInput!): GroupRemoveChildPayload
+    groupChangeOrganization(id: ID!, input: GroupChangeOrganizationInput!): GroupChangeOrganizationPayload
+    groupAddUser(id: ID!, input: GroupAddUserInput!): GroupUpdateUserPayload
+    groupRemoveUser(id: ID!, input: GroupRemoveUserInput!): GroupUpdateUserPayload
+    groupAddEvent(id: ID!, input: GroupAddEventInput!): GroupUpdateEventPayload
+    groupRemoveEvent(id: ID!, input: GroupRemoveEventInput!): GroupUpdateEventPayload
+    groupAddTarget(id: ID!, input: GroupAddTargetInput!): GroupUpdateTargetPayload
+    groupRemoveTarget(id: ID!, input: GroupRemoveTargetInput!): GroupUpdateTargetPayload
+    groupAddParent(id: ID!, input: GroupAddParentInput!): GroupUpdateParentPayload
+    groupRemoveParent(id: ID!, input: GroupRemoveParentInput!): GroupUpdateParentPayload
+    groupAddChild(id: ID!, input: GroupAddChildInput!): GroupUpdateChildPayload
+    groupRemoveChild(id: ID!, input: GroupRemoveChildInput!): GroupUpdateChildPayload
 }
 
 # Type definitions

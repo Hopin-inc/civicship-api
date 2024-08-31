@@ -24,8 +24,17 @@ export default class EventService {
     return await EventRepository.queryPublic(where, orderBy, take, cursor);
   }
 
-  static async checkIfEventExists(id: string) {
-    const event = await EventRepository.findForUpdate(id);
+  static async checkIfEventExistsForUpdate(id: string) {
+    const event = await EventRepository.findForUpdateContent(id);
+    if (!event) {
+      throw new Error(`Event with ID ${id} not found`);
+    }
+
+    return event;
+  }
+
+  static async checkIfEventExistsRelation(id: string) {
+    const event = await EventRepository.findForUpdateRelation(id);
     if (!event) {
       throw new Error(`Event with ID ${id} not found`);
     }

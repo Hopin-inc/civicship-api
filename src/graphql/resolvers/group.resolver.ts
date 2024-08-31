@@ -1,4 +1,3 @@
-import GroupService from "@/services/group.service";
 import {
   GqlQueryGroupArgs,
   GqlMutationGroupDeleteArgs,
@@ -15,40 +14,44 @@ import {
   GqlMutationGroupAddChildArgs,
   GqlMutationGroupRemoveChildArgs,
   GqlMutationGroupUpdateContentArgs,
+  GqlMutationGroupChangeOrganizationArgs,
 } from "@/types/graphql";
+import GroupUseCase from "@/usacase/group.usecase";
 
 const groupResolver = {
   Query: {
-    groups: async (_: unknown, args: GqlQueryGroupsArgs) => GroupService.queryGroups(args),
-    group: async (_: unknown, args: GqlQueryGroupArgs) => GroupService.getGroup(args),
+    groups: async (_: unknown, args: GqlQueryGroupsArgs) => GroupUseCase.userGetManyGroups(args),
+    group: async (_: unknown, args: GqlQueryGroupArgs) => GroupUseCase.userGetGroup(args),
   },
   Mutation: {
     groupCreate: async (_: unknown, args: GqlMutationGroupCreateArgs) =>
-      GroupService.groupCreate(args),
+      GroupUseCase.userCreateGroup(args),
     groupDelete: async (_: unknown, args: GqlMutationGroupDeleteArgs) =>
-      GroupService.groupDelete(args),
+      GroupUseCase.userDeleteGroup(args),
     groupUpdateContent: async (_: unknown, args: GqlMutationGroupUpdateContentArgs) =>
-      GroupService.groupUpdateContent(args),
+      GroupUseCase.userUpdateGroupContent(args),
+    groupChangeOrganization: async (_: unknown, args: GqlMutationGroupChangeOrganizationArgs) =>
+      GroupUseCase.userChangeOrganizationOfGroup(args),
     groupAddUser: async (_: unknown, args: GqlMutationGroupAddUserArgs) =>
-      GroupService.groupAddUser(args),
+      GroupUseCase.userAddUserToGroup(args),
     groupRemoveUser: async (_: unknown, args: GqlMutationGroupRemoveUserArgs) =>
-      GroupService.groupRemoveUser(args),
+      GroupUseCase.userRemoveUserFromGroup(args),
     groupAddEvent: async (_: unknown, args: GqlMutationGroupAddEventArgs) =>
-      GroupService.groupAddEvent(args),
+      GroupUseCase.userAddEventToGroup(args),
     groupRemoveEvent: async (_: unknown, args: GqlMutationGroupRemoveEventArgs) =>
-      GroupService.groupRemoveEvent(args),
+      GroupUseCase.userRemoveEventFromGroup(args),
     groupAddTarget: async (_: unknown, args: GqlMutationGroupAddTargetArgs) =>
-      GroupService.groupAddTarget(args),
+      GroupUseCase.userAddTargetToGroup(args),
     groupRemoveTarget: async (_: unknown, args: GqlMutationGroupRemoveTargetArgs) =>
-      GroupService.groupRemoveTarget(args),
+      GroupUseCase.userRemoveTargetFromGroup(args),
     groupAddParent: async (_: unknown, args: GqlMutationGroupAddParentArgs) =>
-      GroupService.groupAddParent(args),
+      GroupUseCase.userAddParentToGroup(args),
     groupRemoveParent: async (_: unknown, args: GqlMutationGroupRemoveParentArgs) =>
-      GroupService.groupRemoveParent(args),
+      GroupUseCase.userRemoveParentFromGroup(args),
     groupAddChild: async (_: unknown, args: GqlMutationGroupAddChildArgs) =>
-      GroupService.groupAddChild(args),
+      GroupUseCase.userAddChildToGroup(args),
     groupRemoveChild: async (_: unknown, args: GqlMutationGroupRemoveChildArgs) =>
-      GroupService.groupRemoveChild(args),
+      GroupUseCase.userRemoveChildFromGroup(args),
   },
 };
 

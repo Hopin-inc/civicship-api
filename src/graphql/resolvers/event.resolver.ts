@@ -17,7 +17,7 @@ const eventResolver = {
   Query: {
     events: async (_: unknown, args: GqlQueryEventsArgs) => {
       try {
-        return await EventUseCase.userGetPublicEvents(args);
+        return await EventUseCase.userGetManyPublicEvents(args);
       } catch (error) {
         throw new Error("Error fetching public events");
       }

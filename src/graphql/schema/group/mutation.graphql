@@ -23,6 +23,10 @@ input GroupUpdateContentInput {
     cityCodes: [String!]
 }
 
+input GroupChangeOrganizationInput {
+    organizationId: String!
+}
+
 input GroupAddUserInput {
     userId: String!
 }
@@ -77,52 +81,32 @@ type GroupUpdateContentSuccess {
     group: Group!
 }
 
-type GroupAddUserSuccess {
+type GroupChangeOrganizationSuccess {
+    group: Group!
+    organization: Organization!
+}
+
+type GroupUpdateUserSuccess {
     group: Group!
     user: User!
 }
 
-type GroupRemoveUserSuccess {
-    group: Group!
-    user: User!
-}
-
-type GroupAddEventSuccess {
+type GroupUpdateEventSuccess {
     group: Group!
     event: Event!
 }
 
-type GroupRemoveEventSuccess {
-    group: Group!
-    event: Event!
-}
-
-type GroupAddTargetSuccess {
+type GroupUpdateTargetSuccess {
     group: Group!
     target: Target!
 }
 
-type GroupRemoveTargetSuccess {
-    group: Group!
-    target: Target!
-}
-
-type GroupAddParentSuccess {
+type GroupUpdateParentSuccess {
     group: Group!
     parent: Group!
 }
 
-type GroupRemoveParentSuccess {
-    group: Group!
-    parent: Group!
-}
-
-type GroupAddChildSuccess {
-    group: Group!
-    child: Group!
-}
-
-type GroupRemoveChildSuccess {
+type GroupUpdateChildSuccess {
     group: Group!
     child: Group!
 }
@@ -147,62 +131,38 @@ union GroupUpdateContentPayload =
     AuthError |
     ComplexQueryError
 
-union GroupAddUserPayload =
-    GroupAddUserSuccess |
+union GroupChangeOrganizationPayload =
+    GroupChangeOrganizationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union GroupRemoveUserPayload =
-    GroupRemoveUserSuccess |
+union GroupUpdateUserPayload =
+    GroupUpdateUserSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union GroupAddEventPayload =
-    GroupAddEventSuccess |
+union GroupUpdateEventPayload =
+    GroupUpdateEventSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union GroupRemoveEventPayload =
-    GroupRemoveEventSuccess |
+union GroupUpdateTargetPayload =
+    GroupUpdateTargetSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union GroupAddTargetPayload =
-    GroupAddTargetSuccess |
+union GroupUpdateParentPayload =
+    GroupUpdateParentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union GroupRemoveTargetPayload =
-    GroupRemoveTargetSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union GroupAddParentPayload =
-    GroupAddParentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union GroupRemoveParentPayload =
-    GroupRemoveParentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union GroupAddChildPayload =
-    GroupAddChildSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union GroupRemoveChildPayload =
-    GroupRemoveChildSuccess |
+union GroupUpdateChildPayload =
+    GroupUpdateChildSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

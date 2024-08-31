@@ -23,7 +23,7 @@ import GroupService from "@/services/group.service";
 import OrganizationService from "@/services/organization.service";
 
 export default class EventUseCase {
-  static async userGetPublicEvents({
+  static async userGetManyPublicEvents({
     cursor,
     filter,
     sort,
@@ -56,7 +56,7 @@ export default class EventUseCase {
     id,
     input,
   }: GqlMutationEventUpdateContentArgs): Promise<GqlEventUpdateContentPayload> {
-    const existingEvent = await EventService.checkIfEventExists(id);
+    const existingEvent = await EventService.checkIfEventExistsForUpdate(id);
 
     const event = await EventService.updateContent({ id, input }, existingEvent);
     return EventResponseFormat.updateContent(event);

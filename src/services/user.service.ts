@@ -26,9 +26,18 @@ import {
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
+import UserRepository from "@/prisma/repository/user.repository";
 
 export default class UserService {
   private static db = prismaClient;
+
+  static async checkIfUserExists(id: string): Promise<GqlUser> {
+    const user = await UserRepository.checkExists(id);
+    if (!user) {
+      throw new Error(`Group with ID ${id} not found`);
+    }
+    return user;
+  }
 
   // #ToDo add skill in filter
   static async queryUsers({

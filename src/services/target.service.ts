@@ -21,9 +21,18 @@ import {
 } from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
+import TargetRepository from "@/prisma/repository/target.repository";
 
 class TargetService {
   private static db = prismaClient;
+
+  static async checkIfTargetExists(id: string): Promise<GqlTarget> {
+    const target = await TargetRepository.checkExists(id);
+    if (!target) {
+      throw new Error(`Group with ID ${id} not found`);
+    }
+    return target;
+  }
 
   static async queryTargets({ cursor, filter, sort, first }: GqlQueryTargetsArgs) {
     const take = first ?? 10;
