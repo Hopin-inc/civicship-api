@@ -1,0 +1,91 @@
+model User {
+  id         String  @id @default(cuid())
+  lastName   String  @map("last_name")
+  middleName String? @map("middle_name")
+  firstName  String  @map("first_name")
+  email      String?
+  image      String?
+  bio        String?
+  sysRole    SysRole @default(USER) @map("sys_role")
+  isPublic   Boolean @default(false) @map("is_public")
+
+  agendas         AgendasOnUsers[]
+  skillsets       SkillsetsOnUsers[]
+  issueCategories IssueCategoriesOnUsers[]
+  cities          CitiesOnUsers[]
+  groups          UsersOnGroups[]
+  organizations   UsersOnOrganizations[]
+  applications    Application[]
+  confirmations   ApplicationConfirmation[]
+  activities      Activity[]
+
+  likes    Like[]
+  comments Comment[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_users")
+}
+
+model AgendasOnUsers {
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agendaId Int    @map("agenda_id")
+  agenda   Agenda @relation(fields: [agendaId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, agendaId])
+  @@map("t_agendas_on_users")
+}
+
+model AgendasOnGroups {
+  groupId  String @map("group_id")
+  group    Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  agendaId Int    @map("agenda_id")
+  agenda   Agenda @relation(fields: [agendaId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([groupId, agendaId])
+  @@map("t_agendas_on_groups")
+}
+
+model IssueCategoriesOnUsers {
+  userId          String        @map("user_id")
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issueCategoryId Int           @map("issue_category_id")
+  issueCategory   IssueCategory @relation(fields: [issueCategoryId], references: [id], onDelete: Restrict)
+
+  @@id([userId, issueCategoryId])
+  @@map("m_issue_categories_on_users")
+}
+
+model SkillsetsOnUsers {
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillsetId Int      @map("skillset_id")
+  skillset   Skillset @relation(fields: [skillsetId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, skillsetId])
+  @@map("t_skillsets_on_users")
+}
+
+model CitiesOnUsers {
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cityCode String @map("city_code")
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, cityCode])
+  @@map("t_cities_on_users")
+}

@@ -1,0 +1,48 @@
+extend type Query {
+    users(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection!
+    user(id: ID!): User
+}
+
+extend type Mutation {
+    userCreate(input: UserCreateInput!): UserCreatePayload
+    userDelete(id: ID!): UserDeletePayload
+    userUpdateContent(id: ID!, input: UserUpdateContentInput!): UserUpdateContentPayload
+    userPublish(id: ID!, input: UserSwitchPrivacyInput!): UserSwitchPrivacyPayload
+    userUnpublish(id: ID!, input: UserSwitchPrivacyInput!): UserSwitchPrivacyPayload
+    userAddGroup(id: ID!, input: UserAddGroupInput!): UserUpdateGroupPayload
+    userRemoveGroup(id: ID!, input: UserRemoveGroupInput!): UserUpdateGroupPayload
+    userAddOrganization(id: ID!, input: UserAddOrganizationInput!): UserUpdateOrganizationPayload
+    userRemoveOrganization(id: ID!, input: UserRemoveOrganizationInput!): UserUpdateOrganizationPayload
+    userAddActivity(id: ID!, input: UserAddActivityInput!): UserUpdateActivityPayload
+    userRemoveActivity(id: ID!, input: UserRemoveActivityInput!): UserUpdateActivityPayload
+}
+
+# Type definitions
+
+type User {
+    id: ID!
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+    sysRole: SysRole!
+    isPublic: Boolean!
+
+    agendas: [Agenda!]
+    cities: [City!]
+    groups: [Group!]
+    organizations: [Organization!]
+    activities: [Activity!]
+    likes: [Like!]
+    comments: [Comment!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

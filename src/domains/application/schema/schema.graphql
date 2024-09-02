@@ -1,0 +1,35 @@
+# Queries and Mutations
+
+extend type Query {
+    applications(
+        filter: ApplicationFilterInput
+        sort: ApplicationSortInput
+        cursor: String
+        first: Int
+    ): ApplicationsConnection!
+    application(id: ID!): Application
+}
+
+extend type Mutation {
+    applicationCreate(input: ApplicationCreateInput!): ApplicationCreatePayload
+    applicationDelete(id: ID!): ApplicationDeletePayload
+    applicationUpdateComment(id: ID!, input: ApplicationUpdateCommentInput!): ApplicationUpdateCommentPayload
+    applicationPublish(id: ID!): ApplicationSwitchPrivacyPayload
+    applicationUnpublish(id: ID!): ApplicationSwitchPrivacyPayload
+}
+
+# Type definitions
+
+type Application {
+    comment: String
+    isPublic: Boolean!
+
+    event: Event
+    user: User
+    activity: Activity
+    approvals: [ApplicationConfirmation!]
+    submittedAt: Datetime!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

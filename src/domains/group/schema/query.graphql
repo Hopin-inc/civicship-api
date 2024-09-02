@@ -1,0 +1,24 @@
+# Queries/Mutations-related type definitions
+
+type GroupsConnection {
+    edges: [GroupEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type GroupEdge implements Edge {
+    cursor: String!
+    node: Group
+}
+
+input GroupFilterInput {
+    isPublic: Boolean
+    keyword: String
+    agendaId: Int
+    organizationId: String
+}
+
+input GroupSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}

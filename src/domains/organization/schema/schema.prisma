@@ -1,0 +1,107 @@
+model Organization {
+  id             String          @id @default(cuid())
+  name           String
+  entity         String?
+  entityPosition EntityPosition? @map("entity_position")
+  image          String?
+  bio            String?
+  establishedAt  DateTime?       @map("established_at")
+  website        String?
+  isPublic       Boolean         @default(false) @map("is_public")
+
+  zipcode          String  @db.VarChar(7)
+  stateCode        String  @map("state_code")
+  stateCountryCode String  @map("state_country_code")
+  cityCode         String  @map("city_code")
+  state            State   @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode], onDelete: Restrict)
+  city             City    @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+  address1         String
+  address2         String?
+
+  groups                Group[]
+  users                 UsersOnOrganizations[]
+  events                EventsOnOrganizations[]
+  issues                IssuesOnOrganizations[]
+  agendas               AgendasOnOrganizations[]
+  cities                CitiesOnOrganizations[]
+  targets               Target[]
+  activitiesNotInEvents Activity[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_organizations")
+}
+
+model UsersOnOrganizations {
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  displayName  String?   @map("display_name")
+  displayImage String?   @map("display_image")
+  role         Role      @default(MEMBER)
+  addedAt      DateTime? @map("added_at")
+  removedAt    DateTime? @map("removed_at")
+  isPublic     Boolean   @default(false) @map("is_public")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, organizationId])
+  @@map("t_users_on_organizations")
+}
+
+model EventsOnOrganizations {
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eventId        String       @map("event_id")
+  event          Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([organizationId, eventId])
+  @@map("t_events_on_organizations")
+}
+
+model IssuesOnOrganizations {
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  issueId        String       @map("issue_id")
+  issue          Issue        @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([organizationId, issueId])
+  @@map("t_issues_on_organizations")
+}
+
+model AgendasOnOrganizations {
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agendaId       Int          @map("agenda_id")
+  agenda         Agenda       @relation(fields: [agendaId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([organizationId, agendaId])
+  @@map("t_agendas_on_organizations")
+}
+
+model CitiesOnOrganizations {
+  organizationId String       @map("organization_id")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cityCode       String       @map("city_code")
+  city           City         @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([organizationId, cityCode])
+  @@map("t_cities_on_organizations")
+}

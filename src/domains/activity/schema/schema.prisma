@@ -1,0 +1,48 @@
+model Activity {
+  id            String        @id @default(cuid())
+  description   String?
+  remark        String?
+  isPublic      Boolean       @default(false) @map("is_public")
+  activityStyle ActivityStyle @default(OFFSITE) @map("activity_style")
+  /// [ArrayOfString]
+  images        Json          @default("[]")
+  startsAt      DateTime      @map("starts_at")
+  endsAt        DateTime      @map("ends_at")
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  organizationId String?       @map("organization_id")
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  eventId String? @map("event_id")
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  issueId String? @map("issue_id")
+  issue   Issue?  @relation(fields: [issueId], references: [id], onDelete: SetNull)
+
+  applicationId String?      @unique @map("application_id")
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  stat ActivityStatView?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_activities")
+}
+
+view ActivityStatView {
+  id       String   @unique
+  isPublic Boolean  @map("is_public")
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime @map("ends_at")
+
+  userId  String @map("user_id")
+  eventId String @map("event_id")
+
+  activity     Activity @relation(fields: [id], references: [id])
+  totalMinutes Int      @map("total_minutes")
+
+  @@map("v_activities_stats")
+}

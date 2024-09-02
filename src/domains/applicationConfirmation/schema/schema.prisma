@@ -1,0 +1,16 @@
+model ApplicationConfirmation {
+  id         String  @id @default(cuid())
+  isApproved Boolean @default(true) @map("is_approved")
+  comment    String?
+
+  applicationId String      @map("application_id")
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  confirmerId String? @map("confirmer_id")
+  confirmedBy User?   @relation(fields: [confirmerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_application_confirmations")
+}

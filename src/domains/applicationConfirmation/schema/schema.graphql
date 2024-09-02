@@ -1,0 +1,28 @@
+# Queries and Mutations
+
+extend type Query {
+    applicationConfirmations(
+        filter: ApplicationConfirmationFilterInput
+        sort: ApplicationConfirmationSortInput
+        cursor: String
+        first: Int
+    ): ApplicationConfirmationsConnection!
+    applicationConfirmation(id: ID!): ApplicationConfirmation
+}
+
+extend type Mutation {
+    applicationConfirmationCreate(input: ApplicationConfirmationInput!): ApplicationConfirmationCreatePayload
+}
+
+# Type definitions
+
+type ApplicationConfirmation{
+    isApproved: Boolean!
+    comment: String
+
+    application: Application
+    confirmedBy: User
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

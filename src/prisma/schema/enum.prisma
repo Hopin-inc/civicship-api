@@ -1,0 +1,25 @@
+enum SysRole {
+  SYS_ADMIN
+  USER
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  MEMBER
+}
+
+enum EntityPosition {
+  PREFIX
+  SUFFIX
+}
+
+enum ValueType {
+  INT
+  FLOAT
+}
+
+enum ActivityStyle {
+  ONSITE
+  OFFSITE
+}

@@ -1,0 +1,106 @@
+# Queries/Mutations-related type definitions
+
+input ActivityCreateInput {
+    description: String
+    remark: String
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+
+    userId: String!
+    eventId: String!
+}
+
+input ActivityUpdateContentInput {
+    description: String
+    remark: String
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+input ActivitySwitchPrivacyInput {
+    isPublic: Boolean!
+}
+
+input ActivityAddUserInput {
+    userId: String!
+}
+
+input ActivityRemoveUserInput {
+    userId: String!
+}
+
+input ActivityAddEventInput {
+    eventId: String!
+}
+
+input ActivityRemoveEventInput {
+    eventId: String!
+}
+
+# Type definitions
+
+type ActivityCreateSuccess {
+    activity: Activity
+}
+
+type ActivityDeleteSuccess {
+    activityId: ID!
+}
+
+type ActivityUpdateContentSuccess {
+    activity: Activity!
+}
+
+type ActivitySwitchPrivacySuccess {
+    activity: Activity!
+}
+
+type ActivityUpdateUserSuccess {
+    activity: Activity!
+    user: User!
+}
+
+type ActivityUpdateEventSuccess {
+    activity: Activity!
+    event: Event!
+}
+
+# union definitions
+
+union ActivityCreatePayload =
+ActivityCreateSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityDeletePayload =
+ActivityDeleteSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityUpdateContentPayload =
+ActivityUpdateContentSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivitySwitchPrivacyPayload =
+ActivitySwitchPrivacySuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityUpdateUserPayload =
+ActivityUpdateUserSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError
+
+union ActivityUpdateEventPayload =
+ActivityUpdateEventSuccess |
+InvalidInputValueError |
+AuthError |
+ComplexQueryError

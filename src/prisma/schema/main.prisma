@@ -1,0 +1,30 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["views", "relationJoins", "prismaSchemaFolder"]
+}
+
+generator erd {
+  provider                  = "prisma-erd-generator"
+  theme                     = "forest"
+  output                    = "../../docs/ERD.md"
+  includeRelationFromFields = true
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+  output   = "../../docs"
+}
+
+generator fabbrica {
+  provider = "prisma-fabbrica"
+  output   = "./../__generated__/fabbrica"
+}
+
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
