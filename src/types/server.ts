@@ -1,5 +1,10 @@
 import { User } from "@prisma/client";
 
-export type Context = {
-  user?: User,
+type LoggedInUserInfo = {
+  uid: string;
+  currentUser: User | undefined;
 };
+export type IContext = (
+  | Record<string, never>
+  | LoggedInUserInfo
+);

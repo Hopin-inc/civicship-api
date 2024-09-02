@@ -38,6 +38,10 @@ type Index {
     description: String
 }
 
+enum IdentityPlatform {
+    LINE
+}
+
 enum EntityPosition {
     PREFIX
     SUFFIX

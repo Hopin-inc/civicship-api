@@ -1,6 +1,12 @@
 ```mermaid
 erDiagram
 
+        IdentityPlatform {
+            LINE LINE
+        }
+    
+
+
         SysRole {
             SYS_ADMIN SYS_ADMIN
 USER USER
@@ -35,6 +41,22 @@ FLOAT FLOAT
 OFFSITE OFFSITE
         }
     
+  "t_sessions" {
+    String sid "🗝️"
+    Json data 
+    DateTime expires_at 
+    }
+  
+
+  "t_identities" {
+    String uid "🗝️"
+    IdentityPlatform platform 
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_users" {
     String id "🗝️"
     String last_name 
@@ -432,7 +454,10 @@ OFFSITE OFFSITE
     Int totalMinutes 
     }
   
+    "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
+    "t_identities" o|--|| "t_users" : "user"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
+    "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_agendas_on_users" : "agendas"
     "t_users" o{--}o "t_skillsets_on_users" : "skillsets"
     "t_users" o{--}o "m_issue_categories_on_users" : "issueCategories"
