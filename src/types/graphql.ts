@@ -353,6 +353,16 @@ export type GqlComplexQueryError = GqlError & {
   path: Array<Scalars['String']['output']>;
 };
 
+export type GqlCurrentUserPayload = {
+  __typename?: 'CurrentUserPayload';
+  user?: Maybe<GqlUser>;
+};
+
+export type GqlCustomTokenCreatePayload = {
+  __typename?: 'CustomTokenCreatePayload';
+  idToken: Scalars['String']['output'];
+};
+
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -756,6 +766,11 @@ export type GqlGroupsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export const GqlIdentityPlatform = {
+  Line: 'LINE'
+} as const;
+
+export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
 export type GqlIndex = {
   __typename?: 'Index';
   description?: Maybe<Scalars['String']['output']>;
@@ -1044,6 +1059,7 @@ export type GqlMutation = {
   commentUpdate?: Maybe<GqlCommentUpdatePayload>;
   createComment?: Maybe<GqlComment>;
   createEvent?: Maybe<GqlEvent>;
+  customTokenCreateWithAccessToken?: Maybe<GqlCustomTokenCreatePayload>;
   deleteComment?: Maybe<GqlComment>;
   deleteEvent?: Maybe<GqlEvent>;
   eventAddGroup?: Maybe<GqlEventAddGroupPayload>;
@@ -1233,6 +1249,12 @@ export type GqlMutationCreateCommentArgs = {
 
 export type GqlMutationCreateEventArgs = {
   content: GqlEventCreateInput;
+};
+
+
+export type GqlMutationCustomTokenCreateWithAccessTokenArgs = {
+  accessToken: Scalars['String']['input'];
+  platform: GqlIdentityPlatform;
 };
 
 
@@ -1902,6 +1924,7 @@ export type GqlQuery = {
   applicationConfirmations: GqlApplicationConfirmationsConnection;
   applications: GqlApplicationsConnection;
   cities: Array<GqlCity>;
+  currentUser?: Maybe<GqlCurrentUserPayload>;
   echo: Scalars['String']['output'];
   event?: Maybe<GqlEvent>;
   events: GqlEventsConnection;
@@ -2600,6 +2623,8 @@ export type GqlResolversTypes = ResolversObject<{
   CommentUpdateSuccess: ResolverTypeWrapper<Omit<GqlCommentUpdateSuccess, 'comment'> & { comment: GqlResolversTypes['Comment'] }>;
   Comments: ResolverTypeWrapper<Omit<GqlComments, 'data'> & { data: Array<GqlResolversTypes['Comment']> }>;
   ComplexQueryError: ResolverTypeWrapper<GqlComplexQueryError>;
+  CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
+  CustomTokenCreatePayload: ResolverTypeWrapper<GqlCustomTokenCreatePayload>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
   EntityPosition: GqlEntityPosition;
@@ -2680,6 +2705,7 @@ export type GqlResolversTypes = ResolversObject<{
   GroupUpdateSuccess: ResolverTypeWrapper<Omit<GqlGroupUpdateSuccess, 'group'> & { group: GqlResolversTypes['Group'] }>;
   GroupsConnection: ResolverTypeWrapper<Omit<GqlGroupsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['GroupEdge']>>> }>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
+  IdentityPlatform: GqlIdentityPlatform;
   Index: ResolverTypeWrapper<Index>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   InvalidInputValueError: ResolverTypeWrapper<GqlInvalidInputValueError>;
@@ -2914,6 +2940,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommentUpdateSuccess: Omit<GqlCommentUpdateSuccess, 'comment'> & { comment: GqlResolversParentTypes['Comment'] };
   Comments: Omit<GqlComments, 'data'> & { data: Array<GqlResolversParentTypes['Comment']> };
   ComplexQueryError: GqlComplexQueryError;
+  CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
+  CustomTokenCreatePayload: GqlCustomTokenCreatePayload;
   Datetime: Scalars['Datetime']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
   Error: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Error'];
@@ -3428,6 +3456,16 @@ export type GqlCommentsResolvers<ContextType = Context, ParentType extends GqlRe
 export type GqlComplexQueryErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ComplexQueryError'] = GqlResolversParentTypes['ComplexQueryError']> = ResolversObject<{
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   path?: Resolver<Array<GqlResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCurrentUserPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CurrentUserPayload'] = GqlResolversParentTypes['CurrentUserPayload']> = ResolversObject<{
+  user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCustomTokenCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CustomTokenCreatePayload'] = GqlResolversParentTypes['CustomTokenCreatePayload']> = ResolversObject<{
+  idToken?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3967,6 +4005,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   commentUpdate?: Resolver<Maybe<GqlResolversTypes['CommentUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentUpdateArgs, 'id' | 'input'>>;
   createComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationCreateCommentArgs, 'content'>>;
   createEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationCreateEventArgs, 'content'>>;
+  customTokenCreateWithAccessToken?: Resolver<Maybe<GqlResolversTypes['CustomTokenCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCustomTokenCreateWithAccessTokenArgs, 'accessToken' | 'platform'>>;
   deleteComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationDeleteCommentArgs, 'id'>>;
   deleteEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationDeleteEventArgs, 'id'>>;
   eventAddGroup?: Resolver<Maybe<GqlResolversTypes['EventAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddGroupArgs, 'id' | 'input'>>;
@@ -4208,6 +4247,7 @@ export type GqlQueryResolvers<ContextType = Context, ParentType extends GqlResol
   applicationConfirmations?: Resolver<GqlResolversTypes['ApplicationConfirmationsConnection'], ParentType, ContextType, Partial<GqlQueryApplicationConfirmationsArgs>>;
   applications?: Resolver<GqlResolversTypes['ApplicationsConnection'], ParentType, ContextType, Partial<GqlQueryApplicationsArgs>>;
   cities?: Resolver<Array<GqlResolversTypes['City']>, ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
+  currentUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType>;
   echo?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   event?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlQueryEventArgs, 'id'>>;
   events?: Resolver<GqlResolversTypes['EventsConnection'], ParentType, ContextType, Partial<GqlQueryEventsArgs>>;
@@ -4523,6 +4563,8 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   CommentUpdateSuccess?: GqlCommentUpdateSuccessResolvers<ContextType>;
   Comments?: GqlCommentsResolvers<ContextType>;
   ComplexQueryError?: GqlComplexQueryErrorResolvers<ContextType>;
+  CurrentUserPayload?: GqlCurrentUserPayloadResolvers<ContextType>;
+  CustomTokenCreatePayload?: GqlCustomTokenCreatePayloadResolvers<ContextType>;
   Datetime?: GraphQLScalarType;
   Edge?: GqlEdgeResolvers<ContextType>;
   Error?: GqlErrorResolvers<ContextType>;

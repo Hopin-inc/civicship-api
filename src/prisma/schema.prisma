@@ -37,6 +37,33 @@ datasource db {
 
 // Models
 
+// #  Auth
+
+model Session {
+  sid       String   @id
+  data      Json
+  expiresAt DateTime @map("expires_at")
+
+  @@map("t_sessions")
+}
+
+model Identity {
+  uid      String           @id
+  platform IdentityPlatform
+  userId   String           @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_identities")
+}
+
+enum IdentityPlatform {
+  LINE
+}
+
 // # Users
 
 model User {
@@ -50,6 +77,7 @@ model User {
   sysRole    SysRole @default(USER) @map("sys_role")
   isPublic   Boolean @default(false) @map("is_public")
 
+  identities      Identity[]
   agendas         AgendasOnUsers[]
   skillsets       SkillsetsOnUsers[]
   issueCategories IssueCategoriesOnUsers[]

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineIssueStatViewFactory = exports.defineEventStatViewFactory = exports.defineActivityStatViewFactory = exports.defineIndexFactory = exports.defineCitiesOnIssuesFactory = exports.defineCitiesOnEventsFactory = exports.defineCitiesOnOrganizationsFactory = exports.defineCitiesOnGroupsFactory = exports.defineCitiesOnUsersFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineSkillsetsOnIssuesFactory = exports.defineSkillsetsOnEventsFactory = exports.defineSkillsetsOnUsersFactory = exports.defineSkillsetFactory = exports.defineIssueCategoriesOnUsersFactory = exports.defineIssueCategoriesOnIssuesFactory = exports.defineIssueCategoryFactory = exports.defineAgendasOnEventsFactory = exports.defineAgendasOnOrganizationsFactory = exports.defineAgendasOnGroupsFactory = exports.defineAgendasOnUsersFactory = exports.defineAgendaFactory = exports.defineTargetFactory = exports.defineCommentFactory = exports.defineLikeFactory = exports.defineIssuesOnOrganizationsFactory = exports.defineIssuesOnGroupsFactory = exports.defineIssueFactory = exports.defineEventsOnOrganizationsFactory = exports.defineEventsOnGroupsFactory = exports.defineEventFactory = exports.defineApplicationConfirmationFactory = exports.defineApplicationFactory = exports.defineActivityFactory = exports.defineUsersOnOrganizationsFactory = exports.defineOrganizationFactory = exports.defineUsersOnGroupsFactory = exports.defineGroupFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineIssueStatViewFactory = exports.defineEventStatViewFactory = exports.defineActivityStatViewFactory = exports.defineIndexFactory = exports.defineCitiesOnIssuesFactory = exports.defineCitiesOnEventsFactory = exports.defineCitiesOnOrganizationsFactory = exports.defineCitiesOnGroupsFactory = exports.defineCitiesOnUsersFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineSkillsetsOnIssuesFactory = exports.defineSkillsetsOnEventsFactory = exports.defineSkillsetsOnUsersFactory = exports.defineSkillsetFactory = exports.defineIssueCategoriesOnUsersFactory = exports.defineIssueCategoriesOnIssuesFactory = exports.defineIssueCategoryFactory = exports.defineAgendasOnEventsFactory = exports.defineAgendasOnOrganizationsFactory = exports.defineAgendasOnGroupsFactory = exports.defineAgendasOnUsersFactory = exports.defineAgendaFactory = exports.defineTargetFactory = exports.defineCommentFactory = exports.defineLikeFactory = exports.defineIssuesOnOrganizationsFactory = exports.defineIssuesOnGroupsFactory = exports.defineIssueFactory = exports.defineEventsOnOrganizationsFactory = exports.defineEventsOnGroupsFactory = exports.defineEventFactory = exports.defineApplicationConfirmationFactory = exports.defineApplicationFactory = exports.defineActivityFactory = exports.defineUsersOnOrganizationsFactory = exports.defineOrganizationFactory = exports.defineUsersOnGroupsFactory = exports.defineGroupFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineSessionFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -10,8 +10,22 @@ const initializer = (0, internal_1.createInitializer)();
 const { getClient } = initializer;
 exports.initialize = initializer.initialize;
 const modelFieldDefinitions = [{
+        name: "Session",
+        fields: []
+    }, {
+        name: "Identity",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "IdentityToUser"
+            }]
+    }, {
         name: "User",
         fields: [{
+                name: "identities",
+                type: "Identity",
+                relationName: "IdentityToUser"
+            }, {
                 name: "agendas",
                 type: "AgendasOnUsers",
                 relationName: "AgendasOnUsersToUser"
@@ -658,6 +672,188 @@ const modelFieldDefinitions = [{
                 relationName: "IssueToIssueStatView"
             }]
     }];
+function autoGenerateSessionScalarsOrEnums({ seq }) {
+    return {
+        sid: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Session", fieldName: "sid", isId: true, isUnique: false, seq }),
+        data: (0, internal_1.getScalarFieldValueGenerator)().Json({ modelName: "Session", fieldName: "data", isId: false, isUnique: false, seq }),
+        expiresAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "Session", fieldName: "expiresAt", isId: false, isUnique: false, seq })
+    };
+}
+function defineSessionFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Session", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateSessionScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {};
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            sid: inputData.sid
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().session.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Session",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Session} model.
+ *
+ * @param options
+ * @returns factory {@link SessionFactoryInterface}
+ */
+exports.defineSessionFactory = ((options) => {
+    return defineSessionFactoryInternal(options ?? {}, {});
+});
+exports.defineSessionFactory.withTransientFields = defaultTransientFieldValues => options => defineSessionFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isIdentityuserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateIdentityScalarsOrEnums({ seq }) {
+    return {
+        uid: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Identity", fieldName: "uid", isId: true, isUnique: false, seq }),
+        platform: "LINE"
+    };
+}
+function defineIdentityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Identity", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIdentityScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isIdentityuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            uid: inputData.uid
+        });
+        const create = async (inputData = {}) => {
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const data = await build(inputData).then(screen);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().identity.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Identity",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Identity} model.
+ *
+ * @param options
+ * @returns factory {@link IdentityFactoryInterface}
+ */
+exports.defineIdentityFactory = ((options) => {
+    return defineIdentityFactoryInternal(options, {});
+});
+exports.defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
 function autoGenerateUserScalarsOrEnums({ seq }) {
     return {
         lastName: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "User", fieldName: "lastName", isId: false, isUnique: false, seq }),
