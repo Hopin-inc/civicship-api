@@ -38,8 +38,8 @@ type Index {
     description: String
 }
 
-type Stat {
-    totalMinutes: Int!
+enum IdentityPlatform {
+    LINE
 }
 
 enum EntityPosition {

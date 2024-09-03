@@ -3,9 +3,10 @@ import {
   // rule,
   allow,
 } from "graphql-shield";
+// import { IContext } from "@/types/server";
 
-// const isAuthenticated = rule({ cache: "contextual" })(async (parent, args, { user }) => {
-//   return !!user;
+// const isAuthenticated = rule({ cache: "contextual" })(async (_, __, { currentUser }: IContext) => {
+//   return !!currentUser;
 // });
 
 export const permissions = shield({
