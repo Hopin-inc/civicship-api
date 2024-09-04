@@ -37,7 +37,6 @@ type Activity {
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
-    stat: Stat
 
     user: User
     event: Event

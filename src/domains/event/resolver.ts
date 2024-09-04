@@ -11,7 +11,7 @@ import {
   GqlMutationEventAddOrganizationArgs,
   GqlMutationEventRemoveOrganizationArgs,
 } from "@/types/graphql";
-import EventUseCase from "@/usecase/event.usecase";
+import EventUseCase from "@/domains/event/event.usecase";
 
 const eventResolver = {
   Query: {

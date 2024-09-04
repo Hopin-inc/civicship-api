@@ -1,0 +1,120 @@
+# Queries/Mutations-related type definitions
+
+input ApplicationCreateInput {
+    userId: String!
+    eventId: String
+    comment: String
+    submittedAt: Datetime!
+}
+
+input ApplicationUpdateCommentInput {
+    comment: String
+}
+
+input ApplicationAddConfirmationInput{
+    isApproved: Boolean!
+    confirmerId: String!
+    comment: String
+}
+
+input ApplicationApprovalInput{
+    applicationConfirmationId: String!
+}
+
+input ApplicationRefusalInput{
+    applicationConfirmationId: String!
+}
+
+input ApplicationUpdateConfirmationCommentInput{
+    applicationConfirmationId: String!
+    comment: String
+}
+
+input ApplicationDeleteConfirmationInput {
+    applicationConfirmationId: String!
+}
+
+# Type definitions
+
+type ApplicationCreateSuccess {
+    application: Application!
+}
+
+type ApplicationDeleteSuccess {
+    applicationId: ID!
+}
+
+type ApplicationUpdateCommentSuccess {
+    application: Application!
+}
+
+type ApplicationSwitchPrivacySuccess {
+    application: Application!
+}
+
+type ApplicationAddConfirmationSuccess{
+    application: Application!
+}
+
+type ApplicationSwitchIsApprovedSuccess{
+    application: Application!
+}
+
+type ApplicationUpdateConfirmationCommentSuccess{
+    application: Application!
+}
+
+type ApplicationDeleteConfirmationSuccess {
+    applicationId: ID!
+    applicationConfirmationId: String!
+}
+
+# union definitions
+
+union ApplicationCreatePayload =
+    ApplicationCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationDeletePayload =
+    ApplicationDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationUpdateCommentPayload =
+    ApplicationUpdateCommentSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationSwitchPrivacyPayload =
+    ApplicationSwitchPrivacySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationAddConfirmationPayload =
+    ApplicationAddConfirmationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationSwitchIsApprovedPayload =
+    ApplicationSwitchIsApprovedSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationUpdateConfirmationCommentPayload =
+    ApplicationUpdateConfirmationCommentSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationDeleteConfirmationPayload =
+    ApplicationDeleteConfirmationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

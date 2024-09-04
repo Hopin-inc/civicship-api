@@ -35,7 +35,6 @@ type Issue {
     description: String
     isPublic: Boolean!
     images: [String!]
-    stat: Stat
 
     issueCategories: [IssueCategory!]
     skillsets: [Skillset!]

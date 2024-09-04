@@ -6,8 +6,8 @@ import {
   GqlApplicationConfirmationsConnection,
   GqlApplicationConfirmation,
 } from "@/types/graphql";
-import ApplicationConfirmationService from "@/domains/applicationConfirmation/service";
-import ApplicationConfirmationResponseFormat from "@/domains/applicationConfirmation/presenter/response";
+import ApplicationConfirmationService from "@/domains/application/applicationConfirmation/service";
+import ApplicationConfirmationResponseFormat from "@/domains/application/applicationConfirmation/presenter/response";
 
 export default class ApplicationConfirmationUseCase {
   static async userGetManyApplicationConfirmations({
@@ -33,6 +33,7 @@ export default class ApplicationConfirmationUseCase {
     id,
   }: GqlQueryApplicationConfirmationArgs): Promise<GqlApplicationConfirmation | null> {
     const confirmation = await ApplicationConfirmationService.getApplicationConfirmation({ id });
+
     if (!confirmation) {
       return null;
     }

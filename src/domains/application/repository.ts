@@ -1,6 +1,7 @@
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
 import {
+  applicationUpdateConfirmationInclude,
   applicationCreateInclude,
   applicationGetInclude,
   applicationUpdateContentInclude,
@@ -56,7 +57,7 @@ export default class ApplicationRepository {
   static async switchPrivacy(id: string, isPublic: boolean) {
     return this.db.application.update({
       where: { id },
-      data: { isPublic: isPublic },
+      data: { isPublic },
     });
   }
 
@@ -69,5 +70,70 @@ export default class ApplicationRepository {
 
   static async delete(id: string) {
     return this.db.application.delete({ where: { id } });
+  }
+
+  static async updateConfirmation(
+    applicationId: string,
+    data: Prisma.ApplicationConfirmationCreateInput,
+  ) {
+    return this.db.application.update({
+      where: { id: applicationId },
+      data: {
+        approvals: {
+          create: data,
+        },
+      },
+      include: applicationUpdateConfirmationInclude,
+    });
+  }
+
+  static async switchIsApproved(
+    applicationId: string,
+    applicationConfirmationId: string,
+    isApproved: boolean,
+  ) {
+    return this.db.application.update({
+      where: { id: applicationId },
+      data: {
+        approvals: {
+          update: {
+            where: { id: applicationConfirmationId },
+            data: { isApproved },
+          },
+        },
+      },
+    });
+  }
+
+  static async updateConfirmationComment(
+    applicationId: string,
+    applicationConfirmationId: string,
+    comment?: string,
+  ) {
+    return this.db.application.update({
+      where: { id: applicationId },
+      data: {
+        approvals: {
+          update: {
+            where: { id: applicationConfirmationId },
+            data: { comment },
+          },
+        },
+      },
+      include: applicationUpdateConfirmationInclude,
+    });
+  }
+
+  static async deleteConfirmation(applicationId: string, applicationConfirmationId: string) {
+    return this.db.application.update({
+      where: { id: applicationId },
+      data: {
+        approvals: {
+          delete: {
+            id: applicationConfirmationId,
+          },
+        },
+      },
+    });
   }
 }

@@ -1,12 +1,12 @@
-import ApplicationUseCase from "@/usecase/application.usecase";
+import ApplicationUseCase from "@/domains/application/usecase";
 import {
   GqlQueryApplicationsArgs,
   GqlMutationApplicationCreateArgs,
   GqlQueryApplicationArgs,
   GqlMutationApplicationDeleteArgs,
-  GqlMutationApplicationUpdateCommentArgs,
   GqlMutationApplicationPublishArgs,
   GqlMutationApplicationUnpublishArgs,
+  GqlMutationApplicationUpdateCommentArgs,
 } from "@/types/graphql";
 
 const applicationResolver = {

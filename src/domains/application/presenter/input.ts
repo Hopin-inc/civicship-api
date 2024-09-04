@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import {
+  GqlMutationApplicationAddConfirmationArgs,
   GqlMutationApplicationCreateArgs,
   GqlQueryActivitiesArgs,
   GqlQueryApplicationsArgs,
@@ -30,6 +31,19 @@ export default class ApplicationInputFormat {
       user: { connect: { id: userId } },
       event: { connect: { id: eventId } },
       submittedAt: new Date(submittedAt ?? Date.now()).toISOString(),
+    };
+  }
+
+  static addConfirmation({
+    id,
+    input,
+  }: GqlMutationApplicationAddConfirmationArgs): Prisma.ApplicationConfirmationCreateInput {
+    const { isApproved, confirmerId, comment } = input;
+    return {
+      isApproved,
+      application: { connect: { id } },
+      confirmedBy: { connect: { id: confirmerId } },
+      comment,
     };
   }
 }

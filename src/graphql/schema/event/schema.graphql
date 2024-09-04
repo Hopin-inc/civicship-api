@@ -33,7 +33,6 @@ type Event {
     endsAt: Datetime!
     plannedStartsAt: Datetime
     plannedEndsAt: Datetime
-    stat: Stat
 
     agendas: [Agenda!]
     cities: [City!]

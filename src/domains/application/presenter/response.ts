@@ -5,8 +5,13 @@ import {
   GqlApplicationsConnection,
   GqlApplicationUpdateCommentSuccess,
   GqlApplicationSwitchPrivacySuccess,
+  GqlApplicationDeleteConfirmationSuccess,
+  GqlApplicationUpdateConfirmationCommentSuccess,
+  GqlApplicationSwitchIsApprovedSuccess,
+  GqlApplicationAddConfirmationSuccess,
 } from "@/types/graphql";
 import {
+  ApplicationUpdateConfirmationPayloadWithArgs,
   ApplicationCreatePayloadWithArgs,
   ApplicationGetPayloadWithArgs,
   ApplicationUpdateContentPayloadWithArgs,
@@ -34,6 +39,7 @@ export default class ApplicationResponseFormat {
       ...application,
       user: application.user,
       event: application.event,
+      approvals: application.approvals,
     };
   }
 
@@ -69,6 +75,52 @@ export default class ApplicationResponseFormat {
     return {
       __typename: "ApplicationSwitchPrivacySuccess",
       application,
+    };
+  }
+
+  static addConfirmation(
+    application: ApplicationUpdateConfirmationPayloadWithArgs,
+  ): GqlApplicationAddConfirmationSuccess {
+    return {
+      __typename: "ApplicationAddConfirmationSuccess",
+      application: {
+        ...application,
+        user: application.user,
+        event: application.event,
+        approvals: application.approvals,
+      },
+    };
+  }
+
+  static switchIsApproved(application: GqlApplication): GqlApplicationSwitchIsApprovedSuccess {
+    return {
+      __typename: "ApplicationSwitchIsApprovedSuccess",
+      application,
+    };
+  }
+
+  static updateConfirmationComment(
+    application: ApplicationUpdateConfirmationPayloadWithArgs,
+  ): GqlApplicationUpdateConfirmationCommentSuccess {
+    return {
+      __typename: "ApplicationUpdateConfirmationCommentSuccess",
+      application: {
+        ...application,
+        user: application.user,
+        event: application.event,
+        approvals: application.approvals,
+      },
+    };
+  }
+
+  static deleteConfirmation(
+    applicationId: string,
+    applicationConfirmationId: string,
+  ): GqlApplicationDeleteConfirmationSuccess {
+    return {
+      __typename: "ApplicationDeleteConfirmationSuccess",
+      applicationId,
+      applicationConfirmationId,
     };
   }
 }

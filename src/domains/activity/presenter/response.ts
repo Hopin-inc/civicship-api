@@ -55,6 +55,8 @@ export default class ActivityResponseFormat {
   static updateContent(
     activity: ActivityUpdateContentPayloadWithArgs,
   ): GqlActivityUpdateContentSuccess {
+    if (activity instanceof Error) {
+    }
     return {
       __typename: "ActivityUpdateContentSuccess",
       activity: {

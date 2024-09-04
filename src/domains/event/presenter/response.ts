@@ -53,19 +53,19 @@ export default class EventResponseFormat {
       groups: event.groups?.map((r) => r.group),
       activities: event.activities
         ? {
-            data: event.activities.map((activity) => activity),
+            data: event.activities,
             total: event._count.activities,
           }
         : undefined,
       likes: event.likes
         ? {
-            data: event.likes.map((like) => like),
+            data: event.likes,
             total: event._count.likes,
           }
         : undefined,
       comments: event.comments
         ? {
-            data: event.comments.map((comment) => comment),
+            data: event.comments,
             total: event._count.comments,
           }
         : undefined,

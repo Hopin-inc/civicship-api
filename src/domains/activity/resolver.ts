@@ -11,7 +11,7 @@ import {
   GqlQueryActivityArgs,
   GqlMutationActivityRemoveUserArgs,
 } from "@/types/graphql";
-import ActivityUseCase from "@/usecase/activity.usecase";
+import ActivityUseCase from "@/domains/activity/activity.usecase";
 
 const activityResolver = {
   Query: {

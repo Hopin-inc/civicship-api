@@ -38,7 +38,7 @@ import {
   defineCitiesOnOrganizationsFactory,
   defineCitiesOnEventsFactory,
   defineIndexFactory,
-} from "./fabbrica";
+} from "../../__generated__/fabbrica";
 
 // Base Factories
 export const IndexFactory = defineIndexFactory({

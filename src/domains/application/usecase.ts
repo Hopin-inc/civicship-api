@@ -12,6 +12,15 @@ import {
   GqlApplicationSwitchPrivacyPayload,
   GqlApplicationsConnection,
   GqlApplication,
+  GqlMutationApplicationAddConfirmationArgs,
+  GqlMutationApplicationUpdateConfirmationCommentArgs,
+  GqlMutationApplicationDeleteConfirmationArgs,
+  GqlApplicationAddConfirmationPayload,
+  GqlApplicationSwitchIsApprovedPayload,
+  GqlApplicationUpdateConfirmationCommentPayload,
+  GqlApplicationDeleteConfirmationPayload,
+  GqlMutationApplicationApprovalArgs,
+  GqlMutationApplicationRefusalArgs,
 } from "@/types/graphql";
 import ApplicationService from "@/domains/application/service";
 import ApplicationResponseFormat from "@/domains/application/presenter/response";
@@ -75,5 +84,48 @@ export default class ApplicationUseCase {
   }: GqlMutationApplicationUnpublishArgs): Promise<GqlApplicationSwitchPrivacyPayload> {
     const application = await ApplicationService.applicationUnpublish({ id });
     return ApplicationResponseFormat.switchPrivacy(application);
+  }
+
+  static async userUpdateApplicationConfirmation({
+    id,
+    input,
+  }: GqlMutationApplicationAddConfirmationArgs): Promise<GqlApplicationAddConfirmationPayload> {
+    const application = await ApplicationService.applicationUpdateConfirmation({ id, input });
+    return ApplicationResponseFormat.addConfirmation(application);
+  }
+
+  static async userApproveApplication({
+    id,
+    input,
+  }: GqlMutationApplicationApprovalArgs): Promise<GqlApplicationSwitchIsApprovedPayload> {
+    const result = await ApplicationService.applicationApprove({ id, input });
+    return ApplicationResponseFormat.switchIsApproved(result);
+  }
+
+  static async userRefuseApplication({
+    id,
+    input,
+  }: GqlMutationApplicationRefusalArgs): Promise<GqlApplicationSwitchIsApprovedPayload> {
+    const result = await ApplicationService.applicationRefuse({ id, input });
+    return ApplicationResponseFormat.switchIsApproved(result);
+  }
+
+  static async userUpdateApplicationConfirmationComment({
+    id,
+    input,
+  }: GqlMutationApplicationUpdateConfirmationCommentArgs): Promise<GqlApplicationUpdateConfirmationCommentPayload> {
+    const updatedConfirmation = await ApplicationService.applicationUpdateConfirmationComment({
+      id,
+      input,
+    });
+    return ApplicationResponseFormat.updateConfirmationComment(updatedConfirmation);
+  }
+
+  static async userDeleteApplicationConfirmation({
+    id,
+    input,
+  }: GqlMutationApplicationDeleteConfirmationArgs): Promise<GqlApplicationDeleteConfirmationPayload> {
+    await ApplicationService.applicationDeleteConfirmation({ id, input });
+    return ApplicationResponseFormat.deleteConfirmation(id, input.applicationConfirmationId);
   }
 }

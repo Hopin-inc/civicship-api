@@ -21,6 +21,7 @@ import ActivityService from "@/domains/activity/service";
 import UserService from "@/domains/user/service";
 import EventService from "@/domains/event/service";
 import ActivityResponseFormat from "@/domains/activity/presenter/response";
+import { handlePrismaError } from "@/repository/error";
 
 export default class ActivityUseCase {
   static async userGetManyPublicActivities({
@@ -61,8 +62,12 @@ export default class ActivityUseCase {
     id,
     input,
   }: GqlMutationActivityUpdateContentArgs): Promise<GqlActivityUpdateContentPayload> {
-    const activity = await ActivityService.updateContent({ id, input });
-    return ActivityResponseFormat.updateContent(activity);
+    try {
+      const activity = await ActivityService.updateContent({ id, input });
+      return ActivityResponseFormat.updateContent(activity);
+    } catch (e) {
+      return handlePrismaError(e);
+    }
   }
 
   static async userPublishActivity({

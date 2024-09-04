@@ -1,9 +1,14 @@
 import {
+  GqlMutationApplicationAddConfirmationArgs,
+  GqlMutationApplicationApprovalArgs,
   GqlMutationApplicationCreateArgs,
   GqlMutationApplicationDeleteArgs,
+  GqlMutationApplicationDeleteConfirmationArgs,
   GqlMutationApplicationPublishArgs,
+  GqlMutationApplicationRefusalArgs,
   GqlMutationApplicationUnpublishArgs,
   GqlMutationApplicationUpdateCommentArgs,
+  GqlMutationApplicationUpdateConfirmationCommentArgs,
   GqlQueryApplicationArgs,
   GqlQueryApplicationsArgs,
 } from "@/types/graphql";
@@ -59,5 +64,39 @@ export default class ApplicationService {
 
   static async applicationUnpublish({ id }: GqlMutationApplicationUnpublishArgs) {
     return await ApplicationRepository.switchPrivacy(id, false);
+  }
+
+  static async applicationUpdateConfirmation({
+    id,
+    input,
+  }: GqlMutationApplicationAddConfirmationArgs) {
+    const data = ApplicationInputFormat.addConfirmation({ id, input });
+    return ApplicationRepository.updateConfirmation(id, data);
+  }
+
+  static async applicationApprove({ id, input }: GqlMutationApplicationApprovalArgs) {
+    return ApplicationRepository.switchIsApproved(id, input.applicationConfirmationId, true);
+  }
+
+  static async applicationRefuse({ id, input }: GqlMutationApplicationRefusalArgs) {
+    return ApplicationRepository.switchIsApproved(id, input.applicationConfirmationId, false);
+  }
+
+  static async applicationUpdateConfirmationComment({
+    id,
+    input,
+  }: GqlMutationApplicationUpdateConfirmationCommentArgs) {
+    return ApplicationRepository.updateConfirmationComment(
+      id,
+      input.applicationConfirmationId,
+      input.comment,
+    );
+  }
+
+  static async applicationDeleteConfirmation({
+    id,
+    input,
+  }: GqlMutationApplicationDeleteConfirmationArgs) {
+    return ApplicationRepository.deleteConfirmation(id, input.applicationConfirmationId);
   }
 }
