@@ -1,4 +1,4 @@
-import UserUseCase from "@/domains/user/user.usecase";
+import UserUseCase from "@/domains/user/usecase";
 import {
   GqlQueryUserArgs,
   GqlQueryUsersArgs,

@@ -1,12 +1,6 @@
-import { prismaClient } from "@/prisma/client";
 import {
-  GqlQueryIssuesArgs,
-  GqlQueryIssueArgs,
   GqlMutationIssueCreateArgs,
   GqlMutationIssueDeleteArgs,
-  GqlMutationIssueUpdateContentArgs,
-  GqlMutationIssuePublishArgs,
-  GqlMutationIssueUnpublishArgs,
   GqlMutationIssueAddGroupArgs,
   GqlMutationIssueRemoveGroupArgs,
   GqlMutationIssueAddOrganizationArgs,
@@ -17,675 +11,153 @@ import {
   GqlMutationIssueRemoveCityArgs,
   GqlMutationIssueAddCategoryArgs,
   GqlMutationIssueRemoveCategoryArgs,
-  GqlIssueCreatePayload,
-  GqlIssueDeletePayload,
-  GqlIssueUpdateContentPayload,
-  GqlIssueUpdatePrivacyPayload,
-  GqlIssuesConnection,
-  GqlIssue,
-  GqlIssueAddGroupPayload,
-  GqlIssueRemoveGroupPayload,
-  GqlIssueAddOrganizationPayload,
-  GqlIssueRemoveOrganizationPayload,
-  GqlIssueAddSkillsetPayload,
-  GqlIssueRemoveSkillsetPayload,
-  GqlIssueAddCityPayload,
-  GqlIssueRemoveCityPayload,
-  GqlIssueAddCategoryPayload,
-  GqlIssueRemoveCategoryPayload,
+  GqlMutationIssueUpdateContentArgs,
+  GqlMutationIssuePublishArgs,
+  GqlMutationIssueUnpublishArgs,
+  GqlQueryIssueArgs,
+  GqlQueryIssuesArgs,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { RELATION_ACTION } from "@/consts";
+import IssueRepository from "@/domains/issue/repository";
+import IssueInputFormat from "@/domains/issue/presenter/input";
 
 export default class IssueService {
-  private static db = prismaClient;
+  static async fetchIssues({ cursor, filter, sort }: GqlQueryIssuesArgs, take: number) {
+    const where = IssueInputFormat.filter({ filter });
+    const orderBy = IssueInputFormat.sort({ sort });
 
-  static async queryIssues({
-    filter,
-    sort,
-    cursor,
-    first,
-  }: GqlQueryIssuesArgs): Promise<GqlIssuesConnection> {
-    const take = first ?? 10;
-
-    const where: Prisma.IssueWhereInput = {
-      AND: [
-        filter?.keyword
-          ? {
-              OR: [{ description: { contains: filter?.keyword } }],
-            }
-          : {},
-      ],
-    };
-
-    const orderBy: Prisma.IssueOrderByWithRelationInput[] = [
-      { createdAt: sort?.createdAt ?? "desc" },
-    ];
-
-    const data = await this.db.issue.findMany({
-      where,
-      orderBy,
-      take: take + 1,
-      skip: cursor ? 1 : 0,
-      cursor: cursor ? { id: cursor } : undefined,
-    });
-
-    const hasNextPage = data.length > take;
-    const formattedData = data.slice(0, take);
-
-    return {
-      totalCount: data.length,
-      pageInfo: {
-        hasNextPage,
-        hasPreviousPage: Boolean(cursor),
-        startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
-      },
-      edges: formattedData.map((edge) => ({
-        cursor: edge.id,
-        node: edge as GqlIssue,
-      })),
-    };
+    return await IssueRepository.query(where, orderBy, take, cursor);
   }
 
-  static async getIssue({ id }: GqlQueryIssueArgs): Promise<GqlIssue | null> {
-    const issue = await this.db.issue.findUnique({
-      where: { id },
-      include: {
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-
-    return issue ?? null;
+  static async getIssue({ id }: GqlQueryIssueArgs) {
+    return IssueRepository.find(id);
   }
 
-  static async issueCreate({ input }: GqlMutationIssueCreateArgs): Promise<GqlIssueCreatePayload> {
-    const { skillsetIds, cityCodes, issueCategoryIds, ...properties } = input;
-
-    const data: Prisma.IssueCreateInput = {
-      ...properties,
-      skillsets: { create: skillsetIds?.map((skillsetId) => ({ skillsetId })) },
-      cities: { create: cityCodes?.map((cityCode) => ({ cityCode })) },
-      issueCategories: {
-        create: issueCategoryIds?.map((issueCategoryId) => ({
-          issueCategoryId,
-        })),
-      },
-    };
-
-    const issue = await this.db.issue.create({
-      data,
-      include: {
-        skillsets: { include: { skillset: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        issueCategories: { include: { issueCategory: true } },
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-    };
-  }
-
-  static async issueDelete({ id }: GqlMutationIssueDeleteArgs): Promise<GqlIssueDeletePayload> {
-    await this.db.issue.delete({
-      where: { id },
-    });
-
-    return { issueId: id };
-  }
-
-  static async issueUpdateContent({
-    id,
-    input,
-  }: GqlMutationIssueUpdateContentArgs): Promise<GqlIssueUpdateContentPayload> {
-    const { skillsetIds, cityCodes, issueCategoryIds, ...properties } = input;
-
-    const data: Prisma.IssueUpdateInput = {
-      ...properties,
-      skillsets: {
-        set: skillsetIds?.map((skillsetId) => ({
-          issueId_skillsetId: {
-            issueId: id,
-            skillsetId: skillsetId,
-          },
-        })),
-      },
-      cities: {
-        set: cityCodes?.map((cityCode) => ({
-          issueId_cityCode: {
-            issueId: id,
-            cityCode: cityCode,
-          },
-        })),
-      },
-      issueCategories: {
-        set: issueCategoryIds?.map((issueCategoryId) => ({
-          issueId_issueCategoryId: {
-            issueId: id,
-            issueCategoryId: issueCategoryId,
-          },
-        })),
-      },
-    };
-
-    const issue = await this.db.issue.update({
-      where: { id },
-      data,
-      include: {
-        skillsets: { include: { skillset: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        issueCategories: { include: { issueCategory: true } },
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-    };
-  }
-
-  static async issuePublish({
-    id,
-    input,
-  }: GqlMutationIssuePublishArgs): Promise<GqlIssueUpdatePrivacyPayload> {
-    const issue = await this.db.issue.update({
-      where: { id },
-      data: { isPublic: input.isPublic },
-      include: {
-        skillsets: { include: { skillset: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        issueCategories: { include: { issueCategory: true } },
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-    };
-  }
-
-  static async issueUnpublish({
-    id,
-    input,
-  }: GqlMutationIssueUnpublishArgs): Promise<GqlIssueUpdatePrivacyPayload> {
-    const issue = await this.db.issue.update({
-      where: { id },
-      data: { isPublic: input.isPublic },
-      include: {
-        skillsets: { include: { skillset: true } },
-        cities: { include: { city: { include: { state: true } } } },
-        issueCategories: { include: { issueCategory: true } },
-        stat: { select: { totalMinutes: true } },
-      },
-    });
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-    };
-  }
-
-  static async issueAddGroup({
-    id,
-    input,
-  }: GqlMutationIssueAddGroupArgs): Promise<GqlIssueAddGroupPayload> {
-    const [issue, group] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          groups: {
-            connect: {
-              groupId_issueId: {
-                issueId: id,
-                groupId: input.groupId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.group.findUnique({
-        where: { id: input.groupId },
-      }),
-    ]);
-
-    if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+  static async checkIfIssueExists(id: string) {
+    const issue = await IssueRepository.checkExists(id);
+    if (!issue) {
+      throw new Error(`Issue with ID ${id} not found`);
     }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      group,
-    };
+    return issue;
   }
 
-  static async issueRemoveGroup({
-    id,
-    input,
-  }: GqlMutationIssueRemoveGroupArgs): Promise<GqlIssueRemoveGroupPayload> {
-    const [issue, group] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          groups: {
-            disconnect: {
-              groupId_issueId: {
-                issueId: id,
-                groupId: input.groupId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.group.findUnique({
-        where: { id: input.groupId },
-      }),
-    ]);
-
-    if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+  static async findIssueForUpdateContent(id: string) {
+    const issue = await IssueRepository.findForUpdateContent(id);
+    if (!issue) {
+      throw new Error(`Issue with ID ${id} not found`);
     }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      group,
-    };
+    return issue;
   }
 
-  static async issueAddOrganization({
-    id,
-    input,
-  }: GqlMutationIssueAddOrganizationArgs): Promise<GqlIssueAddOrganizationPayload> {
-    const [issue, organization] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          organizations: {
-            connect: {
-              organizationId_issueId: {
-                issueId: id,
-                organizationId: input.organizationId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.organization.findUnique({
-        where: { id: input.organizationId },
-        include: { city: { include: { state: true } }, state: true },
-      }),
-    ]);
-
-    if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      organization,
-    };
+  static async issueCreate({ input }: GqlMutationIssueCreateArgs) {
+    const data: Prisma.IssueCreateInput = IssueInputFormat.create(input);
+    return await IssueRepository.create(data);
   }
 
-  static async issueRemoveOrganization({
-    id,
-    input,
-  }: GqlMutationIssueRemoveOrganizationArgs): Promise<GqlIssueRemoveOrganizationPayload> {
-    const [issue, organization] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          organizations: {
-            disconnect: {
-              organizationId_issueId: {
-                issueId: id,
-                organizationId: input.organizationId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.organization.findUnique({
-        where: { id: input.organizationId },
-        include: { city: { include: { state: true } }, state: true },
-      }),
-    ]);
-
-    if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      organization,
-    };
+  static async issueDelete({ id }: GqlMutationIssueDeleteArgs) {
+    return await IssueRepository.delete(id);
   }
 
-  static async issueAddSkillset({
-    id,
-    input,
-  }: GqlMutationIssueAddSkillsetArgs): Promise<GqlIssueAddSkillsetPayload> {
-    const [issue, skillset] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          skillsets: {
-            connect: {
-              issueId_skillsetId: {
-                issueId: id,
-                skillsetId: input.skillsetId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.skillset.findUnique({
-        where: { id: input.skillsetId },
-      }),
-    ]);
-
-    if (!skillset) {
-      throw new Error(`Skillset with ID ${input.skillsetId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      skillset,
-    };
+  static async issueUpdateContent({ id, input }: GqlMutationIssueUpdateContentArgs) {
+    return await IssueRepository.updateContent(id, input);
   }
 
-  static async issueRemoveSkillset({
-    id,
-    input,
-  }: GqlMutationIssueRemoveSkillsetArgs): Promise<GqlIssueRemoveSkillsetPayload> {
-    const [issue, skillset] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          skillsets: {
-            disconnect: {
-              issueId_skillsetId: {
-                issueId: id,
-                skillsetId: input.skillsetId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.skillset.findUnique({
-        where: { id: input.skillsetId },
-      }),
-    ]);
-
-    if (!skillset) {
-      throw new Error(`Skillset with ID ${input.skillsetId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      skillset,
-    };
+  static async issueAddGroup({ id, input }: GqlMutationIssueAddGroupArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateGroup(
+      id,
+      input.groupId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
   }
 
-  static async issueAddCity({
-    id,
-    input,
-  }: GqlMutationIssueAddCityArgs): Promise<GqlIssueAddCityPayload> {
-    const [issue, city] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          cities: {
-            connect: {
-              issueId_cityCode: {
-                issueId: id,
-                cityCode: input.cityId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.city.findUnique({
-        where: { code: input.cityId },
-        include: { state: true },
-      }),
-    ]);
-
-    if (!city) {
-      throw new Error(`City with ID ${input.cityId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      city,
-    };
+  static async issueRemoveGroup({ id, input }: GqlMutationIssueRemoveGroupArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateGroup(
+      id,
+      input.groupId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
   }
 
-  static async issueRemoveCity({
-    id,
-    input,
-  }: GqlMutationIssueRemoveCityArgs): Promise<GqlIssueRemoveCityPayload> {
-    const [issue, city] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          cities: {
-            disconnect: {
-              issueId_cityCode: {
-                issueId: id,
-                cityCode: input.cityId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.city.findUnique({
-        where: { code: input.cityId },
-        include: { state: true },
-      }),
-    ]);
-
-    if (!city) {
-      throw new Error(`City with ID ${input.cityId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      city,
-    };
+  static async issueAddOrganization({ id, input }: GqlMutationIssueAddOrganizationArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateOrganization(
+      id,
+      input.organizationId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
   }
 
-  static async issueAddCategory({
-    id,
-    input,
-  }: GqlMutationIssueAddCategoryArgs): Promise<GqlIssueAddCategoryPayload> {
-    const [issue, category] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          issueCategories: {
-            connect: {
-              issueId_issueCategoryId: {
-                issueId: id,
-                issueCategoryId: input.categoryId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.issueCategory.findUnique({
-        where: { id: input.categoryId },
-      }),
-    ]);
-
-    if (!category) {
-      throw new Error(`Category with ID ${input.categoryId} not found`);
-    }
-
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      category,
-    };
+  static async issueRemoveOrganization({ id, input }: GqlMutationIssueRemoveOrganizationArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateOrganization(
+      id,
+      input.organizationId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
   }
 
-  static async issueRemoveCategory({
-    id,
-    input,
-  }: GqlMutationIssueRemoveCategoryArgs): Promise<GqlIssueRemoveCategoryPayload> {
-    const [issue, category] = await this.db.$transaction([
-      this.db.issue.update({
-        where: { id },
-        data: {
-          issueCategories: {
-            disconnect: {
-              issueId_issueCategoryId: {
-                issueId: id,
-                issueCategoryId: input.categoryId,
-              },
-            },
-          },
-        },
-        include: {
-          skillsets: { include: { skillset: true } },
-          cities: { include: { city: { include: { state: true } } } },
-          issueCategories: { include: { issueCategory: true } },
-          stat: { select: { totalMinutes: true } },
-        },
-      }),
-      this.db.issueCategory.findUnique({
-        where: { id: input.categoryId },
-      }),
-    ]);
+  static async issueAddSkillset({ id, input }: GqlMutationIssueAddSkillsetArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateSkillset(
+      id,
+      input.skillsetId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
+  }
 
-    if (!category) {
-      throw new Error(`Category with ID ${input.categoryId} not found`);
-    }
+  static async issueRemoveSkillset({ id, input }: GqlMutationIssueRemoveSkillsetArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateSkillset(
+      id,
+      input.skillsetId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
+  }
 
-    return {
-      issue: {
-        ...issue,
-        skillsets: issue.skillsets.map((r) => r.skillset),
-        cities: issue.cities.map((r) => r.city),
-        issueCategories: issue.issueCategories.map((r) => r.issueCategory),
-      },
-      category,
-    };
+  static async issueAddCity({ id, input }: GqlMutationIssueAddCityArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateCity(
+      id,
+      input.cityId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
+  }
+
+  static async issueRemoveCity({ id, input }: GqlMutationIssueRemoveCityArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateCity(
+      id,
+      input.cityId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
+  }
+
+  static async issueAddCategory({ id, input }: GqlMutationIssueAddCategoryArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateCategory(
+      id,
+      input.categoryId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
+  }
+
+  static async issueRemoveCategory({ id, input }: GqlMutationIssueRemoveCategoryArgs) {
+    const data: Prisma.IssueUpdateInput = IssueInputFormat.updateCategory(
+      id,
+      input.categoryId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await IssueRepository.updateRelation(id, data);
+  }
+
+  static async issuePublish({ id }: GqlMutationIssuePublishArgs) {
+    return await IssueRepository.switchPrivacy(id, true);
+  }
+
+  static async issueUnpublish({ id }: GqlMutationIssueUnpublishArgs) {
+    return await IssueRepository.switchPrivacy(id, false);
   }
 }

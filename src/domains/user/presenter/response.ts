@@ -10,7 +10,7 @@ import {
   GqlUserUpdateContentSuccess,
   GqlUserUpdateGroupSuccess,
   GqlUserUpdateOrganizationSuccess,
-  GqlUserUpdatePrivacySuccess,
+  GqlUserSwitchPrivacySuccess,
 } from "@/types/graphql";
 import {
   UserCreatePayloadWithArgs,
@@ -76,9 +76,9 @@ export default class UserResponseFormat {
     };
   }
 
-  static switchPrivacy(user: GqlUser): GqlUserUpdatePrivacySuccess {
+  static switchPrivacy(user: GqlUser): GqlUserSwitchPrivacySuccess {
     return {
-      __typename: "UserUpdatePrivacySuccess",
+      __typename: "UserSwitchPrivacySuccess",
       user,
     };
   }

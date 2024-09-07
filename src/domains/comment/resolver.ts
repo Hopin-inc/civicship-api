@@ -3,7 +3,7 @@ import {
   GqlMutationCommentUpdateContentArgs,
   GqlMutationCommentDeleteArgs,
 } from "@/types/graphql";
-import CommentUseCase from "@/domains/comment/comment.usecase";
+import CommentUseCase from "@/domains/comment/usecase";
 
 const commentResolver = {
   Mutation: {

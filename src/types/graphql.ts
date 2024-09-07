@@ -748,60 +748,20 @@ export type GqlIssueAddCategoryInput = {
   categoryId: Scalars['Int']['input'];
 };
 
-export type GqlIssueAddCategoryPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueAddCategorySuccess;
-
-export type GqlIssueAddCategorySuccess = {
-  __typename?: 'IssueAddCategorySuccess';
-  category: GqlIssueCategory;
-  issue: GqlIssue;
-};
-
 export type GqlIssueAddCityInput = {
   cityId: Scalars['String']['input'];
-};
-
-export type GqlIssueAddCityPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueAddCitySuccess;
-
-export type GqlIssueAddCitySuccess = {
-  __typename?: 'IssueAddCitySuccess';
-  city: GqlCity;
-  issue: GqlIssue;
 };
 
 export type GqlIssueAddGroupInput = {
   groupId: Scalars['String']['input'];
 };
 
-export type GqlIssueAddGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueAddGroupSuccess;
-
-export type GqlIssueAddGroupSuccess = {
-  __typename?: 'IssueAddGroupSuccess';
-  group: GqlGroup;
-  issue: GqlIssue;
-};
-
 export type GqlIssueAddOrganizationInput = {
   organizationId: Scalars['String']['input'];
 };
 
-export type GqlIssueAddOrganizationPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueAddOrganizationSuccess;
-
-export type GqlIssueAddOrganizationSuccess = {
-  __typename?: 'IssueAddOrganizationSuccess';
-  issue: GqlIssue;
-  organization: GqlOrganization;
-};
-
 export type GqlIssueAddSkillsetInput = {
   skillsetId: Scalars['Int']['input'];
-};
-
-export type GqlIssueAddSkillsetPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueAddSkillsetSuccess;
-
-export type GqlIssueAddSkillsetSuccess = {
-  __typename?: 'IssueAddSkillsetSuccess';
-  issue: GqlIssue;
-  skillset: GqlSkillset;
 };
 
 export type GqlIssueCategory = {
@@ -855,64 +815,40 @@ export type GqlIssueRemoveCategoryInput = {
   categoryId: Scalars['Int']['input'];
 };
 
-export type GqlIssueRemoveCategoryPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueRemoveCategorySuccess;
-
-export type GqlIssueRemoveCategorySuccess = {
-  __typename?: 'IssueRemoveCategorySuccess';
-  category: GqlIssueCategory;
-  issue: GqlIssue;
-};
-
 export type GqlIssueRemoveCityInput = {
   cityId: Scalars['String']['input'];
-};
-
-export type GqlIssueRemoveCityPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueRemoveCitySuccess;
-
-export type GqlIssueRemoveCitySuccess = {
-  __typename?: 'IssueRemoveCitySuccess';
-  city: GqlCity;
-  issue: GqlIssue;
 };
 
 export type GqlIssueRemoveGroupInput = {
   groupId: Scalars['String']['input'];
 };
 
-export type GqlIssueRemoveGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueRemoveGroupSuccess;
-
-export type GqlIssueRemoveGroupSuccess = {
-  __typename?: 'IssueRemoveGroupSuccess';
-  group: GqlGroup;
-  issue: GqlIssue;
-};
-
 export type GqlIssueRemoveOrganizationInput = {
   organizationId: Scalars['String']['input'];
-};
-
-export type GqlIssueRemoveOrganizationPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueRemoveOrganizationSuccess;
-
-export type GqlIssueRemoveOrganizationSuccess = {
-  __typename?: 'IssueRemoveOrganizationSuccess';
-  issue: GqlIssue;
-  organization: GqlOrganization;
 };
 
 export type GqlIssueRemoveSkillsetInput = {
   skillsetId: Scalars['Int']['input'];
 };
 
-export type GqlIssueRemoveSkillsetPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueRemoveSkillsetSuccess;
-
-export type GqlIssueRemoveSkillsetSuccess = {
-  __typename?: 'IssueRemoveSkillsetSuccess';
-  issue: GqlIssue;
-  skillset: GqlSkillset;
-};
-
 export type GqlIssueSortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
+};
+
+export type GqlIssueUpdateCategoryPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueUpdateCategorySuccess;
+
+export type GqlIssueUpdateCategorySuccess = {
+  __typename?: 'IssueUpdateCategorySuccess';
+  issue: GqlIssue;
+  issueCategory: GqlIssueCategory;
+};
+
+export type GqlIssueUpdateCityPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueUpdateCitySuccess;
+
+export type GqlIssueUpdateCitySuccess = {
+  __typename?: 'IssueUpdateCitySuccess';
+  city: GqlCity;
+  issue: GqlIssue;
 };
 
 export type GqlIssueUpdateContentInput = {
@@ -930,11 +866,35 @@ export type GqlIssueUpdateContentSuccess = {
   issue: GqlIssue;
 };
 
+export type GqlIssueUpdateGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueUpdateGroupSuccess;
+
+export type GqlIssueUpdateGroupSuccess = {
+  __typename?: 'IssueUpdateGroupSuccess';
+  group: GqlGroup;
+  issue: GqlIssue;
+};
+
+export type GqlIssueUpdateOrganizationPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueUpdateOrganizationSuccess;
+
+export type GqlIssueUpdateOrganizationSuccess = {
+  __typename?: 'IssueUpdateOrganizationSuccess';
+  issue: GqlIssue;
+  organization: GqlOrganization;
+};
+
 export type GqlIssueUpdatePrivacyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueUpdatePrivacySuccess;
 
 export type GqlIssueUpdatePrivacySuccess = {
   __typename?: 'IssueUpdatePrivacySuccess';
   issue: GqlIssue;
+};
+
+export type GqlIssueUpdateSkillsetPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlIssueUpdateSkillsetSuccess;
+
+export type GqlIssueUpdateSkillsetSuccess = {
+  __typename?: 'IssueUpdateSkillsetSuccess';
+  issue: GqlIssue;
+  skillset: GqlSkillset;
 };
 
 export type GqlIssuesConnection = {
@@ -1026,42 +986,42 @@ export type GqlMutation = {
   groupRemoveTarget?: Maybe<GqlGroupUpdateTargetPayload>;
   groupRemoveUser?: Maybe<GqlGroupUpdateUserPayload>;
   groupUpdateContent?: Maybe<GqlGroupUpdateContentPayload>;
-  issueAddCategory?: Maybe<GqlIssueAddCategoryPayload>;
-  issueAddCity?: Maybe<GqlIssueAddCityPayload>;
-  issueAddGroup?: Maybe<GqlIssueAddGroupPayload>;
-  issueAddOrganization?: Maybe<GqlIssueAddOrganizationPayload>;
-  issueAddSkillset?: Maybe<GqlIssueAddSkillsetPayload>;
+  issueAddCategory?: Maybe<GqlIssueUpdateCategoryPayload>;
+  issueAddCity?: Maybe<GqlIssueUpdateCityPayload>;
+  issueAddGroup?: Maybe<GqlIssueUpdateGroupPayload>;
+  issueAddOrganization?: Maybe<GqlIssueUpdateOrganizationPayload>;
+  issueAddSkillset?: Maybe<GqlIssueUpdateSkillsetPayload>;
   issueCreate?: Maybe<GqlIssueCreatePayload>;
   issueDelete?: Maybe<GqlIssueDeletePayload>;
   issuePublish?: Maybe<GqlIssueUpdatePrivacyPayload>;
-  issueRemoveCategory?: Maybe<GqlIssueRemoveCategoryPayload>;
-  issueRemoveCity?: Maybe<GqlIssueRemoveCityPayload>;
-  issueRemoveGroup?: Maybe<GqlIssueRemoveGroupPayload>;
-  issueRemoveOrganization?: Maybe<GqlIssueRemoveOrganizationPayload>;
-  issueRemoveSkillset?: Maybe<GqlIssueRemoveSkillsetPayload>;
+  issueRemoveCategory?: Maybe<GqlIssueUpdateCategoryPayload>;
+  issueRemoveCity?: Maybe<GqlIssueUpdateCityPayload>;
+  issueRemoveGroup?: Maybe<GqlIssueUpdateGroupPayload>;
+  issueRemoveOrganization?: Maybe<GqlIssueUpdateOrganizationPayload>;
+  issueRemoveSkillset?: Maybe<GqlIssueUpdateSkillsetPayload>;
   issueUnpublish?: Maybe<GqlIssueUpdatePrivacyPayload>;
   issueUpdateContent?: Maybe<GqlIssueUpdateContentPayload>;
   likeAddEvent?: Maybe<GqlLikeAddEventPayload>;
   likeDelete?: Maybe<GqlLikeDeletePayload>;
   mutationEcho: Scalars['String']['output'];
-  organizationAddGroup?: Maybe<GqlOrganizationAddGroupPayload>;
-  organizationAddTarget?: Maybe<GqlOrganizationAddTargetPayload>;
-  organizationAddUser?: Maybe<GqlOrganizationAddUserPayload>;
+  organizationAddGroup?: Maybe<GqlOrganizationUpdateGroupPayload>;
+  organizationAddTarget?: Maybe<GqlOrganizationUpdateTargetPayload>;
+  organizationAddUser?: Maybe<GqlOrganizationUpdateUserPayload>;
   organizationCreate?: Maybe<GqlOrganizationCreatePayload>;
   organizationDelete?: Maybe<GqlOrganizationDeletePayload>;
-  organizationPublish?: Maybe<GqlOrganizationUpdatePrivacyPayload>;
-  organizationRemoveGroup?: Maybe<GqlOrganizationRemoveGroupPayload>;
-  organizationRemoveTarget?: Maybe<GqlOrganizationRemoveTargetPayload>;
-  organizationRemoveUser?: Maybe<GqlOrganizationRemoveUserPayload>;
-  organizationUnpublish?: Maybe<GqlOrganizationUpdatePrivacyPayload>;
+  organizationPublish?: Maybe<GqlOrganizationSwitchPrivacyPayload>;
+  organizationRemoveGroup?: Maybe<GqlOrganizationUpdateGroupPayload>;
+  organizationRemoveTarget?: Maybe<GqlOrganizationUpdateTargetPayload>;
+  organizationRemoveUser?: Maybe<GqlOrganizationUpdateUserPayload>;
+  organizationUnpublish?: Maybe<GqlOrganizationSwitchPrivacyPayload>;
   organizationUpdateContent?: Maybe<GqlOrganizationUpdateContentPayload>;
   organizationUpdateDefault?: Maybe<GqlOrganizationUpdateDefaultPayload>;
-  targetAddGroup?: Maybe<GqlTargetAddGroupPayload>;
-  targetAddOrganization?: Maybe<GqlTargetAddOrganizationPayload>;
+  targetAddGroup?: Maybe<GqlTargetUpdateGroupPayload>;
+  targetAddOrganization?: Maybe<GqlTargetUpdateOrganizationPayload>;
   targetCreate?: Maybe<GqlTargetCreatePayload>;
   targetDelete?: Maybe<GqlTargetDeletePayload>;
-  targetRemoveGroup?: Maybe<GqlTargetRemoveGroupPayload>;
-  targetRemoveOrganization?: Maybe<GqlTargetRemoveOrganizationPayload>;
+  targetRemoveGroup?: Maybe<GqlTargetUpdateGroupPayload>;
+  targetRemoveOrganization?: Maybe<GqlTargetUpdateOrganizationPayload>;
   targetUpdateContent?: Maybe<GqlTargetUpdateContentPayload>;
   targetUpdateIndex?: Maybe<GqlTargetUpdateIndexPayload>;
   userAddActivity?: Maybe<GqlUserUpdateActivityPayload>;
@@ -1639,36 +1599,12 @@ export type GqlOrganizationAddGroupInput = {
   groupId: Scalars['String']['input'];
 };
 
-export type GqlOrganizationAddGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationAddGroupSuccess;
-
-export type GqlOrganizationAddGroupSuccess = {
-  __typename?: 'OrganizationAddGroupSuccess';
-  group: GqlGroup;
-  organization: GqlOrganization;
-};
-
 export type GqlOrganizationAddTargetInput = {
   targetId: Scalars['String']['input'];
 };
 
-export type GqlOrganizationAddTargetPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationAddTargetSuccess;
-
-export type GqlOrganizationAddTargetSuccess = {
-  __typename?: 'OrganizationAddTargetSuccess';
-  organization: GqlOrganization;
-  target: GqlTarget;
-};
-
 export type GqlOrganizationAddUserInput = {
   userId: Scalars['String']['input'];
-};
-
-export type GqlOrganizationAddUserPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationAddUserSuccess;
-
-export type GqlOrganizationAddUserSuccess = {
-  __typename?: 'OrganizationAddUserSuccess';
-  organization: GqlOrganization;
-  user: GqlUser;
 };
 
 export type GqlOrganizationCreateInput = {
@@ -1719,40 +1655,23 @@ export type GqlOrganizationRemoveGroupInput = {
   groupId: Scalars['String']['input'];
 };
 
-export type GqlOrganizationRemoveGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationRemoveGroupSuccess;
-
-export type GqlOrganizationRemoveGroupSuccess = {
-  __typename?: 'OrganizationRemoveGroupSuccess';
-  group: GqlGroup;
-  organization: GqlOrganization;
-};
-
 export type GqlOrganizationRemoveTargetInput = {
   targetId: Scalars['String']['input'];
-};
-
-export type GqlOrganizationRemoveTargetPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationRemoveTargetSuccess;
-
-export type GqlOrganizationRemoveTargetSuccess = {
-  __typename?: 'OrganizationRemoveTargetSuccess';
-  organization: GqlOrganization;
-  target: GqlTarget;
 };
 
 export type GqlOrganizationRemoveUserInput = {
   userId: Scalars['String']['input'];
 };
 
-export type GqlOrganizationRemoveUserPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationRemoveUserSuccess;
-
-export type GqlOrganizationRemoveUserSuccess = {
-  __typename?: 'OrganizationRemoveUserSuccess';
-  organization: GqlOrganization;
-  user: GqlUser;
-};
-
 export type GqlOrganizationSortInput = {
   updatedAt?: InputMaybe<GqlSortDirection>;
+};
+
+export type GqlOrganizationSwitchPrivacyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationSwitchPrivacySuccess;
+
+export type GqlOrganizationSwitchPrivacySuccess = {
+  __typename?: 'OrganizationSwitchPrivacySuccess';
+  organization: GqlOrganization;
 };
 
 export type GqlOrganizationUpdateContentInput = {
@@ -1790,11 +1709,28 @@ export type GqlOrganizationUpdateDefaultSuccess = {
   organization: GqlOrganization;
 };
 
-export type GqlOrganizationUpdatePrivacyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationUpdatePrivacySuccess;
+export type GqlOrganizationUpdateGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationUpdateGroupSuccess;
 
-export type GqlOrganizationUpdatePrivacySuccess = {
-  __typename?: 'OrganizationUpdatePrivacySuccess';
+export type GqlOrganizationUpdateGroupSuccess = {
+  __typename?: 'OrganizationUpdateGroupSuccess';
+  group: GqlGroup;
   organization: GqlOrganization;
+};
+
+export type GqlOrganizationUpdateTargetPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationUpdateTargetSuccess;
+
+export type GqlOrganizationUpdateTargetSuccess = {
+  __typename?: 'OrganizationUpdateTargetSuccess';
+  organization: GqlOrganization;
+  target: GqlTarget;
+};
+
+export type GqlOrganizationUpdateUserPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOrganizationUpdateUserSuccess;
+
+export type GqlOrganizationUpdateUserSuccess = {
+  __typename?: 'OrganizationUpdateUserSuccess';
+  organization: GqlOrganization;
+  user: GqlUser;
 };
 
 export type GqlOrganizations = {
@@ -2015,24 +1951,8 @@ export type GqlTargetAddGroupInput = {
   groupId: Scalars['String']['input'];
 };
 
-export type GqlTargetAddGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTargetAddGroupSuccess;
-
-export type GqlTargetAddGroupSuccess = {
-  __typename?: 'TargetAddGroupSuccess';
-  group: GqlGroup;
-  target: GqlTarget;
-};
-
 export type GqlTargetAddOrganizationInput = {
   organizationId: Scalars['String']['input'];
-};
-
-export type GqlTargetAddOrganizationPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTargetAddOrganizationSuccess;
-
-export type GqlTargetAddOrganizationSuccess = {
-  __typename?: 'TargetAddOrganizationSuccess';
-  organization: GqlOrganization;
-  target: GqlTarget;
 };
 
 export type GqlTargetCreateInput = {
@@ -2074,24 +1994,8 @@ export type GqlTargetRemoveGroupInput = {
   groupId: Scalars['String']['input'];
 };
 
-export type GqlTargetRemoveGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTargetRemoveGroupSuccess;
-
-export type GqlTargetRemoveGroupSuccess = {
-  __typename?: 'TargetRemoveGroupSuccess';
-  group: GqlGroup;
-  target: GqlTarget;
-};
-
 export type GqlTargetRemoveOrganizationInput = {
   organizationId: Scalars['String']['input'];
-};
-
-export type GqlTargetRemoveOrganizationPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTargetRemoveOrganizationSuccess;
-
-export type GqlTargetRemoveOrganizationSuccess = {
-  __typename?: 'TargetRemoveOrganizationSuccess';
-  organization: GqlOrganization;
-  target: GqlTarget;
 };
 
 export type GqlTargetSortInput = {
@@ -2112,6 +2016,14 @@ export type GqlTargetUpdateContentSuccess = {
   target?: Maybe<GqlTarget>;
 };
 
+export type GqlTargetUpdateGroupPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTargetUpdateGroupSuccess;
+
+export type GqlTargetUpdateGroupSuccess = {
+  __typename?: 'TargetUpdateGroupSuccess';
+  group: GqlGroup;
+  target: GqlTarget;
+};
+
 export type GqlTargetUpdateIndexInput = {
   indexId: Scalars['Int']['input'];
 };
@@ -2121,6 +2033,14 @@ export type GqlTargetUpdateIndexPayload = GqlAuthError | GqlComplexQueryError | 
 export type GqlTargetUpdateIndexSuccess = {
   __typename?: 'TargetUpdateIndexSuccess';
   index: GqlIndex;
+  target: GqlTarget;
+};
+
+export type GqlTargetUpdateOrganizationPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTargetUpdateOrganizationSuccess;
+
+export type GqlTargetUpdateOrganizationSuccess = {
+  __typename?: 'TargetUpdateOrganizationSuccess';
+  organization: GqlOrganization;
   target: GqlTarget;
 };
 
@@ -2390,41 +2310,31 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   GroupUpdateParentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupUpdateParentSuccess, 'group' | 'parent'> & { group: _RefType['Group'], parent: _RefType['Group'] } ) | ( GqlInvalidInputValueError );
   GroupUpdateTargetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupUpdateTargetSuccess, 'group' | 'target'> & { group: _RefType['Group'], target: _RefType['Target'] } ) | ( GqlInvalidInputValueError );
   GroupUpdateUserPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( Omit<GqlGroupUpdateUserSuccess, 'group' | 'user'> & { group: _RefType['Group'], user: _RefType['User'] } ) | ( GqlInvalidInputValueError );
-  IssueAddCategoryPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueAddCategorySuccess, 'issue'> & { issue: _RefType['Issue'] } );
-  IssueAddCityPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueAddCitySuccess, 'city' | 'issue'> & { city: _RefType['City'], issue: _RefType['Issue'] } );
-  IssueAddGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueAddGroupSuccess, 'group' | 'issue'> & { group: _RefType['Group'], issue: _RefType['Issue'] } );
-  IssueAddOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueAddOrganizationSuccess, 'issue' | 'organization'> & { issue: _RefType['Issue'], organization: _RefType['Organization'] } );
-  IssueAddSkillsetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueAddSkillsetSuccess, 'issue'> & { issue: _RefType['Issue'] } );
   IssueCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueCreateSuccess, 'issue'> & { issue: _RefType['Issue'] } );
   IssueDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlIssueDeleteSuccess );
-  IssueRemoveCategoryPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueRemoveCategorySuccess, 'issue'> & { issue: _RefType['Issue'] } );
-  IssueRemoveCityPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueRemoveCitySuccess, 'city' | 'issue'> & { city: _RefType['City'], issue: _RefType['Issue'] } );
-  IssueRemoveGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueRemoveGroupSuccess, 'group' | 'issue'> & { group: _RefType['Group'], issue: _RefType['Issue'] } );
-  IssueRemoveOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueRemoveOrganizationSuccess, 'issue' | 'organization'> & { issue: _RefType['Issue'], organization: _RefType['Organization'] } );
-  IssueRemoveSkillsetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueRemoveSkillsetSuccess, 'issue'> & { issue: _RefType['Issue'] } );
+  IssueUpdateCategoryPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdateCategorySuccess, 'issue'> & { issue: _RefType['Issue'] } );
+  IssueUpdateCityPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdateCitySuccess, 'city' | 'issue'> & { city: _RefType['City'], issue: _RefType['Issue'] } );
   IssueUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdateContentSuccess, 'issue'> & { issue: _RefType['Issue'] } );
+  IssueUpdateGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdateGroupSuccess, 'group' | 'issue'> & { group: _RefType['Group'], issue: _RefType['Issue'] } );
+  IssueUpdateOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdateOrganizationSuccess, 'issue' | 'organization'> & { issue: _RefType['Issue'], organization: _RefType['Organization'] } );
   IssueUpdatePrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdatePrivacySuccess, 'issue'> & { issue: _RefType['Issue'] } );
+  IssueUpdateSkillsetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlIssueUpdateSkillsetSuccess, 'issue'> & { issue: _RefType['Issue'] } );
   LikeAddEventPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlLikeAddEventSuccess, 'like'> & { like: _RefType['Like'] } );
   LikeDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlLikeDeleteSuccess );
-  OrganizationAddGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationAddGroupSuccess, 'group' | 'organization'> & { group: _RefType['Group'], organization: _RefType['Organization'] } );
-  OrganizationAddTargetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationAddTargetSuccess, 'organization' | 'target'> & { organization: _RefType['Organization'], target: _RefType['Target'] } );
-  OrganizationAddUserPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationAddUserSuccess, 'organization' | 'user'> & { organization: _RefType['Organization'], user: _RefType['User'] } );
   OrganizationCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationCreateSuccess, 'organization'> & { organization?: Maybe<_RefType['Organization']> } );
   OrganizationDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlOrganizationDeleteSuccess );
-  OrganizationRemoveGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationRemoveGroupSuccess, 'group' | 'organization'> & { group: _RefType['Group'], organization: _RefType['Organization'] } );
-  OrganizationRemoveTargetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationRemoveTargetSuccess, 'organization' | 'target'> & { organization: _RefType['Organization'], target: _RefType['Target'] } );
-  OrganizationRemoveUserPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationRemoveUserSuccess, 'organization' | 'user'> & { organization: _RefType['Organization'], user: _RefType['User'] } );
+  OrganizationSwitchPrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationSwitchPrivacySuccess, 'organization'> & { organization: _RefType['Organization'] } );
   OrganizationUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationUpdateContentSuccess, 'organization'> & { organization: _RefType['Organization'] } );
   OrganizationUpdateDefaultPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationUpdateDefaultSuccess, 'organization'> & { organization: _RefType['Organization'] } );
-  OrganizationUpdatePrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationUpdatePrivacySuccess, 'organization'> & { organization: _RefType['Organization'] } );
-  TargetAddGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetAddGroupSuccess, 'group' | 'target'> & { group: _RefType['Group'], target: _RefType['Target'] } );
-  TargetAddOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetAddOrganizationSuccess, 'organization' | 'target'> & { organization: _RefType['Organization'], target: _RefType['Target'] } );
+  OrganizationUpdateGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationUpdateGroupSuccess, 'group' | 'organization'> & { group: _RefType['Group'], organization: _RefType['Organization'] } );
+  OrganizationUpdateTargetPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationUpdateTargetSuccess, 'organization' | 'target'> & { organization: _RefType['Organization'], target: _RefType['Target'] } );
+  OrganizationUpdateUserPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOrganizationUpdateUserSuccess, 'organization' | 'user'> & { organization: _RefType['Organization'], user: _RefType['User'] } );
   TargetCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetCreateSuccess, 'target'> & { target?: Maybe<_RefType['Target']> } );
   TargetDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlTargetDeleteSuccess );
-  TargetRemoveGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetRemoveGroupSuccess, 'group' | 'target'> & { group: _RefType['Group'], target: _RefType['Target'] } );
-  TargetRemoveOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetRemoveOrganizationSuccess, 'organization' | 'target'> & { organization: _RefType['Organization'], target: _RefType['Target'] } );
   TargetUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetUpdateContentSuccess, 'target'> & { target?: Maybe<_RefType['Target']> } );
+  TargetUpdateGroupPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetUpdateGroupSuccess, 'group' | 'target'> & { group: _RefType['Group'], target: _RefType['Target'] } );
   TargetUpdateIndexPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetUpdateIndexSuccess, 'index' | 'target'> & { index: _RefType['Index'], target: _RefType['Target'] } );
+  TargetUpdateOrganizationPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTargetUpdateOrganizationSuccess, 'organization' | 'target'> & { organization: _RefType['Organization'], target: _RefType['Target'] } );
   UserCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserCreateSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
   UserDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlUserDeleteSuccess );
   UserSwitchPrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserSwitchPrivacySuccess, 'user'> & { user: _RefType['User'] } );
@@ -2586,20 +2496,10 @@ export type GqlResolversTypes = ResolversObject<{
   InvalidInputValueError: ResolverTypeWrapper<GqlInvalidInputValueError>;
   Issue: ResolverTypeWrapper<Omit<GqlIssue, 'activities' | 'cities' | 'comments' | 'groups' | 'likes' | 'organizations'> & { activities?: Maybe<GqlResolversTypes['Activities']>, cities?: Maybe<Array<GqlResolversTypes['City']>>, comments?: Maybe<GqlResolversTypes['Comments']>, groups?: Maybe<Array<GqlResolversTypes['Group']>>, likes?: Maybe<GqlResolversTypes['Likes']>, organizations?: Maybe<Array<GqlResolversTypes['Organization']>> }>;
   IssueAddCategoryInput: GqlIssueAddCategoryInput;
-  IssueAddCategoryPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueAddCategoryPayload']>;
-  IssueAddCategorySuccess: ResolverTypeWrapper<Omit<GqlIssueAddCategorySuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
   IssueAddCityInput: GqlIssueAddCityInput;
-  IssueAddCityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueAddCityPayload']>;
-  IssueAddCitySuccess: ResolverTypeWrapper<Omit<GqlIssueAddCitySuccess, 'city' | 'issue'> & { city: GqlResolversTypes['City'], issue: GqlResolversTypes['Issue'] }>;
   IssueAddGroupInput: GqlIssueAddGroupInput;
-  IssueAddGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueAddGroupPayload']>;
-  IssueAddGroupSuccess: ResolverTypeWrapper<Omit<GqlIssueAddGroupSuccess, 'group' | 'issue'> & { group: GqlResolversTypes['Group'], issue: GqlResolversTypes['Issue'] }>;
   IssueAddOrganizationInput: GqlIssueAddOrganizationInput;
-  IssueAddOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueAddOrganizationPayload']>;
-  IssueAddOrganizationSuccess: ResolverTypeWrapper<Omit<GqlIssueAddOrganizationSuccess, 'issue' | 'organization'> & { issue: GqlResolversTypes['Issue'], organization: GqlResolversTypes['Organization'] }>;
   IssueAddSkillsetInput: GqlIssueAddSkillsetInput;
-  IssueAddSkillsetPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueAddSkillsetPayload']>;
-  IssueAddSkillsetSuccess: ResolverTypeWrapper<Omit<GqlIssueAddSkillsetSuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
   IssueCategory: ResolverTypeWrapper<GqlIssueCategory>;
   IssueCreateInput: GqlIssueCreateInput;
   IssueCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueCreatePayload']>;
@@ -2610,26 +2510,26 @@ export type GqlResolversTypes = ResolversObject<{
   IssueFilterInput: GqlIssueFilterInput;
   IssuePrivacyInput: GqlIssuePrivacyInput;
   IssueRemoveCategoryInput: GqlIssueRemoveCategoryInput;
-  IssueRemoveCategoryPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueRemoveCategoryPayload']>;
-  IssueRemoveCategorySuccess: ResolverTypeWrapper<Omit<GqlIssueRemoveCategorySuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
   IssueRemoveCityInput: GqlIssueRemoveCityInput;
-  IssueRemoveCityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueRemoveCityPayload']>;
-  IssueRemoveCitySuccess: ResolverTypeWrapper<Omit<GqlIssueRemoveCitySuccess, 'city' | 'issue'> & { city: GqlResolversTypes['City'], issue: GqlResolversTypes['Issue'] }>;
   IssueRemoveGroupInput: GqlIssueRemoveGroupInput;
-  IssueRemoveGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueRemoveGroupPayload']>;
-  IssueRemoveGroupSuccess: ResolverTypeWrapper<Omit<GqlIssueRemoveGroupSuccess, 'group' | 'issue'> & { group: GqlResolversTypes['Group'], issue: GqlResolversTypes['Issue'] }>;
   IssueRemoveOrganizationInput: GqlIssueRemoveOrganizationInput;
-  IssueRemoveOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueRemoveOrganizationPayload']>;
-  IssueRemoveOrganizationSuccess: ResolverTypeWrapper<Omit<GqlIssueRemoveOrganizationSuccess, 'issue' | 'organization'> & { issue: GqlResolversTypes['Issue'], organization: GqlResolversTypes['Organization'] }>;
   IssueRemoveSkillsetInput: GqlIssueRemoveSkillsetInput;
-  IssueRemoveSkillsetPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueRemoveSkillsetPayload']>;
-  IssueRemoveSkillsetSuccess: ResolverTypeWrapper<Omit<GqlIssueRemoveSkillsetSuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
   IssueSortInput: GqlIssueSortInput;
+  IssueUpdateCategoryPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdateCategoryPayload']>;
+  IssueUpdateCategorySuccess: ResolverTypeWrapper<Omit<GqlIssueUpdateCategorySuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
+  IssueUpdateCityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdateCityPayload']>;
+  IssueUpdateCitySuccess: ResolverTypeWrapper<Omit<GqlIssueUpdateCitySuccess, 'city' | 'issue'> & { city: GqlResolversTypes['City'], issue: GqlResolversTypes['Issue'] }>;
   IssueUpdateContentInput: GqlIssueUpdateContentInput;
   IssueUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdateContentPayload']>;
   IssueUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlIssueUpdateContentSuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
+  IssueUpdateGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdateGroupPayload']>;
+  IssueUpdateGroupSuccess: ResolverTypeWrapper<Omit<GqlIssueUpdateGroupSuccess, 'group' | 'issue'> & { group: GqlResolversTypes['Group'], issue: GqlResolversTypes['Issue'] }>;
+  IssueUpdateOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdateOrganizationPayload']>;
+  IssueUpdateOrganizationSuccess: ResolverTypeWrapper<Omit<GqlIssueUpdateOrganizationSuccess, 'issue' | 'organization'> & { issue: GqlResolversTypes['Issue'], organization: GqlResolversTypes['Organization'] }>;
   IssueUpdatePrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdatePrivacyPayload']>;
   IssueUpdatePrivacySuccess: ResolverTypeWrapper<Omit<GqlIssueUpdatePrivacySuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
+  IssueUpdateSkillsetPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['IssueUpdateSkillsetPayload']>;
+  IssueUpdateSkillsetSuccess: ResolverTypeWrapper<Omit<GqlIssueUpdateSkillsetSuccess, 'issue'> & { issue: GqlResolversTypes['Issue'] }>;
   IssuesConnection: ResolverTypeWrapper<Omit<GqlIssuesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['IssueEdge']>>> }>;
   Like: ResolverTypeWrapper<Like>;
   LikeAddEventInput: GqlLikeAddEventInput;
@@ -2641,14 +2541,8 @@ export type GqlResolversTypes = ResolversObject<{
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationAddGroupInput: GqlOrganizationAddGroupInput;
-  OrganizationAddGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationAddGroupPayload']>;
-  OrganizationAddGroupSuccess: ResolverTypeWrapper<Omit<GqlOrganizationAddGroupSuccess, 'group' | 'organization'> & { group: GqlResolversTypes['Group'], organization: GqlResolversTypes['Organization'] }>;
   OrganizationAddTargetInput: GqlOrganizationAddTargetInput;
-  OrganizationAddTargetPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationAddTargetPayload']>;
-  OrganizationAddTargetSuccess: ResolverTypeWrapper<Omit<GqlOrganizationAddTargetSuccess, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   OrganizationAddUserInput: GqlOrganizationAddUserInput;
-  OrganizationAddUserPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationAddUserPayload']>;
-  OrganizationAddUserSuccess: ResolverTypeWrapper<Omit<GqlOrganizationAddUserSuccess, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
   OrganizationCreateInput: GqlOrganizationCreateInput;
   OrganizationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationCreatePayload']>;
   OrganizationCreateSuccess: ResolverTypeWrapper<Omit<GqlOrganizationCreateSuccess, 'organization'> & { organization?: Maybe<GqlResolversTypes['Organization']> }>;
@@ -2657,23 +2551,23 @@ export type GqlResolversTypes = ResolversObject<{
   OrganizationEdge: ResolverTypeWrapper<Omit<GqlOrganizationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Organization']> }>;
   OrganizationFilterInput: GqlOrganizationFilterInput;
   OrganizationRemoveGroupInput: GqlOrganizationRemoveGroupInput;
-  OrganizationRemoveGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationRemoveGroupPayload']>;
-  OrganizationRemoveGroupSuccess: ResolverTypeWrapper<Omit<GqlOrganizationRemoveGroupSuccess, 'group' | 'organization'> & { group: GqlResolversTypes['Group'], organization: GqlResolversTypes['Organization'] }>;
   OrganizationRemoveTargetInput: GqlOrganizationRemoveTargetInput;
-  OrganizationRemoveTargetPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationRemoveTargetPayload']>;
-  OrganizationRemoveTargetSuccess: ResolverTypeWrapper<Omit<GqlOrganizationRemoveTargetSuccess, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   OrganizationRemoveUserInput: GqlOrganizationRemoveUserInput;
-  OrganizationRemoveUserPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationRemoveUserPayload']>;
-  OrganizationRemoveUserSuccess: ResolverTypeWrapper<Omit<GqlOrganizationRemoveUserSuccess, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
   OrganizationSortInput: GqlOrganizationSortInput;
+  OrganizationSwitchPrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationSwitchPrivacyPayload']>;
+  OrganizationSwitchPrivacySuccess: ResolverTypeWrapper<Omit<GqlOrganizationSwitchPrivacySuccess, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
   OrganizationUpdateContentInput: GqlOrganizationUpdateContentInput;
   OrganizationUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdateContentPayload']>;
   OrganizationUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdateContentSuccess, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
   OrganizationUpdateDefaultInput: GqlOrganizationUpdateDefaultInput;
   OrganizationUpdateDefaultPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdateDefaultPayload']>;
   OrganizationUpdateDefaultSuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdateDefaultSuccess, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
-  OrganizationUpdatePrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdatePrivacyPayload']>;
-  OrganizationUpdatePrivacySuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdatePrivacySuccess, 'organization'> & { organization: GqlResolversTypes['Organization'] }>;
+  OrganizationUpdateGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdateGroupPayload']>;
+  OrganizationUpdateGroupSuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdateGroupSuccess, 'group' | 'organization'> & { group: GqlResolversTypes['Group'], organization: GqlResolversTypes['Organization'] }>;
+  OrganizationUpdateTargetPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdateTargetPayload']>;
+  OrganizationUpdateTargetSuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdateTargetSuccess, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
+  OrganizationUpdateUserPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrganizationUpdateUserPayload']>;
+  OrganizationUpdateUserSuccess: ResolverTypeWrapper<Omit<GqlOrganizationUpdateUserSuccess, 'organization' | 'user'> & { organization: GqlResolversTypes['Organization'], user: GqlResolversTypes['User'] }>;
   Organizations: ResolverTypeWrapper<Omit<GqlOrganizations, 'data'> & { data: Array<GqlResolversTypes['Organization']> }>;
   OrganizationsConnection: ResolverTypeWrapper<Omit<GqlOrganizationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OrganizationEdge']>>> }>;
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
@@ -2687,11 +2581,7 @@ export type GqlResolversTypes = ResolversObject<{
   SysRole: GqlSysRole;
   Target: ResolverTypeWrapper<Target>;
   TargetAddGroupInput: GqlTargetAddGroupInput;
-  TargetAddGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetAddGroupPayload']>;
-  TargetAddGroupSuccess: ResolverTypeWrapper<Omit<GqlTargetAddGroupSuccess, 'group' | 'target'> & { group: GqlResolversTypes['Group'], target: GqlResolversTypes['Target'] }>;
   TargetAddOrganizationInput: GqlTargetAddOrganizationInput;
-  TargetAddOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetAddOrganizationPayload']>;
-  TargetAddOrganizationSuccess: ResolverTypeWrapper<Omit<GqlTargetAddOrganizationSuccess, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   TargetCreateInput: GqlTargetCreateInput;
   TargetCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetCreatePayload']>;
   TargetCreateSuccess: ResolverTypeWrapper<Omit<GqlTargetCreateSuccess, 'target'> & { target?: Maybe<GqlResolversTypes['Target']> }>;
@@ -2700,18 +2590,18 @@ export type GqlResolversTypes = ResolversObject<{
   TargetEdge: ResolverTypeWrapper<Omit<GqlTargetEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Target']> }>;
   TargetFilterInput: GqlTargetFilterInput;
   TargetRemoveGroupInput: GqlTargetRemoveGroupInput;
-  TargetRemoveGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetRemoveGroupPayload']>;
-  TargetRemoveGroupSuccess: ResolverTypeWrapper<Omit<GqlTargetRemoveGroupSuccess, 'group' | 'target'> & { group: GqlResolversTypes['Group'], target: GqlResolversTypes['Target'] }>;
   TargetRemoveOrganizationInput: GqlTargetRemoveOrganizationInput;
-  TargetRemoveOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetRemoveOrganizationPayload']>;
-  TargetRemoveOrganizationSuccess: ResolverTypeWrapper<Omit<GqlTargetRemoveOrganizationSuccess, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   TargetSortInput: GqlTargetSortInput;
   TargetUpdateContentInput: GqlTargetUpdateContentInput;
   TargetUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetUpdateContentPayload']>;
   TargetUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlTargetUpdateContentSuccess, 'target'> & { target?: Maybe<GqlResolversTypes['Target']> }>;
+  TargetUpdateGroupPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetUpdateGroupPayload']>;
+  TargetUpdateGroupSuccess: ResolverTypeWrapper<Omit<GqlTargetUpdateGroupSuccess, 'group' | 'target'> & { group: GqlResolversTypes['Group'], target: GqlResolversTypes['Target'] }>;
   TargetUpdateIndexInput: GqlTargetUpdateIndexInput;
   TargetUpdateIndexPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetUpdateIndexPayload']>;
   TargetUpdateIndexSuccess: ResolverTypeWrapper<Omit<GqlTargetUpdateIndexSuccess, 'index' | 'target'> & { index: GqlResolversTypes['Index'], target: GqlResolversTypes['Target'] }>;
+  TargetUpdateOrganizationPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TargetUpdateOrganizationPayload']>;
+  TargetUpdateOrganizationSuccess: ResolverTypeWrapper<Omit<GqlTargetUpdateOrganizationSuccess, 'organization' | 'target'> & { organization: GqlResolversTypes['Organization'], target: GqlResolversTypes['Target'] }>;
   TargetsConnection: ResolverTypeWrapper<Omit<GqlTargetsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TargetEdge']>>> }>;
   User: ResolverTypeWrapper<User>;
   UserAddActivityInput: GqlUserAddActivityInput;
@@ -2888,20 +2778,10 @@ export type GqlResolversParentTypes = ResolversObject<{
   InvalidInputValueError: GqlInvalidInputValueError;
   Issue: Omit<GqlIssue, 'activities' | 'cities' | 'comments' | 'groups' | 'likes' | 'organizations'> & { activities?: Maybe<GqlResolversParentTypes['Activities']>, cities?: Maybe<Array<GqlResolversParentTypes['City']>>, comments?: Maybe<GqlResolversParentTypes['Comments']>, groups?: Maybe<Array<GqlResolversParentTypes['Group']>>, likes?: Maybe<GqlResolversParentTypes['Likes']>, organizations?: Maybe<Array<GqlResolversParentTypes['Organization']>> };
   IssueAddCategoryInput: GqlIssueAddCategoryInput;
-  IssueAddCategoryPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueAddCategoryPayload'];
-  IssueAddCategorySuccess: Omit<GqlIssueAddCategorySuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
   IssueAddCityInput: GqlIssueAddCityInput;
-  IssueAddCityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueAddCityPayload'];
-  IssueAddCitySuccess: Omit<GqlIssueAddCitySuccess, 'city' | 'issue'> & { city: GqlResolversParentTypes['City'], issue: GqlResolversParentTypes['Issue'] };
   IssueAddGroupInput: GqlIssueAddGroupInput;
-  IssueAddGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueAddGroupPayload'];
-  IssueAddGroupSuccess: Omit<GqlIssueAddGroupSuccess, 'group' | 'issue'> & { group: GqlResolversParentTypes['Group'], issue: GqlResolversParentTypes['Issue'] };
   IssueAddOrganizationInput: GqlIssueAddOrganizationInput;
-  IssueAddOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueAddOrganizationPayload'];
-  IssueAddOrganizationSuccess: Omit<GqlIssueAddOrganizationSuccess, 'issue' | 'organization'> & { issue: GqlResolversParentTypes['Issue'], organization: GqlResolversParentTypes['Organization'] };
   IssueAddSkillsetInput: GqlIssueAddSkillsetInput;
-  IssueAddSkillsetPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueAddSkillsetPayload'];
-  IssueAddSkillsetSuccess: Omit<GqlIssueAddSkillsetSuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
   IssueCategory: GqlIssueCategory;
   IssueCreateInput: GqlIssueCreateInput;
   IssueCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueCreatePayload'];
@@ -2912,26 +2792,26 @@ export type GqlResolversParentTypes = ResolversObject<{
   IssueFilterInput: GqlIssueFilterInput;
   IssuePrivacyInput: GqlIssuePrivacyInput;
   IssueRemoveCategoryInput: GqlIssueRemoveCategoryInput;
-  IssueRemoveCategoryPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueRemoveCategoryPayload'];
-  IssueRemoveCategorySuccess: Omit<GqlIssueRemoveCategorySuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
   IssueRemoveCityInput: GqlIssueRemoveCityInput;
-  IssueRemoveCityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueRemoveCityPayload'];
-  IssueRemoveCitySuccess: Omit<GqlIssueRemoveCitySuccess, 'city' | 'issue'> & { city: GqlResolversParentTypes['City'], issue: GqlResolversParentTypes['Issue'] };
   IssueRemoveGroupInput: GqlIssueRemoveGroupInput;
-  IssueRemoveGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueRemoveGroupPayload'];
-  IssueRemoveGroupSuccess: Omit<GqlIssueRemoveGroupSuccess, 'group' | 'issue'> & { group: GqlResolversParentTypes['Group'], issue: GqlResolversParentTypes['Issue'] };
   IssueRemoveOrganizationInput: GqlIssueRemoveOrganizationInput;
-  IssueRemoveOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueRemoveOrganizationPayload'];
-  IssueRemoveOrganizationSuccess: Omit<GqlIssueRemoveOrganizationSuccess, 'issue' | 'organization'> & { issue: GqlResolversParentTypes['Issue'], organization: GqlResolversParentTypes['Organization'] };
   IssueRemoveSkillsetInput: GqlIssueRemoveSkillsetInput;
-  IssueRemoveSkillsetPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueRemoveSkillsetPayload'];
-  IssueRemoveSkillsetSuccess: Omit<GqlIssueRemoveSkillsetSuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
   IssueSortInput: GqlIssueSortInput;
+  IssueUpdateCategoryPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdateCategoryPayload'];
+  IssueUpdateCategorySuccess: Omit<GqlIssueUpdateCategorySuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
+  IssueUpdateCityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdateCityPayload'];
+  IssueUpdateCitySuccess: Omit<GqlIssueUpdateCitySuccess, 'city' | 'issue'> & { city: GqlResolversParentTypes['City'], issue: GqlResolversParentTypes['Issue'] };
   IssueUpdateContentInput: GqlIssueUpdateContentInput;
   IssueUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdateContentPayload'];
   IssueUpdateContentSuccess: Omit<GqlIssueUpdateContentSuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
+  IssueUpdateGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdateGroupPayload'];
+  IssueUpdateGroupSuccess: Omit<GqlIssueUpdateGroupSuccess, 'group' | 'issue'> & { group: GqlResolversParentTypes['Group'], issue: GqlResolversParentTypes['Issue'] };
+  IssueUpdateOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdateOrganizationPayload'];
+  IssueUpdateOrganizationSuccess: Omit<GqlIssueUpdateOrganizationSuccess, 'issue' | 'organization'> & { issue: GqlResolversParentTypes['Issue'], organization: GqlResolversParentTypes['Organization'] };
   IssueUpdatePrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdatePrivacyPayload'];
   IssueUpdatePrivacySuccess: Omit<GqlIssueUpdatePrivacySuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
+  IssueUpdateSkillsetPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['IssueUpdateSkillsetPayload'];
+  IssueUpdateSkillsetSuccess: Omit<GqlIssueUpdateSkillsetSuccess, 'issue'> & { issue: GqlResolversParentTypes['Issue'] };
   IssuesConnection: Omit<GqlIssuesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['IssueEdge']>>> };
   Like: Like;
   LikeAddEventInput: GqlLikeAddEventInput;
@@ -2943,14 +2823,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   Mutation: {};
   Organization: Organization;
   OrganizationAddGroupInput: GqlOrganizationAddGroupInput;
-  OrganizationAddGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationAddGroupPayload'];
-  OrganizationAddGroupSuccess: Omit<GqlOrganizationAddGroupSuccess, 'group' | 'organization'> & { group: GqlResolversParentTypes['Group'], organization: GqlResolversParentTypes['Organization'] };
   OrganizationAddTargetInput: GqlOrganizationAddTargetInput;
-  OrganizationAddTargetPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationAddTargetPayload'];
-  OrganizationAddTargetSuccess: Omit<GqlOrganizationAddTargetSuccess, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   OrganizationAddUserInput: GqlOrganizationAddUserInput;
-  OrganizationAddUserPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationAddUserPayload'];
-  OrganizationAddUserSuccess: Omit<GqlOrganizationAddUserSuccess, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
   OrganizationCreateInput: GqlOrganizationCreateInput;
   OrganizationCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationCreatePayload'];
   OrganizationCreateSuccess: Omit<GqlOrganizationCreateSuccess, 'organization'> & { organization?: Maybe<GqlResolversParentTypes['Organization']> };
@@ -2959,23 +2833,23 @@ export type GqlResolversParentTypes = ResolversObject<{
   OrganizationEdge: Omit<GqlOrganizationEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Organization']> };
   OrganizationFilterInput: GqlOrganizationFilterInput;
   OrganizationRemoveGroupInput: GqlOrganizationRemoveGroupInput;
-  OrganizationRemoveGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationRemoveGroupPayload'];
-  OrganizationRemoveGroupSuccess: Omit<GqlOrganizationRemoveGroupSuccess, 'group' | 'organization'> & { group: GqlResolversParentTypes['Group'], organization: GqlResolversParentTypes['Organization'] };
   OrganizationRemoveTargetInput: GqlOrganizationRemoveTargetInput;
-  OrganizationRemoveTargetPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationRemoveTargetPayload'];
-  OrganizationRemoveTargetSuccess: Omit<GqlOrganizationRemoveTargetSuccess, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   OrganizationRemoveUserInput: GqlOrganizationRemoveUserInput;
-  OrganizationRemoveUserPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationRemoveUserPayload'];
-  OrganizationRemoveUserSuccess: Omit<GqlOrganizationRemoveUserSuccess, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
   OrganizationSortInput: GqlOrganizationSortInput;
+  OrganizationSwitchPrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationSwitchPrivacyPayload'];
+  OrganizationSwitchPrivacySuccess: Omit<GqlOrganizationSwitchPrivacySuccess, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
   OrganizationUpdateContentInput: GqlOrganizationUpdateContentInput;
   OrganizationUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdateContentPayload'];
   OrganizationUpdateContentSuccess: Omit<GqlOrganizationUpdateContentSuccess, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
   OrganizationUpdateDefaultInput: GqlOrganizationUpdateDefaultInput;
   OrganizationUpdateDefaultPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdateDefaultPayload'];
   OrganizationUpdateDefaultSuccess: Omit<GqlOrganizationUpdateDefaultSuccess, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
-  OrganizationUpdatePrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdatePrivacyPayload'];
-  OrganizationUpdatePrivacySuccess: Omit<GqlOrganizationUpdatePrivacySuccess, 'organization'> & { organization: GqlResolversParentTypes['Organization'] };
+  OrganizationUpdateGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdateGroupPayload'];
+  OrganizationUpdateGroupSuccess: Omit<GqlOrganizationUpdateGroupSuccess, 'group' | 'organization'> & { group: GqlResolversParentTypes['Group'], organization: GqlResolversParentTypes['Organization'] };
+  OrganizationUpdateTargetPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdateTargetPayload'];
+  OrganizationUpdateTargetSuccess: Omit<GqlOrganizationUpdateTargetSuccess, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
+  OrganizationUpdateUserPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrganizationUpdateUserPayload'];
+  OrganizationUpdateUserSuccess: Omit<GqlOrganizationUpdateUserSuccess, 'organization' | 'user'> & { organization: GqlResolversParentTypes['Organization'], user: GqlResolversParentTypes['User'] };
   Organizations: Omit<GqlOrganizations, 'data'> & { data: Array<GqlResolversParentTypes['Organization']> };
   OrganizationsConnection: Omit<GqlOrganizationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['OrganizationEdge']>>> };
   PageInfo: GqlPageInfo;
@@ -2986,11 +2860,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   String: Scalars['String']['output'];
   Target: Target;
   TargetAddGroupInput: GqlTargetAddGroupInput;
-  TargetAddGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetAddGroupPayload'];
-  TargetAddGroupSuccess: Omit<GqlTargetAddGroupSuccess, 'group' | 'target'> & { group: GqlResolversParentTypes['Group'], target: GqlResolversParentTypes['Target'] };
   TargetAddOrganizationInput: GqlTargetAddOrganizationInput;
-  TargetAddOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetAddOrganizationPayload'];
-  TargetAddOrganizationSuccess: Omit<GqlTargetAddOrganizationSuccess, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   TargetCreateInput: GqlTargetCreateInput;
   TargetCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetCreatePayload'];
   TargetCreateSuccess: Omit<GqlTargetCreateSuccess, 'target'> & { target?: Maybe<GqlResolversParentTypes['Target']> };
@@ -2999,18 +2869,18 @@ export type GqlResolversParentTypes = ResolversObject<{
   TargetEdge: Omit<GqlTargetEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Target']> };
   TargetFilterInput: GqlTargetFilterInput;
   TargetRemoveGroupInput: GqlTargetRemoveGroupInput;
-  TargetRemoveGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetRemoveGroupPayload'];
-  TargetRemoveGroupSuccess: Omit<GqlTargetRemoveGroupSuccess, 'group' | 'target'> & { group: GqlResolversParentTypes['Group'], target: GqlResolversParentTypes['Target'] };
   TargetRemoveOrganizationInput: GqlTargetRemoveOrganizationInput;
-  TargetRemoveOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetRemoveOrganizationPayload'];
-  TargetRemoveOrganizationSuccess: Omit<GqlTargetRemoveOrganizationSuccess, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   TargetSortInput: GqlTargetSortInput;
   TargetUpdateContentInput: GqlTargetUpdateContentInput;
   TargetUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetUpdateContentPayload'];
   TargetUpdateContentSuccess: Omit<GqlTargetUpdateContentSuccess, 'target'> & { target?: Maybe<GqlResolversParentTypes['Target']> };
+  TargetUpdateGroupPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetUpdateGroupPayload'];
+  TargetUpdateGroupSuccess: Omit<GqlTargetUpdateGroupSuccess, 'group' | 'target'> & { group: GqlResolversParentTypes['Group'], target: GqlResolversParentTypes['Target'] };
   TargetUpdateIndexInput: GqlTargetUpdateIndexInput;
   TargetUpdateIndexPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetUpdateIndexPayload'];
   TargetUpdateIndexSuccess: Omit<GqlTargetUpdateIndexSuccess, 'index' | 'target'> & { index: GqlResolversParentTypes['Index'], target: GqlResolversParentTypes['Target'] };
+  TargetUpdateOrganizationPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TargetUpdateOrganizationPayload'];
+  TargetUpdateOrganizationSuccess: Omit<GqlTargetUpdateOrganizationSuccess, 'organization' | 'target'> & { organization: GqlResolversParentTypes['Organization'], target: GqlResolversParentTypes['Target'] };
   TargetsConnection: Omit<GqlTargetsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TargetEdge']>>> };
   User: User;
   UserAddActivityInput: GqlUserAddActivityInput;
@@ -3594,56 +3464,6 @@ export type GqlIssueResolvers<ContextType = Context, ParentType extends GqlResol
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlIssueAddCategoryPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddCategoryPayload'] = GqlResolversParentTypes['IssueAddCategoryPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueAddCategorySuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddCategorySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddCategorySuccess'] = GqlResolversParentTypes['IssueAddCategorySuccess']> = ResolversObject<{
-  category?: Resolver<GqlResolversTypes['IssueCategory'], ParentType, ContextType>;
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddCityPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddCityPayload'] = GqlResolversParentTypes['IssueAddCityPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueAddCitySuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddCitySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddCitySuccess'] = GqlResolversParentTypes['IssueAddCitySuccess']> = ResolversObject<{
-  city?: Resolver<GqlResolversTypes['City'], ParentType, ContextType>;
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddGroupPayload'] = GqlResolversParentTypes['IssueAddGroupPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueAddGroupSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddGroupSuccess'] = GqlResolversParentTypes['IssueAddGroupSuccess']> = ResolversObject<{
-  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddOrganizationPayload'] = GqlResolversParentTypes['IssueAddOrganizationPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueAddOrganizationSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddOrganizationSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddOrganizationSuccess'] = GqlResolversParentTypes['IssueAddOrganizationSuccess']> = ResolversObject<{
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddSkillsetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddSkillsetPayload'] = GqlResolversParentTypes['IssueAddSkillsetPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueAddSkillsetSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueAddSkillsetSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueAddSkillsetSuccess'] = GqlResolversParentTypes['IssueAddSkillsetSuccess']> = ResolversObject<{
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  skillset?: Resolver<GqlResolversTypes['Skillset'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlIssueCategoryResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueCategory'] = GqlResolversParentTypes['IssueCategory']> = ResolversObject<{
   code?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -3676,53 +3496,23 @@ export type GqlIssueEdgeResolvers<ContextType = Context, ParentType extends GqlR
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlIssueRemoveCategoryPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveCategoryPayload'] = GqlResolversParentTypes['IssueRemoveCategoryPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueRemoveCategorySuccess', ParentType, ContextType>;
+export type GqlIssueUpdateCategoryPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateCategoryPayload'] = GqlResolversParentTypes['IssueUpdateCategoryPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueUpdateCategorySuccess', ParentType, ContextType>;
 }>;
 
-export type GqlIssueRemoveCategorySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveCategorySuccess'] = GqlResolversParentTypes['IssueRemoveCategorySuccess']> = ResolversObject<{
-  category?: Resolver<GqlResolversTypes['IssueCategory'], ParentType, ContextType>;
+export type GqlIssueUpdateCategorySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateCategorySuccess'] = GqlResolversParentTypes['IssueUpdateCategorySuccess']> = ResolversObject<{
   issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
+  issueCategory?: Resolver<GqlResolversTypes['IssueCategory'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlIssueRemoveCityPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveCityPayload'] = GqlResolversParentTypes['IssueRemoveCityPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueRemoveCitySuccess', ParentType, ContextType>;
+export type GqlIssueUpdateCityPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateCityPayload'] = GqlResolversParentTypes['IssueUpdateCityPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueUpdateCitySuccess', ParentType, ContextType>;
 }>;
 
-export type GqlIssueRemoveCitySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveCitySuccess'] = GqlResolversParentTypes['IssueRemoveCitySuccess']> = ResolversObject<{
+export type GqlIssueUpdateCitySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateCitySuccess'] = GqlResolversParentTypes['IssueUpdateCitySuccess']> = ResolversObject<{
   city?: Resolver<GqlResolversTypes['City'], ParentType, ContextType>;
   issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueRemoveGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveGroupPayload'] = GqlResolversParentTypes['IssueRemoveGroupPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueRemoveGroupSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueRemoveGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveGroupSuccess'] = GqlResolversParentTypes['IssueRemoveGroupSuccess']> = ResolversObject<{
-  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueRemoveOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveOrganizationPayload'] = GqlResolversParentTypes['IssueRemoveOrganizationPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueRemoveOrganizationSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueRemoveOrganizationSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveOrganizationSuccess'] = GqlResolversParentTypes['IssueRemoveOrganizationSuccess']> = ResolversObject<{
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlIssueRemoveSkillsetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveSkillsetPayload'] = GqlResolversParentTypes['IssueRemoveSkillsetPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueRemoveSkillsetSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlIssueRemoveSkillsetSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueRemoveSkillsetSuccess'] = GqlResolversParentTypes['IssueRemoveSkillsetSuccess']> = ResolversObject<{
-  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
-  skillset?: Resolver<GqlResolversTypes['Skillset'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3735,12 +3525,42 @@ export type GqlIssueUpdateContentSuccessResolvers<ContextType = Context, ParentT
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlIssueUpdateGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateGroupPayload'] = GqlResolversParentTypes['IssueUpdateGroupPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueUpdateGroupSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlIssueUpdateGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateGroupSuccess'] = GqlResolversParentTypes['IssueUpdateGroupSuccess']> = ResolversObject<{
+  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
+  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlIssueUpdateOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateOrganizationPayload'] = GqlResolversParentTypes['IssueUpdateOrganizationPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueUpdateOrganizationSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlIssueUpdateOrganizationSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateOrganizationSuccess'] = GqlResolversParentTypes['IssueUpdateOrganizationSuccess']> = ResolversObject<{
+  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlIssueUpdatePrivacyPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdatePrivacyPayload'] = GqlResolversParentTypes['IssueUpdatePrivacyPayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueUpdatePrivacySuccess', ParentType, ContextType>;
 }>;
 
 export type GqlIssueUpdatePrivacySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdatePrivacySuccess'] = GqlResolversParentTypes['IssueUpdatePrivacySuccess']> = ResolversObject<{
   issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlIssueUpdateSkillsetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateSkillsetPayload'] = GqlResolversParentTypes['IssueUpdateSkillsetPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'IssueUpdateSkillsetSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlIssueUpdateSkillsetSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['IssueUpdateSkillsetSuccess'] = GqlResolversParentTypes['IssueUpdateSkillsetSuccess']> = ResolversObject<{
+  issue?: Resolver<GqlResolversTypes['Issue'], ParentType, ContextType>;
+  skillset?: Resolver<GqlResolversTypes['Skillset'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3830,42 +3650,42 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   groupRemoveTarget?: Resolver<Maybe<GqlResolversTypes['GroupUpdateTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationGroupRemoveTargetArgs, 'id' | 'input'>>;
   groupRemoveUser?: Resolver<Maybe<GqlResolversTypes['GroupUpdateUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationGroupRemoveUserArgs, 'id' | 'input'>>;
   groupUpdateContent?: Resolver<Maybe<GqlResolversTypes['GroupUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationGroupUpdateContentArgs, 'id' | 'input'>>;
-  issueAddCategory?: Resolver<Maybe<GqlResolversTypes['IssueAddCategoryPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddCategoryArgs, 'id' | 'input'>>;
-  issueAddCity?: Resolver<Maybe<GqlResolversTypes['IssueAddCityPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddCityArgs, 'id' | 'input'>>;
-  issueAddGroup?: Resolver<Maybe<GqlResolversTypes['IssueAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddGroupArgs, 'id' | 'input'>>;
-  issueAddOrganization?: Resolver<Maybe<GqlResolversTypes['IssueAddOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddOrganizationArgs, 'id' | 'input'>>;
-  issueAddSkillset?: Resolver<Maybe<GqlResolversTypes['IssueAddSkillsetPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddSkillsetArgs, 'id' | 'input'>>;
+  issueAddCategory?: Resolver<Maybe<GqlResolversTypes['IssueUpdateCategoryPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddCategoryArgs, 'id' | 'input'>>;
+  issueAddCity?: Resolver<Maybe<GqlResolversTypes['IssueUpdateCityPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddCityArgs, 'id' | 'input'>>;
+  issueAddGroup?: Resolver<Maybe<GqlResolversTypes['IssueUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddGroupArgs, 'id' | 'input'>>;
+  issueAddOrganization?: Resolver<Maybe<GqlResolversTypes['IssueUpdateOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddOrganizationArgs, 'id' | 'input'>>;
+  issueAddSkillset?: Resolver<Maybe<GqlResolversTypes['IssueUpdateSkillsetPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueAddSkillsetArgs, 'id' | 'input'>>;
   issueCreate?: Resolver<Maybe<GqlResolversTypes['IssueCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueCreateArgs, 'input'>>;
   issueDelete?: Resolver<Maybe<GqlResolversTypes['IssueDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueDeleteArgs, 'id'>>;
   issuePublish?: Resolver<Maybe<GqlResolversTypes['IssueUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssuePublishArgs, 'id' | 'input'>>;
-  issueRemoveCategory?: Resolver<Maybe<GqlResolversTypes['IssueRemoveCategoryPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveCategoryArgs, 'id' | 'input'>>;
-  issueRemoveCity?: Resolver<Maybe<GqlResolversTypes['IssueRemoveCityPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveCityArgs, 'id' | 'input'>>;
-  issueRemoveGroup?: Resolver<Maybe<GqlResolversTypes['IssueRemoveGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveGroupArgs, 'id' | 'input'>>;
-  issueRemoveOrganization?: Resolver<Maybe<GqlResolversTypes['IssueRemoveOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveOrganizationArgs, 'id' | 'input'>>;
-  issueRemoveSkillset?: Resolver<Maybe<GqlResolversTypes['IssueRemoveSkillsetPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveSkillsetArgs, 'id' | 'input'>>;
+  issueRemoveCategory?: Resolver<Maybe<GqlResolversTypes['IssueUpdateCategoryPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveCategoryArgs, 'id' | 'input'>>;
+  issueRemoveCity?: Resolver<Maybe<GqlResolversTypes['IssueUpdateCityPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveCityArgs, 'id' | 'input'>>;
+  issueRemoveGroup?: Resolver<Maybe<GqlResolversTypes['IssueUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveGroupArgs, 'id' | 'input'>>;
+  issueRemoveOrganization?: Resolver<Maybe<GqlResolversTypes['IssueUpdateOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveOrganizationArgs, 'id' | 'input'>>;
+  issueRemoveSkillset?: Resolver<Maybe<GqlResolversTypes['IssueUpdateSkillsetPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueRemoveSkillsetArgs, 'id' | 'input'>>;
   issueUnpublish?: Resolver<Maybe<GqlResolversTypes['IssueUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueUnpublishArgs, 'id' | 'input'>>;
   issueUpdateContent?: Resolver<Maybe<GqlResolversTypes['IssueUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationIssueUpdateContentArgs, 'id' | 'input'>>;
   likeAddEvent?: Resolver<Maybe<GqlResolversTypes['LikeAddEventPayload']>, ParentType, ContextType, RequireFields<GqlMutationLikeAddEventArgs, 'input'>>;
   likeDelete?: Resolver<Maybe<GqlResolversTypes['LikeDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationLikeDeleteArgs, 'id'>>;
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  organizationAddGroup?: Resolver<Maybe<GqlResolversTypes['OrganizationAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationAddGroupArgs, 'id' | 'input'>>;
-  organizationAddTarget?: Resolver<Maybe<GqlResolversTypes['OrganizationAddTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationAddTargetArgs, 'id' | 'input'>>;
-  organizationAddUser?: Resolver<Maybe<GqlResolversTypes['OrganizationAddUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationAddUserArgs, 'id' | 'input'>>;
+  organizationAddGroup?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationAddGroupArgs, 'id' | 'input'>>;
+  organizationAddTarget?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationAddTargetArgs, 'id' | 'input'>>;
+  organizationAddUser?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationAddUserArgs, 'id' | 'input'>>;
   organizationCreate?: Resolver<Maybe<GqlResolversTypes['OrganizationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationCreateArgs, 'input'>>;
   organizationDelete?: Resolver<Maybe<GqlResolversTypes['OrganizationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationDeleteArgs, 'id'>>;
-  organizationPublish?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationPublishArgs, 'id'>>;
-  organizationRemoveGroup?: Resolver<Maybe<GqlResolversTypes['OrganizationRemoveGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveGroupArgs, 'id' | 'input'>>;
-  organizationRemoveTarget?: Resolver<Maybe<GqlResolversTypes['OrganizationRemoveTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveTargetArgs, 'id' | 'input'>>;
-  organizationRemoveUser?: Resolver<Maybe<GqlResolversTypes['OrganizationRemoveUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveUserArgs, 'id' | 'input'>>;
-  organizationUnpublish?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdatePrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationUnpublishArgs, 'id'>>;
+  organizationPublish?: Resolver<Maybe<GqlResolversTypes['OrganizationSwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationPublishArgs, 'id'>>;
+  organizationRemoveGroup?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveGroupArgs, 'id' | 'input'>>;
+  organizationRemoveTarget?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateTargetPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveTargetArgs, 'id' | 'input'>>;
+  organizationRemoveUser?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationRemoveUserArgs, 'id' | 'input'>>;
+  organizationUnpublish?: Resolver<Maybe<GqlResolversTypes['OrganizationSwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationUnpublishArgs, 'id'>>;
   organizationUpdateContent?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationUpdateContentArgs, 'id' | 'input'>>;
   organizationUpdateDefault?: Resolver<Maybe<GqlResolversTypes['OrganizationUpdateDefaultPayload']>, ParentType, ContextType, RequireFields<GqlMutationOrganizationUpdateDefaultArgs, 'id' | 'input'>>;
-  targetAddGroup?: Resolver<Maybe<GqlResolversTypes['TargetAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetAddGroupArgs, 'id' | 'input'>>;
-  targetAddOrganization?: Resolver<Maybe<GqlResolversTypes['TargetAddOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetAddOrganizationArgs, 'id' | 'input'>>;
+  targetAddGroup?: Resolver<Maybe<GqlResolversTypes['TargetUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetAddGroupArgs, 'id' | 'input'>>;
+  targetAddOrganization?: Resolver<Maybe<GqlResolversTypes['TargetUpdateOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetAddOrganizationArgs, 'id' | 'input'>>;
   targetCreate?: Resolver<Maybe<GqlResolversTypes['TargetCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetCreateArgs, 'input'>>;
   targetDelete?: Resolver<Maybe<GqlResolversTypes['TargetDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetDeleteArgs, 'id'>>;
-  targetRemoveGroup?: Resolver<Maybe<GqlResolversTypes['TargetRemoveGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetRemoveGroupArgs, 'id' | 'input'>>;
-  targetRemoveOrganization?: Resolver<Maybe<GqlResolversTypes['TargetRemoveOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetRemoveOrganizationArgs, 'id' | 'input'>>;
+  targetRemoveGroup?: Resolver<Maybe<GqlResolversTypes['TargetUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetRemoveGroupArgs, 'id' | 'input'>>;
+  targetRemoveOrganization?: Resolver<Maybe<GqlResolversTypes['TargetUpdateOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetRemoveOrganizationArgs, 'id' | 'input'>>;
   targetUpdateContent?: Resolver<Maybe<GqlResolversTypes['TargetUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetUpdateContentArgs, 'id' | 'input'>>;
   targetUpdateIndex?: Resolver<Maybe<GqlResolversTypes['TargetUpdateIndexPayload']>, ParentType, ContextType, RequireFields<GqlMutationTargetUpdateIndexArgs, 'id' | 'input'>>;
   userAddActivity?: Resolver<Maybe<GqlResolversTypes['UserUpdateActivityPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserAddActivityArgs, 'id' | 'input'>>;
@@ -3907,36 +3727,6 @@ export type GqlOrganizationResolvers<ContextType = Context, ParentType extends G
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlOrganizationAddGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationAddGroupPayload'] = GqlResolversParentTypes['OrganizationAddGroupPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationAddGroupSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationAddGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationAddGroupSuccess'] = GqlResolversParentTypes['OrganizationAddGroupSuccess']> = ResolversObject<{
-  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationAddTargetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationAddTargetPayload'] = GqlResolversParentTypes['OrganizationAddTargetPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationAddTargetSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationAddTargetSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationAddTargetSuccess'] = GqlResolversParentTypes['OrganizationAddTargetSuccess']> = ResolversObject<{
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationAddUserPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationAddUserPayload'] = GqlResolversParentTypes['OrganizationAddUserPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationAddUserSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationAddUserSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationAddUserSuccess'] = GqlResolversParentTypes['OrganizationAddUserSuccess']> = ResolversObject<{
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlOrganizationCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationCreatePayload'] = GqlResolversParentTypes['OrganizationCreatePayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationCreateSuccess', ParentType, ContextType>;
 }>;
@@ -3961,33 +3751,12 @@ export type GqlOrganizationEdgeResolvers<ContextType = Context, ParentType exten
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlOrganizationRemoveGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationRemoveGroupPayload'] = GqlResolversParentTypes['OrganizationRemoveGroupPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationRemoveGroupSuccess', ParentType, ContextType>;
+export type GqlOrganizationSwitchPrivacyPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationSwitchPrivacyPayload'] = GqlResolversParentTypes['OrganizationSwitchPrivacyPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationSwitchPrivacySuccess', ParentType, ContextType>;
 }>;
 
-export type GqlOrganizationRemoveGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationRemoveGroupSuccess'] = GqlResolversParentTypes['OrganizationRemoveGroupSuccess']> = ResolversObject<{
-  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
+export type GqlOrganizationSwitchPrivacySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationSwitchPrivacySuccess'] = GqlResolversParentTypes['OrganizationSwitchPrivacySuccess']> = ResolversObject<{
   organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationRemoveTargetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationRemoveTargetPayload'] = GqlResolversParentTypes['OrganizationRemoveTargetPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationRemoveTargetSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationRemoveTargetSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationRemoveTargetSuccess'] = GqlResolversParentTypes['OrganizationRemoveTargetSuccess']> = ResolversObject<{
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationRemoveUserPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationRemoveUserPayload'] = GqlResolversParentTypes['OrganizationRemoveUserPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationRemoveUserSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOrganizationRemoveUserSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationRemoveUserSuccess'] = GqlResolversParentTypes['OrganizationRemoveUserSuccess']> = ResolversObject<{
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4009,12 +3778,33 @@ export type GqlOrganizationUpdateDefaultSuccessResolvers<ContextType = Context, 
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlOrganizationUpdatePrivacyPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdatePrivacyPayload'] = GqlResolversParentTypes['OrganizationUpdatePrivacyPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationUpdatePrivacySuccess', ParentType, ContextType>;
+export type GqlOrganizationUpdateGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdateGroupPayload'] = GqlResolversParentTypes['OrganizationUpdateGroupPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationUpdateGroupSuccess', ParentType, ContextType>;
 }>;
 
-export type GqlOrganizationUpdatePrivacySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdatePrivacySuccess'] = GqlResolversParentTypes['OrganizationUpdatePrivacySuccess']> = ResolversObject<{
+export type GqlOrganizationUpdateGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdateGroupSuccess'] = GqlResolversParentTypes['OrganizationUpdateGroupSuccess']> = ResolversObject<{
+  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
   organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOrganizationUpdateTargetPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdateTargetPayload'] = GqlResolversParentTypes['OrganizationUpdateTargetPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationUpdateTargetSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOrganizationUpdateTargetSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdateTargetSuccess'] = GqlResolversParentTypes['OrganizationUpdateTargetSuccess']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOrganizationUpdateUserPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdateUserPayload'] = GqlResolversParentTypes['OrganizationUpdateUserPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OrganizationUpdateUserSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOrganizationUpdateUserSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OrganizationUpdateUserSuccess'] = GqlResolversParentTypes['OrganizationUpdateUserSuccess']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4098,26 +3888,6 @@ export type GqlTargetResolvers<ContextType = Context, ParentType extends GqlReso
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlTargetAddGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetAddGroupPayload'] = GqlResolversParentTypes['TargetAddGroupPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetAddGroupSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlTargetAddGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetAddGroupSuccess'] = GqlResolversParentTypes['TargetAddGroupSuccess']> = ResolversObject<{
-  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlTargetAddOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetAddOrganizationPayload'] = GqlResolversParentTypes['TargetAddOrganizationPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetAddOrganizationSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlTargetAddOrganizationSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetAddOrganizationSuccess'] = GqlResolversParentTypes['TargetAddOrganizationSuccess']> = ResolversObject<{
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlTargetCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetCreatePayload'] = GqlResolversParentTypes['TargetCreatePayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetCreateSuccess', ParentType, ContextType>;
 }>;
@@ -4142,26 +3912,6 @@ export type GqlTargetEdgeResolvers<ContextType = Context, ParentType extends Gql
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlTargetRemoveGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetRemoveGroupPayload'] = GqlResolversParentTypes['TargetRemoveGroupPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetRemoveGroupSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlTargetRemoveGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetRemoveGroupSuccess'] = GqlResolversParentTypes['TargetRemoveGroupSuccess']> = ResolversObject<{
-  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlTargetRemoveOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetRemoveOrganizationPayload'] = GqlResolversParentTypes['TargetRemoveOrganizationPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetRemoveOrganizationSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlTargetRemoveOrganizationSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetRemoveOrganizationSuccess'] = GqlResolversParentTypes['TargetRemoveOrganizationSuccess']> = ResolversObject<{
-  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
-  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlTargetUpdateContentPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateContentPayload'] = GqlResolversParentTypes['TargetUpdateContentPayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetUpdateContentSuccess', ParentType, ContextType>;
 }>;
@@ -4171,12 +3921,32 @@ export type GqlTargetUpdateContentSuccessResolvers<ContextType = Context, Parent
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlTargetUpdateGroupPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateGroupPayload'] = GqlResolversParentTypes['TargetUpdateGroupPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetUpdateGroupSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlTargetUpdateGroupSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateGroupSuccess'] = GqlResolversParentTypes['TargetUpdateGroupSuccess']> = ResolversObject<{
+  group?: Resolver<GqlResolversTypes['Group'], ParentType, ContextType>;
+  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlTargetUpdateIndexPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateIndexPayload'] = GqlResolversParentTypes['TargetUpdateIndexPayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetUpdateIndexSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTargetUpdateIndexSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateIndexSuccess'] = GqlResolversParentTypes['TargetUpdateIndexSuccess']> = ResolversObject<{
   index?: Resolver<GqlResolversTypes['Index'], ParentType, ContextType>;
+  target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTargetUpdateOrganizationPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateOrganizationPayload'] = GqlResolversParentTypes['TargetUpdateOrganizationPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TargetUpdateOrganizationSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlTargetUpdateOrganizationSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['TargetUpdateOrganizationSuccess'] = GqlResolversParentTypes['TargetUpdateOrganizationSuccess']> = ResolversObject<{
+  organization?: Resolver<GqlResolversTypes['Organization'], ParentType, ContextType>;
   target?: Resolver<GqlResolversTypes['Target'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4384,36 +4154,26 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   Index?: GqlIndexResolvers<ContextType>;
   InvalidInputValueError?: GqlInvalidInputValueErrorResolvers<ContextType>;
   Issue?: GqlIssueResolvers<ContextType>;
-  IssueAddCategoryPayload?: GqlIssueAddCategoryPayloadResolvers<ContextType>;
-  IssueAddCategorySuccess?: GqlIssueAddCategorySuccessResolvers<ContextType>;
-  IssueAddCityPayload?: GqlIssueAddCityPayloadResolvers<ContextType>;
-  IssueAddCitySuccess?: GqlIssueAddCitySuccessResolvers<ContextType>;
-  IssueAddGroupPayload?: GqlIssueAddGroupPayloadResolvers<ContextType>;
-  IssueAddGroupSuccess?: GqlIssueAddGroupSuccessResolvers<ContextType>;
-  IssueAddOrganizationPayload?: GqlIssueAddOrganizationPayloadResolvers<ContextType>;
-  IssueAddOrganizationSuccess?: GqlIssueAddOrganizationSuccessResolvers<ContextType>;
-  IssueAddSkillsetPayload?: GqlIssueAddSkillsetPayloadResolvers<ContextType>;
-  IssueAddSkillsetSuccess?: GqlIssueAddSkillsetSuccessResolvers<ContextType>;
   IssueCategory?: GqlIssueCategoryResolvers<ContextType>;
   IssueCreatePayload?: GqlIssueCreatePayloadResolvers<ContextType>;
   IssueCreateSuccess?: GqlIssueCreateSuccessResolvers<ContextType>;
   IssueDeletePayload?: GqlIssueDeletePayloadResolvers<ContextType>;
   IssueDeleteSuccess?: GqlIssueDeleteSuccessResolvers<ContextType>;
   IssueEdge?: GqlIssueEdgeResolvers<ContextType>;
-  IssueRemoveCategoryPayload?: GqlIssueRemoveCategoryPayloadResolvers<ContextType>;
-  IssueRemoveCategorySuccess?: GqlIssueRemoveCategorySuccessResolvers<ContextType>;
-  IssueRemoveCityPayload?: GqlIssueRemoveCityPayloadResolvers<ContextType>;
-  IssueRemoveCitySuccess?: GqlIssueRemoveCitySuccessResolvers<ContextType>;
-  IssueRemoveGroupPayload?: GqlIssueRemoveGroupPayloadResolvers<ContextType>;
-  IssueRemoveGroupSuccess?: GqlIssueRemoveGroupSuccessResolvers<ContextType>;
-  IssueRemoveOrganizationPayload?: GqlIssueRemoveOrganizationPayloadResolvers<ContextType>;
-  IssueRemoveOrganizationSuccess?: GqlIssueRemoveOrganizationSuccessResolvers<ContextType>;
-  IssueRemoveSkillsetPayload?: GqlIssueRemoveSkillsetPayloadResolvers<ContextType>;
-  IssueRemoveSkillsetSuccess?: GqlIssueRemoveSkillsetSuccessResolvers<ContextType>;
+  IssueUpdateCategoryPayload?: GqlIssueUpdateCategoryPayloadResolvers<ContextType>;
+  IssueUpdateCategorySuccess?: GqlIssueUpdateCategorySuccessResolvers<ContextType>;
+  IssueUpdateCityPayload?: GqlIssueUpdateCityPayloadResolvers<ContextType>;
+  IssueUpdateCitySuccess?: GqlIssueUpdateCitySuccessResolvers<ContextType>;
   IssueUpdateContentPayload?: GqlIssueUpdateContentPayloadResolvers<ContextType>;
   IssueUpdateContentSuccess?: GqlIssueUpdateContentSuccessResolvers<ContextType>;
+  IssueUpdateGroupPayload?: GqlIssueUpdateGroupPayloadResolvers<ContextType>;
+  IssueUpdateGroupSuccess?: GqlIssueUpdateGroupSuccessResolvers<ContextType>;
+  IssueUpdateOrganizationPayload?: GqlIssueUpdateOrganizationPayloadResolvers<ContextType>;
+  IssueUpdateOrganizationSuccess?: GqlIssueUpdateOrganizationSuccessResolvers<ContextType>;
   IssueUpdatePrivacyPayload?: GqlIssueUpdatePrivacyPayloadResolvers<ContextType>;
   IssueUpdatePrivacySuccess?: GqlIssueUpdatePrivacySuccessResolvers<ContextType>;
+  IssueUpdateSkillsetPayload?: GqlIssueUpdateSkillsetPayloadResolvers<ContextType>;
+  IssueUpdateSkillsetSuccess?: GqlIssueUpdateSkillsetSuccessResolvers<ContextType>;
   IssuesConnection?: GqlIssuesConnectionResolvers<ContextType>;
   Like?: GqlLikeResolvers<ContextType>;
   LikeAddEventPayload?: GqlLikeAddEventPayloadResolvers<ContextType>;
@@ -4423,29 +4183,23 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   Likes?: GqlLikesResolvers<ContextType>;
   Mutation?: GqlMutationResolvers<ContextType>;
   Organization?: GqlOrganizationResolvers<ContextType>;
-  OrganizationAddGroupPayload?: GqlOrganizationAddGroupPayloadResolvers<ContextType>;
-  OrganizationAddGroupSuccess?: GqlOrganizationAddGroupSuccessResolvers<ContextType>;
-  OrganizationAddTargetPayload?: GqlOrganizationAddTargetPayloadResolvers<ContextType>;
-  OrganizationAddTargetSuccess?: GqlOrganizationAddTargetSuccessResolvers<ContextType>;
-  OrganizationAddUserPayload?: GqlOrganizationAddUserPayloadResolvers<ContextType>;
-  OrganizationAddUserSuccess?: GqlOrganizationAddUserSuccessResolvers<ContextType>;
   OrganizationCreatePayload?: GqlOrganizationCreatePayloadResolvers<ContextType>;
   OrganizationCreateSuccess?: GqlOrganizationCreateSuccessResolvers<ContextType>;
   OrganizationDeletePayload?: GqlOrganizationDeletePayloadResolvers<ContextType>;
   OrganizationDeleteSuccess?: GqlOrganizationDeleteSuccessResolvers<ContextType>;
   OrganizationEdge?: GqlOrganizationEdgeResolvers<ContextType>;
-  OrganizationRemoveGroupPayload?: GqlOrganizationRemoveGroupPayloadResolvers<ContextType>;
-  OrganizationRemoveGroupSuccess?: GqlOrganizationRemoveGroupSuccessResolvers<ContextType>;
-  OrganizationRemoveTargetPayload?: GqlOrganizationRemoveTargetPayloadResolvers<ContextType>;
-  OrganizationRemoveTargetSuccess?: GqlOrganizationRemoveTargetSuccessResolvers<ContextType>;
-  OrganizationRemoveUserPayload?: GqlOrganizationRemoveUserPayloadResolvers<ContextType>;
-  OrganizationRemoveUserSuccess?: GqlOrganizationRemoveUserSuccessResolvers<ContextType>;
+  OrganizationSwitchPrivacyPayload?: GqlOrganizationSwitchPrivacyPayloadResolvers<ContextType>;
+  OrganizationSwitchPrivacySuccess?: GqlOrganizationSwitchPrivacySuccessResolvers<ContextType>;
   OrganizationUpdateContentPayload?: GqlOrganizationUpdateContentPayloadResolvers<ContextType>;
   OrganizationUpdateContentSuccess?: GqlOrganizationUpdateContentSuccessResolvers<ContextType>;
   OrganizationUpdateDefaultPayload?: GqlOrganizationUpdateDefaultPayloadResolvers<ContextType>;
   OrganizationUpdateDefaultSuccess?: GqlOrganizationUpdateDefaultSuccessResolvers<ContextType>;
-  OrganizationUpdatePrivacyPayload?: GqlOrganizationUpdatePrivacyPayloadResolvers<ContextType>;
-  OrganizationUpdatePrivacySuccess?: GqlOrganizationUpdatePrivacySuccessResolvers<ContextType>;
+  OrganizationUpdateGroupPayload?: GqlOrganizationUpdateGroupPayloadResolvers<ContextType>;
+  OrganizationUpdateGroupSuccess?: GqlOrganizationUpdateGroupSuccessResolvers<ContextType>;
+  OrganizationUpdateTargetPayload?: GqlOrganizationUpdateTargetPayloadResolvers<ContextType>;
+  OrganizationUpdateTargetSuccess?: GqlOrganizationUpdateTargetSuccessResolvers<ContextType>;
+  OrganizationUpdateUserPayload?: GqlOrganizationUpdateUserPayloadResolvers<ContextType>;
+  OrganizationUpdateUserSuccess?: GqlOrganizationUpdateUserSuccessResolvers<ContextType>;
   Organizations?: GqlOrganizationsResolvers<ContextType>;
   OrganizationsConnection?: GqlOrganizationsConnectionResolvers<ContextType>;
   PageInfo?: GqlPageInfoResolvers<ContextType>;
@@ -4454,23 +4208,19 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   Skillset?: GqlSkillsetResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
   Target?: GqlTargetResolvers<ContextType>;
-  TargetAddGroupPayload?: GqlTargetAddGroupPayloadResolvers<ContextType>;
-  TargetAddGroupSuccess?: GqlTargetAddGroupSuccessResolvers<ContextType>;
-  TargetAddOrganizationPayload?: GqlTargetAddOrganizationPayloadResolvers<ContextType>;
-  TargetAddOrganizationSuccess?: GqlTargetAddOrganizationSuccessResolvers<ContextType>;
   TargetCreatePayload?: GqlTargetCreatePayloadResolvers<ContextType>;
   TargetCreateSuccess?: GqlTargetCreateSuccessResolvers<ContextType>;
   TargetDeletePayload?: GqlTargetDeletePayloadResolvers<ContextType>;
   TargetDeleteSuccess?: GqlTargetDeleteSuccessResolvers<ContextType>;
   TargetEdge?: GqlTargetEdgeResolvers<ContextType>;
-  TargetRemoveGroupPayload?: GqlTargetRemoveGroupPayloadResolvers<ContextType>;
-  TargetRemoveGroupSuccess?: GqlTargetRemoveGroupSuccessResolvers<ContextType>;
-  TargetRemoveOrganizationPayload?: GqlTargetRemoveOrganizationPayloadResolvers<ContextType>;
-  TargetRemoveOrganizationSuccess?: GqlTargetRemoveOrganizationSuccessResolvers<ContextType>;
   TargetUpdateContentPayload?: GqlTargetUpdateContentPayloadResolvers<ContextType>;
   TargetUpdateContentSuccess?: GqlTargetUpdateContentSuccessResolvers<ContextType>;
+  TargetUpdateGroupPayload?: GqlTargetUpdateGroupPayloadResolvers<ContextType>;
+  TargetUpdateGroupSuccess?: GqlTargetUpdateGroupSuccessResolvers<ContextType>;
   TargetUpdateIndexPayload?: GqlTargetUpdateIndexPayloadResolvers<ContextType>;
   TargetUpdateIndexSuccess?: GqlTargetUpdateIndexSuccessResolvers<ContextType>;
+  TargetUpdateOrganizationPayload?: GqlTargetUpdateOrganizationPayloadResolvers<ContextType>;
+  TargetUpdateOrganizationSuccess?: GqlTargetUpdateOrganizationSuccessResolvers<ContextType>;
   TargetsConnection?: GqlTargetsConnectionResolvers<ContextType>;
   User?: GqlUserResolvers<ContextType>;
   UserCreatePayload?: GqlUserCreatePayloadResolvers<ContextType>;

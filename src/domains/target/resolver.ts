@@ -1,4 +1,3 @@
-import TargetService from "@/domains/target/service";
 import {
   GqlMutationTargetCreateArgs,
   GqlMutationTargetDeleteArgs,
@@ -11,29 +10,31 @@ import {
   GqlMutationTargetUpdateIndexArgs,
   GqlMutationTargetUpdateContentArgs,
 } from "@/types/graphql";
+import TargetUseCase from "@/domains/target/usecase";
 
 const targetResolver = {
   Query: {
-    targets: async (_: unknown, args: GqlQueryTargetsArgs) => TargetService.queryTargets(args),
-    target: async (_: unknown, args: GqlQueryTargetArgs) => TargetService.getTarget(args),
+    targets: async (_: unknown, args: GqlQueryTargetsArgs) =>
+      TargetUseCase.userGetManyTargets(args),
+    target: async (_: unknown, args: GqlQueryTargetArgs) => TargetUseCase.userGetTarget(args),
   },
   Mutation: {
     targetCreate: async (_: unknown, args: GqlMutationTargetCreateArgs) =>
-      TargetService.targetCreate(args),
+      TargetUseCase.userCreateTarget(args),
     targetDelete: async (_: unknown, args: GqlMutationTargetDeleteArgs) =>
-      TargetService.targetDelete(args),
+      TargetUseCase.userDeleteTarget(args),
     targetUpdateContent: async (_: unknown, args: GqlMutationTargetUpdateContentArgs) =>
-      TargetService.targetUpdateContent(args),
+      TargetUseCase.userUpdateContentOfTarget(args),
     targetAddGroup: async (_: unknown, args: GqlMutationTargetAddGroupArgs) =>
-      TargetService.targetAddGroup(args),
+      TargetUseCase.userAddGroupToTarget(args),
     targetRemoveGroup: async (_: unknown, args: GqlMutationTargetRemoveGroupArgs) =>
-      TargetService.targetRemoveGroup(args),
+      TargetUseCase.userRemoveGroupFromTarget(args),
     targetAddOrganization: async (_: unknown, args: GqlMutationTargetAddOrganizationArgs) =>
-      TargetService.targetAddOrganization(args),
+      TargetUseCase.userAddOrganizationToTarget(args),
     targetRemoveOrganization: async (_: unknown, args: GqlMutationTargetRemoveOrganizationArgs) =>
-      TargetService.targetRemoveOrganization(args),
+      TargetUseCase.userRemoveOrganizationFromTarget(args),
     targetUpdateIndex: async (_: unknown, args: GqlMutationTargetUpdateIndexArgs) =>
-      TargetService.targetUpdateIndex(args),
+      TargetUseCase.userUpdateIndexOfTarget(args),
   },
 };
 

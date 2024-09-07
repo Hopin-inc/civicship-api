@@ -1,4 +1,3 @@
-import OrganizationService from "@/domains/organization/service";
 import {
   GqlMutationOrganizationCreateArgs,
   GqlMutationOrganizationDeleteArgs,
@@ -15,39 +14,40 @@ import {
   GqlQueryOrganizationsArgs,
   GqlMutationOrganizationUpdateContentArgs,
 } from "@/types/graphql";
+import OrganizationUseCase from "@/domains/organization/usecase";
 
 const organizationResolver = {
   Query: {
     organizations: async (_: unknown, args: GqlQueryOrganizationsArgs) =>
-      OrganizationService.queryOrganizations(args),
+      OrganizationUseCase.userGetManyOrganizations(args),
     organization: async (_: unknown, args: GqlQueryOrganizationArgs) =>
-      OrganizationService.getOrganization(args),
+      OrganizationUseCase.userGetOrganization(args),
   },
   Mutation: {
     organizationCreate: async (_: unknown, args: GqlMutationOrganizationCreateArgs) =>
-      OrganizationService.organizationCreate(args),
+      OrganizationUseCase.userCreateOrganization(args),
     organizationDelete: async (_: unknown, args: GqlMutationOrganizationDeleteArgs) =>
-      OrganizationService.organizationDelete(args),
+      OrganizationUseCase.userDeleteOrganization(args),
     organizationUpdateDefault: async (_: unknown, args: GqlMutationOrganizationUpdateDefaultArgs) =>
-      OrganizationService.organizationUpdateDefault(args),
+      OrganizationUseCase.userUpdateDefaultInfoOfOrganization(args),
     organizationUpdateContent: async (_: unknown, args: GqlMutationOrganizationUpdateContentArgs) =>
-      OrganizationService.organizationUpdateContent(args),
+      OrganizationUseCase.userUpdateContentOfOrganization(args),
     organizationPublish: async (_: unknown, args: GqlMutationOrganizationPublishArgs) =>
-      OrganizationService.organizationPublish(args),
+      OrganizationUseCase.userPublishOrganization(args),
     organizationUnpublish: async (_: unknown, args: GqlMutationOrganizationUnpublishArgs) =>
-      OrganizationService.organizationUnpublish(args),
+      OrganizationUseCase.userUnpublishOrganization(args),
     organizationAddUser: async (_: unknown, args: GqlMutationOrganizationAddUserArgs) =>
-      OrganizationService.organizationAddUser(args),
+      OrganizationUseCase.userAddUserToOrganization(args),
     organizationRemoveUser: async (_: unknown, args: GqlMutationOrganizationRemoveUserArgs) =>
-      OrganizationService.organizationRemoveUser(args),
+      OrganizationUseCase.userRemoveUserFromOrganization(args),
     organizationAddTarget: async (_: unknown, args: GqlMutationOrganizationAddTargetArgs) =>
-      OrganizationService.organizationAddTarget(args),
+      OrganizationUseCase.userAddTargetToOrganization(args),
     organizationRemoveTarget: async (_: unknown, args: GqlMutationOrganizationRemoveTargetArgs) =>
-      OrganizationService.organizationRemoveTarget(args),
+      OrganizationUseCase.userRemoveTargetFromOrganization(args),
     organizationAddGroup: async (_: unknown, args: GqlMutationOrganizationAddGroupArgs) =>
-      OrganizationService.organizationAddGroup(args),
+      OrganizationUseCase.userAddGroupToOrganization(args),
     organizationRemoveGroup: async (_: unknown, args: GqlMutationOrganizationRemoveGroupArgs) =>
-      OrganizationService.organizationRemoveGroup(args),
+      OrganizationUseCase.userRemoveGroupFromOrganization(args),
   },
 };
 

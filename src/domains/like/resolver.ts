@@ -1,5 +1,5 @@
 import { GqlMutationLikeAddEventArgs, GqlMutationLikeDeleteArgs } from "@/types/graphql";
-import LikeUseCase from "@/domains/like/like.usecase";
+import LikeUseCase from "@/domains/like/usecase";
 
 const likeResolver = {
   Mutation: {

@@ -53,22 +53,12 @@ type TargetUpdateContentSuccess {
     target: Target
 }
 
-type TargetAddGroupSuccess {
+type TargetUpdateGroupSuccess {
     target: Target!
     group: Group!
 }
 
-type TargetRemoveGroupSuccess {
-    target: Target!
-    group: Group!
-}
-
-type TargetAddOrganizationSuccess {
-    target: Target!
-    organization: Organization!
-}
-
-type TargetRemoveOrganizationSuccess {
+type TargetUpdateOrganizationSuccess {
     target: Target!
     organization: Organization!
 }
@@ -98,26 +88,14 @@ union TargetUpdateContentPayload =
     AuthError |
     ComplexQueryError
 
-union TargetAddGroupPayload =
-    TargetAddGroupSuccess |
+union TargetUpdateGroupPayload =
+    TargetUpdateGroupSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union TargetRemoveGroupPayload =
-    TargetRemoveGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TargetAddOrganizationPayload =
-    TargetAddOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TargetRemoveOrganizationPayload =
-    TargetRemoveOrganizationSuccess |
+union TargetUpdateOrganizationPayload =
+    TargetUpdateOrganizationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

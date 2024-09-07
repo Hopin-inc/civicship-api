@@ -88,36 +88,21 @@ type OrganizationUpdateContentSuccess {
     organization: Organization!
 }
 
-type OrganizationUpdatePrivacySuccess {
+type OrganizationSwitchPrivacySuccess {
     organization: Organization!
 }
 
-type OrganizationAddGroupSuccess {
-    organization: Organization!
-    group: Group!
-}
-
-type OrganizationRemoveGroupSuccess {
+type OrganizationUpdateGroupSuccess {
     organization: Organization!
     group: Group!
 }
 
-type OrganizationAddUserSuccess {
+type OrganizationUpdateUserSuccess {
     organization: Organization!
     user: User!
 }
 
-type OrganizationRemoveUserSuccess {
-    organization: Organization!
-    user: User!
-}
-
-type OrganizationAddTargetSuccess {
-    organization: Organization!
-    target: Target!
-}
-
-type OrganizationRemoveTargetSuccess {
+type OrganizationUpdateTargetSuccess {
     organization: Organization!
     target: Target!
 }
@@ -148,44 +133,26 @@ union OrganizationUpdateContentPayload =
     AuthError |
     ComplexQueryError
 
-union OrganizationUpdatePrivacyPayload =
-    OrganizationUpdatePrivacySuccess |
+union OrganizationSwitchPrivacyPayload =
+    OrganizationSwitchPrivacySuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union OrganizationAddGroupPayload =
-    OrganizationAddGroupSuccess |
+union OrganizationUpdateGroupPayload =
+    OrganizationUpdateGroupSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union OrganizationRemoveGroupPayload =
-    OrganizationRemoveGroupSuccess |
+union OrganizationUpdateUserPayload =
+    OrganizationUpdateUserSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union OrganizationAddUserPayload =
-    OrganizationAddUserSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationRemoveUserPayload =
-    OrganizationRemoveUserSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationAddTargetPayload =
-    OrganizationAddTargetSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationRemoveTargetPayload =
-    OrganizationRemoveTargetSuccess |
+union OrganizationUpdateTargetPayload =
+    OrganizationUpdateTargetSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

@@ -1,276 +1,98 @@
 import {
-  GqlTargetAddGroupPayload,
-  GqlTargetAddOrganizationPayload,
-  GqlMutationTargetAddGroupArgs,
-  GqlMutationTargetAddOrganizationArgs,
+  GqlQueryTargetsArgs,
+  GqlQueryTargetArgs,
   GqlMutationTargetCreateArgs,
   GqlMutationTargetDeleteArgs,
-  GqlMutationTargetRemoveGroupArgs,
-  GqlMutationTargetRemoveOrganizationArgs,
-  GqlQueryTargetArgs,
-  GqlQueryTargetsArgs,
-  GqlTargetRemoveGroupPayload,
-  GqlTargetRemoveOrganizationPayload,
-  GqlTarget,
-  GqlMutationTargetUpdateIndexArgs,
-  GqlTargetUpdateIndexPayload,
-  GqlTargetUpdateContentPayload,
   GqlMutationTargetUpdateContentArgs,
-  GqlTargetCreatePayload,
-  GqlTargetDeletePayload,
+  GqlMutationTargetAddGroupArgs,
+  GqlMutationTargetRemoveGroupArgs,
+  GqlMutationTargetAddOrganizationArgs,
+  GqlMutationTargetRemoveOrganizationArgs,
+  GqlMutationTargetUpdateIndexArgs,
 } from "@/types/graphql";
-import { prismaClient } from "@/prisma/client";
-import { Prisma } from "@prisma/client";
+import TargetInputFormat from "@/domains/target/presenter/input";
 import TargetRepository from "@/domains/target/repository";
+import { Prisma } from "@prisma/client";
+import { RELATION_ACTION } from "@/consts";
 
-class TargetService {
-  private static db = prismaClient;
+export default class TargetService {
+  static async fetchTargets({ cursor, filter, sort }: GqlQueryTargetsArgs, take: number) {
+    const where = TargetInputFormat.filter({ filter });
+    const orderBy = TargetInputFormat.sort({ sort });
 
-  static async checkIfTargetExists(id: string): Promise<GqlTarget> {
+    return await TargetRepository.query(where, orderBy, take, cursor);
+  }
+
+  static async getTarget({ id }: GqlQueryTargetArgs) {
+    return TargetRepository.find(id);
+  }
+
+  static async checkIfTargetExists(id: string) {
     const target = await TargetRepository.checkExists(id);
     if (!target) {
-      throw new Error(`Group with ID ${id} not found`);
+      throw new Error(`Target with ID ${id} not found`);
     }
     return target;
   }
 
-  static async queryTargets({ cursor, filter, sort, first }: GqlQueryTargetsArgs) {
-    const take = first ?? 10;
-    const where: Prisma.TargetWhereInput = {
-      AND: [
-        filter?.organizationId ? { organizationId: filter.organizationId } : {},
-        filter?.keyword ? { name: { contains: filter.keyword } } : {},
-      ],
-    };
-    const orderBy: Prisma.UserOrderByWithRelationInput = {
-      updatedAt: sort?.updatedAt ?? Prisma.SortOrder.desc,
-    };
-
-    const data = await this.db.target.findMany({
-      where,
-      orderBy,
-      take: take + 1,
-      skip: cursor ? 1 : 0,
-      cursor: cursor ? { id: cursor } : undefined,
-    });
-    const hasNextPage = data.length > take;
-    const formattedData = data.slice(0, take).map((record) => ({
-      ...record,
-    }));
-    return {
-      totalCount: data.length,
-      pageInfo: {
-        hasNextPage,
-        hasPreviousPage: true,
-        startCursor: formattedData[0]?.id,
-        endCursor: formattedData.length ? formattedData[formattedData.length - 1].id : undefined,
-      },
-      edges: formattedData.map((edge) => ({
-        cursor: edge.id,
-        node: edge,
-      })),
-    };
-  }
-
-  static async getTarget({ id }: GqlQueryTargetArgs): Promise<GqlTarget | null> {
-    return this.db.target.findUnique({ where: { id } });
-  }
-
-  static async targetCreate({
-    input,
-  }: GqlMutationTargetCreateArgs): Promise<GqlTargetCreatePayload> {
-    const { organizationId, groupId, indexId, ...properties } = input;
-    const data: Prisma.TargetCreateInput = {
-      ...properties,
-      organization: {
-        connect: { id: organizationId },
-      },
-      group: {
-        connect: { id: groupId },
-      },
-      index: {
-        connect: { id: indexId },
-      },
-    };
-    const target: GqlTarget = await this.db.target.create({ data });
-    return { target };
-  }
-
-  static async targetDelete({ id }: GqlMutationTargetDeleteArgs): Promise<GqlTargetDeletePayload> {
-    await this.db.target.delete({
-      where: { id },
-    });
-    return { targetId: id };
-  }
-
-  static async targetUpdateContent({
-    id,
-    input,
-  }: GqlMutationTargetUpdateContentArgs): Promise<GqlTargetUpdateContentPayload> {
-    const target: GqlTarget = await this.db.target.update({
-      where: { id },
-      data: input,
-    });
-    return { target };
-  }
-
-  static async targetAddGroup({
-    id,
-    input,
-  }: GqlMutationTargetAddGroupArgs): Promise<GqlTargetAddGroupPayload> {
-    const [target, group] = await this.db.$transaction([
-      this.db.target.update({
-        where: { id },
-        data: {
-          group: {
-            connect: {
-              id: input.groupId,
-            },
-          },
-        },
-      }),
-      this.db.group.findUnique({
-        where: { id: input.groupId },
-      }),
-    ]);
-
-    if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
+  static async findTargetForUpdateContent(id: string) {
+    const target = await TargetRepository.findForUpdateContent(id);
+    if (!target) {
+      throw new Error(`Target with ID ${id} not found`);
     }
-
-    return {
-      target,
-      group,
-    };
+    return target;
   }
 
-  static async targetRemoveGroup({
-    id,
-    input,
-  }: GqlMutationTargetRemoveGroupArgs): Promise<GqlTargetRemoveGroupPayload> {
-    const [target, group] = await this.db.$transaction([
-      this.db.target.update({
-        where: { id },
-        data: {
-          group: {
-            disconnect: { id: input.groupId },
-          },
-        },
-      }),
-      this.db.group.findUnique({
-        where: { id: input.groupId },
-      }),
-    ]);
-
-    if (!group) {
-      throw new Error(`Group with ID ${input.groupId} not found`);
-    }
-
-    return {
-      target,
-      group,
-    };
+  static async targetCreate({ input }: GqlMutationTargetCreateArgs) {
+    const data: Prisma.TargetCreateInput = TargetInputFormat.create(input);
+    return await TargetRepository.create(data);
   }
 
-  static async targetAddOrganization({
-    id,
-    input,
-  }: GqlMutationTargetAddOrganizationArgs): Promise<GqlTargetAddOrganizationPayload> {
-    const [target, organization] = await this.db.$transaction([
-      this.db.target.update({
-        where: { id },
-        data: {
-          organization: {
-            connect: { id: input.organizationId },
-          },
-        },
-      }),
-      this.db.organization.findUnique({
-        where: { id: input.organizationId },
-        include: {
-          state: true,
-          city: {
-            include: {
-              state: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
-    }
-
-    return {
-      target,
-      organization,
-    };
+  static async targetDelete({ id }: GqlMutationTargetDeleteArgs) {
+    return await TargetRepository.delete(id);
   }
 
-  static async targetRemoveOrganization({
-    id,
-    input,
-  }: GqlMutationTargetRemoveOrganizationArgs): Promise<GqlTargetRemoveOrganizationPayload> {
-    const [target, organization] = await this.db.$transaction([
-      this.db.target.update({
-        where: { id },
-        data: {
-          organization: {
-            disconnect: { id: input.organizationId },
-          },
-        },
-      }),
-      this.db.organization.findUnique({
-        where: { id: input.organizationId },
-        include: {
-          state: true,
-          city: {
-            include: {
-              state: true,
-            },
-          },
-        },
-      }),
-    ]);
-
-    if (!organization) {
-      throw new Error(`Organization with ID ${input.organizationId} not found`);
-    }
-
-    return {
-      target,
-      organization,
-    };
+  static async targetUpdateContent({ id, input }: GqlMutationTargetUpdateContentArgs) {
+    return await TargetRepository.updateContent(id, input);
   }
 
-  static async targetUpdateIndex({
-    id,
-    input,
-  }: GqlMutationTargetUpdateIndexArgs): Promise<GqlTargetUpdateIndexPayload> {
-    const [target, index] = await this.db.$transaction([
-      this.db.target.update({
-        where: { id },
-        data: {
-          index: {
-            connect: { id: input.indexId },
-          },
-        },
-      }),
-      this.db.index.findUnique({
-        where: { id: input.indexId },
-      }),
-    ]);
+  static async targetAddGroup({ id, input }: GqlMutationTargetAddGroupArgs) {
+    const data: Prisma.TargetUpdateInput = TargetInputFormat.updateGroup(
+      input.groupId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await TargetRepository.updateRelation(id, data);
+  }
 
-    if (!index) {
-      throw new Error(`Index with ID ${input.indexId} not found`);
-    }
+  static async targetRemoveGroup({ id, input }: GqlMutationTargetRemoveGroupArgs) {
+    const data: Prisma.TargetUpdateInput = TargetInputFormat.updateGroup(
+      input.groupId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await TargetRepository.updateRelation(id, data);
+  }
 
-    return {
-      target,
-      index,
-    };
+  static async targetAddOrganization({ id, input }: GqlMutationTargetAddOrganizationArgs) {
+    const data: Prisma.TargetUpdateInput = TargetInputFormat.updateOrganization(
+      input.organizationId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await TargetRepository.updateRelation(id, data);
+  }
+
+  static async targetRemoveOrganization({ id, input }: GqlMutationTargetRemoveOrganizationArgs) {
+    const data: Prisma.TargetUpdateInput = TargetInputFormat.updateOrganization(
+      input.organizationId,
+      RELATION_ACTION.DISCONNECT,
+    );
+    return await TargetRepository.updateRelation(id, data);
+  }
+
+  static async targetUpdateIndex({ id, input }: GqlMutationTargetUpdateIndexArgs) {
+    const data: Prisma.TargetUpdateInput = TargetInputFormat.updateIndex(
+      input.indexId,
+      RELATION_ACTION.CONNECT,
+    );
+    return await TargetRepository.updateRelation(id, data);
   }
 }
-
-export default TargetService;

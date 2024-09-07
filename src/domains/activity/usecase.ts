@@ -21,7 +21,7 @@ import ActivityService from "@/domains/activity/service";
 import UserService from "@/domains/user/service";
 import EventService from "@/domains/event/service";
 import ActivityResponseFormat from "@/domains/activity/presenter/response";
-import { handlePrismaError } from "@/repository/error";
+import { handlePrismaError } from "@/prisma/error";
 
 export default class ActivityUseCase {
   static async userGetManyPublicActivities({

@@ -15,14 +15,14 @@ extend type Mutation {
     organizationDelete(id: ID!): OrganizationDeletePayload
     organizationUpdateDefault(id: ID!, input: OrganizationUpdateDefaultInput!): OrganizationUpdateDefaultPayload
     organizationUpdateContent(id: ID!, input: OrganizationUpdateContentInput!): OrganizationUpdateContentPayload
-    organizationPublish(id: ID!): OrganizationUpdatePrivacyPayload
-    organizationUnpublish(id: ID!): OrganizationUpdatePrivacyPayload
-    organizationAddUser(id: ID!, input: OrganizationAddUserInput!): OrganizationAddUserPayload
-    organizationRemoveUser(id: ID!, input: OrganizationRemoveUserInput!): OrganizationRemoveUserPayload
-    organizationAddTarget(id: ID!, input: OrganizationAddTargetInput!): OrganizationAddTargetPayload
-    organizationRemoveTarget(id: ID!, input: OrganizationRemoveTargetInput!): OrganizationRemoveTargetPayload
-    organizationAddGroup(id: ID!, input: OrganizationAddGroupInput!): OrganizationAddGroupPayload
-    organizationRemoveGroup(id: ID!, input: OrganizationRemoveGroupInput!): OrganizationRemoveGroupPayload
+    organizationPublish(id: ID!): OrganizationSwitchPrivacyPayload
+    organizationUnpublish(id: ID!): OrganizationSwitchPrivacyPayload
+    organizationAddUser(id: ID!, input: OrganizationAddUserInput!): OrganizationUpdateUserPayload
+    organizationRemoveUser(id: ID!, input: OrganizationRemoveUserInput!): OrganizationUpdateUserPayload
+    organizationAddTarget(id: ID!, input: OrganizationAddTargetInput!): OrganizationUpdateTargetPayload
+    organizationRemoveTarget(id: ID!, input: OrganizationRemoveTargetInput!): OrganizationUpdateTargetPayload
+    organizationAddGroup(id: ID!, input: OrganizationAddGroupInput!): OrganizationUpdateGroupPayload
+    organizationRemoveGroup(id: ID!, input: OrganizationRemoveGroupInput!): OrganizationUpdateGroupPayload
 }
 
 # Type definitions

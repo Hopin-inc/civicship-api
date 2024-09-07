@@ -16,7 +16,7 @@ import {
   GqlMutationGroupUpdateContentArgs,
   GqlMutationGroupChangeOrganizationArgs,
 } from "@/types/graphql";
-import GroupUseCase from "@/domains/group/group.usecase";
+import GroupUseCase from "@/domains/group/usecase";
 
 const groupResolver = {
   Query: {

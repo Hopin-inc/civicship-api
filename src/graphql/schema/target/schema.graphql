@@ -14,10 +14,10 @@ extend type Mutation {
     targetCreate(input: TargetCreateInput!): TargetCreatePayload
     targetDelete(id: ID!): TargetDeletePayload
     targetUpdateContent(id: ID!, input: TargetUpdateContentInput!): TargetUpdateContentPayload
-    targetAddGroup(id: ID!, input: TargetAddGroupInput!): TargetAddGroupPayload
-    targetRemoveGroup(id: ID!, input: TargetRemoveGroupInput!): TargetRemoveGroupPayload
-    targetAddOrganization(id: ID!, input: TargetAddOrganizationInput!): TargetAddOrganizationPayload
-    targetRemoveOrganization(id: ID!, input: TargetRemoveOrganizationInput!): TargetRemoveOrganizationPayload
+    targetAddGroup(id: ID!, input: TargetAddGroupInput!): TargetUpdateGroupPayload
+    targetRemoveGroup(id: ID!, input: TargetRemoveGroupInput!): TargetUpdateGroupPayload
+    targetAddOrganization(id: ID!, input: TargetAddOrganizationInput!): TargetUpdateOrganizationPayload
+    targetRemoveOrganization(id: ID!, input: TargetRemoveOrganizationInput!): TargetUpdateOrganizationPayload
     targetUpdateIndex(id: ID!, input: TargetUpdateIndexInput!): TargetUpdateIndexPayload
 }
 
