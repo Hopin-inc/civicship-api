@@ -13,7 +13,7 @@
   "mergeModulesRenameDefaults": true,
   "mergeModulesMergeMode": "module",
 
-  "exclude": ["**/__tests__/**", "**/__generated__/**"],
+  "exclude": ["**/__tests__/**", "**/prisma/__generated__/**"],
   "excludePrivate": true,
   "excludeProtected": true,
   "excludeExternals": true,
