@@ -1,8 +1,8 @@
-import IssueService from "@/domains/issue/service";
+import IssueUseCase from "@/domains/issue/usecase";
 import {
   GqlQueryIssuesArgs,
-  GqlMutationIssueCreateArgs,
   GqlQueryIssueArgs,
+  GqlMutationIssueCreateArgs,
   GqlMutationIssueDeleteArgs,
   GqlMutationIssueUpdateContentArgs,
   GqlMutationIssuePublishArgs,
@@ -21,40 +21,40 @@ import {
 
 const issueResolver = {
   Query: {
-    issues: async (_: unknown, args: GqlQueryIssuesArgs) => IssueService.queryIssues(args),
-    issue: async (_: unknown, args: GqlQueryIssueArgs) => IssueService.getIssue(args),
+    issues: async (_: unknown, args: GqlQueryIssuesArgs) => IssueUseCase.userGetManyIssues(args),
+    issue: async (_: unknown, args: GqlQueryIssueArgs) => IssueUseCase.userGetIssue(args),
   },
   Mutation: {
     issueCreate: async (_: unknown, args: GqlMutationIssueCreateArgs) =>
-      IssueService.issueCreate(args),
+      IssueUseCase.userCreateIssue(args),
     issueDelete: async (_: unknown, args: GqlMutationIssueDeleteArgs) =>
-      IssueService.issueDelete(args),
+      IssueUseCase.userDeleteIssue(args),
     issueUpdateContent: async (_: unknown, args: GqlMutationIssueUpdateContentArgs) =>
-      IssueService.issueUpdateContent(args),
+      IssueUseCase.userUpdateContentOfIssue(args),
     issuePublish: async (_: unknown, args: GqlMutationIssuePublishArgs) =>
-      IssueService.issuePublish(args),
+      IssueUseCase.userPublishIssue(args),
     issueUnpublish: async (_: unknown, args: GqlMutationIssueUnpublishArgs) =>
-      IssueService.issueUnpublish(args),
+      IssueUseCase.userUnpublishIssue(args),
     issueAddGroup: async (_: unknown, args: GqlMutationIssueAddGroupArgs) =>
-      IssueService.issueAddGroup(args),
+      IssueUseCase.userAddGroupToIssue(args),
     issueRemoveGroup: async (_: unknown, args: GqlMutationIssueRemoveGroupArgs) =>
-      IssueService.issueRemoveGroup(args),
+      IssueUseCase.userRemoveGroupFromIssue(args),
     issueAddOrganization: async (_: unknown, args: GqlMutationIssueAddOrganizationArgs) =>
-      IssueService.issueAddOrganization(args),
+      IssueUseCase.userAddOrganizationToIssue(args),
     issueRemoveOrganization: async (_: unknown, args: GqlMutationIssueRemoveOrganizationArgs) =>
-      IssueService.issueRemoveOrganization(args),
+      IssueUseCase.userRemoveOrganizationFromIssue(args),
     issueAddSkillset: async (_: unknown, args: GqlMutationIssueAddSkillsetArgs) =>
-      IssueService.issueAddSkillset(args),
+      IssueUseCase.userAddSkillsetToIssue(args),
     issueRemoveSkillset: async (_: unknown, args: GqlMutationIssueRemoveSkillsetArgs) =>
-      IssueService.issueRemoveSkillset(args),
+      IssueUseCase.userRemoveSkillsetFromIssue(args),
     issueAddCity: async (_: unknown, args: GqlMutationIssueAddCityArgs) =>
-      IssueService.issueAddCity(args),
+      IssueUseCase.userAddCityToIssue(args),
     issueRemoveCity: async (_: unknown, args: GqlMutationIssueRemoveCityArgs) =>
-      IssueService.issueRemoveCity(args),
+      IssueUseCase.userRemoveCityFromIssue(args),
     issueAddCategory: async (_: unknown, args: GqlMutationIssueAddCategoryArgs) =>
-      IssueService.issueAddCategory(args),
+      IssueUseCase.userAddCategoryToIssue(args),
     issueRemoveCategory: async (_: unknown, args: GqlMutationIssueRemoveCategoryArgs) =>
-      IssueService.issueRemoveCategory(args),
+      IssueUseCase.userRemoveCategoryFromIssue(args),
   },
 };
 
