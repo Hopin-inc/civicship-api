@@ -1059,7 +1059,6 @@ export type GqlMutation = {
   commentUpdate?: Maybe<GqlCommentUpdatePayload>;
   createComment?: Maybe<GqlComment>;
   createEvent?: Maybe<GqlEvent>;
-  customTokenCreateWithAccessToken?: Maybe<GqlCustomTokenCreatePayload>;
   deleteComment?: Maybe<GqlComment>;
   deleteEvent?: Maybe<GqlEvent>;
   eventAddGroup?: Maybe<GqlEventAddGroupPayload>;
@@ -1249,12 +1248,6 @@ export type GqlMutationCreateCommentArgs = {
 
 export type GqlMutationCreateEventArgs = {
   content: GqlEventCreateInput;
-};
-
-
-export type GqlMutationCustomTokenCreateWithAccessTokenArgs = {
-  accessToken: Scalars['String']['input'];
-  platform: GqlIdentityPlatform;
 };
 
 
@@ -4005,7 +3998,6 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   commentUpdate?: Resolver<Maybe<GqlResolversTypes['CommentUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentUpdateArgs, 'id' | 'input'>>;
   createComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationCreateCommentArgs, 'content'>>;
   createEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationCreateEventArgs, 'content'>>;
-  customTokenCreateWithAccessToken?: Resolver<Maybe<GqlResolversTypes['CustomTokenCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCustomTokenCreateWithAccessTokenArgs, 'accessToken' | 'platform'>>;
   deleteComment?: Resolver<Maybe<GqlResolversTypes['Comment']>, ParentType, ContextType, RequireFields<GqlMutationDeleteCommentArgs, 'id'>>;
   deleteEvent?: Resolver<Maybe<GqlResolversTypes['Event']>, ParentType, ContextType, RequireFields<GqlMutationDeleteEventArgs, 'id'>>;
   eventAddGroup?: Resolver<Maybe<GqlResolversTypes['EventAddGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddGroupArgs, 'id' | 'input'>>;

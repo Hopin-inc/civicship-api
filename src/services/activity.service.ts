@@ -23,6 +23,7 @@ import {
   GqlActivityUpdatePrivacyPayload,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { refreshMaterializedViewActivityStat } from "@prisma/client/sql";
 
 export default class ActivityService {
   private static db = prismaClient;
@@ -487,5 +488,9 @@ export default class ActivityService {
         totalMinutes: event.stat?.totalMinutes ?? 0,
       },
     };
+  }
+
+  static async refreshActivityStat() {
+    await this.db.$queryRawTyped(refreshMaterializedViewActivityStat());
   }
 }

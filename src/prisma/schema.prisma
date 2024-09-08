@@ -6,7 +6,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["views"]
+  previewFeatures = ["views", "typedSql"]
 }
 
 generator erd {
@@ -31,7 +31,7 @@ generator json {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -741,7 +741,7 @@ view ActivityStatView {
   activity     Activity @relation(fields: [id], references: [id])
   totalMinutes Int      @map("total_minutes")
 
-  @@map("v_activities_stats")
+  @@map("mv_activities_stats")
 }
 
 view EventStatView {
@@ -755,7 +755,7 @@ view EventStatView {
   event        Event @relation(fields: [id], references: [id])
   totalMinutes Int   @map("total_minutes")
 
-  @@map("v_events_stats")
+  @@map("mv_events_stats")
 }
 
 view IssueStatView {
@@ -769,5 +769,5 @@ view IssueStatView {
   issue        Issue @relation(fields: [id], references: [id])
   totalMinutes Int   @map("total_minutes")
 
-  @@map("v_issues_stats")
+  @@map("mv_issues_stats")
 }
