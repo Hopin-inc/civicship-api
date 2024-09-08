@@ -18,7 +18,7 @@ import {
   GqlQueryIssuesArgs,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import IssueRepository from "@/domains/issue/repository";
 import IssueInputFormat from "@/domains/issue/presenter/input";
 

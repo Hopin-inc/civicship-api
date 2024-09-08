@@ -7,7 +7,7 @@ import {
   GqlMutationActivityAddEventArgs,
   GqlMutationActivityRemoveEventArgs,
 } from "@/types/graphql";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { Prisma } from "@prisma/client";
 import ActivityInputFormat from "@/domains/activity/presenter/input";
 import ActivityRepository from "@/domains/activity/repository";

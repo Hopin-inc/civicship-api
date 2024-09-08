@@ -1,6 +1,6 @@
 import { GqlIssueCreateInput, GqlQueryIssuesArgs } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 
 export default class IssueInputFormat {
   static filter({ filter }: GqlQueryIssuesArgs): Prisma.IssueWhereInput {
@@ -83,7 +83,7 @@ export default class IssueInputFormat {
     const data: Prisma.IssueUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.groups = {
           connectOrCreate: {
             where: {
@@ -118,7 +118,7 @@ export default class IssueInputFormat {
     const data: Prisma.IssueUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.organizations = {
           connectOrCreate: {
             where: {
@@ -153,7 +153,7 @@ export default class IssueInputFormat {
     const data: Prisma.IssueUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.skillsets = {
           connectOrCreate: {
             where: {
@@ -188,7 +188,7 @@ export default class IssueInputFormat {
     const data: Prisma.IssueUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.cities = {
           connectOrCreate: {
             where: {
@@ -223,7 +223,7 @@ export default class IssueInputFormat {
     const data: Prisma.IssueUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.issueCategories = {
           connectOrCreate: {
             where: {

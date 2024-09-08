@@ -17,7 +17,7 @@ import {
 import { Prisma } from "@prisma/client";
 import GroupRepository from "@/domains/group/repository";
 import GroupInputFormat from "@/domains/group/presenter/input";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { GroupUpdateContentPayloadWithArgs } from "@/domains/group/type";
 
 export default class GroupService {
@@ -74,7 +74,7 @@ export default class GroupService {
     const data: Prisma.GroupUpdateInput = GroupInputFormat.updateUser(
       id,
       input.userId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await GroupRepository.updateRelation(id, data);
   }
@@ -92,7 +92,7 @@ export default class GroupService {
     const data: Prisma.GroupUpdateInput = GroupInputFormat.updateEvent(
       id,
       input.eventId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await GroupRepository.updateRelation(id, data);
   }

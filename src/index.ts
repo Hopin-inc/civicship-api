@@ -36,18 +36,18 @@ const port = Number(process.env.PORT ?? 3000);
 const server =
   process.env.NODE_HTTPS === "true"
     ? createServer(
-        {
-          key: fs.readFileSync("./certificates/localhost-key.pem"),
-          cert: fs.readFileSync("./certificates/localhost.pem"),
-        },
-        app,
-      )
+      {
+        key: fs.readFileSync("./certificates/localhost-key.pem"),
+        cert: fs.readFileSync("./certificates/localhost.pem"),
+      },
+      app,
+    )
     : app;
 server.listen(port, () => {
   const uri =
     process.env.ENV === "LOCAL"
-      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${port}/graphql`
-      : `${process.env.HOST}/graphql`;
-  console.info(`🚀 Server ready at ${uri}`);
-  console.info(`Environment ${process.env.ENV}`);
+      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${ port }/graphql`
+      : `${ process.env.HOST }/graphql`;
+  console.info(`🚀 Server ready at ${ uri }`);
+  console.info(`Environment ${ process.env.ENV }`);
 });

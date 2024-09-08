@@ -13,7 +13,7 @@ import {
 import TargetInputFormat from "@/domains/target/presenter/input";
 import TargetRepository from "@/domains/target/repository";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 
 export default class TargetService {
   static async fetchTargets({ cursor, filter, sort }: GqlQueryTargetsArgs, take: number) {

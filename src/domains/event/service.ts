@@ -10,7 +10,7 @@ import {
   GqlMutationEventPlanArgs,
   GqlMutationEventRemoveGroupArgs,
 } from "@/types/graphql";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { Prisma } from "@prisma/client";
 import EventInputFormat from "@/domains/event/presenter/input";
 import { EventUpdateContentPayloadWithArgs } from "@/domains/event/type";
@@ -75,7 +75,7 @@ export default class EventService {
     const data: Prisma.EventUpdateInput = EventInputFormat.updateGroup(
       id,
       input.groupId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await EventRepository.updateRelation(id, data);
   }
@@ -93,7 +93,7 @@ export default class EventService {
     const data: Prisma.EventUpdateInput = EventInputFormat.updateOrganization(
       id,
       input.organizationId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await EventRepository.updateRelation(id, data);
   }

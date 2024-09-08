@@ -4,7 +4,7 @@ import {
   GqlUserUpdateContentInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { calculateDifferences } from "@/utils";
 import { UserUpdateContentPayloadWithArgs } from "@/domains/user/type";
 
@@ -102,7 +102,7 @@ export default class UserInputFormat {
     const data: Prisma.UserUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.groups = {
           connectOrCreate: {
             where: {
@@ -136,7 +136,7 @@ export default class UserInputFormat {
     const data: Prisma.UserUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.organizations = {
           connectOrCreate: {
             where: {
@@ -170,7 +170,7 @@ export default class UserInputFormat {
     const data: Prisma.UserUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.activities = {
           connect: {
             id: activityId,

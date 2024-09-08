@@ -12,7 +12,7 @@ import {
 import { Prisma } from "@prisma/client";
 import UserRepository from "@/domains/user/repository";
 import UserInputFormat from "@/domains/user/presenter/input";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { UserUpdateContentPayloadWithArgs } from "@/domains/user/type";
 
 export default class UserService {
@@ -72,7 +72,7 @@ export default class UserService {
     const data: Prisma.UserUpdateInput = UserInputFormat.updateGroup(
       id,
       input.groupId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await UserRepository.updateRelation(id, data);
   }
@@ -90,7 +90,7 @@ export default class UserService {
     const data: Prisma.UserUpdateInput = UserInputFormat.updateOrganization(
       id,
       input.organizationId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await UserRepository.updateRelation(id, data);
   }
@@ -108,7 +108,7 @@ export default class UserService {
     const data: Prisma.UserUpdateInput = UserInputFormat.updateActivity(
       id,
       input.activityId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await UserRepository.updateRelation(id, data);
   }

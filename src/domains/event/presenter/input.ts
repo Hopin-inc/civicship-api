@@ -6,7 +6,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { calculateDifferences } from "@/utils";
 import { EventUpdateContentPayloadWithArgs } from "@/domains/event/type";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 
 export default class EventInputFormat {
   static filter({ filter }: GqlQueryEventsArgs): Prisma.EventWhereInput {
@@ -154,7 +154,7 @@ export default class EventInputFormat {
     const data: Prisma.EventUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.groups = {
           connectOrCreate: {
             where: {
@@ -189,7 +189,7 @@ export default class EventInputFormat {
     const data: Prisma.EventUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.organizations = {
           connectOrCreate: {
             where: {

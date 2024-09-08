@@ -1,6 +1,6 @@
 import { GqlTargetCreateInput, GqlQueryTargetsArgs } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 
 export default class TargetInputFormat {
   static filter({ filter }: GqlQueryTargetsArgs): Prisma.TargetWhereInput {

@@ -5,7 +5,7 @@ import {
   GqlQueryGroupsArgs,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { calculateDifferences } from "@/utils";
 import { GroupUpdateContentPayloadWithArgs } from "@/domains/group/type";
 
@@ -109,7 +109,7 @@ export default class GroupInputFormat {
     const data: Prisma.GroupUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.users = {
           connectOrCreate: {
             where: {
@@ -144,7 +144,7 @@ export default class GroupInputFormat {
     const data: Prisma.GroupUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.events = {
           connectOrCreate: {
             where: {

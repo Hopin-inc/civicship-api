@@ -17,7 +17,7 @@ import {
 import OrganizationInputFormat from "@/domains/organization/presenter/input";
 import OrganizationRepository from "@/domains/organization/repository";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { OrganizationUpdateContentPayloadWithArgs } from "@/domains/organization/type";
 
 export default class OrganizationService {
@@ -75,7 +75,7 @@ export default class OrganizationService {
     const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateUser(
       id,
       input.userId,
-      RELATION_ACTION.CONNECTORCREATE,
+      RELATION_ACTION.CONNECT_OR_CREATE,
     );
     return await OrganizationRepository.updateRelation(id, data);
   }

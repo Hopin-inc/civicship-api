@@ -5,7 +5,7 @@ import {
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { calculateDifferences } from "@/utils";
-import { RELATION_ACTION } from "@/consts";
+import { RELATION_ACTION } from "@/consts/prisma";
 import { OrganizationUpdateContentPayloadWithArgs } from "@/domains/organization/type";
 
 export default class OrganizationInputFormat {
@@ -95,7 +95,7 @@ export default class OrganizationInputFormat {
     const data: Prisma.OrganizationUpdateInput = {};
 
     switch (action) {
-      case RELATION_ACTION.CONNECTORCREATE:
+      case RELATION_ACTION.CONNECT_OR_CREATE:
         data.users = {
           connectOrCreate: {
             where: {
