@@ -11,15 +11,15 @@ extend type Query {
 }
 
 extend type Mutation {
-    eventCreate(input: EventInput!): EventCreatePayload
+    eventPlan(input: EventPlanInput!): EventPlanPayload
     eventDelete(id: ID!): EventDeletePayload
-    eventUpdate(id: ID!, input: EventInput!): EventUpdatePayload
-    eventPublish(id: ID!, input: EventPrivacyInput!): EventUpdatePrivacyPayload
-    eventUnpublish(id: ID!, input: EventPrivacyInput!): EventUpdatePrivacyPayload
-    eventAddGroup(id: ID!, input: EventAddGroupInput!): EventAddGroupPayload
-    eventRemoveGroup(id: ID!, input: EventRemoveGroupInput!): EventRemoveGroupPayload
-    eventAddOrganization(id: ID!, input: EventAddOrganizationInput!): EventAddOrganizationPayload
-    eventRemoveOrganization(id: ID!, input: EventRemoveOrganizationInput!): EventRemoveOrganizationPayload
+    eventUpdateContent(id: ID!, input: EventUpdateContentInput!): EventUpdateContentPayload
+    eventPublish(id: ID!): EventUpdatePrivacyPayload
+    eventUnpublish(id: ID!): EventUpdatePrivacyPayload
+    eventAddGroup(id: ID!, input: EventAddGroupInput!): EventUpdateGroupPayload
+    eventRemoveGroup(id: ID!, input: EventRemoveGroupInput!): EventUpdateGroupPayload
+    eventAddOrganization(id: ID!, input: EventAddOrganizationInput!): EventUpdateOrganizationPayload
+    eventRemoveOrganization(id: ID!, input: EventRemoveOrganizationInput!): EventUpdateOrganizationPayload
 }
 
 # Type definitions
@@ -33,12 +33,14 @@ type Event {
     endsAt: Datetime!
     plannedStartsAt: Datetime
     plannedEndsAt: Datetime
-    totalMinutes: Int!
 
     agendas: [Agenda!]
+    cities: [City!]
+    skillsets: [Skillset!]
+
     organizations: [Organization!]
     groups: [Group!]
-    cities: [City!]
+
     likes: Likes
     comments: Comments
     activities: Activities

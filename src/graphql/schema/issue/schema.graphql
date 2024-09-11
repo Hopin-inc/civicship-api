@@ -11,21 +11,21 @@ extend type Query {
 }
 
 extend type Mutation {
-    issueCreate(input: IssueInput!): IssueCreatePayload
+    issueCreate(input: IssueCreateInput!): IssueCreatePayload
     issueDelete(id: ID!): IssueDeletePayload
-    issueUpdate(id: ID!, input: IssueInput!): IssueUpdatePayload
+    issueUpdateContent(id: ID!, input: IssueUpdateContentInput!): IssueUpdateContentPayload
     issuePublish(id: ID!, input: IssuePrivacyInput!): IssueUpdatePrivacyPayload
     issueUnpublish(id: ID!, input: IssuePrivacyInput!): IssueUpdatePrivacyPayload
-    issueAddGroup(id: ID!, input: IssueAddGroupInput!): IssueAddGroupPayload
-    issueRemoveGroup(id: ID!, input: IssueRemoveGroupInput!): IssueRemoveGroupPayload
-    issueAddOrganization(id: ID!, input: IssueAddOrganizationInput!): IssueAddOrganizationPayload
-    issueRemoveOrganization(id: ID!, input: IssueRemoveOrganizationInput!): IssueRemoveOrganizationPayload
-    issueAddSkillset(id: ID!, input: IssueAddSkillsetInput!): IssueAddSkillsetPayload
-    issueRemoveSkillset(id: ID!, input: IssueRemoveSkillsetInput!): IssueRemoveSkillsetPayload
-    issueAddCity(id: ID!, input: IssueAddCityInput!): IssueAddCityPayload
-    issueRemoveCity(id: ID!, input: IssueRemoveCityInput!): IssueRemoveCityPayload
-    issueAddCategory(id: ID!, input: IssueAddCategoryInput!): IssueAddCategoryPayload
-    issueRemoveCategory(id: ID!, input: IssueRemoveCategoryInput!): IssueRemoveCategoryPayload
+    issueAddGroup(id: ID!, input: IssueAddGroupInput!): IssueUpdateGroupPayload
+    issueRemoveGroup(id: ID!, input: IssueRemoveGroupInput!): IssueUpdateGroupPayload
+    issueAddOrganization(id: ID!, input: IssueAddOrganizationInput!): IssueUpdateOrganizationPayload
+    issueRemoveOrganization(id: ID!, input: IssueRemoveOrganizationInput!): IssueUpdateOrganizationPayload
+    issueAddSkillset(id: ID!, input: IssueAddSkillsetInput!): IssueUpdateSkillsetPayload
+    issueRemoveSkillset(id: ID!, input: IssueRemoveSkillsetInput!): IssueUpdateSkillsetPayload
+    issueAddCity(id: ID!, input: IssueAddCityInput!): IssueUpdateCityPayload
+    issueRemoveCity(id: ID!, input: IssueRemoveCityInput!): IssueUpdateCityPayload
+    issueAddCategory(id: ID!, input: IssueAddCategoryInput!): IssueUpdateCategoryPayload
+    issueRemoveCategory(id: ID!, input: IssueRemoveCategoryInput!): IssueUpdateCategoryPayload
 }
 
 # Type definitions
@@ -35,16 +35,17 @@ type Issue {
     description: String
     isPublic: Boolean!
     images: [String!]
-    totalMinutes: Int!
 
     issueCategories: [IssueCategory!]
     skillsets: [Skillset!]
+
     organizations: [Organization!]
     groups: [Group!]
     cities: [City!]
+
+    activities: Activities
     likes: Likes
     comments: Comments
-    activities: Activities
 
     createdAt: Datetime!
     updatedAt: Datetime

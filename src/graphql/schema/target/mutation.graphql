@@ -1,14 +1,22 @@
 # Queries/Mutations-related type definitions
 
-input TargetInput {
+input TargetCreateInput {
     name: String!
     value: Float!
     validFrom: Datetime!
     validTo: Datetime!
 
+    indexId: Int!
+
     organizationId: String!
     groupId: String!
-    indexId: Int!
+}
+
+input TargetUpdateContentInput {
+    name: String!
+    value: Float!
+    validFrom: Datetime!
+    validTo: Datetime!
 }
 
 input TargetAddGroupInput {
@@ -41,26 +49,16 @@ type TargetDeleteSuccess {
     targetId: ID!
 }
 
-type TargetUpdateSuccess {
+type TargetUpdateContentSuccess {
     target: Target
 }
 
-type TargetAddGroupSuccess {
+type TargetUpdateGroupSuccess {
     target: Target!
     group: Group!
 }
 
-type TargetRemoveGroupSuccess {
-    target: Target!
-    group: Group!
-}
-
-type TargetAddOrganizationSuccess {
-    target: Target!
-    organization: Organization!
-}
-
-type TargetRemoveOrganizationSuccess {
+type TargetUpdateOrganizationSuccess {
     target: Target!
     organization: Organization!
 }
@@ -84,32 +82,20 @@ union TargetDeletePayload =
     AuthError |
     ComplexQueryError
 
-union TargetUpdatePayload =
-    TargetUpdateSuccess |
+union TargetUpdateContentPayload =
+    TargetUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union TargetAddGroupPayload =
-    TargetAddGroupSuccess |
+union TargetUpdateGroupPayload =
+    TargetUpdateGroupSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union TargetRemoveGroupPayload =
-    TargetRemoveGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TargetAddOrganizationPayload =
-    TargetAddOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TargetRemoveOrganizationPayload =
-    TargetRemoveOrganizationSuccess |
+union TargetUpdateOrganizationPayload =
+    TargetUpdateOrganizationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

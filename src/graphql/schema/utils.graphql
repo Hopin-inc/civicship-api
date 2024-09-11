@@ -46,27 +46,32 @@ enum SortDirection {
 }
 
 interface Error {
+    statusCode: Int!
     message: String!
-    path: [String!]!
 }
 
 type InvalidInputValueError implements Error {
+    statusCode: Int!
     message: String!
-    path: [String!]!
-    fields: [Field]!
+    fields: [Field!]
 }
 
 type AuthError implements Error {
+    statusCode: Int!
     message: String!
-    path: [String!]!
 }
 
 type ComplexQueryError implements Error {
+    statusCode: Int!
     message: String!
-    path: [String!]!
 }
 
 type Field {
     name: String!
     message: String
 }
+
+union CommonError =
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

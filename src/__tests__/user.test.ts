@@ -1,4 +1,4 @@
-import { UserFactory } from "@/__generated__/factory";
+import { UserFactory } from "@/prisma/__generated__/factory";
 
 describe("UserService", () => {
   const prisma = jestPrisma.client;

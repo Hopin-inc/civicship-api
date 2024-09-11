@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input EventInput {
+input EventPlanInput {
     description: String
     isPublic: Boolean
     images: [String!]
@@ -11,10 +11,24 @@ input EventInput {
 
     agendaIds: [Int!]
     cityCodes: [String!]
+    skillsets: [Int!]
+
+    organizationIds: [String!]
+    groupIds: [String!]
 }
 
-input EventPrivacyInput {
-    isPublic: Boolean!
+input EventUpdateContentInput {
+    description: String
+    isPublic: Boolean
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+    plannedStartsAt: Datetime
+    plannedEndsAt: Datetime
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+    skillsets: [Int!]
 }
 
 input EventAddGroupInput {
@@ -35,7 +49,7 @@ input EventRemoveOrganizationInput {
 
 # Type definitions
 
-type EventCreateSuccess {
+type EventPlanSuccess {
     event: Event
 }
 
@@ -43,7 +57,7 @@ type EventDeleteSuccess {
     eventId: ID!
 }
 
-type EventUpdateSuccess {
+type EventUpdateContentSuccess {
     event: Event!
 }
 
@@ -51,30 +65,20 @@ type EventUpdatePrivacySuccess {
     event: Event!
 }
 
-type EventAddGroupSuccess {
+type EventUpdateGroupSuccess {
     event: Event!
     group: Group!
 }
 
-type EventRemoveGroupSuccess {
-    event: Event!
-    group: Group!
-}
-
-type EventAddOrganizationSuccess {
-    event: Event!
-    organization: Organization!
-}
-
-type EventRemoveOrganizationSuccess {
+type EventUpdateOrganizationSuccess {
     event: Event!
     organization: Organization!
 }
 
 # union definitions
 
-union EventCreatePayload =
-    EventCreateSuccess |
+union EventPlanPayload =
+    EventPlanSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
@@ -85,8 +89,8 @@ union EventDeletePayload =
     AuthError |
     ComplexQueryError
 
-union EventUpdatePayload =
-    EventUpdateSuccess |
+union EventUpdateContentPayload =
+    EventUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
@@ -97,26 +101,14 @@ union EventUpdatePrivacyPayload =
     AuthError |
     ComplexQueryError
 
-union EventAddGroupPayload =
-    EventAddGroupSuccess |
+union EventUpdateGroupPayload =
+    EventUpdateGroupSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union EventRemoveGroupPayload =
-    EventRemoveGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union EventAddOrganizationPayload =
-    EventAddOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union EventRemoveOrganizationPayload =
-    EventRemoveOrganizationSuccess |
+union EventUpdateOrganizationPayload =
+    EventUpdateOrganizationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

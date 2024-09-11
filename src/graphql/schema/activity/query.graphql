@@ -12,9 +12,10 @@ type ActivityEdge implements Edge {
 }
 
 input ActivityFilterInput {
+    isPublic: Boolean
     keyword: String
-    userId: String,
-    eventId: String,
+    userId: String
+    eventId: String
 }
 
 input ActivitySortInput {

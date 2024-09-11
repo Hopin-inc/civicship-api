@@ -1,10 +1,37 @@
 # Queries/Mutations-related type definitions
 
-input ApplicationInput {
+input ApplicationCreateInput {
     userId: String!
     eventId: String
     comment: String
     submittedAt: Datetime!
+}
+
+input ApplicationUpdateCommentInput {
+    comment: String
+}
+
+input ApplicationAddConfirmationInput{
+    isApproved: Boolean!
+    confirmerId: String!
+    comment: String
+}
+
+input ApplicationApprovalInput{
+    applicationConfirmationId: String!
+}
+
+input ApplicationRefusalInput{
+    applicationConfirmationId: String!
+}
+
+input ApplicationUpdateConfirmationCommentInput{
+    applicationConfirmationId: String!
+    comment: String
+}
+
+input ApplicationDeleteConfirmationInput {
+    applicationConfirmationId: String!
 }
 
 # Type definitions
@@ -17,12 +44,29 @@ type ApplicationDeleteSuccess {
     applicationId: ID!
 }
 
-type ApplicationUpdateSuccess {
+type ApplicationUpdateCommentSuccess {
     application: Application!
 }
 
-type ApplicationUpdatePrivacySuccess {
+type ApplicationSwitchPrivacySuccess {
     application: Application!
+}
+
+type ApplicationAddConfirmationSuccess{
+    application: Application!
+}
+
+type ApplicationSwitchIsApprovedSuccess{
+    application: Application!
+}
+
+type ApplicationUpdateConfirmationCommentSuccess{
+    application: Application!
+}
+
+type ApplicationDeleteConfirmationSuccess {
+    applicationId: ID!
+    applicationConfirmationId: String!
 }
 
 # union definitions
@@ -39,14 +83,38 @@ union ApplicationDeletePayload =
     AuthError |
     ComplexQueryError
 
-union ApplicationUpdatePayload =
-    ApplicationUpdateSuccess |
+union ApplicationUpdateCommentPayload =
+    ApplicationUpdateCommentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union ApplicationUpdatePrivacyPayload =
-    ApplicationUpdatePrivacySuccess |
+union ApplicationSwitchPrivacyPayload =
+    ApplicationSwitchPrivacySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationAddConfirmationPayload =
+    ApplicationAddConfirmationSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationSwitchIsApprovedPayload =
+    ApplicationSwitchIsApprovedSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationUpdateConfirmationCommentPayload =
+    ApplicationUpdateConfirmationCommentSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ApplicationDeleteConfirmationPayload =
+    ApplicationDeleteConfirmationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
