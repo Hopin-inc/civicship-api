@@ -15,6 +15,7 @@ import { corsHandler } from "@/middleware/cors";
 const app = express();
 const httpServer = http.createServer(app);
 
+// TODO delete Field suggestion on prd
 const schemaWithResolvers = addResolversToSchema({ schema, resolvers });
 const graphqlServer = new ApolloServer<IContext>({
   schema: schemaWithResolvers,
@@ -32,12 +33,16 @@ app.use(
 );
 
 const port = Number(process.env.PORT ?? 3000);
-const server = process.env.NODE_HTTPS === "true"
-  ? createServer({
-    key: fs.readFileSync("./certificates/localhost-key.pem"),
-    cert: fs.readFileSync("./certificates/localhost.pem"),
-  }, app)
-  : app;
+const server =
+  process.env.NODE_HTTPS === "true"
+    ? createServer(
+      {
+        key: fs.readFileSync("./certificates/localhost-key.pem"),
+        cert: fs.readFileSync("./certificates/localhost.pem"),
+      },
+      app,
+    )
+    : app;
 server.listen(port, () => {
   const uri =
     process.env.ENV === "LOCAL"

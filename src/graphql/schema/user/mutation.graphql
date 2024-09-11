@@ -1,17 +1,33 @@
 # Queries/Mutations-related type definitions
 
-input UserInput {
+input UserCreateInput {
     lastName: String!
     middleName: String
     firstName: String!
     email: String
     image: String
     bio: String
+
+    agendaIds: [Int!]
+    cityCodes: [String!]
+
+    organizationIds: [String!]
+    groupIds: [String!]
+}
+
+input UserUpdateContentInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: String
+    bio: String
+
     agendaIds: [Int!]
     cityCodes: [String!]
 }
 
-input UserPrivacyInput {
+input UserSwitchPrivacyInput {
     isPublic: Boolean!
 }
 
@@ -49,44 +65,28 @@ type UserDeleteSuccess {
     userId: ID!
 }
 
-type UserUpdateSuccess {
+type UserUpdateContentSuccess {
     user: User
 }
 
-type UserUpdatePrivacySuccess {
+type UserSwitchPrivacySuccess {
     user: User!
 }
 
-type UserAddGroupSuccess {
+type UserUpdateGroupSuccess {
     user: User!
     group: Group!
 }
 
-type UserRemoveGroupSuccess {
-    user: User!
-    group: Group!
-}
-
-type UserAddOrganizationSuccess {
+type UserUpdateOrganizationSuccess {
     user: User!
     organization: Organization!
 }
 
-type UserRemoveOrganizationSuccess {
-    user: User!
-    organization: Organization!
-}
-
-type UserAddActivitySuccess {
+type UserUpdateActivitySuccess {
     user: User
     activity: Activity!
 }
-
-type UserRemoveActivitySuccess {
-    user: User!
-    activity: Activity!
-}
-
 # union definitions
 
 union UserCreatePayload =
@@ -101,50 +101,32 @@ union UserDeletePayload =
     AuthError |
     ComplexQueryError
 
-union UserUpdatePayload =
-    UserUpdateSuccess |
+union UserUpdateContentPayload =
+    UserUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union UserUpdatePrivacyPayload =
-    UserUpdatePrivacySuccess |
+union UserSwitchPrivacyPayload =
+    UserSwitchPrivacySuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union UserAddGroupPayload =
-    UserAddGroupSuccess |
+union UserUpdateGroupPayload =
+    UserUpdateGroupSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union UserRemoveGroupPayload =
-    UserRemoveGroupSuccess |
+union UserUpdateOrganizationPayload =
+    UserUpdateOrganizationSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union UserAddOrganizationPayload =
-    UserAddOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserRemoveOrganizationPayload =
-    UserRemoveOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserAddActivityPayload =
-    UserAddActivitySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserRemoveActivityPayload =
-    UserRemoveActivitySuccess |
+union UserUpdateActivityPayload =
+    UserUpdateActivitySuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

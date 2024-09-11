@@ -5,8 +5,8 @@ export const prismaClient = new PrismaClient({
     { emit: "stdout", level: "query" },
     { emit: "stdout", level: "error" },
     { emit: "stdout", level: "info" },
-    { emit: "stdout", level: "warn" }
-  ]
+    { emit: "stdout", level: "warn" },
+  ],
 });
 
 export interface Context {

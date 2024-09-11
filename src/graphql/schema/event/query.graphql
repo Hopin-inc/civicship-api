@@ -1,26 +1,3 @@
-# Queries and Mutations
-
-extend type Query {
-    events(
-        filter: EventFilterInput
-        sort: EventSortInput
-        cursor: String
-        first: Int
-    ): EventsConnection!
-    event(id: ID!): Event
-}
-
-extend type Mutation {
-    createEvent(content: EventCreateInput!): Event
-    updateEvent(id: ID!, content: EventUpdateInput!): Event
-    deleteEvent(id: ID!): Event
-    addLike(content: LikeCreateInput!): Like
-    removeLike(id: ID!): Like
-    createComment(content: CommentCreateInput!): Comment
-    updateComment(id: ID!, content: CommentUpdateInput!): Comment
-    deleteComment(id: ID!): Comment
-}
-
 # Queries/Mutations-related type definitions
 
 type EventsConnection {
@@ -42,49 +19,4 @@ input EventFilterInput {
 
 input EventSortInput {
     startsAt: SortDirection
-}
-
-input EventCreateInput {
-    description: String
-    isPublic: Boolean
-    images: [String!]
-    startsAt: Datetime!
-    endsAt: Datetime!
-    plannedStartsAt: Datetime
-    plannedEndsAt: Datetime
-    agendaIds: [Int!]
-    cityCodes: [String!]
-    groupIds: [String!]
-    organizationIds: [String!]
-}
-
-input EventUpdateInput {
-    description: String
-    isPublic: Boolean
-    images: [String!]
-    startsAt: Datetime
-    endsAt: Datetime
-    plannedStartsAt: Datetime
-    plannedEndsAt: Datetime
-    agendaIds: [Int!]
-    cityCodes: [String!]
-    groupIds: [String!]
-    organizationIds: [String!]
-}
-
-input LikeCreateInput {
-    eventId: ID!
-    userId: ID!
-    postedAt: Datetime
-}
-
-input CommentCreateInput {
-    eventId: ID!
-    userId: ID!
-    content: String!
-    postedAt: Datetime
-}
-
-input CommentUpdateInput {
-    content: String
 }

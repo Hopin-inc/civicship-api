@@ -1,6 +1,6 @@
 # Queries/Mutations-related type definitions
 
-input ActivityInput {
+input ActivityCreateInput {
     description: String
     remark: String
     images: [String!]
@@ -11,7 +11,15 @@ input ActivityInput {
     eventId: String!
 }
 
-input ActivityPrivacyInput {
+input ActivityUpdateContentInput {
+    description: String
+    remark: String
+    images: [String!]
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+input ActivitySwitchPrivacyInput {
     isPublic: Boolean!
 }
 
@@ -19,7 +27,7 @@ input ActivityAddUserInput {
     userId: String!
 }
 
-input ActivityUpdateUserInput {
+input ActivityRemoveUserInput {
     userId: String!
 }
 
@@ -41,17 +49,12 @@ type ActivityDeleteSuccess {
     activityId: ID!
 }
 
-type ActivityUpdateSuccess {
+type ActivityUpdateContentSuccess {
     activity: Activity!
 }
 
-type ActivityUpdatePrivacySuccess {
+type ActivitySwitchPrivacySuccess {
     activity: Activity!
-}
-
-type ActivityAddUserSuccess {
-    activity: Activity!
-    user: User!
 }
 
 type ActivityUpdateUserSuccess {
@@ -59,12 +62,7 @@ type ActivityUpdateUserSuccess {
     user: User!
 }
 
-type ActivityAddEventSuccess {
-    activity: Activity!
-    event: Event!
-}
-
-type ActivityRemoveEventSuccess {
+type ActivityUpdateEventSuccess {
     activity: Activity!
     event: Event!
 }
@@ -83,20 +81,14 @@ InvalidInputValueError |
 AuthError |
 ComplexQueryError
 
-union ActivityUpdatePayload =
-ActivityUpdateSuccess |
+union ActivityUpdateContentPayload =
+ActivityUpdateContentSuccess |
 InvalidInputValueError |
 AuthError |
 ComplexQueryError
 
-union ActivityUpdatePrivacyPayload =
-ActivityUpdatePrivacySuccess |
-InvalidInputValueError |
-AuthError |
-ComplexQueryError
-
-union ActivityAddUserPayload =
-ActivityAddUserSuccess |
+union ActivitySwitchPrivacyPayload =
+ActivitySwitchPrivacySuccess |
 InvalidInputValueError |
 AuthError |
 ComplexQueryError
@@ -107,14 +99,8 @@ InvalidInputValueError |
 AuthError |
 ComplexQueryError
 
-union ActivityAddEventPayload =
-ActivityAddEventSuccess |
-InvalidInputValueError |
-AuthError |
-ComplexQueryError
-
-union ActivityRemoveEventPayload =
-ActivityRemoveEventSuccess |
+union ActivityUpdateEventPayload =
+ActivityUpdateEventSuccess |
 InvalidInputValueError |
 AuthError |
 ComplexQueryError

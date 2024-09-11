@@ -11,15 +11,15 @@ extend type Query {
 }
 
 extend type Mutation {
-    activityCreate(input: ActivityInput!): ActivityCreatePayload
+    activityCreate(input: ActivityCreateInput!): ActivityCreatePayload
     activityDelete(id: ID!): ActivityDeletePayload
-    activityUpdate(id: ID!, input: ActivityInput!): ActivityUpdatePayload
-    activityPublish(id: ID!, input: ActivityPrivacyInput!): ActivityUpdatePrivacyPayload
-    activityUnpublish(id: ID!, input: ActivityPrivacyInput!): ActivityUpdatePrivacyPayload
-    activityAddUser(id: ID!, input: ActivityAddUserInput!): ActivityAddUserPayload
-    activityUpdateUser(id: ID!, input: ActivityUpdateUserInput!): ActivityUpdateUserPayload
-    activityAddEvent(id: ID!, input: ActivityAddEventInput!): ActivityAddEventPayload
-    activityRemoveEvent(id: ID!, input: ActivityRemoveEventInput!): ActivityRemoveEventPayload
+    activityUpdateContent(id: ID!, input: ActivityUpdateContentInput!): ActivityUpdateContentPayload
+    activityPublish(id: ID!, input: ActivitySwitchPrivacyInput!): ActivitySwitchPrivacyPayload
+    activityUnpublish(id: ID!, input: ActivitySwitchPrivacyInput!): ActivitySwitchPrivacyPayload
+    activityAddUser(id: ID!, input: ActivityAddUserInput!): ActivityUpdateUserPayload
+    activityRemoveUser(id: ID!, input: ActivityRemoveUserInput!): ActivityUpdateUserPayload
+    activityAddEvent(id: ID!, input: ActivityAddEventInput!): ActivityUpdateEventPayload
+    activityRemoveEvent(id: ID!, input: ActivityRemoveEventInput!): ActivityUpdateEventPayload
 }
 
 # Type definitions
@@ -37,10 +37,13 @@ type Activity {
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
-    totalMinutes: Int!
 
     user: User
     event: Event
+
+    organization: Organization
+    issue: Issue
+    application: Application
 
     createdAt: Datetime!
     updatedAt: Datetime
