@@ -39,14 +39,6 @@ datasource db {
 
 // #  Auth
 
-model Session {
-  sid       String   @id
-  data      Json
-  expiresAt DateTime @map("expires_at")
-
-  @@map("t_sessions")
-}
-
 model Identity {
   uid      String           @id
   platform IdentityPlatform
@@ -62,6 +54,7 @@ model Identity {
 
 enum IdentityPlatform {
   LINE
+  FACEBOOK
 }
 
 // # Users

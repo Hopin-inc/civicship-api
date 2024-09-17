@@ -80,6 +80,6 @@ export default class IssueRepository {
   }
 
   static async refreshStat() {
-    await this.db.$queryRawTyped(refreshMaterializedViewIssueStat());
+    return this.db.$queryRawTyped(refreshMaterializedViewIssueStat());
   }
 }

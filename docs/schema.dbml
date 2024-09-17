@@ -2,12 +2,6 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
-Table t_sessions {
-  sid String [pk]
-  data Json [not null]
-  expiresAt DateTime [not null]
-}
-
 Table t_identities {
   uid String [pk]
   platform IdentityPlatform [not null]
@@ -594,6 +588,7 @@ Table mv_issues_stats {
 
 Enum IdentityPlatform {
   LINE
+  FACEBOOK
 }
 
 Enum SysRole {

@@ -76,6 +76,6 @@ export default class ActivityRepository {
   }
 
   static async refreshStat() {
-    await this.db.$queryRawTyped(refreshMaterializedViewActivityStat());
+    return this.db.$queryRawTyped(refreshMaterializedViewActivityStat());
   }
 }

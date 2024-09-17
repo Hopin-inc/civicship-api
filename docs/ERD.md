@@ -3,6 +3,7 @@ erDiagram
 
         IdentityPlatform {
             LINE LINE
+FACEBOOK FACEBOOK
         }
     
 
@@ -41,13 +42,6 @@ FLOAT FLOAT
 OFFSITE OFFSITE
         }
     
-  "t_sessions" {
-    String sid "🗝️"
-    Json data 
-    DateTime expires_at 
-    }
-  
-
   "t_identities" {
     String uid "🗝️"
     IdentityPlatform platform 

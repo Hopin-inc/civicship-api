@@ -17,15 +17,6 @@ CREATE TYPE "ValueType" AS ENUM ('INT', 'FLOAT');
 CREATE TYPE "ActivityStyle" AS ENUM ('ONSITE', 'OFFSITE');
 
 -- CreateTable
-CREATE TABLE "t_sessions" (
-    "sid" TEXT NOT NULL,
-    "data" JSONB NOT NULL,
-    "expires_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "t_sessions_pkey" PRIMARY KEY ("sid")
-);
-
--- CreateTable
 CREATE TABLE "t_identities" (
     "uid" TEXT NOT NULL,
     "platform" "IdentityPlatform" NOT NULL,

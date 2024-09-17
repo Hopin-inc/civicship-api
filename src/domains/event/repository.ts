@@ -81,6 +81,6 @@ export default class EventRepository {
   }
 
   static async refreshStat() {
-    await this.db.$queryRawTyped(refreshMaterializedViewEventStat());
+    return this.db.$queryRawTyped(refreshMaterializedViewEventStat());
   }
 }
