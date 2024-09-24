@@ -5,6 +5,7 @@ import {
   issueGetInclude,
   issueUpdateContentInclude,
 } from "@/domains/issue/type";
+import { refreshMaterializedViewIssueStat } from "@prisma/client/sql";
 
 export default class IssueRepository {
   private static db = prismaClient;
@@ -76,5 +77,9 @@ export default class IssueRepository {
       where: { id },
       data: { isPublic: isPublic },
     });
+  }
+
+  static async refreshStat() {
+    return this.db.$queryRawTyped(refreshMaterializedViewIssueStat());
   }
 }

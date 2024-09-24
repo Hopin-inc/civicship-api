@@ -5,6 +5,7 @@ import {
   eventCreateInclude,
   eventUpdateContentInclude,
 } from "@/domains/event/type";
+import { refreshMaterializedViewEventStat } from "@prisma/client/sql";
 
 export default class EventRepository {
   private static db = prismaClient;
@@ -77,5 +78,9 @@ export default class EventRepository {
       where: { id },
       data: data,
     });
+  }
+
+  static async refreshStat() {
+    return this.db.$queryRawTyped(refreshMaterializedViewEventStat());
   }
 }

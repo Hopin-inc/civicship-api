@@ -1,5 +1,6 @@
 import { prismaClient } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
+import { refreshMaterializedViewActivityStat } from "@prisma/client/sql";
 import { activityGetInclude, activityUpdateContentInclude } from "@/domains/activity/type";
 
 export default class ActivityRepository {
@@ -72,5 +73,9 @@ export default class ActivityRepository {
       where: { id },
       data,
     });
+  }
+
+  static async refreshStat() {
+    return this.db.$queryRawTyped(refreshMaterializedViewActivityStat());
   }
 }

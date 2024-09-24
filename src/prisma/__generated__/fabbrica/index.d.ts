@@ -1,4 +1,3 @@
-import type { Session } from "@prisma/client";
 import type { Identity } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Group } from "@prisma/client";
@@ -59,48 +58,6 @@ type CallbackDefineOptions<TCreated, TCreateInput, TTransients extends Record<st
     onAfterCreate?: (created: TCreated, transientFields: TTransients) => void | PromiseLike<void>;
 };
 export declare const initialize: (options: import("@quramy/prisma-fabbrica/lib/initialize").InitializeOptions) => void;
-type SessionFactoryDefineInput = {
-    sid?: string;
-    data?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    expiresAt?: Date;
-};
-type SessionTransientFields = Record<string, unknown> & Partial<Record<keyof SessionFactoryDefineInput, never>>;
-type SessionFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<SessionFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Session, Prisma.SessionCreateInput, TTransients>;
-type SessionFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<SessionFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: TraitName]: SessionFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Session, Prisma.SessionCreateInput, TTransients>;
-type SessionTraitKeys<TOptions extends SessionFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-export interface SessionFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Session";
-    build(inputData?: Partial<Prisma.SessionCreateInput & TTransients>): PromiseLike<Prisma.SessionCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.SessionCreateInput & TTransients>): PromiseLike<Prisma.SessionCreateInput>;
-    buildList(list: readonly Partial<Prisma.SessionCreateInput & TTransients>[]): PromiseLike<Prisma.SessionCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.SessionCreateInput & TTransients>): PromiseLike<Prisma.SessionCreateInput[]>;
-    pickForConnect(inputData: Session): Pick<Session, "sid">;
-    create(inputData?: Partial<Prisma.SessionCreateInput & TTransients>): PromiseLike<Session>;
-    createList(list: readonly Partial<Prisma.SessionCreateInput & TTransients>[]): PromiseLike<Session[]>;
-    createList(count: number, item?: Partial<Prisma.SessionCreateInput & TTransients>): PromiseLike<Session[]>;
-    createForConnect(inputData?: Partial<Prisma.SessionCreateInput & TTransients>): PromiseLike<Pick<Session, "sid">>;
-}
-export interface SessionFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends SessionFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): SessionFactoryInterfaceWithoutTraits<TTransients>;
-}
-interface SessionFactoryBuilder {
-    <TOptions extends SessionFactoryDefineOptions>(options?: TOptions): SessionFactoryInterface<{}, SessionTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends SessionTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends SessionFactoryDefineOptions<TTransients>>(options?: TOptions) => SessionFactoryInterface<TTransients, SessionTraitKeys<TOptions>>;
-}
-/**
- * Define factory for {@link Session} model.
- *
- * @param options
- * @returns factory {@link SessionFactoryInterface}
- */
-export declare const defineSessionFactory: SessionFactoryBuilder;
 type IdentityuserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIdentitiesInput["create"]>;

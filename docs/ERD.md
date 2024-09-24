@@ -3,6 +3,7 @@ erDiagram
 
         IdentityPlatform {
             LINE LINE
+FACEBOOK FACEBOOK
         }
     
 
@@ -41,13 +42,6 @@ FLOAT FLOAT
 OFFSITE OFFSITE
         }
     
-  "t_sessions" {
-    String sid "🗝️"
-    Json data 
-    DateTime expires_at 
-    }
-  
-
   "t_identities" {
     String uid "🗝️"
     IdentityPlatform platform 
@@ -422,7 +416,7 @@ OFFSITE OFFSITE
     }
   
 
-  "v_activities_stats" {
+  "mv_activities_stats" {
     String id 
     Boolean isPublic 
     DateTime startsAt 
@@ -433,7 +427,7 @@ OFFSITE OFFSITE
     }
   
 
-  "v_events_stats" {
+  "mv_events_stats" {
     String id 
     Boolean isPublic 
     DateTime startsAt 
@@ -444,7 +438,7 @@ OFFSITE OFFSITE
     }
   
 
-  "v_issues_stats" {
+  "mv_issues_stats" {
     String id 
     Boolean isPublic 
     DateTime startsAt 
@@ -501,7 +495,7 @@ OFFSITE OFFSITE
     "t_activities" o|--|o "t_events" : "event"
     "t_activities" o|--|o "t_issues" : "issue"
     "t_activities" o|--|o "t_applications" : "application"
-    "t_activities" o{--}o "v_activities_stats" : "stat"
+    "t_activities" o{--}o "mv_activities_stats" : "stat"
     "t_applications" o|--|o "t_events" : "event"
     "t_applications" o|--|o "t_users" : "user"
     "t_applications" o{--}o "t_activities" : "activity"
@@ -517,7 +511,7 @@ OFFSITE OFFSITE
     "t_events" o{--}o "t_comments" : "comments"
     "t_events" o{--}o "t_activities" : "activities"
     "t_events" o{--}o "t_cities_on_events" : "cities"
-    "t_events" o{--}o "v_events_stats" : "stat"
+    "t_events" o{--}o "mv_events_stats" : "stat"
     "t_events_on_groups" o|--|| "t_groups" : "group"
     "t_events_on_groups" o|--|| "t_events" : "event"
     "t_events_on_organizations" o|--|| "t_organizations" : "organization"
@@ -530,7 +524,7 @@ OFFSITE OFFSITE
     "t_issues" o{--}o "t_comments" : "comments"
     "t_issues" o{--}o "t_activities" : "activities"
     "t_issues" o{--}o "t_cities_on_issues" : "cities"
-    "t_issues" o{--}o "v_issues_stats" : "stat"
+    "t_issues" o{--}o "mv_issues_stats" : "stat"
     "t_issues_on_groups" o|--|| "t_groups" : "group"
     "t_issues_on_groups" o|--|| "t_issues" : "issue"
     "t_issues_on_organizations" o|--|| "t_organizations" : "organization"
@@ -592,7 +586,7 @@ OFFSITE OFFSITE
     "t_cities_on_issues" o|--|| "m_cities" : "city"
     "t_indexes" o|--|| "ValueType" : "enum:value_type"
     "t_indexes" o{--}o "t_targets" : "targets"
-    "v_activities_stats" o|--|| "t_activities" : "activity"
-    "v_events_stats" o|--|| "t_events" : "event"
-    "v_issues_stats" o|--|| "t_issues" : "issue"
+    "mv_activities_stats" o|--|| "t_activities" : "activity"
+    "mv_events_stats" o|--|| "t_events" : "event"
+    "mv_issues_stats" o|--|| "t_issues" : "issue"
 ```

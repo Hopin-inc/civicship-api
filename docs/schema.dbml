@@ -2,12 +2,6 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
-Table t_sessions {
-  sid String [pk]
-  data Json [not null]
-  expiresAt DateTime [not null]
-}
-
 Table t_identities {
   uid String [pk]
   platform IdentityPlatform [not null]
@@ -148,7 +142,7 @@ Table t_activities {
   issue t_issues
   applicationId String [unique]
   application t_applications
-  stat v_activities_stats
+  stat mv_activities_stats
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -198,7 +192,7 @@ Table t_events {
   comments t_comments [not null]
   activities t_activities [not null]
   cities t_cities_on_events [not null]
-  stat v_events_stats
+  stat mv_events_stats
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -242,7 +236,7 @@ Table t_issues {
   comments t_comments [not null]
   activities t_activities [not null]
   cities t_cities_on_issues [not null]
-  stat v_issues_stats
+  stat mv_issues_stats
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -559,7 +553,7 @@ Table t_indexes {
   targets t_targets [not null]
 }
 
-Table v_activities_stats {
+Table mv_activities_stats {
   id String [unique, not null]
   isPublic Boolean [not null]
   startsAt DateTime [not null]
@@ -570,7 +564,7 @@ Table v_activities_stats {
   totalMinutes Int [not null]
 }
 
-Table v_events_stats {
+Table mv_events_stats {
   id String [unique, not null]
   isPublic Boolean [not null]
   startsAt DateTime [not null]
@@ -581,7 +575,7 @@ Table v_events_stats {
   totalMinutes Int [not null]
 }
 
-Table v_issues_stats {
+Table mv_issues_stats {
   id String [unique, not null]
   isPublic Boolean [not null]
   startsAt DateTime [not null]
@@ -594,6 +588,7 @@ Table v_issues_stats {
 
 Enum IdentityPlatform {
   LINE
+  FACEBOOK
 }
 
 Enum SysRole {
@@ -750,8 +745,8 @@ Ref: t_cities_on_issues.issueId > t_issues.id [delete: Cascade]
 
 Ref: t_cities_on_issues.cityCode > m_cities.code [delete: Restrict]
 
-Ref: v_activities_stats.id - t_activities.id
+Ref: mv_activities_stats.id - t_activities.id
 
-Ref: v_events_stats.id - t_events.id
+Ref: mv_events_stats.id - t_events.id
 
-Ref: v_issues_stats.id - t_issues.id
+Ref: mv_issues_stats.id - t_issues.id
