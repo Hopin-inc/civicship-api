@@ -3,7 +3,17 @@ import TestDbUtil from "./util/test-db-util";
 
 
 describe("UserService", () => {
-  test("should create a new user", async () => {
+  beforeEach(async () => {
+    // テスト前にDBのデータをリセット
+    await TestDbUtil.deleteAll();
+  })
+
+  afterAll(async () => {
+    // Prismaの接続を閉じる
+    TestDbUtil.disconnect();
+  })
+
+  it("should create a new user", async () => {
     const id = "001"
     const lastName = "Doe"
     const firstName = "John"

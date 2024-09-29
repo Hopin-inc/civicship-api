@@ -1,14 +1,21 @@
 import { prismaClient } from "@/prisma/client";
 
 export default class TestDbUtil {
+  static $disconnect() {
+    throw new Error("Method not implemented.");
+  }
   private static db = prismaClient;
 
   static async findAll() {
     return await this.db.user.findMany();
   }
 
-  static async delete(id: string) {
-    return await this.db.user.delete({ where: { id } });
+  static async deleteAll() {
+    return await this.db.user.deleteMany();
+  }
+
+  static async disconnect() {
+    return this.db.$disconnect()
   }
 
   // TODO: 実際テストで使うメソッドを整える
