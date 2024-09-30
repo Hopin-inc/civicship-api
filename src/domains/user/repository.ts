@@ -5,7 +5,6 @@ import { userCreateInclude, userGetInclude, userUpdateContentInclude } from "@/d
 export default class UserRepository {
   private static db = prismaClient;
 
-  // FIXME: awaitする
   static async query(
     where: Prisma.UserWhereInput,
     orderBy: Prisma.UserOrderByWithRelationInput,
@@ -58,7 +57,7 @@ export default class UserRepository {
   }
 
   static async create(data: Prisma.UserCreateInput) {
-    return await this.db.user.create({
+    return this.db.user.create({
       data,
       include: userCreateInclude,
     });

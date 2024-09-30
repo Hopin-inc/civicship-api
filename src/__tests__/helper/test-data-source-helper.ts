@@ -1,17 +1,14 @@
 import { prismaClient } from "@/prisma/client";
 
 export default class TestDataSourceHelper {
-  static $disconnect() {
-    throw new Error("Method not implemented.");
-  }
   private static db = prismaClient;
 
   static async findAll() {
-    return await this.db.user.findMany();
+    return this.db.user.findMany();
   }
 
   static async deleteAll() {
-    return await this.db.user.deleteMany();
+    return this.db.user.deleteMany();
   }
 
   static async disconnect() {
