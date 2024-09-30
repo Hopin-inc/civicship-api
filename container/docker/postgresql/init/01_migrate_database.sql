@@ -1,3 +1,6 @@
+-- NOTE: 暫定で、以下ファイルのコピーを実行
+-- src/prisma/migrations/20240902111318_postgres_init
+
 -- CreateEnum
 CREATE TYPE "IdentityPlatform" AS ENUM ('LINE');
 

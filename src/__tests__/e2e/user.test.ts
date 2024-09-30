@@ -1,16 +1,16 @@
 import UserUseCase from "@/domains/user/usecase";
-import TestDbUtil from "./util/test-db-util";
+import TestDataSourceHelper from "../helper/test-data-source-helper";
 
 
 describe("UserService", () => {
   beforeEach(async () => {
     // テスト前にDBのデータをリセット
-    await TestDbUtil.deleteAll();
+    await TestDataSourceHelper.deleteAll();
   })
 
   afterAll(async () => {
     // Prismaの接続を閉じる
-    TestDbUtil.disconnect();
+    TestDataSourceHelper.disconnect();
   })
 
   it("should create a new user", async () => {
@@ -26,7 +26,7 @@ describe("UserService", () => {
     await UserUseCase.userCreateUser(input)
 
     // DBに挿入されたデータを取得
-    const users = await TestDbUtil.findAll()
+    const users = await TestDataSourceHelper.findAll()
     const user = users.filter(users => users.id = id)
 
     // データが期待通りに挿入されたか確認

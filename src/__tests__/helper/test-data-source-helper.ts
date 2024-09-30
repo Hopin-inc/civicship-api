@@ -1,6 +1,6 @@
 import { prismaClient } from "@/prisma/client";
 
-export default class TestDbUtil {
+export default class TestDataSourceHelper {
   static $disconnect() {
     throw new Error("Method not implemented.");
   }
