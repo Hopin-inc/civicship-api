@@ -371,11 +371,6 @@ export type GqlCurrentUserPayload = {
   user?: Maybe<GqlUser>;
 };
 
-export type GqlCustomTokenCreatePayload = {
-  __typename?: 'CustomTokenCreatePayload';
-  idToken: Scalars['String']['output'];
-};
-
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -707,6 +702,7 @@ export type GqlGroupsConnection = {
 };
 
 export const GqlIdentityPlatform = {
+  Facebook: 'FACEBOOK',
   Line: 'LINE'
 } as const;
 
@@ -963,6 +959,7 @@ export type GqlMutation = {
   commentAddEvent?: Maybe<GqlCommentAddEventPayload>;
   commentDelete?: Maybe<GqlCommentDeletePayload>;
   commentUpdateContent?: Maybe<GqlCommentUpdateContentPayload>;
+  deleteUser?: Maybe<GqlCurrentUserPayload>;
   eventAddGroup?: Maybe<GqlEventUpdateGroupPayload>;
   eventAddOrganization?: Maybe<GqlEventUpdateOrganizationPayload>;
   eventDelete?: Maybe<GqlEventDeletePayload>;
@@ -2423,7 +2420,6 @@ export type GqlResolversTypes = ResolversObject<{
   CommonError: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommonError']>;
   ComplexQueryError: ResolverTypeWrapper<GqlComplexQueryError>;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
-  CustomTokenCreatePayload: ResolverTypeWrapper<GqlCustomTokenCreatePayload>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
   EntityPosition: GqlEntityPosition;
@@ -2707,7 +2703,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommonError: GqlResolversUnionTypes<GqlResolversParentTypes>['CommonError'];
   ComplexQueryError: GqlComplexQueryError;
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
-  CustomTokenCreatePayload: GqlCustomTokenCreatePayload;
   Datetime: Scalars['Datetime']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
   Error: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Error'];
@@ -3196,11 +3191,6 @@ export type GqlCurrentUserPayloadResolvers<ContextType = Context, ParentType ext
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlCustomTokenCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CustomTokenCreatePayload'] = GqlResolversParentTypes['CustomTokenCreatePayload']> = ResolversObject<{
-  idToken?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export interface GqlDatetimeScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['Datetime'], any> {
   name: 'Datetime';
 }
@@ -3627,6 +3617,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   commentAddEvent?: Resolver<Maybe<GqlResolversTypes['CommentAddEventPayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentAddEventArgs, 'input'>>;
   commentDelete?: Resolver<Maybe<GqlResolversTypes['CommentDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentDeleteArgs, 'id'>>;
   commentUpdateContent?: Resolver<Maybe<GqlResolversTypes['CommentUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentUpdateContentArgs, 'id' | 'input'>>;
+  deleteUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType>;
   eventAddGroup?: Resolver<Maybe<GqlResolversTypes['EventUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddGroupArgs, 'id' | 'input'>>;
   eventAddOrganization?: Resolver<Maybe<GqlResolversTypes['EventUpdateOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddOrganizationArgs, 'id' | 'input'>>;
   eventDelete?: Resolver<Maybe<GqlResolversTypes['EventDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationEventDeleteArgs, 'id'>>;
@@ -4110,7 +4101,6 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   CommonError?: GqlCommonErrorResolvers<ContextType>;
   ComplexQueryError?: GqlComplexQueryErrorResolvers<ContextType>;
   CurrentUserPayload?: GqlCurrentUserPayloadResolvers<ContextType>;
-  CustomTokenCreatePayload?: GqlCustomTokenCreatePayloadResolvers<ContextType>;
   Datetime?: GraphQLScalarType;
   Edge?: GqlEdgeResolvers<ContextType>;
   Error?: GqlErrorResolvers<ContextType>;

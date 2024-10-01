@@ -12,7 +12,3 @@ export const prismaClient = new PrismaClient({
 export interface Context {
   prisma: PrismaClient;
 }
-
-export const createContext: () => Context = () => {
-  return { prisma: prismaClient };
-};

@@ -1,7 +1,7 @@
-type CustomTokenCreatePayload {
-    idToken: String!
+extend type Query {
+    currentUser: CurrentUserPayload
 }
 
-type CurrentUserPayload {
-    user: User
+extend type Mutation {
+    deleteUser: CurrentUserPayload
 }
