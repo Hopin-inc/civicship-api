@@ -4,7 +4,7 @@ import * as GqlTypes from "../../types/graphql"
 
 
 describe("UserService", () => {
-  beforeEach(async () => {
+  beforeAll(async () => {
     // テスト前にDBのデータをリセット
     await TestDataSourceHelper.deleteAll();
   })
@@ -45,5 +45,22 @@ describe("UserService", () => {
     expect(returned.user?.isPublic).toBeFalsy()
     expect(returned.user?.createdAt).toBeDefined()
     expect(returned.user?.updatedAt).toBeDefined()
+  })
+
+  it("should get a created user", async () => {
+    const id = "001"
+
+    const input = {
+      id: id
+    }
+    const returned = await UserUseCase.userGetUser(input)
+    const user = returned
+
+    // // データが期待通りに取得されたか確認
+    expect(user).toBeDefined
+
+    // usecase層の返り値（≒レスポンス）の検証
+    expect(returned).toBeDefined()
+    expect(returned?.id).toBe(input.id)
   })
 })
