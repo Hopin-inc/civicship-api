@@ -1,0 +1,15 @@
+input CreateUserInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: ImageInput
+    bio: String
+    isPublic: Boolean
+
+    organizationIds: [String!]
+    groupIds: [String!]
+    agendaIds: [String!]
+    skillsetIds: [String!]
+    cityCodes: [String!]
+}

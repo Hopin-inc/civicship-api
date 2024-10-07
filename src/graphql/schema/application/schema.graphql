@@ -17,10 +17,11 @@ extend type Mutation {
     applicationPublish(id: ID!): ApplicationSwitchPrivacyPayload
     applicationUnpublish(id: ID!): ApplicationSwitchPrivacyPayload
     applicationAddConfirmation(id: ID!, input: ApplicationAddConfirmationInput!): ApplicationAddConfirmationPayload
-    applicationApproval(id: ID!,input: ApplicationApprovalInput!): ApplicationSwitchIsApprovedPayload
-    applicationRefusal(id: ID!,input: ApplicationRefusalInput!): ApplicationSwitchIsApprovedPayload
-    applicationUpdateConfirmationComment(id: ID!,input: ApplicationUpdateConfirmationCommentInput!): ApplicationUpdateConfirmationCommentPayload
-    applicationDeleteConfirmation(id: ID!,input: ApplicationDeleteConfirmationInput!): ApplicationDeleteConfirmationPayload
+    applicationApprove(id: ID!, input: ApplicationApprovalInput!): ApplicationSwitchIsApprovedPayload
+    applicationRefuse(id: ID!, input: ApplicationRefusalInput!): ApplicationSwitchIsApprovedPayload
+    applicationUpdateConfirmation(id: ID!, input: ApplicationAddConfirmationInput!): ApplicationAddConfirmationPayload
+    applicationUpdateConfirmationComment(id: ID!, input: ApplicationUpdateConfirmationCommentInput!): ApplicationUpdateConfirmationCommentPayload
+    applicationDeleteConfirmation(id: ID!, input: ApplicationDeleteConfirmationInput!): ApplicationDeleteConfirmationPayload
 }
 
 # Type definitions
