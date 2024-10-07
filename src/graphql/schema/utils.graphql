@@ -29,6 +29,10 @@ interface Edge {
     cursor: String!
 }
 
+input ImageInput {
+    base64: String!
+}
+
 enum SysRole {
     SYS_ADMIN
     USER

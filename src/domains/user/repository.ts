@@ -63,8 +63,26 @@ export default class UserRepository {
     });
   }
 
+  static async createWithIdentity(data: Prisma.UserCreateInput) {
+    return this.db.user.create({
+      data,
+      include: {
+        identities: true,
+      },
+    });
+  }
+
   static async delete(id: string) {
     return this.db.user.delete({ where: { id } });
+  }
+
+  static async deleteWithIdentity(id: string) {
+    return this.db.user.delete({
+      where: { id },
+      include: {
+        identities: true,
+      },
+    });
   }
 
   static async updateRelation(id: string, data: Prisma.UserUpdateInput) {
