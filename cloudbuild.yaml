@@ -1,7 +1,7 @@
 steps:
   - id: Build Docker image
     name: 'gcr.io/cloud-builders/docker'
-    args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/civicship-api', '.' ]
+    args: [ 'build', '--build-arg', 'DATABASE_URL=${_DATABASE_URL}', '-t', 'gcr.io/$PROJECT_ID/civicship-api', '.' ]
   - id: Push Docker image to Container Registry
     name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/civicship-api']
