@@ -19,7 +19,9 @@
     "db:mark-rolled-back": "prisma migrate resolve --schema src/prisma/schema.prisma --rolled-back",
     "db:studio": "prisma studio --schema src/prisma/schema.prisma",
     "gql:generate": "graphql-codegen --config codegen.yaml",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "container:up": "ls src/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
+    "container:down": "docker-compose down --rmi all --volumes --remove-orphans"
   },
   "keywords": [],
   "author": "",

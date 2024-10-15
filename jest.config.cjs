@@ -1,7 +1,7 @@
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: "ts-jest",
-  testEnvironment: "@quramy/jest-prisma/environment",
+  testEnvironment: "node",
   testEnvironmentOptions: {
     verboseQuery: true,
   },
@@ -18,5 +18,8 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  testPathIgnorePatterns: [
+    '<rootDir>/src/__tests__/helper/'
+  ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"]
 };
