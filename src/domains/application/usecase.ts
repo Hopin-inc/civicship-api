@@ -19,8 +19,8 @@ import {
   GqlApplicationSwitchIsApprovedPayload,
   GqlApplicationUpdateConfirmationCommentPayload,
   GqlApplicationDeleteConfirmationPayload,
-  GqlMutationApplicationApprovalArgs,
-  GqlMutationApplicationRefusalArgs,
+  GqlMutationApplicationApproveArgs,
+  GqlMutationApplicationRefuseArgs,
 } from "@/types/graphql";
 import ApplicationService from "@/domains/application/service";
 import ApplicationResponseFormat from "@/domains/application/presenter/response";
@@ -97,7 +97,7 @@ export default class ApplicationUseCase {
   static async userApproveApplication({
     id,
     input,
-  }: GqlMutationApplicationApprovalArgs): Promise<GqlApplicationSwitchIsApprovedPayload> {
+  }: GqlMutationApplicationApproveArgs): Promise<GqlApplicationSwitchIsApprovedPayload> {
     const result = await ApplicationService.applicationApprove({ id, input });
     return ApplicationResponseFormat.switchIsApproved(result);
   }
@@ -105,7 +105,7 @@ export default class ApplicationUseCase {
   static async userRefuseApplication({
     id,
     input,
-  }: GqlMutationApplicationRefusalArgs): Promise<GqlApplicationSwitchIsApprovedPayload> {
+  }: GqlMutationApplicationRefuseArgs): Promise<GqlApplicationSwitchIsApprovedPayload> {
     const result = await ApplicationService.applicationRefuse({ id, input });
     return ApplicationResponseFormat.switchIsApproved(result);
   }

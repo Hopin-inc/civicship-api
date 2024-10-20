@@ -25,6 +25,7 @@ import ActivityService from "@/domains/activity/service";
 import GroupService from "@/domains/group/service";
 import OrganizationService from "@/domains/organization/service";
 import UserResponseFormat from "@/domains/user/presenter/response";
+import { IContext } from "@/types/server";
 
 export default class UserUseCase {
   static async userGetManyPublicUsers({
@@ -35,6 +36,20 @@ export default class UserUseCase {
   }: GqlQueryUsersArgs): Promise<GqlUsersConnection> {
     const take = first ?? 10;
     const data = await UserService.fetchPublicUsers({ cursor, filter, sort }, take);
+    const hasNextPage = data.length > take;
+
+    const users: GqlUser[] = data.slice(0, take).map((record) => {
+      return UserResponseFormat.get(record);
+    });
+    return UserResponseFormat.query(users, hasNextPage);
+  }
+
+  static async userGetManyOrganizationUsers(
+    ctx: IContext,
+    { cursor, filter, sort, first }: GqlQueryUsersArgs,
+  ): Promise<GqlUsersConnection> {
+    const take = first ?? 10;
+    const data = await UserService.fetchOrganizationUsers(ctx, { cursor, filter, sort }, take);
     const hasNextPage = data.length > take;
 
     const users: GqlUser[] = data.slice(0, take).map((record) => {
