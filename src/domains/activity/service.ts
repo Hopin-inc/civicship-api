@@ -17,7 +17,7 @@ export default class ActivityService {
     const where = ActivityInputFormat.filter({ filter });
     const orderBy = ActivityInputFormat.sort({ sort });
 
-    return await ActivityRepository.query(where, orderBy, take, cursor);
+    return ActivityRepository.query(where, orderBy, take, cursor);
   }
 
   static async checkIfActivityExists(id: string) {
