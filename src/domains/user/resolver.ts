@@ -14,10 +14,12 @@ import {
   GqlMutationUserRemoveOrganizationArgs,
   GqlMutationUserRemoveActivityArgs,
 } from "@/types/graphql";
+import { IContext } from "@/types/server";
 
 const userResolver = {
   Query: {
-    users: async (_: unknown, args: GqlQueryUsersArgs) => UserUseCase.userGetManyPublicUsers(args),
+    // users: async (_: unknown, args: GqlQueryUsersArgs) => UserUseCase.userGetManyPublicUsers(args),
+    users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) => UserUseCase.userGetManyOrganizationUsers(ctx, args),
     user: async (_: unknown, args: GqlQueryUserArgs) => UserUseCase.userGetUser(args),
   },
   Mutation: {

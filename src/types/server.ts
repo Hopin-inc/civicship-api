@@ -1,8 +1,9 @@
-import { User } from "@prisma/client";
+import { IdentityPlatform, User } from "@prisma/client";
 
 type LoggedInUserInfo = {
   uid: string;
-  currentUser: User | undefined;
+  platform: IdentityPlatform;
+  currentUser: User | null;
 };
 export type IContext = (
   | Record<string, never>

@@ -1,7 +1,0 @@
-type CustomTokenCreatePayload {
-    idToken: String!
-}
-
-type CurrentUserPayload {
-    user: User
-}

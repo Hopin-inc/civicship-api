@@ -366,14 +366,24 @@ export type GqlComplexQueryError = GqlError & {
   statusCode: Scalars['Int']['output'];
 };
 
+export type GqlCreateUserInput = {
+  agendaIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  bio?: InputMaybe<Scalars['String']['input']>;
+  cityCodes?: InputMaybe<Array<Scalars['String']['input']>>;
+  email?: InputMaybe<Scalars['String']['input']>;
+  firstName: Scalars['String']['input'];
+  groupIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  image?: InputMaybe<GqlImageInput>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
+  lastName: Scalars['String']['input'];
+  middleName?: InputMaybe<Scalars['String']['input']>;
+  organizationIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  skillsetIds?: InputMaybe<Array<Scalars['String']['input']>>;
+};
+
 export type GqlCurrentUserPayload = {
   __typename?: 'CurrentUserPayload';
   user?: Maybe<GqlUser>;
-};
-
-export type GqlCustomTokenCreatePayload = {
-  __typename?: 'CustomTokenCreatePayload';
-  idToken: Scalars['String']['output'];
 };
 
 export type GqlEdge = {
@@ -707,10 +717,15 @@ export type GqlGroupsConnection = {
 };
 
 export const GqlIdentityPlatform = {
+  Facebook: 'FACEBOOK',
   Line: 'LINE'
 } as const;
 
 export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
+export type GqlImageInput = {
+  base64: Scalars['String']['input'];
+};
+
 export type GqlIndex = {
   __typename?: 'Index';
   description?: Maybe<Scalars['String']['output']>;
@@ -951,18 +966,21 @@ export type GqlMutation = {
   activityUnpublish?: Maybe<GqlActivitySwitchPrivacyPayload>;
   activityUpdateContent?: Maybe<GqlActivityUpdateContentPayload>;
   applicationAddConfirmation?: Maybe<GqlApplicationAddConfirmationPayload>;
-  applicationApproval?: Maybe<GqlApplicationSwitchIsApprovedPayload>;
+  applicationApprove?: Maybe<GqlApplicationSwitchIsApprovedPayload>;
   applicationCreate?: Maybe<GqlApplicationCreatePayload>;
   applicationDelete?: Maybe<GqlApplicationDeletePayload>;
   applicationDeleteConfirmation?: Maybe<GqlApplicationDeleteConfirmationPayload>;
   applicationPublish?: Maybe<GqlApplicationSwitchPrivacyPayload>;
-  applicationRefusal?: Maybe<GqlApplicationSwitchIsApprovedPayload>;
+  applicationRefuse?: Maybe<GqlApplicationSwitchIsApprovedPayload>;
   applicationUnpublish?: Maybe<GqlApplicationSwitchPrivacyPayload>;
   applicationUpdateComment?: Maybe<GqlApplicationUpdateCommentPayload>;
+  applicationUpdateConfirmation?: Maybe<GqlApplicationAddConfirmationPayload>;
   applicationUpdateConfirmationComment?: Maybe<GqlApplicationUpdateConfirmationCommentPayload>;
   commentAddEvent?: Maybe<GqlCommentAddEventPayload>;
   commentDelete?: Maybe<GqlCommentDeletePayload>;
   commentUpdateContent?: Maybe<GqlCommentUpdateContentPayload>;
+  createUser?: Maybe<GqlCurrentUserPayload>;
+  deleteUser?: Maybe<GqlCurrentUserPayload>;
   eventAddGroup?: Maybe<GqlEventUpdateGroupPayload>;
   eventAddOrganization?: Maybe<GqlEventUpdateOrganizationPayload>;
   eventDelete?: Maybe<GqlEventDeletePayload>;
@@ -1096,7 +1114,7 @@ export type GqlMutationApplicationAddConfirmationArgs = {
 };
 
 
-export type GqlMutationApplicationApprovalArgs = {
+export type GqlMutationApplicationApproveArgs = {
   id: Scalars['ID']['input'];
   input: GqlApplicationApprovalInput;
 };
@@ -1123,7 +1141,7 @@ export type GqlMutationApplicationPublishArgs = {
 };
 
 
-export type GqlMutationApplicationRefusalArgs = {
+export type GqlMutationApplicationRefuseArgs = {
   id: Scalars['ID']['input'];
   input: GqlApplicationRefusalInput;
 };
@@ -1137,6 +1155,12 @@ export type GqlMutationApplicationUnpublishArgs = {
 export type GqlMutationApplicationUpdateCommentArgs = {
   id: Scalars['ID']['input'];
   input: GqlApplicationUpdateCommentInput;
+};
+
+
+export type GqlMutationApplicationUpdateConfirmationArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlApplicationAddConfirmationInput;
 };
 
 
@@ -1159,6 +1183,11 @@ export type GqlMutationCommentDeleteArgs = {
 export type GqlMutationCommentUpdateContentArgs = {
   id: Scalars['ID']['input'];
   input: GqlCommentUpdateContentInput;
+};
+
+
+export type GqlMutationCreateUserArgs = {
+  input: GqlCreateUserInput;
 };
 
 
@@ -2422,8 +2451,8 @@ export type GqlResolversTypes = ResolversObject<{
   Comments: ResolverTypeWrapper<Omit<GqlComments, 'data'> & { data: Array<GqlResolversTypes['Comment']> }>;
   CommonError: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommonError']>;
   ComplexQueryError: ResolverTypeWrapper<GqlComplexQueryError>;
+  CreateUserInput: GqlCreateUserInput;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
-  CustomTokenCreatePayload: ResolverTypeWrapper<GqlCustomTokenCreatePayload>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
   EntityPosition: GqlEntityPosition;
@@ -2491,6 +2520,7 @@ export type GqlResolversTypes = ResolversObject<{
   GroupsConnection: ResolverTypeWrapper<Omit<GqlGroupsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['GroupEdge']>>> }>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   IdentityPlatform: GqlIdentityPlatform;
+  ImageInput: GqlImageInput;
   Index: ResolverTypeWrapper<Index>;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   InvalidInputValueError: ResolverTypeWrapper<GqlInvalidInputValueError>;
@@ -2706,8 +2736,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   Comments: Omit<GqlComments, 'data'> & { data: Array<GqlResolversParentTypes['Comment']> };
   CommonError: GqlResolversUnionTypes<GqlResolversParentTypes>['CommonError'];
   ComplexQueryError: GqlComplexQueryError;
+  CreateUserInput: GqlCreateUserInput;
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
-  CustomTokenCreatePayload: GqlCustomTokenCreatePayload;
   Datetime: Scalars['Datetime']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
   Error: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Error'];
@@ -2773,6 +2803,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   GroupUpdateUserSuccess: Omit<GqlGroupUpdateUserSuccess, 'group' | 'user'> & { group: GqlResolversParentTypes['Group'], user: GqlResolversParentTypes['User'] };
   GroupsConnection: Omit<GqlGroupsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['GroupEdge']>>> };
   ID: Scalars['ID']['output'];
+  ImageInput: GqlImageInput;
   Index: Index;
   Int: Scalars['Int']['output'];
   InvalidInputValueError: GqlInvalidInputValueError;
@@ -3196,11 +3227,6 @@ export type GqlCurrentUserPayloadResolvers<ContextType = Context, ParentType ext
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlCustomTokenCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CustomTokenCreatePayload'] = GqlResolversParentTypes['CustomTokenCreatePayload']> = ResolversObject<{
-  idToken?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export interface GqlDatetimeScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['Datetime'], any> {
   name: 'Datetime';
 }
@@ -3615,18 +3641,21 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   activityUnpublish?: Resolver<Maybe<GqlResolversTypes['ActivitySwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationActivityUnpublishArgs, 'id' | 'input'>>;
   activityUpdateContent?: Resolver<Maybe<GqlResolversTypes['ActivityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationActivityUpdateContentArgs, 'id' | 'input'>>;
   applicationAddConfirmation?: Resolver<Maybe<GqlResolversTypes['ApplicationAddConfirmationPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationAddConfirmationArgs, 'id' | 'input'>>;
-  applicationApproval?: Resolver<Maybe<GqlResolversTypes['ApplicationSwitchIsApprovedPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationApprovalArgs, 'id' | 'input'>>;
+  applicationApprove?: Resolver<Maybe<GqlResolversTypes['ApplicationSwitchIsApprovedPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationApproveArgs, 'id' | 'input'>>;
   applicationCreate?: Resolver<Maybe<GqlResolversTypes['ApplicationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationCreateArgs, 'input'>>;
   applicationDelete?: Resolver<Maybe<GqlResolversTypes['ApplicationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationDeleteArgs, 'id'>>;
   applicationDeleteConfirmation?: Resolver<Maybe<GqlResolversTypes['ApplicationDeleteConfirmationPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationDeleteConfirmationArgs, 'id' | 'input'>>;
   applicationPublish?: Resolver<Maybe<GqlResolversTypes['ApplicationSwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationPublishArgs, 'id'>>;
-  applicationRefusal?: Resolver<Maybe<GqlResolversTypes['ApplicationSwitchIsApprovedPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationRefusalArgs, 'id' | 'input'>>;
+  applicationRefuse?: Resolver<Maybe<GqlResolversTypes['ApplicationSwitchIsApprovedPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationRefuseArgs, 'id' | 'input'>>;
   applicationUnpublish?: Resolver<Maybe<GqlResolversTypes['ApplicationSwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationUnpublishArgs, 'id'>>;
   applicationUpdateComment?: Resolver<Maybe<GqlResolversTypes['ApplicationUpdateCommentPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationUpdateCommentArgs, 'id' | 'input'>>;
+  applicationUpdateConfirmation?: Resolver<Maybe<GqlResolversTypes['ApplicationAddConfirmationPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationUpdateConfirmationArgs, 'id' | 'input'>>;
   applicationUpdateConfirmationComment?: Resolver<Maybe<GqlResolversTypes['ApplicationUpdateConfirmationCommentPayload']>, ParentType, ContextType, RequireFields<GqlMutationApplicationUpdateConfirmationCommentArgs, 'id' | 'input'>>;
   commentAddEvent?: Resolver<Maybe<GqlResolversTypes['CommentAddEventPayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentAddEventArgs, 'input'>>;
   commentDelete?: Resolver<Maybe<GqlResolversTypes['CommentDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentDeleteArgs, 'id'>>;
   commentUpdateContent?: Resolver<Maybe<GqlResolversTypes['CommentUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationCommentUpdateContentArgs, 'id' | 'input'>>;
+  createUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationCreateUserArgs, 'input'>>;
+  deleteUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType>;
   eventAddGroup?: Resolver<Maybe<GqlResolversTypes['EventUpdateGroupPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddGroupArgs, 'id' | 'input'>>;
   eventAddOrganization?: Resolver<Maybe<GqlResolversTypes['EventUpdateOrganizationPayload']>, ParentType, ContextType, RequireFields<GqlMutationEventAddOrganizationArgs, 'id' | 'input'>>;
   eventDelete?: Resolver<Maybe<GqlResolversTypes['EventDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationEventDeleteArgs, 'id'>>;
@@ -4110,7 +4139,6 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   CommonError?: GqlCommonErrorResolvers<ContextType>;
   ComplexQueryError?: GqlComplexQueryErrorResolvers<ContextType>;
   CurrentUserPayload?: GqlCurrentUserPayloadResolvers<ContextType>;
-  CustomTokenCreatePayload?: GqlCustomTokenCreatePayloadResolvers<ContextType>;
   Datetime?: GraphQLScalarType;
   Edge?: GqlEdgeResolvers<ContextType>;
   Error?: GqlErrorResolvers<ContextType>;

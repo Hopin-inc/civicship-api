@@ -6,7 +6,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["views", "typedSql", "relationJoins"]
+  previewFeatures = ["views", "typedSql"]
 }
 
 generator erd {

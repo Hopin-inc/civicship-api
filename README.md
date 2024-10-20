@@ -12,7 +12,7 @@ Before starting up the server, make sure you have a connection with the database
 
 ```shell
 # Start up server
-pnpm dev
+pnpm dev:https
 
 # See database
 pnpm db:studio

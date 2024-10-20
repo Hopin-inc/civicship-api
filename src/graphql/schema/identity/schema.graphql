@@ -1,0 +1,8 @@
+extend type Query {
+    currentUser: CurrentUserPayload
+}
+
+extend type Mutation {
+    createUser(input: CreateUserInput!): CurrentUserPayload
+    deleteUser: CurrentUserPayload
+}
