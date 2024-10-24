@@ -43,6 +43,8 @@ jobs:
         ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:5432 &
 
     - name: pnpm db:generate
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: pnpm db:generate
 
     - name: pnpm gql:generate
