@@ -1,0 +1,77 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches:
+      - feature/startup-github-actions
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      REGION: ${{ secrets.GCP_REGION }}
+      ARTIFACT_REGISTRY: ${{ secrets.GCP_ARTIFACT_REGISTRY }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Set up Cloud SQL Proxy
+      uses: actions/download-artifact@v2
+      with:
+        name: cloud_sql_proxy
+        path: /tmp/cloud_sql_proxy
+
+    - name: Start Cloud SQL Proxy
+      run: |
+        chmod +x /tmp/cloud_sql_proxy/cloud_sql_proxy
+        /tmp/cloud_sql_proxy/cloud_sql_proxy -dir=/cloudsql &
+
+    - name: Connect to Cloud SQL
+      run: |
+        export CLOUD_SQL_CONNECTION_NAME="${{ env.CLOUD_SQL_CONNECTION_NAME }}"
+        /tmp/cloud_sql_proxy/cloud_sql_proxy -instances="$CLOUD_SQL_CONNECTION_NAME"=tcp:5432 &
+
+    - name: pnpm db:generate
+      run: pnpm db:generate
+
+    - name: pnpm gql:generate
+      run: pnpm gql:generate
+
+    - name: pnpm build
+      run: pnpm build
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
+    - name: Configure Docker for GCP Artifact Registry
+      run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
+
+    - name: Build Docker image
+      run: |
+        docker build -t ${{ env.ARTIFACT_REGISTRY }}/civicship-api:latest .
+
+    - name: Push Docker image to Artifact Registry
+      run: |
+        docker push ${{ env.ARTIFACT_REGISTRY }}/civicship-api:latest
