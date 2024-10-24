@@ -17,7 +17,7 @@ jobs:
       GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
       REGION: ${{ secrets.GCP_REGION }}
-      ARTIFACT_REGISTRY: ${{ secrets.GCP_ARTIFACT_REGISTRY }}
+      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
 
     steps:
     - name: Checkout code
