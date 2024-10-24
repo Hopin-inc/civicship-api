@@ -29,10 +29,8 @@ jobs:
         node-version: '20'
         cache: 'pnpm'
 
-    - name: Install pnpm
-      run: npm install -g pnpm
-
     - name: Install dependencies
+      uses: pnpm/action-setup
       run: pnpm install
 
     - name: Set up Cloud SQL Proxy
