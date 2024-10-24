@@ -38,7 +38,7 @@ jobs:
 
     - name: Set up Cloud SQL Proxy
       run: |
-          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > credentials.json
+          echo '${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}' > credentials.json
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:5432 -credential_file=credentials.json &
