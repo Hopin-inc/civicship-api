@@ -7,9 +7,9 @@ import {
   GqlMutationApplicationPublishArgs,
   GqlMutationApplicationUnpublishArgs,
   GqlMutationApplicationUpdateCommentArgs,
-  GqlMutationApplicationApprovalArgs,
+  GqlMutationApplicationApproveArgs,
   GqlMutationApplicationAddConfirmationArgs,
-  GqlMutationApplicationRefusalArgs,
+  GqlMutationApplicationRefuseArgs,
   GqlMutationApplicationUpdateConfirmationCommentArgs,
   GqlMutationApplicationDeleteConfirmationArgs,
 } from "@/types/graphql";
@@ -36,9 +36,9 @@ const applicationResolver = {
       _: unknown,
       args: GqlMutationApplicationAddConfirmationArgs,
     ) => ApplicationUseCase.userUpdateApplicationConfirmation(args),
-    applicationApprove: async (_: unknown, args: GqlMutationApplicationApprovalArgs) =>
+    applicationApprove: async (_: unknown, args: GqlMutationApplicationApproveArgs) =>
       ApplicationUseCase.userApproveApplication(args),
-    applicationRefuse: async (_: unknown, args: GqlMutationApplicationRefusalArgs) =>
+    applicationRefuse: async (_: unknown, args: GqlMutationApplicationRefuseArgs) =>
       ApplicationUseCase.userRefuseApplication(args),
     applicationUpdateConfirmationComment: async (
       _: unknown,

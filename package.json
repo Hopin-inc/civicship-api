@@ -88,6 +88,7 @@
     "graphql-scalars": "^1.23.0",
     "graphql-shield": "^7.6.5",
     "node-fetch": "^3.3.2",
+    "tsconfig-paths": "^4.2.0",
     "winston": "^3.14.2"
   }
 }

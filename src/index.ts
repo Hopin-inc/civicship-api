@@ -5,7 +5,7 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import { addResolversToSchema } from "@graphql-tools/schema";
 import { createServer } from "https";
 import fs from "fs";
-import schema from "@/graphql/schema";
+import schema from "@/graphql/schema/";
 import resolvers from "@/graphql/resolvers";
 import { IContext } from "@/types/server";
 import { requestLogger } from "@/middleware/logger";
@@ -46,8 +46,8 @@ const server =
 server.listen(port, () => {
   const uri =
     process.env.ENV === "LOCAL"
-      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${ port }/graphql`
-      : `${ process.env.HOST }/graphql`;
-  console.info(`🚀 Server ready at ${ uri }`);
-  console.info(`Environment ${ process.env.ENV }`);
+      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${port}/graphql`
+      : `${process.env.HOST}/graphql`;
+  console.info(`🚀 Server ready at ${uri}`);
+  console.info(`Environment ${process.env.ENV}`);
 });
