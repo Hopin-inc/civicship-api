@@ -23,8 +23,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Install dependencies
+    - name: Install pnpm
       uses: pnpm/action-setup
+
+    - name: Install dependencies
       run: pnpm install
 
     - name: Set up Cloud SQL Proxy
