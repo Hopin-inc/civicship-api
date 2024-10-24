@@ -65,7 +65,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ env.ARTIFACT_REGISTRY }}/civicship-api:latest .
+        docker build -t gcr.io/${{ env.ARTIFACT_REGISTRY }}/civicship-api:latest .
 
     - name: Push Docker image to Artifact Registry
       run: |
