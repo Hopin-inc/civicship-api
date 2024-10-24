@@ -37,10 +37,10 @@ jobs:
       run: pnpm install
 
     - name: Set up Cloud SQL Proxy
-      uses: actions/download-artifact@v4
-      with:
-        name: cloud_sql_proxy
-        path: /tmp/cloud_sql_proxy
+      run: |
+        wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
+        chmod +x cloud_sql_proxy
+        ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:5432 &
 
     - name: Start Cloud SQL Proxy
       run: |
