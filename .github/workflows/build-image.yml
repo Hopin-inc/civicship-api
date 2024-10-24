@@ -36,7 +36,7 @@ jobs:
       run: pnpm install
 
     - name: Set up Cloud SQL Proxy
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: cloud_sql_proxy
         path: /tmp/cloud_sql_proxy
