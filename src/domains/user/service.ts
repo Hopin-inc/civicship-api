@@ -14,13 +14,19 @@ import UserRepository from "@/domains/user/repository";
 import UserInputFormat from "@/domains/user/presenter/input";
 import { RELATION_ACTION } from "@/consts/prisma";
 import { UserUpdateContentPayloadWithArgs } from "@/domains/user/type";
+import { IContext } from "@/types/server";
 
 export default class UserService {
   static async fetchPublicUsers({ cursor, filter, sort }: GqlQueryUsersArgs, take: number) {
     const where = UserInputFormat.filter({ filter });
     const orderBy = UserInputFormat.sort({ sort });
-
     return UserRepository.query(where, orderBy, take, cursor);
+  }
+
+  static async fetchOrganizationUsers(ctx: IContext, { cursor, filter, sort }: GqlQueryUsersArgs, take: number) {
+    const where = UserInputFormat.filter({ filter });
+    const orderBy = UserInputFormat.sort({ sort });
+    return UserRepository.queryOnlyOrganization(ctx, where, orderBy, take, cursor);
   }
 
   static async findUser(id: string) {

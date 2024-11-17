@@ -5,21 +5,29 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import { addResolversToSchema } from "@graphql-tools/schema";
 import { createServer } from "https";
 import fs from "fs";
-import schema from "@/graphql/schema/";
+import schema from "@/graphql/schema";
 import resolvers from "@/graphql/resolvers";
 import { IContext } from "@/types/server";
 import { requestLogger } from "@/middleware/logger";
 import { authHandler } from "@/middleware/auth";
 import { corsHandler } from "@/middleware/cors";
+import { applyMiddleware } from "graphql-middleware";
+import errorMiddleware from "@/middleware/error";
+import logger from "./libs/logger";
 
 const app = express();
 const httpServer = http.createServer(app);
 
 // TODO delete Field suggestion on prd
-const schemaWithResolvers = addResolversToSchema({ schema, resolvers });
+const mergedSchema = applyMiddleware(
+  addResolversToSchema({ schema, resolvers }),
+  errorMiddleware,
+);
 const graphqlServer = new ApolloServer<IContext>({
-  schema: schemaWithResolvers,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  schema: mergedSchema,
+  plugins: [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+  ],
 });
 await graphqlServer.start();
 
@@ -48,6 +56,6 @@ server.listen(port, () => {
     process.env.ENV === "LOCAL"
       ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${port}/graphql`
       : `${process.env.HOST}/graphql`;
-  console.info(`🚀 Server ready at ${uri}`);
-  console.info(`Environment ${process.env.ENV}`);
+  logger.info(`🚀 Server ready at ${uri}`);
+  logger.info(`Environment ${process.env.ENV}`);
 });

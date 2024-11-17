@@ -12,7 +12,7 @@ export default class TestDataSourceHelper {
   }
 
   static async disconnect() {
-    return this.db.$disconnect()
+    return this.db.$disconnect();
   }
 
   // TODO: 実際テストで使うメソッドを整える
