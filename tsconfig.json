@@ -25,6 +25,10 @@
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "outputExtension": ".js"
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
 }
