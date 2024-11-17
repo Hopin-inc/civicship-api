@@ -4,9 +4,11 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// debian-openssl-3.0.x for CloudRun, linux-arm64-openssl-3.0.x for local
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["views", "typedSql", "relationJoins"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
 }
 
 generator erd {
