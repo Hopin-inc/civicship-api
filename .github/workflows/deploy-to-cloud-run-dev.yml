@@ -1,9 +1,9 @@
-name: Deploy to Cloud Run
+name: Deploy to GCP
 
 on:
   push:
     branches:
-      - develop
+      - feature/startup-github-actions
 
 jobs:
   deploy:
