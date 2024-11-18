@@ -13,6 +13,7 @@
     "skipLibCheck": true,
     "types": ["node", "@types/jest", "@quramy/jest-prisma"],
     "paths": {
+      "graphql/*": ["node_modules/graphql/*"],
       "@/*": ["./src/*"]
     },
     "plugins": [
