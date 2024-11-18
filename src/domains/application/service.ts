@@ -1,11 +1,11 @@
 import {
   GqlMutationApplicationAddConfirmationArgs,
-  GqlMutationApplicationApprovalArgs,
+  GqlMutationApplicationApproveArgs,
   GqlMutationApplicationCreateArgs,
   GqlMutationApplicationDeleteArgs,
   GqlMutationApplicationDeleteConfirmationArgs,
   GqlMutationApplicationPublishArgs,
-  GqlMutationApplicationRefusalArgs,
+  GqlMutationApplicationRefuseArgs,
   GqlMutationApplicationUnpublishArgs,
   GqlMutationApplicationUpdateCommentArgs,
   GqlMutationApplicationUpdateConfirmationCommentArgs,
@@ -74,11 +74,11 @@ export default class ApplicationService {
     return ApplicationRepository.updateConfirmation(id, data);
   }
 
-  static async applicationApprove({ id, input }: GqlMutationApplicationApprovalArgs) {
+  static async applicationApprove({ id, input }: GqlMutationApplicationApproveArgs) {
     return ApplicationRepository.switchIsApproved(id, input.applicationConfirmationId, true);
   }
 
-  static async applicationRefuse({ id, input }: GqlMutationApplicationRefusalArgs) {
+  static async applicationRefuse({ id, input }: GqlMutationApplicationRefuseArgs) {
     return ApplicationRepository.switchIsApproved(id, input.applicationConfirmationId, false);
   }
 

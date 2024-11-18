@@ -13,7 +13,7 @@ import { authHandler } from "@/middleware/auth";
 import { corsHandler } from "@/middleware/cors";
 import { applyMiddleware } from "graphql-middleware";
 import errorMiddleware from "@/middleware/error";
-import logger from "@/libs/logger";
+import logger from "./libs/logger";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -54,8 +54,8 @@ const server =
 server.listen(port, () => {
   const uri =
     process.env.ENV === "LOCAL"
-      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${ port }/graphql`
-      : `${ process.env.HOST }/graphql`;
-  logger.info(`🚀 Server ready at ${ uri }`);
-  logger.info(`Environment ${ process.env.ENV }`);
+      ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${port}/graphql`
+      : `${process.env.HOST}/graphql`;
+  logger.info(`🚀 Server ready at ${uri}`);
+  logger.info(`Environment ${process.env.ENV}`);
 });

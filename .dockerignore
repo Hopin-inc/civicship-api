@@ -1,0 +1,34 @@
+# Node.js dependencies
+# node_modules
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Logs
+logs
+*.log
+
+# Dependency directories
+dist
+
+# Environment variables
+.env
+*.env
+
+# Git
+.git
+.gitignore
+
+# IDE settings
+.vscode
+
+# Test files and coverage
+test
+tests
+__tests__
+coverage
+.jest
+
+# Documentation
+README.md
+docs
