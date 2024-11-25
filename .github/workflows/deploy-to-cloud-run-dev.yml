@@ -71,7 +71,7 @@ jobs:
     - name: Configure Docker for GCP Artifact Registry
       run: |
         gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
-        gcloud auth configure-docker asia-northeast1-docker.pkg.dev
+        gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
 
     - name: Build Docker image
