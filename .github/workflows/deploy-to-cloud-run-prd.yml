@@ -17,8 +17,7 @@ jobs:
       # GCP settings
       GCP_REGION: ${{ secrets.GCP_REGION }}
       # GCP service account credentials
-      SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_SQL: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_SQL }}
-      SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_RUN: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_RUN }}
+      SERVICE_ACCOUNT_CREDENTIAL_JSON: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
       # DB credentials
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -46,7 +45,7 @@ jobs:
 
     - name: Set up Cloud SQL Proxy
       run: |
-          echo '${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_SQL }}' > credentials.json
+          echo '${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}' > credentials.json
           wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
           chmod +x cloud_sql_proxy
           ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:5432 -credential_file=credentials.json &
@@ -66,7 +65,7 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
       with:
-        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_SQL }}
+        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
 
     - name: Configure Docker for GCP Artifact Registry
       run: |
@@ -82,7 +81,7 @@ jobs:
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
       with:
-        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON__CLOUD_RUN }}
+        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
 
     - name: Push Docker image to Artifact Registry
       run: |
