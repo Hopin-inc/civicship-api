@@ -26,6 +26,8 @@ jobs:
       # application settings
       ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
       APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+      HOST: ${{ secrets.HOST }}
+      ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
 
     steps:
     - name: Checkout code
