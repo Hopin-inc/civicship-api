@@ -28,6 +28,10 @@ const graphqlServer = new ApolloServer<IContext>({
   plugins: [
     ApolloServerPluginDrainHttpServer({ httpServer }),
   ],
+  formatError: (err) => {
+    logger.error("GraphQL Error:", err);
+    return err;
+  },
 });
 await graphqlServer.start();
 
