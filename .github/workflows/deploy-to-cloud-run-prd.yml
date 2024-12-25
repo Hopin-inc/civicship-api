@@ -13,6 +13,7 @@ jobs:
 
     env:
       # stage
+      ENV: prd
       STAGE: prd
       # GCP settings
       GCP_REGION: ${{ secrets.GCP_REGION }}
