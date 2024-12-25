@@ -40,6 +40,14 @@ app.use(
   authHandler(graphqlServer),
 );
 
+app.use((err: Error, req, res, next) => {
+  logger.error("Unhandled Express Error:", {
+    message: err.message,
+    stack: err.stack,
+  });
+  res.status(500).json({ error: "Internal Server Error" });
+});
+
 const port = Number(process.env.PORT ?? 3000);
 const server =
   process.env.NODE_HTTPS === "true"
