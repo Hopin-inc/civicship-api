@@ -7,6 +7,7 @@
     "target": "es2022",
     "strict": true,
     "noImplicitReturns": true,
+    "noImplicitAny": false,
     "noUnusedLocals": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
