@@ -3,7 +3,8 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - develop
+      # - develop
+      - feature/fix-env-vars-error
 
 jobs:
   deploy:
