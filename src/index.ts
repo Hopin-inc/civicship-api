@@ -28,6 +28,7 @@ const graphqlServer = new ApolloServer<IContext>({
   plugins: [
     ApolloServerPluginDrainHttpServer({ httpServer }),
   ],
+  // handle Apollo server error (GraphQL error)
   formatError: (err) => {
     logger.error("GraphQL Error:", err);
     return err;
@@ -44,6 +45,7 @@ app.use(
   authHandler(graphqlServer),
 );
 
+// handle express error
 app.use((err: Error, req, res, next) => {
   logger.error("Unhandled Express Error:", {
     message: err.message,
