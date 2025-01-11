@@ -28,6 +28,11 @@ const graphqlServer = new ApolloServer<IContext>({
   plugins: [
     ApolloServerPluginDrainHttpServer({ httpServer }),
   ],
+  // handle Apollo server error (GraphQL error)
+  formatError: (err) => {
+    logger.error("GraphQL Error:", err);
+    return err;
+  },
 });
 await graphqlServer.start();
 
@@ -39,6 +44,15 @@ app.use(
   requestLogger,
   authHandler(graphqlServer),
 );
+
+// handle express error
+app.use((err: Error, req, res, next) => {
+  logger.error("Unhandled Express Error:", {
+    message: err.message,
+    stack: err.stack,
+  });
+  res.status(500).json({ error: "Internal Server Error" });
+});
 
 const port = Number(process.env.PORT ?? 3000);
 const server =
