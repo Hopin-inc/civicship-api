@@ -62,8 +62,9 @@ export type GqlActivityAddUserInput = {
 export type GqlActivityCreateInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   endsAt: Scalars['Datetime']['input'];
-  eventId: Scalars['String']['input'];
+  eventId?: InputMaybe<Scalars['String']['input']>;
   images?: InputMaybe<Array<Scalars['String']['input']>>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
   remark?: InputMaybe<Scalars['String']['input']>;
   startsAt: Scalars['Datetime']['input'];
   userId: Scalars['String']['input'];
@@ -124,6 +125,7 @@ export type GqlActivityUpdateContentInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   endsAt: Scalars['Datetime']['input'];
   images?: InputMaybe<Array<Scalars['String']['input']>>;
+  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
   remark?: InputMaybe<Scalars['String']['input']>;
   startsAt: Scalars['Datetime']['input'];
 };

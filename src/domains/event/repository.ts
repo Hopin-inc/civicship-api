@@ -19,7 +19,6 @@ export default class EventRepository {
     return this.db.event.findMany({
       where,
       orderBy,
-      relationLoadStrategy: "join",
       include: eventGetInclude,
       take: take + 1,
       skip: cursor ? 1 : 0,
