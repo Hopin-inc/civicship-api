@@ -6,9 +6,10 @@ input ActivityCreateInput {
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
+    isPublic: Boolean
 
     userId: String!
-    eventId: String!
+    eventId: String
 }
 
 input ActivityUpdateContentInput {
@@ -17,6 +18,7 @@ input ActivityUpdateContentInput {
     images: [String!]
     startsAt: Datetime!
     endsAt: Datetime!
+    isPublic: Boolean
 }
 
 input ActivitySwitchPrivacyInput {

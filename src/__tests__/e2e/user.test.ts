@@ -2,6 +2,7 @@ import UserUseCase from "@/domains/user/usecase";
 import TestDataSourceHelper from "../helper/test-data-source-helper";
 import * as GqlTypes from "../../types/graphql";
 
+// TODO: ctxを流し込めるようにする
 
 describe("UserService", () => {
   beforeAll(async () => {
