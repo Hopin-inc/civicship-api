@@ -68,8 +68,8 @@ OTHER OTHER
     String url_x "❓"
     String url_facebook "❓"
     String url_instagram "❓"
-    String url_you_tube "❓"
-    String url_tik_tok "❓"
+    String url_youtube "❓"
+    String url_tiktok "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }

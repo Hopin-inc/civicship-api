@@ -52,8 +52,8 @@ model User {
   urlX         String? @map("url_x")
   urlFacebook  String? @map("url_facebook")
   urlInstagram String? @map("url_instagram")
-  urlYouTube   String? @map("url_you_tube")
-  urlTikTok    String? @map("url_tik_tok")
+  urlYoutube   String? @map("url_youtube")
+  urlTiktok    String? @map("url_tiktok")
 
   identities               Identity[]
   memberships              Membership[]
