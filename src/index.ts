@@ -15,6 +15,9 @@ import { applyMiddleware } from "graphql-middleware";
 import errorMiddleware from "@/middleware/error";
 import logger from "./libs/logger";
 
+const isLocal = process.env.ENV === "LOCAL"
+process.env.NODE_ENV = isLocal ? "development" : "production"
+
 const app = express();
 const httpServer = http.createServer(app);
 
