@@ -316,8 +316,8 @@ enum SysRole {
 }
 
 enum Role {
-  COMMUNITY_MANAGER
-  CONTENT_MANAGER
+  OWNER
+  MANAGER
   MEMBER
 }
 
