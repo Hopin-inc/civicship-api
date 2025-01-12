@@ -13,8 +13,8 @@ Table t_users {
   urlX String
   urlFacebook String
   urlInstagram String
-  urlYouTube String
-  urlTikTok String
+  urlYoutube String
+  urlTiktok String
   identities t_identities [not null]
   memberships t_memberships [not null]
   participations t_participations [not null]

@@ -41,8 +41,8 @@ type UserFactoryDefineInput = {
     urlX?: string | null;
     urlFacebook?: string | null;
     urlInstagram?: string | null;
-    urlYouTube?: string | null;
-    urlTikTok?: string | null;
+    urlYoutube?: string | null;
+    urlTiktok?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
