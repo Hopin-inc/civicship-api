@@ -46,10 +46,6 @@ const modelFieldDefinitions = [{
     }, {
         name: "Community",
         fields: [{
-                name: "state",
-                type: "State",
-                relationName: "CommunityToState"
-            }, {
                 name: "city",
                 type: "City",
                 relationName: "CityToCommunity"
@@ -58,7 +54,7 @@ const modelFieldDefinitions = [{
                 type: "Membership",
                 relationName: "CommunityToMembership"
             }, {
-                name: "ooportunities",
+                name: "opportunities",
                 type: "Opportunity",
                 relationName: "CommunityToOpportunity"
             }, {
@@ -73,6 +69,10 @@ const modelFieldDefinitions = [{
                 name: "utility",
                 type: "Utility",
                 relationName: "CommunityToUtility"
+            }, {
+                name: "state",
+                type: "State",
+                relationName: "CommunityToState"
             }]
     }, {
         name: "Membership",
@@ -119,10 +119,6 @@ const modelFieldDefinitions = [{
                 type: "User",
                 relationName: "OpportunityToUser"
             }, {
-                name: "state",
-                type: "State",
-                relationName: "OpportunityToState"
-            }, {
                 name: "city",
                 type: "City",
                 relationName: "CityToOpportunity"
@@ -130,6 +126,10 @@ const modelFieldDefinitions = [{
                 name: "participations",
                 type: "Participation",
                 relationName: "OpportunityToParticipation"
+            }, {
+                name: "state",
+                type: "State",
+                relationName: "OpportunityToState"
             }]
     }, {
         name: "Participation",
@@ -414,11 +414,11 @@ exports.defineIdentityFactory = ((options) => {
     return defineIdentityFactoryInternal(options, {});
 });
 exports.defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
-function isCommunitystateFactory(x) {
-    return x?._factoryFor === "State";
-}
 function isCommunitycityFactory(x) {
     return x?._factoryFor === "City";
+}
+function isCommunitystateFactory(x) {
+    return x?._factoryFor === "State";
 }
 function autoGenerateCommunityScalarsOrEnums({ seq }) {
     return {
@@ -459,12 +459,12 @@ function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAf
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                state: isCommunitystateFactory(defaultData.state) ? {
-                    create: await defaultData.state.build()
-                } : defaultData.state,
                 city: isCommunitycityFactory(defaultData.city) ? {
                     create: await defaultData.city.build()
-                } : defaultData.city
+                } : defaultData.city,
+                state: isCommunitystateFactory(defaultData.state) ? {
+                    create: await defaultData.state.build()
+                } : defaultData.state
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -721,11 +721,11 @@ function isOpportunitycommunityFactory(x) {
 function isOpportunitycreatedByUserFactory(x) {
     return x?._factoryFor === "User";
 }
-function isOpportunitystateFactory(x) {
-    return x?._factoryFor === "State";
-}
 function isOpportunitycityFactory(x) {
     return x?._factoryFor === "City";
+}
+function isOpportunitystateFactory(x) {
+    return x?._factoryFor === "State";
 }
 function autoGenerateOpportunityScalarsOrEnums({ seq }) {
     return {
@@ -773,12 +773,12 @@ function defineOpportunityFactoryInternal({ defaultData: defaultDataResolver, on
                 createdByUser: isOpportunitycreatedByUserFactory(defaultData.createdByUser) ? {
                     create: await defaultData.createdByUser.build()
                 } : defaultData.createdByUser,
-                state: isOpportunitystateFactory(defaultData.state) ? {
-                    create: await defaultData.state.build()
-                } : defaultData.state,
                 city: isOpportunitycityFactory(defaultData.city) ? {
                     create: await defaultData.city.build()
-                } : defaultData.city
+                } : defaultData.city,
+                state: isOpportunitystateFactory(defaultData.state) ? {
+                    create: await defaultData.state.build()
+                } : defaultData.state
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1139,10 +1139,7 @@ function isTransactionutilityFactory(x) {
     return x?._factoryFor === "Utility";
 }
 function autoGenerateTransactionScalarsOrEnums({ seq }) {
-    return {
-        fromPointChange: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Transaction", fieldName: "fromPointChange", isId: false, isUnique: false, seq }),
-        toPointChange: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Transaction", fieldName: "toPointChange", isId: false, isUnique: false, seq })
-    };
+    return {};
 }
 function defineTransactionFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
     const getFactoryWithTraits = (traitKeys = []) => {

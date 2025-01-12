@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_activities_stats";

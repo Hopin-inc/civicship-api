@@ -42,18 +42,18 @@ Table t_communities {
   bio String
   establishedAt DateTime
   website String
-  stateCode String [not null]
-  stateCountryCode String [not null]
   cityCode String [not null]
-  state m_states [not null]
   city m_cities [not null]
   memberships t_memberships [not null]
-  ooportunities t_opportunities [not null]
+  opportunities t_opportunities [not null]
   participations t_participations [not null]
   wallets t_wallets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   utility t_utilities [not null]
+  state m_states
+  stateCode String
+  stateCountryCode String
 }
 
 Table t_memberships {
@@ -76,7 +76,7 @@ Table t_wallets {
   community t_communities [not null]
   userId String
   user t_users
-  currentPointView mv_current_point
+  currentPointView mv_current_points
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   fromTransactions t_transactions [not null]
@@ -100,14 +100,14 @@ Table t_opportunities {
   community t_communities [not null]
   createdBy String [not null]
   createdByUser t_users [not null]
-  stateCode String [not null]
-  stateCountryCode String [not null]
   cityCode String [not null]
-  state m_states [not null]
   city m_cities [not null]
   participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+  state m_states
+  stateCode String
+  stateCountryCode String
 }
 
 Table t_participations {
@@ -153,10 +153,10 @@ Table t_transactions {
   id String [pk]
   from String
   fromWallet t_wallets
-  fromPointChange Int [not null]
+  fromPointChange Int
   to String
   toWallet t_wallets
-  toPointChange Int [not null]
+  toPointChange Int
   participationId String
   participation t_participations
   utilityId String
@@ -188,7 +188,7 @@ Table m_states {
   }
 }
 
-Table mv_current_point {
+Table mv_current_points {
   walletId String [pk]
   currentPoint Int [not null]
   wallet t_wallets [not null]
@@ -205,8 +205,8 @@ Enum SysRole {
 }
 
 Enum Role {
-  COMMUNITY_MANAGER
-  CONTENT_MANAGER
+  OWNER
+  MANAGER
   MEMBER
 }
 
@@ -240,9 +240,9 @@ Enum TransactionReason {
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 
-Ref: t_communities.(stateCode, stateCountryCode) > m_states.(code, countryCode) [delete: Restrict]
-
 Ref: t_communities.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_communities.(stateCode, stateCountryCode) > m_states.(code, countryCode)
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
@@ -256,9 +256,9 @@ Ref: t_opportunities.communityId > t_communities.id
 
 Ref: t_opportunities.createdBy > t_users.id [delete: Set Null]
 
-Ref: t_opportunities.(stateCode, stateCountryCode) > m_states.(code, countryCode) [delete: Restrict]
-
 Ref: t_opportunities.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_opportunities.(stateCode, stateCountryCode) > m_states.(code, countryCode)
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
 
@@ -282,4 +282,4 @@ Ref: t_transactions.utilityId > t_utilities.id [delete: Set Null]
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
-Ref: mv_current_point.walletId - t_wallets.id
+Ref: mv_current_points.walletId - t_wallets.id

@@ -92,20 +92,20 @@ model Community {
   establishedAt DateTime? @map("established_at")
   website       String?
 
-  stateCode        String @map("state_code")
-  stateCountryCode String @map("state_country_code")
-  cityCode         String @map("city_code")
-  state            State  @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode], onDelete: Restrict)
-  city             City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+  cityCode String @map("city_code")
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   memberships    Membership[]
-  ooportunities  Opportunity[]
+  opportunities  Opportunity[]
   participations Participation[]
   wallets        Wallet[]
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-  utility   Utility[]
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+  utility          Utility[]
+  state            State?    @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode])
+  stateCode        String?   @map("state_code")
+  stateCountryCode String?   @map("state_country_code") @db.Char(2)
 
   @@map("t_communities")
 }
@@ -153,7 +153,7 @@ view CurrentPointView {
 
   wallet Wallet @relation(fields: [walletId], references: [id])
 
-  @@map("mv_current_point")
+  @@map("mv_current_points")
 }
 
 // # Opportunity
@@ -179,16 +179,16 @@ model Opportunity {
   createdBy     String @map("created_by")
   createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
-  stateCode        String @map("state_code")
-  stateCountryCode String @map("state_country_code")
-  cityCode         String @map("city_code")
-  state            State  @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode], onDelete: Restrict)
-  city             City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+  cityCode String @map("city_code")
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   participations Participation[]
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+  state            State?    @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode])
+  stateCode        String?   @map("state_code")
+  stateCountryCode String?   @map("state_country_code") @db.Char(2)
 
   @@map("t_opportunities")
 }
@@ -258,10 +258,10 @@ model Transaction {
 
   from            String?
   fromWallet      Wallet? @relation("from_wallet", fields: [from], references: [id], onDelete: SetNull)
-  fromPointChange Int     @map("from_point_change")
+  fromPointChange Int?    @map("from_point_change")
   to              String?
   toWallet        Wallet? @relation("to_wallet", fields: [to], references: [id], onDelete: SetNull)
-  toPointChange   Int     @map("to_point_change")
+  toPointChange   Int?    @map("to_point_change")
 
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
@@ -316,8 +316,8 @@ enum SysRole {
 }
 
 enum Role {
-  COMMUNITY_MANAGER
-  CONTENT_MANAGER
+  OWNER
+  MANAGER
   MEMBER
 }
 
