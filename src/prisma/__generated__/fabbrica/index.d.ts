@@ -137,13 +137,13 @@ interface IdentityFactoryBuilder {
  * @returns factory {@link IdentityFactoryInterface}
  */
 export declare const defineIdentityFactory: IdentityFactoryBuilder;
-type CommunitystateFactory = {
-    _factoryFor: "State";
-    build: () => PromiseLike<Prisma.StateCreateNestedOneWithoutCommunitiesInput["create"]>;
-};
 type CommunitycityFactory = {
     _factoryFor: "City";
     build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutCommunitiesInput["create"]>;
+};
+type CommunitystateFactory = {
+    _factoryFor: "State";
+    build: () => PromiseLike<Prisma.StateCreateNestedOneWithoutCommunitiesInput["create"]>;
 };
 type CommunityFactoryDefineInput = {
     id?: string;
@@ -155,13 +155,13 @@ type CommunityFactoryDefineInput = {
     website?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
-    state: CommunitystateFactory | Prisma.StateCreateNestedOneWithoutCommunitiesInput;
     city: CommunitycityFactory | Prisma.CityCreateNestedOneWithoutCommunitiesInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
-    ooportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
     utility?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
+    state?: CommunitystateFactory | Prisma.StateCreateNestedOneWithoutCommunitiesInput;
 };
 type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
 type CommunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -313,19 +313,19 @@ interface WalletFactoryBuilder {
 export declare const defineWalletFactory: WalletFactoryBuilder;
 type OpportunitycommunityFactory = {
     _factoryFor: "Community";
-    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutOoportunitiesInput["create"]>;
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput["create"]>;
 };
 type OpportunitycreatedByUserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
 };
-type OpportunitystateFactory = {
-    _factoryFor: "State";
-    build: () => PromiseLike<Prisma.StateCreateNestedOneWithoutOpportunitiesInput["create"]>;
-};
 type OpportunitycityFactory = {
     _factoryFor: "City";
     build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutOpportunitiesInput["create"]>;
+};
+type OpportunitystateFactory = {
+    _factoryFor: "State";
+    build: () => PromiseLike<Prisma.StateCreateNestedOneWithoutOpportunitiesInput["create"]>;
 };
 type OpportunityFactoryDefineInput = {
     id?: string;
@@ -342,11 +342,11 @@ type OpportunityFactoryDefineInput = {
     endsAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date | null;
-    community: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOoportunitiesInput;
+    community: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
-    state: OpportunitystateFactory | Prisma.StateCreateNestedOneWithoutOpportunitiesInput;
     city: OpportunitycityFactory | Prisma.CityCreateNestedOneWithoutOpportunitiesInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInput;
+    state?: OpportunitystateFactory | Prisma.StateCreateNestedOneWithoutOpportunitiesInput;
 };
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
 type OpportunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -568,8 +568,8 @@ type TransactionutilityFactory = {
 };
 type TransactionFactoryDefineInput = {
     id?: string;
-    fromPointChange?: number;
-    toPointChange?: number;
+    fromPointChange?: number | null;
+    toPointChange?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;

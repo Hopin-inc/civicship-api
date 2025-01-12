@@ -12,16 +12,12 @@ async function main() {
     all = false;
   }
 
-  const agenda = all || args.includes("--agenda");
   const cityAndState = all || args.includes("--cityAndState");
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
-  const promise: Promise<any>[] = [];
-  if (agenda) {
-    promise.push(seedAgendas(path.join(__dirname, "./agenda.csv")));
-  }
+  const promise: Promise<unknown>[] = [];
   if (cityAndState) {
     promise.push(seedCitiesAndStates(
       path.join(__dirname, "./city.csv"),
@@ -31,30 +27,9 @@ async function main() {
   await Promise.all(promise);
 }
 
-async function seedAgendas(csvPath: string) {
-  console.log("Seeding Agenda...");
-  const agendaQueries: Prisma.PrismaPromise<any>[] = [];
-  fs.createReadStream(csvPath)
-    .pipe(csvParser())
-    .on("data", row => {
-      const id = parseInt(row.id);
-      const code: string = row.code;
-      const name: string = row.name;
-      agendaQueries.push(prismaClient.agenda.upsert({
-        where: { id },
-        update: { code, name },
-        create: { id, code, name }
-      }));
-    })
-    .on("end", async () => {
-      await prismaClient.$transaction(agendaQueries);
-      console.log("Agenda has been seeded!");
-    });
-}
-
 async function seedCitiesAndStates(citiesCsvPath: string, statesCsvPath: string) {
   console.log("Seeding State...");
-  const stateQueries: Prisma.PrismaPromise<any>[] = [];
+  const stateQueries: Prisma.PrismaPromise<unknown>[] = [];
   fs.createReadStream(statesCsvPath)
     .pipe(csvParser())
     .on("data", row => {
@@ -72,7 +47,7 @@ async function seedCitiesAndStates(citiesCsvPath: string, statesCsvPath: string)
       console.log("State has been seeded!");
 
       console.log("Seeding City...");
-      const cityQueries: Prisma.PrismaPromise<any>[] = [];
+      const cityQueries: Prisma.PrismaPromise<unknown>[] = [];
       fs.createReadStream(citiesCsvPath)
         .pipe(csvParser())
         .on("data", row => {

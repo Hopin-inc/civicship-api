@@ -16,8 +16,8 @@ USER USER
 
 
         Role {
-            COMMUNITY_MANAGER COMMUNITY_MANAGER
-CONTENT_MANAGER CONTENT_MANAGER
+            OWNER OWNER
+MANAGER MANAGER
 MEMBER MEMBER
         }
     
@@ -92,11 +92,11 @@ OTHER OTHER
     String bio "❓"
     DateTime established_at "❓"
     String website "❓"
-    String state_code 
-    String state_country_code 
     String city_code 
     DateTime created_at 
     DateTime updated_at "❓"
+    String state_code "❓"
+    String state_country_code "❓"
     }
   
 
@@ -133,11 +133,11 @@ OTHER OTHER
     DateTime ends_at "❓"
     String community_id 
     String created_by 
-    String state_code 
-    String state_country_code 
     String city_code 
     DateTime created_at 
     DateTime updated_at "❓"
+    String state_code "❓"
+    String state_country_code "❓"
     }
   
 
@@ -177,9 +177,9 @@ OTHER OTHER
   "t_transactions" {
     String id "🗝️"
     String from "❓"
-    Int from_point_change 
+    Int from_point_change "❓"
     String to "❓"
-    Int to_point_change 
+    Int to_point_change "❓"
     String participation_id "❓"
     String utility_id "❓"
     DateTime created_at 
@@ -202,7 +202,7 @@ OTHER OTHER
     }
   
 
-  "mv_current_point" {
+  "mv_current_points" {
     String walletId "🗝️"
     Int currentPoint 
     }
@@ -216,28 +216,28 @@ OTHER OTHER
     "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangeddByMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
-    "t_communities" o|--|| "m_states" : "state"
     "t_communities" o|--|| "m_cities" : "city"
     "t_communities" o{--}o "t_memberships" : "memberships"
-    "t_communities" o{--}o "t_opportunities" : "ooportunities"
+    "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_wallets" : "wallets"
     "t_communities" o{--}o "t_utilities" : "utility"
+    "t_communities" o|--|o "m_states" : "state"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "Role" : "enum:role"
     "t_wallets" o|--|| "t_communities" : "community"
     "t_wallets" o|--|o "t_users" : "user"
-    "t_wallets" o{--}o "mv_current_point" : "currentPointView"
+    "t_wallets" o{--}o "mv_current_points" : "currentPointView"
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|| "t_communities" : "community"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
-    "t_opportunities" o|--|| "m_states" : "state"
     "t_opportunities" o|--|| "m_cities" : "city"
     "t_opportunities" o{--}o "t_participations" : "participations"
+    "t_opportunities" o|--|o "m_states" : "state"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
     "t_participations" o|--|o "t_users" : "user"
     "t_participations" o|--|o "t_communities" : "community"
@@ -259,5 +259,5 @@ OTHER OTHER
     "m_states" o{--}o "m_cities" : "cities"
     "m_states" o{--}o "t_communities" : "communities"
     "m_states" o{--}o "t_opportunities" : "opportunities"
-    "mv_current_point" o|--|| "t_wallets" : "wallet"
+    "mv_current_points" o|--|| "t_wallets" : "wallet"
 ```
