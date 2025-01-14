@@ -50,7 +50,7 @@ type UserFactoryDefineInput = {
     participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
     opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
-    participationStatusChangeddByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
+    participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
 };
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
 type UserFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -451,7 +451,7 @@ type ParticipationStatusHistoryparticipationFactory = {
 };
 type ParticipationStatusHistorycreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutParticipationStatusChangeddByMeInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutParticipationStatusChangedByMeInput["create"]>;
 };
 type ParticipationStatusHistoryFactoryDefineInput = {
     id?: string;
@@ -459,7 +459,7 @@ type ParticipationStatusHistoryFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     participation: ParticipationStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutStatusHistoriesInput;
-    createdByUser?: ParticipationStatusHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutParticipationStatusChangeddByMeInput;
+    createdByUser?: ParticipationStatusHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutParticipationStatusChangedByMeInput;
 };
 type ParticipationStatusHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof ParticipationStatusHistoryFactoryDefineInput, never>>;
 type ParticipationStatusHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {

@@ -61,9 +61,9 @@ model User {
   opportunitiesCreatedByMe Opportunity[]
   wallets                  Wallet[]
 
-  createdAt                       DateTime                     @default(now()) @map("created_at")
-  updatedAt                       DateTime?                    @updatedAt @map("updated_at")
-  participationStatusChangeddByMe ParticipationStatusHistory[]
+  createdAt                      DateTime                     @default(now()) @map("created_at")
+  updatedAt                      DateTime?                    @updatedAt @map("updated_at")
+  participationStatusChangedByMe ParticipationStatusHistory[]
 
   @@map("t_users")
 }
@@ -335,6 +335,7 @@ enum OpportunityCategory {
 
 enum ParticipationStatus {
   APPLIED
+  CANCELED
   PARTICIPATING
   NOT_PARTICIPATING
   APPROVED

@@ -32,7 +32,7 @@ const modelFieldDefinitions = [{
                 type: "Wallet",
                 relationName: "UserToWallet"
             }, {
-                name: "participationStatusChangeddByMe",
+                name: "participationStatusChangedByMe",
                 type: "ParticipationStatusHistory",
                 relationName: "ParticipationStatusHistoryToUser"
             }]
