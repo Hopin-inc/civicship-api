@@ -22,7 +22,7 @@ Table t_users {
   wallets t_wallets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-  participationStatusChangeddByMe t_participation_status_histories [not null]
+  participationStatusChangedByMe t_participation_status_histories [not null]
 }
 
 Table t_identities {
@@ -224,6 +224,7 @@ Enum OpportunityCategory {
 
 Enum ParticipationStatus {
   APPLIED
+  CANCELED
   PARTICIPATING
   NOT_PARTICIPATING
   APPROVED

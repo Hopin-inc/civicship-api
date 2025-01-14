@@ -41,6 +41,7 @@ CONVERSATION CONVERSATION
 
         ParticipationStatus {
             APPLIED APPLIED
+CANCELED CANCELED
 PARTICIPATING PARTICIPATING
 NOT_PARTICIPATING NOT_PARTICIPATING
 APPROVED APPROVED
@@ -213,7 +214,7 @@ OTHER OTHER
     "t_users" o{--}o "t_participations" : "participations"
     "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
-    "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangeddByMe"
+    "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_communities" o|--|| "m_cities" : "city"
