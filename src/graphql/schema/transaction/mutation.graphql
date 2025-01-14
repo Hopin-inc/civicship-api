@@ -1,0 +1,22 @@
+input TransactionCreateInput {
+    fromWalletId: ID
+    fromPointChange: Int
+    toWalletId: ID
+    toPointChange: Int
+    participationId: ID
+    utilityId: ID
+}
+
+# Type definitions for Responses
+
+type TransactionCreateSuccess {
+    transaction: Transaction!
+}
+
+# Union definitions
+
+union TransactionCreatePayload =
+    TransactionCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

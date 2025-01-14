@@ -1,21 +1,20 @@
 # Queries/Mutations-related type definitions
 
-type OrganizationsConnection {
-    edges: [OrganizationEdge]
+type CommunitiesConnection {
+    edges: [CommunityEdge]
     pageInfo: PageInfo!
     totalCount: Int!
 }
 
-type OrganizationEdge implements Edge {
+type CommunityEdge implements Edge {
     cursor: String!
-    node: Organization
+    node: Community
 }
 
-input OrganizationFilterInput {
+input CommunityFilterInput {
     keyword: String
-    agendaId: Int
 }
 
-input OrganizationSortInput {
+input CommunitySortInput {
     updatedAt: SortDirection
 }

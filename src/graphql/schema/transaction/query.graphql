@@ -1,0 +1,18 @@
+type TransactionsConnection {
+    edges: [TransactionEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TransactionEdge implements Edge {
+    cursor: String!
+    node: Transaction
+}
+
+input TransactionFilterInput {
+    keyword: String
+}
+
+input TransactionSortInput {
+    startsAt: SortDirection
+}

@@ -1,4 +1,6 @@
-# Queries/Mutations-related type definitions
+# user
+
+## Input definition
 
 input UserCreateInput {
     lastName: String!
@@ -7,12 +9,6 @@ input UserCreateInput {
     email: String
     image: String
     bio: String
-
-    agendaIds: [Int!]
-    cityCodes: [String!]
-
-    organizationIds: [String!]
-    groupIds: [String!]
 }
 
 input UserUpdateContentInput {
@@ -22,40 +18,13 @@ input UserUpdateContentInput {
     email: String
     image: String
     bio: String
-
-    agendaIds: [Int!]
-    cityCodes: [String!]
 }
 
 input UserSwitchPrivacyInput {
     isPublic: Boolean!
 }
 
-input UserAddGroupInput {
-    groupId: String!
-}
-
-input UserRemoveGroupInput {
-    groupId: String!
-}
-
-input UserAddOrganizationInput {
-    organizationId: String!
-}
-
-input UserRemoveOrganizationInput {
-    organizationId: String!
-}
-
-input UserAddActivityInput {
-    activityId: String!
-}
-
-input UserRemoveActivityInput {
-    activityId: String!
-}
-
-# Type definitions
+## Type definitions
 
 type UserCreateSuccess {
     user: User
@@ -73,21 +42,7 @@ type UserSwitchPrivacySuccess {
     user: User!
 }
 
-type UserUpdateGroupSuccess {
-    user: User!
-    group: Group!
-}
-
-type UserUpdateOrganizationSuccess {
-    user: User!
-    organization: Organization!
-}
-
-type UserUpdateActivitySuccess {
-    user: User
-    activity: Activity!
-}
-# union definitions
+## Union definitions
 
 union UserCreatePayload =
     UserCreateSuccess |
@@ -113,20 +68,17 @@ union UserSwitchPrivacyPayload =
     AuthError |
     ComplexQueryError
 
-union UserUpdateGroupPayload =
-    UserUpdateGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
 
-union UserUpdateOrganizationPayload =
-    UserUpdateOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+# identify
 
-union UserUpdateActivityPayload =
-    UserUpdateActivitySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+## Input definition
+
+input CreateUserInput {
+    lastName: String!
+    middleName: String
+    firstName: String!
+    email: String
+    image: ImageInput
+    bio: String
+    isPublic: Boolean
+}

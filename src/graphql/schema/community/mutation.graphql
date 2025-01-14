@@ -1,158 +1,80 @@
 # Queries/Mutations-related type definitions
 
-input OrganizationCreateInput {
+input CommunityCreateInput {
     name: String!
-    entity: String
-    entityPosition: EntityPosition
-    establishedAt: Datetime
-
-    zipcode: String!
-    stateCode: String!
-    cityCode: String!
-    stateCountryCode: String!
-    address1: String!
-    address2: String
-
+    pointName: String!
     image: String
     bio: String
+    establishedAt: Datetime
     website: String
 
-    agendaIds: [Int!]
-    cityCodes: [String!]
-
-    userIds: [String!]
-}
-
-input OrganizationUpdateDefaultInput {
-    name: String!
-    entity: String
-    entityPosition: EntityPosition
-    establishedAt: Datetime
-
-    zipcode: String!
     stateCode: String!
     cityCode: String!
-    stateCountryCode: String!
-    address1: String!
-    address2: String
 }
 
-input OrganizationUpdateContentInput {
+input CommunityUpdateProfileInput {
+    name: String
+    pointName: String
     image: String
     bio: String
+    establishedAt: Datetime
     website: String
 
-    agendaIds: [Int!]
-    cityCodes: [String!]
+    stateCode: String
+    cityCode: String
 }
 
-input OrganizationAddGroupInput {
-    groupId: String!
+input CommunityAcceptUserInput {
+    userId: ID!
+    role: String
 }
 
-input OrganizationRemoveGroupInput {
-    groupId: String!
+input CommunityReleaseUserInput {
+    userId: ID!
+    reason: String
 }
 
-input OrganizationAddUserInput {
-    userId: String!
+# Payload Definitions
+
+type CommunityCreateSuccess {
+    community: Community!
 }
 
-input OrganizationRemoveUserInput {
-    userId: String!
+type CommunityDeleteSuccess {
+    communityId: ID!
 }
 
-input OrganizationAddTargetInput {
-    targetId: String!
+type CommunityUpdateProfileSuccess {
+    community: Community!
 }
 
-input OrganizationRemoveTargetInput {
-    targetId: String!
-}
-
-# Type definitions
-
-type OrganizationCreateSuccess {
-    organization: Organization
-}
-
-type OrganizationDeleteSuccess {
-    organizationId: ID!
-}
-
-type OrganizationUpdateDefaultSuccess {
-    organization: Organization!
-}
-
-type OrganizationUpdateContentSuccess {
-    organization: Organization!
-}
-
-type OrganizationSwitchPrivacySuccess {
-    organization: Organization!
-}
-
-type OrganizationUpdateGroupSuccess {
-    organization: Organization!
-    group: Group!
-}
-
-type OrganizationUpdateUserSuccess {
-    organization: Organization!
+type CommunityUpdateUserSuccess {
+    community: Community!
     user: User!
 }
 
-type OrganizationUpdateTargetSuccess {
-    organization: Organization!
-    target: Target!
-}
+# Union Definitions
 
-# union definitions
-
-union OrganizationCreatePayload =
-    OrganizationCreateSuccess |
+union CommunityCreatePayload =
+    CommunityCreateSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union OrganizationDeletePayload =
-    OrganizationDeleteSuccess |
+union CommunityDeletePayload =
+    CommunityDeleteSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union OrganizationUpdateDefaultPayload =
-    OrganizationUpdateDefaultSuccess |
+union CommunityUpdateProfilePayload =
+    CommunityUpdateProfileSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union OrganizationUpdateContentPayload =
-    OrganizationUpdateContentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationSwitchPrivacyPayload =
-    OrganizationSwitchPrivacySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationUpdateGroupPayload =
-    OrganizationUpdateGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationUpdateUserPayload =
-    OrganizationUpdateUserSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union OrganizationUpdateTargetPayload =
-    OrganizationUpdateTargetSuccess |
+union CommunityUpdateUserPayload =
+    CommunityUpdateUserSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

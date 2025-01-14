@@ -1,0 +1,18 @@
+type UtilitiesConnection {
+    edges: [UtilityEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type UtilityEdge implements Edge {
+    cursor: String!
+    node: Utility
+}
+
+input UtilityFilterInput {
+    keyword: String
+}
+
+input UtilitySortInput {
+    createdAt: SortDirection
+}

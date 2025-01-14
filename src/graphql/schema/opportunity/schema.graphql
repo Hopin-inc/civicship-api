@@ -1,0 +1,96 @@
+# Queries and Mutations
+
+extend type Query {
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection!
+    opportunity(id: ID!): Opportunity
+
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection!
+    participation(id: ID!): Participation
+
+    participationStatusHistories(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection!
+    participationStatusHistory(id: ID!): ParticipationStatusHistory
+}
+
+extend type Mutation {
+    opportunityCreate(input: OpportunityCreateInput!): OpportunityCreatePayload
+    opportunityDelete(id: ID!): OpportunityDeletePayload
+    opportunityEditContent(id: ID!, input: OpportunityEditContentInput!): OpportunityEditContentPayload
+    opportunitySetPublic(id: ID!): OpportunitySetPublishStatusPayload
+    opportunitySetCommunityInternal(id: ID!): OpportunitySetPublishStatusPayload
+    opportunitySetPrivate(id: ID!): OpportunitySetPublishStatusPayload
+
+    participationSetApply(input: ParticipationApplyInput!): ParticipationApplyPayload
+    participationSetCancel(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
+    participationSetParticipating(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
+    participationSetNotParticipating(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
+    participationSetApprove(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
+    participationSetDeny(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
+}
+
+# Type definitions
+
+type Opportunity {
+    id: ID!
+    title: String!
+    description: String
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+    capacity: Int
+    pointsPerParticipation: Int!
+    image: String
+    files: [String!]
+    startsAt: Datetime
+    endsAt: Datetime
+
+    community: Community!
+    createdBy: User!
+    state: State
+    city: City!
+
+    participations: [Participation!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type Participation {
+    id: ID!
+    status: ParticipationStatus!
+
+    user: User
+    community: Community
+    opportunity: Opportunity
+
+    statusHistories: [ParticipationStatusHistory!]
+    transactions: [Transaction!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type ParticipationStatusHistory {
+    id: ID!
+    status: ParticipationStatus!
+
+    participation: Participation!
+    createdBy: User
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

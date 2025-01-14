@@ -1,0 +1,33 @@
+# Input definitions
+
+input UtilityCreateInput {
+    name: String!
+    description: String
+    image: String
+    pointsRequired: Int!
+    communityId: ID!
+}
+
+# Type definitions
+
+type UtilityCreateSuccess {
+    utility: Utility!
+}
+
+type UtilityDeleteSuccess {
+    utilityId: ID!
+}
+
+# Union definitions
+
+union UtilityCreatePayload =
+    UtilityCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityDeletePayload =
+    UtilityDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

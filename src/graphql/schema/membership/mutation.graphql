@@ -1,0 +1,67 @@
+# membership
+
+## input definitions
+input MembershipCreateInput {
+    userId: ID!
+    communityId: ID!
+    role: String!
+}
+
+## Type definitions
+
+type MembershipCreateSuccess {
+    membership: Membership!
+}
+
+type MembershipDeleteSuccess {
+    userId: ID!
+    communityId: ID!
+}
+
+## Union definitions
+
+union MembershipCreatePayload =
+    MembershipCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union MembershipDeletePayload =
+    MembershipDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+
+# wallet
+
+## input definitions
+
+input WalletCreateInput {
+    communityId: ID!
+    userId: ID
+}
+
+## type definitions
+
+type WalletCreateSuccess {
+    wallet: Wallet!
+}
+
+type WalletDeleteSuccess {
+    walletId: ID!
+}
+
+## union definitions
+
+union WalletCreatePayload =
+    WalletCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union WalletDeletePayload =
+    WalletDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

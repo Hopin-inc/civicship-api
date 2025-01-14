@@ -1,0 +1,32 @@
+# Queries and Mutations
+
+extend type Query {
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection!
+    transaction(id: ID!): Transaction
+}
+
+extend type Mutation {
+    transactionCreate(input: TransactionCreateInput!): TransactionCreatePayload
+}
+
+# Type definitions
+
+type Transaction {
+    id: ID!
+
+    fromWallet: Wallet
+    fromPointChange: Int
+    toWallet: Wallet
+    toPointChange: Int
+
+    participation: Participation
+    utility: Utility
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

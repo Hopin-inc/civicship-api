@@ -1,0 +1,56 @@
+# Queries and Mutations
+
+extend type Query {
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: String
+        first: Int
+    ): MembershipsConnection!
+    membership(userId: ID!, communityId: ID!): Membership
+
+    wallets(
+        filter: WalletFilterInput
+        sort: WalletSortInput
+        cursor: String
+        first: Int
+    ): WalletsConnection!
+    wallet(id: ID!): Wallet
+}
+
+extend type Mutation {
+    membershipCreate(input: MembershipCreateInput!): MembershipCreatePayload
+    membershipDelete(userId: ID!, communityId: ID!): MembershipDeletePayload
+
+    walletCreate(input: WalletCreateInput!): WalletCreatePayload
+    walletDelete(id: ID!): WalletDeletePayload
+}
+
+# Type definitions
+
+type Membership {
+    user: User!
+    community: Community!
+    role: Role!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type Wallet {
+    id: ID!
+    community: Community!
+    user: User
+    currentPointView: CurrentPointView
+
+    fromTransactions: [Transaction!]
+    toTransactions: [Transaction!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type CurrentPointView {
+    wallet: Wallet!
+    currentPoint: Int!
+}

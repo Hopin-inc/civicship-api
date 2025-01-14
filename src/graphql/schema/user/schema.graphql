@@ -6,6 +6,8 @@ extend type Query {
         first: Int
     ): UsersConnection!
     user(id: ID!): User
+
+    currentUser: CurrentUserPayload
 }
 
 extend type Mutation {
@@ -14,35 +16,33 @@ extend type Mutation {
     userUpdateContent(id: ID!, input: UserUpdateContentInput!): UserUpdateContentPayload
     userPublish(id: ID!, input: UserSwitchPrivacyInput!): UserSwitchPrivacyPayload
     userUnpublish(id: ID!, input: UserSwitchPrivacyInput!): UserSwitchPrivacyPayload
-    userAddGroup(id: ID!, input: UserAddGroupInput!): UserUpdateGroupPayload
-    userRemoveGroup(id: ID!, input: UserRemoveGroupInput!): UserUpdateGroupPayload
-    userAddOrganization(id: ID!, input: UserAddOrganizationInput!): UserUpdateOrganizationPayload
-    userRemoveOrganization(id: ID!, input: UserRemoveOrganizationInput!): UserUpdateOrganizationPayload
-    userAddActivity(id: ID!, input: UserAddActivityInput!): UserUpdateActivityPayload
-    userRemoveActivity(id: ID!, input: UserRemoveActivityInput!): UserUpdateActivityPayload
+
+    createUser(input: CreateUserInput!): CurrentUserPayload
+    deleteUser: CurrentUserPayload
 }
 
 # Type definitions
 
 type User {
     id: ID!
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
+    name: String!
+    slug: String!
     image: String
     bio: String
     sysRole: SysRole!
-    isPublic: Boolean!
-
-    agendas: [Agenda!]
-    cities: [City!]
-    groups: [Group!]
-    organizations: [Organization!]
-    activities: [Activity!]
-    likes: [Like!]
-    comments: [Comment!]
+    urlWebsite: String
+    urlX: String
+    urlFacebook: String
+    urlInstagram: String
+    urlYoutube: String
+    urlTiktok: String
 
     createdAt: Datetime!
     updatedAt: Datetime
+
+    memberships: [Membership!]
+    participations: [Participation!]
+    opportunitiesCreatedByMe: [Opportunity!]
+    wallets: [Wallet!]
+    participationStatusChangedByMe: [ParticipationStatusHistory!]
 }
