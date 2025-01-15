@@ -839,7 +839,7 @@ function isParticipationopportunityFactory(x) {
 }
 function autoGenerateParticipationScalarsOrEnums({ seq }) {
     return {
-        status: "APPLIED"
+        status: "INVITED"
     };
 }
 function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -941,7 +941,7 @@ function isParticipationStatusHistorycreatedByUserFactory(x) {
 }
 function autoGenerateParticipationStatusHistoryScalarsOrEnums({ seq }) {
     return {
-        status: "APPLIED"
+        status: "INVITED"
     };
 }
 function defineParticipationStatusHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {

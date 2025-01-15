@@ -36,10 +36,7 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
-  public onlyBelongingOrganization<T>(
-    { currentUser }: IContext,
-    callback: CallbackFn<T>,
-  ): Promise<T> {
+  public onlyBelongingCommunity<T>({ currentUser }: IContext, callback: CallbackFn<T>): Promise<T> {
     if (currentUser) {
       return this.client.$transaction(async (tx) => {
         await this.setRls(tx);
