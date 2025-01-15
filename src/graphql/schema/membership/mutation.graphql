@@ -4,7 +4,7 @@
 input MembershipCreateInput {
     userId: ID!
     communityId: ID!
-    role: String!
+    role: Role!
 }
 
 ## Type definitions
