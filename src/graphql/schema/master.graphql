@@ -28,6 +28,7 @@ enum OpportunityCategory {
 }
 
 enum ParticipationStatus {
+    INVITED
     APPLIED
     CANCELED
     PARTICIPATING
@@ -44,6 +45,7 @@ enum WalletType {
 enum TransactionReason {
     POINT_ISSUED
     PARTICIPATION_APPROVED
+    UTILITY_USAGE
     MEMBERSHIP_DELETED
     GIFT
     OTHER
