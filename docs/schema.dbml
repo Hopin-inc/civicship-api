@@ -72,6 +72,7 @@ Table t_memberships {
 
 Table t_wallets {
   id String [pk]
+  type WalletType [not null, default: 'MEMBER']
   communityId String [not null]
   community t_communities [not null]
   userId String
@@ -229,6 +230,11 @@ Enum ParticipationStatus {
   NOT_PARTICIPATING
   APPROVED
   DENIED
+}
+
+Enum WalletType {
+  COMMUNITY
+  MEMBER
 }
 
 Enum TransactionReason {

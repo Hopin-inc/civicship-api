@@ -9,6 +9,8 @@ import {
   GqlOpportunity,
   GqlOpportunityCreatePayload,
   GqlOpportunityDeletePayload,
+  GqlOpportunityEditContentPayload,
+  GqlOpportunitySetPublishStatusPayload,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
@@ -23,7 +25,11 @@ export default class OpportunityUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
     const take = first ?? 10;
-    const res = await OpportunityService.fetchPublicOpportunities({ cursor, filter, sort }, take);
+    const res = await OpportunityService.fetchPublicOpportunities(
+      ctx,
+      { cursor, filter, sort },
+      take,
+    );
     const hasNextPage = res.length > take;
 
     const data: GqlOpportunity[] = res.slice(0, take).map((record) => {
@@ -36,7 +42,7 @@ export default class OpportunityUseCase {
     { id }: GqlQueryOpportunityArgs,
     ctx: IContext,
   ): Promise<GqlOpportunity | null> {
-    const res = await OpportunityService.findOpportunity(id);
+    const res = await OpportunityService.findOpportunity(ctx, id);
     if (!res) {
       return null;
     }
@@ -47,7 +53,7 @@ export default class OpportunityUseCase {
     { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
-    const res = await OpportunityService.createOpportunity(input);
+    const res = await OpportunityService.createOpportunity(ctx, input);
     return OpportunityOutputFormat.create(res);
   }
 
@@ -55,39 +61,43 @@ export default class OpportunityUseCase {
     { id }: GqlMutationOpportunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityDeletePayload> {
-    const res = await OpportunityService.deleteOpportunity(id);
+    const res = await OpportunityService.deleteOpportunity(ctx, id);
     return OpportunityOutputFormat.delete(res);
   }
 
   static async managerEditOpportunityContent(
-    { id, content }: GqlMutationOpportunityEditContentArgs,
+    { id, input }: GqlMutationOpportunityEditContentArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunity> {
-    const res = await OpportunityService.editOpportunityContent(id, content);
-    return OpportunityOutputFormat.editContent(res);
+  ): Promise<GqlOpportunityEditContentPayload> {
+    const res = await OpportunityService.editOpportunityContent(ctx, id, input);
+    return OpportunityOutputFormat.update(res);
   }
 
   static async managerSetOpportunityToPublic(
     { id }: GqlMutationOpportunitySetPublicArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunity> {
-    const res = await OpportunityService.setOpportunityStatus(id, PublishStatus.PUBLIC);
+  ): Promise<GqlOpportunitySetPublishStatusPayload> {
+    const res = await OpportunityService.setOpportunityStatus(ctx, id, PublishStatus.PUBLIC);
     return OpportunityOutputFormat.setPublishStatus(res);
   }
 
   static async managerSetOpportunityToCommunityInternal(
     { id }: GqlMutationOpportunitySetCommunityInternalArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunity> {
-    const res = await OpportunityService.setOpportunityStatus(id, PublishStatus.COMMUNITY_INTERNAL);
+  ): Promise<GqlOpportunitySetPublishStatusPayload> {
+    const res = await OpportunityService.setOpportunityStatus(
+      ctx,
+      id,
+      PublishStatus.COMMUNITY_INTERNAL,
+    );
     return OpportunityOutputFormat.setPublishStatus(res);
   }
 
   static async managerSetOpportunityToPrivate(
     { id }: GqlMutationOpportunitySetPrivateArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunity> {
-    const res = await OpportunityService.setOpportunityStatus(id, PublishStatus.PRIVATE);
+  ): Promise<GqlOpportunitySetPublishStatusPayload> {
+    const res = await OpportunityService.setOpportunityStatus(ctx, id, PublishStatus.PRIVATE);
     return OpportunityOutputFormat.setPublishStatus(res);
   }
 }

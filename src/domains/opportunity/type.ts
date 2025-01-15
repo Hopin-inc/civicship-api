@@ -4,7 +4,17 @@ export const opportunityInclude = Prisma.validator<Prisma.OpportunityInclude>()(
   community: {
     include: {
       city: { include: { state: true } },
-      state: true,
+      wallets: {
+        include: {
+          community: {
+            include: {
+              city: { include: { state: true } },
+            },
+          },
+          user: true,
+          currentPointView: true,
+        },
+      },
     },
   },
   createdByUser: true,

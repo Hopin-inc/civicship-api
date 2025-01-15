@@ -50,6 +50,13 @@ DENIED DENIED
     
 
 
+        WalletType {
+            COMMUNITY COMMUNITY
+MEMBER MEMBER
+        }
+    
+
+
         TransactionReason {
             POINT_ISSUED POINT_ISSUED
 PARTICIPATION_APPROVED PARTICIPATION_APPROVED
@@ -112,6 +119,7 @@ OTHER OTHER
 
   "t_wallets" {
     String wallet_id "🗝️"
+    WalletType type 
     String community_id 
     String user_id "❓"
     DateTime created_at 
@@ -227,6 +235,7 @@ OTHER OTHER
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "Role" : "enum:role"
+    "t_wallets" o|--|| "WalletType" : "enum:type"
     "t_wallets" o|--|| "t_communities" : "community"
     "t_wallets" o|--|o "t_users" : "user"
     "t_wallets" o{--}o "mv_current_points" : "currentPointView"

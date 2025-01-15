@@ -15,7 +15,6 @@ input OpportunityCreateInput {
     endsAt: Datetime
 
     communityId: String!
-    createdById: String!
     cityCode: String!
 
     stateCode: String
@@ -84,13 +83,8 @@ union OpportunitySetPublishStatusPayload =
 ## input definitions
 
 input ParticipationApplyInput {
-    createdById: String!
     communityId: String
     opportunityId: String!
-}
-
-input ParticipationUpdateStatusInput {
-    createdById: String!
 }
 
 ## Type definitions
@@ -124,7 +118,7 @@ union ParticipationSetStatusPayload =
 input ParticipationStatusHistoryCreateInput {
     participationId: String!
     status: ParticipationStatus!
-    createdById: String
+    createdById: String!
 }
 
 ## Type definitions

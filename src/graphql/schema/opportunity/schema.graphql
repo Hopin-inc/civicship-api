@@ -35,11 +35,11 @@ extend type Mutation {
     opportunitySetPrivate(id: ID!): OpportunitySetPublishStatusPayload
 
     participationSetApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationSetCancel(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
-    participationSetParticipating(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
-    participationSetNotParticipating(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
-    participationSetApprove(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
-    participationSetDeny(id: ID!, input: ParticipationUpdateStatusInput!): ParticipationSetStatusPayload
+    participationSetCancel(id: ID!): ParticipationSetStatusPayload
+    participationSetParticipating(id: ID!): ParticipationSetStatusPayload
+    participationSetNotParticipating(id: ID!): ParticipationSetStatusPayload
+    participationSetApprove(id: ID!): ParticipationSetStatusPayload
+    participationSetDeny(id: ID!): ParticipationSetStatusPayload
 }
 
 # Type definitions

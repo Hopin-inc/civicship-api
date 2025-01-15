@@ -14,6 +14,7 @@ import type { CurrentPointView } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
 import type { Role } from "@prisma/client";
+import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
@@ -266,6 +267,7 @@ type WalletcurrentPointViewFactory = {
 };
 type WalletFactoryDefineInput = {
     id?: string;
+    type?: WalletType;
     createdAt?: Date;
     updatedAt?: Date | null;
     community: WalletcommunityFactory | Prisma.CommunityCreateNestedOneWithoutWalletsInput;

@@ -24,14 +24,17 @@ export default class ParticipationInputFormat {
     ];
   }
 
-  static apply(input: GqlParticipationApplyInput): Prisma.ParticipationCreateInput {
-    const { communityId, createdById, opportunityId, ...properties } = input;
+  static apply(
+    input: GqlParticipationApplyInput,
+    currentUserId: string,
+  ): Prisma.ParticipationCreateInput {
+    const { communityId, opportunityId, ...properties } = input;
 
     return {
       ...properties,
       status: ParticipationStatus.APPLIED,
       community: { connect: { id: communityId } },
-      user: { connect: { id: createdById } },
+      user: { connect: { id: currentUserId } },
       opportunity: { connect: { id: opportunityId } },
     };
   }

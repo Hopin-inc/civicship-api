@@ -1,5 +1,6 @@
 import {
   GqlOpportunityCreateInput,
+  GqlOpportunityEditContentInput,
   GqlOpportunityFilterInput,
   GqlOpportunitySortInput,
 } from "@/types/graphql";
@@ -27,14 +28,24 @@ export default class OpportunityInputFormat {
     ];
   }
 
-  static create(input: GqlOpportunityCreateInput): Prisma.OpportunityCreateInput {
-    const { communityId, cityCode, createdById, ...properties } = input;
+  static create(
+    input: GqlOpportunityCreateInput,
+    currentUserId: string,
+  ): Prisma.OpportunityCreateInput {
+    const { communityId, cityCode, ...properties } = input;
 
     return {
       ...properties,
       community: { connect: { id: communityId } },
-      createdByUser: { connect: { id: createdById } },
+      createdByUser: { connect: { id: currentUserId } },
       city: { connect: { code: cityCode } },
+    };
+  }
+
+  // TODO updatedByUserをDBに加えるか判断
+  static update(input: GqlOpportunityEditContentInput): Prisma.OpportunityUpdateInput {
+    return {
+      ...input,
     };
   }
 }

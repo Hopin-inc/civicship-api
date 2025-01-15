@@ -36,6 +36,11 @@ enum ParticipationStatus {
     DENIED
 }
 
+enum WalletType {
+    COMMUNITY
+    MEMBER
+}
+
 enum TransactionReason {
     POINT_ISSUED
     PARTICIPATION_APPROVED

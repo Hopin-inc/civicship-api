@@ -22,7 +22,7 @@ export default class ParticipationUseCase {
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
     const take = first ?? 10;
-    const res = await ParticipationService.fetchParticipations({ cursor, filter, sort }, take);
+    const res = await ParticipationService.fetchParticipations(ctx, { cursor, filter, sort }, take);
     const hasNextPage = res.length > take;
 
     const data: GqlParticipation[] = res.slice(0, take).map((record) => {
@@ -35,7 +35,7 @@ export default class ParticipationUseCase {
     { id }: GqlQueryParticipationArgs,
     ctx: IContext,
   ): Promise<GqlParticipation | null> {
-    const res = await ParticipationService.findParticipation(id);
+    const res = await ParticipationService.findParticipation(ctx, id);
     if (!res) {
       return null;
     }
@@ -46,47 +46,47 @@ export default class ParticipationUseCase {
     { input }: GqlMutationParticipationSetApplyArgs,
     ctx: IContext,
   ): Promise<GqlParticipationApplyPayload> {
-    const res = await ParticipationService.applyParticipation(input);
+    const res = await ParticipationService.applyParticipation(ctx, input);
     return ParticipationOutputFormat.apply(res);
   }
 
-  static async userCancelParticipation(
-    { id, input }: GqlMutationParticipationSetCancelArgs,
+  static async userCancelApplication(
+    { id }: GqlMutationParticipationSetCancelArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.cancelApplication(id, input);
+    const res = await ParticipationService.cancelApplication(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 
   static async managerApproveApplication(
-    { id, input }: GqlMutationParticipationSetParticipatingArgs,
+    { id }: GqlMutationParticipationSetParticipatingArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.approveApplication(id, input);
+    const res = await ParticipationService.approveApplication(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 
   static async managerDenyApplication(
-    { id, input }: GqlMutationParticipationSetNotParticipatingArgs,
+    { id }: GqlMutationParticipationSetNotParticipatingArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.denyApplication(id, input);
+    const res = await ParticipationService.denyApplication(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 
   static async managerApprovePerformance(
-    { id, input }: GqlMutationParticipationSetApproveArgs,
+    { id }: GqlMutationParticipationSetApproveArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.approvePerformance(id, input);
+    const res = await ParticipationService.approvePerformance(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 
   static async managerDenyPerformance(
-    { id, input }: GqlMutationParticipationSetDenyArgs,
+    { id }: GqlMutationParticipationSetDenyArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.denyPerformance(id, input);
+    const res = await ParticipationService.denyPerformance(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 }

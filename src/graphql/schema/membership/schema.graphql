@@ -39,6 +39,7 @@ type Membership {
 
 type Wallet {
     id: ID!
+    type: WalletType!
     community: Community!
     user: User
     currentPointView: CurrentPointView
@@ -51,6 +52,6 @@ type Wallet {
 }
 
 type CurrentPointView {
-    wallet: Wallet!
+    walletId: String!
     currentPoint: Int!
 }

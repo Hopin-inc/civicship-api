@@ -2,6 +2,9 @@ import {
   GqlOpportunitiesConnection,
   GqlOpportunity,
   GqlOpportunityCreateSuccess,
+  GqlOpportunityDeleteSuccess,
+  GqlOpportunityEditContentSuccess,
+  GqlOpportunitySetPublishStatusSuccess,
 } from "@/types/graphql";
 import { OpportunityPayloadWithArgs } from "@/domains/opportunity/type";
 
@@ -27,8 +30,27 @@ export default class OpportunityOutputFormat {
 
     return {
       ...prop,
-      community: community,
-      city: city,
+      community: {
+        ...community,
+        wallets: community.wallets?.map((wallet) => ({
+          ...wallet,
+          community: {
+            ...wallet.community,
+            city: { ...wallet.community.city, state: wallet.community.city.state },
+          },
+          user: wallet.user ? { ...wallet.user } : null,
+          currentPointView: wallet.currentPointView
+            ? {
+                walletId: wallet.id,
+                currentPoint: wallet.currentPointView.currentPoint,
+              }
+            : null,
+        })),
+      },
+      city: {
+        ...city,
+        state: city.state,
+      },
       createdBy: createdByUser,
       participations: participations?.map((p) => ({
         ...p,
@@ -40,6 +62,27 @@ export default class OpportunityOutputFormat {
   static create(r: OpportunityPayloadWithArgs): GqlOpportunityCreateSuccess {
     return {
       __typename: "OpportunityCreateSuccess",
+      opportunity: this.get(r),
+    };
+  }
+
+  static delete(r: OpportunityPayloadWithArgs): GqlOpportunityDeleteSuccess {
+    return {
+      __typename: "OpportunityDeleteSuccess",
+      opportunityId: r.id,
+    };
+  }
+
+  static update(r: OpportunityPayloadWithArgs): GqlOpportunityEditContentSuccess {
+    return {
+      __typename: "OpportunityEditContentSuccess",
+      opportunity: this.get(r),
+    };
+  }
+
+  static setPublishStatus(r: OpportunityPayloadWithArgs): GqlOpportunitySetPublishStatusSuccess {
+    return {
+      __typename: "OpportunitySetPublishStatusSuccess",
       opportunity: this.get(r),
     };
   }

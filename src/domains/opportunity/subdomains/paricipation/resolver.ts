@@ -28,7 +28,7 @@ const participationResolver = {
       _: unknown,
       args: GqlMutationParticipationSetCancelArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.userCancelParticipation(args, ctx),
+    ) => ParticipationUseCase.userCancelApplication(args, ctx),
     participationSetParticipating: async (
       _: unknown,
       args: GqlMutationParticipationSetParticipatingArgs,
