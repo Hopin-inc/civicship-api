@@ -12,9 +12,10 @@ type CommunityEdge implements Edge {
 }
 
 input CommunityFilterInput {
-    keyword: String
+    stateCode: String
+    cityCode: String
 }
 
 input CommunitySortInput {
-    updatedAt: SortDirection
+    createdAt: SortDirection
 }

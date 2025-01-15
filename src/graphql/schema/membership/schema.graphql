@@ -20,10 +20,7 @@ extend type Query {
 
 extend type Mutation {
     membershipCreate(input: MembershipCreateInput!): MembershipCreatePayload
-    membershipDelete(userId: ID!, communityId: ID!): MembershipDeletePayload
-
-    walletCreate(input: WalletCreateInput!): WalletCreatePayload
-    walletDelete(id: ID!): WalletDeletePayload
+    membershipDelete(id: ID!): MembershipDeletePayload
 }
 
 # Type definitions
