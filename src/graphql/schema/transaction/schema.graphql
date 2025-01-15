@@ -18,6 +18,7 @@ extend type Mutation {
 
 type Transaction {
     id: ID!
+    reason: TransactionReason
 
     fromWallet: Wallet
     fromPointChange: Int

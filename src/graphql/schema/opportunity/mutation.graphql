@@ -87,9 +87,19 @@ input ParticipationApplyInput {
     opportunityId: String!
 }
 
+input ParticipationInviteInput{
+    communityId: String
+    opportunityId: String!
+    invitedUserId: String!
+}
+
 ## Type definitions
 
 type ParticipationApplySuccess {
+    participation: Participation!
+}
+
+type ParticipationInviteSuccess {
     participation: Participation!
 }
 
@@ -101,6 +111,12 @@ type ParticipationSetStatusSuccess {
 
 union ParticipationApplyPayload =
     ParticipationApplySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ParticipationInvitePayload =
+    ParticipationInviteSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

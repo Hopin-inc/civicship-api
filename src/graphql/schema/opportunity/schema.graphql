@@ -30,16 +30,28 @@ extend type Mutation {
     opportunityCreate(input: OpportunityCreateInput!): OpportunityCreatePayload
     opportunityDelete(id: ID!): OpportunityDeletePayload
     opportunityEditContent(id: ID!, input: OpportunityEditContentInput!): OpportunityEditContentPayload
+
     opportunitySetPublic(id: ID!): OpportunitySetPublishStatusPayload
     opportunitySetCommunityInternal(id: ID!): OpportunitySetPublishStatusPayload
     opportunitySetPrivate(id: ID!): OpportunitySetPublishStatusPayload
 
-    participationSetApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationSetCancel(id: ID!): ParticipationSetStatusPayload
-    participationSetParticipating(id: ID!): ParticipationSetStatusPayload
-    participationSetNotParticipating(id: ID!): ParticipationSetStatusPayload
-    participationSetApprove(id: ID!): ParticipationSetStatusPayload
-    participationSetDeny(id: ID!): ParticipationSetStatusPayload
+    # invite
+    participationInvite(id: ID!, input: ParticipationInviteInput!): ParticipationSetStatusPayload
+    participationCancelInvitation(id: ID!): ParticipationSetStatusPayload
+    participationApproveInvitation(id: ID!): ParticipationSetStatusPayload
+    participationDenyInvitation(id: ID!): ParticipationSetStatusPayload
+
+    # apply
+    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
+    participationCancelApplication(id: ID!): ParticipationSetStatusPayload
+    participationApproveApplication(id: ID!): ParticipationSetStatusPayload
+    participationDenyApplication(id: ID!): ParticipationSetStatusPayload
+
+    # performance
+    participationSubmitOutput(id: ID!): ParticipationSetStatusPayload
+    participationCancelSubmission(id: ID!): ParticipationSetStatusPayload
+    participationApprovePerformance(id: ID!): ParticipationSetStatusPayload
+    participationDenyPerformance(id: ID!): ParticipationSetStatusPayload
 }
 
 # Type definitions

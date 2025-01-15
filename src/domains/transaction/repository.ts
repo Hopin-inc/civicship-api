@@ -1,35 +1,26 @@
-import { prismaClient } from "@/prisma/client";
+import { PrismaClientIssuer } from "@/prisma/client";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
 
 export default class TransactionRepository {
-  private static db = prismaClient;
+  private static issuer = new PrismaClientIssuer();
 
-  static async refreshStat() {
-    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+  static async refreshStat(ctx: IContext, tx: Prisma.TransactionClient) {
+    return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
+      return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    });
   }
 
-  static async transferPoints(
+  static async createWithTransaction(
+    ctx: IContext,
     tx: Prisma.TransactionClient,
-    sourceWalletId: string,
-    targetWalletId: string,
-    points: number,
+    data: Prisma.TransactionCreateInput,
   ) {
-    if (points <= 0) {
-      throw new Error("Points to transfer must be greater than zero");
-    }
-
-    await tx.transaction.createMany({
-      data: [
-        {
-          from: sourceWalletId,
-          fromPointChange: -points,
-        },
-        {
-          to: targetWalletId,
-          toPointChange: points,
-        },
-      ],
+    return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
+      return transactionTx.transaction.create({
+        data,
+      });
     });
   }
 }

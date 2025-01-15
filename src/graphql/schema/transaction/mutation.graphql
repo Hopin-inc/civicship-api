@@ -1,10 +1,13 @@
 input TransactionCreateInput {
-    fromWalletId: ID
+    reason: TransactionReason!
+
+    fromWalletId: String
     fromPointChange: Int
-    toWalletId: ID
+    toWalletId: String!
     toPointChange: Int
-    participationId: ID
-    utilityId: ID
+
+    participationId: String
+    utilityId: String
 }
 
 # Type definitions for Responses

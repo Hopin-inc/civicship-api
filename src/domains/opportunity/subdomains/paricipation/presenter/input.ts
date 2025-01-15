@@ -2,6 +2,7 @@ import {
   GqlParticipationFilterInput,
   GqlParticipationSortInput,
   GqlParticipationApplyInput,
+  GqlParticipationInviteInput,
 } from "@/types/graphql";
 import { ParticipationStatus, Prisma } from "@prisma/client";
 
@@ -22,6 +23,18 @@ export default class ParticipationInputFormat {
       { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
       { updatedAt: sort?.updatedAt ?? Prisma.SortOrder.desc },
     ];
+  }
+
+  static invite(input: GqlParticipationInviteInput): Prisma.ParticipationCreateInput {
+    const { communityId, opportunityId, invitedUserId, ...properties } = input;
+
+    return {
+      ...properties,
+      status: ParticipationStatus.APPLIED,
+      community: { connect: { id: communityId } },
+      user: { connect: { id: invitedUserId } },
+      opportunity: { connect: { id: opportunityId } },
+    };
   }
 
   static apply(

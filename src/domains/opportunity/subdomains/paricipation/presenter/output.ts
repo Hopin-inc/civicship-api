@@ -3,6 +3,7 @@ import {
   GqlParticipation,
   GqlParticipationApplySuccess,
   GqlParticipationSetStatusPayload,
+  GqlParticipationInviteSuccess,
 } from "@/types/graphql";
 import { ParticipationPayloadWithArgs } from "@/domains/opportunity/subdomains/paricipation/type";
 
@@ -46,6 +47,13 @@ export default class ParticipationOutputFormat {
       transactions: Array.isArray(transactions)
         ? transactions.map((transaction) => ({ ...transaction }))
         : [],
+    };
+  }
+
+  static invite(r: ParticipationPayloadWithArgs): GqlParticipationInviteSuccess {
+    return {
+      __typename: "ParticipationInviteSuccess",
+      participation: this.get(r),
     };
   }
 
