@@ -129,7 +129,8 @@ model Membership {
 }
 
 model Wallet {
-  id String @id @default(cuid())
+  id   String     @id @default(cuid())
+  type WalletType @default(MEMBER)
 
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -340,6 +341,11 @@ enum ParticipationStatus {
   NOT_PARTICIPATING
   APPROVED
   DENIED
+}
+
+enum WalletType {
+  COMMUNITY
+  MEMBER
 }
 
 enum TransactionReason {
