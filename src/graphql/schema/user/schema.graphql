@@ -11,14 +11,10 @@ extend type Query {
 }
 
 extend type Mutation {
-    userCreate(input: UserCreateInput!): UserCreatePayload
-    userDelete(id: ID!): UserDeletePayload
-    userUpdateContent(id: ID!, input: UserUpdateContentInput!): UserUpdateContentPayload
-    userPublish(id: ID!, input: UserSwitchPrivacyInput!): UserSwitchPrivacyPayload
-    userUnpublish(id: ID!, input: UserSwitchPrivacyInput!): UserSwitchPrivacyPayload
-
     createUser(input: CreateUserInput!): CurrentUserPayload
     deleteUser: CurrentUserPayload
+
+    userUpdateProfile(id: ID!, input: UserUpdateProfileInput!): UserUpdateProfilePayload
 }
 
 # Type definitions
@@ -29,7 +25,7 @@ type User {
     slug: String!
     image: String
     bio: String
-    sysRole: SysRole!
+    sysRole: SysRole
     urlWebsite: String
     urlX: String
     urlFacebook: String
@@ -41,8 +37,9 @@ type User {
     updatedAt: Datetime
 
     memberships: [Membership!]
-    participations: [Participation!]
-    opportunitiesCreatedByMe: [Opportunity!]
     wallets: [Wallet!]
+
+    opportunitiesCreatedByMe: [Opportunity!]
+    participations: [Participation!]
     participationStatusChangedByMe: [ParticipationStatusHistory!]
 }

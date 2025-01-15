@@ -5,7 +5,8 @@ export default class IdentityInputFormat {
   static create({ input }: GqlMutationCreateUserArgs): Prisma.UserCreateInput {
     return {
       ...input,
-      image: input.image?.base64
+      slug: input.slug || "",
+      image: input.image?.base64,
     };
   }
 }

@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import IdentityUseCase from "@/domains/identity/usecase";
+import IdentityUseCase from "@/domains/user/identity/usecase";
 import { GqlMutationCreateUserArgs } from "@/types/graphql";
 
 const identityResolver = {
@@ -12,7 +12,7 @@ const identityResolver = {
       IdentityUseCase.userCreateAccount(ctx, args),
     deleteUser: async (_: unknown, __: unknown, ctx: IContext) =>
       IdentityUseCase.userDeleteAccount(ctx),
-  }
+  },
 };
 
 export default identityResolver;

@@ -13,17 +13,9 @@ type UserEdge implements Edge {
 
 input UserFilterInput {
     keyword: String
-    agendaId: Int
-    cityCode: String
-    isPublic: Boolean
+    sysRole: SysRole
 }
 
 input UserSortInput {
-    updatedAt: SortDirection
-}
-
-# identify
-
-type CurrentUserPayload {
-    user: User
+    createdAt: SortDirection
 }

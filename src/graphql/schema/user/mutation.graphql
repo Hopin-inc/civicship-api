@@ -2,68 +2,23 @@
 
 ## Input definition
 
-input UserCreateInput {
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
-    image: String
+input UserUpdateProfileInput {
+    name: String!
+    slug: String
+    image: ImageInput
     bio: String
-}
-
-input UserUpdateContentInput {
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
-    image: String
-    bio: String
-}
-
-input UserSwitchPrivacyInput {
-    isPublic: Boolean!
 }
 
 ## Type definitions
 
-type UserCreateSuccess {
+type UserUpdateProfileSuccess {
     user: User
-}
-
-type UserDeleteSuccess {
-    userId: ID!
-}
-
-type UserUpdateContentSuccess {
-    user: User
-}
-
-type UserSwitchPrivacySuccess {
-    user: User!
 }
 
 ## Union definitions
 
-union UserCreatePayload =
-    UserCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserDeletePayload =
-    UserDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserUpdateContentPayload =
-    UserUpdateContentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserSwitchPrivacyPayload =
-    UserSwitchPrivacySuccess |
+union UserUpdateProfilePayload =
+    UserUpdateProfileSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
@@ -74,11 +29,13 @@ union UserSwitchPrivacyPayload =
 ## Input definition
 
 input CreateUserInput {
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
+    name: String!
+    slug: String
     image: ImageInput
-    bio: String
-    isPublic: Boolean
+}
+
+## Type definitions
+
+type CurrentUserPayload {
+    user: User
 }
