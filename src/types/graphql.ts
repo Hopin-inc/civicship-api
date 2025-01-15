@@ -150,13 +150,9 @@ export type GqlComplexQueryError = GqlError & {
 };
 
 export type GqlCreateUserInput = {
-  bio?: InputMaybe<Scalars['String']['input']>;
-  email?: InputMaybe<Scalars['String']['input']>;
-  firstName: Scalars['String']['input'];
   image?: InputMaybe<GqlImageInput>;
-  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
-  lastName: Scalars['String']['input'];
-  middleName?: InputMaybe<Scalars['String']['input']>;
+  name: Scalars['String']['input'];
+  slug?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlCurrentPointView = {
@@ -213,7 +209,7 @@ export type GqlMembership = {
 
 export type GqlMembershipCreateInput = {
   communityId: Scalars['ID']['input'];
-  role: Scalars['String']['input'];
+  role: GqlRole;
   userId: Scalars['ID']['input'];
 };
 
@@ -271,18 +267,20 @@ export type GqlMutation = {
   opportunitySetCommunityInternal?: Maybe<GqlOpportunitySetPublishStatusPayload>;
   opportunitySetPrivate?: Maybe<GqlOpportunitySetPublishStatusPayload>;
   opportunitySetPublic?: Maybe<GqlOpportunitySetPublishStatusPayload>;
-  participationSetApply?: Maybe<GqlParticipationApplyPayload>;
-  participationSetApprove?: Maybe<GqlParticipationSetStatusPayload>;
-  participationSetCancel?: Maybe<GqlParticipationSetStatusPayload>;
-  participationSetDeny?: Maybe<GqlParticipationSetStatusPayload>;
-  participationSetNotParticipating?: Maybe<GqlParticipationSetStatusPayload>;
-  participationSetParticipating?: Maybe<GqlParticipationSetStatusPayload>;
+  participationApply?: Maybe<GqlParticipationApplyPayload>;
+  participationApproveApplication?: Maybe<GqlParticipationSetStatusPayload>;
+  participationApproveInvitation?: Maybe<GqlParticipationSetStatusPayload>;
+  participationApprovePerformance?: Maybe<GqlParticipationSetStatusPayload>;
+  participationCancelApplication?: Maybe<GqlParticipationSetStatusPayload>;
+  participationCancelInvitation?: Maybe<GqlParticipationSetStatusPayload>;
+  participationCancelSubmission?: Maybe<GqlParticipationSetStatusPayload>;
+  participationDenyApplication?: Maybe<GqlParticipationSetStatusPayload>;
+  participationDenyInvitation?: Maybe<GqlParticipationSetStatusPayload>;
+  participationDenyPerformance?: Maybe<GqlParticipationSetStatusPayload>;
+  participationInvite?: Maybe<GqlParticipationSetStatusPayload>;
+  participationSubmitOutput?: Maybe<GqlParticipationSetStatusPayload>;
   transactionCreate?: Maybe<GqlTransactionCreatePayload>;
-  userCreate?: Maybe<GqlUserCreatePayload>;
-  userDelete?: Maybe<GqlUserDeletePayload>;
-  userPublish?: Maybe<GqlUserSwitchPrivacyPayload>;
-  userUnpublish?: Maybe<GqlUserSwitchPrivacyPayload>;
-  userUpdateContent?: Maybe<GqlUserUpdateContentPayload>;
+  userUpdateProfile?: Maybe<GqlUserUpdateProfilePayload>;
   utilityCreate?: Maybe<GqlUtilityCreatePayload>;
   utilityDelete?: Maybe<GqlUtilityDeletePayload>;
   walletCreate?: Maybe<GqlWalletCreatePayload>;
@@ -365,32 +363,63 @@ export type GqlMutationOpportunitySetPublicArgs = {
 };
 
 
-export type GqlMutationParticipationSetApplyArgs = {
+export type GqlMutationParticipationApplyArgs = {
   input: GqlParticipationApplyInput;
 };
 
 
-export type GqlMutationParticipationSetApproveArgs = {
+export type GqlMutationParticipationApproveApplicationArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-export type GqlMutationParticipationSetCancelArgs = {
+export type GqlMutationParticipationApproveInvitationArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-export type GqlMutationParticipationSetDenyArgs = {
+export type GqlMutationParticipationApprovePerformanceArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-export type GqlMutationParticipationSetNotParticipatingArgs = {
+export type GqlMutationParticipationCancelApplicationArgs = {
   id: Scalars['ID']['input'];
 };
 
 
-export type GqlMutationParticipationSetParticipatingArgs = {
+export type GqlMutationParticipationCancelInvitationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationParticipationCancelSubmissionArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationParticipationDenyApplicationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationParticipationDenyInvitationArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationParticipationDenyPerformanceArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlMutationParticipationInviteArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlParticipationInviteInput;
+};
+
+
+export type GqlMutationParticipationSubmitOutputArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -400,31 +429,9 @@ export type GqlMutationTransactionCreateArgs = {
 };
 
 
-export type GqlMutationUserCreateArgs = {
-  input: GqlUserCreateInput;
-};
-
-
-export type GqlMutationUserDeleteArgs = {
+export type GqlMutationUserUpdateProfileArgs = {
   id: Scalars['ID']['input'];
-};
-
-
-export type GqlMutationUserPublishArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlUserSwitchPrivacyInput;
-};
-
-
-export type GqlMutationUserUnpublishArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlUserSwitchPrivacyInput;
-};
-
-
-export type GqlMutationUserUpdateContentArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlUserUpdateContentInput;
+  input: GqlUserUpdateProfileInput;
 };
 
 
@@ -614,6 +621,19 @@ export type GqlParticipationFilterInput = {
   userId?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type GqlParticipationInviteInput = {
+  communityId?: InputMaybe<Scalars['String']['input']>;
+  invitedUserId: Scalars['String']['input'];
+  opportunityId: Scalars['String']['input'];
+};
+
+export type GqlParticipationInvitePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationInviteSuccess;
+
+export type GqlParticipationInviteSuccess = {
+  __typename?: 'ParticipationInviteSuccess';
+  participation: GqlParticipation;
+};
+
 export type GqlParticipationSetStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationSetStatusSuccess;
 
 export type GqlParticipationSetStatusSuccess = {
@@ -631,6 +651,7 @@ export const GqlParticipationStatus = {
   Approved: 'APPROVED',
   Canceled: 'CANCELED',
   Denied: 'DENIED',
+  Invited: 'INVITED',
   NotParticipating: 'NOT_PARTICIPATING',
   Participating: 'PARTICIPATING'
 } as const;
@@ -883,6 +904,7 @@ export type GqlTransaction = {
   fromWallet?: Maybe<GqlWallet>;
   id: Scalars['ID']['output'];
   participation?: Maybe<GqlParticipation>;
+  reason?: Maybe<GqlTransactionReason>;
   toPointChange?: Maybe<Scalars['Int']['output']>;
   toWallet?: Maybe<GqlWallet>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -891,11 +913,12 @@ export type GqlTransaction = {
 
 export type GqlTransactionCreateInput = {
   fromPointChange?: InputMaybe<Scalars['Int']['input']>;
-  fromWalletId?: InputMaybe<Scalars['ID']['input']>;
-  participationId?: InputMaybe<Scalars['ID']['input']>;
+  fromWalletId?: InputMaybe<Scalars['String']['input']>;
+  participationId?: InputMaybe<Scalars['String']['input']>;
+  reason: GqlTransactionReason;
   toPointChange?: InputMaybe<Scalars['Int']['input']>;
-  toWalletId?: InputMaybe<Scalars['ID']['input']>;
-  utilityId?: InputMaybe<Scalars['ID']['input']>;
+  toWalletId: Scalars['String']['input'];
+  utilityId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlTransactionCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionCreateSuccess;
@@ -920,7 +943,8 @@ export const GqlTransactionReason = {
   MembershipDeleted: 'MEMBERSHIP_DELETED',
   Other: 'OTHER',
   ParticipationApproved: 'PARTICIPATION_APPROVED',
-  PointIssued: 'POINT_ISSUED'
+  PointIssued: 'POINT_ISSUED',
+  UtilityUsage: 'UTILITY_USAGE'
 } as const;
 
 export type GqlTransactionReason = typeof GqlTransactionReason[keyof typeof GqlTransactionReason];
@@ -947,7 +971,7 @@ export type GqlUser = {
   participationStatusChangedByMe?: Maybe<Array<GqlParticipationStatusHistory>>;
   participations?: Maybe<Array<GqlParticipation>>;
   slug: Scalars['String']['output'];
-  sysRole: GqlSysRole;
+  sysRole?: Maybe<GqlSysRole>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   urlFacebook?: Maybe<Scalars['String']['output']>;
   urlInstagram?: Maybe<Scalars['String']['output']>;
@@ -958,29 +982,6 @@ export type GqlUser = {
   wallets?: Maybe<Array<GqlWallet>>;
 };
 
-export type GqlUserCreateInput = {
-  bio?: InputMaybe<Scalars['String']['input']>;
-  email?: InputMaybe<Scalars['String']['input']>;
-  firstName: Scalars['String']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
-  lastName: Scalars['String']['input'];
-  middleName?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type GqlUserCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserCreateSuccess;
-
-export type GqlUserCreateSuccess = {
-  __typename?: 'UserCreateSuccess';
-  user?: Maybe<GqlUser>;
-};
-
-export type GqlUserDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserDeleteSuccess;
-
-export type GqlUserDeleteSuccess = {
-  __typename?: 'UserDeleteSuccess';
-  userId: Scalars['ID']['output'];
-};
-
 export type GqlUserEdge = GqlEdge & {
   __typename?: 'UserEdge';
   cursor: Scalars['String']['output'];
@@ -988,40 +989,25 @@ export type GqlUserEdge = GqlEdge & {
 };
 
 export type GqlUserFilterInput = {
-  agendaId?: InputMaybe<Scalars['Int']['input']>;
-  cityCode?: InputMaybe<Scalars['String']['input']>;
-  isPublic?: InputMaybe<Scalars['Boolean']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
+  sysRole?: InputMaybe<GqlSysRole>;
 };
 
 export type GqlUserSortInput = {
-  updatedAt?: InputMaybe<GqlSortDirection>;
+  createdAt?: InputMaybe<GqlSortDirection>;
 };
 
-export type GqlUserSwitchPrivacyInput = {
-  isPublic: Scalars['Boolean']['input'];
-};
-
-export type GqlUserSwitchPrivacyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserSwitchPrivacySuccess;
-
-export type GqlUserSwitchPrivacySuccess = {
-  __typename?: 'UserSwitchPrivacySuccess';
-  user: GqlUser;
-};
-
-export type GqlUserUpdateContentInput = {
+export type GqlUserUpdateProfileInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
-  email?: InputMaybe<Scalars['String']['input']>;
-  firstName: Scalars['String']['input'];
-  image?: InputMaybe<Scalars['String']['input']>;
-  lastName: Scalars['String']['input'];
-  middleName?: InputMaybe<Scalars['String']['input']>;
+  image?: InputMaybe<GqlImageInput>;
+  name: Scalars['String']['input'];
+  slug?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlUserUpdateContentPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserUpdateContentSuccess;
+export type GqlUserUpdateProfilePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserUpdateProfileSuccess;
 
-export type GqlUserUpdateContentSuccess = {
-  __typename?: 'UserUpdateContentSuccess';
+export type GqlUserUpdateProfileSuccess = {
+  __typename?: 'UserUpdateProfileSuccess';
   user?: Maybe<GqlUser>;
 };
 
@@ -1235,13 +1221,11 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   OpportunityEditContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityEditContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunitySetPublishStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   ParticipationApplyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationApplySuccess, 'participation'> & { participation: _RefType['Participation'] } );
+  ParticipationInvitePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationSetStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationStatusHistoryCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationStatusHistoryCreateSuccess, 'participationStatusHistory'> & { participationStatusHistory: _RefType['ParticipationStatusHistory'] } );
   TransactionCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionCreateSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
-  UserCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserCreateSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
-  UserDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlUserDeleteSuccess );
-  UserSwitchPrivacyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserSwitchPrivacySuccess, 'user'> & { user: _RefType['User'] } );
-  UserUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserUpdateContentSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
+  UserUpdateProfilePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
   UtilityCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: _RefType['Utility'] } );
   UtilityDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlUtilityDeleteSuccess );
   WalletCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlWalletCreateSuccess, 'wallet'> & { wallet: _RefType['Wallet'] } );
@@ -1326,6 +1310,9 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationApplySuccess: ResolverTypeWrapper<Omit<GqlParticipationApplySuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationEdge: ResolverTypeWrapper<Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Participation']> }>;
   ParticipationFilterInput: GqlParticipationFilterInput;
+  ParticipationInviteInput: GqlParticipationInviteInput;
+  ParticipationInvitePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationInvitePayload']>;
+  ParticipationInviteSuccess: ResolverTypeWrapper<Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationSetStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationSetStatusPayload']>;
   ParticipationSetStatusSuccess: ResolverTypeWrapper<Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationSortInput: GqlParticipationSortInput;
@@ -1356,20 +1343,12 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
   User: ResolverTypeWrapper<User>;
-  UserCreateInput: GqlUserCreateInput;
-  UserCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UserCreatePayload']>;
-  UserCreateSuccess: ResolverTypeWrapper<Omit<GqlUserCreateSuccess, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
-  UserDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UserDeletePayload']>;
-  UserDeleteSuccess: ResolverTypeWrapper<GqlUserDeleteSuccess>;
   UserEdge: ResolverTypeWrapper<Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversTypes['User']> }>;
   UserFilterInput: GqlUserFilterInput;
   UserSortInput: GqlUserSortInput;
-  UserSwitchPrivacyInput: GqlUserSwitchPrivacyInput;
-  UserSwitchPrivacyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UserSwitchPrivacyPayload']>;
-  UserSwitchPrivacySuccess: ResolverTypeWrapper<Omit<GqlUserSwitchPrivacySuccess, 'user'> & { user: GqlResolversTypes['User'] }>;
-  UserUpdateContentInput: GqlUserUpdateContentInput;
-  UserUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UserUpdateContentPayload']>;
-  UserUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlUserUpdateContentSuccess, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
+  UserUpdateProfileInput: GqlUserUpdateProfileInput;
+  UserUpdateProfilePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UserUpdateProfilePayload']>;
+  UserUpdateProfileSuccess: ResolverTypeWrapper<Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   UsersConnection: ResolverTypeWrapper<Omit<GqlUsersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['UserEdge']>>> }>;
   UtilitiesConnection: ResolverTypeWrapper<Omit<GqlUtilitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['UtilityEdge']>>> }>;
   Utility: ResolverTypeWrapper<Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversTypes['Community'], transactions?: Maybe<Array<GqlResolversTypes['Transaction']>> }>;
@@ -1465,6 +1444,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationApplySuccess: Omit<GqlParticipationApplySuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationEdge: Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Participation']> };
   ParticipationFilterInput: GqlParticipationFilterInput;
+  ParticipationInviteInput: GqlParticipationInviteInput;
+  ParticipationInvitePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationInvitePayload'];
+  ParticipationInviteSuccess: Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationSetStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationSetStatusPayload'];
   ParticipationSetStatusSuccess: Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationSortInput: GqlParticipationSortInput;
@@ -1489,20 +1471,12 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
   User: User;
-  UserCreateInput: GqlUserCreateInput;
-  UserCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UserCreatePayload'];
-  UserCreateSuccess: Omit<GqlUserCreateSuccess, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
-  UserDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UserDeletePayload'];
-  UserDeleteSuccess: GqlUserDeleteSuccess;
   UserEdge: Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['User']> };
   UserFilterInput: GqlUserFilterInput;
   UserSortInput: GqlUserSortInput;
-  UserSwitchPrivacyInput: GqlUserSwitchPrivacyInput;
-  UserSwitchPrivacyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UserSwitchPrivacyPayload'];
-  UserSwitchPrivacySuccess: Omit<GqlUserSwitchPrivacySuccess, 'user'> & { user: GqlResolversParentTypes['User'] };
-  UserUpdateContentInput: GqlUserUpdateContentInput;
-  UserUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UserUpdateContentPayload'];
-  UserUpdateContentSuccess: Omit<GqlUserUpdateContentSuccess, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
+  UserUpdateProfileInput: GqlUserUpdateProfileInput;
+  UserUpdateProfilePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UserUpdateProfilePayload'];
+  UserUpdateProfileSuccess: Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   UsersConnection: Omit<GqlUsersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['UserEdge']>>> };
   UtilitiesConnection: Omit<GqlUtilitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['UtilityEdge']>>> };
   Utility: Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversParentTypes['Community'], transactions?: Maybe<Array<GqlResolversParentTypes['Transaction']>> };
@@ -1722,18 +1696,20 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   opportunitySetCommunityInternal?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetCommunityInternalArgs, 'id'>>;
   opportunitySetPrivate?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPrivateArgs, 'id'>>;
   opportunitySetPublic?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublicArgs, 'id'>>;
-  participationSetApply?: Resolver<Maybe<GqlResolversTypes['ParticipationApplyPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSetApplyArgs, 'input'>>;
-  participationSetApprove?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSetApproveArgs, 'id'>>;
-  participationSetCancel?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSetCancelArgs, 'id'>>;
-  participationSetDeny?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSetDenyArgs, 'id'>>;
-  participationSetNotParticipating?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSetNotParticipatingArgs, 'id'>>;
-  participationSetParticipating?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSetParticipatingArgs, 'id'>>;
+  participationApply?: Resolver<Maybe<GqlResolversTypes['ParticipationApplyPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApplyArgs, 'input'>>;
+  participationApproveApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApproveApplicationArgs, 'id'>>;
+  participationApproveInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApproveInvitationArgs, 'id'>>;
+  participationApprovePerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApprovePerformanceArgs, 'id'>>;
+  participationCancelApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelApplicationArgs, 'id'>>;
+  participationCancelInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelInvitationArgs, 'id'>>;
+  participationCancelSubmission?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelSubmissionArgs, 'id'>>;
+  participationDenyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyApplicationArgs, 'id'>>;
+  participationDenyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyInvitationArgs, 'id'>>;
+  participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id'>>;
+  participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'id' | 'input'>>;
+  participationSubmitOutput?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSubmitOutputArgs, 'id'>>;
   transactionCreate?: Resolver<Maybe<GqlResolversTypes['TransactionCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionCreateArgs, 'input'>>;
-  userCreate?: Resolver<Maybe<GqlResolversTypes['UserCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserCreateArgs, 'input'>>;
-  userDelete?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteArgs, 'id'>>;
-  userPublish?: Resolver<Maybe<GqlResolversTypes['UserSwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserPublishArgs, 'id' | 'input'>>;
-  userUnpublish?: Resolver<Maybe<GqlResolversTypes['UserSwitchPrivacyPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUnpublishArgs, 'id' | 'input'>>;
-  userUpdateContent?: Resolver<Maybe<GqlResolversTypes['UserUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateContentArgs, 'id' | 'input'>>;
+  userUpdateProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateProfileArgs, 'id' | 'input'>>;
   utilityCreate?: Resolver<Maybe<GqlResolversTypes['UtilityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityCreateArgs, 'input'>>;
   utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id'>>;
   walletCreate?: Resolver<Maybe<GqlResolversTypes['WalletCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationWalletCreateArgs, 'input'>>;
@@ -1854,6 +1830,15 @@ export type GqlParticipationEdgeResolvers<ContextType = Context, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlParticipationInvitePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ParticipationInvitePayload'] = GqlResolversParentTypes['ParticipationInvitePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'ParticipationInviteSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlParticipationInviteSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ParticipationInviteSuccess'] = GqlResolversParentTypes['ParticipationInviteSuccess']> = ResolversObject<{
+  participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlParticipationSetStatusPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['ParticipationSetStatusPayload'] = GqlResolversParentTypes['ParticipationSetStatusPayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'ParticipationSetStatusSuccess', ParentType, ContextType>;
 }>;
@@ -1940,6 +1925,7 @@ export type GqlTransactionResolvers<ContextType = Context, ParentType extends Gq
   fromWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participation?: Resolver<Maybe<GqlResolversTypes['Participation']>, ParentType, ContextType>;
+  reason?: Resolver<Maybe<GqlResolversTypes['TransactionReason']>, ParentType, ContextType>;
   toPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   toWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -1980,7 +1966,7 @@ export type GqlUserResolvers<ContextType = Context, ParentType extends GqlResolv
   participationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ParticipationStatusHistory']>>, ParentType, ContextType>;
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   slug?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  sysRole?: Resolver<GqlResolversTypes['SysRole'], ParentType, ContextType>;
+  sysRole?: Resolver<Maybe<GqlResolversTypes['SysRole']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   urlFacebook?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   urlInstagram?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -1992,44 +1978,17 @@ export type GqlUserResolvers<ContextType = Context, ParentType extends GqlResolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlUserCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserCreatePayload'] = GqlResolversParentTypes['UserCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UserCreateSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlUserCreateSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserCreateSuccess'] = GqlResolversParentTypes['UserCreateSuccess']> = ResolversObject<{
-  user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlUserDeletePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserDeletePayload'] = GqlResolversParentTypes['UserDeletePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UserDeleteSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlUserDeleteSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserDeleteSuccess'] = GqlResolversParentTypes['UserDeleteSuccess']> = ResolversObject<{
-  userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlUserEdgeResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserEdge'] = GqlResolversParentTypes['UserEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlUserSwitchPrivacyPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserSwitchPrivacyPayload'] = GqlResolversParentTypes['UserSwitchPrivacyPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UserSwitchPrivacySuccess', ParentType, ContextType>;
+export type GqlUserUpdateProfilePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserUpdateProfilePayload'] = GqlResolversParentTypes['UserUpdateProfilePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UserUpdateProfileSuccess', ParentType, ContextType>;
 }>;
 
-export type GqlUserSwitchPrivacySuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserSwitchPrivacySuccess'] = GqlResolversParentTypes['UserSwitchPrivacySuccess']> = ResolversObject<{
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlUserUpdateContentPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserUpdateContentPayload'] = GqlResolversParentTypes['UserUpdateContentPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UserUpdateContentSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlUserUpdateContentSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserUpdateContentSuccess'] = GqlResolversParentTypes['UserUpdateContentSuccess']> = ResolversObject<{
+export type GqlUserUpdateProfileSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['UserUpdateProfileSuccess'] = GqlResolversParentTypes['UserUpdateProfileSuccess']> = ResolversObject<{
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -2178,6 +2137,8 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   ParticipationApplyPayload?: GqlParticipationApplyPayloadResolvers<ContextType>;
   ParticipationApplySuccess?: GqlParticipationApplySuccessResolvers<ContextType>;
   ParticipationEdge?: GqlParticipationEdgeResolvers<ContextType>;
+  ParticipationInvitePayload?: GqlParticipationInvitePayloadResolvers<ContextType>;
+  ParticipationInviteSuccess?: GqlParticipationInviteSuccessResolvers<ContextType>;
   ParticipationSetStatusPayload?: GqlParticipationSetStatusPayloadResolvers<ContextType>;
   ParticipationSetStatusSuccess?: GqlParticipationSetStatusSuccessResolvers<ContextType>;
   ParticipationStatusHistoriesConnection?: GqlParticipationStatusHistoriesConnectionResolvers<ContextType>;
@@ -2194,15 +2155,9 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   TransactionEdge?: GqlTransactionEdgeResolvers<ContextType>;
   TransactionsConnection?: GqlTransactionsConnectionResolvers<ContextType>;
   User?: GqlUserResolvers<ContextType>;
-  UserCreatePayload?: GqlUserCreatePayloadResolvers<ContextType>;
-  UserCreateSuccess?: GqlUserCreateSuccessResolvers<ContextType>;
-  UserDeletePayload?: GqlUserDeletePayloadResolvers<ContextType>;
-  UserDeleteSuccess?: GqlUserDeleteSuccessResolvers<ContextType>;
   UserEdge?: GqlUserEdgeResolvers<ContextType>;
-  UserSwitchPrivacyPayload?: GqlUserSwitchPrivacyPayloadResolvers<ContextType>;
-  UserSwitchPrivacySuccess?: GqlUserSwitchPrivacySuccessResolvers<ContextType>;
-  UserUpdateContentPayload?: GqlUserUpdateContentPayloadResolvers<ContextType>;
-  UserUpdateContentSuccess?: GqlUserUpdateContentSuccessResolvers<ContextType>;
+  UserUpdateProfilePayload?: GqlUserUpdateProfilePayloadResolvers<ContextType>;
+  UserUpdateProfileSuccess?: GqlUserUpdateProfileSuccessResolvers<ContextType>;
   UsersConnection?: GqlUsersConnectionResolvers<ContextType>;
   UtilitiesConnection?: GqlUtilitiesConnectionResolvers<ContextType>;
   Utility?: GqlUtilityResolvers<ContextType>;
