@@ -71,7 +71,7 @@ type Opportunity {
     endsAt: Datetime
 
     community: Community!
-    createdBy: User!
+    createdByUser: User!
     state: State
     city: City!
 
@@ -101,7 +101,7 @@ type ParticipationStatusHistory {
     status: ParticipationStatus!
 
     participation: Participation!
-    createdBy: User
+    createdByUser: User
 
     createdAt: Datetime!
     updatedAt: Datetime

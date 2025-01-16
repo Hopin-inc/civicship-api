@@ -32,17 +32,17 @@ export default class ParticipationOutputFormat {
       user,
       opportunity: opportunity
         ? {
-          ...opportunity,
-          createdBy: opportunity.createdByUser,
-          community: opportunity.community,
-        }
+            ...opportunity,
+            createdByUser: opportunity.createdByUser,
+            community: opportunity.community,
+          }
         : null,
       statusHistories: Array.isArray(statusHistories)
         ? statusHistories.map((history) => ({
-          ...history,
-          createdBy: history.createdByUser,
-          participation: history.participation,
-        }))
+            ...history,
+            createdByUser: history.createdByUser,
+            participation: history.participation,
+          }))
         : [],
       transactions: Array.isArray(transactions)
         ? transactions.map((transaction) => ({ ...transaction }))

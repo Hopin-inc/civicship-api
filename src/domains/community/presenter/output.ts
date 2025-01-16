@@ -42,7 +42,7 @@ export default class CommunityOutputFormat {
       })),
       opportunities: opportunities?.map((o) => ({
         ...o,
-        createdBy: o.createdByUser,
+        createdByUser: o.createdByUser,
         community: o.community,
         city: { ...o.city, state: o.city.state },
       })),

@@ -35,6 +35,11 @@ export default class OpportunityService {
   }
 
   static async deleteOpportunity(ctx: IContext, id: string) {
+    const currentUserId = ctx.currentUser?.id;
+    if (!currentUserId) {
+      throw new Error("Unauthorized: User must be logged in");
+    }
+
     const opportunity = await OpportunityRepository.find(ctx, id);
     if (!opportunity) {
       throw new Error(`OpportunityNotFound: ID=${id}`);

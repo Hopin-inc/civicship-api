@@ -51,7 +51,7 @@ export default class OpportunityOutputFormat {
         ...city,
         state: city.state,
       },
-      createdBy: createdByUser,
+      createdByUser,
       participations: participations?.map((p) => ({
         ...p,
         user: p.user ? { ...p.user } : null,
