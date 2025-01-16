@@ -1,9 +1,9 @@
 input TransactionCreateInput {
     reason: TransactionReason!
 
-    fromWalletId: String
+    from: String
     fromPointChange: Int
-    toWalletId: String!
+    to: String!
     toPointChange: Int
 
     participationId: String

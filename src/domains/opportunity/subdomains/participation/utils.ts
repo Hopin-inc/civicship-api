@@ -63,9 +63,9 @@ export const ParticipationUtils = {
 
     await TransactionService.transferPointsWithTransaction(ctx, tx, {
       reason: "PARTICIPATION_APPROVED",
-      fromWalletId: communityWallet.id,
+      from: communityWallet.id,
       fromPointChange: -opportunity.pointsPerParticipation,
-      toWalletId: userWallet.id,
+      to: userWallet.id,
       toPointChange: opportunity.pointsPerParticipation,
       participationId: participation.id,
     });
@@ -94,12 +94,12 @@ export const ParticipationUtils = {
   ): { communityWallet: GqlWallet; userWallet: GqlWallet } {
     const communityWallet = wallets.find((w) => w.type === WalletType.COMMUNITY);
     const userWallet = wallets.find((w) => w.user?.id === currentUserId);
-
     if (!communityWallet?.id || !userWallet?.id) {
       throw new Error("Wallet information is missing for points transfer");
     }
-
     const { currentPoint } = communityWallet.currentPointView || {};
+    console.log(currentPoint);
+    console.log(requiredPoints);
     if (!currentPoint || currentPoint < requiredPoints) {
       throw new Error(
         `Insufficient points in community wallet. Required: ${requiredPoints}, Available: ${currentPoint || 0}`,
