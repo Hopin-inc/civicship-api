@@ -106,7 +106,7 @@ export type GqlCommunityFilterInput = {
 
 export type GqlCommunityGrantPointInput = {
   amount: Scalars['Int']['input'];
-  userId: Scalars['String']['input'];
+  toWalletId: Scalars['String']['input'];
 };
 
 export type GqlCommunityGrantPointPayload = GqlAuthError | GqlCommunityGrantPointSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
@@ -115,7 +115,7 @@ export type GqlCommunityGrantPointSuccess = {
   __typename?: 'CommunityGrantPointSuccess';
   amount: Scalars['Int']['output'];
   community: GqlCommunity;
-  user: GqlUser;
+  toWallet: GqlWallet;
 };
 
 export type GqlCommunityIssuePointInput = {
@@ -908,12 +908,12 @@ export type GqlTransaction = {
 };
 
 export type GqlTransactionCreateInput = {
+  from?: InputMaybe<Scalars['String']['input']>;
   fromPointChange?: InputMaybe<Scalars['Int']['input']>;
-  fromWalletId?: InputMaybe<Scalars['String']['input']>;
   participationId?: InputMaybe<Scalars['String']['input']>;
   reason: GqlTransactionReason;
+  to: Scalars['String']['input'];
   toPointChange?: InputMaybe<Scalars['Int']['input']>;
-  toWalletId: Scalars['String']['input'];
   utilityId?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1208,7 +1208,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   CommonError: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommunityCreatePayload: ( GqlAuthError ) | ( Omit<GqlCommunityCreateSuccess, 'community'> & { community: _RefType['Community'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommunityDeletePayload: ( GqlAuthError ) | ( GqlCommunityDeleteSuccess ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
-  CommunityGrantPointPayload: ( GqlAuthError ) | ( Omit<GqlCommunityGrantPointSuccess, 'community' | 'user'> & { community: _RefType['Community'], user: _RefType['User'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
+  CommunityGrantPointPayload: ( GqlAuthError ) | ( Omit<GqlCommunityGrantPointSuccess, 'community' | 'toWallet'> & { community: _RefType['Community'], toWallet: _RefType['Wallet'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommunityIssuePointPayload: ( GqlAuthError ) | ( Omit<GqlCommunityIssuePointSuccess, 'community'> & { community: _RefType['Community'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommunityUpdateProfilePayload: ( GqlAuthError ) | ( Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: _RefType['Community'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   MembershipCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipCreateSuccess, 'membership'> & { membership: _RefType['Membership'] } );
@@ -1253,7 +1253,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityGrantPointInput: GqlCommunityGrantPointInput;
   CommunityGrantPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityGrantPointPayload']>;
-  CommunityGrantPointSuccess: ResolverTypeWrapper<Omit<GqlCommunityGrantPointSuccess, 'community' | 'user'> & { community: GqlResolversTypes['Community'], user: GqlResolversTypes['User'] }>;
+  CommunityGrantPointSuccess: ResolverTypeWrapper<Omit<GqlCommunityGrantPointSuccess, 'community' | 'toWallet'> & { community: GqlResolversTypes['Community'], toWallet: GqlResolversTypes['Wallet'] }>;
   CommunityIssuePointInput: GqlCommunityIssuePointInput;
   CommunityIssuePointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityIssuePointPayload']>;
   CommunityIssuePointSuccess: ResolverTypeWrapper<Omit<GqlCommunityIssuePointSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
@@ -1391,7 +1391,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityFilterInput: GqlCommunityFilterInput;
   CommunityGrantPointInput: GqlCommunityGrantPointInput;
   CommunityGrantPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityGrantPointPayload'];
-  CommunityGrantPointSuccess: Omit<GqlCommunityGrantPointSuccess, 'community' | 'user'> & { community: GqlResolversParentTypes['Community'], user: GqlResolversParentTypes['User'] };
+  CommunityGrantPointSuccess: Omit<GqlCommunityGrantPointSuccess, 'community' | 'toWallet'> & { community: GqlResolversParentTypes['Community'], toWallet: GqlResolversParentTypes['Wallet'] };
   CommunityIssuePointInput: GqlCommunityIssuePointInput;
   CommunityIssuePointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityIssuePointPayload'];
   CommunityIssuePointSuccess: Omit<GqlCommunityIssuePointSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
@@ -1582,7 +1582,7 @@ export type GqlCommunityGrantPointPayloadResolvers<ContextType = Context, Parent
 export type GqlCommunityGrantPointSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['CommunityGrantPointSuccess'] = GqlResolversParentTypes['CommunityGrantPointSuccess']> = ResolversObject<{
   amount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  toWallet?: Resolver<GqlResolversTypes['Wallet'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

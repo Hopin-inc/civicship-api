@@ -24,15 +24,6 @@ input CommunityUpdateProfileInput {
     cityCode: String
 }
 
-input CommunityIssuePointInput {
-    amount: Int!
-}
-
-input CommunityGrantPointInput {
-    userId: String!
-    amount: Int!
-}
-
 # Payload Definitions
 
 type CommunityCreateSuccess {
@@ -45,17 +36,6 @@ type CommunityDeleteSuccess {
 
 type CommunityUpdateProfileSuccess {
     community: Community!
-}
-
-type CommunityIssuePointSuccess {
-    community: Community!
-    amount: Int!
-}
-
-type CommunityGrantPointSuccess {
-    community: Community!
-    user: User!
-    amount: Int!
 }
 
 # Union Definitions
@@ -74,18 +54,6 @@ union CommunityDeletePayload =
 
 union CommunityUpdateProfilePayload =
     CommunityUpdateProfileSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union CommunityIssuePointPayload =
-    CommunityIssuePointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union CommunityGrantPointPayload =
-    CommunityGrantPointSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

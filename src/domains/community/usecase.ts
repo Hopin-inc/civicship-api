@@ -1,169 +1,66 @@
-// import {
-//   GqlOrganization,
-//   GqlOrganizationsConnection,
-//   GqlOrganizationCreatePayload,
-//   GqlOrganizationDeletePayload,
-//   GqlOrganizationUpdateContentPayload,
-//   GqlMutationOrganizationAddTargetArgs,
-//   GqlMutationOrganizationAddUserArgs,
-//   GqlMutationOrganizationCreateArgs,
-//   GqlMutationOrganizationDeleteArgs,
-//   GqlMutationOrganizationRemoveTargetArgs,
-//   GqlMutationOrganizationRemoveUserArgs,
-//   GqlMutationOrganizationAddGroupArgs,
-//   GqlMutationOrganizationRemoveGroupArgs,
-//   GqlMutationOrganizationUpdateDefaultArgs,
-//   GqlMutationOrganizationPublishArgs,
-//   GqlMutationOrganizationUnpublishArgs,
-//   GqlMutationOrganizationUpdateContentArgs,
-//   GqlQueryOrganizationArgs,
-//   GqlQueryOrganizationsArgs,
-//   GqlOrganizationUpdateDefaultPayload,
-//   GqlOrganizationSwitchPrivacyPayload,
-//   GqlOrganizationUpdateGroupPayload,
-//   GqlOrganizationUpdateTargetPayload,
-//   GqlOrganizationUpdateUserPayload,
-// } from "@/types/graphql";
-// import OrganizationService from "@/domains/organization/service";
-// import OrganizationResponseFormat from "@/domains/organization/presenter/response";
-// import UserService from "@/domains/user/service";
-// import TargetService from "@/domains/target/service";
-// import GroupService from "@/domains/group/service";
-//
-// export default class OrganizationUseCase {
-//   static async userGetManyOrganizations({
-//     cursor,
-//     filter,
-//     sort,
-//     first,
-//   }: GqlQueryOrganizationsArgs): Promise<GqlOrganizationsConnection> {
-//     const take = first ?? 10;
-//     const data = await OrganizationService.fetchOrganizations({ cursor, filter, sort }, take);
-//     const hasNextPage = data.length > take;
-//
-//     const organizations: GqlOrganization[] = data.slice(0, take).map((record) => {
-//       return OrganizationResponseFormat.get(record);
-//     });
-//
-//     return OrganizationResponseFormat.query(organizations, hasNextPage);
-//   }
-//
-//   static async userGetOrganization({
-//     id,
-//   }: GqlQueryOrganizationArgs): Promise<GqlOrganization | null> {
-//     const organization = await OrganizationService.getOrganization({ id });
-//     if (!organization) {
-//       return null;
-//     }
-//     return OrganizationResponseFormat.get(organization);
-//   }
-//
-//   static async userCreateOrganization({
-//     input,
-//   }: GqlMutationOrganizationCreateArgs): Promise<GqlOrganizationCreatePayload> {
-//     const organization = await OrganizationService.organizationCreate({ input });
-//     return OrganizationResponseFormat.create(organization);
-//   }
-//
-//   static async userDeleteOrganization({
-//     id,
-//   }: GqlMutationOrganizationDeleteArgs): Promise<GqlOrganizationDeletePayload> {
-//     await OrganizationService.organizationDelete({ id });
-//     return OrganizationResponseFormat.delete(id);
-//   }
-//
-//   static async userUpdateDefaultInfoOfOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationUpdateDefaultArgs): Promise<GqlOrganizationUpdateDefaultPayload> {
-//     const organization = await OrganizationService.organizationUpdateDefaultInfo({ id, input });
-//     return OrganizationResponseFormat.updateDefaultInfo(organization);
-//   }
-//
-//   static async userUpdateContentOfOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationUpdateContentArgs): Promise<GqlOrganizationUpdateContentPayload> {
-//     const existingOrganization = await OrganizationService.findOrganizationForUpdateContent(id);
-//
-//     const organization = await OrganizationService.organizationUpdateContent(
-//       { id, input },
-//       existingOrganization,
-//     );
-//     return OrganizationResponseFormat.updateContent(organization);
-//   }
-//
-//   static async userAddUserToOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationAddUserArgs): Promise<GqlOrganizationUpdateUserPayload> {
-//     const user = await UserService.checkIfUserExists(input.userId);
-//
-//     const organization = await OrganizationService.organizationAddUser({ id, input });
-//     return OrganizationResponseFormat.updateUser(organization, user);
-//   }
-//
-//   static async userRemoveUserFromOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationRemoveUserArgs): Promise<GqlOrganizationUpdateUserPayload> {
-//     const user = await UserService.checkIfUserExists(input.userId);
-//
-//     const organization = await OrganizationService.organizationRemoveUser({ id, input });
-//     return OrganizationResponseFormat.updateUser(organization, user);
-//   }
-//
-//   static async userAddTargetToOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationAddTargetArgs): Promise<GqlOrganizationUpdateTargetPayload> {
-//     const target = await TargetService.checkIfTargetExists(input.targetId);
-//
-//     const organization = await OrganizationService.organizationAddTarget({ id, input });
-//     return OrganizationResponseFormat.updateTarget(organization, target);
-//   }
-//
-//   static async userRemoveTargetFromOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationRemoveTargetArgs): Promise<GqlOrganizationUpdateTargetPayload> {
-//     const target = await TargetService.checkIfTargetExists(input.targetId);
-//
-//     const organization = await OrganizationService.organizationRemoveTarget({ id, input });
-//     return OrganizationResponseFormat.updateTarget(organization, target);
-//   }
-//
-//   static async userAddGroupToOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationAddGroupArgs): Promise<GqlOrganizationUpdateGroupPayload> {
-//     const group = await GroupService.checkIfGroupExists(input.groupId);
-//
-//     const organization = await OrganizationService.organizationAddGroup({ id, input });
-//     return OrganizationResponseFormat.updateGroup(organization, group);
-//   }
-//
-//   static async userRemoveGroupFromOrganization({
-//     id,
-//     input,
-//   }: GqlMutationOrganizationRemoveGroupArgs): Promise<GqlOrganizationUpdateGroupPayload> {
-//     const group = await GroupService.checkIfGroupExists(input.groupId);
-//
-//     const organization = await OrganizationService.organizationRemoveGroup({ id, input });
-//     return OrganizationResponseFormat.updateGroup(organization, group);
-//   }
-//
-//   static async userPublishOrganization({
-//     id,
-//   }: GqlMutationOrganizationPublishArgs): Promise<GqlOrganizationSwitchPrivacyPayload> {
-//     const organization = await OrganizationService.organizationPublish({ id });
-//     return OrganizationResponseFormat.switchPrivacy(organization);
-//   }
-//
-//   static async userUnpublishOrganization({
-//     id,
-//   }: GqlMutationOrganizationUnpublishArgs): Promise<GqlOrganizationSwitchPrivacyPayload> {
-//     const organization = await OrganizationService.organizationUnpublish({ id });
-//     return OrganizationResponseFormat.switchPrivacy(organization);
-//   }
-// }
+import {
+  GqlQueryCommunitiesArgs,
+  GqlQueryCommunityArgs,
+  GqlMutationCommunityCreateArgs,
+  GqlMutationCommunityDeleteArgs,
+  GqlMutationCommunityUpdateProfileArgs,
+  GqlCommunitiesConnection,
+  GqlCommunity,
+  GqlCommunityCreatePayload,
+  GqlCommunityDeletePayload,
+  GqlCommunityUpdateProfilePayload,
+} from "@/types/graphql";
+import { IContext } from "@/types/server";
+import CommunityService from "@/domains/community/service";
+import CommunityOutputFormat from "@/domains/community/presenter/output";
+
+export default class CommunityUseCase {
+  static async userBrowseCommunities(
+    { filter, sort, cursor, first }: GqlQueryCommunitiesArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunitiesConnection> {
+    const take = first ?? 10;
+    const res = await CommunityService.fetchCommunities(ctx, { filter, sort, cursor }, take);
+    const hasNextPage = res.length > take;
+
+    const data: GqlCommunity[] = res.slice(0, take).map((record) => {
+      return CommunityOutputFormat.get(record);
+    });
+    return CommunityOutputFormat.query(data, hasNextPage);
+  }
+
+  static async userViewCommunity(
+    { id }: GqlQueryCommunityArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunity | null> {
+    const res = await CommunityService.findCommunity(ctx, id);
+    if (!res) {
+      return null;
+    }
+    return CommunityOutputFormat.get(res);
+  }
+
+  static async userCreateCommunity(
+    { input }: GqlMutationCommunityCreateArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunityCreatePayload> {
+    const res = await CommunityService.createCommunity(ctx, input);
+    return CommunityOutputFormat.create(res);
+  }
+
+  static async managerDeleteCommunity(
+    { id }: GqlMutationCommunityDeleteArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunityDeletePayload> {
+    const res = await CommunityService.deleteCommunity(ctx, id);
+    return CommunityOutputFormat.delete(res);
+  }
+
+  static async managerUpdateCommunityProfile(
+    { id, input }: GqlMutationCommunityUpdateProfileArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunityUpdateProfilePayload> {
+    const res = await CommunityService.updateCommunityProfile(ctx, id, input);
+    return CommunityOutputFormat.update(res);
+  }
+}

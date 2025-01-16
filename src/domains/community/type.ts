@@ -1,50 +1,76 @@
-// import { Prisma } from "@prisma/client";
-//
-// export const organizationDefaultInclude = Prisma.validator<Prisma.OrganizationInclude>()({
-//   city: { include: { state: true } },
-//   state: true,
-// });
-//
-// export const organizationGetInclude = Prisma.validator<Prisma.OrganizationInclude>()({
-//   city: { include: { state: true } },
-//   state: true,
-//   users: { include: { user: true } },
-//   groups: true,
-//   targets: true,
-//   agendas: { include: { agenda: true } },
-// });
-//
-// export const organizationCreateInclude = Prisma.validator<Prisma.OrganizationInclude>()({
-//   city: { include: { state: true } },
-//   state: true,
-//   users: { include: { user: true } },
-//   groups: true,
-//   targets: true,
-//   agendas: { include: { agenda: true } },
-// });
-//
-// export const organizationUpdateContentInclude = Prisma.validator<Prisma.OrganizationInclude>()({
-//   city: { include: { state: true } },
-//   state: true,
-//   cities: { include: { city: { include: { state: true } } } },
-//   users: { include: { user: true } },
-//   groups: true,
-//   targets: true,
-//   agendas: { include: { agenda: true } },
-// });
-//
-// export type OrganizationDefaultPayloadWithArgs = Prisma.OrganizationGetPayload<{
-//   include: typeof organizationDefaultInclude;
-// }>;
-//
-// export type OrganizationGetPayloadWithArgs = Prisma.OrganizationGetPayload<{
-//   include: typeof organizationGetInclude;
-// }>;
-//
-// export type OrganizationCreatePayloadWithArgs = Prisma.OrganizationGetPayload<{
-//   include: typeof organizationCreateInclude;
-// }>;
-//
-// export type OrganizationUpdateContentPayloadWithArgs = Prisma.OrganizationGetPayload<{
-//   include: typeof organizationUpdateContentInclude;
-// }>;
+import { Prisma } from "@prisma/client";
+
+export const communityInclude = Prisma.validator<Prisma.CommunityInclude>()({
+  city: {
+    include: {
+      state: true,
+    },
+  },
+  state: true,
+  memberships: {
+    include: {
+      community: {
+        include: {
+          city: { include: { state: true } },
+        },
+      },
+      user: true,
+    },
+  },
+  opportunities: {
+    include: {
+      createdByUser: true,
+      community: {
+        include: {
+          city: { include: { state: true } },
+        },
+      },
+      city: { include: { state: true } },
+    },
+  },
+  participations: {
+    include: {
+      user: true,
+      community: {
+        include: {
+          city: { include: { state: true } },
+        },
+      },
+      opportunity: {
+        include: {
+          createdByUser: true,
+          community: {
+            include: {
+              city: { include: { state: true } },
+            },
+          },
+          city: { include: { state: true } },
+        },
+      },
+    },
+  },
+  wallets: {
+    include: {
+      user: true,
+      community: {
+        include: {
+          city: { include: { state: true } },
+        },
+      },
+      currentPointView: true,
+    },
+  },
+  utility: {
+    include: {
+      community: {
+        include: {
+          city: { include: { state: true } },
+        },
+      },
+    },
+  },
+});
+
+export type CommunityPayloadWithArgs = Prisma.CommunityGetPayload<{
+  include: typeof communityInclude;
+}>;

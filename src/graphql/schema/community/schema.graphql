@@ -14,9 +14,6 @@ extend type Mutation {
     communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
     communityDelete(id: ID!): CommunityDeletePayload
     communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!): CommunityUpdateProfilePayload
-
-    communityIssuePoint(id: ID!, input: CommunityIssuePointInput!): CommunityIssuePointPayload
-    communityGrantPoint(id: ID!, input: CommunityGrantPointInput!): CommunityGrantPointPayload
 }
 
 # Type definitions

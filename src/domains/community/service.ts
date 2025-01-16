@@ -1,138 +1,64 @@
 import {
-  GqlQueryOrganizationsArgs,
-  GqlQueryOrganizationArgs,
-  GqlMutationOrganizationCreateArgs,
-  GqlMutationOrganizationDeleteArgs,
-  GqlMutationOrganizationUpdateContentArgs,
-  GqlMutationOrganizationAddUserArgs,
-  GqlMutationOrganizationRemoveUserArgs,
-  GqlMutationOrganizationAddTargetArgs,
-  GqlMutationOrganizationRemoveTargetArgs,
-  GqlMutationOrganizationAddGroupArgs,
-  GqlMutationOrganizationRemoveGroupArgs,
-  GqlMutationOrganizationPublishArgs,
-  GqlMutationOrganizationUnpublishArgs,
-  GqlMutationOrganizationUpdateDefaultArgs,
+  GqlCommunityCreateInput,
+  GqlCommunityUpdateProfileInput,
+  GqlQueryCommunitiesArgs,
 } from "@/types/graphql";
-import OrganizationInputFormat from "@/domains/organization/presenter/input";
-import OrganizationRepository from "@/domains/organization/repository";
+import CommunityInputFormat from "@/domains/community/presenter/input";
+import CommunityRepository from "@/domains/community/repository";
 import { Prisma } from "@prisma/client";
-import { RELATION_ACTION } from "@/consts/prisma";
-import { OrganizationUpdateContentPayloadWithArgs } from "@/domains/organization/type";
+import { IContext } from "@/types/server";
 
-export default class OrganizationService {
-  static async fetchOrganizations(
-    { cursor, filter, sort }: GqlQueryOrganizationsArgs,
+export default class CommunityService {
+  static async fetchCommunities(
+    ctx: IContext,
+    { cursor, filter, sort }: GqlQueryCommunitiesArgs,
     take: number,
   ) {
-    const where = OrganizationInputFormat.filter({ filter });
-    const orderBy = OrganizationInputFormat.sort({ sort });
+    const where = CommunityInputFormat.filter(filter ?? {});
+    const orderBy = CommunityInputFormat.sort(sort ?? {});
 
-    return await OrganizationRepository.query(where, orderBy, take, cursor);
+    return await CommunityRepository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async getOrganization({ id }: GqlQueryOrganizationArgs) {
-    return OrganizationRepository.find(id);
+  static async findCommunity(ctx: IContext, id: string) {
+    return await CommunityRepository.find(ctx, id);
   }
 
-  static async checkIfOrganizationExists(id: string) {
-    const organization = await OrganizationRepository.checkExists(id);
-    if (!organization) {
-      throw new Error(`Group with ID ${id} not found`);
+  static async createCommunity(ctx: IContext, input: GqlCommunityCreateInput) {
+    const currentUserId = ctx.currentUser?.id;
+    if (!currentUserId) {
+      throw new Error("Unauthorized: User must be logged in");
     }
-    return organization;
+
+    const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, currentUserId);
+    return await CommunityRepository.create(ctx, data);
   }
 
-  static async findOrganizationForUpdateContent(id: string) {
-    const organization = await OrganizationRepository.findForUpdateContent(id);
-    if (!organization) {
-      throw new Error(`Group with ID ${id} not found`);
+  static async deleteCommunity(ctx: IContext, id: string) {
+    const currentUserId = ctx.currentUser?.id;
+    if (!currentUserId) {
+      throw new Error("Unauthorized: User must be logged in");
     }
-    return organization;
+
+    const community = await CommunityRepository.find(ctx, id);
+    if (!community) {
+      throw new Error(`CommunityNotFound: ID=${id}`);
+    }
+
+    return await CommunityRepository.delete(ctx, id);
   }
 
-  static async organizationCreate({ input }: GqlMutationOrganizationCreateArgs) {
-    const data: Prisma.OrganizationCreateInput = OrganizationInputFormat.create(input);
-    return await OrganizationRepository.create(data);
-  }
-
-  static async organizationDelete({ id }: GqlMutationOrganizationDeleteArgs) {
-    return await OrganizationRepository.delete(id);
-  }
-
-  static async organizationUpdateContent(
-    { id, input }: GqlMutationOrganizationUpdateContentArgs,
-    existingOrganization: OrganizationUpdateContentPayloadWithArgs,
+  static async updateCommunityProfile(
+    ctx: IContext,
+    id: string,
+    input: GqlCommunityUpdateProfileInput,
   ) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateContent(
-      existingOrganization,
-      input,
-    );
-    return await OrganizationRepository.updateContent(id, data);
-  }
+    const community = await CommunityRepository.find(ctx, id);
+    if (!community) {
+      throw new Error(`CommunityNotFound: ID=${id}`);
+    }
 
-  static async organizationAddUser({ id, input }: GqlMutationOrganizationAddUserArgs) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateUser(
-      id,
-      input.userId,
-      RELATION_ACTION.CONNECT_OR_CREATE,
-    );
-    return await OrganizationRepository.updateRelation(id, data);
-  }
-
-  static async organizationRemoveUser({ id, input }: GqlMutationOrganizationRemoveUserArgs) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateUser(
-      id,
-      input.userId,
-      RELATION_ACTION.DELETE,
-    );
-    return await OrganizationRepository.updateRelation(id, data);
-  }
-
-  static async organizationAddTarget({ id, input }: GqlMutationOrganizationAddTargetArgs) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateTarget(
-      input.targetId,
-      RELATION_ACTION.CONNECT,
-    );
-    return await OrganizationRepository.updateRelation(id, data);
-  }
-
-  static async organizationRemoveTarget({ id, input }: GqlMutationOrganizationRemoveTargetArgs) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateTarget(
-      input.targetId,
-      RELATION_ACTION.DISCONNECT,
-    );
-    return await OrganizationRepository.updateRelation(id, data);
-  }
-
-  static async organizationAddGroup({ id, input }: GqlMutationOrganizationAddGroupArgs) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateGroup(
-      input.groupId,
-      RELATION_ACTION.CONNECT,
-    );
-    return await OrganizationRepository.updateRelation(id, data);
-  }
-
-  static async organizationRemoveGroup({ id, input }: GqlMutationOrganizationRemoveGroupArgs) {
-    const data: Prisma.OrganizationUpdateInput = OrganizationInputFormat.updateGroup(
-      input.groupId,
-      RELATION_ACTION.DISCONNECT,
-    );
-    return await OrganizationRepository.updateRelation(id, data);
-  }
-
-  static async organizationPublish({ id }: GqlMutationOrganizationPublishArgs) {
-    return await OrganizationRepository.switchPrivacy(id, true);
-  }
-
-  static async organizationUnpublish({ id }: GqlMutationOrganizationUnpublishArgs) {
-    return await OrganizationRepository.switchPrivacy(id, false);
-  }
-
-  static async organizationUpdateDefaultInfo({
-    id,
-    input,
-  }: GqlMutationOrganizationUpdateDefaultArgs) {
-    return await OrganizationRepository.updateDefaultInfo(id, input);
+    const data: Prisma.CommunityUpdateInput = CommunityInputFormat.update(input);
+    return await CommunityRepository.update(ctx, id, data);
   }
 }
