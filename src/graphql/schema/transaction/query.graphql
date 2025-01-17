@@ -10,9 +10,15 @@ type TransactionEdge implements Edge {
 }
 
 input TransactionFilterInput {
-    keyword: String
+    id: String
+    reason: TransactionReason
+    fromWalletId: String
+    toWalletId: String
+
+    participationId: String
+    utilityId: String
 }
 
 input TransactionSortInput {
-    startsAt: SortDirection
+    createdAt: SortDirection
 }

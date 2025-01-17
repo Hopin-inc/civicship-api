@@ -61,8 +61,7 @@ export const ParticipationUtils = {
       opportunity.pointsPerParticipation,
     );
 
-    await TransactionService.transferPointsWithTransaction(ctx, tx, {
-      reason: "PARTICIPATION_APPROVED",
+    await TransactionService.giveRewardPoint(ctx, tx, {
       from: communityWallet.id,
       fromPointChange: -opportunity.pointsPerParticipation,
       to: userWallet.id,

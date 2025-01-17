@@ -11,7 +11,10 @@ extend type Query {
 }
 
 extend type Mutation {
-    transactionCreate(input: TransactionCreateInput!): TransactionCreatePayload
+    transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!): TransactionIssueCommunityPointPayload
+    transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!): TransactionGrantCommunityPointPayload
+
+    transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!): TransactionDonateSelfPointPayload
 }
 
 # Type definitions
