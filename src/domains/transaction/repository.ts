@@ -35,10 +35,16 @@ export default class TransactionRepository {
     });
   }
 
-  static async refreshStat(ctx: IContext, tx: Prisma.TransactionClient) {
-    return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
-      return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
-    });
+  static async refreshStat(ctx: IContext, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
+        return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+      });
+    } else {
+      return this.issuer.public(ctx, (transactionTx) => {
+        return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+      });
+    }
   }
 
   static async create(ctx: IContext, data: Prisma.TransactionCreateInput) {
