@@ -61,6 +61,7 @@ Table t_memberships {
   user t_users [not null]
   communityId String [not null]
   community t_communities [not null]
+  status MembershipStatus [not null]
   role Role [not null, default: 'MEMBER']
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -152,6 +153,7 @@ Table t_utilities {
 
 Table t_transactions {
   id String [pk]
+  reason TransactionReason [not null]
   from String
   fromWallet t_wallets
   fromPointChange Int
@@ -221,6 +223,13 @@ Enum OpportunityCategory {
   EVENT
   TASK
   CONVERSATION
+}
+
+Enum MembershipStatus {
+  INVITED
+  CANCELED
+  JOINED
+  WITHDRAWED
 }
 
 Enum ParticipationStatus {

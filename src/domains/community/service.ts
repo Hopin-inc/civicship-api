@@ -7,6 +7,7 @@ import CommunityInputFormat from "@/domains/community/presenter/input";
 import CommunityRepository from "@/domains/community/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import WalletService from "@/domains/membership/wallet/service";
 
 export default class CommunityService {
   static async fetchCommunities(
@@ -31,7 +32,11 @@ export default class CommunityService {
     }
 
     const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, currentUserId);
-    return await CommunityRepository.create(ctx, data);
+    const community = await CommunityRepository.create(ctx, data);
+
+    await WalletService.createCommunityWallet(ctx, community.id);
+
+    return community;
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {

@@ -39,6 +39,15 @@ CONVERSATION CONVERSATION
     
 
 
+        MembershipStatus {
+            INVITED INVITED
+CANCELED CANCELED
+JOINED JOINED
+WITHDRAWED WITHDRAWED
+        }
+    
+
+
         ParticipationStatus {
             INVITED INVITED
 APPLIED APPLIED
@@ -113,6 +122,7 @@ OTHER OTHER
   "t_memberships" {
     String user_id 
     String community_id 
+    MembershipStatus status 
     Role role 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -187,6 +197,7 @@ OTHER OTHER
 
   "t_transactions" {
     String id "🗝️"
+    TransactionReason reason 
     String from "❓"
     Int from_point_change "❓"
     String to "❓"
@@ -236,6 +247,7 @@ OTHER OTHER
     "t_communities" o|--|o "m_states" : "state"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
+    "t_memberships" o|--|| "MembershipStatus" : "enum:status"
     "t_memberships" o|--|| "Role" : "enum:role"
     "t_wallets" o|--|| "WalletType" : "enum:type"
     "t_wallets" o|--|| "t_communities" : "community"
@@ -261,6 +273,7 @@ OTHER OTHER
     "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
     "t_utilities" o|--|| "t_communities" : "community"
     "t_utilities" o{--}o "t_transactions" : "transactions"
+    "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"

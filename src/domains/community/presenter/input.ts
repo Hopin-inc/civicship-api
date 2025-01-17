@@ -4,7 +4,7 @@ import {
   GqlCommunityFilterInput,
   GqlCommunitySortInput,
 } from "@/types/graphql";
-import { Prisma, Role } from "@prisma/client";
+import { MembershipStatus, Prisma, Role } from "@prisma/client";
 
 export default class CommunityInputFormat {
   static filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
@@ -32,7 +32,8 @@ export default class CommunityInputFormat {
       memberships: {
         create: [
           {
-            user: { connect: { id: currentUserId } },
+            userId: currentUserId,
+            status: MembershipStatus.JOINED,
             role: Role.OWNER,
           },
         ],
