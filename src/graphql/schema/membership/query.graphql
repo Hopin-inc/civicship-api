@@ -14,6 +14,7 @@ type MembershipEdge implements Edge {
 input MembershipFilterInput {
     userId: String
     communityId: String
+    status: MembershipStatus
     role: Role
 }
 

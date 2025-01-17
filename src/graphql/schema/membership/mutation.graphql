@@ -8,10 +8,46 @@ input MembershipInviteInput {
 }
 
 input MembershipSelfJoinInput {
+    communityId: String!
+}
+
+input MembershipCancelInvitationInput {
     userId: String!
     communityId: String!
-    role: Role
 }
+
+input MembershipApproveInvitationInput {
+    communityId: String!
+}
+
+input MembershipDenyInvitationInput {
+    communityId: String!
+}
+
+input MembershipWithdrawInput {
+    communityId: String!
+}
+
+input MembershipAssignOwnerInput {
+    userId: String!
+    communityId: String!
+}
+
+input MembershipAssignManagerInput {
+    userId: String!
+    communityId: String!
+}
+
+input MembershipAssignMemberInput {
+    userId: String!
+    communityId: String!
+}
+
+input MembershipRemoveInput {
+    userId: String!
+    communityId: String!
+}
+
 
 ## Type definitions
 
@@ -28,11 +64,13 @@ type MembershipSetRoleSuccess {
 }
 
 type MembershipRemoveSuccess {
-    membershipId: String!
+    userId: String!
+    communityId: String!
 }
 
 type MembershipWithdrawSuccess {
-    membership: Membership!
+    userId: String!
+    communityId: String!
 }
 
 type MembershipSetInvitationStatusSuccess {

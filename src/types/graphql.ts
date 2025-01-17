@@ -191,6 +191,34 @@ export type GqlMembership = {
   user: GqlUser;
 };
 
+export type GqlMembershipApproveInvitationInput = {
+  communityId: Scalars['String']['input'];
+};
+
+export type GqlMembershipAssignManagerInput = {
+  communityId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+export type GqlMembershipAssignMemberInput = {
+  communityId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+export type GqlMembershipAssignOwnerInput = {
+  communityId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+export type GqlMembershipCancelInvitationInput = {
+  communityId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
+export type GqlMembershipDenyInvitationInput = {
+  communityId: Scalars['String']['input'];
+};
+
 export type GqlMembershipEdge = GqlEdge & {
   __typename?: 'MembershipEdge';
   cursor: Scalars['String']['output'];
@@ -200,6 +228,7 @@ export type GqlMembershipEdge = GqlEdge & {
 export type GqlMembershipFilterInput = {
   communityId?: InputMaybe<Scalars['String']['input']>;
   role?: InputMaybe<GqlRole>;
+  status?: InputMaybe<GqlMembershipStatus>;
   userId?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -216,17 +245,21 @@ export type GqlMembershipInviteSuccess = {
   membership: GqlMembership;
 };
 
+export type GqlMembershipRemoveInput = {
+  communityId: Scalars['String']['input'];
+  userId: Scalars['String']['input'];
+};
+
 export type GqlMembershipRemovePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipRemoveSuccess;
 
 export type GqlMembershipRemoveSuccess = {
   __typename?: 'MembershipRemoveSuccess';
-  membershipId: Scalars['String']['output'];
+  communityId: Scalars['String']['output'];
+  userId: Scalars['String']['output'];
 };
 
 export type GqlMembershipSelfJoinInput = {
   communityId: Scalars['String']['input'];
-  role?: InputMaybe<GqlRole>;
-  userId: Scalars['String']['input'];
 };
 
 export type GqlMembershipSelfJoinPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipSelfJoinSuccess;
@@ -262,11 +295,16 @@ export const GqlMembershipStatus = {
 } as const;
 
 export type GqlMembershipStatus = typeof GqlMembershipStatus[keyof typeof GqlMembershipStatus];
+export type GqlMembershipWithdrawInput = {
+  communityId: Scalars['String']['input'];
+};
+
 export type GqlMembershipWithdrawPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipWithdrawSuccess;
 
 export type GqlMembershipWithdrawSuccess = {
   __typename?: 'MembershipWithdrawSuccess';
-  membership: GqlMembership;
+  communityId: Scalars['String']['output'];
+  userId: Scalars['String']['output'];
 };
 
 export type GqlMembershipsConnection = {
@@ -345,54 +383,52 @@ export type GqlMutationCreateUserArgs = {
 
 
 export type GqlMutationMembershipApproveInvitationArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipApproveInvitationInput;
 };
 
 
 export type GqlMutationMembershipAssignManagerArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipAssignManagerInput;
 };
 
 
 export type GqlMutationMembershipAssignMemberRoleArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipAssignMemberInput;
 };
 
 
 export type GqlMutationMembershipAssignOwnerArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipAssignOwnerInput;
 };
 
 
 export type GqlMutationMembershipCancelInvitationArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipCancelInvitationInput;
 };
 
 
 export type GqlMutationMembershipDenyInvitationArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipDenyInvitationInput;
 };
 
 
 export type GqlMutationMembershipInviteArgs = {
-  id: Scalars['ID']['input'];
   input: GqlMembershipInviteInput;
 };
 
 
 export type GqlMutationMembershipRemoveArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipRemoveInput;
 };
 
 
 export type GqlMutationMembershipSelfJoinArgs = {
-  id: Scalars['ID']['input'];
   input: GqlMembershipSelfJoinInput;
 };
 
 
 export type GqlMutationMembershipWithdrawArgs = {
-  id: Scalars['ID']['input'];
+  input: GqlMembershipWithdrawInput;
 };
 
 
@@ -1392,7 +1428,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   MembershipSelfJoinPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipSelfJoinSuccess, 'membership'> & { membership: _RefType['Membership'] } );
   MembershipSetInvitationStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipSetInvitationStatusSuccess, 'membership'> & { membership: _RefType['Membership'] } );
   MembershipSetRolePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipSetRoleSuccess, 'membership'> & { membership: _RefType['Membership'] } );
-  MembershipWithdrawPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipWithdrawSuccess, 'membership'> & { membership: _RefType['Membership'] } );
+  MembershipWithdrawPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlMembershipWithdrawSuccess );
   OpportunityCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityCreateSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunityDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlOpportunityDeleteSuccess );
   OpportunityEditContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityEditContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
@@ -1455,11 +1491,18 @@ export type GqlResolversTypes = ResolversObject<{
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   InvalidInputValueError: ResolverTypeWrapper<GqlInvalidInputValueError>;
   Membership: ResolverTypeWrapper<Omit<GqlMembership, 'community' | 'user'> & { community: GqlResolversTypes['Community'], user: GqlResolversTypes['User'] }>;
+  MembershipApproveInvitationInput: GqlMembershipApproveInvitationInput;
+  MembershipAssignManagerInput: GqlMembershipAssignManagerInput;
+  MembershipAssignMemberInput: GqlMembershipAssignMemberInput;
+  MembershipAssignOwnerInput: GqlMembershipAssignOwnerInput;
+  MembershipCancelInvitationInput: GqlMembershipCancelInvitationInput;
+  MembershipDenyInvitationInput: GqlMembershipDenyInvitationInput;
   MembershipEdge: ResolverTypeWrapper<Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Membership']> }>;
   MembershipFilterInput: GqlMembershipFilterInput;
   MembershipInviteInput: GqlMembershipInviteInput;
   MembershipInvitePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['MembershipInvitePayload']>;
   MembershipInviteSuccess: ResolverTypeWrapper<Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: GqlResolversTypes['Membership'] }>;
+  MembershipRemoveInput: GqlMembershipRemoveInput;
   MembershipRemovePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['MembershipRemovePayload']>;
   MembershipRemoveSuccess: ResolverTypeWrapper<GqlMembershipRemoveSuccess>;
   MembershipSelfJoinInput: GqlMembershipSelfJoinInput;
@@ -1471,8 +1514,9 @@ export type GqlResolversTypes = ResolversObject<{
   MembershipSetRoleSuccess: ResolverTypeWrapper<Omit<GqlMembershipSetRoleSuccess, 'membership'> & { membership: GqlResolversTypes['Membership'] }>;
   MembershipSortInput: GqlMembershipSortInput;
   MembershipStatus: GqlMembershipStatus;
+  MembershipWithdrawInput: GqlMembershipWithdrawInput;
   MembershipWithdrawPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['MembershipWithdrawPayload']>;
-  MembershipWithdrawSuccess: ResolverTypeWrapper<Omit<GqlMembershipWithdrawSuccess, 'membership'> & { membership: GqlResolversTypes['Membership'] }>;
+  MembershipWithdrawSuccess: ResolverTypeWrapper<GqlMembershipWithdrawSuccess>;
   MembershipsConnection: ResolverTypeWrapper<Omit<GqlMembershipsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['MembershipEdge']>>> }>;
   Mutation: ResolverTypeWrapper<{}>;
   OpportunitiesConnection: ResolverTypeWrapper<Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['OpportunityEdge']> }>;
@@ -1615,11 +1659,18 @@ export type GqlResolversParentTypes = ResolversObject<{
   Int: Scalars['Int']['output'];
   InvalidInputValueError: GqlInvalidInputValueError;
   Membership: Omit<GqlMembership, 'community' | 'user'> & { community: GqlResolversParentTypes['Community'], user: GqlResolversParentTypes['User'] };
+  MembershipApproveInvitationInput: GqlMembershipApproveInvitationInput;
+  MembershipAssignManagerInput: GqlMembershipAssignManagerInput;
+  MembershipAssignMemberInput: GqlMembershipAssignMemberInput;
+  MembershipAssignOwnerInput: GqlMembershipAssignOwnerInput;
+  MembershipCancelInvitationInput: GqlMembershipCancelInvitationInput;
+  MembershipDenyInvitationInput: GqlMembershipDenyInvitationInput;
   MembershipEdge: Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Membership']> };
   MembershipFilterInput: GqlMembershipFilterInput;
   MembershipInviteInput: GqlMembershipInviteInput;
   MembershipInvitePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipInvitePayload'];
   MembershipInviteSuccess: Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: GqlResolversParentTypes['Membership'] };
+  MembershipRemoveInput: GqlMembershipRemoveInput;
   MembershipRemovePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipRemovePayload'];
   MembershipRemoveSuccess: GqlMembershipRemoveSuccess;
   MembershipSelfJoinInput: GqlMembershipSelfJoinInput;
@@ -1630,8 +1681,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   MembershipSetRolePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipSetRolePayload'];
   MembershipSetRoleSuccess: Omit<GqlMembershipSetRoleSuccess, 'membership'> & { membership: GqlResolversParentTypes['Membership'] };
   MembershipSortInput: GqlMembershipSortInput;
+  MembershipWithdrawInput: GqlMembershipWithdrawInput;
   MembershipWithdrawPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipWithdrawPayload'];
-  MembershipWithdrawSuccess: Omit<GqlMembershipWithdrawSuccess, 'membership'> & { membership: GqlResolversParentTypes['Membership'] };
+  MembershipWithdrawSuccess: GqlMembershipWithdrawSuccess;
   MembershipsConnection: Omit<GqlMembershipsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['MembershipEdge']>>> };
   Mutation: {};
   OpportunitiesConnection: Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OpportunityEdge']> };
@@ -1890,7 +1942,8 @@ export type GqlMembershipRemovePayloadResolvers<ContextType = Context, ParentTyp
 }>;
 
 export type GqlMembershipRemoveSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['MembershipRemoveSuccess'] = GqlResolversParentTypes['MembershipRemoveSuccess']> = ResolversObject<{
-  membershipId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  communityId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  userId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1926,7 +1979,8 @@ export type GqlMembershipWithdrawPayloadResolvers<ContextType = Context, ParentT
 }>;
 
 export type GqlMembershipWithdrawSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['MembershipWithdrawSuccess'] = GqlResolversParentTypes['MembershipWithdrawSuccess']> = ResolversObject<{
-  membership?: Resolver<GqlResolversTypes['Membership'], ParentType, ContextType>;
+  communityId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  userId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1943,16 +1997,16 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input'>>;
   createUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationCreateUserArgs, 'input'>>;
   deleteUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType>;
-  membershipApproveInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipApproveInvitationArgs, 'id'>>;
-  membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'id'>>;
-  membershipAssignMemberRole?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignMemberRoleArgs, 'id'>>;
-  membershipAssignOwner?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignOwnerArgs, 'id'>>;
-  membershipCancelInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipCancelInvitationArgs, 'id'>>;
-  membershipDenyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipDenyInvitationArgs, 'id'>>;
-  membershipInvite?: Resolver<Maybe<GqlResolversTypes['MembershipInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipInviteArgs, 'id' | 'input'>>;
-  membershipRemove?: Resolver<Maybe<GqlResolversTypes['MembershipRemovePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipRemoveArgs, 'id'>>;
-  membershipSelfJoin?: Resolver<Maybe<GqlResolversTypes['MembershipSelfJoinPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipSelfJoinArgs, 'id' | 'input'>>;
-  membershipWithdraw?: Resolver<Maybe<GqlResolversTypes['MembershipWithdrawPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipWithdrawArgs, 'id'>>;
+  membershipApproveInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipApproveInvitationArgs, 'input'>>;
+  membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input'>>;
+  membershipAssignMemberRole?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignMemberRoleArgs, 'input'>>;
+  membershipAssignOwner?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignOwnerArgs, 'input'>>;
+  membershipCancelInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipCancelInvitationArgs, 'input'>>;
+  membershipDenyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipDenyInvitationArgs, 'input'>>;
+  membershipInvite?: Resolver<Maybe<GqlResolversTypes['MembershipInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipInviteArgs, 'input'>>;
+  membershipRemove?: Resolver<Maybe<GqlResolversTypes['MembershipRemovePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipRemoveArgs, 'input'>>;
+  membershipSelfJoin?: Resolver<Maybe<GqlResolversTypes['MembershipSelfJoinPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipSelfJoinArgs, 'input'>>;
+  membershipWithdraw?: Resolver<Maybe<GqlResolversTypes['MembershipWithdrawPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipWithdrawArgs, 'input'>>;
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   opportunityCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityCreateArgs, 'input'>>;
   opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id'>>;

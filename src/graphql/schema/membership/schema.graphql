@@ -20,20 +20,20 @@ extend type Query {
 
 extend type Mutation {
     # invite
-    membershipInvite(id: ID!, input: MembershipInviteInput!): MembershipInvitePayload
-    membershipCancelInvitation(id: ID!): MembershipSetInvitationStatusPayload
-    membershipApproveInvitation(id: ID!): MembershipSetInvitationStatusPayload
-    membershipDenyInvitation(id: ID!): MembershipSetInvitationStatusPayload
+    membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
+    membershipCancelInvitation(input: MembershipCancelInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipApproveInvitation(input: MembershipApproveInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipDenyInvitation(input: MembershipDenyInvitationInput!): MembershipSetInvitationStatusPayload
 
     # join
-    membershipSelfJoin(id: ID!, input: MembershipSelfJoinInput!): MembershipSelfJoinPayload
-    membershipWithdraw(id: ID!): MembershipWithdrawPayload
+    membershipSelfJoin(input: MembershipSelfJoinInput!): MembershipSelfJoinPayload
+    membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
 
     # role
-    membershipAssignOwner(id: ID!): MembershipSetRolePayload
-    membershipAssignManager(id: ID!): MembershipSetRolePayload
-    membershipAssignMemberRole(id: ID!): MembershipSetRolePayload
-    membershipRemove(id: ID!): MembershipRemovePayload
+    membershipAssignOwner(input: MembershipAssignOwnerInput!): MembershipSetRolePayload
+    membershipAssignManager(input: MembershipAssignManagerInput!): MembershipSetRolePayload
+    membershipAssignMemberRole(input: MembershipAssignMemberInput!): MembershipSetRolePayload
+    membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
 }
 
 # Type definitions
@@ -50,6 +50,7 @@ type Membership {
 
 type Wallet {
     id: ID!
+
     type: WalletType!
     community: Community!
     user: User
