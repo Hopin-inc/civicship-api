@@ -1,7 +1,13 @@
 # membership
 
 ## input definitions
-input MembershipCreateInput {
+input MembershipInviteInput {
+    userId: String!
+    communityId: String!
+    role: Role
+}
+
+input MembershipSelfJoinInput {
     userId: String!
     communityId: String!
     role: Role
@@ -9,37 +15,81 @@ input MembershipCreateInput {
 
 ## Type definitions
 
-type MembershipCreateSuccess {
+type MembershipInviteSuccess {
     membership: Membership!
 }
 
-type MembershipDeleteSuccess {
-    userId: String!
-    communityId: String!
+type MembershipSelfJoinSuccess {
+    membership: Membership!
+}
+
+type MembershipSetRoleSuccess {
+    membership: Membership!
+}
+
+type MembershipRemoveSuccess {
+    membershipId: String!
+}
+
+type MembershipWithdrawSuccess {
+    membership: Membership!
+}
+
+type MembershipSetInvitationStatusSuccess {
+    membership: Membership!
 }
 
 ## Union definitions
 
-union MembershipCreatePayload =
-    MembershipCreateSuccess |
+union MembershipInvitePayload =
+    MembershipInviteSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union MembershipDeletePayload =
-    MembershipDeleteSuccess |
+union MembershipSelfJoinPayload =
+    MembershipSelfJoinSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
+
+union MembershipSetRolePayload =
+    MembershipSetRoleSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union MembershipRemovePayload =
+    MembershipRemoveSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union MembershipWithdrawPayload =
+    MembershipWithdrawSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union MembershipSetInvitationStatusPayload =
+    MembershipSetInvitationStatusSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
 
 
 # wallet
 
 ## input definitions
 
-input WalletCreateInput {
+input WalletCreateToCommunityInput {
     communityId: String!
-    userId: String
+}
+
+input WalletCreateToMemberInput {
+    communityId: String!
+    userId: String!
 }
 
 ## type definitions

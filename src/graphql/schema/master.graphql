@@ -27,6 +27,13 @@ enum OpportunityCategory {
     CONVERSATION
 }
 
+enum MembershipStatus {
+    INVITED
+    CANCELED
+    JOINED
+    WITHDRAWED
+}
+
 enum ParticipationStatus {
     INVITED
     APPLIED

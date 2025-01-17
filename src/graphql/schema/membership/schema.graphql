@@ -19,8 +19,21 @@ extend type Query {
 }
 
 extend type Mutation {
-    membershipCreate(input: MembershipCreateInput!): MembershipCreatePayload
-    membershipDelete(id: ID!): MembershipDeletePayload
+    # invite
+    membershipInvite(id: ID!, input: MembershipInviteInput!): MembershipInvitePayload
+    membershipCancelInvitation(id: ID!): MembershipSetInvitationStatusPayload
+    membershipApproveInvitation(id: ID!): MembershipSetInvitationStatusPayload
+    membershipDenyInvitation(id: ID!): MembershipSetInvitationStatusPayload
+
+    # join
+    membershipSelfJoin(id: ID!, input: MembershipSelfJoinInput!): MembershipSelfJoinPayload
+    membershipWithdraw(id: ID!): MembershipWithdrawPayload
+
+    # role
+    membershipAssignOwner(id: ID!): MembershipSetRolePayload
+    membershipAssignManager(id: ID!): MembershipSetRolePayload
+    membershipAssignMemberRole(id: ID!): MembershipSetRolePayload
+    membershipRemove(id: ID!): MembershipRemovePayload
 }
 
 # Type definitions
@@ -28,6 +41,7 @@ extend type Mutation {
 type Membership {
     user: User!
     community: Community!
+    status: MembershipStatus
     role: Role!
 
     createdAt: Datetime!

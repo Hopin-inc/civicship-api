@@ -12,7 +12,9 @@ type MembershipEdge implements Edge {
 }
 
 input MembershipFilterInput {
-    keyword: String
+    userId: String
+    communityId: String
+    role: Role
 }
 
 input MembershipSortInput {
@@ -33,7 +35,9 @@ type WalletEdge implements Edge {
 }
 
 input WalletFilterInput {
-    keyword: String
+    type: WalletType
+    userId: String
+    communityId: String
 }
 
 input WalletSortInput {
