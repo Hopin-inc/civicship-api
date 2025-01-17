@@ -119,7 +119,8 @@ model Membership {
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  role Role @default(MEMBER)
+  status MembershipStatus
+  role   Role             @default(MEMBER)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -255,7 +256,8 @@ model Utility {
 // Transaction
 
 model Transaction {
-  id String @id @default(cuid())
+  id     String            @id @default(cuid())
+  reason TransactionReason
 
   from            String?
   fromWallet      Wallet? @relation("from_wallet", fields: [from], references: [id], onDelete: SetNull)
@@ -332,6 +334,13 @@ enum OpportunityCategory {
   EVENT
   TASK
   CONVERSATION
+}
+
+enum MembershipStatus {
+  INVITED
+  CANCELED
+  JOINED
+  WITHDRAWED
 }
 
 enum ParticipationStatus {

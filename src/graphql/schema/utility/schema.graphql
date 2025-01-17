@@ -13,6 +13,9 @@ extend type Query {
 extend type Mutation {
     utilityCreate(input: UtilityCreateInput!): UtilityCreatePayload
     utilityDelete(id: ID!): UtilityDeletePayload
+    utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!): UtilityUpdateInfoPayload
+
+    utilityUse(id: ID!, input: UtilityUseInput!): UtilityUsePayload
 }
 
 # Type definitions

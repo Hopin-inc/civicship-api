@@ -521,7 +521,9 @@ function isMembershipcommunityFactory(x) {
     return x?._factoryFor === "Community";
 }
 function autoGenerateMembershipScalarsOrEnums({ seq }) {
-    return {};
+    return {
+        status: "INVITED"
+    };
 }
 function defineMembershipFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
     const getFactoryWithTraits = (traitKeys = []) => {
@@ -1139,7 +1141,9 @@ function isTransactionutilityFactory(x) {
     return x?._factoryFor === "Utility";
 }
 function autoGenerateTransactionScalarsOrEnums({ seq }) {
-    return {};
+    return {
+        reason: "POINT_ISSUED"
+    };
 }
 function defineTransactionFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
     const getFactoryWithTraits = (traitKeys = []) => {

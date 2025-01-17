@@ -5,7 +5,19 @@ input UtilityCreateInput {
     description: String
     image: String
     pointsRequired: Int!
-    communityId: ID!
+
+    communityId: String!
+}
+
+input UtilityUpdateInfoInput {
+    name: String!
+    description: String
+    image: String
+    pointsRequired: Int!
+}
+
+input UtilityUseInput {
+    userWalletId: String!
 }
 
 # Type definitions
@@ -15,7 +27,15 @@ type UtilityCreateSuccess {
 }
 
 type UtilityDeleteSuccess {
-    utilityId: ID!
+    utilityId: String!
+}
+
+type UtilityUpdateInfoSuccess {
+    utility: Utility!
+}
+
+type UtilityUseSuccess {
+    utility: Utility!
 }
 
 # Union definitions
@@ -28,6 +48,18 @@ union UtilityCreatePayload =
 
 union UtilityDeletePayload =
     UtilityDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityUpdateInfoPayload =
+    UtilityUpdateInfoSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityUsePayload =
+    UtilityUseSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

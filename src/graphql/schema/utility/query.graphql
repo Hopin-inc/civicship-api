@@ -10,9 +10,10 @@ type UtilityEdge implements Edge {
 }
 
 input UtilityFilterInput {
-    keyword: String
+    communityId: String
 }
 
 input UtilitySortInput {
     createdAt: SortDirection
+    pointsRequired: SortDirection
 }

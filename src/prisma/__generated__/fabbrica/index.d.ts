@@ -13,11 +13,13 @@ import type { State } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
+import type { MembershipStatus } from "@prisma/client";
 import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
+import type { TransactionReason } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { Resolver } from "@quramy/prisma-fabbrica/lib/internal";
 export { resetSequence, registerScalarFieldValueGenerator, resetScalarFieldValueGenerator } from "@quramy/prisma-fabbrica/lib/internal";
@@ -210,6 +212,7 @@ type MembershipcommunityFactory = {
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutMembershipsInput["create"]>;
 };
 type MembershipFactoryDefineInput = {
+    status?: MembershipStatus;
     role?: Role;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -570,6 +573,7 @@ type TransactionutilityFactory = {
 };
 type TransactionFactoryDefineInput = {
     id?: string;
+    reason?: TransactionReason;
     fromPointChange?: number | null;
     toPointChange?: number | null;
     createdAt?: Date;
