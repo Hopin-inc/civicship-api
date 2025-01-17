@@ -26,7 +26,7 @@ const transactionResolver = {
       args: GqlMutationTransactionGrantCommunityPointArgs,
       ctx: IContext,
     ) => TransactionUseCase.managerGrantCommunityPoint(args, ctx),
-    transactionGiveUserPoint: async (
+    transactionDonateSelfPoint: async (
       _: unknown,
       args: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
