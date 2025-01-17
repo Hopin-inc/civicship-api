@@ -3,7 +3,7 @@
 input UtilityCreateInput {
     name: String!
     description: String
-    image: String
+    image: ImageInput
     pointsRequired: Int!
 
     communityId: String!
@@ -12,7 +12,7 @@ input UtilityCreateInput {
 input UtilityUpdateInfoInput {
     name: String!
     description: String
-    image: String
+    image: ImageInput
     pointsRequired: Int!
 }
 
@@ -35,7 +35,7 @@ type UtilityUpdateInfoSuccess {
 }
 
 type UtilityUseSuccess {
-    utility: Utility!
+    transaction: Transaction!
 }
 
 # Union definitions

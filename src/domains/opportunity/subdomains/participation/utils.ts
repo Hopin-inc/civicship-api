@@ -97,8 +97,7 @@ export const ParticipationUtils = {
       throw new Error("Wallet information is missing for points transfer");
     }
     const { currentPoint } = communityWallet.currentPointView || {};
-    console.log(currentPoint);
-    console.log(requiredPoints);
+
     if (!currentPoint || currentPoint < requiredPoints) {
       throw new Error(
         `Insufficient points in community wallet. Required: ${requiredPoints}, Available: ${currentPoint || 0}`,

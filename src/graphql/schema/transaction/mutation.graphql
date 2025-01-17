@@ -51,12 +51,10 @@ type TransactionDonateSelfPointSuccess {
 
 type TransactionGiveRewardPointSuccess {
     transaction: Transaction!
-    participation: Participation!
 }
 
 type TransactionUseUtilitySuccess {
     transaction: Transaction!
-    utility: Utility!
 }
 
 
