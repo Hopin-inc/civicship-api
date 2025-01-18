@@ -13,6 +13,10 @@ export const prismaClient = new PrismaClient({
     { level: "info", emit: "stdout" },
     { level: "warn", emit: "stdout" },
   ],
+  transactionOptions: {
+    maxWait: 10000,
+    timeout: 200000,
+  },
 });
 prismaClient.$on("query", async ({ query, params }) => {
   console.info("Prisma: Query issued.", { query, params });

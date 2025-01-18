@@ -642,6 +642,7 @@ export type GqlOpportunityEdge = GqlEdge & {
 export type GqlOpportunityEditContentInput = {
   capacity?: InputMaybe<Scalars['Int']['input']>;
   category?: InputMaybe<GqlOpportunityCategory>;
+  cityCode?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
   files?: InputMaybe<Array<Scalars['String']['input']>>;
