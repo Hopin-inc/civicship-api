@@ -85,12 +85,10 @@ union OpportunitySetPublishStatusPayload =
 ## input definitions
 
 input ParticipationApplyInput {
-    communityId: String
     opportunityId: String!
 }
 
 input ParticipationInviteInput{
-    communityId: String
     opportunityId: String!
     invitedUserId: String!
 }
