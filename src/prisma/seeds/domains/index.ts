@@ -26,12 +26,6 @@ export async function seedUsecase(citiesCsvPath: string) {
     );
     const utilityMap = await seedUtilities(tx, communityIds);
 
-    console.log(communityIds);
-    console.log(communityWalletIds);
-    console.log(memberWalletIds);
-    console.log(utilityMap);
-    console.log(approvedParticipationIds);
-
     await seedTransactions(
       tx,
       communityIds,
