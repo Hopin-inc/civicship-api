@@ -514,7 +514,6 @@ export type GqlMutationParticipationDenyPerformanceArgs = {
 
 
 export type GqlMutationParticipationInviteArgs = {
-  id: Scalars['ID']['input'];
   input: GqlParticipationInviteInput;
 };
 
@@ -710,7 +709,6 @@ export type GqlParticipation = {
 };
 
 export type GqlParticipationApplyInput = {
-  communityId?: InputMaybe<Scalars['String']['input']>;
   opportunityId: Scalars['String']['input'];
 };
 
@@ -735,7 +733,6 @@ export type GqlParticipationFilterInput = {
 };
 
 export type GqlParticipationInviteInput = {
-  communityId?: InputMaybe<Scalars['String']['input']>;
   invitedUserId: Scalars['String']['input'];
   opportunityId: Scalars['String']['input'];
 };
@@ -2023,7 +2020,7 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   participationDenyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyApplicationArgs, 'id'>>;
   participationDenyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyInvitationArgs, 'id'>>;
   participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id'>>;
-  participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'id' | 'input'>>;
+  participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'input'>>;
   participationSubmitOutput?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationSubmitOutputArgs, 'id'>>;
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input'>>;
