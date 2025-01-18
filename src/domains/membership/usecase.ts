@@ -18,6 +18,7 @@ import {
   GqlMembershipRemovePayload,
   GqlMembershipsConnection,
   GqlMembership,
+  GqlMembershipSelfJoinPayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
@@ -83,7 +84,7 @@ export default class MembershipUseCase {
   static async userSelfJoin(
     { input }: GqlMutationMembershipSelfJoinArgs,
     ctx: IContext,
-  ): Promise<GqlMembershipInvitePayload> {
+  ): Promise<GqlMembershipSelfJoinPayload> {
     const membership = await MembershipService.selfJoinCommunity(ctx, input);
     return MembershipOutputFormat.selfJoin(membership);
   }
