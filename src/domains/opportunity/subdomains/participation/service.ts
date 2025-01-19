@@ -33,8 +33,6 @@ export default class ParticipationService {
       throw new Error("Unauthorized: User must be logged in");
     }
 
-    const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.invite(input);
-
     return await prismaClient.$transaction(async (tx) => {
       const opportunity = await OpportunityRepository.findWithTransaction(
         ctx,
@@ -45,6 +43,16 @@ export default class ParticipationService {
       if (!opportunity) {
         throw new Error(`OpportunityNotFound: ID=${input.opportunityId}`);
       }
+
+      const communityId = opportunity.community.id;
+      if (!communityId) {
+        throw new Error(`CommunityNotFound: ID=${opportunity.community}`);
+      }
+
+      const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.invite(
+        input,
+        communityId,
+      );
 
       const participation = await ParticipationRepository.createWithTransaction(ctx, tx, {
         ...data,
@@ -69,11 +77,6 @@ export default class ParticipationService {
       throw new Error("Unauthorized: User must be logged in");
     }
 
-    const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.apply(
-      input,
-      currentUserId,
-    );
-
     return await prismaClient.$transaction(async (tx) => {
       const opportunity = await OpportunityRepository.findWithTransaction(
         ctx,
@@ -84,6 +87,17 @@ export default class ParticipationService {
       if (!opportunity) {
         throw new Error(`OpportunityNotFound: ID=${input.opportunityId}`);
       }
+
+      const communityId = opportunity.community.id;
+      if (!communityId) {
+        throw new Error(`CommunityNotFound: ID=${opportunity.community}`);
+      }
+
+      const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.apply(
+        input,
+        currentUserId,
+        communityId,
+      );
 
       const participationStatus = opportunity.requireApproval
         ? ParticipationStatus.APPLIED

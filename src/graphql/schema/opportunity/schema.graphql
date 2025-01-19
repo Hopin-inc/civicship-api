@@ -36,7 +36,7 @@ extend type Mutation {
     opportunitySetPrivate(id: ID!): OpportunitySetPublishStatusPayload
 
     # invite
-    participationInvite(input: ParticipationInviteInput!): ParticipationSetStatusPayload
+    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
     participationCancelInvitation(id: ID!): ParticipationSetStatusPayload
     participationApproveInvitation(id: ID!): ParticipationSetStatusPayload
     participationDenyInvitation(id: ID!): ParticipationSetStatusPayload

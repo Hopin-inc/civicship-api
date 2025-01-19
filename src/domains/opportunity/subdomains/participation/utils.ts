@@ -26,7 +26,7 @@ export const ParticipationUtils = {
         await ParticipationRepository.setStatusWithTransaction(ctx, tx, id, status);
 
       if (withPointsTransfer && status === ParticipationStatus.APPROVED) {
-        await this.handlePointsTransfer(ctx, tx, participation, currentUserId);
+        await this.handlePointsTransfer(ctx, tx, participation);
       }
 
       await this.recordParticipationHistory(ctx, tx, id, status, currentUserId);
@@ -39,7 +39,6 @@ export const ParticipationUtils = {
     ctx: IContext,
     tx: Prisma.TransactionClient,
     participation: ParticipationPayloadWithArgs,
-    currentUserId: string,
   ) {
     if (!participation.opportunityId) {
       throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
@@ -55,9 +54,13 @@ export const ParticipationUtils = {
       throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
     }
 
+    if (!participation.userId) {
+      throw new Error(`Participation with ID ${participation.userId} not found`);
+    }
+
     const { communityWallet, userWallet } = this.validateTransfer(
       opportunity.community.wallets,
-      currentUserId,
+      participation.userId,
       opportunity.pointsPerParticipation,
     );
 
