@@ -19,13 +19,14 @@ import {
 import { IContext } from "@/types/server";
 import ParticipationService from "@/domains/opportunity/subdomains/participation/service";
 import ParticipationOutputFormat from "@/domains/opportunity/subdomains/participation/presenter/output";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class ParticipationUseCase {
   static async visitorBrowseParticipations(
     { cursor, filter, sort, first }: GqlQueryParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const res = await ParticipationService.fetchParticipations(ctx, { cursor, filter, sort }, take);
     const hasNextPage = res.length > take;
 

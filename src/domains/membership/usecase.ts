@@ -24,13 +24,14 @@ import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
 import { Role } from "@prisma/client";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class MembershipUseCase {
   static async visitorBrowseMemberships(
     { filter, sort, cursor, first }: GqlQueryMembershipsArgs,
     ctx: IContext,
   ): Promise<GqlMembershipsConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const res = await MembershipService.fetchMemberships(ctx, { filter, sort, cursor }, take);
     const hasNextPage = res.length > take;
 

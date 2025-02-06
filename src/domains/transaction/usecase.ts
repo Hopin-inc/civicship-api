@@ -13,13 +13,14 @@ import {
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class TransactionUseCase {
   static async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
     ctx: IContext,
   ): Promise<GqlTransactionsConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const res = await TransactionService.fetchTransactions(ctx, { filter, sort, cursor }, take);
     const hasNextPage = res.length > take;
 

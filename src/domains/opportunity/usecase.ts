@@ -18,13 +18,14 @@ import { IContext } from "@/types/server";
 import OpportunityService from "@/domains/opportunity/service";
 import OpportunityOutputFormat from "@/domains/opportunity/presenter/output";
 import { PublishStatus } from "@prisma/client";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class OpportunityUseCase {
   static async visitorBrowsePublicOpportunities(
     { cursor, filter, sort, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const res = await OpportunityService.fetchPublicOpportunities(
       ctx,
       { cursor, filter, sort },

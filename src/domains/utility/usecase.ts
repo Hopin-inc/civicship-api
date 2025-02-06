@@ -15,13 +15,14 @@ import {
 import UtilityService from "@/domains/utility/service";
 import UtilityOutputFormat from "@/domains/utility/presenter/output";
 import { IContext } from "@/types/server";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class UtilityUseCase {
   static async visitorBrowseUtilities(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUtilitiesArgs,
   ): Promise<GqlUtilitiesConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const data = await UtilityService.fetchUtilities(ctx, { cursor, filter, sort }, take);
     const hasNextPage = data.length > take;
 
