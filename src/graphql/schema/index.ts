@@ -3,7 +3,7 @@ import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { makeExecutableSchema, mergeSchemas } from "@graphql-tools/schema";
 import { DateTimeTypeDefinition } from "graphql-scalars";
 import { applyMiddleware } from "graphql-middleware";
-import { permissions } from "@/graphql/permissions";
+import { permissions } from "@/graphql/permission";
 
 const definedSchema = loadSchemaSync("./**/*.graphql", {
   loaders: [new GraphQLFileLoader()],
