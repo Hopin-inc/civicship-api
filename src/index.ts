@@ -14,20 +14,19 @@ import { corsHandler } from "@/middleware/cors";
 import { applyMiddleware } from "graphql-middleware";
 import errorMiddleware from "@/middleware/error";
 import logger from "./libs/logger";
+import { specifiedRules } from "graphql/validation";
+import { complexityRule, depthRule } from "@/graphql/validation";
 
 const app = express();
 const httpServer = http.createServer(app);
 
 // TODO delete Field suggestion on prd
-const mergedSchema = applyMiddleware(
-  addResolversToSchema({ schema, resolvers }),
-  errorMiddleware,
-);
+const mergedSchema = applyMiddleware(addResolversToSchema({ schema, resolvers }), errorMiddleware);
+
 const graphqlServer = new ApolloServer<IContext>({
   schema: mergedSchema,
-  plugins: [
-    ApolloServerPluginDrainHttpServer({ httpServer }),
-  ],
+  validationRules: [...specifiedRules, depthRule, complexityRule],
+  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
   // handle Apollo server error (GraphQL error)
   formatError: (err) => {
     logger.error("GraphQL Error:", err);
@@ -58,12 +57,12 @@ const port = Number(process.env.PORT ?? 3000);
 const server =
   process.env.NODE_HTTPS === "true"
     ? createServer(
-      {
-        key: fs.readFileSync("./certificates/localhost-key.pem"),
-        cert: fs.readFileSync("./certificates/localhost.pem"),
-      },
-      app,
-    )
+        {
+          key: fs.readFileSync("./certificates/localhost-key.pem"),
+          cert: fs.readFileSync("./certificates/localhost.pem"),
+        },
+        app,
+      )
     : app;
 server.listen(port, () => {
   const uri =
