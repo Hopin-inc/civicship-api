@@ -1,24 +1,3 @@
-type Agenda {
-    id: Int!
-    code: String!
-    name: String!
-    description: String
-}
-
-type Skillset {
-    id: Int!
-    code: String!
-    name: String!
-    description: String
-}
-
-type IssueCategory {
-    id: Int!
-    code: String!
-    name: String!
-    description: String
-}
-
 type City {
     code: ID!
     name: String!
@@ -31,21 +10,52 @@ type State {
     name: String!
 }
 
-type Index {
-    id: Int!
-    name: String!
-    valueType: ValueType!
-    description: String
-}
-
 enum IdentityPlatform {
     LINE
     FACEBOOK
 }
 
-enum EntityPosition {
-    PREFIX
-    SUFFIX
+enum PublishStatus {
+    PUBLIC
+    COMMUNITY_INTERNAL
+    PRIVATE
+}
+
+enum OpportunityCategory {
+    EVENT
+    TASK
+    CONVERSATION
+}
+
+enum MembershipStatus {
+    INVITED
+    CANCELED
+    JOINED
+    WITHDRAWED
+}
+
+enum ParticipationStatus {
+    INVITED
+    APPLIED
+    CANCELED
+    PARTICIPATING
+    NOT_PARTICIPATING
+    APPROVED
+    DENIED
+}
+
+enum WalletType {
+    COMMUNITY
+    MEMBER
+}
+
+enum TransactionReason {
+    POINT_ISSUED
+    PARTICIPATION_APPROVED
+    UTILITY_USAGE
+    MEMBERSHIP_DELETED
+    GIFT
+    OTHER
 }
 
 enum ValueType {
@@ -54,7 +64,6 @@ enum ValueType {
 }
 
 extend type Query {
-    agendas: [Agenda!]!
     cities(name: String): [City!]!
     states(name: String): [State!]!
 }

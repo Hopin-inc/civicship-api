@@ -1,0 +1,69 @@
+# Queries and Mutations
+
+extend type Query {
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: String
+        first: Int
+    ): MembershipsConnection!
+    membership(userId: ID!, communityId: ID!): Membership
+
+    wallets(
+        filter: WalletFilterInput
+        sort: WalletSortInput
+        cursor: String
+        first: Int
+    ): WalletsConnection!
+    wallet(id: ID!): Wallet
+}
+
+extend type Mutation {
+    # invite
+    membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
+    membershipCancelInvitation(input: MembershipCancelInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipApproveInvitation(input: MembershipApproveInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipDenyInvitation(input: MembershipDenyInvitationInput!): MembershipSetInvitationStatusPayload
+
+    # join
+    membershipSelfJoin(input: MembershipSelfJoinInput!): MembershipSelfJoinPayload
+    membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
+
+    # role
+    membershipAssignOwner(input: MembershipAssignOwnerInput!): MembershipSetRolePayload
+    membershipAssignManager(input: MembershipAssignManagerInput!): MembershipSetRolePayload
+    membershipAssignMemberRole(input: MembershipAssignMemberInput!): MembershipSetRolePayload
+    membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
+}
+
+# Type definitions
+
+type Membership {
+    user: User!
+    community: Community!
+    status: MembershipStatus
+    role: Role!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type Wallet {
+    id: ID!
+
+    type: WalletType!
+    community: Community!
+    user: User
+    currentPointView: CurrentPointView
+
+    fromTransactions: [Transaction!]
+    toTransactions: [Transaction!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type CurrentPointView {
+    walletId: String!
+    currentPoint: Int!
+}

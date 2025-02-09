@@ -1,4 +1,4 @@
-# Queries/Mutations-related type definitions
+# user
 
 type UsersConnection {
     edges: [UserEdge]
@@ -13,11 +13,9 @@ type UserEdge implements Edge {
 
 input UserFilterInput {
     keyword: String
-    agendaId: Int
-    cityCode: String
-    isPublic: Boolean
+    sysRole: SysRole
 }
 
 input UserSortInput {
-    updatedAt: SortDirection
+    createdAt: SortDirection
 }

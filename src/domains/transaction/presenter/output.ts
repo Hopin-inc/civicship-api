@@ -1,0 +1,63 @@
+import {
+  GqlTransaction,
+  GqlTransactionsConnection,
+  GqlTransactionIssueCommunityPointSuccess,
+  GqlTransactionGrantCommunityPointSuccess,
+  GqlTransactionDonateSelfPointSuccess,
+} from "@/types/graphql";
+import { TransactionPayloadWithArgs } from "@/domains/transaction/type";
+
+export default class TransactionOutputFormat {
+  static query(r: GqlTransaction[], hasNextPage: boolean): GqlTransactionsConnection {
+    return {
+      totalCount: r.length,
+      pageInfo: {
+        hasNextPage,
+        hasPreviousPage: true,
+        startCursor: r[0]?.id,
+        endCursor: r.length ? r[r.length - 1].id : undefined,
+      },
+      edges: r.map((edge) => ({
+        cursor: edge.id,
+        node: edge,
+      })),
+    };
+  }
+
+  static get(r: TransactionPayloadWithArgs): GqlTransaction {
+    const { fromWallet, toWallet, participation, utility, ...prop } = r;
+
+    return {
+      ...prop,
+      fromWallet: fromWallet,
+      toWallet: toWallet,
+      participation: participation,
+      utility: utility ? { ...utility } : null,
+    };
+  }
+
+  static issueCommunityPoint(
+    r: TransactionPayloadWithArgs,
+  ): GqlTransactionIssueCommunityPointSuccess {
+    return {
+      __typename: "TransactionIssueCommunityPointSuccess",
+      transaction: this.get(r),
+    };
+  }
+
+  static grantCommunityPoint(
+    r: TransactionPayloadWithArgs,
+  ): GqlTransactionGrantCommunityPointSuccess {
+    return {
+      __typename: "TransactionGrantCommunityPointSuccess",
+      transaction: this.get(r),
+    };
+  }
+
+  static giveUserPoint(r: TransactionPayloadWithArgs): GqlTransactionDonateSelfPointSuccess {
+    return {
+      __typename: "TransactionDonateSelfPointSuccess",
+      transaction: this.get(r),
+    };
+  }
+}

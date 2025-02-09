@@ -1,0 +1,46 @@
+# Queries and Mutations
+
+extend type Query {
+    communities(
+        filter: CommunityFilterInput
+        sort: CommunitySortInput
+        cursor: String
+        first: Int
+    ): CommunitiesConnection!
+    community(id: ID!): Community
+}
+
+extend type Mutation {
+    communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
+    communityDelete(id: ID!): CommunityDeletePayload
+    communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!): CommunityUpdateProfilePayload
+}
+
+# Type definitions
+
+type Communities {
+    total: Int!
+    data: [Community!]!
+}
+
+type Community {
+    id: ID!
+    name: String!
+    pointName: String!
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    state: State
+    city: City!
+
+    memberships: [Membership!]
+    opportunities: [Opportunity!]
+    participations: [Participation!]
+    wallets: [Wallet!]
+    utilities: [Utility!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

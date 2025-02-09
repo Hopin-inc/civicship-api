@@ -1,132 +1,47 @@
-# Queries/Mutations-related type definitions
+# user
 
-input UserCreateInput {
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
-    image: String
+## Input definition
+
+input UserUpdateProfileInput {
+    name: String!
+    slug: String
+    image: ImageInput
     bio: String
-
-    agendaIds: [Int!]
-    cityCodes: [String!]
-
-    organizationIds: [String!]
-    groupIds: [String!]
+    urlWebsite: String
+    urlX: String
+    urlFacebook: String
+    urlInstagram: String
+    urlYoutube: String
+    urlTiktok: String
 }
 
-input UserUpdateContentInput {
-    lastName: String!
-    middleName: String
-    firstName: String!
-    email: String
-    image: String
-    bio: String
+## Type definitions
 
-    agendaIds: [Int!]
-    cityCodes: [String!]
-}
-
-input UserSwitchPrivacyInput {
-    isPublic: Boolean!
-}
-
-input UserAddGroupInput {
-    groupId: String!
-}
-
-input UserRemoveGroupInput {
-    groupId: String!
-}
-
-input UserAddOrganizationInput {
-    organizationId: String!
-}
-
-input UserRemoveOrganizationInput {
-    organizationId: String!
-}
-
-input UserAddActivityInput {
-    activityId: String!
-}
-
-input UserRemoveActivityInput {
-    activityId: String!
-}
-
-# Type definitions
-
-type UserCreateSuccess {
+type UserUpdateProfileSuccess {
     user: User
 }
 
-type UserDeleteSuccess {
-    userId: ID!
+## Union definitions
+
+union UserUpdateProfilePayload =
+    UserUpdateProfileSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+
+# identify
+
+## Input definition
+
+input CreateUserInput {
+    name: String!
+    slug: String
+    image: ImageInput
 }
 
-type UserUpdateContentSuccess {
+## Type definitions
+
+type CurrentUserPayload {
     user: User
 }
-
-type UserSwitchPrivacySuccess {
-    user: User!
-}
-
-type UserUpdateGroupSuccess {
-    user: User!
-    group: Group!
-}
-
-type UserUpdateOrganizationSuccess {
-    user: User!
-    organization: Organization!
-}
-
-type UserUpdateActivitySuccess {
-    user: User
-    activity: Activity!
-}
-# union definitions
-
-union UserCreatePayload =
-    UserCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserDeletePayload =
-    UserDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserUpdateContentPayload =
-    UserUpdateContentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserSwitchPrivacyPayload =
-    UserSwitchPrivacySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserUpdateGroupPayload =
-    UserUpdateGroupSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserUpdateOrganizationPayload =
-    UserUpdateOrganizationSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UserUpdateActivityPayload =
-    UserUpdateActivitySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError

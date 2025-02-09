@@ -1,0 +1,76 @@
+# Opportunity
+
+type OpportunitiesConnection {
+    edges: [OpportunityEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OpportunityEdge implements Edge {
+    cursor: String!
+    node: Opportunity
+}
+
+input OpportunityFilterInput {
+    category: OpportunityCategory
+    publishStatus: PublishStatus
+    communityId: String
+    createdBy: String
+    stateCode: String
+    cityCode: String
+}
+
+input OpportunitySortInput {
+    startsAt: SortDirection
+    pointsPerParticipation: SortDirection
+    createdAt: SortDirection
+}
+
+# Participation
+
+type ParticipationsConnection {
+    edges: [ParticipationEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ParticipationEdge implements Edge {
+    cursor: String!
+    node: Participation
+}
+
+input ParticipationFilterInput {
+    status: ParticipationStatus
+
+    communityId: String
+    userId: String
+    opportunityId: String
+}
+
+input ParticipationSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}
+
+# ParticipationStatusHistory
+
+type ParticipationStatusHistoriesConnection {
+    edges: [ParticipationStatusHistoryEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ParticipationStatusHistoryEdge implements Edge {
+    cursor: String!
+    node: ParticipationStatusHistory
+}
+
+input ParticipationStatusHistoryFilterInput {
+    status: ParticipationStatus
+    participationId: String
+    createdById: String
+}
+
+input ParticipationStatusHistorySortInput {
+    createdAt: SortDirection
+}

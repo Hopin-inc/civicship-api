@@ -1,0 +1,46 @@
+# membership
+
+type MembershipsConnection {
+    edges: [MembershipEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type MembershipEdge implements Edge {
+    cursor: String!
+    node: Membership
+}
+
+input MembershipFilterInput {
+    userId: String
+    communityId: String
+    status: MembershipStatus
+    role: Role
+}
+
+input MembershipSortInput {
+    createdAt: SortDirection
+}
+
+# wallet
+
+type WalletsConnection {
+    edges: [WalletEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type WalletEdge implements Edge {
+    cursor: String!
+    node: Wallet
+}
+
+input WalletFilterInput {
+    type: WalletType
+    userId: String
+    communityId: String
+}
+
+input WalletSortInput {
+    createdAt: SortDirection
+}

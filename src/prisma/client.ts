@@ -1,10 +1,10 @@
-import { PrismaClient, SysRole } from "@prisma/client";
+import { Prisma, PrismaClient, SysRole } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
 
 // type CallbackFn = Parameters<typeof PrismaClient.prototype.$transaction>[0];
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
-type CallbackFn<T> = (prisma: Transaction) => Promise<T>
+type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
 
 export const prismaClient = new PrismaClient({
   log: [
@@ -13,6 +13,10 @@ export const prismaClient = new PrismaClient({
     { level: "info", emit: "stdout" },
     { level: "warn", emit: "stdout" },
   ],
+  transactionOptions: {
+    maxWait: 10000,
+    timeout: 200000,
+  },
 });
 prismaClient.$on("query", async ({ query, params }) => {
   console.info("Prisma: Query issued.", { query, params });
@@ -36,7 +40,7 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
-  public onlyBelongingOrganization<T>({ currentUser }: IContext, callback: CallbackFn<T>): Promise<T> {
+  public onlyBelongingCommunity<T>({ currentUser }: IContext, callback: CallbackFn<T>): Promise<T> {
     if (currentUser) {
       return this.client.$transaction(async (tx) => {
         await this.setRls(tx);
@@ -46,6 +50,18 @@ export class PrismaClientIssuer {
     } else {
       throw new Error("No organization available!");
     }
+  }
+
+  public async publicWithTransaction(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    operation: (tx: Prisma.TransactionClient) => Promise<any>,
+  ) {
+    if (!ctx.currentUser?.id) {
+      throw new Error("Unauthorized: User must be logged in");
+    }
+
+    return await operation(tx);
   }
 
   public admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
@@ -65,13 +81,17 @@ export class PrismaClientIssuer {
   }
 
   private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
-    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(`SELECT set_config('app.rls_config.user_id', '${ userId ?? "" }', TRUE) as value;`);
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', TRUE) as value;`,
+    );
     return value;
   }
 
   private async setRls(tx: Transaction, bypass: boolean = false) {
     const bypassConfig = bypass ? "on" : "off";
-    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(`SELECT set_config('app.rls_bypass', '${ bypassConfig }', TRUE) as value;`);
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_bypass', '${bypassConfig}', TRUE) as value;`,
+    );
     return value;
   }
 }
