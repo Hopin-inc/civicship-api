@@ -1,7 +1,7 @@
 import TransactionService from "@/domains/transaction/service";
 import TransactionRepository from "@/domains/transaction/repository";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 
 jest.mock("@/domains/transaction/repository");
 jest.mock("@/domains/community/repository");
@@ -23,7 +23,7 @@ describe("All Services", () => {
     describe("Transaction/service", () => {
         it("should return a list of transactions", async () => {
             const mockTransactions = {
-                AND: [{ id: "1", reason: "POINT_ISSUED" }],
+                AND: [{ id: "1", reason: TransactionReason.POINT_ISSUED }],
             };
             (TransactionRepository.query as jest.Mock).mockResolvedValue(mockTransactions);
 
@@ -40,7 +40,7 @@ describe("All Services", () => {
         });
 
         it("should return a transaction by id", async () => {
-            const mockTransaction = { id: "1", reason: "POINT_ISSUED" };
+            const mockTransaction = { id: "1", reason: TransactionReason.POINT_ISSUED };
             (TransactionRepository.find as jest.Mock).mockResolvedValue(mockTransaction);
 
             const result = await TransactionService.findTransaction(ctx, "1");
@@ -56,7 +56,7 @@ describe("All Services", () => {
                 toPointChange: 100,
                 participationId: "participation-1"
             };
-            const mockTransaction = { id: "1", ...input, reason: "PARTICIPATION_APPROVED" };
+            const mockTransaction = { id: "1", ...input, reason: TransactionReason.PARTICIPATION_APPROVED };
             (TransactionRepository.createWithTransaction as jest.Mock).mockResolvedValue(mockTransaction);
 
             const result = await TransactionService.giveRewardPoint(ctx, tx, input);
@@ -67,7 +67,7 @@ describe("All Services", () => {
 
         it("should issue community points", async () => {
             const input = { communityId: "community-1", to: "user-1", toPointChange: 500 };
-            const mockTransaction = { id: "2", ...input, reason: "POINT_ISSUED" };
+            const mockTransaction = { id: "2", ...input, reason: TransactionReason.POINT_ISSUED };
             (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
 
             const result = await TransactionService.issueCommunityPoint(ctx, input);
@@ -78,7 +78,7 @@ describe("All Services", () => {
 
         it("should grant community points", async () => {
             const input = { from: "community-1", to: "user-2", fromPointChange: -50, toPointChange: 50 };
-            const mockTransaction = { id: "3", ...input, reason: "GIFT" };
+            const mockTransaction = { id: "3", ...input, reason: TransactionReason.GIFT };
             (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
 
             const result = await TransactionService.grantCommunityPoint(ctx, input);
@@ -89,7 +89,7 @@ describe("All Services", () => {
 
         it("should donate self points", async () => {
             const input = { from: "user-1", to: "charity-1", fromPointChange: -200, toPointChange: 200 };
-            const mockTransaction = { id: "4", ...input, reason: "GIFT" };
+            const mockTransaction = { id: "4", ...input, reason: TransactionReason.GIFT };
             (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
 
             const result = await TransactionService.donateSelfPoint(ctx, input);
@@ -100,7 +100,7 @@ describe("All Services", () => {
 
         it("should use utility", async () => {
             const input = { from: "user-1", to: "utility-1", fromPointChange: -300, toPointChange: 0, utilityId: "utility-1" };
-            const mockTransaction = { id: "5", ...input, reason: "UTILITY_USAGE" };
+            const mockTransaction = { id: "5", ...input, reason: TransactionReason.UTILITY_USAGE };
             (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
 
             const result = await TransactionService.useUtility(ctx, input);
