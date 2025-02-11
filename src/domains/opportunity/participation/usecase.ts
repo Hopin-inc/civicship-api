@@ -19,6 +19,8 @@ import {
   GqlParticipationSetStatusPayload,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
+  GqlUser,
+  GqlUserParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationService from "@/domains/opportunity/participation/service";
@@ -46,6 +48,18 @@ export default class ParticipationUseCase {
     return ParticipationUtils.fetchParticipationsCommon(ctx, {
       cursor,
       filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserParticipationsArgs,
+    ctx: IContext,
+  ) {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
       first,
     });
   }

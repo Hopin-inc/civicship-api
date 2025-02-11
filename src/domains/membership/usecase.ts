@@ -20,7 +20,9 @@ import {
   GqlMembership,
   GqlMembershipSelfJoinPayload,
   GqlCommunity,
-  GqlCommunityParticipationsArgs,
+  GqlCommunityMembershipsArgs,
+  GqlUserMembershipsArgs,
+  GqlUser,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
@@ -43,12 +45,24 @@ export default class MembershipUseCase {
 
   static async visitorBrowseMembershipsByCommunity(
     { id }: GqlCommunity,
-    { first, cursor }: GqlCommunityParticipationsArgs,
+    { first, cursor }: GqlCommunityMembershipsArgs,
     ctx: IContext,
   ): Promise<GqlMembershipsConnection> {
     return MembershipUtils.fetchMembershipsCommon(ctx, {
       cursor,
       filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseMembershipsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserMembershipsArgs,
+    ctx: IContext,
+  ) {
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
       first,
     });
   }

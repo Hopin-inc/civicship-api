@@ -13,6 +13,8 @@ import {
   GqlOpportunitySetPublishStatusPayload,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
+  GqlUser,
+  GqlUserOpportunitiesCreatedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityService from "@/domains/opportunity/service";
@@ -40,6 +42,18 @@ export default class OpportunityUseCase {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
       filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseOpportunitiesCreatedByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserOpportunitiesCreatedByMeArgs,
+    ctx: IContext,
+  ) {
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter: { createdBy: id },
       first,
     });
   }

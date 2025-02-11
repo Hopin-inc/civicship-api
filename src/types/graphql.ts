@@ -1162,11 +1162,11 @@ export type GqlUser = {
   createdAt: Scalars['Datetime']['output'];
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
-  memberships?: Maybe<Array<GqlMembership>>;
+  memberships?: Maybe<GqlMembershipsConnection>;
   name: Scalars['String']['output'];
-  opportunitiesCreatedByMe?: Maybe<Array<GqlOpportunity>>;
-  participationStatusChangedByMe?: Maybe<Array<GqlParticipationStatusHistory>>;
-  participations?: Maybe<Array<GqlParticipation>>;
+  opportunitiesCreatedByMe?: Maybe<GqlOpportunitiesConnection>;
+  participationStatusChangedByMe?: Maybe<GqlParticipationStatusHistoriesConnection>;
+  participations?: Maybe<GqlParticipationsConnection>;
   slug: Scalars['String']['output'];
   sysRole?: Maybe<GqlSysRole>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -1176,7 +1176,37 @@ export type GqlUser = {
   urlWebsite?: Maybe<Scalars['String']['output']>;
   urlX?: Maybe<Scalars['String']['output']>;
   urlYoutube?: Maybe<Scalars['String']['output']>;
-  wallets?: Maybe<Array<GqlWallet>>;
+  wallets?: Maybe<GqlWalletsConnection>;
+};
+
+
+export type GqlUserMembershipsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlUserOpportunitiesCreatedByMeArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlUserParticipationStatusChangedByMeArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlUserParticipationsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type GqlUserWalletsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type GqlUserEdge = GqlEdge & {
@@ -2351,11 +2381,11 @@ export type GqlUserResolvers<ContextType = Context, ParentType extends GqlResolv
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  memberships?: Resolver<Maybe<Array<GqlResolversTypes['Membership']>>, ParentType, ContextType>;
+  memberships?: Resolver<Maybe<GqlResolversTypes['MembershipsConnection']>, ParentType, ContextType, Partial<GqlUserMembershipsArgs>>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  opportunitiesCreatedByMe?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
-  participationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ParticipationStatusHistory']>>, ParentType, ContextType>;
-  participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
+  opportunitiesCreatedByMe?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUserOpportunitiesCreatedByMeArgs>>;
+  participationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserParticipationStatusChangedByMeArgs>>;
+  participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlUserParticipationsArgs>>;
   slug?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   sysRole?: Resolver<Maybe<GqlResolversTypes['SysRole']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -2365,7 +2395,7 @@ export type GqlUserResolvers<ContextType = Context, ParentType extends GqlResolv
   urlWebsite?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   urlX?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   urlYoutube?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  wallets?: Resolver<Maybe<Array<GqlResolversTypes['Wallet']>>, ParentType, ContextType>;
+  wallets?: Resolver<Maybe<GqlResolversTypes['WalletsConnection']>, ParentType, ContextType, Partial<GqlUserWalletsArgs>>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

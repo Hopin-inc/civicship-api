@@ -5,6 +5,8 @@ import {
   GqlWalletsConnection,
   GqlCommunity,
   GqlCommunityWalletsArgs,
+  GqlUser,
+  GqlUserWalletsArgs,
 } from "@/types/graphql";
 import WalletService from "@/domains/membership/wallet/service";
 import WalletOutputFormat from "@/domains/membership/wallet/presenter/output";
@@ -35,6 +37,19 @@ export default class WalletUseCase {
       first,
     });
   }
+
+  static async visitorBrowseWalletsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserWalletsArgs,
+    ctx: IContext,
+  ) {
+    return WalletUtils.fetchWalletsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
+      first,
+    });
+  }
+
   static async userViewWallet(
     { id }: GqlQueryWalletArgs,
     ctx: IContext,

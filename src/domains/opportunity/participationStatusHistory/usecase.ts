@@ -2,12 +2,11 @@ import {
   GqlParticipation,
   GqlParticipationStatusHistoriesArgs,
   GqlParticipationStatusHistoriesConnection,
-  GqlParticipationStatusHistory,
+  GqlUser,
+  GqlUserParticipationStatusChangedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/graphql/pagination";
-import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
-import ParticipationStatusHistoryOutputFormat from "@/domains/opportunity/participationStatusHistory/presenter/output";
+import { ParticipationStatusHistoryUtils } from "@/domains/opportunity/participationStatusHistory/utils";
 
 export default class ParticipationStatusHistoryUseCase {
   static async visitorBrowseStatusHistoriesByParticipation(
@@ -15,19 +14,22 @@ export default class ParticipationStatusHistoryUseCase {
     { first, cursor }: GqlParticipationStatusHistoriesArgs,
     ctx: IContext,
   ): Promise<GqlParticipationStatusHistoriesConnection> {
-    const take = clampFirst(first);
-
-    const res = await ParticipationStatusHistoryService.fetchStatusHistories(
-      ctx,
-      { filter: { participationId: id }, cursor: cursor },
-      take,
-    );
-    const hasNextPage = res.length > take;
-
-    const data: GqlParticipationStatusHistory[] = res.slice(0, take).map((record) => {
-      return ParticipationStatusHistoryOutputFormat.get(record);
+    return ParticipationStatusHistoryUtils.fetchParticipationStatusHistoriesCommon(ctx, {
+      cursor,
+      filter: { participationId: id },
+      first,
     });
+  }
 
-    return ParticipationStatusHistoryOutputFormat.query(data, hasNextPage);
+  static async visitorBrowseParticipationStatusChangedByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserParticipationStatusChangedByMeArgs,
+    ctx: IContext,
+  ) {
+    return ParticipationStatusHistoryUtils.fetchParticipationStatusHistoriesCommon(ctx, {
+      cursor,
+      filter: { createdById: id },
+      first,
+    });
   }
 }
