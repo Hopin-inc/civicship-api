@@ -281,8 +281,8 @@ function defineUserFactoryInternal({ defaultData: defaultDataResolver, onAfterBu
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().user.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -375,8 +375,8 @@ function defineIdentityFactoryInternal({ defaultData: defaultDataResolver, onAft
             uid: inputData.uid
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().identity.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -475,8 +475,8 @@ function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAf
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().community.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -575,8 +575,8 @@ function defineMembershipFactoryInternal({ defaultData: defaultDataResolver, onA
             communityId: inputData.communityId
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().membership.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -678,8 +678,8 @@ function defineWalletFactoryInternal({ defaultData: defaultDataResolver, onAfter
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().wallet.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -791,8 +791,8 @@ function defineOpportunityFactoryInternal({ defaultData: defaultDataResolver, on
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().opportunity.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -896,8 +896,8 @@ function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, 
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().participation.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -995,8 +995,8 @@ function defineParticipationStatusHistoryFactoryInternal({ defaultData: defaultD
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().participationStatusHistory.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -1089,8 +1089,8 @@ function defineUtilityFactoryInternal({ defaultData: defaultDataResolver, onAfte
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().utility.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -1200,8 +1200,8 @@ function defineTransactionFactoryInternal({ defaultData: defaultDataResolver, on
             id: inputData.id
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().transaction.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -1294,8 +1294,8 @@ function defineCityFactoryInternal({ defaultData: defaultDataResolver, onAfterBu
             code: inputData.code
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().city.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -1383,8 +1383,8 @@ function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterB
             countryCode: inputData.countryCode
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().state.create({ data });
             await handleAfterCreate(createdData, transientFields);
@@ -1476,8 +1476,8 @@ function defineCurrentPointViewFactoryInternal({ defaultData: defaultDataResolve
             walletId: inputData.walletId
         });
         const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const data = await build(inputData).then(screen);
             await handleBeforeCreate(data, transientFields);
             const createdData = await getClient().currentPointView.create({ data });
             await handleAfterCreate(createdData, transientFields);
