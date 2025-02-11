@@ -6,6 +6,7 @@ import { PrismaClientIssuer } from "@/prisma/client";
 import { IContext } from "@/types/server";
 import { SignInProvider } from "@/consts/utils";
 import { authInclude } from "@/domains/user/type";
+import { authSelect } from "@/domains/membership/type";
 
 export const authHandler = (server: ApolloServer<IContext>) =>
   expressMiddleware(server, {
@@ -17,7 +18,7 @@ export const authHandler = (server: ApolloServer<IContext>) =>
         const uid = decoded?.uid;
         const platform = SignInProvider[decoded.firebase.sign_in_provider];
         const currentUser = await issuer.internal(async (tx) => {
-          return tx.user.findFirst({
+          const user = await tx.user.findFirst({
             where: {
               identities: {
                 some: { uid },
@@ -25,6 +26,20 @@ export const authHandler = (server: ApolloServer<IContext>) =>
             },
             include: authInclude,
           });
+
+          if (!user) {
+            return null;
+          }
+
+          const memberships = await tx.membership.findMany({
+            where: { userId: user.id },
+            select: authSelect,
+          });
+
+          return {
+            ...user,
+            memberships,
+          };
         });
         console.log(currentUser);
         return { uid, platform, currentUser } satisfies IContext;
