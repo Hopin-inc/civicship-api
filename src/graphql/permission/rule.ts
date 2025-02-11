@@ -27,17 +27,30 @@ export const isSelf = rule({ cache: "contextual" })((parent, args, ctx: IContext
 });
 
 // TODO: inputにcommunityIdを必須で追加する(Serviceは更新しなくておk）
-export const isCommunityOwnerOrManager = rule({ cache: "contextual" })(async (
+export const isCommunityOwner = rule({ cache: "contextual" })(async (
   parent,
   args,
   ctx: IContext,
 ) => {
-  if (!ctx.currentUser) return false;
-  const communityId = args.input?.communityId || args.communityId || args.id;
-  if (!communityId) return false;
+  if (!ctx.currentUser || !args.communityId) return false;
+  const communityId = args.communityId;
+
   const membership = ctx.currentUser.memberships?.find((m) => m.communityId === communityId);
   if (!membership) return false;
 
-  const validRoles: Role[] = [Role.OWNER, Role.MANAGER];
-  return validRoles.includes(membership.role);
+  return membership.role === Role.OWNER;
+});
+
+export const isCommunityManager = rule({ cache: "contextual" })(async (
+  parent,
+  args,
+  ctx: IContext,
+) => {
+  if (!ctx.currentUser || !args.communityId) return false;
+  const communityId = args.communityId;
+
+  const membership = ctx.currentUser.memberships?.find((m) => m.communityId === communityId);
+  if (!membership) return false;
+
+  return membership.role === Role.MANAGER;
 });
