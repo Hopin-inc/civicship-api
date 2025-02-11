@@ -1267,8 +1267,14 @@ export type GqlUtility = {
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
-  transactions?: Maybe<Array<GqlTransaction>>;
+  transactions?: Maybe<GqlTransactionsConnection>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
+
+export type GqlUtilityTransactionsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type GqlUtilityCreateInput = {
@@ -1657,7 +1663,7 @@ export type GqlResolversTypes = ResolversObject<{
   UserUpdateProfileSuccess: ResolverTypeWrapper<Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   UsersConnection: ResolverTypeWrapper<Omit<GqlUsersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['UserEdge']>>> }>;
   UtilitiesConnection: ResolverTypeWrapper<Omit<GqlUtilitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['UtilityEdge']>>> }>;
-  Utility: ResolverTypeWrapper<Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversTypes['Community'], transactions?: Maybe<Array<GqlResolversTypes['Transaction']>> }>;
+  Utility: ResolverTypeWrapper<Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversTypes['Community'], transactions?: Maybe<GqlResolversTypes['TransactionsConnection']> }>;
   UtilityCreateInput: GqlUtilityCreateInput;
   UtilityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityCreatePayload']>;
   UtilityCreateSuccess: ResolverTypeWrapper<Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: GqlResolversTypes['Utility'] }>;
@@ -1818,7 +1824,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   UserUpdateProfileSuccess: Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   UsersConnection: Omit<GqlUsersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['UserEdge']>>> };
   UtilitiesConnection: Omit<GqlUtilitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['UtilityEdge']>>> };
-  Utility: Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversParentTypes['Community'], transactions?: Maybe<Array<GqlResolversParentTypes['Transaction']>> };
+  Utility: Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversParentTypes['Community'], transactions?: Maybe<GqlResolversParentTypes['TransactionsConnection']> };
   UtilityCreateInput: GqlUtilityCreateInput;
   UtilityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityCreatePayload'];
   UtilityCreateSuccess: Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: GqlResolversParentTypes['Utility'] };
@@ -2436,7 +2442,7 @@ export type GqlUtilityResolvers<ContextType = Context, ParentType extends GqlRes
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  transactions?: Resolver<Maybe<Array<GqlResolversTypes['Transaction']>>, ParentType, ContextType>;
+  transactions?: Resolver<Maybe<GqlResolversTypes['TransactionsConnection']>, ParentType, ContextType, Partial<GqlUtilityTransactionsArgs>>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

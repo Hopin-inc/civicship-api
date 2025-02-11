@@ -13,6 +13,8 @@ import {
   GqlParticipationTransactionsArgs,
   GqlWallet,
   GqlWalletTransactionsArgs,
+  GqlUtility,
+  GqlUtilityTransactionsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
@@ -52,6 +54,18 @@ export default class TransactionUseCase {
     return TransactionUtils.fetchTransactionsCommon(ctx, {
       filter: { fromWalletId: id, toWalletId: id },
       cursor,
+      first,
+    });
+  }
+
+  static async visitorBrowseTransactionsByUtility(
+    { id }: GqlUtility,
+    { first, cursor }: GqlUtilityTransactionsArgs,
+    ctx: IContext,
+  ) {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      cursor,
+      filter: { utilityId: id },
       first,
     });
   }

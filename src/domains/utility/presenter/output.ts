@@ -29,33 +29,7 @@ export default class UtilityResponseFormat {
   }
 
   static get(r: UtilityGetPayloadWithArgs): GqlUtility {
-    const { community, transactions, ...prop } = r;
-
-    return {
-      ...prop,
-      community,
-      transactions: transactions?.map((transaction: TransactionPayloadWithArgs) => ({
-        ...transaction,
-        fromWallet: transaction.fromWallet
-          ? {
-              ...transaction.fromWallet,
-              community: {
-                ...transaction.fromWallet.community,
-                city: transaction.fromWallet.community.city,
-              },
-            }
-          : null,
-        toWallet: transaction.toWallet
-          ? {
-              ...transaction.toWallet,
-              community: {
-                ...transaction.toWallet.community,
-                city: transaction.toWallet.community.city,
-              },
-            }
-          : null,
-      })),
-    };
+    return r;
   }
 
   static create(r: UtilityGetPayloadWithArgs): GqlUtilityCreateSuccess {
