@@ -20,11 +20,13 @@ export const isNotAuthenticated = rule({ cache: "contextual" })(async (
   return ctx.currentUser === null;
 });
 
+// TODO: 基本的なユースケースは自分のデータを更新できる・Adminは別途必要なら作成する・inputにIDを指定しない更新する（User自身にまつわるデータが対象）
 export const isSelf = rule({ cache: "contextual" })((parent, args, ctx: IContext) => {
   if (!ctx.currentUser) return false;
   return ctx.currentUser.id === args.id;
 });
 
+// TODO: inputにcommunityIdを必須で追加する(Serviceは更新しなくておk）
 export const isCommunityOwnerOrManager = rule({ cache: "contextual" })(async (
   parent,
   args,

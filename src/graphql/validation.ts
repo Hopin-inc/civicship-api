@@ -1,12 +1,20 @@
-import depthLimit from "graphql-depth-limit";
-import createComplexityRule, { simpleEstimator } from "graphql-query-complexity";
-import { GraphQLError } from "graphql/error";
-
-export const depthRule = depthLimit(7);
+import { GraphQLError } from "graphql";
+import {
+  createComplexityRule,
+  fieldExtensionsEstimator,
+  simpleEstimator,
+} from "graphql-query-complexity";
+import { DEFAULT_COMPLEXITY, MAX_COMPLEXITY } from "@/consts/graphql";
 
 export const complexityRule = createComplexityRule({
-  maximumComplexity: 200,
+  maximumComplexity: MAX_COMPLEXITY,
   variables: {},
+  estimators: [
+    fieldExtensionsEstimator(),
+    simpleEstimator({
+      defaultComplexity: DEFAULT_COMPLEXITY,
+    }),
+  ],
   createError: (max, actual) => {
     return new GraphQLError(`Query is too complex: ${actual}. Max allowed: ${max}`, {
       extensions: {
@@ -16,5 +24,4 @@ export const complexityRule = createComplexityRule({
       },
     });
   },
-  estimators: [simpleEstimator({ defaultComplexity: 1 })],
 });
