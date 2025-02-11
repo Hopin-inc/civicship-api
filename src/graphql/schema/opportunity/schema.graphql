@@ -6,7 +6,7 @@ extend type Query {
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection!
+    ): OpportunitiesConnection! @complexity(value: 10)
     opportunity(id: ID!): Opportunity
 
     participations(
@@ -14,7 +14,7 @@ extend type Query {
         sort: ParticipationSortInput
         cursor: String
         first: Int
-    ): ParticipationsConnection!
+    ): ParticipationsConnection! @complexity(value: 10)
     participation(id: ID!): Participation
 
     participationStatusHistories(
@@ -22,7 +22,7 @@ extend type Query {
         sort: ParticipationStatusHistorySortInput
         cursor: String
         first: Int
-    ): ParticipationStatusHistoriesConnection!
+    ): ParticipationStatusHistoriesConnection! @complexity(value: 10)
     participationStatusHistory(id: ID!): ParticipationStatusHistory
 }
 
@@ -75,7 +75,7 @@ type Opportunity {
     state: State
     city: City!
 
-    participations: [Participation!]
+    participations: [Participation!] @complexity(value: 10)
 
     createdAt: Datetime!
     updatedAt: Datetime
@@ -89,8 +89,8 @@ type Participation {
     community: Community
     opportunity: Opportunity
 
-    statusHistories: [ParticipationStatusHistory!]
-    transactions: [Transaction!]
+    statusHistories: [ParticipationStatusHistory!] @complexity(value: 10)
+    transactions: [Transaction!] @complexity(value: 10)
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -6,7 +6,7 @@ extend type Query {
         sort: MembershipSortInput
         cursor: String
         first: Int
-    ): MembershipsConnection!
+    ): MembershipsConnection! @complexity(value: 10)
     membership(userId: ID!, communityId: ID!): Membership
 
     wallets(
@@ -14,7 +14,7 @@ extend type Query {
         sort: WalletSortInput
         cursor: String
         first: Int
-    ): WalletsConnection!
+    ): WalletsConnection! @complexity(value: 10)
     wallet(id: ID!): Wallet
 }
 
@@ -56,8 +56,8 @@ type Wallet {
     user: User
     currentPointView: CurrentPointView
 
-    fromTransactions: [Transaction!]
-    toTransactions: [Transaction!]
+    fromTransactions: [Transaction!] @complexity(value: 10)
+    toTransactions: [Transaction!] @complexity(value: 10)
 
     createdAt: Datetime!
     updatedAt: Datetime

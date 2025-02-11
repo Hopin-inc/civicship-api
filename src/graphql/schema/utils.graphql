@@ -3,6 +3,8 @@ schema {
     mutation: Mutation
 }
 
+directive @complexity(value: Int!) on FIELD_DEFINITION
+
 scalar Datetime
 
 type Query {

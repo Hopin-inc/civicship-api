@@ -4,7 +4,7 @@ extend type Query {
         sort: UserSortInput
         cursor: String
         first: Int
-    ): UsersConnection!
+    ): UsersConnection! @complexity(value: 10)
     user(id: ID!): User
 
     currentUser: CurrentUserPayload
@@ -36,10 +36,10 @@ type User {
     createdAt: Datetime!
     updatedAt: Datetime
 
-    memberships: [Membership!]
-    wallets: [Wallet!]
+    memberships: [Membership!] @complexity(value: 10)
+    wallets: [Wallet!] @complexity(value: 10)
 
-    opportunitiesCreatedByMe: [Opportunity!]
-    participations: [Participation!]
-    participationStatusChangedByMe: [ParticipationStatusHistory!]
+    opportunitiesCreatedByMe: [Opportunity!] @complexity(value: 10)
+    participations: [Participation!] @complexity(value: 10)
+    participationStatusChangedByMe: [ParticipationStatusHistory!] @complexity(value: 10)
 }

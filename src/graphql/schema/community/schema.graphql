@@ -6,7 +6,7 @@ extend type Query {
         sort: CommunitySortInput
         cursor: String
         first: Int
-    ): CommunitiesConnection!
+    ): CommunitiesConnection! @complexity(value: 10)
     community(id: ID!): Community
 }
 
@@ -35,11 +35,11 @@ type Community {
     state: State
     city: City!
 
-    memberships: [Membership!]
-    opportunities: [Opportunity!]
-    participations: [Participation!]
-    wallets: [Wallet!]
-    utilities: [Utility!]
+    memberships: [Membership!] @complexity(value: 10)
+    opportunities: [Opportunity!] @complexity(value: 10)
+    participations: [Participation!] @complexity(value: 10)
+    wallets: [Wallet!] @complexity(value: 10)
+    utilities: [Utility!] @complexity(value: 10)
 
     createdAt: Datetime!
     updatedAt: Datetime

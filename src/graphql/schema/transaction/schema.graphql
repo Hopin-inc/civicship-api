@@ -6,7 +6,7 @@ extend type Query {
         sort: TransactionSortInput
         cursor: String
         first: Int
-    ): TransactionsConnection!
+    ): TransactionsConnection! @complexity(value: 10)
     transaction(id: ID!): Transaction
 }
 
