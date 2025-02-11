@@ -1780,6 +1780,12 @@ export type GqlResolversParentTypes = ResolversObject<{
   WalletsConnection: Omit<GqlWalletsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['WalletEdge']>>> };
 }>;
 
+export type GqlComplexityDirectiveArgs = {
+  value: Scalars['Int']['input'];
+};
+
+export type GqlComplexityDirectiveResolver<Result, Parent, ContextType = Context, Args = GqlComplexityDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
 export type GqlAuthErrorResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['AuthError'] = GqlResolversParentTypes['AuthError']> = ResolversObject<{
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
@@ -2563,3 +2569,6 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   WalletsConnection?: GqlWalletsConnectionResolvers<ContextType>;
 }>;
 
+export type GqlDirectiveResolvers<ContextType = Context> = ResolversObject<{
+  complexity?: GqlComplexityDirectiveResolver<any, any, ContextType>;
+}>;
