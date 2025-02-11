@@ -56,7 +56,7 @@ type Wallet {
     user: User
     currentPointView: CurrentPointView
 
-    transactions(first: Int, cursor: String): [Transaction!] @complexity(value: 10, multipliers: ["first"])
+    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
