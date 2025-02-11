@@ -1,4 +1,6 @@
 import {
+  GqlCommunity,
+  GqlCommunityParticipationsArgs,
   GqlMutationParticipationApplyArgs,
   GqlMutationParticipationApproveApplicationArgs,
   GqlMutationParticipationApproveInvitationArgs,
@@ -32,6 +34,18 @@ export default class ParticipationUseCase {
       cursor,
       sort,
       filter,
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
       first,
     });
   }

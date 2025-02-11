@@ -1,4 +1,6 @@
 import {
+  GqlCommunity,
+  GqlCommunityOpportunitiesArgs,
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunityEditContentArgs,
@@ -15,25 +17,31 @@ import {
 import { IContext } from "@/types/server";
 import OpportunityService from "@/domains/opportunity/service";
 import OpportunityOutputFormat from "@/domains/opportunity/presenter/output";
-import { clampFirst } from "@/graphql/pagination";
+import { OpportunityUtils } from "@/domains/opportunity/utlis";
 
 export default class OpportunityUseCase {
   static async visitorBrowsePublicOpportunities(
     { cursor, filter, sort, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    const take = clampFirst(first);
-    const res = await OpportunityService.fetchPublicOpportunities(
-      ctx,
-      { cursor, filter, sort },
-      take,
-    );
-    const hasNextPage = res.length > take;
-
-    const data: GqlOpportunity[] = res.slice(0, take).map((record) => {
-      return OpportunityOutputFormat.get(record);
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter,
+      sort,
+      first,
     });
-    return OpportunityOutputFormat.query(data, hasNextPage);
+  }
+
+  static async visitorBrowseOpportunitiesByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityOpportunitiesArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitiesConnection> {
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
   }
 
   static async visitorViewOpportunity(

@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { transactionInclude } from "@/domains/transaction/type";
 
 export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
   community: {
@@ -9,9 +8,6 @@ export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
   },
   user: true,
   currentPointView: true,
-
-  fromTransactions: { include: transactionInclude },
-  toTransactions: { include: transactionInclude },
 });
 
 export type WalletPayloadWithArgs = Prisma.WalletGetPayload<{

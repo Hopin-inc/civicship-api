@@ -19,15 +19,13 @@ export default class WalletOutputFormat {
   }
 
   static get(r: WalletPayloadWithArgs): GqlWallet {
-    const { community, user, currentPointView, fromTransactions, toTransactions, ...prop } = r;
+    const { community, user, currentPointView, ...prop } = r;
 
     return {
       ...prop,
       community,
       user,
       currentPointView,
-      fromTransactions,
-      toTransactions,
     };
   }
 }

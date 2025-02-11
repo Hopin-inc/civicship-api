@@ -11,25 +11,37 @@ import {
   GqlUtilityDeletePayload,
   GqlUtilityUpdateInfoPayload,
   GqlUtilityUsePayload,
+  GqlCommunity,
+  GqlCommunityUtilitiesArgs,
 } from "@/types/graphql";
 import UtilityService from "@/domains/utility/service";
 import UtilityOutputFormat from "@/domains/utility/presenter/output";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/graphql/pagination";
+import { UtilityUtils } from "@/domains/utility/utils";
 
 export default class UtilityUseCase {
   static async visitorBrowseUtilities(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUtilitiesArgs,
   ): Promise<GqlUtilitiesConnection> {
-    const take = clampFirst(first);
-    const data = await UtilityService.fetchUtilities(ctx, { cursor, filter, sort }, take);
-    const hasNextPage = data.length > take;
-
-    const utilities: GqlUtility[] = data.slice(0, take).map((record) => {
-      return UtilityOutputFormat.get(record);
+    return UtilityUtils.fetchUtilitiesCommon(ctx, {
+      cursor,
+      filter,
+      sort,
+      first,
     });
-    return UtilityOutputFormat.query(utilities, hasNextPage);
+  }
+
+  static async visitorBrowseUtilitiesByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityUtilitiesArgs,
+    ctx: IContext,
+  ): Promise<GqlUtilitiesConnection> {
+    return UtilityUtils.fetchUtilitiesCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
   }
 
   static async visitorViewUtility(
