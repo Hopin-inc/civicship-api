@@ -11,6 +11,8 @@ import {
   GqlTransactionDonateSelfPointPayload,
   GqlParticipation,
   GqlParticipationTransactionsArgs,
+  GqlWallet,
+  GqlWalletTransactionsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
@@ -37,6 +39,18 @@ export default class TransactionUseCase {
   ): Promise<GqlTransactionsConnection> {
     return TransactionUtils.fetchTransactionsCommon(ctx, {
       filter: { participationId: id },
+      cursor,
+      first,
+    });
+  }
+
+  static async visitorBrowseTransactionsByWallet(
+    { id }: GqlWallet,
+    { first, cursor }: GqlWalletTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter: { fromWalletId: id, toWalletId: id },
       cursor,
       first,
     });
