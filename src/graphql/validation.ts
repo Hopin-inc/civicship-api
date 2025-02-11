@@ -1,16 +1,15 @@
 import { GraphQLError } from "graphql";
 import {
   createComplexityRule,
-  fieldExtensionsEstimator,
+  directiveEstimator,
   simpleEstimator,
 } from "graphql-query-complexity";
 import { DEFAULT_COMPLEXITY, MAX_COMPLEXITY } from "@/consts/graphql";
 
 export const complexityRule = createComplexityRule({
   maximumComplexity: MAX_COMPLEXITY,
-  variables: {},
   estimators: [
-    fieldExtensionsEstimator(),
+    directiveEstimator({ name: "complexity" }),
     simpleEstimator({
       defaultComplexity: DEFAULT_COMPLEXITY,
     }),

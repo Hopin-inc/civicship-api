@@ -1,8 +1,7 @@
 import Redis from "ioredis";
-import { fieldExtensionsEstimator, getComplexity, simpleEstimator } from "graphql-query-complexity";
+import { directiveEstimator, getComplexity, simpleEstimator } from "graphql-query-complexity";
 import { ApolloServerPlugin, GraphQLRequestContext } from "@apollo/server";
-import type { DocumentNode, GraphQLSchema } from "graphql";
-import type { IContext, LoggedInUserInfo } from "@/types/server";
+import type { IContext } from "@/types/server";
 import {
   DEFAULT_COMPLEXITY,
   MAX_COMPLEXITY_PER_MINUTE,
@@ -19,8 +18,20 @@ const rateLimitPlugin: ApolloServerPlugin<IContext> = {
     void requestContext;
     return {
       async didResolveOperation(ctx: GraphQLRequestContext<IContext>) {
-        const { schema } = ctx;
-        const complexity = getQueryComplexity(schema, ctx.document);
+        if (!ctx.document) {
+          throw new Error("GraphQL document is undefined");
+        }
+        const complexity = getComplexity({
+          schema: ctx.schema,
+          query: ctx.document,
+          variables: ctx.request.variables,
+          estimators: [
+            directiveEstimator({ name: "complexity" }),
+            simpleEstimator({
+              defaultComplexity: DEFAULT_COMPLEXITY,
+            }),
+          ],
+        });
         console.log(`Calculated query complexity: ${complexity}`);
 
         const clientIdentifier = getClientIdentifier(ctx);
@@ -31,92 +42,32 @@ const rateLimitPlugin: ApolloServerPlugin<IContext> = {
   },
 };
 
-/**
- * GraphQL の DocumentNode が Introspection クエリかどうか判定する
- */
-function isIntrospectionQuery(document: DocumentNode): boolean {
-  return document.definitions.some((def) => {
-    if (def.kind !== "OperationDefinition") return false;
-    return def.selectionSet.selections.some(
-      (selection) =>
-        selection.kind === "Field" &&
-        (selection.name.value === "__schema" || selection.name.value === "__type"),
-    );
-  });
-}
-
-/**
- * オブジェクトが uid プロパティを持っているか判定する型ガード
- */
-function hasUidProperty(obj: unknown): obj is { uid: unknown } {
-  return typeof obj === "object" && obj !== null && "uid" in obj;
-}
-
-/**
- * コンテキストが LoggedInUserInfo であるか判定する型ガード
- */
-function isLoggedInUserInfo(context: IContext): context is LoggedInUserInfo {
-  return hasUidProperty(context) && true;
-}
-
-/**
- * クライアントの識別子を取得する関数
- * - Introspection クエリの場合は固定 "introspection" を返す
- * - ログイン済みの場合は uid を利用
- * - 未ログインの場合は HTTP ヘッダーの x-forwarded-for を利用
- */
-function getClientIdentifier(ctx: GraphQLRequestContext<IContext>): string {
-  if (ctx.document && isIntrospectionQuery(ctx.document)) {
-    return "introspection";
+/** context から uid を取り出す */
+function extractUid(context: IContext): string | null {
+  if (typeof context === "object" && context !== null && "uid" in context) {
+    return context.uid;
   }
+  return null;
+}
 
-  const contextValue = ctx.contextValue;
-  if (isLoggedInUserInfo(contextValue) && contextValue.uid.trim() !== "") {
-    return contextValue.uid;
+/** クライアントの識別子を取得する関数 */
+function getClientIdentifier(ctx: GraphQLRequestContext<IContext>): string {
+  if (process.env.ENV === "LOCAL") {
+    return "3000";
+  }
+  const uid = extractUid(ctx.contextValue);
+  if (uid?.trim()) {
+    return uid;
   }
 
   if (!ctx.request.http) {
     throw new Error("No HTTP request info available");
   }
-
-  // まずは通常の x-forwarded-for ヘッダーから取得
   const ip = ctx.request.http.headers.get("x-forwarded-for");
   if (ip) {
     return ip;
   }
-
-  // ヘッダーが存在しない場合、開発環境なら代替手段として remoteAddress を利用する
-  if (process.env.ENV === "LOCAL") {
-    const remoteAddress = (ctx.request.http as any).socket?.remoteAddress;
-    if (remoteAddress) {
-      return remoteAddress;
-    }
-    // remoteAddress が取れない場合は、デフォルト値を返す（必要に応じて変更）
-    return "127.0.0.1";
-  }
-
   throw new Error("Unable to determine client IP address");
-}
-
-/**
- * クエリの複雑度を計算する関数
- */
-function getQueryComplexity(schema: GraphQLSchema, document: DocumentNode | undefined): number {
-  if (!document) {
-    throw new Error("GraphQL document is undefined");
-  }
-
-  return getComplexity({
-    schema,
-    query: document,
-    variables: {},
-    estimators: [
-      fieldExtensionsEstimator(),
-      simpleEstimator({
-        defaultComplexity: DEFAULT_COMPLEXITY,
-      }),
-    ],
-  });
 }
 
 /**
