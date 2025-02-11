@@ -1,15 +1,50 @@
-import ParticipationStatusHistoryRepository from "@/domains/opportunity/subdomains/participationStatusHistory/repository";
+import ParticipationStatusHistoryRepository from "@/domains/opportunity/participationStatusHistory/repository";
 import { IContext } from "@/types/server";
 import { ParticipationStatus, Prisma, WalletType } from "@prisma/client";
-import { ParticipationPayloadWithArgs } from "@/domains/opportunity/subdomains/participation/type";
+import { ParticipationPayloadWithArgs } from "@/domains/opportunity/participation/type";
 import OpportunityRepository from "@/domains/opportunity/repository";
 import TransactionService from "@/domains/transaction/service";
-import ParticipationStatusHistoryInputFormat from "@/domains/opportunity/subdomains/participationStatusHistory/presenter/input";
-import { GqlWallet } from "@/types/graphql";
+import ParticipationStatusHistoryInputFormat from "@/domains/opportunity/participationStatusHistory/presenter/input";
+import {
+  GqlParticipation,
+  GqlParticipationFilterInput,
+  GqlParticipationsConnection,
+  GqlParticipationSortInput,
+  GqlWallet,
+} from "@/types/graphql";
 import { prismaClient } from "@/prisma/client";
-import ParticipationRepository from "@/domains/opportunity/subdomains/participation/repository";
+import ParticipationRepository from "@/domains/opportunity/participation/repository";
+import { clampFirst } from "@/graphql/pagination";
+import ParticipationService from "@/domains/opportunity/participation/service";
+import ParticipationOutputFormat from "@/domains/opportunity/participation/presenter/output";
 
 export const ParticipationUtils = {
+  async fetchParticipationsCommon(
+    ctx: IContext,
+    {
+      cursor,
+      filter,
+      sort,
+      first,
+    }: {
+      cursor?: string;
+      filter?: GqlParticipationFilterInput;
+      sort?: GqlParticipationSortInput;
+      first?: number;
+    },
+  ): Promise<GqlParticipationsConnection> {
+    const take = clampFirst(first);
+
+    const res = await ParticipationService.fetchParticipations(ctx, { cursor, filter, sort }, take);
+    const hasNextPage = res.length > take;
+
+    const data: GqlParticipation[] = res.slice(0, take).map((record) => {
+      return ParticipationOutputFormat.get(record);
+    });
+
+    return ParticipationOutputFormat.query(data, hasNextPage);
+  },
+
   async setParticipationStatus(
     ctx: IContext,
     id: string,

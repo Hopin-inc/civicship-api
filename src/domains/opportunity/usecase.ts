@@ -2,9 +2,7 @@ import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunityEditContentArgs,
-  GqlMutationOpportunitySetCommunityInternalArgs,
-  GqlMutationOpportunitySetPrivateArgs,
-  GqlMutationOpportunitySetPublicArgs,
+  GqlMutationOpportunitySetPublishStatusArgs,
   GqlOpportunitiesConnection,
   GqlOpportunity,
   GqlOpportunityCreatePayload,
@@ -17,7 +15,6 @@ import {
 import { IContext } from "@/types/server";
 import OpportunityService from "@/domains/opportunity/service";
 import OpportunityOutputFormat from "@/domains/opportunity/presenter/output";
-import { PublishStatus } from "@prisma/client";
 import { clampFirst } from "@/graphql/pagination";
 
 export default class OpportunityUseCase {
@@ -74,31 +71,11 @@ export default class OpportunityUseCase {
     return OpportunityOutputFormat.update(res);
   }
 
-  static async managerSetOpportunityToPublic(
-    { id }: GqlMutationOpportunitySetPublicArgs,
+  static async managerSetOpportunityPublishStatus(
+    { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(ctx, id, PublishStatus.PUBLIC);
-    return OpportunityOutputFormat.setPublishStatus(res);
-  }
-
-  static async managerSetOpportunityToCommunityInternal(
-    { id }: GqlMutationOpportunitySetCommunityInternalArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(
-      ctx,
-      id,
-      PublishStatus.COMMUNITY_INTERNAL,
-    );
-    return OpportunityOutputFormat.setPublishStatus(res);
-  }
-
-  static async managerSetOpportunityToPrivate(
-    { id }: GqlMutationOpportunitySetPrivateArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(ctx, id, PublishStatus.PRIVATE);
+    const res = await OpportunityService.setOpportunityStatus(ctx, id, input.status);
     return OpportunityOutputFormat.setPublishStatus(res);
   }
 }

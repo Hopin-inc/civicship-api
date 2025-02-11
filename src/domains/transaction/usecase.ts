@@ -9,25 +9,37 @@ import {
   GqlTransactionIssueCommunityPointPayload,
   GqlTransactionGrantCommunityPointPayload,
   GqlTransactionDonateSelfPointPayload,
+  GqlParticipation,
+  GqlParticipationTransactionsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
-import { clampFirst } from "@/graphql/pagination";
+import { TransactionUtils } from "@/domains/transaction/utils";
 
 export default class TransactionUseCase {
   static async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
     ctx: IContext,
   ): Promise<GqlTransactionsConnection> {
-    const take = clampFirst(first);
-    const res = await TransactionService.fetchTransactions(ctx, { filter, sort, cursor }, take);
-    const hasNextPage = res.length > take;
-
-    const data: GqlTransaction[] = res.slice(0, take).map((record) => {
-      return TransactionOutputFormat.get(record);
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter,
+      sort,
+      cursor,
+      first,
     });
-    return TransactionOutputFormat.query(data, hasNextPage);
+  }
+
+  static async visitorBrowseTransactionsByParticipation(
+    { id }: GqlParticipation,
+    { first, cursor }: GqlParticipationTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter: { participationId: id },
+      cursor,
+      first,
+    });
   }
 
   static async visitorViewTransaction(

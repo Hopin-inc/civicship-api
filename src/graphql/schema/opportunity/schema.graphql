@@ -6,7 +6,7 @@ extend type Query {
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection! @complexity(value: 10)
+    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
     opportunity(id: ID!): Opportunity
 
     participations(
@@ -14,7 +14,7 @@ extend type Query {
         sort: ParticipationSortInput
         cursor: String
         first: Int
-    ): ParticipationsConnection! @complexity(value: 10)
+    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
     participation(id: ID!): Participation
 
     participationStatusHistories(
@@ -22,7 +22,7 @@ extend type Query {
         sort: ParticipationStatusHistorySortInput
         cursor: String
         first: Int
-    ): ParticipationStatusHistoriesConnection! @complexity(value: 10)
+    ): ParticipationStatusHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
     participationStatusHistory(id: ID!): ParticipationStatusHistory
 }
 
@@ -31,9 +31,7 @@ extend type Mutation {
     opportunityDelete(id: ID!): OpportunityDeletePayload
     opportunityEditContent(id: ID!, input: OpportunityEditContentInput!): OpportunityEditContentPayload
 
-    opportunitySetPublic(id: ID!): OpportunitySetPublishStatusPayload
-    opportunitySetCommunityInternal(id: ID!): OpportunitySetPublishStatusPayload
-    opportunitySetPrivate(id: ID!): OpportunitySetPublishStatusPayload
+    opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!): OpportunitySetPublishStatusPayload
 
     # invite
     participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
@@ -48,8 +46,6 @@ extend type Mutation {
     participationDenyApplication(id: ID!): ParticipationSetStatusPayload
 
     # performance
-    participationSubmitOutput(id: ID!): ParticipationSetStatusPayload
-    participationCancelSubmission(id: ID!): ParticipationSetStatusPayload
     participationApprovePerformance(id: ID!): ParticipationSetStatusPayload
     participationDenyPerformance(id: ID!): ParticipationSetStatusPayload
 }
@@ -75,7 +71,7 @@ type Opportunity {
     state: State
     city: City!
 
-    participations: [Participation!] @complexity(value: 10)
+    participations(first: Int, cursor: String): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
@@ -89,8 +85,8 @@ type Participation {
     community: Community
     opportunity: Opportunity
 
-    statusHistories: [ParticipationStatusHistory!] @complexity(value: 10)
-    transactions: [Transaction!] @complexity(value: 10)
+    statusHistories(first: Int, cursor: String): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

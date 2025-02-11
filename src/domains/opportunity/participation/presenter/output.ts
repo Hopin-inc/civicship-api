@@ -5,7 +5,7 @@ import {
   GqlParticipationSetStatusPayload,
   GqlParticipationInviteSuccess,
 } from "@/types/graphql";
-import { ParticipationPayloadWithArgs } from "@/domains/opportunity/subdomains/participation/type";
+import { ParticipationPayloadWithArgs } from "@/domains/opportunity/participation/type";
 
 export default class ParticipationOutputFormat {
   static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
@@ -25,28 +25,13 @@ export default class ParticipationOutputFormat {
   }
 
   static get(r: ParticipationPayloadWithArgs): GqlParticipation {
-    const { user, opportunity, transactions, statusHistories } = r;
+    const { user, opportunity, community } = r;
 
     return {
       ...r,
       user,
-      opportunity: opportunity
-        ? {
-            ...opportunity,
-            createdByUser: opportunity.createdByUser,
-            community: opportunity.community,
-          }
-        : null,
-      statusHistories: Array.isArray(statusHistories)
-        ? statusHistories.map((history) => ({
-            ...history,
-            createdByUser: history.createdByUser,
-            participation: history.participation,
-          }))
-        : [],
-      transactions: Array.isArray(transactions)
-        ? transactions.map((transaction) => ({ ...transaction }))
-        : [],
+      community,
+      opportunity,
     };
   }
 

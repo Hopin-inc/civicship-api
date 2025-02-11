@@ -1,6 +1,6 @@
 import { PrismaClientIssuer } from "@/prisma/client";
 import { Prisma, ParticipationStatus } from "@prisma/client";
-import { participationInclude } from "@/domains/opportunity/subdomains/participation/type";
+import { participationInclude } from "@/domains/opportunity/participation/type";
 import { IContext } from "@/types/server";
 
 export default class ParticipationRepository {
