@@ -7,9 +7,10 @@ import {
 import UtilityRepository from "@/domains/utility/repository";
 import { IContext } from "@/types/server";
 import UtilityInputFormat from "@/domains/utility/presenter/input";
-import { Prisma, WalletType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import CommunityRepository from "@/domains/community/repository";
 import TransactionService from "@/domains/transaction/service";
+import WalletRepository from "@/domains/membership/wallet/repository";
 
 export default class UtilityService {
   static async fetchUtilities(
@@ -49,7 +50,8 @@ export default class UtilityService {
     if (!community) {
       throw new Error(`CommunityNotFound: ID=${utility.communityId}`);
     }
-    const communityWallet = community.wallets.find((w) => w.type === WalletType.COMMUNITY);
+
+    const communityWallet = await WalletRepository.findByCommunityId(ctx, utility.communityId);
     if (!communityWallet?.id) {
       throw new Error("Wallet information is missing for points transfer");
     }
