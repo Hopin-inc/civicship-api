@@ -14,10 +14,6 @@ export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
   user: true,
 });
 
-export type membershipAuthGetPayloadWithArgs = Prisma.MembershipGetPayload<{
-  select: typeof authSelect;
-}>;
-
 export type MembershipPayloadWithArgs = Prisma.MembershipGetPayload<{
   include: typeof membershipInclude;
 }>;
