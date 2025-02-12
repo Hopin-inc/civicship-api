@@ -4,12 +4,12 @@ import {
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { ParticipationStatus, Prisma } from "@prisma/client";
-import ParticipationInputFormat from "@/domains/opportunity/subdomains/participation/presenter/input";
-import ParticipationRepository from "@/domains/opportunity/subdomains/participation/repository";
+import ParticipationInputFormat from "@/domains/opportunity/participation/presenter/input";
+import ParticipationRepository from "@/domains/opportunity/participation/repository";
 import { prismaClient } from "@/prisma/client";
 import OpportunityRepository from "@/domains/opportunity/repository";
 import { IContext } from "@/types/server";
-import { ParticipationUtils } from "@/domains/opportunity/subdomains/participation/utils";
+import { ParticipationUtils } from "@/domains/opportunity/participation/utils";
 
 export default class ParticipationService {
   static async fetchParticipations(
@@ -151,14 +151,6 @@ export default class ParticipationService {
       ParticipationStatus.NOT_PARTICIPATING,
     );
   }
-
-  // static async submitOutput(ctx: IContext, id: string) {
-  //   return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.PARTICIPATING);
-  // }
-  //
-  // static async cancelSubmission(ctx: IContext, id: string) {
-  //   return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.PARTICIPATING);
-  // }
 
   static async approvePerformance(ctx: IContext, id: string) {
     return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.APPROVED, true);

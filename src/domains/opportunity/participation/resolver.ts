@@ -9,11 +9,16 @@ import {
   GqlMutationParticipationDenyInvitationArgs,
   GqlMutationParticipationDenyPerformanceArgs,
   GqlMutationParticipationInviteArgs,
+  GqlParticipation,
+  GqlParticipationStatusHistoriesArgs,
+  GqlParticipationTransactionsArgs,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationUseCase from "@/domains/opportunity/subdomains/participation/usecase";
+import ParticipationUseCase from "@/domains/opportunity/participation/usecase";
+import TransactionUseCase from "@/domains/transaction/usecase";
+import ParticipationStatusHistoryUseCase from "@/domains/opportunity/participationStatusHistory/usecase";
 
 const participationResolver = {
   Query: {
@@ -72,18 +77,6 @@ const participationResolver = {
       ctx: IContext,
     ) => ParticipationUseCase.managerDenyApplication(args, ctx),
 
-    // participationSubmitOutput: async (
-    //   _: unknown,
-    //   args: GqlMutationParticipationSubmitOutputArgs,
-    //   ctx: IContext,
-    // ) => ParticipationUseCase.memberSubmitOutput(args, ctx),
-    //
-    // participationCancelSubmission: async (
-    //   _: unknown,
-    //   args: GqlMutationParticipationCancelSubmissionArgs,
-    //   ctx: IContext,
-    // ) => ParticipationUseCase.memberCancelSubmission(args, ctx),
-
     participationApprovePerformance: async (
       _: unknown,
       args: GqlMutationParticipationApprovePerformanceArgs,
@@ -95,6 +88,28 @@ const participationResolver = {
       args: GqlMutationParticipationDenyPerformanceArgs,
       ctx: IContext,
     ) => ParticipationUseCase.managerDenyPerformance(args, ctx),
+  },
+
+  Participation: {
+    statusHistories: async (
+      parent: GqlParticipation,
+      args: GqlParticipationStatusHistoriesArgs,
+      ctx: IContext,
+    ) => {
+      return ParticipationStatusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
+        parent,
+        args,
+        ctx,
+      );
+    },
+
+    transactions: async (
+      parent: GqlParticipation,
+      args: GqlParticipationTransactionsArgs,
+      ctx: IContext,
+    ) => {
+      return TransactionUseCase.visitorBrowseTransactionsByParticipation(parent, args, ctx);
+    },
   },
 };
 

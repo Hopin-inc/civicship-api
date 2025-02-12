@@ -6,8 +6,12 @@ import {
   GqlMutationUtilityDeleteArgs,
   GqlMutationUtilityUpdateInfoArgs,
   GqlMutationUtilityUseArgs,
+  GqlUtility,
+  GqlUtilityTransactionsArgs,
+  GqlTransactionsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import TransactionUseCase from "@/domains/transaction/usecase";
 
 const utilityResolver = {
   Query: {
@@ -26,6 +30,16 @@ const utilityResolver = {
       UtilityUseCase.managerUpdateUtilityInfo(ctx, args),
     utilityUse: async (_: unknown, args: GqlMutationUtilityUseArgs, ctx: IContext) =>
       UtilityUseCase.memberUseUtility(ctx, args),
+  },
+
+  Utility: {
+    transactions: async (
+      parent: GqlUtility,
+      args: GqlUtilityTransactionsArgs,
+      ctx: IContext,
+    ): Promise<GqlTransactionsConnection> => {
+      return TransactionUseCase.visitorBrowseTransactionsByUtility(parent, args, ctx);
+    },
   },
 };
 

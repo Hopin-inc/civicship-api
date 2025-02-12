@@ -9,24 +9,65 @@ import {
   GqlTransactionIssueCommunityPointPayload,
   GqlTransactionGrantCommunityPointPayload,
   GqlTransactionDonateSelfPointPayload,
+  GqlParticipation,
+  GqlParticipationTransactionsArgs,
+  GqlWallet,
+  GqlWalletTransactionsArgs,
+  GqlUtility,
+  GqlUtilityTransactionsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
+import { TransactionUtils } from "@/domains/transaction/utils";
 
 export default class TransactionUseCase {
   static async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
     ctx: IContext,
   ): Promise<GqlTransactionsConnection> {
-    const take = first ?? 10;
-    const res = await TransactionService.fetchTransactions(ctx, { filter, sort, cursor }, take);
-    const hasNextPage = res.length > take;
-
-    const data: GqlTransaction[] = res.slice(0, take).map((record) => {
-      return TransactionOutputFormat.get(record);
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter,
+      sort,
+      cursor,
+      first,
     });
-    return TransactionOutputFormat.query(data, hasNextPage);
+  }
+
+  static async visitorBrowseTransactionsByParticipation(
+    { id }: GqlParticipation,
+    { first, cursor }: GqlParticipationTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter: { participationId: id },
+      cursor,
+      first,
+    });
+  }
+
+  static async visitorBrowseTransactionsByWallet(
+    { id }: GqlWallet,
+    { first, cursor }: GqlWalletTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter: { fromWalletId: id, toWalletId: id },
+      cursor,
+      first,
+    });
+  }
+
+  static async visitorBrowseTransactionsByUtility(
+    { id }: GqlUtility,
+    { first, cursor }: GqlUtilityTransactionsArgs,
+    ctx: IContext,
+  ) {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      cursor,
+      filter: { utilityId: id },
+      first,
+    });
   }
 
   static async visitorViewTransaction(

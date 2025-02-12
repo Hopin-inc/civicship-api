@@ -19,23 +19,7 @@ export default class UserResponseFormat {
   }
 
   static get(r: UserGetPayloadWithArgs): GqlUser {
-    const { memberships, wallets, ...prop } = r;
-
-    return {
-      ...prop,
-      memberships: memberships?.map((membership) => ({
-        ...membership,
-      })),
-      wallets: wallets?.map((wallet) => ({
-        ...wallet,
-        currentPointView: wallet.currentPointView
-          ? {
-              walletId: wallet.id,
-              currentPoint: wallet.currentPointView.currentPoint,
-            }
-          : null,
-      })),
-    };
+    return r;
   }
 
   static updateProfile(r: UserGetPayloadWithArgs): GqlUserUpdateProfileSuccess {

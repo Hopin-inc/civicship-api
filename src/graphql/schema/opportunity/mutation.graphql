@@ -35,6 +35,10 @@ input OpportunityEditContentInput {
     cityCode: String
 }
 
+input OpportunitySetPublishStatusInput{
+    status: PublishStatus!
+}
+
 ## Type definitions
 
 type OpportunityCreateSuccess {

@@ -1,6 +1,6 @@
 import { PrismaClientIssuer } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
-import { participationStatusHistoryInclude } from "@/domains/opportunity/subdomains/participationStatusHistory/type";
+import { participationStatusHistoryInclude } from "@/domains/opportunity/participationStatusHistory/type";
 import { IContext } from "@/types/server";
 
 export default class ParticipationStatusHistoryRepository {
@@ -17,6 +17,7 @@ export default class ParticipationStatusHistoryRepository {
       return tx.participationStatusHistory.findMany({
         where,
         orderBy,
+        include: participationStatusHistoryInclude,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -28,6 +29,7 @@ export default class ParticipationStatusHistoryRepository {
     return this.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.findUnique({
         where: { id },
+        include: participationStatusHistoryInclude,
       });
     });
   }
@@ -36,6 +38,7 @@ export default class ParticipationStatusHistoryRepository {
     return this.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.create({
         data,
+        include: participationStatusHistoryInclude,
       });
     });
   }

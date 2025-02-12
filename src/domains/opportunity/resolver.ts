@@ -2,14 +2,15 @@ import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunityEditContentArgs,
-  GqlMutationOpportunitySetCommunityInternalArgs,
-  GqlMutationOpportunitySetPrivateArgs,
-  GqlMutationOpportunitySetPublicArgs,
+  GqlMutationOpportunitySetPublishStatusArgs,
+  GqlOpportunity,
+  GqlOpportunityParticipationsArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import OpportunityUseCase from "@/domains/opportunity/usecase";
 import { IContext } from "@/types/server";
+import ParticipationUseCase from "@/domains/opportunity/participation/usecase";
 
 const opportunityResolver = {
   Query: {
@@ -28,21 +29,20 @@ const opportunityResolver = {
       args: GqlMutationOpportunityEditContentArgs,
       ctx: IContext,
     ) => OpportunityUseCase.managerEditOpportunityContent(args, ctx),
-    opportunitySetPublic: async (
+    opportunitySetPublishStatus: async (
       _: unknown,
-      args: GqlMutationOpportunitySetPublicArgs,
+      args: GqlMutationOpportunitySetPublishStatusArgs,
       ctx: IContext,
-    ) => OpportunityUseCase.managerSetOpportunityToPublic(args, ctx),
-    opportunitySetCommunityInternal: async (
-      _: unknown,
-      args: GqlMutationOpportunitySetCommunityInternalArgs,
+    ) => OpportunityUseCase.managerSetOpportunityPublishStatus(args, ctx),
+  },
+  Opportunity: {
+    participations: async (
+      parent: GqlOpportunity,
+      args: GqlOpportunityParticipationsArgs,
       ctx: IContext,
-    ) => OpportunityUseCase.managerSetOpportunityToCommunityInternal(args, ctx),
-    opportunitySetPrivate: async (
-      _: unknown,
-      args: GqlMutationOpportunitySetPrivateArgs,
-      ctx: IContext,
-    ) => OpportunityUseCase.managerSetOpportunityToPrivate(args, ctx),
+    ) => {
+      return ParticipationUseCase.visitorBrowseParticipationsByOpportunity(parent, args, ctx);
+    },
   },
 };
 

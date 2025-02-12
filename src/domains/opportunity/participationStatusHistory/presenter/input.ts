@@ -1,27 +1,27 @@
 import {
-  GqlParticipationFilterInput,
-  GqlParticipationSortInput,
   GqlParticipationStatusHistoryCreateInput,
+  GqlParticipationStatusHistoryFilterInput,
+  GqlParticipationStatusHistorySortInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
 export default class ParticipationStatusHistoryInputFormat {
-  static filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
+  static filter(
+    filter?: GqlParticipationStatusHistoryFilterInput,
+  ): Prisma.ParticipationStatusHistoryWhereInput {
     return {
       AND: [
+        filter?.participationId ? { participationId: filter?.participationId } : {},
+        filter?.createdById ? { createdBy: filter?.createdById } : {},
         filter?.status ? { status: filter?.status } : {},
-        filter?.communityId ? { communityId: filter?.communityId } : {},
-        filter?.userId ? { userId: filter?.userId } : {},
-        filter?.opportunityId ? { opportunityId: filter?.opportunityId } : {},
       ],
     };
   }
 
-  static sort(sort?: GqlParticipationSortInput): Prisma.ParticipationOrderByWithRelationInput[] {
-    return [
-      { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
-      { updatedAt: sort?.updatedAt ?? Prisma.SortOrder.desc },
-    ];
+  static sort(
+    sort?: GqlParticipationStatusHistorySortInput,
+  ): Prisma.ParticipationStatusHistoryOrderByWithRelationInput[] {
+    return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
   static create(

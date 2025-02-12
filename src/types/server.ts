@@ -1,11 +1,10 @@
-import { IdentityPlatform, User } from "@prisma/client";
+import { IdentityPlatform } from "@prisma/client";
+import { AuthGetPayloadWithArgs } from "@/domains/user/type";
 
-type LoggedInUserInfo = {
+export type LoggedInUserInfo = {
   uid: string;
   platform: IdentityPlatform;
-  currentUser: User | null;
+  currentUser: AuthGetPayloadWithArgs | null;
 };
-export type IContext = (
-  | Record<string, never>
-  | LoggedInUserInfo
-);
+
+export type IContext = Record<string, never> | LoggedInUserInfo;

@@ -25,54 +25,7 @@ export default class CommunityOutputFormat {
   }
 
   static get(r: CommunityPayloadWithArgs): GqlCommunity {
-    const { city, state, memberships, opportunities, participations, wallets, utility, ...prop } =
-      r;
-
-    return {
-      ...prop,
-      city: {
-        ...city,
-        state: city.state,
-      },
-      state: state || null,
-      memberships: memberships?.map((m) => ({
-        ...m,
-        community: m.community,
-        user: m.user,
-      })),
-      opportunities: opportunities?.map((o) => ({
-        ...o,
-        createdByUser: o.createdByUser,
-        community: o.community,
-        city: { ...o.city, state: o.city.state },
-      })),
-      participations: participations?.map((p) => ({
-        ...p,
-        user: p.user ? { ...p.user } : null,
-        opportunity: p.opportunity
-          ? {
-              ...p.opportunity,
-              createdBy: p.opportunity.createdByUser,
-              city: { ...p.opportunity.city, state: p.opportunity.city.state },
-              community: p.opportunity.community,
-            }
-          : null,
-      })),
-      wallets: wallets?.map((wallet) => ({
-        ...wallet,
-        user: wallet.user ? { ...wallet.user } : null,
-        currentPointView: wallet.currentPointView
-          ? {
-              walletId: wallet.id,
-              currentPoint: wallet.currentPointView.currentPoint,
-            }
-          : null,
-      })),
-      utilities: utility?.map((utility) => ({
-        ...utility,
-        community: utility.community,
-      })),
-    };
+    return r;
   }
 
   static create(r: CommunityPayloadWithArgs): GqlCommunityCreateSuccess {

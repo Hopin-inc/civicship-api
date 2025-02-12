@@ -29,10 +29,10 @@ export default class TransactionOutputFormat {
 
     return {
       ...prop,
-      fromWallet: fromWallet,
-      toWallet: toWallet,
-      participation: participation,
-      utility: utility ? { ...utility } : null,
+      fromWallet,
+      toWallet,
+      participation,
+      utility,
     };
   }
 

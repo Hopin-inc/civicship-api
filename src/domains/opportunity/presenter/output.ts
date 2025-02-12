@@ -26,36 +26,13 @@ export default class OpportunityOutputFormat {
   }
 
   static get(r: OpportunityPayloadWithArgs): GqlOpportunity {
-    const { createdByUser, participations, community, city, ...prop } = r;
+    const { createdByUser, community, city, ...prop } = r;
 
     return {
       ...prop,
-      community: {
-        ...community,
-        wallets: community.wallets?.map((wallet) => ({
-          ...wallet,
-          community: {
-            ...wallet.community,
-            city: { ...wallet.community.city, state: wallet.community.city.state },
-          },
-          user: wallet.user ? { ...wallet.user } : null,
-          currentPointView: wallet.currentPointView
-            ? {
-                walletId: wallet.id,
-                currentPoint: wallet.currentPointView.currentPoint,
-              }
-            : null,
-        })),
-      },
-      city: {
-        ...city,
-        state: city.state,
-      },
+      community,
+      city,
       createdByUser,
-      participations: participations?.map((p) => ({
-        ...p,
-        user: p.user ? { ...p.user } : null,
-      })),
     };
   }
 

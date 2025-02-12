@@ -13,13 +13,14 @@ import {
 import { IContext } from "@/types/server";
 import CommunityService from "@/domains/community/service";
 import CommunityOutputFormat from "@/domains/community/presenter/output";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class CommunityUseCase {
   static async userBrowseCommunities(
     { filter, sort, cursor, first }: GqlQueryCommunitiesArgs,
     ctx: IContext,
   ): Promise<GqlCommunitiesConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const res = await CommunityService.fetchCommunities(ctx, { filter, sort, cursor }, take);
     const hasNextPage = res.length > take;
 

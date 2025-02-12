@@ -9,13 +9,14 @@ import {
 import UserService from "@/domains/user/service";
 import UserResponseFormat from "@/domains/user/presenter/output";
 import { IContext } from "@/types/server";
+import { clampFirst } from "@/graphql/pagination";
 
 export default class UserUseCase {
   static async visitorBrowseCommunityMembers(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUsersArgs,
   ): Promise<GqlUsersConnection> {
-    const take = first ?? 10;
+    const take = clampFirst(first);
     const data = await UserService.fetchCommunityMembers(ctx, { cursor, filter, sort }, take);
     const hasNextPage = data.length > take;
 

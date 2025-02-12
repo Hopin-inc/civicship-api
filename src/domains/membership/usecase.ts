@@ -19,26 +19,52 @@ import {
   GqlMembershipsConnection,
   GqlMembership,
   GqlMembershipSelfJoinPayload,
+  GqlCommunity,
+  GqlCommunityMembershipsArgs,
+  GqlUserMembershipsArgs,
+  GqlUser,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
 import { Role } from "@prisma/client";
+import { MembershipUtils } from "@/domains/membership/utils";
 
 export default class MembershipUseCase {
   static async visitorBrowseMemberships(
     { filter, sort, cursor, first }: GqlQueryMembershipsArgs,
     ctx: IContext,
   ): Promise<GqlMembershipsConnection> {
-    const take = first ?? 10;
-    const res = await MembershipService.fetchMemberships(ctx, { filter, sort, cursor }, take);
-    const hasNextPage = res.length > take;
-
-    const data: GqlMembership[] = res.slice(0, take).map((record) => {
-      return MembershipOutputFormat.get(record);
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      sort,
+      filter,
+      first,
     });
+  }
 
-    return MembershipOutputFormat.query(data, hasNextPage);
+  static async visitorBrowseMembershipsByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityMembershipsArgs,
+    ctx: IContext,
+  ): Promise<GqlMembershipsConnection> {
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseMembershipsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserMembershipsArgs,
+    ctx: IContext,
+  ) {
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
+      first,
+    });
   }
 
   static async visitorViewMembership(

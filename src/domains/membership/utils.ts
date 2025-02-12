@@ -2,8 +2,42 @@ import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import MembershipRepository from "@/domains/membership/repository";
 import MembershipInputFormat from "@/domains/membership/presenter/input";
+import {
+  GqlMembershipFilterInput,
+  GqlMembershipsConnection,
+  GqlMembershipSortInput,
+} from "@/types/graphql";
+import { clampFirst } from "@/graphql/pagination";
+import MembershipService from "@/domains/membership/service";
+import MembershipOutputFormat from "@/domains/membership/presenter/output";
 
 export const MembershipUtils = {
+  async fetchMembershipsCommon(
+    ctx: IContext,
+    {
+      cursor,
+      filter,
+      sort,
+      first,
+    }: {
+      cursor?: string;
+      filter?: GqlMembershipFilterInput;
+      sort?: GqlMembershipSortInput;
+      first?: number;
+    },
+  ): Promise<GqlMembershipsConnection> {
+    const take = clampFirst(first);
+
+    const res = await MembershipService.fetchMemberships(ctx, { cursor, filter, sort }, take);
+    const hasNextPage = res.length > take;
+
+    const data = res.slice(0, take).map((record) => {
+      return MembershipOutputFormat.get(record);
+    });
+
+    return MembershipOutputFormat.query(data, hasNextPage);
+  },
+
   async setMembershipStatus(
     ctx: IContext,
     userId: string,

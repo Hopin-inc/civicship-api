@@ -34,12 +34,8 @@ export default class MembershipOutputFormat {
 
     return {
       ...prop,
-      user: {
-        ...user,
-      },
-      community: {
-        ...community,
-      },
+      user,
+      community,
     };
   }
 

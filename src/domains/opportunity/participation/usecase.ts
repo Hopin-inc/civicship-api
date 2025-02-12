@@ -1,4 +1,6 @@
 import {
+  GqlCommunity,
+  GqlCommunityParticipationsArgs,
   GqlMutationParticipationApplyArgs,
   GqlMutationParticipationApproveApplicationArgs,
   GqlMutationParticipationApproveInvitationArgs,
@@ -8,6 +10,8 @@ import {
   GqlMutationParticipationDenyInvitationArgs,
   GqlMutationParticipationDenyPerformanceArgs,
   GqlMutationParticipationInviteArgs,
+  GqlOpportunity,
+  GqlOpportunityParticipationsArgs,
   GqlParticipation,
   GqlParticipationApplyPayload,
   GqlParticipationInvitePayload,
@@ -15,24 +19,61 @@ import {
   GqlParticipationSetStatusPayload,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
+  GqlUser,
+  GqlUserParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationService from "@/domains/opportunity/subdomains/participation/service";
-import ParticipationOutputFormat from "@/domains/opportunity/subdomains/participation/presenter/output";
+import ParticipationService from "@/domains/opportunity/participation/service";
+import ParticipationOutputFormat from "@/domains/opportunity/participation/presenter/output";
+import { ParticipationUtils } from "@/domains/opportunity/participation/utils";
 
 export default class ParticipationUseCase {
   static async visitorBrowseParticipations(
     { cursor, filter, sort, first }: GqlQueryParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
-    const take = first ?? 10;
-    const res = await ParticipationService.fetchParticipations(ctx, { cursor, filter, sort }, take);
-    const hasNextPage = res.length > take;
-
-    const data: GqlParticipation[] = res.slice(0, take).map((record) => {
-      return ParticipationOutputFormat.get(record);
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      sort,
+      filter,
+      first,
     });
-    return ParticipationOutputFormat.query(data, hasNextPage);
+  }
+
+  static async visitorBrowseParticipationsByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserParticipationsArgs,
+    ctx: IContext,
+  ) {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByOpportunity(
+    { id }: GqlOpportunity,
+    { first, cursor }: GqlOpportunityParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { opportunityId: id },
+      first,
+    });
   }
 
   static async visitorViewParticipation(
@@ -109,22 +150,6 @@ export default class ParticipationUseCase {
     const res = await ParticipationService.denyApplication(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
-
-  // static async memberSubmitOutput(
-  //   { id }: GqlMutationParticipationSubmitOutputArgs,
-  //   ctx: IContext,
-  // ): Promise<GqlParticipationSetStatusPayload> {
-  //   const res = await ParticipationService.submitOutput(ctx, id);
-  //   return ParticipationOutputFormat.setStatus(res);
-  // }
-  //
-  // static async memberCancelSubmission(
-  //   { id }: GqlMutationParticipationCancelSubmissionArgs,
-  //   ctx: IContext,
-  // ): Promise<GqlParticipationSetStatusPayload> {
-  //   const res = await ParticipationService.cancelSubmission(ctx, id);
-  //   return ParticipationOutputFormat.setStatus(res);
-  // }
 
   static async managerApprovePerformance(
     { id }: GqlMutationParticipationApprovePerformanceArgs,

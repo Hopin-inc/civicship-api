@@ -1,10 +1,10 @@
 import {
+  GqlCommunity,
+  GqlCommunityOpportunitiesArgs,
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunityEditContentArgs,
-  GqlMutationOpportunitySetCommunityInternalArgs,
-  GqlMutationOpportunitySetPrivateArgs,
-  GqlMutationOpportunitySetPublicArgs,
+  GqlMutationOpportunitySetPublishStatusArgs,
   GqlOpportunitiesConnection,
   GqlOpportunity,
   GqlOpportunityCreatePayload,
@@ -13,29 +13,49 @@ import {
   GqlOpportunitySetPublishStatusPayload,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
+  GqlUser,
+  GqlUserOpportunitiesCreatedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityService from "@/domains/opportunity/service";
 import OpportunityOutputFormat from "@/domains/opportunity/presenter/output";
-import { PublishStatus } from "@prisma/client";
+import { OpportunityUtils } from "@/domains/opportunity/utlis";
 
 export default class OpportunityUseCase {
   static async visitorBrowsePublicOpportunities(
     { cursor, filter, sort, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    const take = first ?? 10;
-    const res = await OpportunityService.fetchPublicOpportunities(
-      ctx,
-      { cursor, filter, sort },
-      take,
-    );
-    const hasNextPage = res.length > take;
-
-    const data: GqlOpportunity[] = res.slice(0, take).map((record) => {
-      return OpportunityOutputFormat.get(record);
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter,
+      sort,
+      first,
     });
-    return OpportunityOutputFormat.query(data, hasNextPage);
+  }
+
+  static async visitorBrowseOpportunitiesByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityOpportunitiesArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitiesConnection> {
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseOpportunitiesCreatedByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserOpportunitiesCreatedByMeArgs,
+    ctx: IContext,
+  ) {
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter: { createdBy: id },
+      first,
+    });
   }
 
   static async visitorViewOpportunity(
@@ -73,31 +93,11 @@ export default class OpportunityUseCase {
     return OpportunityOutputFormat.update(res);
   }
 
-  static async managerSetOpportunityToPublic(
-    { id }: GqlMutationOpportunitySetPublicArgs,
+  static async managerSetOpportunityPublishStatus(
+    { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(ctx, id, PublishStatus.PUBLIC);
-    return OpportunityOutputFormat.setPublishStatus(res);
-  }
-
-  static async managerSetOpportunityToCommunityInternal(
-    { id }: GqlMutationOpportunitySetCommunityInternalArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(
-      ctx,
-      id,
-      PublishStatus.COMMUNITY_INTERNAL,
-    );
-    return OpportunityOutputFormat.setPublishStatus(res);
-  }
-
-  static async managerSetOpportunityToPrivate(
-    { id }: GqlMutationOpportunitySetPrivateArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(ctx, id, PublishStatus.PRIVATE);
+    const res = await OpportunityService.setOpportunityStatus(ctx, id, input.status);
     return OpportunityOutputFormat.setPublishStatus(res);
   }
 }

@@ -6,7 +6,7 @@ extend type Query {
         sort: UtilitySortInput
         cursor: String
         first: Int
-    ): UtilitiesConnection!
+    ): UtilitiesConnection! @complexity(value: 10, multipliers: ["first"])
     utility(id: ID!): Utility
 }
 
@@ -28,7 +28,7 @@ type Utility {
     pointsRequired: Int!
 
     community: Community!
-    transactions: [Transaction!]
+    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -6,7 +6,7 @@ extend type Query {
         sort: TransactionSortInput
         cursor: String
         first: Int
-    ): TransactionsConnection!
+    ): TransactionsConnection! @complexity(value: 10, multipliers: ["first"])
     transaction(id: ID!): Transaction
 }
 
@@ -21,7 +21,7 @@ extend type Mutation {
 
 type Transaction {
     id: ID!
-    reason: TransactionReason
+    reason: TransactionReason!
 
     fromWallet: Wallet
     fromPointChange: Int

@@ -1,6 +1,13 @@
-import { GqlQueryWalletsArgs, GqlQueryWalletArgs } from "@/types/graphql";
+import {
+  GqlQueryWalletsArgs,
+  GqlQueryWalletArgs,
+  GqlWallet,
+  GqlTransactionsConnection,
+  GqlWalletTransactionsArgs,
+} from "@/types/graphql";
 import WalletUseCase from "@/domains/membership/wallet/usecase";
 import { IContext } from "@/types/server";
+import TransactionUseCase from "@/domains/transaction/usecase";
 
 const walletResolver = {
   Query: {
@@ -8,6 +15,16 @@ const walletResolver = {
       WalletUseCase.userBrowseWallets(args, ctx),
     wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) =>
       WalletUseCase.userViewWallet(args, ctx),
+  },
+
+  Wallet: {
+    transactions: async (
+      parent: GqlWallet,
+      args: GqlWalletTransactionsArgs,
+      ctx: IContext,
+    ): Promise<GqlTransactionsConnection> => {
+      return TransactionUseCase.visitorBrowseTransactionsByWallet(parent, args, ctx);
+    },
   },
 };
 
