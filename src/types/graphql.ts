@@ -70,7 +70,7 @@ export type GqlCommunity = {
 
 
 export type GqlCommunityMembershipsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
+  cursor?: InputMaybe<GqlMembershipCursorInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -1168,7 +1168,7 @@ export type GqlUser = {
 
 
 export type GqlUserMembershipsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
+  cursor?: InputMaybe<GqlMembershipCursorInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
 };
 

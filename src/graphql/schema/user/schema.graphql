@@ -31,7 +31,7 @@ type User {
     createdAt: Datetime!
     updatedAt: Datetime
 
-    memberships(first: Int, cursor: String): MembershipsConnection @complexity(value: 10, multipliers: ["first"])
+    memberships(first: Int, cursor: MembershipCursorInput): MembershipsConnection @complexity(value: 10, multipliers: ["first"])
     wallets(first: Int, cursor: String): WalletsConnection @complexity(value: 10, multipliers: ["first"])
 
     opportunitiesCreatedByMe(first: Int, cursor: String): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])

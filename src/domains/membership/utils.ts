@@ -3,6 +3,7 @@ import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import MembershipRepository from "@/domains/membership/repository";
 import MembershipInputFormat from "@/domains/membership/presenter/input";
 import {
+  GqlMembershipCursorInput,
   GqlMembershipFilterInput,
   GqlMembershipsConnection,
   GqlMembershipSortInput,
@@ -20,7 +21,7 @@ export const MembershipUtils = {
       sort,
       first,
     }: {
-      cursor?: string;
+      cursor?: GqlMembershipCursorInput;
       filter?: GqlMembershipFilterInput;
       sort?: GqlMembershipSortInput;
       first?: number;
