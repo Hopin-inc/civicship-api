@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import IdentityUseCase from "@/domains/user/identity/usecase";
-import { GqlMutationCreateUserArgs } from "@/types/graphql";
+import { GqlMutationUserSignUpArgs } from "@/types/graphql";
 
 const identityResolver = {
   Query: {
@@ -8,9 +8,9 @@ const identityResolver = {
       IdentityUseCase.userViewCurrentAccount(ctx),
   },
   Mutation: {
-    createUser: async (_: unknown, args: GqlMutationCreateUserArgs, ctx: IContext) =>
+    userSignUp: async (_: unknown, args: GqlMutationUserSignUpArgs, ctx: IContext) =>
       IdentityUseCase.userCreateAccount(ctx, args),
-    deleteUser: async (_: unknown, __: unknown, ctx: IContext) =>
+    userDeleteMe: async (_: unknown, __: unknown, ctx: IContext) =>
       IdentityUseCase.userDeleteAccount(ctx),
   },
 };

@@ -1,8 +1,8 @@
-import { GqlMutationCreateUserArgs } from "@/types/graphql";
+import { GqlMutationUserSignUpArgs } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
 export default class IdentityInputFormat {
-  static create({ input }: GqlMutationCreateUserArgs): Prisma.UserCreateInput {
+  static create({ input }: GqlMutationUserSignUpArgs): Prisma.UserCreateInput {
     return {
       ...input,
       slug: input.slug || "",

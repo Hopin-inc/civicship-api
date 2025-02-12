@@ -6,15 +6,10 @@ extend type Query {
         first: Int
     ): UsersConnection! @complexity(value: 10, multipliers: ["first"])
     user(id: ID!): User
-
-    currentUser: CurrentUserPayload
 }
 
 extend type Mutation {
-    createUser(input: CreateUserInput!): CurrentUserPayload
-    deleteUser: CurrentUserPayload
-
-    userUpdateProfile(id: ID!, input: UserUpdateProfileInput!): UserUpdateProfilePayload
+    userUpdateMyProfile(input: UserUpdateProfileInput!): UserUpdateProfilePayload
 }
 
 # Type definitions
@@ -25,7 +20,7 @@ type User {
     slug: String!
     image: String
     bio: String
-    sysRole: SysRole
+    sysRole: SysRole!
     urlWebsite: String
     urlX: String
     urlFacebook: String

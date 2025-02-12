@@ -1,5 +1,5 @@
 import {
-  GqlMutationUserUpdateProfileArgs,
+  GqlMutationUserUpdateMyProfileArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
   GqlUser,
@@ -36,9 +36,9 @@ export default class UserUseCase {
 
   static async userUpdateProfile(
     ctx: IContext,
-    { id, input }: GqlMutationUserUpdateProfileArgs,
+    { input }: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
-    const res = await UserService.updateProfile(ctx, { id, input });
+    const res = await UserService.updateProfile(ctx, { input });
     return UserResponseFormat.updateProfile(res);
   }
 }

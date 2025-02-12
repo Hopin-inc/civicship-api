@@ -2,55 +2,61 @@ import { IContext } from "@/types/server";
 import { or, rule } from "graphql-shield";
 import { Role } from "@prisma/client";
 
-export const isAdmin = rule({ cache: "contextual" })(async (_parent, _args, ctx: IContext) => {
+/**
+ * システム管理者（SYS_ADMIN）かどうかを判定するルール
+ */
+const isAdmin = rule({ cache: "contextual" })(async (_parent, _args, ctx: IContext) => {
   return ctx.currentUser?.sysRole === "SYS_ADMIN";
 });
 
-export const isUser = rule({ cache: "contextual" })(async (_parent, _args, ctx: IContext) => {
+/**
+ * ログイン済みかどうかを判定するルール
+ */
+const isUser = rule({ cache: "contextual" })(async (_parent, _args, ctx: IContext) => {
   return !!ctx.currentUser;
 });
 
-export const isAuthenticated = or(isUser, isAdmin);
+/**
+ * ログイン済み または SYS_ADMIN ならOK
+ */
+const isAuthenticated = or(isUser, isAdmin);
 
-export const isNotAuthenticated = rule({ cache: "contextual" })(async (
-  _parent,
-  _args,
-  ctx: IContext,
-) => {
-  return ctx.currentUser === null;
+/**
+ * 自分自身かどうかを判定するルール
+ */
+const isSelf = rule({ cache: "contextual" })((_parent, _args, ctx: IContext) => {
+  return !!ctx.currentUser;
 });
 
-// TODO: 基本的なユースケースは自分のデータを更新できる・Adminは別途必要なら作成する・inputにIDを指定しない更新する（User自身にまつわるデータが対象）
-export const isSelf = rule({ cache: "contextual" })((parent, args, ctx: IContext) => {
-  if (!ctx.currentUser) return false;
-  return ctx.currentUser.id === args.id;
-});
-
-// TODO: inputにcommunityIdを必須で追加する(Serviceは更新しなくておk）
-export const isCommunityOwner = rule({ cache: "contextual" })(async (
-  parent,
-  args,
-  ctx: IContext,
-) => {
+/**
+ * コミュニティのオーナー権限があるかどうかを判定するルール
+ * - args.communityId が必須
+ * - ctx.memberships に配列でコミュニティ・ロール情報が入っている前提
+ */
+const isCommunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
   if (!ctx.currentUser || !args.communityId) return false;
   const communityId = args.communityId;
 
-  const membership = ctx.currentUser.memberships?.find((m) => m.communityId === communityId);
+  // ctx.memberships が存在し、そこから該当communityを探す
+  const membership = ctx.memberships?.find((m) => m.communityId === communityId);
   if (!membership) return false;
 
   return membership.role === Role.OWNER;
 });
 
-export const isCommunityManager = rule({ cache: "contextual" })(async (
-  parent,
-  args,
-  ctx: IContext,
-) => {
+/**
+ * コミュニティのマネージャー権限があるかどうかを判定するルール
+ * - args.communityId が必須
+ * - ctx.memberships に配列でコミュニティ・ロール情報が入っている前提
+ */
+const isCommunityManager = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
   if (!ctx.currentUser || !args.communityId) return false;
   const communityId = args.communityId;
 
-  const membership = ctx.currentUser.memberships?.find((m) => m.communityId === communityId);
+  const membership = ctx.memberships?.find((m) => m.communityId === communityId);
   if (!membership) return false;
 
   return membership.role === Role.MANAGER;
 });
+
+export { isAdmin, isUser, isAuthenticated, isSelf, isCommunityManager, isCommunityOwner };

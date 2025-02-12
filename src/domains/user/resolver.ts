@@ -1,7 +1,6 @@
 import UserUseCase from "@/domains/user/usecase";
 import {
   GqlQueryUserArgs,
-  GqlMutationUserUpdateProfileArgs,
   GqlQueryUsersArgs,
   GqlUser,
   GqlUserMembershipsArgs,
@@ -14,6 +13,7 @@ import {
   GqlParticipationsConnection,
   GqlParticipationStatusHistoriesConnection,
   GqlUserParticipationStatusChangedByMeArgs,
+  GqlMutationUserUpdateMyProfileArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipUseCase from "@/domains/membership/usecase";
@@ -30,8 +30,11 @@ const userResolver = {
       UserUseCase.visitorViewMember(ctx, args),
   },
   Mutation: {
-    userUpdateProfile: async (_: unknown, args: GqlMutationUserUpdateProfileArgs, ctx: IContext) =>
-      UserUseCase.userUpdateProfile(ctx, args),
+    userUpdateMyProfile: async (
+      _: unknown,
+      args: GqlMutationUserUpdateMyProfileArgs,
+      ctx: IContext,
+    ) => UserUseCase.userUpdateProfile(ctx, args),
   },
 
   User: {

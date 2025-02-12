@@ -1,10 +1,8 @@
-# user
-
 ## Input definition
 
 input UserUpdateProfileInput {
     name: String!
-    slug: String
+    slug: String!
     image: ImageInput
     bio: String
     urlWebsite: String
@@ -28,20 +26,3 @@ union UserUpdateProfilePayload =
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
-
-
-# identify
-
-## Input definition
-
-input CreateUserInput {
-    name: String!
-    slug: String
-    image: ImageInput
-}
-
-## Type definitions
-
-type CurrentUserPayload {
-    user: User
-}

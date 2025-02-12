@@ -16,9 +16,7 @@ export default class UserInputFormat {
 
   static update(input: GqlUserUpdateProfileInput): Prisma.UserUpdateInput {
     return {
-      name: input.name,
-      slug: input.slug,
-      bio: input.bio,
+      ...input,
       image: input.image?.base64,
     };
   }

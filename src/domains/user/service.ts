@@ -1,4 +1,4 @@
-import { GqlMutationUserUpdateProfileArgs, GqlQueryUsersArgs } from "@/types/graphql";
+import { GqlMutationUserUpdateMyProfileArgs, GqlQueryUsersArgs } from "@/types/graphql";
 import UserRepository from "@/domains/user/repository";
 import { IContext } from "@/types/server";
 import UserInputFormat from "@/domains/user/presenter/input";
@@ -19,8 +19,8 @@ export default class UserService {
     return await UserRepository.find(ctx, id);
   }
 
-  static async updateProfile(ctx: IContext, { id, input }: GqlMutationUserUpdateProfileArgs) {
+  static async updateProfile(ctx: IContext, { input }: GqlMutationUserUpdateMyProfileArgs) {
     const data: Prisma.UserUpdateInput = UserInputFormat.update(input);
-    return UserRepository.updateProfile(ctx, id, data);
+    return UserRepository.updateProfile(ctx, ctx.uid, data);
   }
 }

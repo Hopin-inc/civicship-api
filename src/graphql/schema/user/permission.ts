@@ -1,18 +1,13 @@
-import { isAdmin, isNotAuthenticated, isSelf } from "@/graphql/permission/rule";
-import { IRuleTypeMap } from "graphql-shield/typings/types";
+import { isAdmin, isSelf } from "@/graphql/permission/rule";
+import { ShieldRule } from "graphql-shield/typings/types";
 
-export const userPermission: IRuleTypeMap = {
-  Query: {
-    users: isAdmin,
-    user: isNotAuthenticated,
-    currentUser: isSelf,
-  },
-  Mutation: {
-    createUser: isNotAuthenticated,
-    deleteUser: isSelf,
-    userUpdateProfile: isSelf,
-  },
-  User: {
-    sysRole: isAdmin,
-  },
+const userQueryPermissions: Record<string, ShieldRule> = {
+  users: isAdmin,
 };
+
+const userMutationPermissions: Record<string, ShieldRule> = {
+  userDeleteMe: isSelf,
+  userUpdateMyProfile: isSelf,
+};
+
+export { userQueryPermissions, userMutationPermissions };

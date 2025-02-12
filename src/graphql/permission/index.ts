@@ -1,17 +1,19 @@
 import { shield, allow } from "graphql-shield";
-import { userPermission } from "@/graphql/schema/user/permission";
+import { userMutationPermissions, userQueryPermissions } from "@/graphql/schema/user/permission";
 
-export const permissions = shield(
+const permissions = shield(
   {
     Query: {
-      ...userPermission.Query,
+      ...userQueryPermissions,
     },
     Mutation: {
-      ...userPermission.Mutation,
+      ...userMutationPermissions,
     },
   },
   {
     fallbackRule: allow,
-    allowExternalErrors: true,
+    debug: process.env.ENV === "LOCAL",
   },
 );
+
+export default permissions;
