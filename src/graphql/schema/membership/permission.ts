@@ -5,7 +5,7 @@ const membershipMutationPermissions: Record<string, ShieldRule> = {
   // invite
   membershipInvite: isCommunityOwnerOrManager,
   membershipCancelInvitation: isCommunityOwnerOrManager,
-  membershipApproveMyInvitation: isSelf,
+  membershipAcceptMyInvitation: isSelf,
   membershipDenyMyInvitation: isSelf,
 
   // join
