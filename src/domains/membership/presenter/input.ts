@@ -39,13 +39,13 @@ export default class MembershipInputFormat {
     };
   }
 
-  static updateStatus(
+  static setStatus(
     status: MembershipStatus,
   ): Prisma.EnumMembershipStatusFieldUpdateOperationsInput {
     return { set: status };
   }
 
-  static updateRole(role: Role): Prisma.EnumRoleFieldUpdateOperationsInput {
+  static setRole(role: Role): Prisma.EnumRoleFieldUpdateOperationsInput {
     return { set: role };
   }
 }

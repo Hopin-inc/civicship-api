@@ -3,13 +3,9 @@ import {
   GqlQueryMembershipArgs,
   GqlMutationMembershipInviteArgs,
   GqlMutationMembershipCancelInvitationArgs,
-  GqlMutationMembershipApproveInvitationArgs,
-  GqlMutationMembershipDenyInvitationArgs,
-  GqlMutationMembershipSelfJoinArgs,
   GqlMutationMembershipWithdrawArgs,
   GqlMutationMembershipAssignOwnerArgs,
   GqlMutationMembershipAssignManagerArgs,
-  GqlMutationMembershipAssignMemberRoleArgs,
   GqlMutationMembershipRemoveArgs,
   GqlMembershipInvitePayload,
   GqlMembershipSetInvitationStatusPayload,
@@ -18,11 +14,13 @@ import {
   GqlMembershipRemovePayload,
   GqlMembershipsConnection,
   GqlMembership,
-  GqlMembershipSelfJoinPayload,
   GqlCommunity,
   GqlCommunityMembershipsArgs,
   GqlUserMembershipsArgs,
   GqlUser,
+  GqlMutationMembershipAssignMemberArgs,
+  GqlMutationMembershipAcceptMyInvitationArgs,
+  GqlMutationMembershipDenyMyInvitationArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
@@ -75,15 +73,15 @@ export default class MembershipUseCase {
     return membership ? MembershipOutputFormat.get(membership) : null;
   }
 
-  static async memberInviteMembership(
+  static async ownerInviteMember(
     { input }: GqlMutationMembershipInviteArgs,
     ctx: IContext,
   ): Promise<GqlMembershipInvitePayload> {
-    const membership = await MembershipService.inviteMembership(ctx, input);
+    const membership = await MembershipService.inviteMember(ctx, input);
     return MembershipOutputFormat.invite(membership);
   }
 
-  static async memberCancelInvitation(
+  static async ownerCancelInvitation(
     { input }: GqlMutationMembershipCancelInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
@@ -91,28 +89,20 @@ export default class MembershipUseCase {
     return MembershipOutputFormat.setInvitationStatus(membership);
   }
 
-  static async userApproveInvitation(
-    { input }: GqlMutationMembershipApproveInvitationArgs,
+  static async userAcceptMyInvitation(
+    { input }: GqlMutationMembershipAcceptMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const membership = await MembershipService.approveInvitation(ctx, input);
+    const membership = await MembershipService.acceptInvitation(ctx, input);
     return MembershipOutputFormat.setInvitationStatus(membership);
   }
 
-  static async userDenyInvitation(
-    { input }: GqlMutationMembershipDenyInvitationArgs,
+  static async userDenyMyInvitation(
+    { input }: GqlMutationMembershipDenyMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
     const membership = await MembershipService.denyInvitation(ctx, input);
     return MembershipOutputFormat.setInvitationStatus(membership);
-  }
-
-  static async userSelfJoin(
-    { input }: GqlMutationMembershipSelfJoinArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSelfJoinPayload> {
-    const membership = await MembershipService.selfJoinCommunity(ctx, input);
-    return MembershipOutputFormat.selfJoin(membership);
   }
 
   static async memberWithdrawCommunity(
@@ -123,7 +113,7 @@ export default class MembershipUseCase {
     return MembershipOutputFormat.withdraw(membership);
   }
 
-  static async ownerRemoveMembership(
+  static async ownerRemoveMember(
     { input }: GqlMutationMembershipRemoveArgs,
     ctx: IContext,
   ): Promise<GqlMembershipRemovePayload> {
@@ -139,7 +129,7 @@ export default class MembershipUseCase {
     return MembershipOutputFormat.setRole(membership);
   }
 
-  static async ownerAssignManager(
+  static async managerAssignManager(
     { input }: GqlMutationMembershipAssignManagerArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
@@ -147,8 +137,8 @@ export default class MembershipUseCase {
     return MembershipOutputFormat.setRole(membership);
   }
 
-  static async ownerAssignMember(
-    { input }: GqlMutationMembershipAssignMemberRoleArgs,
+  static async managerAssignMember(
+    { input }: GqlMutationMembershipAssignMemberArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
     const membership = await MembershipService.assignRole(ctx, input, Role.MEMBER);

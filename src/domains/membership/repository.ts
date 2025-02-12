@@ -44,21 +44,32 @@ export default class MembershipRepository {
     });
   }
 
-  static async updateStatus(
+  static async setStatus(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
     status: Prisma.EnumMembershipStatusFieldUpdateOperationsInput,
+    tx?: Prisma.TransactionClient,
   ) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.membership.update({
-        where,
-        data: { status },
-        include: membershipInclude,
+    if (tx) {
+      return this.issuer.publicWithTransaction(ctx, tx, (repoTx) => {
+        return repoTx.membership.update({
+          where,
+          data: { status },
+          include: membershipInclude,
+        });
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (repoTx) => {
+        return repoTx.membership.update({
+          where,
+          data: { status },
+          include: membershipInclude,
+        });
+      });
+    }
   }
 
-  static async updateRole(
+  static async setRole(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
     role: Prisma.EnumRoleFieldUpdateOperationsInput,

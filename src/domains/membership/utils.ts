@@ -52,15 +52,15 @@ export const MembershipUtils = {
     }
 
     const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
-      MembershipInputFormat.updateStatus(status);
-    return MembershipRepository.updateStatus(
+      MembershipInputFormat.setStatus(status);
+    return MembershipRepository.setStatus(
       ctx,
       { userId_communityId: { userId, communityId } },
       data,
     );
   },
 
-  async updateMembershipRole(ctx: IContext, userId: string, communityId: string, role: Role) {
+  async setMembershipRole(ctx: IContext, userId: string, communityId: string, role: Role) {
     const membership = await MembershipRepository.find(ctx, {
       userId_communityId: { userId, communityId },
     });
@@ -68,12 +68,8 @@ export const MembershipUtils = {
       throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
     }
 
-    const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipInputFormat.updateRole(role);
-    return MembershipRepository.updateRole(
-      ctx,
-      { userId_communityId: { userId, communityId } },
-      data,
-    );
+    const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipInputFormat.setRole(role);
+    return MembershipRepository.setRole(ctx, { userId_communityId: { userId, communityId } }, data);
   },
 
   async deleteMembership(ctx: IContext, userId: string, communityId: string) {

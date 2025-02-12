@@ -27,11 +27,26 @@ export default class WalletService {
     return WalletRepository.create(ctx, data);
   }
 
-  static async createMemberWallet(ctx: IContext, userId: string, communityId: string) {
+  static async createMemberWallet(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const existingWallet = await WalletRepository.checkIfExitMemberWallet(
+      ctx,
+      communityId,
+      userId,
+      tx,
+    );
+    if (existingWallet) {
+      return;
+    }
+
     const data: Prisma.WalletCreateInput = WalletInputFormat.createToMember({
       userId,
       communityId,
     });
-    return WalletRepository.create(ctx, data);
+    return WalletRepository.create(ctx, data, tx);
   }
 }

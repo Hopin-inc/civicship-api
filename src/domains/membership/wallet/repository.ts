@@ -43,13 +43,47 @@ export default class WalletRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.WalletCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.wallet.create({
-        data,
-        include: walletInclude,
+  static async checkIfExitMemberWallet(
+    ctx: IContext,
+    communityId: string,
+    userId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return this.issuer.publicWithTransaction(ctx, tx, (repoTx) => {
+        return repoTx.wallet.findFirst({
+          where: { communityId, userId, type: WalletType.MEMBER },
+        });
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (repoTx) => {
+        return repoTx.wallet.findFirst({
+          where: { communityId, userId, type: WalletType.MEMBER },
+        });
+      });
+    }
+  }
+
+  static async create(
+    ctx: IContext,
+    data: Prisma.WalletCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return this.issuer.publicWithTransaction(ctx, tx, (repoTx) => {
+        return repoTx.wallet.create({
+          data,
+          include: walletInclude,
+        });
+      });
+    } else {
+      return this.issuer.public(ctx, (repoTx) => {
+        return repoTx.wallet.create({
+          data,
+          include: walletInclude,
+        });
+      });
+    }
   }
 
   static async delete(ctx: IContext, id: string) {

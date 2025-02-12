@@ -1,0 +1,32 @@
+# Queries and Mutations
+
+extend type Query {
+    wallets(
+        filter: WalletFilterInput
+        sort: WalletSortInput
+        cursor: String
+        first: Int
+    ): WalletsConnection! @complexity(value: 10, multipliers: ["first"])
+    wallet(id: ID!): Wallet
+}
+
+# Type definitions
+
+type Wallet {
+    id: ID!
+
+    type: WalletType!
+    community: Community!
+    user: User
+    currentPointView: CurrentPointView
+
+    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type CurrentPointView {
+    walletId: String!
+    currentPoint: Int!
+}

@@ -1,13 +1,12 @@
 import {
-  GqlMembershipApproveInvitationInput,
+  GqlMembershipAcceptMyInvitationInput,
   GqlMembershipAssignManagerInput,
   GqlMembershipAssignMemberInput,
   GqlMembershipAssignOwnerInput,
   GqlMembershipCancelInvitationInput,
-  GqlMembershipDenyInvitationInput,
+  GqlMembershipDenyMyInvitationInput,
   GqlMembershipInviteInput,
   GqlMembershipRemoveInput,
-  GqlMembershipSelfJoinInput,
   GqlMembershipWithdrawInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
@@ -18,6 +17,7 @@ import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import { MembershipUtils } from "@/domains/membership/utils";
 import { getCurrentUserId } from "@/utils";
 import WalletService from "@/domains/membership/wallet/service";
+import { prismaClient } from "@/prisma/client";
 
 export default class MembershipService {
   static async fetchMemberships(
@@ -35,27 +35,12 @@ export default class MembershipService {
     return MembershipRepository.find(ctx, { userId_communityId: { userId, communityId } });
   }
 
-  static async inviteMembership(ctx: IContext, input: GqlMembershipInviteInput) {
+  static async inviteMember(ctx: IContext, input: GqlMembershipInviteInput) {
     const data: Prisma.MembershipCreateInput = MembershipInputFormat.invite(input);
     return MembershipRepository.create(ctx, data);
   }
 
-  static async selfJoinCommunity(ctx: IContext, input: GqlMembershipSelfJoinInput) {
-    const { communityId } = input;
-    const userId = getCurrentUserId(ctx);
-
-    const data: Prisma.MembershipCreateInput = MembershipInputFormat.selfJoin(
-      userId,
-      input.communityId,
-    );
-    const membership = MembershipRepository.create(ctx, data);
-
-    await WalletService.createMemberWallet(ctx, userId, communityId);
-    return membership;
-  }
-
-  static async removeMember(ctx: IContext, input: GqlMembershipRemoveInput) {
-    const { userId, communityId } = input;
+  static async removeMember(ctx: IContext, { userId, communityId }: GqlMembershipRemoveInput) {
     return MembershipUtils.deleteMembership(ctx, userId, communityId);
   }
 
@@ -64,27 +49,36 @@ export default class MembershipService {
     return MembershipUtils.deleteMembership(ctx, userId, input.communityId);
   }
 
-  static async cancelInvitation(ctx: IContext, input: GqlMembershipCancelInvitationInput) {
-    const { userId, communityId } = input;
+  static async cancelInvitation(
+    ctx: IContext,
+    { userId, communityId }: GqlMembershipCancelInvitationInput,
+  ) {
     return MembershipUtils.setMembershipStatus(ctx, userId, communityId, MembershipStatus.CANCELED);
   }
 
-  static async approveInvitation(ctx: IContext, input: GqlMembershipApproveInvitationInput) {
-    const { communityId } = input;
+  static async acceptInvitation(
+    ctx: IContext,
+    { communityId }: GqlMembershipAcceptMyInvitationInput,
+  ) {
     const userId = getCurrentUserId(ctx);
 
-    const membership = MembershipUtils.setMembershipStatus(
-      ctx,
-      userId,
-      communityId,
-      MembershipStatus.JOINED,
-    );
+    const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
+      MembershipInputFormat.setStatus(MembershipStatus.JOINED);
 
-    await WalletService.createMemberWallet(ctx, userId, communityId);
-    return membership;
+    return prismaClient.$transaction(async (tx) => {
+      const membership = await MembershipRepository.setStatus(
+        ctx,
+        { userId_communityId: { userId, communityId } },
+        data,
+        tx,
+      );
+
+      await WalletService.createMemberWallet(ctx, userId, communityId, tx);
+      return membership;
+    });
   }
 
-  static async denyInvitation(ctx: IContext, input: GqlMembershipDenyInvitationInput) {
+  static async denyInvitation(ctx: IContext, input: GqlMembershipDenyMyInvitationInput) {
     const { communityId } = input;
     const currentUserId = getCurrentUserId(ctx);
 
@@ -105,6 +99,6 @@ export default class MembershipService {
     role: Role,
   ) {
     const { userId, communityId } = input;
-    return MembershipUtils.updateMembershipRole(ctx, userId, communityId, role);
+    return MembershipUtils.setMembershipRole(ctx, userId, communityId, role);
   }
 }
