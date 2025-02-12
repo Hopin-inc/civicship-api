@@ -1,23 +1,29 @@
 import { loadSchemaSync } from "@graphql-tools/load";
 import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
-import { makeExecutableSchema, mergeSchemas } from "@graphql-tools/schema";
+import { makeExecutableSchema, mergeSchemas, addResolversToSchema } from "@graphql-tools/schema";
 import { DateTimeTypeDefinition } from "graphql-scalars";
 import { applyMiddleware } from "graphql-middleware";
-import { permissions } from "@/graphql/permission";
+import permissions from "@/graphql/permission";
+import errorMiddleware from "@/middleware/error"; // 例: errorMiddleware がある場合
+import resolvers from "@/graphql/resolvers";
 
 const definedSchema = loadSchemaSync("./**/*.graphql", {
   loaders: [new GraphQLFileLoader()],
 });
-const schema = applyMiddleware(
-  mergeSchemas({
-    schemas: [
-      definedSchema,
-      makeExecutableSchema({
-        typeDefs: [DateTimeTypeDefinition],
-      }),
-    ],
-  }),
-  permissions,
-);
 
+let schema = mergeSchemas({
+  schemas: [
+    definedSchema,
+    makeExecutableSchema({
+      typeDefs: [DateTimeTypeDefinition],
+    }),
+  ],
+});
+
+schema = addResolversToSchema({
+  schema,
+  resolvers,
+});
+
+schema = applyMiddleware(schema, permissions, errorMiddleware);
 export default schema;

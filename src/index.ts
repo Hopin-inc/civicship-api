@@ -1,21 +1,17 @@
+import http from "http";
 import { createServer } from "https";
 import fs from "fs";
-import app from "@/server/app";
-import { startApolloServer, graphqlServer, httpServer } from "@/server/graphql";
+import { createExpressApp } from "@/server/app";
+import { createApolloServer } from "@/server/graphql";
 import { authHandler } from "@/middleware/auth";
 import logger from "@/libs/logger";
 
 const port = Number(process.env.PORT ?? 3000);
 
-const startServer = async () => {
-  // Apollo Server を起動
-  await startApolloServer();
+async function startServer() {
+  const app = createExpressApp();
 
-  // GraphQL ルートに認証ミドルウェアを追加（Apollo Server のインスタンスが必要）
-  app.use("/graphql", authHandler(graphqlServer));
-
-  // HTTPS 環境の場合は createServer を利用
-  let server;
+  let server: http.Server;
   if (process.env.NODE_HTTPS === "true") {
     server = createServer(
       {
@@ -25,19 +21,18 @@ const startServer = async () => {
       app,
     );
   } else {
-    // 通常は httpServer（app から生成したもの）または直接 app を利用
-    server = httpServer || app;
+    server = http.createServer(app);
   }
 
-  // サーバーの起動
+  const apolloServer = await createApolloServer(server);
+
+  app.use("/graphql", authHandler(apolloServer));
+
   server.listen(port, () => {
-    const uri =
-      process.env.ENV === "LOCAL"
-        ? (process.env.NODE_HTTPS === "true" ? "https://" : "http://") + `localhost:${port}/graphql`
-        : `${process.env.HOST}/graphql`;
+    const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
+    const uri = `${protocol}://localhost:${port}/graphql`;
     logger.info(`🚀 Server ready at ${uri}`);
-    logger.info(`Environment ${process.env.ENV}`);
   });
-};
+}
 
 startServer();
