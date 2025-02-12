@@ -34,10 +34,9 @@ const isSelf = rule({ cache: "contextual" })((_parent, _args, ctx: IContext) => 
  * - ctx.memberships に配列でコミュニティ・ロール情報が入っている前提
  */
 const isCommunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
-  if (!ctx.currentUser || !args.communityId) return false;
-  const communityId = args.communityId;
+  if (!ctx.currentUser || !args.input.communityId) return false;
+  const communityId = args.input.communityId;
 
-  // ctx.memberships が存在し、そこから該当communityを探す
   const membership = ctx.memberships?.find((m) => m.communityId === communityId);
   if (!membership) return false;
 
@@ -50,8 +49,8 @@ const isCommunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx
  * - ctx.memberships に配列でコミュニティ・ロール情報が入っている前提
  */
 const isCommunityManager = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
-  if (!ctx.currentUser || !args.communityId) return false;
-  const communityId = args.communityId;
+  if (!ctx.currentUser || !args.input.communityId) return false;
+  const communityId = args.input.communityId;
 
   const membership = ctx.memberships?.find((m) => m.communityId === communityId);
   if (!membership) return false;
@@ -59,4 +58,29 @@ const isCommunityManager = rule({ cache: "contextual" })(async (_parent, args, c
   return membership.role === Role.MANAGER;
 });
 
-export { isAdmin, isUser, isAuthenticated, isSelf, isCommunityManager, isCommunityOwner };
+const isCommunityMember = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
+  if (!ctx.currentUser || !args.input.communityId) return false;
+  const communityId = args.input.communityId;
+
+  const membership = ctx.memberships?.find((m) => m.communityId === communityId);
+  if (!membership) return false;
+
+  return (
+    membership.role === Role.OWNER ||
+    membership.role === Role.MANAGER ||
+    membership.role === Role.MEMBER
+  );
+});
+
+const isCommunityOwnerOrManager = or(isCommunityOwner, isCommunityManager);
+
+export {
+  isAdmin,
+  isUser,
+  isAuthenticated,
+  isSelf,
+  isCommunityManager,
+  isCommunityOwner,
+  isCommunityMember,
+  isCommunityOwnerOrManager,
+};

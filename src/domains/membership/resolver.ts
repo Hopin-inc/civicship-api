@@ -3,14 +3,13 @@ import {
   GqlQueryMembershipArgs,
   GqlMutationMembershipInviteArgs,
   GqlMutationMembershipCancelInvitationArgs,
-  GqlMutationMembershipApproveInvitationArgs,
-  GqlMutationMembershipDenyInvitationArgs,
-  GqlMutationMembershipSelfJoinArgs,
   GqlMutationMembershipWithdrawArgs,
   GqlMutationMembershipAssignOwnerArgs,
   GqlMutationMembershipAssignManagerArgs,
-  GqlMutationMembershipAssignMemberRoleArgs,
   GqlMutationMembershipRemoveArgs,
+  GqlMutationMembershipAssignMemberArgs,
+  GqlMutationMembershipDenyMyInvitationArgs,
+  GqlMutationMembershipAcceptMyInvitationArgs,
 } from "@/types/graphql";
 import MembershipUseCase from "@/domains/membership/usecase";
 import { IContext } from "@/types/server";
@@ -30,21 +29,16 @@ const membershipResolver = {
       args: GqlMutationMembershipCancelInvitationArgs,
       ctx: IContext,
     ) => MembershipUseCase.memberCancelInvitation(args, ctx),
-    membershipApproveInvitation: async (
+    membershipAcceptMyInvitation: async (
       _: unknown,
-      args: GqlMutationMembershipApproveInvitationArgs,
+      args: GqlMutationMembershipAcceptMyInvitationArgs,
       ctx: IContext,
     ) => MembershipUseCase.userApproveInvitation(args, ctx),
-    membershipDenyInvitation: async (
+    membershipDenyMyInvitation: async (
       _: unknown,
-      args: GqlMutationMembershipDenyInvitationArgs,
+      args: GqlMutationMembershipDenyMyInvitationArgs,
       ctx: IContext,
     ) => MembershipUseCase.userDenyInvitation(args, ctx),
-    membershipSelfJoin: async (
-      _: unknown,
-      args: GqlMutationMembershipSelfJoinArgs,
-      ctx: IContext,
-    ) => MembershipUseCase.userSelfJoin(args, ctx),
     membershipWithdraw: async (
       _: unknown,
       args: GqlMutationMembershipWithdrawArgs,
@@ -60,9 +54,9 @@ const membershipResolver = {
       args: GqlMutationMembershipAssignManagerArgs,
       ctx: IContext,
     ) => MembershipUseCase.ownerAssignManager(args, ctx),
-    membershipAssignMemberRole: async (
+    membershipAssignMember: async (
       _: unknown,
-      args: GqlMutationMembershipAssignMemberRoleArgs,
+      args: GqlMutationMembershipAssignMemberArgs,
       ctx: IContext,
     ) => MembershipUseCase.ownerAssignMember(args, ctx),
     membershipRemove: async (_: unknown, args: GqlMutationMembershipRemoveArgs, ctx: IContext) =>

@@ -8,31 +8,22 @@ extend type Query {
         first: Int
     ): MembershipsConnection! @complexity(value: 10, multipliers: ["first"])
     membership(userId: ID!, communityId: ID!): Membership
-
-    wallets(
-        filter: WalletFilterInput
-        sort: WalletSortInput
-        cursor: String
-        first: Int
-    ): WalletsConnection! @complexity(value: 10, multipliers: ["first"])
-    wallet(id: ID!): Wallet
 }
 
 extend type Mutation {
     # invite
     membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
     membershipCancelInvitation(input: MembershipCancelInvitationInput!): MembershipSetInvitationStatusPayload
-    membershipApproveInvitation(input: MembershipApproveInvitationInput!): MembershipSetInvitationStatusPayload
-    membershipDenyInvitation(input: MembershipDenyInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipAcceptMyInvitation(input: MembershipAcceptMyInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipDenyMyInvitation(input: MembershipDenyMyInvitationInput!): MembershipSetInvitationStatusPayload
 
     # join
-    membershipSelfJoin(input: MembershipSelfJoinInput!): MembershipSelfJoinPayload
     membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
 
     # role
     membershipAssignOwner(input: MembershipAssignOwnerInput!): MembershipSetRolePayload
     membershipAssignManager(input: MembershipAssignManagerInput!): MembershipSetRolePayload
-    membershipAssignMemberRole(input: MembershipAssignMemberInput!): MembershipSetRolePayload
+    membershipAssignMember(input: MembershipAssignMemberInput!): MembershipSetRolePayload
     membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
 }
 
@@ -46,23 +37,4 @@ type Membership {
 
     createdAt: Datetime!
     updatedAt: Datetime
-}
-
-type Wallet {
-    id: ID!
-
-    type: WalletType!
-    community: Community!
-    user: User
-    currentPointView: CurrentPointView
-
-    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
-
-    createdAt: Datetime!
-    updatedAt: Datetime
-}
-
-type CurrentPointView {
-    walletId: String!
-    currentPoint: Int!
 }

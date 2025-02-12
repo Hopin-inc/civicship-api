@@ -7,20 +7,16 @@ input MembershipInviteInput {
     role: Role
 }
 
-input MembershipSelfJoinInput {
-    communityId: String!
-}
-
 input MembershipCancelInvitationInput {
     userId: String!
     communityId: String!
 }
 
-input MembershipApproveInvitationInput {
+input MembershipAcceptMyInvitationInput {
     communityId: String!
 }
 
-input MembershipDenyInvitationInput {
+input MembershipDenyMyInvitationInput {
     communityId: String!
 }
 
@@ -55,10 +51,6 @@ type MembershipInviteSuccess {
     membership: Membership!
 }
 
-type MembershipSelfJoinSuccess {
-    membership: Membership!
-}
-
 type MembershipSetRoleSuccess {
     membership: Membership!
 }
@@ -85,12 +77,6 @@ union MembershipInvitePayload =
     AuthError |
     ComplexQueryError
 
-union MembershipSelfJoinPayload =
-    MembershipSelfJoinSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
 union MembershipSetRolePayload =
     MembershipSetRoleSuccess |
     InvalidInputValueError |
@@ -111,45 +97,6 @@ union MembershipWithdrawPayload =
 
 union MembershipSetInvitationStatusPayload =
     MembershipSetInvitationStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-
-
-# wallet
-
-## input definitions
-
-input WalletCreateToCommunityInput {
-    communityId: String!
-}
-
-input WalletCreateToMemberInput {
-    communityId: String!
-    userId: String!
-}
-
-## type definitions
-
-type WalletCreateSuccess {
-    wallet: Wallet!
-}
-
-type WalletDeleteSuccess {
-    walletId: String!
-}
-
-## union definitions
-
-union WalletCreatePayload =
-    WalletCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union WalletDeletePayload =
-    WalletDeleteSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
