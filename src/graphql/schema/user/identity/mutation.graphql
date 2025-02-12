@@ -6,6 +6,10 @@ input UserSignUpInput {
     image: ImageInput
 }
 
+input UserDeleteInput{
+    userId: String!
+}
+
 ## Type definitions
 
 type CurrentUserPayload {

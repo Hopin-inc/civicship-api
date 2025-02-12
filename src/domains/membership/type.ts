@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 
-export const authSelect = Prisma.validator<Prisma.MembershipSelect>()({
+export const membershipAuthSelect = Prisma.validator<Prisma.MembershipSelect>()({
   role: true,
   communityId: true,
 });

@@ -13,14 +13,17 @@ input MembershipCancelInvitationInput {
 }
 
 input MembershipAcceptMyInvitationInput {
+    userId: String!
     communityId: String!
 }
 
 input MembershipDenyMyInvitationInput {
+    userId: String!
     communityId: String!
 }
 
 input MembershipWithdrawInput {
+    userId: String!
     communityId: String!
 }
 

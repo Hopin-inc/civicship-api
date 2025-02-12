@@ -1,10 +1,10 @@
-import { isCommunityOwner, isCommunityOwnerOrManager, isSelf } from "@/graphql/permission/rule";
+import { isCommunityManager, isCommunityOwner, isSelf } from "@/graphql/permission/rule";
 import { ShieldRule } from "graphql-shield/typings/types";
 
 const membershipMutationPermissions: Record<string, ShieldRule> = {
   // invite
-  membershipInvite: isCommunityOwnerOrManager,
-  membershipCancelInvitation: isCommunityOwnerOrManager,
+  membershipInvite: isCommunityManager,
+  membershipCancelInvitation: isCommunityManager,
   membershipAcceptMyInvitation: isSelf,
   membershipDenyMyInvitation: isSelf,
 
@@ -13,8 +13,8 @@ const membershipMutationPermissions: Record<string, ShieldRule> = {
 
   // role
   membershipAssignOwner: isCommunityOwner,
-  membershipAssignManager: isCommunityOwnerOrManager,
-  membershipAssignMember: isCommunityOwnerOrManager,
+  membershipAssignManager: isCommunityManager,
+  membershipAssignMember: isCommunityManager,
   membershipRemove: isCommunityOwner,
 };
 

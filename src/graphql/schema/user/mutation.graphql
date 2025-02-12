@@ -1,6 +1,8 @@
 ## Input definition
 
 input UserUpdateProfileInput {
+    userId: String!
+
     name: String!
     slug: String!
     image: ImageInput

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 
-export const authInclude = Prisma.validator<Prisma.UserInclude>()({
+export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
   identities: true,
 });
 
