@@ -3,10 +3,11 @@ import { expressMiddleware } from "@apollo/server/express4";
 import { auth } from "@/libs/firebase";
 import http from "http";
 import { PrismaClientIssuer } from "@/prisma/client";
-import { IContext } from "@/types/server"; // IContext の型定義が必要
-import { SignInProvider } from "@/consts/utils"; // これは IdentityPlatform に対応?
-import { authInclude } from "@/domains/user/type";
-import { authSelect } from "@/domains/membership/type";
+import { IContext } from "@/types/server";
+import { SignInProvider } from "@/consts/utils";
+import { userAuthInclude } from "@/domains/user/type";
+import { membershipAuthSelect } from "@/domains/membership/type";
+import { opportunityAuthSelect } from "@/domains/opportunity/type";
 
 export const authHandler = (server: ApolloServer<IContext>) =>
   expressMiddleware(server, {
@@ -29,18 +30,25 @@ export const authHandler = (server: ApolloServer<IContext>) =>
               some: { uid },
             },
           },
-          include: authInclude,
+          include: userAuthInclude,
         });
       });
 
       const memberships = await issuer.internal(async (tx) => {
         return tx.membership.findMany({
           where: { userId: uid },
-          select: authSelect,
+          select: membershipAuthSelect,
         });
       });
 
-      return { uid, platform, currentUser, memberships } satisfies IContext;
+      const opportunitiesCreatedBy = await issuer.internal(async (tx) => {
+        return tx.opportunity.findMany({
+          where: { createdBy: uid },
+          select: opportunityAuthSelect,
+        });
+      });
+
+      return { uid, platform, currentUser, memberships, opportunitiesCreatedBy } satisfies IContext;
     },
   });
 

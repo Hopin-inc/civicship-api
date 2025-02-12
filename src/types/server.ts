@@ -6,6 +6,7 @@ export type LoggedInUserInfo = {
   platform: IdentityPlatform;
   currentUser: GqlUser | null;
   memberships: { communityId: string; role: Role }[];
+  opportunitiesCreatedBy: { id: string }[];
 };
 
 export type IContext = Record<string, never> | LoggedInUserInfo;
