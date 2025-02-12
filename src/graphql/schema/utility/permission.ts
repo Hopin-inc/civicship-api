@@ -6,7 +6,6 @@ const utilityMutationPermissions: Record<string, ShieldRule> = {
   utilityDelete: isCommunityMember,
   utilityUpdateInfo: isCommunityMember,
 
-  utilityGet: isAuthenticated,
   utilityUse: isAuthenticated,
 };
 
