@@ -4,6 +4,7 @@ import { communityMutationPermissions } from "@/graphql/schema/community/permiss
 import { membershipMutationPermissions } from "@/graphql/schema/membership/permission";
 import { opportunityMutationPermissions } from "@/graphql/schema/opportunity/permission";
 import { participationMutationPermissions } from "@/graphql/schema/opportunity/participation/permission";
+import { utilityMutationPermissions } from "@/graphql/schema/utility/permission";
 
 const permissions = shield(
   {
@@ -16,6 +17,7 @@ const permissions = shield(
       ...membershipMutationPermissions,
       ...opportunityMutationPermissions,
       ...participationMutationPermissions,
+      ...utilityMutationPermissions,
     },
   },
   {

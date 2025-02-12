@@ -16,6 +16,14 @@ input UtilityUpdateInfoInput {
     pointsRequired: Int!
 }
 
+input UtilityGetInput {
+    userWalletId: String!
+}
+
+input UtilityDonateInput {
+    userWalletId: String!
+}
+
 input UtilityUseInput {
     userWalletId: String!
 }
@@ -32,6 +40,14 @@ type UtilityDeleteSuccess {
 
 type UtilityUpdateInfoSuccess {
     utility: Utility!
+}
+
+type UtilityGetSuccess {
+    transaction: Transaction!
+}
+
+type UtilityDonateSuccess {
+    transaction: Transaction!
 }
 
 type UtilityUseSuccess {
@@ -54,6 +70,18 @@ union UtilityDeletePayload =
 
 union UtilityUpdateInfoPayload =
     UtilityUpdateInfoSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityGetPayload =
+    UtilityGetSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityDonatePayload =
+    UtilityDonateSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

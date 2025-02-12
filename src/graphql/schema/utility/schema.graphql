@@ -15,6 +15,7 @@ extend type Mutation {
     utilityDelete(id: ID!): UtilityDeletePayload
     utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!): UtilityUpdateInfoPayload
 
+    utilityGet(id: ID!, input: UtilityGetInput!): UtilityGetPayload
     utilityUse(id: ID!, input: UtilityUseInput!): UtilityUsePayload
 }
 
