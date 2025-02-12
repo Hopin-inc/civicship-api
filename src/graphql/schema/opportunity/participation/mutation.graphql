@@ -1,0 +1,44 @@
+## input definitions
+
+input ParticipationApplyInput {
+    opportunityId: String!
+}
+
+input ParticipationInviteInput{
+    opportunityId: String!
+    invitedUserId: String!
+}
+
+## Type definitions
+
+type ParticipationApplySuccess {
+    participation: Participation!
+}
+
+type ParticipationInviteSuccess {
+    participation: Participation!
+}
+
+type ParticipationSetStatusSuccess {
+    participation: Participation!
+}
+
+## union definitions
+
+union ParticipationApplyPayload =
+    ParticipationApplySuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ParticipationInvitePayload =
+    ParticipationInviteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ParticipationSetStatusPayload =
+    ParticipationSetStatusSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

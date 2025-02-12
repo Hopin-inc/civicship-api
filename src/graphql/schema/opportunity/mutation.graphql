@@ -21,6 +21,8 @@ input OpportunityCreateInput {
 }
 
 input OpportunityEditContentInput {
+    communityId: String!
+
     title: String
     description: String
     category: OpportunityCategory
@@ -36,6 +38,8 @@ input OpportunityEditContentInput {
 }
 
 input OpportunitySetPublishStatusInput{
+    communityId: String!
+
     status: PublishStatus!
 }
 
@@ -79,78 +83,6 @@ union OpportunityEditContentPayload =
 
 union OpportunitySetPublishStatusPayload =
     OpportunitySetPublishStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-
-# Participation
-
-## input definitions
-
-input ParticipationApplyInput {
-    opportunityId: String!
-}
-
-input ParticipationInviteInput{
-    opportunityId: String!
-    invitedUserId: String!
-}
-
-## Type definitions
-
-type ParticipationApplySuccess {
-    participation: Participation!
-}
-
-type ParticipationInviteSuccess {
-    participation: Participation!
-}
-
-type ParticipationSetStatusSuccess {
-    participation: Participation!
-}
-
-## union definitions
-
-union ParticipationApplyPayload =
-    ParticipationApplySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union ParticipationInvitePayload =
-    ParticipationInviteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union ParticipationSetStatusPayload =
-    ParticipationSetStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-# ParticipationStatusHistory
-
-## input definitions
-
-input ParticipationStatusHistoryCreateInput {
-    participationId: String!
-    status: ParticipationStatus!
-    createdById: String!
-}
-
-## Type definitions
-
-type ParticipationStatusHistoryCreateSuccess {
-    participationStatusHistory: ParticipationStatusHistory!
-}
-
-## union definitions
-
-union ParticipationStatusHistoryCreatePayload =
-    ParticipationStatusHistoryCreateSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

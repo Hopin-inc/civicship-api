@@ -1,0 +1,46 @@
+# Queries and Mutations
+
+extend type Query {
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
+    participation(id: ID!): Participation
+}
+
+extend type Mutation {
+    # invite
+    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
+    participationCancelInvitation(id: ID!): ParticipationSetStatusPayload
+    participationAcceptMyInvitation(id: ID!): ParticipationSetStatusPayload
+    participationDenyMyInvitation(id: ID!): ParticipationSetStatusPayload
+
+    # apply
+    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
+    participationCancelMyApplication(id: ID!): ParticipationSetStatusPayload
+    participationAcceptApplication(id: ID!): ParticipationSetStatusPayload
+    participationDenyApplication(id: ID!): ParticipationSetStatusPayload
+
+    # performance
+    participationApprovePerformance(id: ID!): ParticipationSetStatusPayload
+    participationDenyPerformance(id: ID!): ParticipationSetStatusPayload
+}
+
+# Type definitions
+
+type Participation {
+    id: ID!
+    status: ParticipationStatus!
+
+    user: User
+    community: Community
+    opportunity: Opportunity
+
+    statusHistories(first: Int, cursor: String): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

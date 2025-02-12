@@ -124,7 +124,7 @@ export default class ParticipationService {
     return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.CANCELED);
   }
 
-  static async approveInvitation(ctx: IContext, id: string) {
+  static async acceptInvitation(ctx: IContext, id: string) {
     return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.PARTICIPATING);
   }
 
@@ -140,7 +140,7 @@ export default class ParticipationService {
     return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.CANCELED);
   }
 
-  static async approveApplication(ctx: IContext, id: string) {
+  static async acceptApplication(ctx: IContext, id: string) {
     return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.PARTICIPATING);
   }
 

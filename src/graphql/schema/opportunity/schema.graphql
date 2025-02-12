@@ -8,22 +8,6 @@ extend type Query {
         first: Int
     ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
     opportunity(id: ID!): Opportunity
-
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
-    participation(id: ID!): Participation
-
-    participationStatusHistories(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): ParticipationStatusHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
-    participationStatusHistory(id: ID!): ParticipationStatusHistory
 }
 
 extend type Mutation {
@@ -32,22 +16,6 @@ extend type Mutation {
     opportunityEditContent(id: ID!, input: OpportunityEditContentInput!): OpportunityEditContentPayload
 
     opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!): OpportunitySetPublishStatusPayload
-
-    # invite
-    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
-    participationCancelInvitation(id: ID!): ParticipationSetStatusPayload
-    participationApproveInvitation(id: ID!): ParticipationSetStatusPayload
-    participationDenyInvitation(id: ID!): ParticipationSetStatusPayload
-
-    # apply
-    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationCancelApplication(id: ID!): ParticipationSetStatusPayload
-    participationApproveApplication(id: ID!): ParticipationSetStatusPayload
-    participationDenyApplication(id: ID!): ParticipationSetStatusPayload
-
-    # performance
-    participationApprovePerformance(id: ID!): ParticipationSetStatusPayload
-    participationDenyPerformance(id: ID!): ParticipationSetStatusPayload
 }
 
 # Type definitions
@@ -72,32 +40,6 @@ type Opportunity {
     city: City!
 
     participations(first: Int, cursor: String): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
-
-    createdAt: Datetime!
-    updatedAt: Datetime
-}
-
-type Participation {
-    id: ID!
-    status: ParticipationStatus!
-
-    user: User
-    community: Community
-    opportunity: Opportunity
-
-    statusHistories(first: Int, cursor: String): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
-    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
-
-    createdAt: Datetime!
-    updatedAt: Datetime
-}
-
-type ParticipationStatusHistory {
-    id: ID!
-    status: ParticipationStatus!
-
-    participation: Participation!
-    createdByUser: User
 
     createdAt: Datetime!
     updatedAt: Datetime
