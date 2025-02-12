@@ -12,7 +12,7 @@ extend type Query {
 
 extend type Mutation {
     communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
-    communityDelete(id: ID!): CommunityDeletePayload
+    communityDelete(id: ID!, input: CommunityDeleteInput!): CommunityDeletePayload
     communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!): CommunityUpdateProfilePayload
 }
 
