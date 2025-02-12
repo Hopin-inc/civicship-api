@@ -1,5 +1,3 @@
-// domains/transaction/utils.ts など
-
 import { IContext } from "@/types/server";
 import {
   GqlTransaction,
