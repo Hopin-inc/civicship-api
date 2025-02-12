@@ -35,7 +35,7 @@ export default class TransactionRepository {
     });
   }
 
-  static async refreshStat(ctx: IContext, tx?: Prisma.TransactionClient) {
+  static async refreshCurrentPoints(ctx: IContext, tx?: Prisma.TransactionClient) {
     if (tx) {
       return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
         return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
