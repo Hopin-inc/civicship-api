@@ -1,0 +1,17 @@
+## Input definition
+
+input UserSignUpInput {
+    name: String!
+    slug: String
+    image: ImageInput
+}
+
+## Type definitions
+
+type CurrentUserPayload {
+    user: User
+}
+
+type UserDeletePayload{
+    userId: String!
+}
