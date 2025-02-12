@@ -6,13 +6,12 @@ import { membershipInclude } from "@/domains/membership/type";
 export default class MembershipRepository {
   private static issuer = new PrismaClientIssuer();
 
-  // TODO cursorを中間テーブルに合わせる
   static async query(
     ctx: IContext,
     where: Prisma.MembershipWhereInput,
     orderBy: Prisma.MembershipOrderByWithRelationInput[],
     take: number,
-    cursor?: string,
+    cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
   ) {
     return this.issuer.public(ctx, (tx) => {
       return tx.membership.findMany({
@@ -20,7 +19,13 @@ export default class MembershipRepository {
         orderBy,
         take: take + 1,
         skip: cursor ? 1 : 0,
-        // cursor: cursor ? { id: cursor } : undefined,
+        ...(cursor
+          ? {
+              cursor: {
+                userId_communityId: cursor,
+              },
+            }
+          : {}),
         include: membershipInclude,
       });
     });

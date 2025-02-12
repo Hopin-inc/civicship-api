@@ -4,7 +4,7 @@ extend type Query {
     memberships(
         filter: MembershipFilterInput
         sort: MembershipSortInput
-        cursor: String
+        cursor: MembershipCursorInput
         first: Int
     ): MembershipsConnection! @complexity(value: 10, multipliers: ["first"])
     membership(userId: ID!, communityId: ID!): Membership

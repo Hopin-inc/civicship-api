@@ -14,7 +14,7 @@ const membershipMutationPermissions: Record<string, ShieldRule> = {
   // role
   membershipAssignOwner: isCommunityOwner,
   membershipAssignManager: isCommunityOwnerOrManager,
-  membershipAssignMemberRole: isCommunityOwnerOrManager,
+  membershipAssignMember: isCommunityOwnerOrManager,
   membershipRemove: isCommunityOwner,
 };
 

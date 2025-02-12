@@ -244,6 +244,11 @@ export type GqlMembershipCancelInvitationInput = {
   userId: Scalars['String']['input'];
 };
 
+export type GqlMembershipCursorInput = {
+  communityId: Scalars['ID']['input'];
+  userId: Scalars['ID']['input'];
+};
+
 export type GqlMembershipDenyMyInvitationInput = {
   communityId: Scalars['String']['input'];
 };
@@ -890,7 +895,7 @@ export type GqlQueryMembershipArgs = {
 
 
 export type GqlQueryMembershipsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
+  cursor?: InputMaybe<GqlMembershipCursorInput>;
   filter?: InputMaybe<GqlMembershipFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
   sort?: InputMaybe<GqlMembershipSortInput>;
@@ -1554,6 +1559,7 @@ export type GqlResolversTypes = ResolversObject<{
   MembershipAssignMemberInput: GqlMembershipAssignMemberInput;
   MembershipAssignOwnerInput: GqlMembershipAssignOwnerInput;
   MembershipCancelInvitationInput: GqlMembershipCancelInvitationInput;
+  MembershipCursorInput: GqlMembershipCursorInput;
   MembershipDenyMyInvitationInput: GqlMembershipDenyMyInvitationInput;
   MembershipEdge: ResolverTypeWrapper<Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Membership']> }>;
   MembershipFilterInput: GqlMembershipFilterInput;
@@ -1722,6 +1728,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   MembershipAssignMemberInput: GqlMembershipAssignMemberInput;
   MembershipAssignOwnerInput: GqlMembershipAssignOwnerInput;
   MembershipCancelInvitationInput: GqlMembershipCancelInvitationInput;
+  MembershipCursorInput: GqlMembershipCursorInput;
   MembershipDenyMyInvitationInput: GqlMembershipDenyMyInvitationInput;
   MembershipEdge: Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Membership']> };
   MembershipFilterInput: GqlMembershipFilterInput;
