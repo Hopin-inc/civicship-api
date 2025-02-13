@@ -14,12 +14,13 @@ import MembershipInputFormat from "@/domains/membership/presenter/input";
 import MembershipRepository from "@/domains/membership/repository";
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
-import { MembershipUtils } from "@/domains/membership/utils";
 import { getCurrentUserId } from "@/utils";
-import WalletService from "@/domains/membership/wallet/service";
-import { prismaClient } from "@/prisma/client";
+import MembershipUtils from "@/domains/membership/utils";
+import { PrismaClientIssuer } from "@/prisma/client";
 
 export default class MembershipService {
+  private static issuer = new PrismaClientIssuer();
+
   static async fetchMemberships(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryMembershipsArgs,
@@ -61,20 +62,8 @@ export default class MembershipService {
     { communityId }: GqlMembershipAcceptMyInvitationInput,
   ) {
     const userId = getCurrentUserId(ctx);
-
-    const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
-      MembershipInputFormat.setStatus(MembershipStatus.JOINED);
-
-    return prismaClient.$transaction(async (tx) => {
-      const membership = await MembershipRepository.setStatus(
-        ctx,
-        { userId_communityId: { userId, communityId } },
-        data,
-        tx,
-      );
-
-      await WalletService.createMemberWallet(ctx, userId, communityId, tx);
-      return membership;
+    return this.issuer.public(ctx, (tx) => {
+      return MembershipUtils.joinCommunityAndCreateMemberWallet(ctx, tx, userId, communityId);
     });
   }
 
