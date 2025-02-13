@@ -27,7 +27,7 @@ export default class TransactionInputFormat {
   }
 
   static giveRewardPoint(input: GqlTransactionGiveRewardPointInput): Prisma.TransactionCreateInput {
-    const { from, to, fromPointChange, toPointChange } = input;
+    const { from, to, fromPointChange, toPointChange, participationId } = input;
 
     return {
       reason: TransactionReason.PARTICIPATION_APPROVED,
@@ -35,6 +35,7 @@ export default class TransactionInputFormat {
       fromPointChange,
       toWallet: { connect: { id: to } },
       toPointChange,
+      participation: { connect: { id: participationId } },
     };
   }
 
