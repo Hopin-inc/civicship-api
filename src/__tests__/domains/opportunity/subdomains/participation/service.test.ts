@@ -2,7 +2,6 @@ import ParticipationService from "@/domains/opportunity/subdomains/participation
 import ParticipationRepository from "@/domains/opportunity/subdomains/participation/repository";
 import { IContext } from "@/types/server";
 import { ParticipationUtils } from "@/domains/opportunity/subdomains/participation/utils";
-// import OpportunityRepository from "@/domains/opportunity/repository";
 
 jest.mock("@/domains/opportunity/subdomains/participation/repository");
 jest.mock("@/prisma/client");
@@ -45,71 +44,76 @@ describe("ParticipationService", () => {
         });
     });
 
-    // describe("inviteParticipation", () => {
-    //     it("should throw error if user is not logged in", async () => {
-    //         ctx.currentUser = null;
-    //         await expect(ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" }))
-    //             .rejects
-    //             .toThrow("Unauthorized: User must be logged in");
-    //     });
+    describe("inviteParticipation", () => {
+        it("should throw error if user is not logged in", async () => {
+            ctx.currentUser = null;
 
-    //     it("should throw error if opportunity not found", async () => {
-    //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(null);
-    //         await expect(ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" }))
-    //             .rejects
-    //             .toThrow("OpportunityNotFound: ID=1");
-    //     });
+            const expectedError = "Unauthorized: User must be logged in"
+            await expect(ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" }))
+                .rejects
+                .toThrow(expectedError);
+        });
 
-    //     it("should throw error if community not found", async () => {
-    //         const mockOpportunity = { community: null };
-    //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
-    //         await expect(ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" }))
-    //             .rejects
-    //             .toThrow("CommunityNotFound: ID=null");
-    //     });
+        // TODO: mock prismaClient
+        //     it("should throw error if opportunity not found", async () => {
+        //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(null);
+        //         await expect(ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" }))
+        //             .rejects
+        //             .toThrow("OpportunityNotFound: ID=1");
+        //     });
 
-    //     it("should successfully invite participation", async () => {
-    //         const mockOpportunity = { community: { id: "community-id" } };
-    //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
-    //         (ParticipationRepository.createWithTransaction as jest.Mock).mockResolvedValue({ id: "1", status: "INVITED" });
+        //     it("should throw error if community not found", async () => {
+        //         const mockOpportunity = { community: null };
+        //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
+        //         await expect(ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" }))
+        //             .rejects
+        //             .toThrow("CommunityNotFound: ID=null");
+        //     });
 
-    //         const result = await ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" });
-    //         expect(result.status).toEqual("INVITED");
-    //     });
-    // });
+        //     it("should successfully invite participation", async () => {
+        //         const mockOpportunity = { community: { id: "community-id" } };
+        //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
+        //         (ParticipationRepository.createWithTransaction as jest.Mock).mockResolvedValue({ id: "1", status: "INVITED" });
 
-    // describe("applyParticipation", () => {
-    //     it("should throw error if user is not logged in", async () => {
-    //         ctx.currentUser = null;
-    //         await expect(ParticipationService.applyParticipation(ctx, { opportunityId: "1" }))
-    //             .rejects
-    //             .toThrow("Unauthorized: User must be logged in");
-    //     });
+        //         const result = await ParticipationService.inviteParticipation(ctx, { opportunityId: "1", invitedUserId: "test-invitee" });
+        //         expect(result.status).toEqual("INVITED");
+        //     });
+    });
 
-    //     it("should throw error if opportunity not found", async () => {
-    //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(null);
-    //         await expect(ParticipationService.applyParticipation(ctx, { opportunityId: "1" }))
-    //             .rejects
-    //             .toThrow("OpportunityNotFound: ID=1");
-    //     });
+    describe("applyParticipation", () => {
+        it("should throw error if user is not logged in", async () => {
+            ctx.currentUser = null;
 
-    //     it("should throw error if community not found", async () => {
-    //         const mockOpportunity = { community: null };
-    //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
-    //         await expect(ParticipationService.applyParticipation(ctx, { opportunityId: "1" }))
-    //             .rejects
-    //             .toThrow("CommunityNotFound: ID=null");
-    //     });
+            const expectedError = "Unauthorized: User must be logged in"
+            await expect(ParticipationService.applyParticipation(ctx, { opportunityId: "1" }))
+                .rejects
+                .toThrow(expectedError);
+        });
 
-    //     it("should successfully apply for participation", async () => {
-    //         const mockOpportunity = { community: { id: "community-id" }, requireApproval: false };
-    //         (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
-    //         (ParticipationRepository.createWithTransaction as jest.Mock).mockResolvedValue({ id: "1", status: "PARTICIPATING" });
+        // it("should throw error if opportunity not found", async () => {
+        //     (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(null);
+        //     await expect(ParticipationService.applyParticipation(ctx, { opportunityId: "1" }))
+        //         .rejects
+        //         .toThrow("OpportunityNotFound: ID=1");
+        // });
 
-    //         const result = await ParticipationService.applyParticipation(ctx, { opportunityId: "1" });
-    //         expect(result.status).toEqual("PARTICIPATING");
-    //     });
-    // });
+        // it("should throw error if community not found", async () => {
+        //     const mockOpportunity = { community: null };
+        //     (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
+        //     await expect(ParticipationService.applyParticipation(ctx, { opportunityId: "1" }))
+        //         .rejects
+        //         .toThrow("CommunityNotFound: ID=null");
+        // });
+
+        // it("should successfully apply for participation", async () => {
+        //     const mockOpportunity = { community: { id: "community-id" }, requireApproval: false };
+        //     (OpportunityRepository.findWithTransaction as jest.Mock).mockResolvedValue(mockOpportunity);
+        //     (ParticipationRepository.createWithTransaction as jest.Mock).mockResolvedValue({ id: "1", status: "PARTICIPATING" });
+
+        //     const result = await ParticipationService.applyParticipation(ctx, { opportunityId: "1" });
+        //     expect(result.status).toEqual("PARTICIPATING");
+        // });
+    });
 
     describe("cancelInvitation", () => {
         it("should successfully cancel invitation", async () => {
