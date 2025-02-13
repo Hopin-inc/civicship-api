@@ -2,6 +2,7 @@ import {
   GqlMembershipFilterInput,
   GqlMembershipSortInput,
   GqlMembershipInviteInput,
+  GqlMembershipAcceptMyInvitationInput,
 } from "@/types/graphql";
 import { Prisma, MembershipStatus, Role } from "@prisma/client";
 
@@ -21,21 +22,20 @@ export default class MembershipInputFormat {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
+  static join(input: GqlMembershipAcceptMyInvitationInput): Prisma.MembershipCreateInput {
+    return {
+      user: { connect: { id: input.userId } },
+      community: { connect: { id: input.communityId } },
+      status: MembershipStatus.JOINED,
+    };
+  }
+
   static invite(input: GqlMembershipInviteInput): Prisma.MembershipCreateInput {
     return {
       user: { connect: { id: input.userId } },
       community: { connect: { id: input.communityId } },
       status: MembershipStatus.INVITED,
       role: input.role ?? Role.MEMBER,
-    };
-  }
-
-  static selfJoin(currentUserId: string, communityId: string): Prisma.MembershipCreateInput {
-    return {
-      user: { connect: { id: currentUserId } },
-      community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
     };
   }
 
