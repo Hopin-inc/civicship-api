@@ -9,8 +9,8 @@ import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
 import { clampFirst } from "@/graphql/pagination";
 
-export const TransactionUtils = {
-  async fetchTransactionsCommon(
+export default class TransactionUtils {
+  static async fetchTransactionsCommon(
     ctx: IContext,
     {
       cursor,
@@ -34,5 +34,5 @@ export const TransactionUtils = {
     });
 
     return TransactionOutputFormat.query(data, hasNextPage);
-  },
-};
+  }
+}
