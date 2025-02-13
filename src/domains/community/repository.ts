@@ -34,12 +34,14 @@ export default class CommunityRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.CommunityCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.community.create({
-        data,
-        include: communityInclude,
-      });
+  static async create(
+    ctx: IContext,
+    data: Prisma.CommunityCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.community.create({
+      data,
+      include: communityInclude,
     });
   }
 
