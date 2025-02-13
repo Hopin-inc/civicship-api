@@ -25,40 +25,58 @@ export default class WalletRepository {
     );
   }
 
-  static async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+  static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    if (tx) {
       return tx.wallet.findUnique({
         where: { id },
         include: walletInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.wallet.findUnique({
+          where: { id },
+          include: walletInclude,
+        });
+      });
+    }
   }
 
-  static async findByCommunityId(ctx: IContext, communityId: string) {
-    return this.issuer.public(ctx, (tx) => {
+  static async findCommunityWallet(
+    ctx: IContext,
+    communityId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.wallet.findFirst({
         where: { communityId, type: WalletType.COMMUNITY },
         include: walletInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.wallet.findFirst({
+          where: { communityId, type: WalletType.COMMUNITY },
+          include: walletInclude,
+        });
+      });
+    }
   }
 
-  static async checkIfExitMemberWallet(
+  static async checkIfExistingMemberWallet(
     ctx: IContext,
     communityId: string,
     userId: string,
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
-      return this.issuer.publicWithTransaction(ctx, tx, (repoTx) => {
-        return repoTx.wallet.findFirst({
-          where: { communityId, userId, type: WalletType.MEMBER },
-        });
+      return tx.wallet.findFirst({
+        where: { communityId, userId, type: WalletType.MEMBER },
+        include: walletInclude,
       });
     } else {
-      return this.issuer.public(ctx, (repoTx) => {
-        return repoTx.wallet.findFirst({
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.wallet.findFirst({
           where: { communityId, userId, type: WalletType.MEMBER },
+          include: walletInclude,
         });
       });
     }
@@ -70,15 +88,13 @@ export default class WalletRepository {
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
-      return this.issuer.publicWithTransaction(ctx, tx, (repoTx) => {
-        return repoTx.wallet.create({
-          data,
-          include: walletInclude,
-        });
+      return tx.wallet.create({
+        data,
+        include: walletInclude,
       });
     } else {
-      return this.issuer.public(ctx, (repoTx) => {
-        return repoTx.wallet.create({
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.wallet.create({
           data,
           include: walletInclude,
         });
