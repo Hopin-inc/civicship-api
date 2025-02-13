@@ -11,9 +11,10 @@ import {
 import { clampFirst } from "@/graphql/pagination";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
+import WalletService from "@/domains/membership/wallet/service";
 
-export const MembershipUtils = {
-  async fetchMembershipsCommon(
+export default class MembershipUtils {
+  static async fetchMembershipsCommon(
     ctx: IContext,
     {
       cursor,
@@ -37,9 +38,44 @@ export const MembershipUtils = {
     });
 
     return MembershipOutputFormat.query(data, hasNextPage);
-  },
+  }
 
-  async setMembershipStatus(
+  static async joinCommunityAndCreateMemberWallet(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    userId: string,
+    communityId: string,
+  ) {
+    let membership = await MembershipRepository.find(
+      ctx,
+      { userId_communityId: { userId, communityId } },
+      tx,
+    );
+
+    if (!membership) {
+      const data: Prisma.MembershipCreateInput = MembershipInputFormat.join({
+        userId,
+        communityId,
+      });
+      membership = await MembershipRepository.create(ctx, data, tx);
+    } else {
+      const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
+        MembershipInputFormat.setStatus(MembershipStatus.JOINED);
+
+      membership = await MembershipRepository.setStatus(
+        ctx,
+        { userId_communityId: { userId, communityId } },
+        data,
+        tx,
+      );
+    }
+
+    await WalletService.createMemberWallet(ctx, userId, communityId, tx);
+
+    return membership;
+  }
+
+  static async setMembershipStatus(
     ctx: IContext,
     userId: string,
     communityId: string,
@@ -54,14 +90,15 @@ export const MembershipUtils = {
 
     const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
       MembershipInputFormat.setStatus(status);
+
     return MembershipRepository.setStatus(
       ctx,
       { userId_communityId: { userId, communityId } },
       data,
     );
-  },
+  }
 
-  async setMembershipRole(ctx: IContext, userId: string, communityId: string, role: Role) {
+  static async setMembershipRole(ctx: IContext, userId: string, communityId: string, role: Role) {
     const membership = await MembershipRepository.find(ctx, {
       userId_communityId: { userId, communityId },
     });
@@ -71,9 +108,9 @@ export const MembershipUtils = {
 
     const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipInputFormat.setRole(role);
     return MembershipRepository.setRole(ctx, { userId_communityId: { userId, communityId } }, data);
-  },
+  }
 
-  async deleteMembership(ctx: IContext, userId: string, communityId: string) {
+  static async deleteMembership(ctx: IContext, userId: string, communityId: string) {
     const membership = await MembershipRepository.find(ctx, {
       userId_communityId: { userId, communityId },
     });
@@ -82,5 +119,5 @@ export const MembershipUtils = {
     }
 
     return MembershipRepository.delete(ctx, { userId_communityId: { userId, communityId } });
-  },
-};
+  }
+}
