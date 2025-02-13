@@ -37,35 +37,31 @@ export default class TransactionRepository {
 
   static async refreshStat(ctx: IContext, tx?: Prisma.TransactionClient) {
     if (tx) {
-      return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
-        return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
-      });
+      return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
     } else {
-      return this.issuer.public(ctx, (transactionTx) => {
-        return transactionTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
       });
     }
   }
 
-  static async create(ctx: IContext, data: Prisma.TransactionCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
+  static async create(
+    ctx: IContext,
+    data: Prisma.TransactionCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.transaction.create({
         data,
         include: transactionInclude,
       });
-    });
-  }
-
-  static async createWithTransaction(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    data: Prisma.TransactionCreateInput,
-  ) {
-    return this.issuer.publicWithTransaction(ctx, tx, (transactionTx) => {
-      return transactionTx.transaction.create({
-        data,
-        include: transactionInclude,
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.transaction.create({
+          data,
+          include: transactionInclude,
+        });
       });
-    });
+    }
   }
 }
