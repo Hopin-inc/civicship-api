@@ -32,12 +32,9 @@ export default class TransactionService {
     tx: Prisma.TransactionClient,
     input: GqlTransactionGiveRewardPointInput,
   ) {
-    const data: Prisma.TransactionCreateInput = {
-      ...input,
-      reason: TransactionReason.PARTICIPATION_APPROVED,
-    };
+    const data: Prisma.TransactionCreateInput = TransactionInputFormat.giveRewardPoint(input);
 
-    const res = await TransactionRepository.createWithTransaction(ctx, tx, data);
+    const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshStat(ctx, tx);
     return res;
   }
