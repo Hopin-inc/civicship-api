@@ -5,8 +5,14 @@ input ParticipationApplyInput {
 }
 
 input ParticipationInviteInput{
+    communityId: String!
+    
     opportunityId: String!
     invitedUserId: String!
+}
+
+input ParticipationSetStatusInput{
+    communityId: String!
 }
 
 ## Type definitions

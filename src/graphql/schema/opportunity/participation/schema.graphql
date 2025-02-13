@@ -13,19 +13,19 @@ extend type Query {
 extend type Mutation {
     # invite
     participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
-    participationCancelInvitation(id: ID!): ParticipationSetStatusPayload
+    participationCancelInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
     participationAcceptMyInvitation(id: ID!): ParticipationSetStatusPayload
     participationDenyMyInvitation(id: ID!): ParticipationSetStatusPayload
 
     # apply
     participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
     participationCancelMyApplication(id: ID!): ParticipationSetStatusPayload
-    participationAcceptApplication(id: ID!): ParticipationSetStatusPayload
-    participationDenyApplication(id: ID!): ParticipationSetStatusPayload
+    participationAcceptApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
 
     # performance
-    participationApprovePerformance(id: ID!): ParticipationSetStatusPayload
-    participationDenyPerformance(id: ID!): ParticipationSetStatusPayload
+    participationApprovePerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyPerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
 }
 
 # Type definitions
