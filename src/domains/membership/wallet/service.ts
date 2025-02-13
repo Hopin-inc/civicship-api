@@ -3,6 +3,7 @@ import WalletInputFormat from "@/domains/membership/wallet/presenter/input";
 import WalletRepository from "@/domains/membership/wallet/repository";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
+import WalletUtils from "@/domains/membership/wallet/utils";
 
 export default class WalletService {
   static async fetchWallets(
@@ -20,11 +21,42 @@ export default class WalletService {
     return WalletRepository.find(ctx, id);
   }
 
-  static async createCommunityWallet(ctx: IContext, communityId: string) {
+  static async findWalletsForGiveReward(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    communityId: string,
+    participationId: string,
+    fromPointChange: number,
+  ) {
+    const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId, tx);
+    if (!communityWallet) {
+      throw new Error(`No community wallet found for communityId: ${communityId}`);
+    }
+
+    const participantWallet = await WalletRepository.checkIfExistingMemberWallet(
+      ctx,
+      communityId,
+      participationId,
+      tx,
+    );
+    if (!participantWallet) {
+      throw new Error(`No participant wallet found for participationId: ${participationId}`);
+    }
+
+    await WalletUtils.validateTransfer(fromPointChange, communityWallet, participantWallet);
+
+    return { from: communityWallet.id, to: participantWallet.id };
+  }
+
+  static async createCommunityWallet(
+    ctx: IContext,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ) {
     const data: Prisma.WalletCreateInput = WalletInputFormat.createToCommunity({
       communityId,
     });
-    return WalletRepository.create(ctx, data);
+    return WalletRepository.create(ctx, data, tx);
   }
 
   static async createMemberWallet(
@@ -33,7 +65,7 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const existingWallet = await WalletRepository.checkIfExitMemberWallet(
+    const existingWallet = await WalletRepository.checkIfExistingMemberWallet(
       ctx,
       communityId,
       userId,
