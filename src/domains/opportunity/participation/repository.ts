@@ -34,31 +34,27 @@ export default class ParticipationRepository {
     });
   }
 
-  static async createWithTransaction(
+  static async create(
     ctx: IContext,
-    tx: Prisma.TransactionClient,
     data: Prisma.ParticipationCreateInput,
+    tx: Prisma.TransactionClient,
   ) {
-    return this.issuer.publicWithTransaction(ctx, tx, (transaction) => {
-      return transaction.participation.create({
-        data,
-        include: participationInclude,
-      });
+    return tx.participation.create({
+      data,
+      include: participationInclude,
     });
   }
 
-  static async setStatusWithTransaction(
+  static async setStatus(
     ctx: IContext,
-    tx: Prisma.TransactionClient,
     id: string,
     status: ParticipationStatus,
+    tx: Prisma.TransactionClient,
   ) {
-    return this.issuer.publicWithTransaction(ctx, tx, (transaction) => {
-      return transaction.participation.update({
-        where: { id },
-        data: { status },
-        include: participationInclude,
-      });
+    return tx.participation.update({
+      where: { id },
+      data: { status },
+      include: participationInclude,
     });
   }
 }
