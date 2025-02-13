@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, SysRole } from "@prisma/client";
+import { PrismaClient, SysRole } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
 
@@ -50,18 +50,6 @@ export class PrismaClientIssuer {
     } else {
       throw new Error("No organization available!");
     }
-  }
-
-  public async publicWithTransaction(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    operation: (tx: Prisma.TransactionClient) => Promise<any>,
-  ) {
-    if (!ctx.currentUser?.id) {
-      throw new Error("Unauthorized: User must be logged in");
-    }
-
-    return await operation(tx);
   }
 
   public admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
