@@ -1,12 +1,17 @@
 import { IContext } from "@/types/server";
-import { GqlWalletsConnection, GqlWalletFilterInput, GqlWalletSortInput } from "@/types/graphql";
+import {
+  GqlWalletsConnection,
+  GqlWalletFilterInput,
+  GqlWalletSortInput,
+  GqlWallet,
+} from "@/types/graphql";
 
 import { clampFirst } from "@/graphql/pagination";
 import WalletService from "@/domains/membership/wallet/service";
 import WalletOutputFormat from "@/domains/membership/wallet/presenter/output";
 
-export const WalletUtils = {
-  async fetchWalletsCommon(
+export default class WalletUtils {
+  static async fetchWalletsCommon(
     ctx: IContext,
     {
       cursor,
@@ -30,5 +35,22 @@ export const WalletUtils = {
     });
 
     return WalletOutputFormat.query(data, hasNextPage);
-  },
-};
+  }
+
+  static async validateTransfer(
+    requiredPoints: number,
+    fromWallet: GqlWallet | null,
+    toWallet: GqlWallet | null,
+  ) {
+    if (!fromWallet || !toWallet) {
+      throw new Error("Wallet information is missing for points transfer");
+    }
+    const { currentPoint } = fromWallet.currentPointView || {};
+
+    if (!currentPoint || currentPoint < requiredPoints) {
+      throw new Error(
+        `Insufficient points in community wallet. Required: ${requiredPoints}, Available: ${currentPoint || 0}`,
+      );
+    }
+  }
+}
