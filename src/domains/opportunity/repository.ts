@@ -25,13 +25,20 @@ export default class OpportunityRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+  static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    if (tx) {
       return tx.opportunity.findUnique({
         where: { id },
         include: opportunityInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.opportunity.findUnique({
+          where: { id },
+          include: opportunityInclude,
+        });
+      });
+    }
   }
 
   static async create(ctx: IContext, data: Prisma.OpportunityCreateInput) {
@@ -67,15 +74,6 @@ export default class OpportunityRepository {
       return tx.opportunity.update({
         where: { id },
         data: { publishStatus },
-        include: opportunityInclude,
-      });
-    });
-  }
-
-  static async findWithTransaction(ctx: IContext, tx: Prisma.TransactionClient, id: string) {
-    return this.issuer.publicWithTransaction(ctx, tx, (transaction) => {
-      return transaction.opportunity.findUnique({
-        where: { id },
         include: opportunityInclude,
       });
     });
