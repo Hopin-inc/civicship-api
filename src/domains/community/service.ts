@@ -8,8 +8,13 @@ import CommunityRepository from "@/domains/community/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import WalletService from "@/domains/membership/wallet/service";
+import { getCurrentUserId } from "@/utils";
+import MembershipUtils from "@/domains/membership/utils";
+import { PrismaClientIssuer } from "@/prisma/client";
 
 export default class CommunityService {
+  private static issuer = new PrismaClientIssuer();
+
   static async fetchCommunities(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryCommunitiesArgs,
@@ -26,17 +31,17 @@ export default class CommunityService {
   }
 
   static async createCommunity(ctx: IContext, input: GqlCommunityCreateInput) {
-    const currentUserId = ctx.currentUser?.id;
-    if (!currentUserId) {
-      throw new Error("Unauthorized: User must be logged in");
-    }
+    return this.issuer.public(ctx, async (tx) => {
+      const userId = getCurrentUserId(ctx);
 
-    const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, currentUserId);
-    const community = await CommunityRepository.create(ctx, data);
+      const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, userId);
+      const community = await CommunityRepository.create(ctx, data, tx);
 
-    await WalletService.createCommunityWallet(ctx, community.id);
+      await WalletService.createCommunityWallet(ctx, community.id, tx);
+      await MembershipUtils.joinCommunityAndCreateMemberWallet(ctx, tx, userId, community.id);
 
-    return community;
+      return community;
+    });
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {
