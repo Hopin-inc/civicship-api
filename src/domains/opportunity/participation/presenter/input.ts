@@ -25,14 +25,12 @@ export default class ParticipationInputFormat {
     ];
   }
 
-  static invite(
-    input: GqlParticipationInviteInput,
-    communityId: string,
-  ): Prisma.ParticipationCreateInput {
-    const { opportunityId, invitedUserId, ...properties } = input;
-
+  static invite({
+    opportunityId,
+    invitedUserId,
+    communityId,
+  }: GqlParticipationInviteInput): Prisma.ParticipationCreateInput {
     return {
-      ...properties,
       status: ParticipationStatus.APPLIED,
       community: { connect: { id: communityId } },
       user: { connect: { id: invitedUserId } },
@@ -41,14 +39,11 @@ export default class ParticipationInputFormat {
   }
 
   static apply(
-    input: GqlParticipationApplyInput,
+    { opportunityId }: GqlParticipationApplyInput,
     currentUserId: string,
     communityId: string,
   ): Prisma.ParticipationCreateInput {
-    const { opportunityId, ...properties } = input;
-
     return {
-      ...properties,
       status: ParticipationStatus.APPLIED,
       community: { connect: { id: communityId } },
       user: { connect: { id: currentUserId } },
