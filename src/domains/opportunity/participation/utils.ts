@@ -1,25 +1,30 @@
-import ParticipationStatusHistoryRepository from "@/domains/opportunity/participationStatusHistory/repository";
 import { IContext } from "@/types/server";
-import { ParticipationStatus, Prisma, WalletType } from "@prisma/client";
+import { OpportunityCategory, ParticipationStatus, Prisma } from "@prisma/client";
 import { ParticipationPayloadWithArgs } from "@/domains/opportunity/participation/type";
-import OpportunityRepository from "@/domains/opportunity/repository";
-import TransactionService from "@/domains/transaction/service";
-import ParticipationStatusHistoryInputFormat from "@/domains/opportunity/participationStatusHistory/presenter/input";
+
 import {
   GqlParticipation,
   GqlParticipationFilterInput,
   GqlParticipationsConnection,
   GqlParticipationSortInput,
-  GqlWallet,
+  GqlTransactionGiveRewardPointInput,
 } from "@/types/graphql";
-import { prismaClient } from "@/prisma/client";
+import { PrismaClientIssuer } from "@/prisma/client";
 import ParticipationRepository from "@/domains/opportunity/participation/repository";
 import { clampFirst } from "@/graphql/pagination";
 import ParticipationService from "@/domains/opportunity/participation/service";
 import ParticipationOutputFormat from "@/domains/opportunity/participation/presenter/output";
+import { getCurrentUserId } from "@/utils";
+import MembershipUtils from "@/domains/membership/utils";
+import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
+import OpportunityRepository from "@/domains/opportunity/repository";
+import TransactionService from "@/domains/transaction/service";
+import WalletService from "@/domains/membership/wallet/service";
 
-export const ParticipationUtils = {
-  async fetchParticipationsCommon(
+export default class ParticipationUtils {
+  private static issuer = new PrismaClientIssuer();
+
+  static async fetchParticipationsCommon(
     ctx: IContext,
     {
       cursor,
@@ -43,105 +48,82 @@ export const ParticipationUtils = {
     });
 
     return ParticipationOutputFormat.query(data, hasNextPage);
-  },
+  }
 
-  async setParticipationStatus(
+  static async setParticipationStatus(
     ctx: IContext,
     id: string,
     status: ParticipationStatus,
-    withPointsTransfer = false,
+    communityId?: string,
   ) {
-    const currentUserId = ctx.currentUser?.id;
-    if (!currentUserId) {
-      throw new Error("Unauthorized: User must be logged in");
-    }
+    const userId = getCurrentUserId(ctx);
 
-    return prismaClient.$transaction(async (tx) => {
-      const participation: ParticipationPayloadWithArgs =
-        await ParticipationRepository.setStatusWithTransaction(ctx, tx, id, status);
+    return this.issuer.public(ctx, async (tx) => {
+      const res = await ParticipationRepository.setStatus(ctx, id, status, tx);
 
-      if (withPointsTransfer && status === ParticipationStatus.APPROVED) {
-        await this.handlePointsTransfer(ctx, tx, participation);
+      if (communityId && status === ParticipationStatus.PARTICIPATING) {
+        await MembershipUtils.joinCommunityAndCreateMemberWallet(ctx, tx, userId, communityId);
       }
 
-      await this.recordParticipationHistory(ctx, tx, id, status, currentUserId);
+      if (communityId && status === ParticipationStatus.APPROVED) {
+        const { opportunity, participation } = await validateParticipation(ctx, tx, res);
 
-      return participation;
-    });
-  },
+        if (opportunity.category === OpportunityCategory.TASK) {
+          const fromPointChange = -opportunity.pointsPerParticipation;
+          const toPointChange = opportunity.pointsPerParticipation;
 
-  async handlePointsTransfer(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    participation: ParticipationPayloadWithArgs,
-  ) {
-    if (!participation.opportunityId) {
-      throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
-    }
+          const { from, to } = await WalletService.findWalletsForGiveReward(
+            ctx,
+            tx,
+            communityId,
+            participation.id,
+            fromPointChange,
+          );
 
-    const opportunity = await OpportunityRepository.findWithTransaction(
-      ctx,
-      tx,
-      participation.opportunityId,
-    );
+          const input: GqlTransactionGiveRewardPointInput = {
+            from,
+            fromPointChange,
+            to,
+            toPointChange,
+            participationId: participation.id,
+          };
 
-    if (!opportunity) {
-      throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
-    }
-
-    if (!participation.userId) {
-      throw new Error(`Participation with ID ${participation.userId} not found`);
-    }
-
-    const { communityWallet, userWallet } = this.validateTransfer(
-      opportunity.community.wallets,
-      participation.userId,
-      opportunity.pointsPerParticipation,
-    );
-
-    await TransactionService.giveRewardPoint(ctx, tx, {
-      from: communityWallet.id,
-      fromPointChange: -opportunity.pointsPerParticipation,
-      to: userWallet.id,
-      toPointChange: opportunity.pointsPerParticipation,
-      participationId: participation.id,
-    });
-  },
-
-  async recordParticipationHistory(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    participationId: string,
-    status: ParticipationStatus,
-    createdById: string,
-  ) {
-    const historyData = ParticipationStatusHistoryInputFormat.create({
-      participationId,
-      status,
-      createdById,
-    });
-
-    await ParticipationStatusHistoryRepository.createWithTransaction(ctx, tx, historyData);
-  },
-
-  validateTransfer(
-    wallets: GqlWallet[],
-    currentUserId: string,
-    requiredPoints: number,
-  ): { communityWallet: GqlWallet; userWallet: GqlWallet } {
-    const communityWallet = wallets.find((w) => w.type === WalletType.COMMUNITY);
-    const userWallet = wallets.find((w) => w.user?.id === currentUserId);
-    if (!communityWallet?.id || !userWallet?.id) {
-      throw new Error("Wallet information is missing for points transfer");
-    }
-    const { currentPoint } = communityWallet.currentPointView || {};
-
-    if (!currentPoint || currentPoint < requiredPoints) {
-      throw new Error(
-        `Insufficient points in community wallet. Required: ${requiredPoints}, Available: ${currentPoint || 0}`,
+          await TransactionService.giveRewardPoint(ctx, tx, input);
+        }
+      }
+      await ParticipationStatusHistoryService.recordParticipationHistory(
+        ctx,
+        tx,
+        id,
+        status,
+        userId,
       );
-    }
 
-    return { communityWallet, userWallet };
-  },
-};
+      return res;
+    });
+  }
+}
+
+async function validateParticipation(
+  ctx: IContext,
+  tx: Prisma.TransactionClient,
+  participation: ParticipationPayloadWithArgs,
+): Promise<{
+  opportunity: NonNullable<Awaited<ReturnType<typeof OpportunityRepository.find>>>;
+  participation: ParticipationPayloadWithArgs;
+}> {
+  if (!participation.opportunityId) {
+    throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
+  }
+
+  const opportunity = await OpportunityRepository.find(ctx, participation.opportunityId, tx);
+  if (!opportunity) {
+    throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
+  }
+
+  if (!participation.userId) {
+    throw new Error(`Participation with ID ${participation.userId} not found`);
+  }
+
+  return { opportunity, participation };
+}
