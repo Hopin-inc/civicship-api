@@ -31,22 +31,44 @@ export default class MembershipRepository {
     });
   }
 
-  static async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
-    return this.issuer.public(ctx, (tx) => {
+  static async find(
+    ctx: IContext,
+    where: Prisma.MembershipWhereUniqueInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.membership.findUnique({
         where,
         include: membershipInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.membership.findUnique({
+          where,
+          include: membershipInclude,
+        });
+      });
+    }
   }
 
-  static async create(ctx: IContext, data: Prisma.MembershipCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
+  static async create(
+    ctx: IContext,
+    data: Prisma.MembershipCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.membership.create({
         data,
         include: membershipInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.membership.create({
+          data,
+          include: membershipInclude,
+        });
+      });
+    }
   }
 
   static async setStatus(
@@ -56,16 +78,14 @@ export default class MembershipRepository {
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
-      return this.issuer.publicWithTransaction(ctx, tx, (repoTx) => {
-        return repoTx.membership.update({
-          where,
-          data: { status },
-          include: membershipInclude,
-        });
+      return tx.membership.update({
+        where,
+        data: { status },
+        include: membershipInclude,
       });
     } else {
-      return this.issuer.public(ctx, (repoTx) => {
-        return repoTx.membership.update({
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.membership.update({
           where,
           data: { status },
           include: membershipInclude,
