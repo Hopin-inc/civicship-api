@@ -18,7 +18,7 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0(winston@3.17.0)
       '@graphql-tools/graphql-file-loader':
-        specifier: ^8.0.1
+        specifier: ^8.0.12
         version: 8.0.12(graphql@16.10.0)
       '@graphql-tools/load':
         specifier: ^8.0.2

@@ -75,7 +75,7 @@
     "@apollo/server": "^4.11.0",
     "@dotenvx/dotenvx": "^1.14.0",
     "@google-cloud/logging-winston": "^6.0.0",
-    "@graphql-tools/graphql-file-loader": "^8.0.1",
+    "@graphql-tools/graphql-file-loader": "^8.0.12",
     "@graphql-tools/load": "^8.0.2",
     "@graphql-tools/load-files": "^7.0.0",
     "@graphql-tools/merge": "^9.0.7",
