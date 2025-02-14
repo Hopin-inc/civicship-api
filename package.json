@@ -20,7 +20,7 @@
     "db:mark-rolled-back": "prisma migrate resolve --schema src/prisma/schema.prisma --rolled-back",
     "db:studio": "prisma studio --schema src/prisma/schema.prisma",
     "gql:generate": "graphql-codegen --config codegen.yaml",
-    "docs": "typedoc",
+    "doc": "typedoc",
     "container:up": "ls src/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
     "container:down": "docker-compose down --rmi all --volumes --remove-orphans"
   },
@@ -80,6 +80,7 @@
     "@graphql-tools/load-files": "^7.0.0",
     "@graphql-tools/merge": "^9.0.7",
     "@graphql-tools/schema": "^10.0.6",
+    "@youlin/typedoc-theme-hierarchy": "^1.0.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.13",
