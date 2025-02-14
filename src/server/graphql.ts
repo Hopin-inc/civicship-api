@@ -12,6 +12,8 @@ import http from "http";
 import app from "@/server/app";
 import rateLimitPlugin from "@/graphql/plugin/rate-limit";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 // Express アプリから HTTP サーバーを生成
 const httpServer = http.createServer(app);
 
@@ -28,6 +30,7 @@ export const graphqlServer = new ApolloServer({
     logger.error("GraphQL Error:", err);
     return err;
   },
+  introspection: !isProduction,
 });
 
 // Apollo Server の起動処理（非同期）

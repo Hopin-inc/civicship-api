@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -28,13 +28,25 @@ const modelFieldDefinitions = [{
                 type: "Opportunity",
                 relationName: "OpportunityToUser"
             }, {
-                name: "wallets",
-                type: "Wallet",
-                relationName: "UserToWallet"
+                name: "opportunityInvitations",
+                type: "OpportunityInvitation",
+                relationName: "OpportunityInvitationToUser"
+            }, {
+                name: "opportunityInvitationHistories",
+                type: "OpportunityInvitationHistory",
+                relationName: "OpportunityInvitationHistoryToUser"
             }, {
                 name: "participationStatusChangedByMe",
                 type: "ParticipationStatusHistory",
                 relationName: "ParticipationStatusHistoryToUser"
+            }, {
+                name: "articles",
+                type: "Article",
+                relationName: "ArticleToUser"
+            }, {
+                name: "wallets",
+                type: "Wallet",
+                relationName: "UserToWallet"
             }]
     }, {
         name: "Identity",
@@ -46,10 +58,6 @@ const modelFieldDefinitions = [{
     }, {
         name: "Community",
         fields: [{
-                name: "city",
-                type: "City",
-                relationName: "CityToCommunity"
-            }, {
                 name: "memberships",
                 type: "Membership",
                 relationName: "CommunityToMembership"
@@ -70,9 +78,9 @@ const modelFieldDefinitions = [{
                 type: "Utility",
                 relationName: "CommunityToUtility"
             }, {
-                name: "state",
-                type: "State",
-                relationName: "CommunityToState"
+                name: "article",
+                type: "Article",
+                relationName: "ArticleToCommunity"
             }]
     }, {
         name: "Membership",
@@ -100,6 +108,10 @@ const modelFieldDefinitions = [{
                 type: "CurrentPointView",
                 relationName: "CurrentPointViewToWallet"
             }, {
+                name: "accumulatedPointView",
+                type: "AccumulatedPointView",
+                relationName: "AccumulatedPointViewToWallet"
+            }, {
                 name: "fromTransactions",
                 type: "Transaction",
                 relationName: "from_wallet"
@@ -111,6 +123,10 @@ const modelFieldDefinitions = [{
     }, {
         name: "Opportunity",
         fields: [{
+                name: "place",
+                type: "Place",
+                relationName: "OpportunityToPlace"
+            }, {
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToOpportunity"
@@ -119,17 +135,69 @@ const modelFieldDefinitions = [{
                 type: "User",
                 relationName: "OpportunityToUser"
             }, {
-                name: "city",
-                type: "City",
-                relationName: "CityToOpportunity"
+                name: "articles",
+                type: "Article",
+                relationName: "t_opportunities_on_articles"
             }, {
                 name: "participations",
                 type: "Participation",
                 relationName: "OpportunityToParticipation"
             }, {
-                name: "state",
-                type: "State",
-                relationName: "OpportunityToState"
+                name: "slots",
+                type: "OpportunitySlot",
+                relationName: "OpportunityToOpportunitySlot"
+            }, {
+                name: "invitations",
+                type: "OpportunityInvitation",
+                relationName: "OpportunityToOpportunityInvitation"
+            }]
+    }, {
+        name: "OpportunitySlot",
+        fields: [{
+                name: "opportunity",
+                type: "Opportunity",
+                relationName: "OpportunityToOpportunitySlot"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "OpportunitySlotToParticipation"
+            }]
+    }, {
+        name: "OpportunityInvitation",
+        fields: [{
+                name: "opportunity",
+                type: "Opportunity",
+                relationName: "OpportunityToOpportunityInvitation"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "OpportunityInvitationToUser"
+            }, {
+                name: "histories",
+                type: "OpportunityInvitationHistory",
+                relationName: "OpportunityInvitationToOpportunityInvitationHistory"
+            }]
+    }, {
+        name: "OpportunityInvitationHistory",
+        fields: [{
+                name: "invitation",
+                type: "OpportunityInvitation",
+                relationName: "OpportunityInvitationToOpportunityInvitationHistory"
+            }, {
+                name: "inivitedUser",
+                type: "User",
+                relationName: "OpportunityInvitationHistoryToUser"
+            }]
+    }, {
+        name: "Place",
+        fields: [{
+                name: "city",
+                type: "City",
+                relationName: "CityToPlace"
+            }, {
+                name: "opportunities",
+                type: "Opportunity",
+                relationName: "OpportunityToPlace"
             }]
     }, {
         name: "Participation",
@@ -145,6 +213,10 @@ const modelFieldDefinitions = [{
                 name: "opportunity",
                 type: "Opportunity",
                 relationName: "OpportunityToParticipation"
+            }, {
+                name: "opportunitySlot",
+                type: "OpportunitySlot",
+                relationName: "OpportunitySlotToParticipation"
             }, {
                 name: "statusHistories",
                 type: "ParticipationStatusHistory",
@@ -164,6 +236,21 @@ const modelFieldDefinitions = [{
                 name: "createdByUser",
                 type: "User",
                 relationName: "ParticipationStatusHistoryToUser"
+            }]
+    }, {
+        name: "Article",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "ArticleToCommunity"
+            }, {
+                name: "writtenByUser",
+                type: "User",
+                relationName: "ArticleToUser"
+            }, {
+                name: "opportunities",
+                type: "Opportunity",
+                relationName: "t_opportunities_on_articles"
             }]
     }, {
         name: "Utility",
@@ -202,13 +289,9 @@ const modelFieldDefinitions = [{
                 type: "State",
                 relationName: "CityToState"
             }, {
-                name: "communities",
-                type: "Community",
-                relationName: "CityToCommunity"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "CityToOpportunity"
+                name: "places",
+                type: "Place",
+                relationName: "CityToPlace"
             }]
     }, {
         name: "State",
@@ -216,14 +299,6 @@ const modelFieldDefinitions = [{
                 name: "cities",
                 type: "City",
                 relationName: "CityToState"
-            }, {
-                name: "communities",
-                type: "Community",
-                relationName: "CommunityToState"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "OpportunityToState"
             }]
     }, {
         name: "CurrentPointView",
@@ -231,6 +306,13 @@ const modelFieldDefinitions = [{
                 name: "wallet",
                 type: "Wallet",
                 relationName: "CurrentPointViewToWallet"
+            }]
+    }, {
+        name: "AccumulatedPointView",
+        fields: [{
+                name: "wallet",
+                type: "Wallet",
+                relationName: "AccumulatedPointViewToWallet"
             }]
     }];
 function autoGenerateUserScalarsOrEnums({ seq }) {
@@ -414,12 +496,6 @@ exports.defineIdentityFactory = ((options) => {
     return defineIdentityFactoryInternal(options, {});
 });
 exports.defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
-function isCommunitycityFactory(x) {
-    return x?._factoryFor === "City";
-}
-function isCommunitystateFactory(x) {
-    return x?._factoryFor === "State";
-}
 function autoGenerateCommunityScalarsOrEnums({ seq }) {
     return {
         name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Community", fieldName: "name", isId: false, isUnique: false, seq }),
@@ -446,7 +522,7 @@ function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAf
         const build = async (inputData = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateCommunityScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -458,14 +534,7 @@ function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAf
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                city: isCommunitycityFactory(defaultData.city) ? {
-                    create: await defaultData.city.build()
-                } : defaultData.city,
-                state: isCommunitystateFactory(defaultData.state) ? {
-                    create: await defaultData.state.build()
-                } : defaultData.state
-            };
+            const defaultAssociations = {};
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
@@ -511,9 +580,9 @@ function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAf
  * @returns factory {@link CommunityFactoryInterface}
  */
 exports.defineCommunityFactory = ((options) => {
-    return defineCommunityFactoryInternal(options, {});
+    return defineCommunityFactoryInternal(options ?? {}, {});
 });
-exports.defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options, defaultTransientFieldValues);
+exports.defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
 function isMembershipuserFactory(x) {
     return x?._factoryFor === "User";
 }
@@ -623,6 +692,9 @@ function isWalletuserFactory(x) {
 function isWalletcurrentPointViewFactory(x) {
     return x?._factoryFor === "CurrentPointView";
 }
+function isWalletaccumulatedPointViewFactory(x) {
+    return x?._factoryFor === "AccumulatedPointView";
+}
 function autoGenerateWalletScalarsOrEnums({ seq }) {
     return {};
 }
@@ -667,7 +739,10 @@ function defineWalletFactoryInternal({ defaultData: defaultDataResolver, onAfter
                 } : defaultData.user,
                 currentPointView: isWalletcurrentPointViewFactory(defaultData.currentPointView) ? {
                     create: await defaultData.currentPointView.build()
-                } : defaultData.currentPointView
+                } : defaultData.currentPointView,
+                accumulatedPointView: isWalletaccumulatedPointViewFactory(defaultData.accumulatedPointView) ? {
+                    create: await defaultData.accumulatedPointView.build()
+                } : defaultData.accumulatedPointView
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -717,23 +792,20 @@ exports.defineWalletFactory = ((options) => {
     return defineWalletFactoryInternal(options, {});
 });
 exports.defineWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineWalletFactoryInternal(options, defaultTransientFieldValues);
+function isOpportunityplaceFactory(x) {
+    return x?._factoryFor === "Place";
+}
 function isOpportunitycommunityFactory(x) {
     return x?._factoryFor === "Community";
 }
 function isOpportunitycreatedByUserFactory(x) {
     return x?._factoryFor === "User";
 }
-function isOpportunitycityFactory(x) {
-    return x?._factoryFor === "City";
-}
-function isOpportunitystateFactory(x) {
-    return x?._factoryFor === "State";
-}
 function autoGenerateOpportunityScalarsOrEnums({ seq }) {
     return {
         title: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "title", isId: false, isUnique: false, seq }),
-        category: "EVENT",
-        pointsPerParticipation: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Opportunity", fieldName: "pointsPerParticipation", isId: false, isUnique: false, seq })
+        description: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "description", isId: false, isUnique: false, seq }),
+        category: "QUEST"
     };
 }
 function defineOpportunityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -769,18 +841,15 @@ function defineOpportunityFactoryInternal({ defaultData: defaultDataResolver, on
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                place: isOpportunityplaceFactory(defaultData.place) ? {
+                    create: await defaultData.place.build()
+                } : defaultData.place,
                 community: isOpportunitycommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
                 } : defaultData.community,
                 createdByUser: isOpportunitycreatedByUserFactory(defaultData.createdByUser) ? {
                     create: await defaultData.createdByUser.build()
-                } : defaultData.createdByUser,
-                city: isOpportunitycityFactory(defaultData.city) ? {
-                    create: await defaultData.city.build()
-                } : defaultData.city,
-                state: isOpportunitystateFactory(defaultData.state) ? {
-                    create: await defaultData.state.build()
-                } : defaultData.state
+                } : defaultData.createdByUser
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -830,6 +899,393 @@ exports.defineOpportunityFactory = ((options) => {
     return defineOpportunityFactoryInternal(options, {});
 });
 exports.defineOpportunityFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityFactoryInternal(options, defaultTransientFieldValues);
+function isOpportunitySlotopportunityFactory(x) {
+    return x?._factoryFor === "Opportunity";
+}
+function autoGenerateOpportunitySlotScalarsOrEnums({ seq }) {
+    return {
+        startsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "OpportunitySlot", fieldName: "startsAt", isId: false, isUnique: false, seq }),
+        endsAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "OpportunitySlot", fieldName: "endsAt", isId: false, isUnique: false, seq })
+    };
+}
+function defineOpportunitySlotFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("OpportunitySlot", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateOpportunitySlotScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                opportunity: isOpportunitySlotopportunityFactory(defaultData.opportunity) ? {
+                    create: await defaultData.opportunity.build()
+                } : defaultData.opportunity
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().opportunitySlot.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "OpportunitySlot",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link OpportunitySlot} model.
+ *
+ * @param options
+ * @returns factory {@link OpportunitySlotFactoryInterface}
+ */
+exports.defineOpportunitySlotFactory = ((options) => {
+    return defineOpportunitySlotFactoryInternal(options ?? {}, {});
+});
+exports.defineOpportunitySlotFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunitySlotFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isOpportunityInvitationopportunityFactory(x) {
+    return x?._factoryFor === "Opportunity";
+}
+function isOpportunityInvitationcreatedByUserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateOpportunityInvitationScalarsOrEnums({ seq }) {
+    return {
+        code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "OpportunityInvitation", fieldName: "code", isId: false, isUnique: false, seq })
+    };
+}
+function defineOpportunityInvitationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("OpportunityInvitation", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateOpportunityInvitationScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                opportunity: isOpportunityInvitationopportunityFactory(defaultData.opportunity) ? {
+                    create: await defaultData.opportunity.build()
+                } : defaultData.opportunity,
+                createdByUser: isOpportunityInvitationcreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().opportunityInvitation.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "OpportunityInvitation",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link OpportunityInvitation} model.
+ *
+ * @param options
+ * @returns factory {@link OpportunityInvitationFactoryInterface}
+ */
+exports.defineOpportunityInvitationFactory = ((options) => {
+    return defineOpportunityInvitationFactoryInternal(options, {});
+});
+exports.defineOpportunityInvitationFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityInvitationFactoryInternal(options, defaultTransientFieldValues);
+function isOpportunityInvitationHistoryinvitationFactory(x) {
+    return x?._factoryFor === "OpportunityInvitation";
+}
+function isOpportunityInvitationHistoryinivitedUserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateOpportunityInvitationHistoryScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineOpportunityInvitationHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("OpportunityInvitationHistory", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateOpportunityInvitationHistoryScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                invitation: isOpportunityInvitationHistoryinvitationFactory(defaultData.invitation) ? {
+                    create: await defaultData.invitation.build()
+                } : defaultData.invitation,
+                inivitedUser: isOpportunityInvitationHistoryinivitedUserFactory(defaultData.inivitedUser) ? {
+                    create: await defaultData.inivitedUser.build()
+                } : defaultData.inivitedUser
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().opportunityInvitationHistory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "OpportunityInvitationHistory",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link OpportunityInvitationHistory} model.
+ *
+ * @param options
+ * @returns factory {@link OpportunityInvitationHistoryFactoryInterface}
+ */
+exports.defineOpportunityInvitationHistoryFactory = ((options) => {
+    return defineOpportunityInvitationHistoryFactoryInternal(options, {});
+});
+exports.defineOpportunityInvitationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityInvitationHistoryFactoryInternal(options, defaultTransientFieldValues);
+function isPlacecityFactory(x) {
+    return x?._factoryFor === "City";
+}
+function autoGeneratePlaceScalarsOrEnums({ seq }) {
+    return {
+        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Place", fieldName: "name", isId: false, isUnique: false, seq }),
+        address: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Place", fieldName: "address", isId: false, isUnique: false, seq }),
+        latitude: (0, internal_1.getScalarFieldValueGenerator)().Decimal({ modelName: "Place", fieldName: "latitude", isId: false, isUnique: false, seq }),
+        longitude: (0, internal_1.getScalarFieldValueGenerator)().Decimal({ modelName: "Place", fieldName: "longitude", isId: false, isUnique: false, seq }),
+        isManual: (0, internal_1.getScalarFieldValueGenerator)().Boolean({ modelName: "Place", fieldName: "isManual", isId: false, isUnique: false, seq })
+    };
+}
+function definePlaceFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Place", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGeneratePlaceScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                city: isPlacecityFactory(defaultData.city) ? {
+                    create: await defaultData.city.build()
+                } : defaultData.city
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().place.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Place",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Place} model.
+ *
+ * @param options
+ * @returns factory {@link PlaceFactoryInterface}
+ */
+exports.definePlaceFactory = ((options) => {
+    return definePlaceFactoryInternal(options, {});
+});
+exports.definePlaceFactory.withTransientFields = defaultTransientFieldValues => options => definePlaceFactoryInternal(options, defaultTransientFieldValues);
 function isParticipationuserFactory(x) {
     return x?._factoryFor === "User";
 }
@@ -838,6 +1294,9 @@ function isParticipationcommunityFactory(x) {
 }
 function isParticipationopportunityFactory(x) {
     return x?._factoryFor === "Opportunity";
+}
+function isParticipationopportunitySlotFactory(x) {
+    return x?._factoryFor === "OpportunitySlot";
 }
 function autoGenerateParticipationScalarsOrEnums({ seq }) {
     return {
@@ -885,7 +1344,10 @@ function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, 
                 } : defaultData.community,
                 opportunity: isParticipationopportunityFactory(defaultData.opportunity) ? {
                     create: await defaultData.opportunity.build()
-                } : defaultData.opportunity
+                } : defaultData.opportunity,
+                opportunitySlot: isParticipationopportunitySlotFactory(defaultData.opportunitySlot) ? {
+                    create: await defaultData.opportunitySlot.build()
+                } : defaultData.opportunitySlot
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1034,6 +1496,109 @@ exports.defineParticipationStatusHistoryFactory = ((options) => {
     return defineParticipationStatusHistoryFactoryInternal(options, {});
 });
 exports.defineParticipationStatusHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineParticipationStatusHistoryFactoryInternal(options, defaultTransientFieldValues);
+function isArticlecommunityFactory(x) {
+    return x?._factoryFor === "Community";
+}
+function isArticlewrittenByUserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateArticleScalarsOrEnums({ seq }) {
+    return {
+        title: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Article", fieldName: "title", isId: false, isUnique: false, seq }),
+        introduction: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Article", fieldName: "introduction", isId: false, isUnique: false, seq }),
+        category: "ACTIVITY_REPORT",
+        body: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Article", fieldName: "body", isId: false, isUnique: false, seq }),
+        publishedAt: (0, internal_1.getScalarFieldValueGenerator)().DateTime({ modelName: "Article", fieldName: "publishedAt", isId: false, isUnique: false, seq })
+    };
+}
+function defineArticleFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Article", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateArticleScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isArticlecommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                writtenByUser: isArticlewrittenByUserFactory(defaultData.writtenByUser) ? {
+                    create: await defaultData.writtenByUser.build()
+                } : defaultData.writtenByUser
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().article.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Article",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Article} model.
+ *
+ * @param options
+ * @returns factory {@link ArticleFactoryInterface}
+ */
+exports.defineArticleFactory = ((options) => {
+    return defineArticleFactoryInternal(options, {});
+});
+exports.defineArticleFactory.withTransientFields = defaultTransientFieldValues => options => defineArticleFactoryInternal(options, defaultTransientFieldValues);
 function isUtilitycommunityFactory(x) {
     return x?._factoryFor === "Community";
 }
@@ -1336,8 +1901,8 @@ exports.defineCityFactory.withTransientFields = defaultTransientFieldValues => o
 function autoGenerateStateScalarsOrEnums({ seq }) {
     return {
         code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "code", isId: true, isUnique: false, seq }),
-        countryCode: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "countryCode", isId: true, isUnique: false, seq }),
-        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "name", isId: false, isUnique: false, seq })
+        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "name", isId: false, isUnique: false, seq }),
+        countryCode: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "countryCode", isId: true, isUnique: false, seq })
     };
 }
 function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -1515,3 +2080,96 @@ exports.defineCurrentPointViewFactory = ((options) => {
     return defineCurrentPointViewFactoryInternal(options, {});
 });
 exports.defineCurrentPointViewFactory.withTransientFields = defaultTransientFieldValues => options => defineCurrentPointViewFactoryInternal(options, defaultTransientFieldValues);
+function isAccumulatedPointViewwalletFactory(x) {
+    return x?._factoryFor === "Wallet";
+}
+function autoGenerateAccumulatedPointViewScalarsOrEnums({ seq }) {
+    return {
+        accumulatedPoint: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "AccumulatedPointView", fieldName: "accumulatedPoint", isId: false, isUnique: false, seq })
+    };
+}
+function defineAccumulatedPointViewFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("AccumulatedPointView", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateAccumulatedPointViewScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                wallet: isAccumulatedPointViewwalletFactory(defaultData.wallet) ? {
+                    create: await defaultData.wallet.build()
+                } : defaultData.wallet
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            walletId: inputData.walletId
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().accumulatedPointView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "AccumulatedPointView",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link AccumulatedPointView} model.
+ *
+ * @param options
+ * @returns factory {@link AccumulatedPointViewFactoryInterface}
+ */
+exports.defineAccumulatedPointViewFactory = ((options) => {
+    return defineAccumulatedPointViewFactoryInternal(options, {});
+});
+exports.defineAccumulatedPointViewFactory.withTransientFields = defaultTransientFieldValues => options => defineAccumulatedPointViewFactoryInternal(options, defaultTransientFieldValues);

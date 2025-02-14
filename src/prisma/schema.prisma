@@ -55,15 +55,18 @@ model User {
   urlYoutube   String? @map("url_youtube")
   urlTiktok    String? @map("url_tiktok")
 
-  identities               Identity[]
-  memberships              Membership[]
-  participations           Participation[]
-  opportunitiesCreatedByMe Opportunity[]
-  wallets                  Wallet[]
-
-  createdAt                      DateTime                     @default(now()) @map("created_at")
-  updatedAt                      DateTime?                    @updatedAt @map("updated_at")
+  identities                     Identity[]
+  memberships                    Membership[]
+  participations                 Participation[]
+  opportunitiesCreatedByMe       Opportunity[]
+  opportunityInvitations         OpportunityInvitation[]
+  opportunityInvitationHistories OpportunityInvitationHistory[]
   participationStatusChangedByMe ParticipationStatusHistory[]
+  articles                       Article[]
+  wallets                        Wallet[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_users")
 }
@@ -92,25 +95,20 @@ model Community {
   establishedAt DateTime? @map("established_at")
   website       String?
 
-  cityCode String @map("city_code")
-  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
-
   memberships    Membership[]
   opportunities  Opportunity[]
   participations Participation[]
   wallets        Wallet[]
 
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime? @updatedAt @map("updated_at")
-  utility          Utility[]
-  state            State?    @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode])
-  stateCode        String?   @map("state_code")
-  stateCountryCode String?   @map("state_country_code") @db.Char(2)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  utility   Utility[]
+  article   Article[]
 
   @@map("t_communities")
 }
 
-// Membership
+// # Membership
 
 model Membership {
   userId String @map("user_id")
@@ -139,7 +137,8 @@ model Wallet {
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  currentPointView CurrentPointView?
+  currentPointView     CurrentPointView?
+  accumulatedPointView AccumulatedPointView?
 
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime?     @updatedAt @map("updated_at")
@@ -158,46 +157,132 @@ view CurrentPointView {
   @@map("mv_current_points")
 }
 
+view AccumulatedPointView {
+  walletId         String @id @map("wallet_id")
+  accumulatedPoint Int    @map("accumulated_point")
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("mv_accumulated_points")
+}
+
 // # Opportunity
 
 model Opportunity {
-  id                     String              @id @default(cuid())
-  title                  String
-  description            String?
-  category               OpportunityCategory
-  publishStatus          PublishStatus       @default(PUBLIC) @map("publish_status")
-  requireApproval        Boolean             @default(false) @map("require_approval")
-  capacity               Int?
-  pointsPerParticipation Int                 @map("points_per_participation")
-  image                  String?
+  id              String              @id @default(cuid())
+  title           String
+  description     String
+  body            String?
+  category        OpportunityCategory
+  publishStatus   PublishStatus       @default(PUBLIC) @map("publish_status")
+  requireApproval Boolean             @default(false) @map("require_approval")
+  capacity        Int?
+  pointsRequired  Int?                @map("points_required")
+  pointsToEarn    Int?                @map("points_to_earn")
+  feeRequired     Int?                @map("fee_required")
+  image           String?
   /// [ArrayOfString]
-  files                  Json                @default("[]")
-  startsAt               DateTime?           @map("starts_at")
-  endsAt                 DateTime?           @map("ends_at")
+  files           Json                @default("[]")
+  startsAt        DateTime?           @map("starts_at")
+  endsAt          DateTime?           @map("ends_at")
+
+  placeId String? @map("place_id")
+  place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
   communityId String    @map("community_id")
-  community   Community @relation(fields: [communityId], references: [id])
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   createdBy     String @map("created_by")
   createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
-  cityCode String @map("city_code")
-  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+  articles Article[] @relation("t_opportunities_on_articles")
+
+  participations Participation[]
+  slots          OpportunitySlot[]
+  invitations    OpportunityInvitation[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_opportunities")
+}
+
+model OpportunitySlot {
+  id       String   @id @default(cuid())
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime @map("ends_at")
+
+  opportunityId String?      @map("opportunity_id")
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
   participations Participation[]
 
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime? @updatedAt @map("updated_at")
-  state            State?    @relation(fields: [stateCode, stateCountryCode], references: [code, countryCode])
-  stateCode        String?   @map("state_code")
-  stateCountryCode String?   @map("state_country_code") @db.Char(2)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@map("t_opportunities")
+  @@map("t_opportunity_slots")
+}
+
+model OpportunityInvitation {
+  id      String  @id @default(cuid())
+  code    String
+  isValid Boolean @default(true) @map("is_valid")
+
+  opportunityId String      @map("opportunity_id")
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  createdBy     String @map("created_by")
+  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  histories OpportunityInvitationHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_opportunity_invitations")
+}
+
+model OpportunityInvitationHistory {
+  id String @id @default(cuid())
+
+  invitationId String                @map("invitation_id")
+  invitation   OpportunityInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  invitedUserId String @map("invited_user_id")
+  inivitedUser  User   @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_opportunity_invitation_histories")
+}
+
+model Place {
+  id            String  @id @default(cuid())
+  name          String
+  address       String
+  latitude      Decimal
+  longitude     Decimal
+  isManual      Boolean @map("is_manual")
+  googlePlaceId String? @map("google_place_id")
+  mapLocation   Json?   @map("map_location")
+
+  cityCode String @map("city_code")
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+
+  opportunities Opportunity[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_places")
 }
 
 model Participation {
   id     String              @id @default(cuid())
   status ParticipationStatus
+  /// [ArrayOfImageInfo]
+  images Json?
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -207,6 +292,9 @@ model Participation {
 
   opportunityId String?      @map("opportunity_id")
   opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  opportunitySlotId String?          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id], onDelete: SetNull)
 
   statusHistories ParticipationStatusHistory[]
   transactions    Transaction[]
@@ -233,7 +321,34 @@ model ParticipationStatusHistory {
   @@map("t_participation_status_histories")
 }
 
-// Utility
+// # Article
+
+model Article {
+  id            String          @id @default(cuid())
+  title         String
+  introduction  String
+  category      ArticleCategory
+  publishStatus PublishStatus   @default(PUBLIC) @map("publish_status")
+  body          String
+  /// [ImageInfo]
+  thumbnail     Json?
+  publishedAt   DateTime        @map("published_at")
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  writtenByUserId String? @map("written_by_user_id")
+  writtenByUser   User?   @relation(fields: [writtenByUserId], references: [id], onDelete: SetNull)
+
+  opportunities Opportunity[] @relation("t_opportunities_on_articles")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_articles")
+}
+
+// # Utility
 
 model Utility {
   id             String  @id @default(cuid())
@@ -253,7 +368,7 @@ model Utility {
   @@map("t_utilities")
 }
 
-// Transaction
+// # Transaction
 
 model Transaction {
   id     String            @id @default(cuid())
@@ -278,35 +393,33 @@ model Transaction {
   @@map("t_transactions")
 }
 
-// Master
+// # Master
 
 model City {
-  code        String @id
-  name        String
+  code String @id
+  name String
+
   stateCode   String @map("state_code")
   countryCode String @map("country_code") @db.Char(2)
   state       State  @relation(fields: [stateCode, countryCode], references: [code, countryCode], onDelete: Restrict)
 
-  communities   Community[]
-  opportunities Opportunity[]
+  places Place[]
 
   @@map("m_cities")
 }
 
 model State {
   code        String
-  countryCode String @map("country_code") @db.Char(2)
   name        String
-  cities      City[]
+  countryCode String @map("country_code") @db.Char(2)
 
-  communities   Community[]
-  opportunities Opportunity[]
+  cities City[]
 
   @@id([code, countryCode])
   @@map("m_states")
 }
 
-// General Enums
+// # General Enums
 
 enum IdentityPlatform {
   LINE
@@ -331,9 +444,14 @@ enum PublishStatus {
 }
 
 enum OpportunityCategory {
+  QUEST
   EVENT
-  TASK
-  CONVERSATION
+  ACTIVITY
+}
+
+enum ArticleCategory {
+  ACTIVITY_REPORT
+  INTERVIEW
 }
 
 enum MembershipStatus {
