@@ -39,7 +39,7 @@ export default class TransactionService {
     const data: Prisma.TransactionCreateInput = TransactionInputFormat.giveRewardPoint(input);
 
     const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshStat(ctx, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
@@ -47,7 +47,7 @@ export default class TransactionService {
     const data: Prisma.TransactionCreateInput = TransactionInputFormat.issueCommunityPoint(input);
 
     const res = await TransactionRepository.create(ctx, data);
-    await TransactionRepository.refreshStat(ctx);
+    await TransactionRepository.refreshCurrentPoints(ctx);
     return res;
   }
 
@@ -64,7 +64,7 @@ export default class TransactionService {
         wallet.id,
       );
       const res = await TransactionRepository.create(ctx, data, tx);
-      await TransactionRepository.refreshStat(ctx, tx);
+      await TransactionRepository.refreshCurrentPoints(ctx, tx);
 
       return res;
     });
@@ -83,11 +83,7 @@ export default class TransactionService {
         wallet.id,
       );
       const res = await TransactionRepository.create(ctx, data, tx);
-      await TransactionRepository.refreshStat(ctx, tx);
-
-    const res = await TransactionRepository.create(ctx, data);
-    await TransactionRepository.refreshCurrentPoints(ctx);
-    return res;
+      await TransactionRepository.refreshCurrentPoints(ctx, tx);
       return res;
     });
   }
