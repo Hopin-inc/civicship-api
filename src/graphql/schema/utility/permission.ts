@@ -1,12 +1,12 @@
-import { isAuthenticated, isCommunityMember } from "@/graphql/permission/rule";
+import { isAuthenticated, isCommunityMember, sanitizeInput } from "@/graphql/permission/rule";
 import { ShieldRule } from "graphql-shield/typings/types";
+import { and } from "graphql-shield";
 
 const utilityMutationPermissions: Record<string, ShieldRule> = {
-  utilityCreate: isCommunityMember,
-  utilityDelete: isCommunityMember,
-  utilityUpdateInfo: isCommunityMember,
-
-  utilityUse: isAuthenticated,
+  utilityCreate: and(isAuthenticated, isCommunityMember, sanitizeInput),
+  utilityDelete: and(isAuthenticated, isCommunityMember, sanitizeInput),
+  utilityUpdateInfo: and(isAuthenticated, isCommunityMember, sanitizeInput),
+  utilityUse: and(isAuthenticated, isCommunityMember, sanitizeInput),
 };
 
 export { utilityMutationPermissions };

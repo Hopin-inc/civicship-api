@@ -1,4 +1,5 @@
-import { isAdmin, isSelf } from "@/graphql/permission/rule";
+import { isAdmin, isSelf, sanitizeInput } from "@/graphql/permission/rule";
+import { and } from "graphql-shield";
 import { ShieldRule } from "graphql-shield/typings/types";
 
 const userQueryPermissions: Record<string, ShieldRule> = {
@@ -6,8 +7,8 @@ const userQueryPermissions: Record<string, ShieldRule> = {
 };
 
 const userMutationPermissions: Record<string, ShieldRule> = {
-  userDeleteMe: isSelf,
-  userUpdateMyProfile: isSelf,
+  userDeleteMe: and(isSelf, sanitizeInput),
+  userUpdateMyProfile: and(isSelf, sanitizeInput),
 };
 
 export { userQueryPermissions, userMutationPermissions };

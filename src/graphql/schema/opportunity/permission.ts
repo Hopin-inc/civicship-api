@@ -1,17 +1,26 @@
+import { or, and } from "graphql-shield";
 import {
   isCommunityManager,
   isCommunityMember,
   isOpportunityOwner,
+  sanitizeInput,
 } from "@/graphql/permission/rule";
 import { ShieldRule } from "graphql-shield/typings/types";
-import { or } from "graphql-shield";
 
 const opportunityMutationPermissions: Record<string, ShieldRule> = {
-  opportunityCreate: isCommunityMember,
-  opportunityDelete: or(isCommunityManager, isOpportunityOwner),
-  opportunityEditContent: or(isCommunityManager, isOpportunityOwner),
-
-  opportunitySetPublishStatus: or(isCommunityManager, isOpportunityOwner),
+  opportunityCreate: and(isCommunityMember, sanitizeInput),
+  opportunityDelete: or(
+    and(isCommunityManager, sanitizeInput),
+    and(isOpportunityOwner, sanitizeInput),
+  ),
+  opportunityEditContent: or(
+    and(isCommunityManager, sanitizeInput),
+    and(isOpportunityOwner, sanitizeInput),
+  ),
+  opportunitySetPublishStatus: or(
+    and(isCommunityManager, sanitizeInput),
+    and(isOpportunityOwner, sanitizeInput),
+  ),
 };
 
 export { opportunityMutationPermissions };
