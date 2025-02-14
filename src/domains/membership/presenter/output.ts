@@ -29,13 +29,7 @@ export default class MembershipOutputFormat {
   }
 
   static get(r: MembershipPayloadWithArgs): GqlMembership {
-    const { user, community, ...prop } = r;
-
-    return {
-      ...prop,
-      user,
-      community,
-    };
+    return r;
   }
 
   static invite(r: MembershipPayloadWithArgs): GqlMembershipInviteSuccess {
@@ -54,11 +48,24 @@ export default class MembershipOutputFormat {
     };
   }
 
-  static withdraw(r: MembershipPayloadWithArgs): GqlMembershipWithdrawSuccess {
+  static withdraw(membership: {
+    userId: string;
+    communityId: string;
+  }): GqlMembershipWithdrawSuccess {
+    const { userId, communityId } = membership;
     return {
       __typename: "MembershipWithdrawSuccess",
-      userId: r.userId,
-      communityId: r.communityId,
+      userId,
+      communityId,
+    };
+  }
+
+  static remove(membership: { userId: string; communityId: string }): GqlMembershipRemoveSuccess {
+    const { userId, communityId } = membership;
+    return {
+      __typename: "MembershipRemoveSuccess",
+      userId,
+      communityId,
     };
   }
 
@@ -66,14 +73,6 @@ export default class MembershipOutputFormat {
     return {
       __typename: "MembershipSetRoleSuccess",
       membership: this.get(r),
-    };
-  }
-
-  static remove(r: MembershipPayloadWithArgs): GqlMembershipRemoveSuccess {
-    return {
-      __typename: "MembershipRemoveSuccess",
-      userId: r.userId,
-      communityId: r.communityId,
     };
   }
 }

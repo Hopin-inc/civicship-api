@@ -11,7 +11,7 @@ import {
 import WalletService from "@/domains/membership/wallet/service";
 import WalletOutputFormat from "@/domains/membership/wallet/presenter/output";
 import { IContext } from "@/types/server";
-import { WalletUtils } from "@/domains/membership/wallet/utils";
+import WalletUtils from "@/domains/membership/wallet/utils";
 
 export default class WalletUseCase {
   static async userBrowseWallets(

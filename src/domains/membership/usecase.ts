@@ -26,7 +26,7 @@ import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
 import { Role } from "@prisma/client";
-import { MembershipUtils } from "@/domains/membership/utils";
+import MembershipUtils from "@/domains/membership/utils";
 
 export default class MembershipUseCase {
   static async visitorBrowseMemberships(
@@ -93,8 +93,8 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAcceptMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const membership = await MembershipService.acceptInvitation(ctx, input);
-    return MembershipOutputFormat.setInvitationStatus(membership);
+    const res = await MembershipService.acceptInvitation(ctx, input);
+    return MembershipOutputFormat.setInvitationStatus(res.membership);
   }
 
   static async userDenyMyInvitation(

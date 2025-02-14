@@ -34,12 +34,14 @@ export default class ParticipationStatusHistoryRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.ParticipationStatusHistoryCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.participationStatusHistory.create({
-        data,
-        include: participationStatusHistoryInclude,
-      });
+  static async create(
+    ctx: IContext,
+    data: Prisma.ParticipationStatusHistoryCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.participationStatusHistory.create({
+      data,
+      include: participationStatusHistoryInclude,
     });
   }
 
@@ -56,11 +58,9 @@ export default class ParticipationStatusHistoryRepository {
     tx: Prisma.TransactionClient,
     data: Prisma.ParticipationStatusHistoryCreateInput,
   ) {
-    return this.issuer.publicWithTransaction(ctx, tx, (transaction) => {
-      return transaction.participationStatusHistory.create({
-        data,
-        include: participationStatusHistoryInclude,
-      });
+    return tx.participationStatusHistory.create({
+      data,
+      include: participationStatusHistoryInclude,
     });
   }
 }

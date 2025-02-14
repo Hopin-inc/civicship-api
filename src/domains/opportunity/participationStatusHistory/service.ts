@@ -29,6 +29,6 @@ export default class ParticipationStatusHistoryService {
       createdById,
     });
 
-    await ParticipationStatusHistoryRepository.createWithTransaction(ctx, tx, data);
+    await ParticipationStatusHistoryRepository.create(ctx, data, tx);
   }
 }
