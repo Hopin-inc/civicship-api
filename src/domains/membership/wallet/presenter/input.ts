@@ -21,14 +21,14 @@ export default class WalletInputFormat {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static createToCommunity(input: GqlWalletCreateToCommunityInput): Prisma.WalletCreateInput {
+  static createCommunityWallet(input: GqlWalletCreateToCommunityInput): Prisma.WalletCreateInput {
     return {
       type: WalletType.COMMUNITY,
       community: { connect: { id: input.communityId } },
     };
   }
 
-  static createToMember(input: GqlWalletCreateToMemberInput): Prisma.WalletCreateInput {
+  static createMemberWallet(input: GqlWalletCreateToMemberInput): Prisma.WalletCreateInput {
     return {
       type: WalletType.MEMBER,
       community: { connect: { id: input.communityId } },

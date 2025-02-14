@@ -122,12 +122,23 @@ export default class MembershipRepository {
     });
   }
 
-  static async delete(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
-    return this.issuer.public(ctx, (tx) => {
+  static async delete(
+    ctx: IContext,
+    where: Prisma.MembershipWhereUniqueInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.membership.delete({
         where,
         include: membershipInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.membership.delete({
+          where,
+          include: membershipInclude,
+        });
+      });
+    }
   }
 }

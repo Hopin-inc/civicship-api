@@ -12,8 +12,11 @@ import { clampFirst } from "@/graphql/pagination";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
 import WalletService from "@/domains/membership/wallet/service";
+import { PrismaClientIssuer } from "@/prisma/client";
 
 export default class MembershipUtils {
+  private static issuer = new PrismaClientIssuer();
+
   static async fetchMembershipsCommon(
     ctx: IContext,
     {
@@ -70,9 +73,31 @@ export default class MembershipUtils {
       );
     }
 
-    await WalletService.createMemberWallet(ctx, userId, communityId, tx);
+    const wallet = await WalletService.createMemberWallet(ctx, userId, communityId, tx);
 
-    return membership;
+    return { membership, wallet };
+  }
+
+  static async withdrawCommunityAndDeleteMemberWallet(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+  ) {
+    return this.issuer.public(ctx, async (tx) => {
+      const membership = await MembershipRepository.find(
+        ctx,
+        { userId_communityId: { userId, communityId } },
+        tx,
+      );
+      if (!membership) {
+        throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
+      }
+
+      await MembershipRepository.delete(ctx, { userId_communityId: { userId, communityId } }, tx);
+      await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
+
+      return { userId, communityId };
+    });
   }
 
   static async setMembershipStatus(
@@ -108,16 +133,5 @@ export default class MembershipUtils {
 
     const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipInputFormat.setRole(role);
     return MembershipRepository.setRole(ctx, { userId_communityId: { userId, communityId } }, data);
-  }
-
-  static async deleteMembership(ctx: IContext, userId: string, communityId: string) {
-    const membership = await MembershipRepository.find(ctx, {
-      userId_communityId: { userId, communityId },
-    });
-    if (!membership) {
-      throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
-    }
-
-    return MembershipRepository.delete(ctx, { userId_communityId: { userId, communityId } });
   }
 }

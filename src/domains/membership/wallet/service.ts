@@ -45,7 +45,7 @@ export default class WalletService {
 
     await WalletUtils.validateTransfer(fromPointChange, communityWallet, participantWallet);
 
-    return { from: communityWallet.id, to: participantWallet.id };
+    return { fromWalletId: communityWallet.id, toWalletId: participantWallet.id };
   }
 
   static async createCommunityWallet(
@@ -53,7 +53,7 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const data: Prisma.WalletCreateInput = WalletInputFormat.createToCommunity({
+    const data: Prisma.WalletCreateInput = WalletInputFormat.createCommunityWallet({
       communityId,
     });
     return WalletRepository.create(ctx, data, tx);
@@ -72,13 +72,27 @@ export default class WalletService {
       tx,
     );
     if (existingWallet) {
-      return;
+      return existingWallet;
     }
 
-    const data: Prisma.WalletCreateInput = WalletInputFormat.createToMember({
+    const data: Prisma.WalletCreateInput = WalletInputFormat.createMemberWallet({
       userId,
       communityId,
     });
     return WalletRepository.create(ctx, data, tx);
+  }
+
+  static async deleteMemberWallet(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const wallet = await WalletRepository.checkIfExistingMemberWallet(ctx, communityId, userId, tx);
+    if (!wallet) {
+      throw new Error(`WalletNotFound: userId=${userId}, communityId=${communityId}`);
+    }
+
+    return WalletRepository.delete(ctx, wallet.id);
   }
 }

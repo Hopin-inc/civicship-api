@@ -42,12 +42,12 @@ export default class MembershipService {
   }
 
   static async removeMember(ctx: IContext, { userId, communityId }: GqlMembershipRemoveInput) {
-    return MembershipUtils.deleteMembership(ctx, userId, communityId);
+    return MembershipUtils.withdrawCommunityAndDeleteMemberWallet(ctx, userId, communityId);
   }
 
   static async withdrawCommunity(ctx: IContext, input: GqlMembershipWithdrawInput) {
     const userId = getCurrentUserId(ctx);
-    return MembershipUtils.deleteMembership(ctx, userId, input.communityId);
+    return MembershipUtils.withdrawCommunityAndDeleteMemberWallet(ctx, userId, input.communityId);
   }
 
   static async cancelInvitation(
