@@ -80,7 +80,6 @@
     "@graphql-tools/load-files": "^7.0.0",
     "@graphql-tools/merge": "^9.0.7",
     "@graphql-tools/schema": "^10.0.6",
-    "@youlin/typedoc-theme-hierarchy": "^1.0.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.13",
