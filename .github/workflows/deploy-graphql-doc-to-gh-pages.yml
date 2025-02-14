@@ -32,6 +32,7 @@ jobs:
 
       # 依存関係のインストール
       - name: Install dependencies
+        working-directory: ./docs/graphql
         run: pnpm install
 
       # GraphQL Docs の生成（例: graphql-markdown/cli を使う）
