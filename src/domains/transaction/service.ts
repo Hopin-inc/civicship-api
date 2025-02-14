@@ -85,6 +85,9 @@ export default class TransactionService {
       const res = await TransactionRepository.create(ctx, data, tx);
       await TransactionRepository.refreshStat(ctx, tx);
 
+    const res = await TransactionRepository.create(ctx, data);
+    await TransactionRepository.refreshCurrentPoints(ctx);
+    return res;
       return res;
     });
   }
@@ -96,7 +99,7 @@ export default class TransactionService {
     };
 
     const res = await TransactionRepository.create(ctx, data);
-    await TransactionRepository.refreshStat(ctx);
+    await TransactionRepository.refreshCurrentPoints(ctx);
     return res;
   }
 }
