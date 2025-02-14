@@ -102,8 +102,8 @@ model Community {
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  utility   Utility[]
-  article   Article[]
+  utilities Utility[]
+  articles  Article[]
 
   @@map("t_communities")
 }

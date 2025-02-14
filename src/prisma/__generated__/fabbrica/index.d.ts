@@ -164,8 +164,8 @@ type CommunityFactoryDefineInput = {
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
-    utility?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
-    article?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
+    utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
+    articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
 };
 type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
 type CommunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -730,7 +730,7 @@ interface ParticipationStatusHistoryFactoryBuilder {
 export declare const defineParticipationStatusHistoryFactory: ParticipationStatusHistoryFactoryBuilder;
 type ArticlecommunityFactory = {
     _factoryFor: "Community";
-    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutArticleInput["create"]>;
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutArticlesInput["create"]>;
 };
 type ArticlewrittenByUserFactory = {
     _factoryFor: "User";
@@ -747,7 +747,7 @@ type ArticleFactoryDefineInput = {
     publishedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
-    community: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticleInput;
+    community: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput;
     writtenByUser?: ArticlewrittenByUserFactory | Prisma.UserCreateNestedOneWithoutArticlesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutArticlesInput;
 };
@@ -790,7 +790,7 @@ interface ArticleFactoryBuilder {
 export declare const defineArticleFactory: ArticleFactoryBuilder;
 type UtilitycommunityFactory = {
     _factoryFor: "Community";
-    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutUtilityInput["create"]>;
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutUtilitiesInput["create"]>;
 };
 type UtilityFactoryDefineInput = {
     id?: string;
@@ -800,7 +800,7 @@ type UtilityFactoryDefineInput = {
     pointsRequired?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
-    community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilityInput;
+    community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
     transactions?: Prisma.TransactionCreateNestedManyWithoutUtilityInput;
 };
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;

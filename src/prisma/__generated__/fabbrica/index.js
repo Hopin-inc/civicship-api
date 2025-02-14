@@ -74,11 +74,11 @@ const modelFieldDefinitions = [{
                 type: "Wallet",
                 relationName: "CommunityToWallet"
             }, {
-                name: "utility",
+                name: "utilities",
                 type: "Utility",
                 relationName: "CommunityToUtility"
             }, {
-                name: "article",
+                name: "articles",
                 type: "Article",
                 relationName: "ArticleToCommunity"
             }]
