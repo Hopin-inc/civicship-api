@@ -51,15 +51,16 @@ export default class UtilityService {
       throw new Error(`CommunityNotFound: ID=${utility.communityId}`);
     }
 
-    const communityWallet = await WalletRepository.findByCommunityId(ctx, utility.communityId);
+    const communityWallet = await WalletRepository.findCommunityWallet(ctx, utility.communityId);
     if (!communityWallet?.id) {
       throw new Error("Wallet information is missing for points transfer");
     }
 
     return await TransactionService.useUtility(ctx, {
-      from: input.userWalletId,
+      communityId: input.communityId,
+      fromWalletId: input.userWalletId,
       fromPointChange: -utility.pointsRequired,
-      to: communityWallet.id,
+      toWalletId: communityWallet.id,
       toPointChange: utility.pointsRequired,
       utilityId: id,
     });
