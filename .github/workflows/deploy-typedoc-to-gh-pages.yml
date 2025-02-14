@@ -34,7 +34,7 @@ jobs:
       # 依存関係のインストールとドキュメント生成
       - name: Install and build typedoc
         run: |
-          npm ci
+          npm install
           npm run doc
 
       - name: Setup Pages
