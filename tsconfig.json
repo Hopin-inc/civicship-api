@@ -32,5 +32,5 @@
     "outputExtension": ".js"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules","**/__tests__/**", "**/prisma/__generated__/**"]
+  "exclude": ["node_modules"]
 }
