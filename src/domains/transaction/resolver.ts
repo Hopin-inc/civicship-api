@@ -12,8 +12,12 @@ const transactionResolver = {
   Query: {
     transactions: async (_: unknown, args: GqlQueryTransactionsArgs, ctx: IContext) =>
       TransactionUseCase.visitorBrowseTransactions(args, ctx),
-    transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) =>
-      TransactionUseCase.visitorViewTransaction(args, ctx),
+    transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
+      if (!ctx.loaders?.transaction) {
+        return TransactionUseCase.visitorViewTransaction(args, ctx);
+      }
+      return await ctx.loaders.transaction.load(args.id);
+    },
   },
   Mutation: {
     transactionIssueCommunityPoint: async (

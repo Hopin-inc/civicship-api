@@ -13,8 +13,12 @@ const walletResolver = {
   Query: {
     wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
       WalletUseCase.userBrowseWallets(args, ctx),
-    wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) =>
-      WalletUseCase.userViewWallet(args, ctx),
+    wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
+      if (!ctx.loaders?.wallet) {
+        return WalletUseCase.userViewWallet(args, ctx);
+      }
+      return await ctx.loaders.wallet.load(args.id);
+    },
   },
 
   Wallet: {

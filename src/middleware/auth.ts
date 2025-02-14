@@ -8,6 +8,7 @@ import { SignInProvider } from "@/consts/utils";
 import { userAuthInclude } from "@/domains/user/type";
 import { membershipAuthSelect } from "@/domains/membership/type";
 import { opportunityAuthSelect } from "@/domains/opportunity/type";
+import { createLoaders } from "@/graphql/dataloader";
 
 export const authHandler = (server: ApolloServer<IContext>) =>
   expressMiddleware(server, {
@@ -48,7 +49,16 @@ export const authHandler = (server: ApolloServer<IContext>) =>
         });
       });
 
-      return { uid, platform, currentUser, memberships, opportunitiesCreatedBy } satisfies IContext;
+      const loaders = createLoaders(issuer);
+
+      return {
+        uid,
+        platform,
+        currentUser,
+        memberships,
+        opportunitiesCreatedBy,
+        loaders,
+      } satisfies IContext;
     },
   });
 

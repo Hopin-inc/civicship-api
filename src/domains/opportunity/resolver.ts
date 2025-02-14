@@ -16,8 +16,12 @@ const opportunityResolver = {
   Query: {
     opportunities: async (_: unknown, args: GqlQueryOpportunitiesArgs, ctx: IContext) =>
       OpportunityUseCase.visitorBrowsePublicOpportunities(args, ctx),
-    opportunity: async (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) =>
-      OpportunityUseCase.visitorViewOpportunity(args, ctx),
+    opportunity: async (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
+      if (!ctx.loaders?.opportunity) {
+        return OpportunityUseCase.visitorViewOpportunity(args, ctx);
+      }
+      return ctx.loaders.opportunity.load(args.id);
+    },
   },
   Mutation: {
     opportunityCreate: async (_: unknown, args: GqlMutationOpportunityCreateArgs, ctx: IContext) =>

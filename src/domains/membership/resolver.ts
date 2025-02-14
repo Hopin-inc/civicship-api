@@ -18,8 +18,16 @@ const membershipResolver = {
   Query: {
     memberships: async (_: unknown, args: GqlQueryMembershipsArgs, ctx: IContext) =>
       MembershipUseCase.visitorBrowseMemberships(args, ctx),
-    membership: async (_: unknown, args: GqlQueryMembershipArgs, ctx: IContext) =>
-      MembershipUseCase.visitorViewMembership(args, ctx),
+    membership: async (_: unknown, args: GqlQueryMembershipArgs, ctx: IContext) => {
+      if (!ctx.loaders?.membership) {
+        return MembershipUseCase.visitorViewMembership(args, ctx);
+      }
+      const key = args.userId && args.communityId ? `${args.userId}:${args.communityId}` : "";
+      if (!key) {
+        return MembershipUseCase.visitorViewMembership(args, ctx);
+      }
+      return await ctx.loaders.membership.load(key);
+    },
   },
   Mutation: {
     membershipInvite: async (_: unknown, args: GqlMutationMembershipInviteArgs, ctx: IContext) =>

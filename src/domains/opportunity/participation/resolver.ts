@@ -25,8 +25,12 @@ const participationResolver = {
     participations: async (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) =>
       ParticipationUseCase.visitorBrowseParticipations(args, ctx),
 
-    participation: async (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) =>
-      ParticipationUseCase.visitorViewParticipation(args, ctx),
+    participation: async (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
+      if (!ctx.loaders?.participation) {
+        return ParticipationUseCase.visitorViewParticipation(args, ctx);
+      }
+      return await ctx.loaders.participation.load(args.id);
+    },
   },
   Mutation: {
     participationInvite: async (

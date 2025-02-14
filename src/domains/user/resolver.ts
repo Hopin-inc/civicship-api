@@ -1,19 +1,19 @@
 import UserUseCase from "@/domains/user/usecase";
 import {
+  GqlMembershipsConnection,
+  GqlMutationUserUpdateMyProfileArgs,
+  GqlOpportunitiesConnection,
+  GqlParticipationsConnection,
+  GqlParticipationStatusHistoriesConnection,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
   GqlUser,
   GqlUserMembershipsArgs,
-  GqlMembershipsConnection,
-  GqlUserWalletsArgs,
-  GqlWalletsConnection,
-  GqlOpportunitiesConnection,
   GqlUserOpportunitiesCreatedByMeArgs,
   GqlUserParticipationsArgs,
-  GqlParticipationsConnection,
-  GqlParticipationStatusHistoriesConnection,
   GqlUserParticipationStatusChangedByMeArgs,
-  GqlMutationUserUpdateMyProfileArgs,
+  GqlUserWalletsArgs,
+  GqlWalletsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipUseCase from "@/domains/membership/usecase";
@@ -26,8 +26,12 @@ const userResolver = {
   Query: {
     users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
       UserUseCase.visitorBrowseCommunityMembers(ctx, args),
-    user: async (_: unknown, args: GqlQueryUserArgs, ctx: IContext) =>
-      UserUseCase.visitorViewMember(ctx, args),
+    user: async (_: unknown, args: GqlQueryUserArgs, ctx: IContext) => {
+      if (!ctx.loaders?.user) {
+        return UserUseCase.visitorViewMember(ctx, args);
+      }
+      return await ctx.loaders.user.load(args.id);
+    },
   },
   Mutation: {
     userUpdateMyProfile: async (

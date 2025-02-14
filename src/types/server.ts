@@ -1,5 +1,6 @@
 import { IdentityPlatform, Role } from "@prisma/client";
 import { GqlUser } from "@/types/graphql";
+import { Loaders } from "@/graphql/dataloader";
 
 export type LoggedInUserInfo = {
   uid: string;
@@ -7,6 +8,7 @@ export type LoggedInUserInfo = {
   currentUser: GqlUser | null;
   memberships: { communityId: string; role: Role }[];
   opportunitiesCreatedBy: { id: string }[];
+  loaders: Loaders;
 };
 
 export type IContext = Record<string, never> | LoggedInUserInfo;

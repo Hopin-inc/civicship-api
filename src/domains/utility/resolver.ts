@@ -18,8 +18,12 @@ const utilityResolver = {
     utilities: async (_: unknown, args: GqlQueryUtilitiesArgs, ctx: IContext) =>
       UtilityUseCase.visitorBrowseUtilities(ctx, args),
 
-    utility: async (_: unknown, args: GqlQueryUtilityArgs, ctx: IContext) =>
-      UtilityUseCase.visitorViewUtility(ctx, args),
+    utility: async (_: unknown, args: GqlQueryUtilityArgs, ctx: IContext) => {
+      if (!ctx.loaders?.utility) {
+        return UtilityUseCase.visitorViewUtility(ctx, args);
+      }
+      return await ctx.loaders.utility.load(args.id);
+    },
   },
   Mutation: {
     utilityCreate: async (_: unknown, args: GqlMutationUtilityCreateArgs, ctx: IContext) =>
