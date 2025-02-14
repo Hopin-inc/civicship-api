@@ -6,7 +6,6 @@ import {
   GqlMembershipWithdrawSuccess,
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
-  GqlMembershipSelfJoinPayload,
 } from "@/types/graphql";
 import { MembershipPayloadWithArgs } from "@/domains/membership/type";
 
@@ -75,13 +74,6 @@ export default class MembershipOutputFormat {
       __typename: "MembershipRemoveSuccess",
       userId: r.userId,
       communityId: r.communityId,
-    };
-  }
-
-  static selfJoin(r: MembershipPayloadWithArgs): GqlMembershipSelfJoinPayload {
-    return {
-      __typename: "MembershipSelfJoinSuccess",
-      membership: this.get(r),
     };
   }
 }
