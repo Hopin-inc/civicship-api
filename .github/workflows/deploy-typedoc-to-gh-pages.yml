@@ -3,7 +3,7 @@ name: Deploy Typedoc to Pages
 on:
   push:
     branches:
-      - main
+      - feature/update-schema-by-UX
   workflow_dispatch:
 
 permissions:
