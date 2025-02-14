@@ -3,9 +3,9 @@ import { or, rule } from "graphql-shield";
 import { Role } from "@prisma/client";
 import sanitize from "sanitize-html";
 
-const sanitizeInput = rule()(async (_parent, args) => {
-  const sanitizedInput = sanitize(args.input, { allowedTags: [] });
-  return args.input === sanitizedInput;
+const sanitizeInput = rule()(async (parent, { input }) => {
+  const sanitizedInput = sanitize(input, { allowedTags: [] });
+  return input === sanitizedInput;
 });
 
 const isAdmin = rule({ cache: "contextual" })(async (_parent, _args, ctx: IContext) => {
