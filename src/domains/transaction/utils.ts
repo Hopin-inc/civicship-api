@@ -7,7 +7,7 @@ import {
 } from "@/types/graphql";
 import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 
 export default class TransactionUtils {
   static async fetchTransactionsCommon(

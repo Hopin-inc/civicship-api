@@ -9,7 +9,7 @@ import {
 import UserService from "@/domains/user/service";
 import UserResponseFormat from "@/domains/user/presenter/output";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 
 export default class UserUseCase {
   static async visitorBrowseCommunityMembers(

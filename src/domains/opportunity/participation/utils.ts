@@ -11,7 +11,7 @@ import {
 } from "@/types/graphql";
 import { PrismaClientIssuer } from "@/prisma/client";
 import ParticipationRepository from "@/domains/opportunity/participation/repository";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 import ParticipationService from "@/domains/opportunity/participation/service";
 import ParticipationOutputFormat from "@/domains/opportunity/participation/presenter/output";
 import { getCurrentUserId } from "@/utils";

@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import UtilityService from "@/domains/utility/service";
 import UtilityOutputFormat from "@/domains/utility/presenter/output";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 
 export const UtilityUtils = {
   async fetchUtilitiesCommon(

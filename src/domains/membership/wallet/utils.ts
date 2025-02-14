@@ -6,7 +6,7 @@ import {
   GqlWallet,
 } from "@/types/graphql";
 
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 import WalletService from "@/domains/membership/wallet/service";
 import WalletOutputFormat from "@/domains/membership/wallet/presenter/output";
 

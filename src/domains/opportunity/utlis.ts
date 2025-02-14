@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import OpportunityService from "@/domains/opportunity/service";
 import OpportunityOutputFormat from "@/domains/opportunity/presenter/output";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 
 export const OpportunityUtils = {
   async fetchOpportunitiesCommon(

@@ -5,7 +5,7 @@ import {
   GqlParticipationStatusHistoryFilterInput,
   GqlParticipationStatusHistorySortInput,
 } from "@/types/graphql";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
 import ParticipationStatusHistoryOutputFormat from "@/domains/opportunity/participationStatusHistory/presenter/output";
 

@@ -13,7 +13,7 @@ import {
 import { IContext } from "@/types/server";
 import CommunityService from "@/domains/community/service";
 import CommunityOutputFormat from "@/domains/community/presenter/output";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 
 export default class CommunityUseCase {
   static async userBrowseCommunities(

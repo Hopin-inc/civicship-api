@@ -8,7 +8,7 @@ import {
   GqlMembershipsConnection,
   GqlMembershipSortInput,
 } from "@/types/graphql";
-import { clampFirst } from "@/graphql/pagination";
+import { clampFirst } from "@/utils";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
 import WalletService from "@/domains/membership/wallet/service";
