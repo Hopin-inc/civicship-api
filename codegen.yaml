@@ -14,17 +14,17 @@ generates:
       scalars:
         Datetime: Date
       enumsAsConst: true
-      mappers:
-        User: "@prisma/client/index.d#User"
-        Community: "@prisma/client/index.d#Community"
-        Membership: "@prisma/client/index.d#Membership"
-        Wallet: "@prisma/client/index.d#Wallet"
-        CurrentPointView: "@prisma/client/index.d#CurrentPointView"
-        Opportunity: "@prisma/client/index.d#Opportunity"
-        Participation: "@prisma/client/index.d#Participation"
-        ParticipationStatusHistory: "@prisma/client/index.d#ParticipationStatusHistory"
-        Utility: "@prisma/client/index.d#Utility"
-        Transaction: "@prisma/client/index.d#Transaction"
-        City: "@prisma/client/index.d#City"
-        State: "@prisma/client/index.d#State"
-      contextType: "@/prisma/client#Context"
+#      mappers:
+#        User: "@prisma/client/index.d#User"
+#        Community: "@prisma/client/index.d#Community"
+#        Membership: "@prisma/client/index.d#Membership"
+#        Wallet: "@prisma/client/index.d#Wallet"
+#        CurrentPointView: "@prisma/client/index.d#CurrentPointView"
+#        Opportunity: "@prisma/client/index.d#Opportunity"
+#        Participation: "@prisma/client/index.d#Participation"
+#        ParticipationStatusHistory: "@prisma/client/index.d#ParticipationStatusHistory"
+#        Utility: "@prisma/client/index.d#Utility"
+#        Transaction: "@prisma/client/index.d#Transaction"
+#        City: "@prisma/client/index.d#City"
+#        State: "@prisma/client/index.d#State"
+#      contextType: "@/prisma/client#Context"
