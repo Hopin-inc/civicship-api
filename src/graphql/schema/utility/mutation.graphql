@@ -1,15 +1,17 @@
 # Input definitions
 
 input UtilityCreateInput {
+    communityId: String!
+
     name: String!
     description: String
     image: ImageInput
     pointsRequired: Int!
-
-    communityId: String!
 }
 
 input UtilityUpdateInfoInput {
+    communityId: String!
+
     name: String!
     description: String
     image: ImageInput
@@ -17,14 +19,20 @@ input UtilityUpdateInfoInput {
 }
 
 input UtilityGetInput {
+    communityId: String!
+
     userWalletId: String!
 }
 
 input UtilityDonateInput {
+    communityId: String!
+
     userWalletId: String!
 }
 
 input UtilityUseInput {
+    communityId: String!
+
     userWalletId: String!
 }
 

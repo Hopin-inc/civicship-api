@@ -1,35 +1,41 @@
 input TransactionIssueCommunityPointInput {
-    to: String!
+    toWalletId: String!
     toPointChange: Int!
 }
 
 input TransactionGrantCommunityPointInput {
-    from: String!
+    communityId: String!
+
+    fromWalletId: String!
     fromPointChange: Int!
-    to: String!
+    toUserId: String!
     toPointChange: Int!
 }
 
 input TransactionDonateSelfPointInput {
-    from: String!
+    communityId: String!
+
+    fromWalletId: String!
     fromPointChange: Int!
-    to: String!
+    toUserId: String!
     toPointChange: Int!
 }
 
 input TransactionGiveRewardPointInput {
-    from: String!
+    fromWalletId: String!
     fromPointChange: Int!
-    to: String!
+    toWalletId: String!
     toPointChange: Int!
 
     participationId: String!
 }
 
 input TransactionUseUtilityInput {
-    from: String!
+    communityId: String!
+
+    fromWalletId: String!
     fromPointChange: Int!
-    to: String!
+    toWalletId: String!
     toPointChange: Int!
 
     utilityId: String!

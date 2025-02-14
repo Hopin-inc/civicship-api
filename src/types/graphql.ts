@@ -1065,10 +1065,11 @@ export type GqlTransaction = {
 };
 
 export type GqlTransactionDonateSelfPointInput = {
-  from: Scalars['String']['input'];
+  communityId: Scalars['String']['input'];
   fromPointChange: Scalars['Int']['input'];
-  to: Scalars['String']['input'];
+  fromWalletId: Scalars['String']['input'];
   toPointChange: Scalars['Int']['input'];
+  toUserId: Scalars['String']['input'];
 };
 
 export type GqlTransactionDonateSelfPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionDonateSelfPointSuccess;
@@ -1094,11 +1095,11 @@ export type GqlTransactionFilterInput = {
 };
 
 export type GqlTransactionGiveRewardPointInput = {
-  from: Scalars['String']['input'];
   fromPointChange: Scalars['Int']['input'];
+  fromWalletId: Scalars['String']['input'];
   participationId: Scalars['String']['input'];
-  to: Scalars['String']['input'];
   toPointChange: Scalars['Int']['input'];
+  toWalletId: Scalars['String']['input'];
 };
 
 export type GqlTransactionGiveRewardPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionGiveRewardPointSuccess;
@@ -1109,10 +1110,11 @@ export type GqlTransactionGiveRewardPointSuccess = {
 };
 
 export type GqlTransactionGrantCommunityPointInput = {
-  from: Scalars['String']['input'];
+  communityId: Scalars['String']['input'];
   fromPointChange: Scalars['Int']['input'];
-  to: Scalars['String']['input'];
+  fromWalletId: Scalars['String']['input'];
   toPointChange: Scalars['Int']['input'];
+  toUserId: Scalars['String']['input'];
 };
 
 export type GqlTransactionGrantCommunityPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionGrantCommunityPointSuccess;
@@ -1123,8 +1125,8 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 };
 
 export type GqlTransactionIssueCommunityPointInput = {
-  to: Scalars['String']['input'];
   toPointChange: Scalars['Int']['input'];
+  toWalletId: Scalars['String']['input'];
 };
 
 export type GqlTransactionIssueCommunityPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionIssueCommunityPointSuccess;
@@ -1149,10 +1151,11 @@ export type GqlTransactionSortInput = {
 };
 
 export type GqlTransactionUseUtilityInput = {
-  from: Scalars['String']['input'];
+  communityId: Scalars['String']['input'];
   fromPointChange: Scalars['Int']['input'];
-  to: Scalars['String']['input'];
+  fromWalletId: Scalars['String']['input'];
   toPointChange: Scalars['Int']['input'];
+  toWalletId: Scalars['String']['input'];
   utilityId: Scalars['String']['input'];
 };
 
@@ -1330,6 +1333,7 @@ export type GqlUtilityDeleteSuccess = {
 };
 
 export type GqlUtilityDonateInput = {
+  communityId: Scalars['String']['input'];
   userWalletId: Scalars['String']['input'];
 };
 
@@ -1351,6 +1355,7 @@ export type GqlUtilityFilterInput = {
 };
 
 export type GqlUtilityGetInput = {
+  communityId: Scalars['String']['input'];
   userWalletId: Scalars['String']['input'];
 };
 
@@ -1367,6 +1372,7 @@ export type GqlUtilitySortInput = {
 };
 
 export type GqlUtilityUpdateInfoInput = {
+  communityId: Scalars['String']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
@@ -1381,6 +1387,7 @@ export type GqlUtilityUpdateInfoSuccess = {
 };
 
 export type GqlUtilityUseInput = {
+  communityId: Scalars['String']['input'];
   userWalletId: Scalars['String']['input'];
 };
 
