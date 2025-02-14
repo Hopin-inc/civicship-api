@@ -8,6 +8,10 @@ directive @complexity(
     multipliers: [String!]
 ) on FIELD_DEFINITION
 
+directive @requireRole(
+    role: Role!
+) on FIELD_DEFINITION
+
 scalar Datetime
 
 type Query {
