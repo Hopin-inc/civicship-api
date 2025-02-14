@@ -72,7 +72,7 @@ export default class ParticipationUtils {
           const fromPointChange = -opportunity.pointsPerParticipation;
           const toPointChange = opportunity.pointsPerParticipation;
 
-          const { from, to } = await WalletService.findWalletsForGiveReward(
+          const { fromWalletId, toWalletId } = await WalletService.findWalletsForGiveReward(
             ctx,
             tx,
             communityId,
@@ -81,9 +81,9 @@ export default class ParticipationUtils {
           );
 
           const input: GqlTransactionGiveRewardPointInput = {
-            from,
+            fromWalletId,
             fromPointChange,
-            to,
+            toWalletId,
             toPointChange,
             participationId: participation.id,
           };

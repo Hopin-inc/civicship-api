@@ -19,7 +19,7 @@ import {
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
-import { TransactionUtils } from "@/domains/transaction/utils";
+import TransactionUtils from "@/domains/transaction/utils";
 
 export default class TransactionUseCase {
   static async visitorBrowseTransactions(
