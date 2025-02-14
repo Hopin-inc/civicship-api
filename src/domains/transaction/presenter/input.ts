@@ -27,13 +27,13 @@ export default class TransactionInputFormat {
   }
 
   static giveRewardPoint(input: GqlTransactionGiveRewardPointInput): Prisma.TransactionCreateInput {
-    const { from, to, fromPointChange, toPointChange, participationId } = input;
+    const { fromWalletId, toWalletId, fromPointChange, toPointChange, participationId } = input;
 
     return {
       reason: TransactionReason.PARTICIPATION_APPROVED,
-      fromWallet: { connect: { id: from } },
+      fromWallet: { connect: { id: fromWalletId } },
       fromPointChange,
-      toWallet: { connect: { id: to } },
+      toWallet: { connect: { id: toWalletId } },
       toPointChange,
       participation: { connect: { id: participationId } },
     };
@@ -42,37 +42,41 @@ export default class TransactionInputFormat {
   static issueCommunityPoint(
     input: GqlTransactionIssueCommunityPointInput,
   ): Prisma.TransactionCreateInput {
-    const { to, toPointChange } = input;
+    const { toWalletId, toPointChange } = input;
 
     return {
       reason: TransactionReason.POINT_ISSUED,
-      toWallet: { connect: { id: to } },
+      toWallet: { connect: { id: toWalletId } },
       toPointChange,
     };
   }
 
   static grantCommunityPoint(
     input: GqlTransactionGrantCommunityPointInput,
+    toWalletId: string,
   ): Prisma.TransactionCreateInput {
-    const { from, to, fromPointChange, toPointChange } = input;
+    const { fromWalletId, fromPointChange, toPointChange } = input;
 
     return {
       reason: TransactionReason.GIFT,
-      fromWallet: { connect: { id: from } },
+      fromWallet: { connect: { id: fromWalletId } },
       fromPointChange,
-      toWallet: { connect: { id: to } },
+      toWallet: { connect: { id: toWalletId } },
       toPointChange,
     };
   }
 
-  static donateSelfPoint(input: GqlTransactionDonateSelfPointInput): Prisma.TransactionCreateInput {
-    const { from, to, fromPointChange, toPointChange } = input;
+  static donateSelfPoint(
+    input: GqlTransactionDonateSelfPointInput,
+    toWalletId: string,
+  ): Prisma.TransactionCreateInput {
+    const { fromWalletId, fromPointChange, toPointChange } = input;
 
     return {
       reason: TransactionReason.GIFT,
-      fromWallet: { connect: { id: from } },
+      fromWallet: { connect: { id: fromWalletId } },
       fromPointChange,
-      toWallet: { connect: { id: to } },
+      toWallet: { connect: { id: toWalletId } },
       toPointChange,
     };
   }
