@@ -27,14 +27,14 @@ const transactionResolver = {
     ) => TransactionUseCase.ownerIssueCommunityPoint(args, ctx),
     transactionGrantCommunityPoint: async (
       _: unknown,
-      args: GqlMutationTransactionGrantCommunityPointArgs,
+      { input }: GqlMutationTransactionGrantCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.managerGrantCommunityPoint(args, ctx),
+    ) => TransactionUseCase.managerGrantCommunityPoint(ctx, input),
     transactionDonateSelfPoint: async (
       _: unknown,
-      args: GqlMutationTransactionDonateSelfPointArgs,
+      { input }: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.userDonateSelfPointToAnother(args, ctx),
+    ) => TransactionUseCase.userDonateSelfPointToAnother(ctx, input),
   },
 };
 

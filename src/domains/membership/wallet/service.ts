@@ -59,7 +59,7 @@ export default class WalletService {
     return WalletRepository.create(ctx, data, tx);
   }
 
-  static async createMemberWallet(
+  static async createMemberWalletIfNeeded(
     ctx: IContext,
     userId: string,
     communityId: string,

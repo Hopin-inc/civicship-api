@@ -37,7 +37,7 @@ const communityResolver = {
   },
   Mutation: {
     communityCreate: async (_: unknown, args: GqlMutationCommunityCreateArgs, ctx: IContext) =>
-      CommunityUseCase.userCreateCommunity(args, ctx),
+      CommunityUseCase.userCreateCommunityAndJoin(args, ctx),
     communityDelete: async (_: unknown, args: GqlMutationCommunityDeleteArgs, ctx: IContext) =>
       CommunityUseCase.managerDeleteCommunity(args, ctx),
     communityUpdateProfile: async (

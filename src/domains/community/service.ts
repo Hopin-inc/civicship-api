@@ -7,14 +7,9 @@ import CommunityInputFormat from "@/domains/community/presenter/input";
 import CommunityRepository from "@/domains/community/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import WalletService from "@/domains/membership/wallet/service";
 import { getCurrentUserId } from "@/utils";
-import MembershipUtils from "@/domains/membership/utils";
-import { PrismaClientIssuer } from "@/prisma/client";
 
 export default class CommunityService {
-  private static issuer = new PrismaClientIssuer();
-
   static async fetchCommunities(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryCommunitiesArgs,
@@ -30,18 +25,15 @@ export default class CommunityService {
     return await CommunityRepository.find(ctx, id);
   }
 
-  static async createCommunity(ctx: IContext, input: GqlCommunityCreateInput) {
-    return this.issuer.public(ctx, async (tx) => {
-      const userId = getCurrentUserId(ctx);
+  static async createCommunity(
+    ctx: IContext,
+    input: GqlCommunityCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    const userId = getCurrentUserId(ctx);
+    const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, userId);
 
-      const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, userId);
-      const community = await CommunityRepository.create(ctx, data, tx);
-
-      await WalletService.createCommunityWallet(ctx, community.id, tx);
-      await MembershipUtils.joinCommunityAndCreateMemberWallet(ctx, tx, userId, community.id);
-
-      return community;
-    });
+    return CommunityRepository.create(ctx, data, tx);
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {

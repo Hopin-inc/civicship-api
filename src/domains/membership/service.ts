@@ -1,13 +1,7 @@
 import {
-  GqlMembershipAcceptMyInvitationInput,
-  GqlMembershipAssignManagerInput,
-  GqlMembershipAssignMemberInput,
-  GqlMembershipAssignOwnerInput,
   GqlMembershipCancelInvitationInput,
   GqlMembershipDenyMyInvitationInput,
   GqlMembershipInviteInput,
-  GqlMembershipRemoveInput,
-  GqlMembershipWithdrawInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
 import MembershipInputFormat from "@/domains/membership/presenter/input";
@@ -16,11 +10,8 @@ import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import { getCurrentUserId } from "@/utils";
 import MembershipUtils from "@/domains/membership/utils";
-import { PrismaClientIssuer } from "@/prisma/client";
 
 export default class MembershipService {
-  private static issuer = new PrismaClientIssuer();
-
   static async fetchMemberships(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryMembershipsArgs,
@@ -41,30 +32,11 @@ export default class MembershipService {
     return MembershipRepository.create(ctx, data);
   }
 
-  static async removeMember(ctx: IContext, { userId, communityId }: GqlMembershipRemoveInput) {
-    return MembershipUtils.withdrawCommunityAndDeleteMemberWallet(ctx, userId, communityId);
-  }
-
-  static async withdrawCommunity(ctx: IContext, input: GqlMembershipWithdrawInput) {
-    const userId = getCurrentUserId(ctx);
-    return MembershipUtils.withdrawCommunityAndDeleteMemberWallet(ctx, userId, input.communityId);
-  }
-
   static async cancelInvitation(
     ctx: IContext,
     { userId, communityId }: GqlMembershipCancelInvitationInput,
   ) {
     return MembershipUtils.setMembershipStatus(ctx, userId, communityId, MembershipStatus.CANCELED);
-  }
-
-  static async acceptInvitation(
-    ctx: IContext,
-    { communityId }: GqlMembershipAcceptMyInvitationInput,
-  ) {
-    const userId = getCurrentUserId(ctx);
-    return this.issuer.public(ctx, (tx) => {
-      return MembershipUtils.joinCommunityAndCreateMemberWallet(ctx, tx, userId, communityId);
-    });
   }
 
   static async denyInvitation(ctx: IContext, input: GqlMembershipDenyMyInvitationInput) {
@@ -79,15 +51,68 @@ export default class MembershipService {
     );
   }
 
-  static async assignRole(
+  static async joinIfNeeded(
     ctx: IContext,
-    input:
-      | GqlMembershipAssignOwnerInput
-      | GqlMembershipAssignManagerInput
-      | GqlMembershipAssignMemberInput,
-    role: Role,
+    userId: string,
+    communityId: string,
+    tx: Prisma.TransactionClient,
   ) {
-    const { userId, communityId } = input;
-    return MembershipUtils.setMembershipRole(ctx, userId, communityId, role);
+    let membership = await MembershipRepository.find(
+      ctx,
+      { userId_communityId: { userId, communityId } },
+      tx,
+    );
+
+    if (!membership) {
+      const data: Prisma.MembershipCreateInput = MembershipInputFormat.join({
+        userId,
+        communityId,
+      });
+      membership = await MembershipRepository.create(ctx, data, tx);
+    } else {
+      if (membership.status !== MembershipStatus.JOINED) {
+        const data = MembershipInputFormat.setStatus(MembershipStatus.JOINED);
+        membership = await MembershipRepository.setStatus(
+          ctx,
+          { userId_communityId: { userId, communityId } },
+          data,
+          tx,
+        );
+      }
+    }
+
+    return membership;
+  }
+
+  static async assignRole(ctx: IContext, userId: string, communityId: string, role: Role) {
+    const membership = await MembershipRepository.find(ctx, {
+      userId_communityId: { userId, communityId },
+    });
+    if (!membership) {
+      throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
+    }
+
+    const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipInputFormat.setRole(role);
+    return MembershipRepository.setRole(ctx, { userId_communityId: { userId, communityId } }, data);
+  }
+
+  static async deleteMembership(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    userId: string,
+    communityId: string,
+  ) {
+    const membership = await MembershipRepository.find(
+      ctx,
+      { userId_communityId: { userId, communityId } },
+      tx,
+    );
+    if (!membership) {
+      throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
+    }
+
+    await MembershipRepository.delete(ctx, { userId_communityId: { userId, communityId } }, tx);
+
+    return membership;
   }
 }

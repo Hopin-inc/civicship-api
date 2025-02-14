@@ -9,8 +9,8 @@ import { clampFirst } from "@/utils";
 import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
 import ParticipationStatusHistoryOutputFormat from "@/domains/opportunity/participationStatusHistory/presenter/output";
 
-export const ParticipationStatusHistoryUtils = {
-  async fetchParticipationStatusHistoriesCommon(
+export default class ParticipationStatusHistoryUtils {
+  static async fetchParticipationStatusHistoriesCommon(
     ctx: IContext,
     {
       cursor,
@@ -38,5 +38,5 @@ export const ParticipationStatusHistoryUtils = {
     });
 
     return ParticipationStatusHistoryOutputFormat.query(data, hasNextPage);
-  },
-};
+  }
+}

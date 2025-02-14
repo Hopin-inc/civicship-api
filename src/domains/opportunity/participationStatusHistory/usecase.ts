@@ -6,7 +6,7 @@ import {
   GqlUserParticipationStatusChangedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { ParticipationStatusHistoryUtils } from "@/domains/opportunity/participationStatusHistory/utils";
+import ParticipationStatusHistoryUtils from "@/domains/opportunity/participationStatusHistory/utils";
 
 export default class ParticipationStatusHistoryUseCase {
   static async visitorBrowseStatusHistoriesByParticipation(

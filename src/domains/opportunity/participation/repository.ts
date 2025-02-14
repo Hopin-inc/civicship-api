@@ -25,13 +25,20 @@ export default class ParticipationRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+  static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    if (tx) {
       return tx.participation.findUnique({
         where: { id },
         include: participationInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.participation.findUnique({
+          where: { id },
+          include: participationInclude,
+        });
+      });
+    }
   }
 
   static async create(

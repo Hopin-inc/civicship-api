@@ -2,8 +2,6 @@ import {
   GqlQueryTransactionsArgs,
   GqlQueryTransactionArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
-  GqlMutationTransactionGrantCommunityPointArgs,
-  GqlMutationTransactionDonateSelfPointArgs,
   GqlTransactionsConnection,
   GqlTransaction,
   GqlTransactionIssueCommunityPointPayload,
@@ -15,13 +13,23 @@ import {
   GqlWalletTransactionsArgs,
   GqlUtility,
   GqlUtilityTransactionsArgs,
+  GqlTransactionDonateSelfPointInput,
+  GqlTransactionGrantCommunityPointInput,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/domains/transaction/service";
 import TransactionOutputFormat from "@/domains/transaction/presenter/output";
 import TransactionUtils from "@/domains/transaction/utils";
+import { PrismaClientIssuer } from "@/prisma/client";
+import MembershipService from "@/domains/membership/service";
+import { Prisma } from "@prisma/client";
+import WalletService from "@/domains/membership/wallet/service";
+import TransactionInputFormat from "@/domains/transaction/presenter/input";
+import TransactionRepository from "@/domains/transaction/repository";
 
 export default class TransactionUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
     ctx: IContext,
@@ -90,18 +98,46 @@ export default class TransactionUseCase {
   }
 
   static async managerGrantCommunityPoint(
-    { input }: GqlMutationTransactionGrantCommunityPointArgs,
     ctx: IContext,
+    input: GqlTransactionGrantCommunityPointInput,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {
-    const res = await TransactionService.grantCommunityPoint(ctx, input);
-    return TransactionOutputFormat.grantCommunityPoint(res);
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      await MembershipService.joinIfNeeded(ctx, input.toUserId, input.communityId, tx);
+
+      const wallet = await WalletService.createMemberWalletIfNeeded(
+        ctx,
+        input.toUserId,
+        input.communityId,
+        tx,
+      );
+
+      const data = TransactionInputFormat.grantCommunityPoint(input, wallet.id);
+      const transaction = await TransactionRepository.create(ctx, data, tx);
+      await TransactionRepository.refreshCurrentPoints(ctx, tx);
+
+      return TransactionOutputFormat.grantCommunityPoint(transaction);
+    });
   }
 
   static async userDonateSelfPointToAnother(
-    { input }: GqlMutationTransactionDonateSelfPointArgs,
     ctx: IContext,
+    input: GqlTransactionDonateSelfPointInput,
   ): Promise<GqlTransactionDonateSelfPointPayload> {
-    const res = await TransactionService.donateSelfPoint(ctx, input);
-    return TransactionOutputFormat.giveUserPoint(res);
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      await MembershipService.joinIfNeeded(ctx, input.toUserId, input.communityId, tx);
+
+      const wallet = await WalletService.createMemberWalletIfNeeded(
+        ctx,
+        input.toUserId,
+        input.communityId,
+        tx,
+      );
+
+      const data = TransactionInputFormat.donateSelfPoint(input, wallet.id);
+      const transaction = await TransactionRepository.create(ctx, data, tx);
+      await TransactionRepository.refreshCurrentPoints(ctx, tx);
+
+      return TransactionOutputFormat.giveUserPoint(transaction);
+    });
   }
 }

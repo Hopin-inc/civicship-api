@@ -20,6 +20,7 @@ import {
   GqlParticipationSetStatusPayload,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
+  GqlTransactionGiveRewardPointInput,
   GqlUser,
   GqlUserParticipationsArgs,
 } from "@/types/graphql";
@@ -27,8 +28,20 @@ import { IContext } from "@/types/server";
 import ParticipationService from "@/domains/opportunity/participation/service";
 import ParticipationOutputFormat from "@/domains/opportunity/participation/presenter/output";
 import ParticipationUtils from "@/domains/opportunity/participation/utils";
+import { PrismaClientIssuer } from "@/prisma/client";
+import { getCurrentUserId } from "@/utils";
+import { OpportunityCategory, ParticipationStatus, Prisma } from "@prisma/client";
+import OpportunityRepository from "@/domains/opportunity/repository";
+import ParticipationInputFormat from "@/domains/opportunity/participation/presenter/input";
+import MembershipService from "@/domains/membership/service";
+import WalletService from "@/domains/membership/wallet/service";
+import ParticipationRepository from "@/domains/opportunity/participation/repository";
+import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
+import TransactionService from "@/domains/transaction/service";
 
 export default class ParticipationUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseParticipations(
     { cursor, filter, sort, first }: GqlQueryParticipationsArgs,
     ctx: IContext,
@@ -97,10 +110,10 @@ export default class ParticipationUseCase {
   }
 
   static async memberCancelInvitation(
-    { id, input }: GqlMutationParticipationCancelInvitationArgs,
+    { id }: GqlMutationParticipationCancelInvitationArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.cancelInvitation(ctx, id, input);
+    const res = await ParticipationService.cancelInvitation(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 
@@ -108,8 +121,39 @@ export default class ParticipationUseCase {
     { id }: GqlMutationParticipationAcceptMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.acceptInvitation(ctx, id);
-    return ParticipationOutputFormat.setStatus(res);
+    const userId = getCurrentUserId(ctx);
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const participation = await ParticipationRepository.find(ctx, id, tx);
+      if (!participation) {
+        throw new Error(`Participation not found: id=${id}`);
+      }
+
+      const updated = await ParticipationRepository.setStatus(
+        ctx,
+        id,
+        ParticipationStatus.PARTICIPATING,
+        tx,
+      );
+
+      const communityId =
+        participation.communityId ?? participation.opportunity?.communityId ?? null;
+      if (!communityId) {
+        throw new Error(`Cannot determine communityId from participation: id=${id}`);
+      }
+      await MembershipService.joinIfNeeded(ctx, userId, communityId, tx);
+      await WalletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
+
+      await ParticipationStatusHistoryService.recordParticipationHistory(
+        ctx,
+        tx,
+        id,
+        ParticipationStatus.PARTICIPATING,
+        userId,
+      );
+
+      return ParticipationOutputFormat.setStatus(updated);
+    });
   }
 
   static async userDenyMyInvitation(
@@ -124,8 +168,48 @@ export default class ParticipationUseCase {
     { input }: GqlMutationParticipationApplyArgs,
     ctx: IContext,
   ): Promise<GqlParticipationApplyPayload> {
-    const res = await ParticipationService.applyParticipation(ctx, input);
-    return ParticipationOutputFormat.apply(res);
+    const userId = getCurrentUserId(ctx);
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const opportunity = await OpportunityRepository.find(ctx, input.opportunityId, tx);
+      if (!opportunity) {
+        throw new Error(`OpportunityNotFound: ID=${input.opportunityId}`);
+      }
+
+      const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.apply(
+        input,
+        userId,
+        opportunity.community.id,
+      );
+
+      const participationStatus = opportunity.requireApproval
+        ? ParticipationStatus.APPLIED
+        : ParticipationStatus.PARTICIPATING;
+
+      if (participationStatus === ParticipationStatus.PARTICIPATING) {
+        await MembershipService.joinIfNeeded(ctx, userId, opportunity.community.id, tx);
+        await WalletService.createMemberWalletIfNeeded(ctx, userId, opportunity.community.id, tx);
+      }
+
+      const participation = await ParticipationRepository.create(
+        ctx,
+        {
+          ...data,
+          status: participationStatus,
+        },
+        tx,
+      );
+
+      await ParticipationStatusHistoryService.recordParticipationHistory(
+        ctx,
+        tx,
+        participation.id,
+        participationStatus,
+        userId,
+      );
+
+      return ParticipationOutputFormat.apply(participation);
+    });
   }
 
   static async userCancelMyApplication(
@@ -140,15 +224,41 @@ export default class ParticipationUseCase {
     { id, input }: GqlMutationParticipationAcceptApplicationArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.acceptApplication(ctx, id, input);
-    return ParticipationOutputFormat.setStatus(res);
+    const userId = getCurrentUserId(ctx);
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const participation = await ParticipationRepository.find(ctx, id, tx);
+      if (!participation) {
+        throw new Error(`Participation not found: id=${id}`);
+      }
+
+      const updated = await ParticipationRepository.setStatus(
+        ctx,
+        id,
+        ParticipationStatus.PARTICIPATING,
+        tx,
+      );
+
+      await MembershipService.joinIfNeeded(ctx, userId, input.communityId, tx);
+      await WalletService.createMemberWalletIfNeeded(ctx, userId, input.communityId, tx);
+
+      await ParticipationStatusHistoryService.recordParticipationHistory(
+        ctx,
+        tx,
+        id,
+        ParticipationStatus.PARTICIPATING,
+        userId,
+      );
+
+      return ParticipationOutputFormat.setStatus(updated);
+    });
   }
 
   static async managerDenyApplication(
-    { id, input }: GqlMutationParticipationDenyApplicationArgs,
+    { id }: GqlMutationParticipationDenyApplicationArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.denyApplication(ctx, id, input);
+    const res = await ParticipationService.denyApplication(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 
@@ -156,15 +266,71 @@ export default class ParticipationUseCase {
     { id, input }: GqlMutationParticipationApprovePerformanceArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.approvePerformance(ctx, id, input);
-    return ParticipationOutputFormat.setStatus(res);
+    const userId = getCurrentUserId(ctx);
+    const { communityId } = input;
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const updated = await ParticipationRepository.setStatus(
+        ctx,
+        id,
+        ParticipationStatus.APPROVED,
+        tx,
+      );
+
+      if (!communityId) {
+        throw new Error(`communityId is required for managerApprovePerformance`);
+      }
+
+      const participation = await ParticipationRepository.find(ctx, id, tx);
+      if (!participation) {
+        throw new Error(`Participation not found: id=${id}`);
+      }
+
+      const { opportunity } = await ParticipationUtils.validateParticipation(
+        ctx,
+        tx,
+        participation,
+      );
+
+      if (opportunity.category === OpportunityCategory.TASK) {
+        const fromPointChange = -opportunity.pointsPerParticipation;
+        const toPointChange = opportunity.pointsPerParticipation;
+
+        const { fromWalletId, toWalletId } = await WalletService.findWalletsForGiveReward(
+          ctx,
+          tx,
+          communityId,
+          participation.id,
+          fromPointChange,
+        );
+
+        const inputForTx: GqlTransactionGiveRewardPointInput = {
+          fromWalletId,
+          fromPointChange,
+          toWalletId,
+          toPointChange,
+          participationId: participation.id,
+        };
+        await TransactionService.giveRewardPoint(ctx, tx, inputForTx);
+      }
+
+      await ParticipationStatusHistoryService.recordParticipationHistory(
+        ctx,
+        tx,
+        id,
+        ParticipationStatus.APPROVED,
+        userId,
+      );
+
+      return ParticipationOutputFormat.setStatus(updated);
+    });
   }
 
   static async managerDenyPerformance(
-    { id, input }: GqlMutationParticipationDenyPerformanceArgs,
+    { id }: GqlMutationParticipationDenyPerformanceArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.denyPerformance(ctx, id, input);
+    const res = await ParticipationService.denyPerformance(ctx, id);
     return ParticipationOutputFormat.setStatus(res);
   }
 }

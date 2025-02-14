@@ -25,10 +25,15 @@ import {
 import { IContext } from "@/types/server";
 import MembershipService from "@/domains/membership/service";
 import MembershipOutputFormat from "@/domains/membership/presenter/output";
-import { Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import MembershipUtils from "@/domains/membership/utils";
+import { getCurrentUserId } from "@/utils";
+import { PrismaClientIssuer } from "@/prisma/client";
+import WalletService from "@/domains/membership/wallet/service";
 
 export default class MembershipUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseMemberships(
     { filter, sort, cursor, first }: GqlQueryMembershipsArgs,
     ctx: IContext,
@@ -93,8 +98,14 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAcceptMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const res = await MembershipService.acceptInvitation(ctx, input);
-    return MembershipOutputFormat.setInvitationStatus(res.membership);
+    const userId = getCurrentUserId(ctx);
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const membership = await MembershipService.joinIfNeeded(ctx, userId, input.communityId, tx);
+      await WalletService.createMemberWalletIfNeeded(ctx, userId, input.communityId, tx);
+
+      return MembershipOutputFormat.setInvitationStatus(membership);
+    });
   }
 
   static async userDenyMyInvitation(
@@ -109,23 +120,47 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipWithdrawArgs,
     ctx: IContext,
   ): Promise<GqlMembershipWithdrawPayload> {
-    const membership = await MembershipService.withdrawCommunity(ctx, input);
-    return MembershipOutputFormat.withdraw(membership);
+    const userId = getCurrentUserId(ctx);
+    const { communityId } = input;
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      await MembershipService.deleteMembership(ctx, tx, userId, communityId);
+      await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
+
+      return MembershipOutputFormat.withdraw({
+        userId,
+        communityId,
+      });
+    });
   }
 
   static async ownerRemoveMember(
     { input }: GqlMutationMembershipRemoveArgs,
     ctx: IContext,
   ): Promise<GqlMembershipRemovePayload> {
-    const membership = await MembershipService.removeMember(ctx, input);
-    return MembershipOutputFormat.remove(membership);
+    const { userId, communityId } = input;
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      await MembershipService.deleteMembership(ctx, tx, userId, communityId);
+      await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
+
+      return MembershipOutputFormat.remove({
+        userId,
+        communityId,
+      });
+    });
   }
 
   static async ownerAssignOwner(
     { input }: GqlMutationMembershipAssignOwnerArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.assignRole(ctx, input, Role.OWNER);
+    const membership = await MembershipService.assignRole(
+      ctx,
+      input.userId,
+      input.communityId,
+      Role.OWNER,
+    );
     return MembershipOutputFormat.setRole(membership);
   }
 
@@ -133,7 +168,12 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAssignManagerArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.assignRole(ctx, input, Role.MANAGER);
+    const membership = await MembershipService.assignRole(
+      ctx,
+      input.userId,
+      input.communityId,
+      Role.MANAGER,
+    );
     return MembershipOutputFormat.setRole(membership);
   }
 
@@ -141,7 +181,12 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAssignMemberArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.assignRole(ctx, input, Role.MEMBER);
+    const membership = await MembershipService.assignRole(
+      ctx,
+      input.userId,
+      input.communityId,
+      Role.MEMBER,
+    );
     return MembershipOutputFormat.setRole(membership);
   }
 }
