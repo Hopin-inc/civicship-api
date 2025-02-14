@@ -1,5 +1,5 @@
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import { Agenda, City, State, Index, Event, Activity, Like, Comment, Organization, Group, Target, User } from '@prisma/client/index.d';
+import { User, Identity, Community, Membership, Wallet, CurrentPointView, AccumulatedPointView, Opportunity, OpportunitySlot, OpportunityInvitation, OpportunityInvitationHistory, Place, Participation, ParticipationStatusHistory, Article, Utility, Transaction, City, State } from '@prisma/client/index.d';
 import { Context } from '@/prisma/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | undefined;
@@ -1531,7 +1531,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommonError: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommonError']>;
   Communities: ResolverTypeWrapper<Omit<GqlCommunities, 'data'> & { data: Array<GqlResolversTypes['Community']> }>;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['CommunityEdge']>>> }>;
-  Community: ResolverTypeWrapper<Omit<GqlCommunity, 'city' | 'memberships' | 'opportunities' | 'participations' | 'state' | 'utilities' | 'wallets'> & { city: GqlResolversTypes['City'], memberships?: Maybe<GqlResolversTypes['MembershipsConnection']>, opportunities?: Maybe<GqlResolversTypes['OpportunitiesConnection']>, participations?: Maybe<GqlResolversTypes['ParticipationsConnection']>, state?: Maybe<GqlResolversTypes['State']>, utilities?: Maybe<GqlResolversTypes['UtilitiesConnection']>, wallets?: Maybe<GqlResolversTypes['WalletsConnection']> }>;
+  Community: ResolverTypeWrapper<Community>;
   CommunityCreateInput: GqlCommunityCreateInput;
   CommunityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityCreatePayload']>;
   CommunityCreateSuccess: ResolverTypeWrapper<Omit<GqlCommunityCreateSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
@@ -1545,7 +1545,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityUpdateProfileSuccess: ResolverTypeWrapper<Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
   ComplexQueryError: ResolverTypeWrapper<GqlComplexQueryError>;
   CreateUserInput: GqlCreateUserInput;
-  CurrentPointView: ResolverTypeWrapper<GqlCurrentPointView>;
+  CurrentPointView: ResolverTypeWrapper<CurrentPointView>;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
@@ -1556,7 +1556,7 @@ export type GqlResolversTypes = ResolversObject<{
   ImageInput: GqlImageInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   InvalidInputValueError: ResolverTypeWrapper<GqlInvalidInputValueError>;
-  Membership: ResolverTypeWrapper<Omit<GqlMembership, 'community' | 'user'> & { community: GqlResolversTypes['Community'], user: GqlResolversTypes['User'] }>;
+  Membership: ResolverTypeWrapper<Membership>;
   MembershipApproveInvitationInput: GqlMembershipApproveInvitationInput;
   MembershipAssignManagerInput: GqlMembershipAssignManagerInput;
   MembershipAssignMemberInput: GqlMembershipAssignMemberInput;
@@ -1586,7 +1586,7 @@ export type GqlResolversTypes = ResolversObject<{
   MembershipsConnection: ResolverTypeWrapper<Omit<GqlMembershipsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['MembershipEdge']>>> }>;
   Mutation: ResolverTypeWrapper<{}>;
   OpportunitiesConnection: ResolverTypeWrapper<Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['OpportunityEdge']> }>;
-  Opportunity: ResolverTypeWrapper<Omit<GqlOpportunity, 'city' | 'community' | 'createdByUser' | 'participations' | 'state'> & { city: GqlResolversTypes['City'], community: GqlResolversTypes['Community'], createdByUser: GqlResolversTypes['User'], participations?: Maybe<GqlResolversTypes['ParticipationsConnection']>, state?: Maybe<GqlResolversTypes['State']> }>;
+  Opportunity: ResolverTypeWrapper<Opportunity>;
   OpportunityCategory: GqlOpportunityCategory;
   OpportunityCreateInput: GqlOpportunityCreateInput;
   OpportunityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityCreatePayload']>;
@@ -1604,7 +1604,7 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunitySortInput: GqlOpportunitySortInput;
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
   Paging: ResolverTypeWrapper<GqlPaging>;
-  Participation: ResolverTypeWrapper<Omit<GqlParticipation, 'community' | 'opportunity' | 'statusHistories' | 'transactions' | 'user'> & { community?: Maybe<GqlResolversTypes['Community']>, opportunity?: Maybe<GqlResolversTypes['Opportunity']>, statusHistories?: Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, transactions?: Maybe<GqlResolversTypes['TransactionsConnection']>, user?: Maybe<GqlResolversTypes['User']> }>;
+  Participation: ResolverTypeWrapper<Participation>;
   ParticipationApplyInput: GqlParticipationApplyInput;
   ParticipationApplyPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationApplyPayload']>;
   ParticipationApplySuccess: ResolverTypeWrapper<Omit<GqlParticipationApplySuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
@@ -1618,7 +1618,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationSortInput: GqlParticipationSortInput;
   ParticipationStatus: GqlParticipationStatus;
   ParticipationStatusHistoriesConnection: ResolverTypeWrapper<Omit<GqlParticipationStatusHistoriesConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationStatusHistoryEdge']> }>;
-  ParticipationStatusHistory: ResolverTypeWrapper<Omit<GqlParticipationStatusHistory, 'createdByUser' | 'participation'> & { createdByUser?: Maybe<GqlResolversTypes['User']>, participation: GqlResolversTypes['Participation'] }>;
+  ParticipationStatusHistory: ResolverTypeWrapper<ParticipationStatusHistory>;
   ParticipationStatusHistoryCreateInput: GqlParticipationStatusHistoryCreateInput;
   ParticipationStatusHistoryCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationStatusHistoryCreatePayload']>;
   ParticipationStatusHistoryCreateSuccess: ResolverTypeWrapper<Omit<GqlParticipationStatusHistoryCreateSuccess, 'participationStatusHistory'> & { participationStatusHistory: GqlResolversTypes['ParticipationStatusHistory'] }>;
@@ -1633,7 +1633,7 @@ export type GqlResolversTypes = ResolversObject<{
   State: ResolverTypeWrapper<State>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SysRole: GqlSysRole;
-  Transaction: ResolverTypeWrapper<Omit<GqlTransaction, 'fromWallet' | 'participation' | 'toWallet' | 'utility'> & { fromWallet?: Maybe<GqlResolversTypes['Wallet']>, participation?: Maybe<GqlResolversTypes['Participation']>, toWallet?: Maybe<GqlResolversTypes['Wallet']>, utility?: Maybe<GqlResolversTypes['Utility']> }>;
+  Transaction: ResolverTypeWrapper<Transaction>;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionDonateSelfPointPayload']>;
   TransactionDonateSelfPointSuccess: ResolverTypeWrapper<Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
@@ -1663,7 +1663,7 @@ export type GqlResolversTypes = ResolversObject<{
   UserUpdateProfileSuccess: ResolverTypeWrapper<Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   UsersConnection: ResolverTypeWrapper<Omit<GqlUsersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['UserEdge']>>> }>;
   UtilitiesConnection: ResolverTypeWrapper<Omit<GqlUtilitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['UtilityEdge']>>> }>;
-  Utility: ResolverTypeWrapper<Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversTypes['Community'], transactions?: Maybe<GqlResolversTypes['TransactionsConnection']> }>;
+  Utility: ResolverTypeWrapper<Utility>;
   UtilityCreateInput: GqlUtilityCreateInput;
   UtilityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityCreatePayload']>;
   UtilityCreateSuccess: ResolverTypeWrapper<Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: GqlResolversTypes['Utility'] }>;
@@ -1679,7 +1679,7 @@ export type GqlResolversTypes = ResolversObject<{
   UtilityUsePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityUsePayload']>;
   UtilityUseSuccess: ResolverTypeWrapper<Omit<GqlUtilityUseSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   ValueType: GqlValueType;
-  Wallet: ResolverTypeWrapper<Omit<GqlWallet, 'community' | 'transactions' | 'user'> & { community: GqlResolversTypes['Community'], transactions?: Maybe<GqlResolversTypes['TransactionsConnection']>, user?: Maybe<GqlResolversTypes['User']> }>;
+  Wallet: ResolverTypeWrapper<Wallet>;
   WalletCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['WalletCreatePayload']>;
   WalletCreateSuccess: ResolverTypeWrapper<Omit<GqlWalletCreateSuccess, 'wallet'> & { wallet: GqlResolversTypes['Wallet'] }>;
   WalletCreateToCommunityInput: GqlWalletCreateToCommunityInput;
@@ -1701,7 +1701,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommonError: GqlResolversUnionTypes<GqlResolversParentTypes>['CommonError'];
   Communities: Omit<GqlCommunities, 'data'> & { data: Array<GqlResolversParentTypes['Community']> };
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['CommunityEdge']>>> };
-  Community: Omit<GqlCommunity, 'city' | 'memberships' | 'opportunities' | 'participations' | 'state' | 'utilities' | 'wallets'> & { city: GqlResolversParentTypes['City'], memberships?: Maybe<GqlResolversParentTypes['MembershipsConnection']>, opportunities?: Maybe<GqlResolversParentTypes['OpportunitiesConnection']>, participations?: Maybe<GqlResolversParentTypes['ParticipationsConnection']>, state?: Maybe<GqlResolversParentTypes['State']>, utilities?: Maybe<GqlResolversParentTypes['UtilitiesConnection']>, wallets?: Maybe<GqlResolversParentTypes['WalletsConnection']> };
+  Community: Community;
   CommunityCreateInput: GqlCommunityCreateInput;
   CommunityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityCreatePayload'];
   CommunityCreateSuccess: Omit<GqlCommunityCreateSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
@@ -1715,7 +1715,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityUpdateProfileSuccess: Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
   ComplexQueryError: GqlComplexQueryError;
   CreateUserInput: GqlCreateUserInput;
-  CurrentPointView: GqlCurrentPointView;
+  CurrentPointView: CurrentPointView;
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   Datetime: Scalars['Datetime']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
@@ -1725,7 +1725,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ImageInput: GqlImageInput;
   Int: Scalars['Int']['output'];
   InvalidInputValueError: GqlInvalidInputValueError;
-  Membership: Omit<GqlMembership, 'community' | 'user'> & { community: GqlResolversParentTypes['Community'], user: GqlResolversParentTypes['User'] };
+  Membership: Membership;
   MembershipApproveInvitationInput: GqlMembershipApproveInvitationInput;
   MembershipAssignManagerInput: GqlMembershipAssignManagerInput;
   MembershipAssignMemberInput: GqlMembershipAssignMemberInput;
@@ -1754,7 +1754,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   MembershipsConnection: Omit<GqlMembershipsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['MembershipEdge']>>> };
   Mutation: {};
   OpportunitiesConnection: Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OpportunityEdge']> };
-  Opportunity: Omit<GqlOpportunity, 'city' | 'community' | 'createdByUser' | 'participations' | 'state'> & { city: GqlResolversParentTypes['City'], community: GqlResolversParentTypes['Community'], createdByUser: GqlResolversParentTypes['User'], participations?: Maybe<GqlResolversParentTypes['ParticipationsConnection']>, state?: Maybe<GqlResolversParentTypes['State']> };
+  Opportunity: Opportunity;
   OpportunityCreateInput: GqlOpportunityCreateInput;
   OpportunityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityCreatePayload'];
   OpportunityCreateSuccess: Omit<GqlOpportunityCreateSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
@@ -1771,7 +1771,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunitySortInput: GqlOpportunitySortInput;
   PageInfo: GqlPageInfo;
   Paging: GqlPaging;
-  Participation: Omit<GqlParticipation, 'community' | 'opportunity' | 'statusHistories' | 'transactions' | 'user'> & { community?: Maybe<GqlResolversParentTypes['Community']>, opportunity?: Maybe<GqlResolversParentTypes['Opportunity']>, statusHistories?: Maybe<GqlResolversParentTypes['ParticipationStatusHistoriesConnection']>, transactions?: Maybe<GqlResolversParentTypes['TransactionsConnection']>, user?: Maybe<GqlResolversParentTypes['User']> };
+  Participation: Participation;
   ParticipationApplyInput: GqlParticipationApplyInput;
   ParticipationApplyPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationApplyPayload'];
   ParticipationApplySuccess: Omit<GqlParticipationApplySuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
@@ -1784,7 +1784,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationSetStatusSuccess: Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationSortInput: GqlParticipationSortInput;
   ParticipationStatusHistoriesConnection: Omit<GqlParticipationStatusHistoriesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ParticipationStatusHistoryEdge']> };
-  ParticipationStatusHistory: Omit<GqlParticipationStatusHistory, 'createdByUser' | 'participation'> & { createdByUser?: Maybe<GqlResolversParentTypes['User']>, participation: GqlResolversParentTypes['Participation'] };
+  ParticipationStatusHistory: ParticipationStatusHistory;
   ParticipationStatusHistoryCreateInput: GqlParticipationStatusHistoryCreateInput;
   ParticipationStatusHistoryCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationStatusHistoryCreatePayload'];
   ParticipationStatusHistoryCreateSuccess: Omit<GqlParticipationStatusHistoryCreateSuccess, 'participationStatusHistory'> & { participationStatusHistory: GqlResolversParentTypes['ParticipationStatusHistory'] };
@@ -1795,7 +1795,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   Query: {};
   State: State;
   String: Scalars['String']['output'];
-  Transaction: Omit<GqlTransaction, 'fromWallet' | 'participation' | 'toWallet' | 'utility'> & { fromWallet?: Maybe<GqlResolversParentTypes['Wallet']>, participation?: Maybe<GqlResolversParentTypes['Participation']>, toWallet?: Maybe<GqlResolversParentTypes['Wallet']>, utility?: Maybe<GqlResolversParentTypes['Utility']> };
+  Transaction: Transaction;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionDonateSelfPointPayload'];
   TransactionDonateSelfPointSuccess: Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
@@ -1824,7 +1824,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   UserUpdateProfileSuccess: Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   UsersConnection: Omit<GqlUsersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['UserEdge']>>> };
   UtilitiesConnection: Omit<GqlUtilitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['UtilityEdge']>>> };
-  Utility: Omit<GqlUtility, 'community' | 'transactions'> & { community: GqlResolversParentTypes['Community'], transactions?: Maybe<GqlResolversParentTypes['TransactionsConnection']> };
+  Utility: Utility;
   UtilityCreateInput: GqlUtilityCreateInput;
   UtilityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityCreatePayload'];
   UtilityCreateSuccess: Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: GqlResolversParentTypes['Utility'] };
@@ -1839,7 +1839,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   UtilityUseInput: GqlUtilityUseInput;
   UtilityUsePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityUsePayload'];
   UtilityUseSuccess: Omit<GqlUtilityUseSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
-  Wallet: Omit<GqlWallet, 'community' | 'transactions' | 'user'> & { community: GqlResolversParentTypes['Community'], transactions?: Maybe<GqlResolversParentTypes['TransactionsConnection']>, user?: Maybe<GqlResolversParentTypes['User']> };
+  Wallet: Wallet;
   WalletCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['WalletCreatePayload'];
   WalletCreateSuccess: Omit<GqlWalletCreateSuccess, 'wallet'> & { wallet: GqlResolversParentTypes['Wallet'] };
   WalletCreateToCommunityInput: GqlWalletCreateToCommunityInput;
