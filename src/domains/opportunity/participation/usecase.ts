@@ -13,6 +13,8 @@ import {
   GqlMutationParticipationInviteArgs,
   GqlOpportunity,
   GqlOpportunityParticipationsArgs,
+  GqlOpportunitySlot,
+  GqlOpportunitySlotParticipationsArgs,
   GqlParticipation,
   GqlParticipationApplyPayload,
   GqlParticipationInvitePayload,
@@ -36,8 +38,8 @@ import ParticipationInputFormat from "@/domains/opportunity/participation/presen
 import MembershipService from "@/domains/membership/service";
 import WalletService from "@/domains/membership/wallet/service";
 import ParticipationRepository from "@/domains/opportunity/participation/repository";
-import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
 import TransactionService from "@/domains/transaction/service";
+import ParticipationStatusHistoryService from "@/domains/opportunity/participation/statusHistory/service";
 
 export default class ParticipationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -86,6 +88,18 @@ export default class ParticipationUseCase {
     return ParticipationUtils.fetchParticipationsCommon(ctx, {
       cursor,
       filter: { opportunityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByOpportunitySlot(
+    { id }: GqlOpportunitySlot,
+    { first, cursor }: GqlOpportunitySlotParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { opportunitySlotId: id },
       first,
     });
   }
