@@ -5,6 +5,8 @@ import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHt
 import http from "http";
 import schema from "@/graphql/schema";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export async function createApolloServer(httpServer: http.Server) {
   const server = new ApolloServer({
     schema,
@@ -13,6 +15,7 @@ export async function createApolloServer(httpServer: http.Server) {
       logger.error("GraphQL Error:", err);
       return err;
     },
+    introspection: !isProduction,
   });
 
   await server.start();

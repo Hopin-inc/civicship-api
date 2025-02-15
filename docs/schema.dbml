@@ -19,10 +19,13 @@ Table t_users {
   memberships t_memberships [not null]
   participations t_participations [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
+  opportunityInvitations t_opportunity_invitations [not null]
+  opportunityInvitationHistories t_opportunity_invitation_histories [not null]
+  participationStatusChangedByMe t_participation_status_histories [not null]
+  articles t_articles [not null]
   wallets t_wallets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-  participationStatusChangedByMe t_participation_status_histories [not null]
 }
 
 Table t_identities {
@@ -42,18 +45,14 @@ Table t_communities {
   bio String
   establishedAt DateTime
   website String
-  cityCode String [not null]
-  city m_cities [not null]
   memberships t_memberships [not null]
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   wallets t_wallets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-  utility t_utilities [not null]
-  state m_states
-  stateCode String
-  stateCountryCode String
+  utilities t_utilities [not null]
+  articles t_articles [not null]
 }
 
 Table t_memberships {
@@ -79,6 +78,7 @@ Table t_wallets {
   userId String
   user t_users
   currentPointView mv_current_points
+  accumulatedPointView mv_accumulated_points
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   fromTransactions t_transactions [not null]
@@ -88,39 +88,95 @@ Table t_wallets {
 Table t_opportunities {
   id String [pk]
   title String [not null]
-  description String
+  description String [not null]
+  body String
   category OpportunityCategory [not null]
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   requireApproval Boolean [not null, default: false]
   capacity Int
-  pointsPerParticipation Int [not null]
+  pointsRequired Int
+  pointsToEarn Int
+  feeRequired Int
   image String
   files Json [not null, default: '[]', note: '[ArrayOfString]']
   startsAt DateTime
   endsAt DateTime
+  placeId String
+  place t_places
   communityId String [not null]
   community t_communities [not null]
   createdBy String [not null]
   createdByUser t_users [not null]
-  cityCode String [not null]
-  city m_cities [not null]
+  articles t_articles [not null]
+  participations t_participations [not null]
+  slots t_opportunity_slots [not null]
+  invitations t_opportunity_invitations [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_opportunity_slots {
+  id String [pk]
+  startsAt DateTime [not null]
+  endsAt DateTime [not null]
+  opportunityId String
+  opportunity t_opportunities
   participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-  state m_states
-  stateCode String
-  stateCountryCode String
+}
+
+Table t_opportunity_invitations {
+  id String [pk]
+  code String [not null]
+  isValid Boolean [not null, default: true]
+  opportunityId String [not null]
+  opportunity t_opportunities [not null]
+  createdBy String [not null]
+  createdByUser t_users [not null]
+  histories t_opportunity_invitation_histories [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_opportunity_invitation_histories {
+  id String [pk]
+  invitationId String [not null]
+  invitation t_opportunity_invitations [not null]
+  invitedUserId String [not null]
+  inivitedUser t_users [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_places {
+  id String [pk]
+  name String [not null]
+  address String [not null]
+  latitude Decimal [not null]
+  longitude Decimal [not null]
+  isManual Boolean [not null]
+  googlePlaceId String
+  mapLocation Json
+  cityCode String [not null]
+  city m_cities [not null]
+  opportunities t_opportunities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
 }
 
 Table t_participations {
   id String [pk]
   status ParticipationStatus [not null]
+  images Json [note: '[ArrayOfImageInfo]']
   userId String
   user t_users
   communityId String
   community t_communities
   opportunityId String
   opportunity t_opportunities
+  opportunitySlotId String
+  opportunitySlot t_opportunity_slots
   statusHistories t_participation_status_histories [not null]
   transactions t_transactions [not null]
   createdAt DateTime [default: `now()`, not null]
@@ -134,6 +190,24 @@ Table t_participation_status_histories {
   participation t_participations [not null]
   createdBy String
   createdByUser t_users
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_articles {
+  id String [pk]
+  title String [not null]
+  introduction String [not null]
+  category ArticleCategory [not null]
+  publishStatus PublishStatus [not null, default: 'PUBLIC']
+  body String [not null]
+  thumbnail Json [note: '[ImageInfo]']
+  publishedAt DateTime [not null]
+  communityId String [not null]
+  community t_communities [not null]
+  writtenByUserId String
+  writtenByUser t_users
+  opportunities t_opportunities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -174,17 +248,14 @@ Table m_cities {
   stateCode String [not null]
   countryCode String [not null]
   state m_states [not null]
-  communities t_communities [not null]
-  opportunities t_opportunities [not null]
+  places t_places [not null]
 }
 
 Table m_states {
   code String [not null]
-  countryCode String [not null]
   name String [not null]
+  countryCode String [not null]
   cities m_cities [not null]
-  communities t_communities [not null]
-  opportunities t_opportunities [not null]
 
   indexes {
     (code, countryCode) [pk]
@@ -195,6 +266,17 @@ Table mv_current_points {
   walletId String [pk]
   currentPoint Int [not null]
   wallet t_wallets [not null]
+}
+
+Table mv_accumulated_points {
+  walletId String [pk]
+  accumulatedPoint Int [not null]
+  wallet t_wallets [not null]
+}
+
+Table t_opportunities_on_articles {
+  articlesId String [ref: > t_articles.id]
+  opportunitiesId String [ref: > t_opportunities.id]
 }
 
 Enum IdentityPlatform {
@@ -220,9 +302,14 @@ Enum PublishStatus {
 }
 
 Enum OpportunityCategory {
+  QUEST
   EVENT
-  TASK
-  CONVERSATION
+  ACTIVITY
+}
+
+Enum ArticleCategory {
+  ACTIVITY_REPORT
+  INTERVIEW
 }
 
 Enum MembershipStatus {
@@ -258,10 +345,6 @@ Enum TransactionReason {
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 
-Ref: t_communities.cityCode > m_cities.code [delete: Restrict]
-
-Ref: t_communities.(stateCode, stateCountryCode) > m_states.(code, countryCode)
-
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
 Ref: t_memberships.communityId > t_communities.id [delete: Cascade]
@@ -270,13 +353,23 @@ Ref: t_wallets.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_wallets.userId > t_users.id [delete: Set Null]
 
-Ref: t_opportunities.communityId > t_communities.id
+Ref: t_opportunities.placeId > t_places.id [delete: Restrict]
+
+Ref: t_opportunities.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_opportunities.createdBy > t_users.id [delete: Set Null]
 
-Ref: t_opportunities.cityCode > m_cities.code [delete: Restrict]
+Ref: t_opportunity_slots.opportunityId > t_opportunities.id [delete: Cascade]
 
-Ref: t_opportunities.(stateCode, stateCountryCode) > m_states.(code, countryCode)
+Ref: t_opportunity_invitations.opportunityId > t_opportunities.id [delete: Set Null]
+
+Ref: t_opportunity_invitations.createdBy > t_users.id [delete: Set Null]
+
+Ref: t_opportunity_invitation_histories.invitationId > t_opportunity_invitations.id [delete: Cascade]
+
+Ref: t_opportunity_invitation_histories.invitedUserId > t_users.id [delete: Cascade]
+
+Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
 
@@ -284,9 +377,15 @@ Ref: t_participations.communityId > t_communities.id [delete: Set Null]
 
 Ref: t_participations.opportunityId > t_opportunities.id [delete: Set Null]
 
+Ref: t_participations.opportunitySlotId > t_opportunity_slots.id [delete: Set Null]
+
 Ref: t_participation_status_histories.participationId > t_participations.id [delete: Cascade]
 
 Ref: t_participation_status_histories.createdBy > t_users.id [delete: Set Null]
+
+Ref: t_articles.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_articles.writtenByUserId > t_users.id [delete: Set Null]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 
@@ -301,3 +400,5 @@ Ref: t_transactions.utilityId > t_utilities.id [delete: Set Null]
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
 Ref: mv_current_points.walletId - t_wallets.id
+
+Ref: mv_accumulated_points.walletId - t_wallets.id
