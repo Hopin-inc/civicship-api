@@ -37,11 +37,6 @@ export default class CommunityService {
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {
-    const currentUserId = ctx.currentUser?.id;
-    if (!currentUserId) {
-      throw new Error("Unauthorized: User must be logged in");
-    }
-
     const community = await CommunityRepository.find(ctx, id);
     if (!community) {
       throw new Error(`CommunityNotFound: ID=${id}`);
