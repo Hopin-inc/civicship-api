@@ -18,7 +18,6 @@ generates:
       enumsAsConst: true
       mappers:
         User: "@prisma/client/index.d#User"
-        Identity: "@prisma/client/index.d#Identity"
         Community: "@prisma/client/index.d#Community"
         Membership: "@prisma/client/index.d#Membership"
         Wallet: "@prisma/client/index.d#Wallet"
