@@ -18,6 +18,7 @@ input OpportunityFilterInput {
     createdBy: String
     stateCode: String
     cityCode: String
+    placeId: String
 }
 
 input OpportunitySortInput {

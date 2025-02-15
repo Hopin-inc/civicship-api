@@ -11,6 +11,8 @@ import {
   GqlOpportunityDeletePayload,
   GqlOpportunityEditContentPayload,
   GqlOpportunitySetPublishStatusPayload,
+  GqlPlace,
+  GqlPlaceOpportunitiesArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
   GqlUser,
@@ -54,6 +56,18 @@ export default class OpportunityUseCase {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
       filter: { createdBy: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseOpportunitiesByPlace(
+    { id }: GqlPlace,
+    { first, cursor }: GqlPlaceOpportunitiesArgs,
+    ctx: IContext,
+  ) {
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter: { placeId: id },
       first,
     });
   }

@@ -18,7 +18,7 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   Datetime: { input: Date; output: Date; }
-  Decimal: { input: number; output: number; }
+  Decimal: { input: string; output: string; }
   JSON: { input: any; output: any; }
 };
 
@@ -493,9 +493,6 @@ export type GqlMutation = {
   participationDenyMyInvitation?: Maybe<GqlParticipationSetStatusPayload>;
   participationDenyPerformance?: Maybe<GqlParticipationSetStatusPayload>;
   participationInvite?: Maybe<GqlParticipationInvitePayload>;
-  placeCreate?: Maybe<GqlPlaceCreatePayload>;
-  placeDelete?: Maybe<GqlPlaceDeletePayload>;
-  placeUpdate?: Maybe<GqlPlaceUpdatePayload>;
   transactionDonateSelfPoint?: Maybe<GqlTransactionDonateSelfPointPayload>;
   transactionGrantCommunityPoint?: Maybe<GqlTransactionGrantCommunityPointPayload>;
   transactionIssueCommunityPoint?: Maybe<GqlTransactionIssueCommunityPointPayload>;
@@ -690,22 +687,6 @@ export type GqlMutationParticipationInviteArgs = {
 };
 
 
-export type GqlMutationPlaceCreateArgs = {
-  input: GqlPlaceCreateInput;
-};
-
-
-export type GqlMutationPlaceDeleteArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type GqlMutationPlaceUpdateArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlPlaceUpdateInput;
-};
-
-
 export type GqlMutationTransactionDonateSelfPointArgs = {
   input: GqlTransactionDonateSelfPointInput;
 };
@@ -891,6 +872,7 @@ export type GqlOpportunityFilterInput = {
   cityCode?: InputMaybe<Scalars['String']['input']>;
   communityId?: InputMaybe<Scalars['String']['input']>;
   createdBy?: InputMaybe<Scalars['String']['input']>;
+  placeId?: InputMaybe<Scalars['String']['input']>;
   publishStatus?: InputMaybe<GqlPublishStatus>;
   stateCode?: InputMaybe<Scalars['String']['input']>;
 };
@@ -1282,7 +1264,7 @@ export type GqlPlaceCreateInput = {
   address: Scalars['String']['input'];
   cityCode: Scalars['String']['input'];
   googlePlaceId?: InputMaybe<Scalars['String']['input']>;
-  isManual?: InputMaybe<Scalars['Boolean']['input']>;
+  isManual: Scalars['Boolean']['input'];
   latitude: Scalars['Decimal']['input'];
   longitude: Scalars['Decimal']['input'];
   mapLocation?: InputMaybe<Scalars['JSON']['input']>;
@@ -1310,11 +1292,8 @@ export type GqlPlaceEdge = GqlEdge & {
 };
 
 export type GqlPlaceFilterInput = {
-  addressContains?: InputMaybe<Scalars['String']['input']>;
   cityCode?: InputMaybe<Scalars['String']['input']>;
-  googlePlaceId?: InputMaybe<Scalars['String']['input']>;
-  isManual?: InputMaybe<Scalars['Boolean']['input']>;
-  nameContains?: InputMaybe<Scalars['String']['input']>;
+  keyword?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlPlaceSortInput = {
@@ -2968,9 +2947,6 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id'>>;
   participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id' | 'input'>>;
   participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'input'>>;
-  placeCreate?: Resolver<Maybe<GqlResolversTypes['PlaceCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceCreateArgs, 'input'>>;
-  placeDelete?: Resolver<Maybe<GqlResolversTypes['PlaceDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceDeleteArgs, 'id'>>;
-  placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input'>>;
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input'>>;

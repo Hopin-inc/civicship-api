@@ -6,7 +6,7 @@ input PlaceCreateInput {
     address: String!
     latitude: Decimal!
     longitude: Decimal!
-    isManual: Boolean
+    isManual: Boolean!
     googlePlaceId: String
     mapLocation: JSON
 

@@ -8,12 +8,6 @@ extend type Query {
     place(id: ID!): Place
 }
 
-extend type Mutation {
-    placeCreate(input: PlaceCreateInput!): PlaceCreatePayload
-    placeUpdate(id: ID!, input: PlaceUpdateInput!): PlaceUpdatePayload
-    placeDelete(id: ID!): PlaceDeletePayload
-}
-
 type Place {
     id: ID!
 

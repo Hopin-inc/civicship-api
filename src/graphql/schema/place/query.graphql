@@ -16,10 +16,7 @@ type PlaceEdge implements Edge {
 # Filter / Sort Input
 # =========================
 input PlaceFilterInput {
-    nameContains: String
-    addressContains: String
-    isManual: Boolean
-    googlePlaceId: String
+    keyword: String
     cityCode: String
 }
 

@@ -7,6 +7,7 @@ import { createWalletLoader } from "@/graphql/dataloader/membership/wallet";
 import { createCommunityLoader } from "@/graphql/dataloader/community";
 import { createMembershipLoader } from "@/graphql/dataloader/membership/membership";
 import { createUtilityLoader } from "@/graphql/dataloader/utility";
+import { createPlaceLoader } from "@/graphql/dataloader/place";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -18,6 +19,7 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     participation: createParticipationLoader(issuer),
     transaction: createTransactionLoader(issuer),
     utility: createUtilityLoader(issuer),
+    place: createPlaceLoader(issuer),
   };
 }
 
