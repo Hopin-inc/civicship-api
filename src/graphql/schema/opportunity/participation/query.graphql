@@ -15,6 +15,7 @@ input ParticipationFilterInput {
     communityId: String
     userId: String
     opportunityId: String
+    opportunitySlotId: String
 }
 
 input ParticipationSortInput {
