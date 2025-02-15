@@ -1,8 +1,8 @@
 import {
   GqlOpportunityCreateInput,
-  GqlOpportunityEditContentInput,
   GqlOpportunityFilterInput,
   GqlOpportunitySortInput,
+  GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
@@ -13,9 +13,7 @@ export default class OpportunityInputFormat {
         filter?.category ? { category: filter?.category } : {},
         filter?.publishStatus ? { publishStatus: filter?.publishStatus } : {},
         filter?.communityId ? { communityId: filter?.communityId } : {},
-        filter?.createdBy ? { createdBy: filter?.createdBy } : {},
-        filter?.stateCode ? { stateCode: filter?.stateCode } : {},
-        filter?.cityCode ? { cityCode: filter?.cityCode } : {},
+        filter?.createdByUserId ? { createdBy: filter?.createdByUserId } : {},
       ],
     };
   }
@@ -23,7 +21,7 @@ export default class OpportunityInputFormat {
   static sort(sort?: GqlOpportunitySortInput): Prisma.OpportunityOrderByWithRelationInput[] {
     return [
       { startsAt: sort?.startsAt ?? Prisma.SortOrder.desc },
-      { pointsPerParticipation: sort?.pointsPerParticipation ?? Prisma.SortOrder.desc },
+      { pointsRequired: sort?.pointsRequired ?? Prisma.SortOrder.desc },
       { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
     ];
   }
@@ -32,18 +30,18 @@ export default class OpportunityInputFormat {
     input: GqlOpportunityCreateInput,
     currentUserId: string,
   ): Prisma.OpportunityCreateInput {
-    const { communityId, cityCode, ...properties } = input;
+    const { communityId, placeId, ...properties } = input;
 
     return {
       ...properties,
       community: { connect: { id: communityId } },
       createdByUser: { connect: { id: currentUserId } },
-      city: { connect: { code: cityCode } },
+      place: { connect: { id: placeId } },
     };
   }
 
   // TODO updatedByUserをDBに加えるか判断
-  static update(input: GqlOpportunityEditContentInput): Prisma.OpportunityUpdateInput {
+  static update(input: GqlOpportunityUpdateContentInput): Prisma.OpportunityUpdateInput {
     return {
       ...input,
     };

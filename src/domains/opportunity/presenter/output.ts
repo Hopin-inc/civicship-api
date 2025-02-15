@@ -3,10 +3,11 @@ import {
   GqlOpportunity,
   GqlOpportunityCreateSuccess,
   GqlOpportunityDeleteSuccess,
-  GqlOpportunityEditContentSuccess,
   GqlOpportunitySetPublishStatusSuccess,
+  GqlOpportunityUpdateContentSuccess,
 } from "@/types/graphql";
 import { OpportunityPayloadWithArgs } from "@/domains/opportunity/type";
+import PlaceOutputFormat from "@/domains/place/presenter/output";
 
 export default class OpportunityOutputFormat {
   static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
@@ -26,12 +27,12 @@ export default class OpportunityOutputFormat {
   }
 
   static get(r: OpportunityPayloadWithArgs): GqlOpportunity {
-    const { createdByUser, community, city, ...prop } = r;
+    const { createdByUser, community, place, ...prop } = r;
 
     return {
       ...prop,
       community,
-      city,
+      place: place ? PlaceOutputFormat.get(place) : null,
       createdByUser,
     };
   }
@@ -50,9 +51,9 @@ export default class OpportunityOutputFormat {
     };
   }
 
-  static update(r: OpportunityPayloadWithArgs): GqlOpportunityEditContentSuccess {
+  static update(r: OpportunityPayloadWithArgs): GqlOpportunityUpdateContentSuccess {
     return {
-      __typename: "OpportunityEditContentSuccess",
+      __typename: "OpportunityUpdateContentSuccess",
       opportunity: this.get(r),
     };
   }
