@@ -9,10 +9,10 @@ import { MembershipStatus, Prisma, Role } from "@prisma/client";
 export default class CommunityInputFormat {
   static filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
     return {
-      AND: [
-        filter?.stateCode ? { stateCode: filter.stateCode } : {},
-        filter?.cityCode ? { cityCode: filter.cityCode } : {},
-      ],
+      // AND: [
+      // filter?.stateCode ? { stateCode: filter.stateCode } : {},
+      // filter?.cityCode ? { cityCode: filter.cityCode } : {},
+      // ],
     };
   }
 
@@ -24,11 +24,11 @@ export default class CommunityInputFormat {
     input: GqlCommunityCreateInput,
     currentUserId: string,
   ): Prisma.CommunityCreateInput {
-    const { cityCode, ...properties } = input;
+    const { ...properties } = input;
 
     return {
       ...properties,
-      city: { connect: { code: cityCode } },
+      // city: { connect: { code: cityCode } },
       memberships: {
         create: [
           {
@@ -42,11 +42,11 @@ export default class CommunityInputFormat {
   }
 
   static update(input: GqlCommunityUpdateProfileInput): Prisma.CommunityUpdateInput {
-    const { cityCode, ...properties } = input;
+    const { ...properties } = input;
 
     return {
       ...properties,
-      city: cityCode ? { connect: { code: cityCode } } : undefined,
+      // city: cityCode ? { connect: { code: cityCode } } : undefined,
     };
   }
 }
