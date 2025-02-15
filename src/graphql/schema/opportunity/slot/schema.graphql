@@ -10,8 +10,7 @@ extend type Query {
 }
 
 extend type Mutation {
-    opportunitySlotCreate(input: OpportunitySlotCreateInput!): OpportunitySlotCreatePayload
-    opportunitySlotDelete(id: ID!): OpportunitySlotDeletePayload
+    opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!): OpportunitySlotsBulkUpdatePayload
 }
 
 type OpportunitySlot {

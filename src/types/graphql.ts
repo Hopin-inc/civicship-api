@@ -476,13 +476,12 @@ export type GqlMutation = {
   mutationEcho: Scalars['String']['output'];
   opportunityCreate?: Maybe<GqlOpportunityCreatePayload>;
   opportunityDelete?: Maybe<GqlOpportunityDeletePayload>;
-  opportunityEditContent?: Maybe<GqlOpportunityEditContentPayload>;
   opportunityInvitationCreate?: Maybe<GqlOpportunityInvitationCreatePayload>;
   opportunityInvitationDelete?: Maybe<GqlOpportunityInvitationDeletePayload>;
   opportunityInvitationDisable?: Maybe<GqlOpportunityInvitationDisablePayload>;
   opportunitySetPublishStatus?: Maybe<GqlOpportunitySetPublishStatusPayload>;
-  opportunitySlotCreate?: Maybe<GqlOpportunitySlotCreatePayload>;
-  opportunitySlotDelete?: Maybe<GqlOpportunitySlotDeletePayload>;
+  opportunitySlotsBulkUpdate?: Maybe<GqlOpportunitySlotsBulkUpdatePayload>;
+  opportunityUpdateContent?: Maybe<GqlOpportunityUpdateContentPayload>;
   participationAcceptApplication?: Maybe<GqlParticipationSetStatusPayload>;
   participationAcceptMyInvitation?: Maybe<GqlParticipationSetStatusPayload>;
   participationApply?: Maybe<GqlParticipationApplyPayload>;
@@ -594,12 +593,6 @@ export type GqlMutationOpportunityDeleteArgs = {
 };
 
 
-export type GqlMutationOpportunityEditContentArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlOpportunityEditContentInput;
-};
-
-
 export type GqlMutationOpportunityInvitationCreateArgs = {
   input: GqlOpportunityInvitationCreateInput;
 };
@@ -622,13 +615,14 @@ export type GqlMutationOpportunitySetPublishStatusArgs = {
 };
 
 
-export type GqlMutationOpportunitySlotCreateArgs = {
-  input: GqlOpportunitySlotCreateInput;
+export type GqlMutationOpportunitySlotsBulkUpdateArgs = {
+  input: GqlOpportunitySlotsBulkUpdateInput;
 };
 
 
-export type GqlMutationOpportunitySlotDeleteArgs = {
+export type GqlMutationOpportunityUpdateContentArgs = {
   id: Scalars['ID']['input'];
+  input: GqlOpportunityUpdateContentInput;
 };
 
 
@@ -759,7 +753,7 @@ export type GqlOpportunity = {
   community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   createdByUser?: Maybe<GqlUser>;
-  description?: Maybe<Scalars['String']['output']>;
+  description: Scalars['String']['output'];
   endsAt?: Maybe<Scalars['Datetime']['output']>;
   feeRequired?: Maybe<Scalars['Int']['output']>;
   files?: Maybe<Scalars['JSON']['output']>;
@@ -810,18 +804,21 @@ export const GqlOpportunityCategory = {
 
 export type GqlOpportunityCategory = typeof GqlOpportunityCategory[keyof typeof GqlOpportunityCategory];
 export type GqlOpportunityCreateInput = {
+  body?: InputMaybe<Scalars['String']['input']>;
   capacity?: InputMaybe<Scalars['Int']['input']>;
   category: GqlOpportunityCategory;
-  cityCode: Scalars['String']['input'];
   communityId: Scalars['String']['input'];
-  description?: InputMaybe<Scalars['String']['input']>;
+  description: Scalars['String']['input'];
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  files?: InputMaybe<Array<Scalars['String']['input']>>;
+  feeRequired?: InputMaybe<Scalars['Int']['input']>;
+  files?: InputMaybe<Scalars['JSON']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
-  pointsPerParticipation: Scalars['Int']['input'];
-  requireApproval?: InputMaybe<Scalars['Boolean']['input']>;
+  placeId?: InputMaybe<Scalars['String']['input']>;
+  pointsRequired?: InputMaybe<Scalars['Int']['input']>;
+  pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
+  publishStatus: GqlPublishStatus;
+  requireApproval: Scalars['Boolean']['input'];
   startsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  stateCode?: InputMaybe<Scalars['String']['input']>;
   title: Scalars['String']['input'];
 };
 
@@ -845,36 +842,12 @@ export type GqlOpportunityEdge = GqlEdge & {
   node?: Maybe<GqlOpportunity>;
 };
 
-export type GqlOpportunityEditContentInput = {
-  capacity?: InputMaybe<Scalars['Int']['input']>;
-  category?: InputMaybe<GqlOpportunityCategory>;
-  cityCode?: InputMaybe<Scalars['String']['input']>;
-  communityId: Scalars['String']['input'];
-  description?: InputMaybe<Scalars['String']['input']>;
-  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  files?: InputMaybe<Array<Scalars['String']['input']>>;
-  image?: InputMaybe<Scalars['String']['input']>;
-  pointsPerParticipation?: InputMaybe<Scalars['Int']['input']>;
-  requireApproval?: InputMaybe<Scalars['Boolean']['input']>;
-  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type GqlOpportunityEditContentPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityEditContentSuccess;
-
-export type GqlOpportunityEditContentSuccess = {
-  __typename?: 'OpportunityEditContentSuccess';
-  opportunity: GqlOpportunity;
-};
-
 export type GqlOpportunityFilterInput = {
   category?: InputMaybe<GqlOpportunityCategory>;
-  cityCode?: InputMaybe<Scalars['String']['input']>;
   communityId?: InputMaybe<Scalars['String']['input']>;
-  createdBy?: InputMaybe<Scalars['String']['input']>;
+  createdByUserId?: InputMaybe<Scalars['String']['input']>;
   placeId?: InputMaybe<Scalars['String']['input']>;
   publishStatus?: InputMaybe<GqlPublishStatus>;
-  stateCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlOpportunityInvitation = {
@@ -1027,22 +1000,7 @@ export type GqlOpportunitySlotParticipationsArgs = {
 
 export type GqlOpportunitySlotCreateInput = {
   endsAt: Scalars['Datetime']['input'];
-  opportunityId?: InputMaybe<Scalars['ID']['input']>;
   startsAt: Scalars['Datetime']['input'];
-};
-
-export type GqlOpportunitySlotCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunitySlotCreateSuccess;
-
-export type GqlOpportunitySlotCreateSuccess = {
-  __typename?: 'OpportunitySlotCreateSuccess';
-  opportunitySlot?: Maybe<GqlOpportunitySlot>;
-};
-
-export type GqlOpportunitySlotDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunitySlotDeleteSuccess;
-
-export type GqlOpportunitySlotDeleteSuccess = {
-  __typename?: 'OpportunitySlotDeleteSuccess';
-  id: Scalars['ID']['output'];
 };
 
 export type GqlOpportunitySlotEdge = GqlEdge & {
@@ -1061,6 +1019,26 @@ export type GqlOpportunitySlotSortInput = {
   startsAt?: InputMaybe<GqlSortDirection>;
 };
 
+export type GqlOpportunitySlotUpdateInput = {
+  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  id: Scalars['ID']['input'];
+  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
+};
+
+export type GqlOpportunitySlotsBulkUpdateInput = {
+  create?: InputMaybe<Array<GqlOpportunitySlotCreateInput>>;
+  delete?: InputMaybe<Array<Scalars['ID']['input']>>;
+  opportunityId: Scalars['ID']['input'];
+  update?: InputMaybe<Array<GqlOpportunitySlotUpdateInput>>;
+};
+
+export type GqlOpportunitySlotsBulkUpdatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunitySlotsBulkUpdateSuccess;
+
+export type GqlOpportunitySlotsBulkUpdateSuccess = {
+  __typename?: 'OpportunitySlotsBulkUpdateSuccess';
+  slots: Array<GqlOpportunitySlot>;
+};
+
 export type GqlOpportunitySlotsConnection = {
   __typename?: 'OpportunitySlotsConnection';
   edges?: Maybe<Array<Maybe<GqlOpportunitySlotEdge>>>;
@@ -1070,8 +1048,34 @@ export type GqlOpportunitySlotsConnection = {
 
 export type GqlOpportunitySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
-  pointsPerParticipation?: InputMaybe<GqlSortDirection>;
+  pointsRequired?: InputMaybe<GqlSortDirection>;
   startsAt?: InputMaybe<GqlSortDirection>;
+};
+
+export type GqlOpportunityUpdateContentInput = {
+  body?: InputMaybe<Scalars['String']['input']>;
+  capacity?: InputMaybe<Scalars['Int']['input']>;
+  category: GqlOpportunityCategory;
+  communityId: Scalars['String']['input'];
+  description: Scalars['String']['input'];
+  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  feeRequired?: InputMaybe<Scalars['Int']['input']>;
+  files?: InputMaybe<Scalars['JSON']['input']>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  placeId?: InputMaybe<Scalars['String']['input']>;
+  pointsRequired?: InputMaybe<Scalars['Int']['input']>;
+  pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
+  publishStatus: GqlPublishStatus;
+  requireApproval: Scalars['Boolean']['input'];
+  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  title: Scalars['String']['input'];
+};
+
+export type GqlOpportunityUpdateContentPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityUpdateContentSuccess;
+
+export type GqlOpportunityUpdateContentSuccess = {
+  __typename?: 'OpportunityUpdateContentSuccess';
+  opportunity: GqlOpportunity;
 };
 
 export type GqlPageInfo = {
@@ -1139,6 +1143,7 @@ export type GqlParticipationEdge = GqlEdge & {
 export type GqlParticipationFilterInput = {
   communityId?: InputMaybe<Scalars['String']['input']>;
   opportunityId?: InputMaybe<Scalars['String']['input']>;
+  opportunitySlotId?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<GqlParticipationStatus>;
   userId?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2128,14 +2133,13 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   MembershipWithdrawPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlMembershipWithdrawSuccess );
   OpportunityCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityCreateSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunityDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlOpportunityDeleteSuccess );
-  OpportunityEditContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityEditContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunityInvitationCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityInvitationCreateSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
   OpportunityInvitationDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlOpportunityInvitationDeleteSuccess );
   OpportunityInvitationDisablePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityInvitationDisableSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
   OpportunityInvitationHistoryCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityInvitationHistoryCreateSuccess, 'opportunityInvitationHistory'> & { opportunityInvitationHistory?: Maybe<_RefType['OpportunityInvitationHistory']> } );
   OpportunitySetPublishStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
-  OpportunitySlotCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunitySlotCreateSuccess, 'opportunitySlot'> & { opportunitySlot?: Maybe<_RefType['OpportunitySlot']> } );
-  OpportunitySlotDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlOpportunitySlotDeleteSuccess );
+  OpportunitySlotsBulkUpdatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
+  OpportunityUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   ParticipationApplyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationApplySuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationInvitePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationSetStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: _RefType['Participation'] } );
@@ -2251,9 +2255,6 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityDeletePayload']>;
   OpportunityDeleteSuccess: ResolverTypeWrapper<GqlOpportunityDeleteSuccess>;
   OpportunityEdge: ResolverTypeWrapper<Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Opportunity']> }>;
-  OpportunityEditContentInput: GqlOpportunityEditContentInput;
-  OpportunityEditContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityEditContentPayload']>;
-  OpportunityEditContentSuccess: ResolverTypeWrapper<Omit<GqlOpportunityEditContentSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   OpportunityFilterInput: GqlOpportunityFilterInput;
   OpportunityInvitation: ResolverTypeWrapper<OpportunityInvitation>;
   OpportunityInvitationCreateInput: GqlOpportunityInvitationCreateInput;
@@ -2281,15 +2282,18 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunitySetPublishStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   OpportunitySlot: ResolverTypeWrapper<OpportunitySlot>;
   OpportunitySlotCreateInput: GqlOpportunitySlotCreateInput;
-  OpportunitySlotCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySlotCreatePayload']>;
-  OpportunitySlotCreateSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySlotCreateSuccess, 'opportunitySlot'> & { opportunitySlot?: Maybe<GqlResolversTypes['OpportunitySlot']> }>;
-  OpportunitySlotDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySlotDeletePayload']>;
-  OpportunitySlotDeleteSuccess: ResolverTypeWrapper<GqlOpportunitySlotDeleteSuccess>;
   OpportunitySlotEdge: ResolverTypeWrapper<Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<GqlResolversTypes['OpportunitySlot']> }>;
   OpportunitySlotFilterInput: GqlOpportunitySlotFilterInput;
   OpportunitySlotSortInput: GqlOpportunitySlotSortInput;
+  OpportunitySlotUpdateInput: GqlOpportunitySlotUpdateInput;
+  OpportunitySlotsBulkUpdateInput: GqlOpportunitySlotsBulkUpdateInput;
+  OpportunitySlotsBulkUpdatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySlotsBulkUpdatePayload']>;
+  OpportunitySlotsBulkUpdateSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<GqlResolversTypes['OpportunitySlot']> }>;
   OpportunitySlotsConnection: ResolverTypeWrapper<Omit<GqlOpportunitySlotsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OpportunitySlotEdge']>>> }>;
   OpportunitySortInput: GqlOpportunitySortInput;
+  OpportunityUpdateContentInput: GqlOpportunityUpdateContentInput;
+  OpportunityUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityUpdateContentPayload']>;
+  OpportunityUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
   Paging: ResolverTypeWrapper<GqlPaging>;
   Participation: ResolverTypeWrapper<Participation>;
@@ -2486,9 +2490,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityDeletePayload'];
   OpportunityDeleteSuccess: GqlOpportunityDeleteSuccess;
   OpportunityEdge: Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Opportunity']> };
-  OpportunityEditContentInput: GqlOpportunityEditContentInput;
-  OpportunityEditContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityEditContentPayload'];
-  OpportunityEditContentSuccess: Omit<GqlOpportunityEditContentSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   OpportunityFilterInput: GqlOpportunityFilterInput;
   OpportunityInvitation: OpportunityInvitation;
   OpportunityInvitationCreateInput: GqlOpportunityInvitationCreateInput;
@@ -2516,15 +2517,18 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunitySetPublishStatusSuccess: Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   OpportunitySlot: OpportunitySlot;
   OpportunitySlotCreateInput: GqlOpportunitySlotCreateInput;
-  OpportunitySlotCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySlotCreatePayload'];
-  OpportunitySlotCreateSuccess: Omit<GqlOpportunitySlotCreateSuccess, 'opportunitySlot'> & { opportunitySlot?: Maybe<GqlResolversParentTypes['OpportunitySlot']> };
-  OpportunitySlotDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySlotDeletePayload'];
-  OpportunitySlotDeleteSuccess: GqlOpportunitySlotDeleteSuccess;
   OpportunitySlotEdge: Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['OpportunitySlot']> };
   OpportunitySlotFilterInput: GqlOpportunitySlotFilterInput;
   OpportunitySlotSortInput: GqlOpportunitySlotSortInput;
+  OpportunitySlotUpdateInput: GqlOpportunitySlotUpdateInput;
+  OpportunitySlotsBulkUpdateInput: GqlOpportunitySlotsBulkUpdateInput;
+  OpportunitySlotsBulkUpdatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySlotsBulkUpdatePayload'];
+  OpportunitySlotsBulkUpdateSuccess: Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<GqlResolversParentTypes['OpportunitySlot']> };
   OpportunitySlotsConnection: Omit<GqlOpportunitySlotsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['OpportunitySlotEdge']>>> };
   OpportunitySortInput: GqlOpportunitySortInput;
+  OpportunityUpdateContentInput: GqlOpportunityUpdateContentInput;
+  OpportunityUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityUpdateContentPayload'];
+  OpportunityUpdateContentSuccess: Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   PageInfo: GqlPageInfo;
   Paging: GqlPaging;
   Participation: Participation;
@@ -2930,13 +2934,12 @@ export type GqlMutationResolvers<ContextType = Context, ParentType extends GqlRe
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   opportunityCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityCreateArgs, 'input'>>;
   opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id'>>;
-  opportunityEditContent?: Resolver<Maybe<GqlResolversTypes['OpportunityEditContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityEditContentArgs, 'id' | 'input'>>;
   opportunityInvitationCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationCreateArgs, 'input'>>;
   opportunityInvitationDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDeleteArgs, 'id'>>;
   opportunityInvitationDisable?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDisablePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDisableArgs, 'id' | 'input'>>;
   opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input'>>;
-  opportunitySlotCreate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotCreateArgs, 'input'>>;
-  opportunitySlotDelete?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotDeleteArgs, 'id'>>;
+  opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input'>>;
+  opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input'>>;
   participationAcceptApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptApplicationArgs, 'id' | 'input'>>;
   participationAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptMyInvitationArgs, 'id'>>;
   participationApply?: Resolver<Maybe<GqlResolversTypes['ParticipationApplyPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApplyArgs, 'input'>>;
@@ -2974,7 +2977,7 @@ export type GqlOpportunityResolvers<ContextType = Context, ParentType extends Gq
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
-  description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  description?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   endsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   feeRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   files?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
@@ -3015,15 +3018,6 @@ export type GqlOpportunityDeleteSuccessResolvers<ContextType = Context, ParentTy
 export type GqlOpportunityEdgeResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunityEdge'] = GqlResolversParentTypes['OpportunityEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOpportunityEditContentPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunityEditContentPayload'] = GqlResolversParentTypes['OpportunityEditContentPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityEditContentSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOpportunityEditContentSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunityEditContentSuccess'] = GqlResolversParentTypes['OpportunityEditContentSuccess']> = ResolversObject<{
-  opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3130,27 +3124,18 @@ export type GqlOpportunitySlotResolvers<ContextType = Context, ParentType extend
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlOpportunitySlotCreatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotCreatePayload'] = GqlResolversParentTypes['OpportunitySlotCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunitySlotCreateSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOpportunitySlotCreateSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotCreateSuccess'] = GqlResolversParentTypes['OpportunitySlotCreateSuccess']> = ResolversObject<{
-  opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOpportunitySlotDeletePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotDeletePayload'] = GqlResolversParentTypes['OpportunitySlotDeletePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunitySlotDeleteSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOpportunitySlotDeleteSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotDeleteSuccess'] = GqlResolversParentTypes['OpportunitySlotDeleteSuccess']> = ResolversObject<{
-  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlOpportunitySlotEdgeResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotEdge'] = GqlResolversParentTypes['OpportunitySlotEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOpportunitySlotsBulkUpdatePayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotsBulkUpdatePayload'] = GqlResolversParentTypes['OpportunitySlotsBulkUpdatePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunitySlotsBulkUpdateSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOpportunitySlotsBulkUpdateSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunitySlotsBulkUpdateSuccess'] = GqlResolversParentTypes['OpportunitySlotsBulkUpdateSuccess']> = ResolversObject<{
+  slots?: Resolver<Array<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3158,6 +3143,15 @@ export type GqlOpportunitySlotsConnectionResolvers<ContextType = Context, Parent
   edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['OpportunitySlotEdge']>>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOpportunityUpdateContentPayloadResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunityUpdateContentPayload'] = GqlResolversParentTypes['OpportunityUpdateContentPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityUpdateContentSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOpportunityUpdateContentSuccessResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['OpportunityUpdateContentSuccess'] = GqlResolversParentTypes['OpportunityUpdateContentSuccess']> = ResolversObject<{
+  opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3663,8 +3657,6 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   OpportunityDeletePayload?: GqlOpportunityDeletePayloadResolvers<ContextType>;
   OpportunityDeleteSuccess?: GqlOpportunityDeleteSuccessResolvers<ContextType>;
   OpportunityEdge?: GqlOpportunityEdgeResolvers<ContextType>;
-  OpportunityEditContentPayload?: GqlOpportunityEditContentPayloadResolvers<ContextType>;
-  OpportunityEditContentSuccess?: GqlOpportunityEditContentSuccessResolvers<ContextType>;
   OpportunityInvitation?: GqlOpportunityInvitationResolvers<ContextType>;
   OpportunityInvitationCreatePayload?: GqlOpportunityInvitationCreatePayloadResolvers<ContextType>;
   OpportunityInvitationCreateSuccess?: GqlOpportunityInvitationCreateSuccessResolvers<ContextType>;
@@ -3682,12 +3674,12 @@ export type GqlResolvers<ContextType = Context> = ResolversObject<{
   OpportunitySetPublishStatusPayload?: GqlOpportunitySetPublishStatusPayloadResolvers<ContextType>;
   OpportunitySetPublishStatusSuccess?: GqlOpportunitySetPublishStatusSuccessResolvers<ContextType>;
   OpportunitySlot?: GqlOpportunitySlotResolvers<ContextType>;
-  OpportunitySlotCreatePayload?: GqlOpportunitySlotCreatePayloadResolvers<ContextType>;
-  OpportunitySlotCreateSuccess?: GqlOpportunitySlotCreateSuccessResolvers<ContextType>;
-  OpportunitySlotDeletePayload?: GqlOpportunitySlotDeletePayloadResolvers<ContextType>;
-  OpportunitySlotDeleteSuccess?: GqlOpportunitySlotDeleteSuccessResolvers<ContextType>;
   OpportunitySlotEdge?: GqlOpportunitySlotEdgeResolvers<ContextType>;
+  OpportunitySlotsBulkUpdatePayload?: GqlOpportunitySlotsBulkUpdatePayloadResolvers<ContextType>;
+  OpportunitySlotsBulkUpdateSuccess?: GqlOpportunitySlotsBulkUpdateSuccessResolvers<ContextType>;
   OpportunitySlotsConnection?: GqlOpportunitySlotsConnectionResolvers<ContextType>;
+  OpportunityUpdateContentPayload?: GqlOpportunityUpdateContentPayloadResolvers<ContextType>;
+  OpportunityUpdateContentSuccess?: GqlOpportunityUpdateContentSuccessResolvers<ContextType>;
   PageInfo?: GqlPageInfoResolvers<ContextType>;
   Paging?: GqlPagingResolvers<ContextType>;
   Participation?: GqlParticipationResolvers<ContextType>;

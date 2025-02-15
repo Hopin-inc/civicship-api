@@ -1,33 +1,28 @@
-# =========================================
-# Create
-# =========================================
+input OpportunitySlotsBulkUpdateInput {
+    opportunityId: ID!
+
+    create: [OpportunitySlotCreateInput!]
+    update: [OpportunitySlotUpdateInput!]
+    delete: [ID!]
+}
 
 input OpportunitySlotCreateInput {
     startsAt: Datetime!
     endsAt: Datetime!
-    opportunityId: ID
 }
 
-type OpportunitySlotCreateSuccess {
-    opportunitySlot: OpportunitySlot
-}
-
-union OpportunitySlotCreatePayload =
-    OpportunitySlotCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
-
-# =========================================
-# Delete
-# =========================================
-
-type OpportunitySlotDeleteSuccess {
+input OpportunitySlotUpdateInput {
     id: ID!
+    startsAt: Datetime
+    endsAt: Datetime
 }
 
-union OpportunitySlotDeletePayload =
-    OpportunitySlotDeleteSuccess
-    | InvalidInputValueError
+type OpportunitySlotsBulkUpdateSuccess {
+    slots: [OpportunitySlot!]!
+}
+
+union OpportunitySlotsBulkUpdatePayload =
+    OpportunitySlotsBulkUpdateSuccess
     | AuthError
+    | InvalidInputValueError
     | ComplexQueryError
