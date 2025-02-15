@@ -3,38 +3,49 @@
 ## input definitions
 
 input OpportunityCreateInput {
+    communityId: String!
+
     title: String!
-    description: String
-    category: OpportunityCategory!
-    requireApproval: Boolean
-    capacity: Int
-    pointsPerParticipation: Int!
+    description: String!
+    body: String
     image: String
-    files: [String!]
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    capacity: Int
+    pointsRequired: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    placeId: String
     startsAt: Datetime
     endsAt: Datetime
-
-    communityId: String!
-    cityCode: String!
-
-    stateCode: String
 }
 
-input OpportunityEditContentInput {
+input OpportunityUpdateContentInput {
     communityId: String!
 
-    title: String
-    description: String
-    category: OpportunityCategory
-    requireApproval: Boolean
-    capacity: Int
-    pointsPerParticipation: Int
+    title: String!
+    description: String!
+    body: String
     image: String
-    files: [String!]
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    capacity: Int
+    pointsRequired: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    placeId: String
     startsAt: Datetime
     endsAt: Datetime
-
-    cityCode: String
 }
 
 input OpportunitySetPublishStatusInput{
@@ -53,7 +64,7 @@ type OpportunityDeleteSuccess {
     opportunityId: String!
 }
 
-type OpportunityEditContentSuccess {
+type OpportunityUpdateContentSuccess {
     opportunity: Opportunity!
 }
 
@@ -75,8 +86,8 @@ union OpportunityDeletePayload =
     AuthError |
     ComplexQueryError
 
-union OpportunityEditContentPayload =
-    OpportunityEditContentSuccess |
+union OpportunityUpdateContentPayload =
+    OpportunityUpdateContentSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

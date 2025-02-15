@@ -13,7 +13,7 @@ extend type Query {
 extend type Mutation {
     opportunityCreate(input: OpportunityCreateInput!): OpportunityCreatePayload
     opportunityDelete(id: ID!): OpportunityDeletePayload
-    opportunityEditContent(id: ID!, input: OpportunityEditContentInput!): OpportunityEditContentPayload
+    opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!): OpportunityUpdateContentPayload
 
     opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!): OpportunitySetPublishStatusPayload
 }
@@ -24,7 +24,7 @@ type Opportunity {
     id: ID!
 
     title: String!
-    description: String
+    description: String!
     body: String
     image: String
     files: JSON

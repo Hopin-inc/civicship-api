@@ -1,6 +1,6 @@
 import {
   GqlOpportunityCreateInput,
-  GqlOpportunityEditContentInput,
+  GqlOpportunityUpdateContentInput,
   GqlQueryOpportunitiesArgs,
 } from "@/types/graphql";
 import OpportunityInputFormat from "@/domains/opportunity/presenter/input";
@@ -48,10 +48,10 @@ export default class OpportunityService {
     return await OpportunityRepository.delete(ctx, id);
   }
 
-  static async editOpportunityContent(
+  static async updateOpportunityContent(
     ctx: IContext,
     id: string,
-    input: GqlOpportunityEditContentInput,
+    input: GqlOpportunityUpdateContentInput,
   ) {
     const opportunity = await OpportunityRepository.find(ctx, id);
     if (!opportunity) {

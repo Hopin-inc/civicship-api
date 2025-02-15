@@ -3,14 +3,14 @@ import {
   GqlCommunityOpportunitiesArgs,
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
-  GqlMutationOpportunityEditContentArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
+  GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunitiesConnection,
   GqlOpportunity,
   GqlOpportunityCreatePayload,
   GqlOpportunityDeletePayload,
-  GqlOpportunityEditContentPayload,
   GqlOpportunitySetPublishStatusPayload,
+  GqlOpportunityUpdateContentPayload,
   GqlPlace,
   GqlPlaceOpportunitiesArgs,
   GqlQueryOpportunitiesArgs,
@@ -55,7 +55,7 @@ export default class OpportunityUseCase {
   ) {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
-      filter: { createdBy: id },
+      filter: { createdByUserId: id },
       first,
     });
   }
@@ -99,11 +99,11 @@ export default class OpportunityUseCase {
     return OpportunityOutputFormat.delete(res);
   }
 
-  static async managerEditOpportunityContent(
-    { id, input }: GqlMutationOpportunityEditContentArgs,
+  static async managerUpdateOpportunityContent(
+    { id, input }: GqlMutationOpportunityUpdateContentArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunityEditContentPayload> {
-    const res = await OpportunityService.editOpportunityContent(ctx, id, input);
+  ): Promise<GqlOpportunityUpdateContentPayload> {
+    const res = await OpportunityService.updateOpportunityContent(ctx, id, input);
     return OpportunityOutputFormat.update(res);
   }
 

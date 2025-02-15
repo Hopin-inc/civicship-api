@@ -13,7 +13,7 @@ const opportunityMutationPermissions: Record<string, ShieldRule> = {
     and(isCommunityManager, sanitizeInput),
     and(isOpportunityOwner, sanitizeInput),
   ),
-  opportunityEditContent: or(
+  opportunityUpdateContent: or(
     and(isCommunityManager, sanitizeInput),
     and(isOpportunityOwner, sanitizeInput),
   ),

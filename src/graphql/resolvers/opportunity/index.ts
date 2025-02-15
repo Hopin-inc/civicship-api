@@ -1,8 +1,8 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
-  GqlMutationOpportunityEditContentArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
+  GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunity,
   GqlOpportunityParticipationsArgs,
   GqlQueryOpportunitiesArgs,
@@ -28,11 +28,11 @@ const opportunityResolver = {
       OpportunityUseCase.managerCreateOpportunity(args, ctx),
     opportunityDelete: async (_: unknown, args: GqlMutationOpportunityDeleteArgs, ctx: IContext) =>
       OpportunityUseCase.managerDeleteOpportunity(args, ctx),
-    opportunityEditContent: async (
+    opportunityUpdateContent: async (
       _: unknown,
-      args: GqlMutationOpportunityEditContentArgs,
+      args: GqlMutationOpportunityUpdateContentArgs,
       ctx: IContext,
-    ) => OpportunityUseCase.managerEditOpportunityContent(args, ctx),
+    ) => OpportunityUseCase.managerUpdateOpportunityContent(args, ctx),
     opportunitySetPublishStatus: async (
       _: unknown,
       args: GqlMutationOpportunitySetPublishStatusArgs,
