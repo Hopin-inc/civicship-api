@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
-import ParticipationStatusHistoryInputFormat from "@/domains/opportunity/participationStatusHistory/presenter/input";
-import ParticipationStatusHistoryRepository from "@/domains/opportunity/participationStatusHistory/repository";
 import { GqlQueryParticipationStatusHistoriesArgs } from "@/types/graphql";
 import { ParticipationStatus, Prisma } from "@prisma/client";
+import ParticipationStatusHistoryRepository from "@/domains/opportunity/participation/statusHistory/repository";
+import ParticipationStatusHistoryInputFormat from "@/domains/opportunity/participation/statusHistory/presenter/input";
 
 export default class ParticipationStatusHistoryService {
   static async fetchStatusHistories(
@@ -14,6 +14,10 @@ export default class ParticipationStatusHistoryService {
     const orderBy = ParticipationStatusHistoryInputFormat.sort(sort ?? {});
 
     return await ParticipationStatusHistoryRepository.query(ctx, where, orderBy, take, cursor);
+  }
+
+  static async findParticipationStatusHistory(ctx: IContext, id: string) {
+    return await ParticipationStatusHistoryRepository.find(ctx, id);
   }
 
   static async recordParticipationHistory(

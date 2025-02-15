@@ -1,8 +1,8 @@
-import { ParticipationStatusHistoryPayloadWithArgs } from "@/domains/opportunity/participationStatusHistory/type";
 import {
   GqlParticipationStatusHistoriesConnection,
   GqlParticipationStatusHistory,
 } from "@/types/graphql";
+import { ParticipationStatusHistoryPayloadWithArgs } from "@/domains/opportunity/participation/statusHistory/type";
 
 export default class ParticipationStatusHistoryOutputFormat {
   static query(

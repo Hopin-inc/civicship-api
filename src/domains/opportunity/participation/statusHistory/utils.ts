@@ -6,8 +6,8 @@ import {
   GqlParticipationStatusHistorySortInput,
 } from "@/types/graphql";
 import { clampFirst } from "@/utils";
-import ParticipationStatusHistoryService from "@/domains/opportunity/participationStatusHistory/service";
-import ParticipationStatusHistoryOutputFormat from "@/domains/opportunity/participationStatusHistory/presenter/output";
+import ParticipationStatusHistoryService from "@/domains/opportunity/participation/statusHistory/service";
+import ParticipationStatusHistoryOutputFormat from "@/domains/opportunity/participation/statusHistory/presenter/output";
 
 export default class ParticipationStatusHistoryUtils {
   static async fetchParticipationStatusHistoriesCommon(

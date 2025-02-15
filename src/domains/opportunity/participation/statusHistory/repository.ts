@@ -1,7 +1,7 @@
 import { PrismaClientIssuer } from "@/prisma/client";
 import { Prisma } from "@prisma/client";
-import { participationStatusHistoryInclude } from "@/domains/opportunity/participationStatusHistory/type";
 import { IContext } from "@/types/server";
+import { participationStatusHistoryInclude } from "@/domains/opportunity/participation/statusHistory/type";
 
 export default class ParticipationStatusHistoryRepository {
   private static issuer = new PrismaClientIssuer();
