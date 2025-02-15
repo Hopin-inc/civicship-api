@@ -159,7 +159,6 @@ export type GqlCommunitiesConnection = {
 export type GqlCommunity = {
   __typename?: 'Community';
   bio?: Maybe<Scalars['String']['output']>;
-  city: GqlCity;
   createdAt: Scalars['Datetime']['output'];
   establishedAt?: Maybe<Scalars['Datetime']['output']>;
   id: Scalars['ID']['output'];
@@ -169,7 +168,6 @@ export type GqlCommunity = {
   opportunities?: Maybe<GqlOpportunitiesConnection>;
   participations?: Maybe<GqlParticipationsConnection>;
   pointName: Scalars['String']['output'];
-  state?: Maybe<GqlState>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   utilities?: Maybe<GqlUtilitiesConnection>;
   wallets?: Maybe<GqlWalletsConnection>;
@@ -2762,7 +2760,6 @@ export type GqlCommunitiesConnectionResolvers<ContextType = Context, ParentType 
 
 export type GqlCommunityResolvers<ContextType = Context, ParentType extends GqlResolversParentTypes['Community'] = GqlResolversParentTypes['Community']> = ResolversObject<{
   bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  city?: Resolver<GqlResolversTypes['City'], ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   establishedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
@@ -2772,7 +2769,6 @@ export type GqlCommunityResolvers<ContextType = Context, ParentType extends GqlR
   opportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlCommunityOpportunitiesArgs>>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlCommunityParticipationsArgs>>;
   pointName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  state?: Resolver<Maybe<GqlResolversTypes['State']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utilities?: Resolver<Maybe<GqlResolversTypes['UtilitiesConnection']>, ParentType, ContextType, Partial<GqlCommunityUtilitiesArgs>>;
   wallets?: Resolver<Maybe<GqlResolversTypes['WalletsConnection']>, ParentType, ContextType, Partial<GqlCommunityWalletsArgs>>;

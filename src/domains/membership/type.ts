@@ -6,11 +6,12 @@ export const membershipAuthSelect = Prisma.validator<Prisma.MembershipSelect>()(
 });
 
 export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
-  community: {
-    include: {
-      city: { include: { state: true } },
-    },
-  },
+  community: true,
+  // community: {
+  // include: {
+  //   city: { include: { state: true } },
+  // },
+  // },
   user: true,
 });
 

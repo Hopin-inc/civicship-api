@@ -3,9 +3,10 @@ import { opportunityInclude } from "@/domains/opportunity/type";
 
 export const participationInclude = Prisma.validator<Prisma.ParticipationInclude>()({
   user: true,
-  community: {
-    include: { city: { include: { state: true } } },
-  },
+  community: true,
+  // community: {
+  //   include: { city: { include: { state: true } } },
+  // },
   opportunity: {
     include: opportunityInclude,
   },

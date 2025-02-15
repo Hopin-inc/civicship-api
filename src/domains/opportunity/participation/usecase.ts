@@ -292,9 +292,9 @@ export default class ParticipationUseCase {
         participation,
       );
 
-      if (opportunity.category === OpportunityCategory.TASK) {
-        const fromPointChange = -opportunity.pointsPerParticipation;
-        const toPointChange = opportunity.pointsPerParticipation;
+      if (opportunity.pointsRequired && opportunity.category === OpportunityCategory.QUEST) {
+        const fromPointChange = -opportunity.pointsRequired;
+        const toPointChange = opportunity.pointsRequired;
 
         const { fromWalletId, toWalletId } = await WalletService.findWalletsForGiveReward(
           ctx,

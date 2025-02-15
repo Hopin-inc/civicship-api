@@ -5,13 +5,15 @@ export const opportunityAuthSelect = Prisma.validator<Prisma.OpportunitySelect>(
 });
 
 export const opportunityInclude = Prisma.validator<Prisma.OpportunityInclude>()({
-  community: {
-    include: {
-      city: { include: { state: true } },
-    },
-  },
+  community: true,
+  // community: {
+  //   include: {
+  //     city: { include: { state: true } },
+  //   },
+  // },
   createdByUser: true,
-  city: { include: { state: true } },
+  // city: { include: { state: true } },
+  place: true,
 });
 
 export type OpportunityPayloadWithArgs = Prisma.OpportunityGetPayload<{

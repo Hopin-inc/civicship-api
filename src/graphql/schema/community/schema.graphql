@@ -32,8 +32,8 @@ type Community {
     establishedAt: Datetime
     website: String
 
-    state: State
-    city: City!
+#    state: State
+#    city: City!
 
     memberships(
         filter: MembershipFilterInput

@@ -1,9 +1,10 @@
 import { Prisma } from "@prisma/client";
 
 export const utilityInclude = Prisma.validator<Prisma.UtilityInclude>()({
-  community: {
-    include: { city: { include: { state: true } } },
-  },
+  community: true,
+  // community: {
+  //   include: { city: { include: { state: true } } },
+  // },
 });
 
 export type UtilityGetPayloadWithArgs = Prisma.UtilityGetPayload<{

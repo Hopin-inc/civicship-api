@@ -1,11 +1,12 @@
 import { Prisma } from "@prisma/client";
 
 export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
-  community: {
-    include: {
-      city: { include: { state: true } },
-    },
-  },
+  community: true,
+  // community: {
+  //   include: {
+  //     city: { include: { state: true } },
+  //   },
+  // },
   user: true,
   currentPointView: true,
 });
