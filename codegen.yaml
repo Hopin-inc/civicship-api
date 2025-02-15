@@ -13,6 +13,8 @@ generates:
       strictScalars: true
       scalars:
         Datetime: Date
+        Decimal: string
+        JSON: any
       enumsAsConst: true
       mappers:
         User: "@prisma/client/index.d#User"
