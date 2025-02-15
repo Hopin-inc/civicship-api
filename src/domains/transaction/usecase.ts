@@ -26,6 +26,8 @@ import { Prisma } from "@prisma/client";
 import WalletService from "@/domains/membership/wallet/service";
 import TransactionInputFormat from "@/domains/transaction/presenter/input";
 import TransactionRepository from "@/domains/transaction/repository";
+import WalletRepository from "@/domains/membership/wallet/repository";
+import WalletUtils from "@/domains/membership/wallet/utils";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -104,14 +106,20 @@ export default class TransactionUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, input.toUserId, input.communityId, tx);
 
-      const wallet = await WalletService.createMemberWalletIfNeeded(
+      const memberWallet = await WalletService.createMemberWalletIfNeeded(
         ctx,
         input.toUserId,
         input.communityId,
         tx,
       );
+      const communityWallet = await WalletRepository.findCommunityWallet(
+        ctx,
+        input.communityId,
+        tx,
+      );
+      await WalletUtils.validateTransfer(input.toPointChange, communityWallet, memberWallet);
 
-      const data = TransactionInputFormat.grantCommunityPoint(input, wallet.id);
+      const data = TransactionInputFormat.grantCommunityPoint(input, memberWallet.id);
       const transaction = await TransactionRepository.create(ctx, data, tx);
       await TransactionRepository.refreshCurrentPoints(ctx, tx);
 
@@ -126,14 +134,16 @@ export default class TransactionUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, input.toUserId, input.communityId, tx);
 
-      const wallet = await WalletService.createMemberWalletIfNeeded(
+      const toWallet = await WalletService.createMemberWalletIfNeeded(
         ctx,
         input.toUserId,
         input.communityId,
         tx,
       );
+      const fromWallet = await WalletRepository.find(ctx, input.fromWalletId);
+      await WalletUtils.validateTransfer(input.toPointChange, fromWallet, toWallet);
 
-      const data = TransactionInputFormat.donateSelfPoint(input, wallet.id);
+      const data = TransactionInputFormat.donateSelfPoint(input, toWallet.id);
       const transaction = await TransactionRepository.create(ctx, data, tx);
       await TransactionRepository.refreshCurrentPoints(ctx, tx);
 
