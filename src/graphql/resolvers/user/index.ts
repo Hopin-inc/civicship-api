@@ -20,7 +20,7 @@ import MembershipUseCase from "@/domains/membership/usecase";
 import WalletUseCase from "@/domains/membership/wallet/usecase";
 import OpportunityUseCase from "@/domains/opportunity/usecase";
 import ParticipationUseCase from "@/domains/opportunity/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/domains/opportunity/participationStatusHistory/usecase";
+import ParticipationStatusHistoryUseCase from "@/domains/opportunity/participation/statusHistory/usecase";
 
 const userResolver = {
   Query: {
