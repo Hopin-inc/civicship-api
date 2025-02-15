@@ -34,3 +34,12 @@ type Transaction {
     createdAt: Datetime!
     updatedAt: Datetime
 }
+
+enum TransactionReason {
+    POINT_ISSUED
+    PARTICIPATION_APPROVED
+    UTILITY_USAGE
+    MEMBERSHIP_DELETED
+    GIFT
+    OTHER
+}

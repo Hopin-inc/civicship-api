@@ -1,0 +1,28 @@
+# =========================
+# Connection / Edge
+# =========================
+type PlacesConnection {
+    edges: [PlaceEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type PlaceEdge implements Edge {
+    cursor: String!
+    node: Place
+}
+
+# =========================
+# Filter / Sort Input
+# =========================
+input PlaceFilterInput {
+    nameContains: String
+    addressContains: String
+    isManual: Boolean
+    googlePlaceId: String
+    cityCode: String
+}
+
+input PlaceSortInput {
+    createdAt: SortDirection
+}

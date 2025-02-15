@@ -1,0 +1,40 @@
+extend type Query {
+    places(
+        filter: PlaceFilterInput
+        sort: PlaceSortInput
+        cursor: String
+        first: Int
+    ): PlacesConnection! @complexity(value: 10, multipliers: ["first"])
+    place(id: ID!): Place
+}
+
+extend type Mutation {
+    placeCreate(input: PlaceCreateInput!): PlaceCreatePayload
+    placeUpdate(id: ID!, input: PlaceUpdateInput!): PlaceUpdatePayload
+    placeDelete(id: ID!): PlaceDeletePayload
+}
+
+type Place {
+    id: ID!
+
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    city: City
+
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

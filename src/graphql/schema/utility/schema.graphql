@@ -28,8 +28,14 @@ type Utility {
     image: String
     pointsRequired: Int!
 
-    community: Community!
-    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
+    community: Community
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

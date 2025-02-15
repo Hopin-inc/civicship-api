@@ -31,10 +31,58 @@ type User {
     createdAt: Datetime!
     updatedAt: Datetime
 
-    memberships(first: Int, cursor: MembershipCursorInput): MembershipsConnection @complexity(value: 10, multipliers: ["first"])
-    wallets(first: Int, cursor: String): WalletsConnection @complexity(value: 10, multipliers: ["first"])
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: MembershipCursorInput
+        first: Int
+    ): MembershipsConnection @complexity(value: 10, multipliers: ["first"])
+    wallets(
+        filter: WalletFilterInput
+        sort: WalletSortInput
+        cursor: String
+        first: Int
+    ): WalletsConnection @complexity(value: 10, multipliers: ["first"])
 
-    opportunitiesCreatedByMe(first: Int, cursor: String): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
-    participations(first: Int, cursor: String): ParticipationsConnection @complexity(value: 10, multipliers: ["first"])
-    participationStatusChangedByMe(first: Int, cursor: String): ParticipationStatusHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+    opportunitiesCreatedByMe(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+    invitations(
+        filter: OpportunityInvitationFilterInput
+        sort: OpportunityInvitationSortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationsConnection @complexity(value: 10, multipliers: ["first"])
+    invitationHistories(
+        filter: OpportunityInvitationHistoryFilterInput
+        sort: OpportunityInvitationHistorySortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection @complexity(value: 10, multipliers: ["first"])
+    participationStatusChangedByMe(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+
+#    articles(
+#        first: Int,
+#        cursor: String
+#    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+}
+
+enum SysRole {
+    SYS_ADMIN
+    USER
 }

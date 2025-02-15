@@ -1,0 +1,33 @@
+# =========================================
+# Create
+# =========================================
+
+input OpportunitySlotCreateInput {
+    startsAt: Datetime!
+    endsAt: Datetime!
+    opportunityId: ID
+}
+
+type OpportunitySlotCreateSuccess {
+    opportunitySlot: OpportunitySlot
+}
+
+union OpportunitySlotCreatePayload =
+    OpportunitySlotCreateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================================
+# Delete
+# =========================================
+
+type OpportunitySlotDeleteSuccess {
+    id: ID!
+}
+
+union OpportunitySlotDeletePayload =
+    OpportunitySlotDeleteSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError

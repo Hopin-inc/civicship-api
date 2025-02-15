@@ -34,13 +34,37 @@ type Participation {
     id: ID!
     status: ParticipationStatus!
 
+    images: JSON
+
     user: User
     community: Community
     opportunity: Opportunity
+    opportunitySlot: OpportunitySlot
 
-    statusHistories(first: Int, cursor: String): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
-    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+    statusHistories(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+enum ParticipationStatus {
+    INVITED
+    APPLIED
+    CANCELED
+    PARTICIPATING
+    NOT_PARTICIPATING
+    APPROVED
+    DENIED
 }

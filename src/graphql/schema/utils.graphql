@@ -13,6 +13,8 @@ directive @requireRole(
 ) on FIELD_DEFINITION
 
 scalar Datetime
+scalar JSON
+scalar Decimal
 
 type Query {
     echo: String!
@@ -40,17 +42,6 @@ interface Edge {
 
 input ImageInput {
     base64: String!
-}
-
-enum SysRole {
-    SYS_ADMIN
-    USER
-}
-
-enum Role {
-    OWNER
-    MANAGER
-    MEMBER
 }
 
 enum SortDirection {

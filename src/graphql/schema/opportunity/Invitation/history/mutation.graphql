@@ -1,0 +1,17 @@
+# =========================
+# Create
+# =========================
+input OpportunityInvitationHistoryCreateInput {
+    invitationId: ID!
+    invitedUserId: ID!
+}
+
+type OpportunityInvitationHistoryCreateSuccess {
+    opportunityInvitationHistory: OpportunityInvitationHistory
+}
+
+union OpportunityInvitationHistoryCreatePayload =
+    OpportunityInvitationHistoryCreateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError

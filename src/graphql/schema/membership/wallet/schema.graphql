@@ -14,13 +14,20 @@ extend type Query {
 
 type Wallet {
     id: ID!
-
     type: WalletType!
+
     community: Community!
     user: User
-    currentPointView: CurrentPointView
 
-    transactions(first: Int, cursor: String): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
+    currentPointView: CurrentPointView
+    accumulatedPointView: AccumulatedPointView
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
@@ -29,4 +36,14 @@ type Wallet {
 type CurrentPointView {
     walletId: String!
     currentPoint: Int!
+}
+
+type AccumulatedPointView {
+    walletId: String!
+    accumulatedPoint: Int!
+}
+
+enum WalletType {
+    COMMUNITY
+    MEMBER
 }

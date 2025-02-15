@@ -22,25 +22,61 @@ extend type Mutation {
 
 type Opportunity {
     id: ID!
+
     title: String!
     description: String
+    body: String
+    image: String
+    files: JSON
+
     category: OpportunityCategory!
     publishStatus: PublishStatus!
     requireApproval: Boolean!
+
     capacity: Int
-    pointsPerParticipation: Int!
-    image: String
-    files: [String!]
+    pointsRequired: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    place: Place
     startsAt: Datetime
     endsAt: Datetime
 
-    community: Community!
-    createdByUser: User!
-    state: State
-    city: City!
+    community: Community
+    createdByUser: User
 
-    participations(first: Int, cursor: String): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    slots(
+        filter: OpportunitySlotFilterInput
+        sort: OpportunitySlotSortInput
+        cursor: String
+        first: Int
+    ): OpportunitySlotsConnection @complexity(value: 5, multipliers: ["first"])
+
+    invitations(
+        filter: OpportunityInvitationFilterInput
+        sort: OpportunityInvitationSortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationsConnection @complexity(value: 5, multipliers: ["first"])
+
+#    articles(
+#        first: Int,
+#        cursor: String
+#    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+enum OpportunityCategory {
+    QUEST
+    EVENT
+    ACTIVITY
 }

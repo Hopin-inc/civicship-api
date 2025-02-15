@@ -1,15 +1,3 @@
-type City {
-    code: ID!
-    name: String!
-    state: State!
-}
-
-type State {
-    code: ID!
-    countryCode: ID!
-    name: String!
-}
-
 enum IdentityPlatform {
     LINE
     FACEBOOK
@@ -21,46 +9,21 @@ enum PublishStatus {
     PRIVATE
 }
 
-enum OpportunityCategory {
-    EVENT
-    TASK
-    CONVERSATION
-}
-
-enum MembershipStatus {
-    INVITED
-    CANCELED
-    JOINED
-    WITHDRAWED
-}
-
-enum ParticipationStatus {
-    INVITED
-    APPLIED
-    CANCELED
-    PARTICIPATING
-    NOT_PARTICIPATING
-    APPROVED
-    DENIED
-}
-
-enum WalletType {
-    COMMUNITY
-    MEMBER
-}
-
-enum TransactionReason {
-    POINT_ISSUED
-    PARTICIPATION_APPROVED
-    UTILITY_USAGE
-    MEMBERSHIP_DELETED
-    GIFT
-    OTHER
-}
-
 enum ValueType {
     INT
     FLOAT
+}
+
+type State {
+    code: ID!
+    countryCode: ID!
+    name: String!
+}
+
+type City {
+    code: ID!
+    name: String!
+    state: State!
 }
 
 extend type Query {
