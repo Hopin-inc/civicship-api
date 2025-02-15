@@ -1,11 +1,11 @@
 import { PrismaClientIssuer } from "@/prisma/client";
 import { createUserLoader } from "@/graphql/dataloader/user";
 import { createTransactionLoader } from "@/graphql/dataloader/transaction";
-import { createOpportunityLoader } from "@/graphql/dataloader/opportunity";
-import { createParticipationLoader } from "@/graphql/dataloader/participant";
-import { createWalletLoader } from "@/graphql/dataloader/wallet";
+import { createOpportunityLoader } from "@/graphql/dataloader/opportunity/opportunity";
+import { createParticipationLoader } from "@/graphql/dataloader/opportunity/participant";
+import { createWalletLoader } from "@/graphql/dataloader/membership/wallet";
 import { createCommunityLoader } from "@/graphql/dataloader/community";
-import { createMembershipLoader } from "@/graphql/dataloader/membership";
+import { createMembershipLoader } from "@/graphql/dataloader/membership/membership";
 import { createUtilityLoader } from "@/graphql/dataloader/utility";
 
 export function createLoaders(issuer: PrismaClientIssuer) {

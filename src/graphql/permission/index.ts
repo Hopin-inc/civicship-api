@@ -1,11 +1,11 @@
 import { shield, allow } from "graphql-shield";
-import { userMutationPermissions, userQueryPermissions } from "@/graphql/schema/user/permission";
-import { communityMutationPermissions } from "@/graphql/schema/community/permission";
-import { membershipMutationPermissions } from "@/graphql/schema/membership/permission";
-import { opportunityMutationPermissions } from "@/graphql/schema/opportunity/permission";
-import { participationMutationPermissions } from "@/graphql/schema/opportunity/participation/permission";
-import { utilityMutationPermissions } from "@/graphql/schema/utility/permission";
-import { transactionMutationPermissions } from "@/graphql/schema/transaction/permission";
+import { userMutationPermissions, userQueryPermissions } from "@/graphql/permission/user";
+import { communityMutationPermissions } from "@/graphql/permission/community";
+import { membershipMutationPermissions } from "@/graphql/permission/membership";
+import { opportunityMutationPermissions } from "@/graphql/permission/opportunity/opportunity";
+import { participationMutationPermissions } from "@/graphql/permission/opportunity/participation";
+import { utilityMutationPermissions } from "@/graphql/permission/utility";
+import { transactionMutationPermissions } from "@/graphql/permission/transaction";
 
 const permissions = shield(
   {
