@@ -14,15 +14,15 @@ type OpportunityEdge implements Edge {
 input OpportunityFilterInput {
     category: OpportunityCategory
     publishStatus: PublishStatus
+
     communityId: String
-    createdBy: String
-    stateCode: String
-    cityCode: String
+    createdByUserId: String
     placeId: String
 }
 
 input OpportunitySortInput {
     startsAt: SortDirection
-    pointsPerParticipation: SortDirection
     createdAt: SortDirection
+
+    pointsRequired: SortDirection
 }
