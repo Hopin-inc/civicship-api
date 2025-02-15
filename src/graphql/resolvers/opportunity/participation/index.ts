@@ -18,7 +18,7 @@ import {
 import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/domains/opportunity/participation/usecase";
 import TransactionUseCase from "@/domains/transaction/usecase";
-import ParticipationStatusHistoryUseCase from "@/domains/opportunity/participationStatusHistory/usecase";
+import ParticipationStatusHistoryUseCase from "@/domains/opportunity/participation/statusHistory/usecase";
 
 const participationResolver = {
   Query: {
