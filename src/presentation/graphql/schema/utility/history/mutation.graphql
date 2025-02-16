@@ -1,0 +1,22 @@
+# Input definitions
+
+input UtilityHistoryCreateInput {
+    walletId: String!
+    utilityId: String!
+    transactionId: String!
+    usedAt: Datetime
+}
+
+# Type definitions
+
+type UtilityHistoryCreateSuccess {
+    utilityHistory: UtilityHistory!
+}
+
+# Union definitions
+
+union UtilityHistoryCreatePayload =
+    UtilityHistoryCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

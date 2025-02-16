@@ -29,7 +29,13 @@ type Transaction {
     toPointChange: Int
 
     participation: Participation
-    utility: Utility
+
+    utilityHistories(
+        filter: UtilityHistoryFilterInput
+        sort: UtilityHistorySortInput
+        cursor: String
+        first: Int
+    ): UtilityHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

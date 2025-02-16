@@ -1,0 +1,24 @@
+# Connection type for pagination
+
+type UtilityHistoriesConnection {
+    edges: [UtilityHistoryEdge!]!
+    pageInfo: PageInfo!
+}
+
+type UtilityHistoryEdge {
+    node: UtilityHistory!
+    cursor: String!
+}
+
+# Input types for filtering and sorting
+
+input UtilityHistoryFilterInput {
+    walletId: ID
+    utilityId: ID
+    usedAtExists: Boolean
+}
+
+input UtilityHistorySortInput {
+    createdAt: SortDirection!
+    usedAt: SortDirection!
+}
