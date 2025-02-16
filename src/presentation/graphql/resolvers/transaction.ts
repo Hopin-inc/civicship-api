@@ -5,7 +5,7 @@ import {
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionDonateSelfPointArgs,
 } from "@/types/graphql";
-import TransactionUseCase from "@/application/transaction/usecase";
+import TransactionUseCase from "@/application/transaction/usecase/read";
 import { IContext } from "@/types/server";
 
 const transactionResolver = {

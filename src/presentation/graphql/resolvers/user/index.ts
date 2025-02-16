@@ -1,4 +1,4 @@
-import UserUseCase from "@/application/user/usecase";
+import UserReadUseCase from "@/application/user/usecase/read";
 import {
   GqlMembershipsConnection,
   GqlMutationUserUpdateMyProfileArgs,
@@ -16,19 +16,20 @@ import {
   GqlWalletsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import MembershipUseCase from "@/application/membership/usecase";
-import WalletUseCase from "@/application/membership/wallet/usecase";
-import OpportunityUseCase from "@/application/opportunity/usecase";
-import ParticipationUseCase from "@/application/opportunity/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/application/opportunity/participation/statusHistory/usecase";
+import WalletReadUseCase from "@/application/membership/wallet/usecase/read";
+import ParticipationReadUseCase from "@/application/opportunity/participation/usecase/read";
+import ParticipationStatusHistoryReadUseCase from "@/application/opportunity/participation/statusHistory/usecase/read";
+import OpportunityReadUseCase from "@/application/opportunity/usecase/read";
+import UserWriteUseCase from "@/application/user/usecase/write";
+import MembershipReadUseCase from "@/application/membership/usecase/read";
 
 const userResolver = {
   Query: {
     users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
-      UserUseCase.visitorBrowseCommunityMembers(ctx, args),
+      UserReadUseCase.visitorBrowseCommunityMembers(ctx, args),
     user: async (_: unknown, args: GqlQueryUserArgs, ctx: IContext) => {
       if (!ctx.loaders?.user) {
-        return UserUseCase.visitorViewMember(ctx, args);
+        return UserReadUseCase.visitorViewMember(ctx, args);
       }
       return await ctx.loaders.user.load(args.id);
     },
@@ -38,7 +39,7 @@ const userResolver = {
       _: unknown,
       args: GqlMutationUserUpdateMyProfileArgs,
       ctx: IContext,
-    ) => UserUseCase.userUpdateProfile(ctx, args),
+    ) => UserWriteUseCase.userUpdateProfile(ctx, args),
   },
 
   User: {
@@ -47,7 +48,7 @@ const userResolver = {
       args: GqlUserMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
-      return MembershipUseCase.visitorBrowseMembershipsByUser(parent, args, ctx);
+      return MembershipReadUseCase.visitorBrowseMembershipsByUser(parent, args, ctx);
     },
 
     wallets: async (
@@ -55,7 +56,7 @@ const userResolver = {
       args: GqlUserWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
-      return WalletUseCase.visitorBrowseWalletsByUser(parent, args, ctx);
+      return WalletReadUseCase.visitorBrowseWalletsByUser(parent, args, ctx);
     },
 
     opportunitiesCreatedByMe: async (
@@ -63,7 +64,7 @@ const userResolver = {
       args: GqlUserOpportunitiesCreatedByMeArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.visitorBrowseOpportunitiesCreatedByUser(parent, args, ctx);
+      return OpportunityReadUseCase.visitorBrowseOpportunitiesCreatedByUser(parent, args, ctx);
     },
 
     participations: async (
@@ -71,7 +72,7 @@ const userResolver = {
       args: GqlUserParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      return ParticipationUseCase.visitorBrowseParticipationsByUser(parent, args, ctx);
+      return ParticipationReadUseCase.visitorBrowseParticipationsByUser(parent, args, ctx);
     },
 
     participationStatusChangedByMe: async (
@@ -79,7 +80,7 @@ const userResolver = {
       args: GqlUserParticipationStatusChangedByMeArgs,
       ctx: IContext,
     ): Promise<GqlParticipationStatusHistoriesConnection> => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseParticipationStatusChangedByUser(
+      return ParticipationStatusHistoryReadUseCase.visitorBrowseParticipationStatusChangedByUser(
         parent,
         args,
         ctx,

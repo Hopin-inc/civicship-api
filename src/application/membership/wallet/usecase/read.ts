@@ -13,7 +13,7 @@ import WalletOutputFormat from "@/presentation/graphql/dto/membership/wallet/out
 import { IContext } from "@/types/server";
 import WalletUtils from "@/application/membership/wallet/utils";
 
-export default class WalletUseCase {
+export default class WalletReadUseCase {
   static async userBrowseWallets(
     { filter, sort, cursor, first }: GqlQueryWalletsArgs,
     ctx: IContext,

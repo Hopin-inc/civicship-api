@@ -16,18 +16,19 @@ import {
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationUseCase from "@/application/opportunity/participation/usecase";
-import TransactionUseCase from "@/application/transaction/usecase";
-import ParticipationStatusHistoryUseCase from "@/application/opportunity/participation/statusHistory/usecase";
+import ParticipationReadUseCase from "@/application/opportunity/participation/usecase/read";
+import TransactionReadUseCase from "@/application/transaction/usecase/read";
+import ParticipationStatusHistoryReadUseCase from "@/application/opportunity/participation/statusHistory/usecase/read";
+import ParticipationWriteUseCase from "@/application/opportunity/participation/usecase/write";
 
 const participationResolver = {
   Query: {
     participations: async (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) =>
-      ParticipationUseCase.visitorBrowseParticipations(args, ctx),
+      ParticipationReadUseCase.visitorBrowseParticipations(args, ctx),
 
     participation: async (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
       if (!ctx.loaders?.participation) {
-        return ParticipationUseCase.visitorViewParticipation(args, ctx);
+        return ParticipationReadUseCase.visitorViewParticipation(args, ctx);
       }
       return await ctx.loaders.participation.load(args.id);
     },
@@ -37,61 +38,61 @@ const participationResolver = {
       _: unknown,
       args: GqlMutationParticipationInviteArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.memberInviteUserToOpportunity(args, ctx),
+    ) => ParticipationWriteUseCase.memberInviteUserToOpportunity(args, ctx),
 
     participationCancelInvitation: async (
       _: unknown,
       args: GqlMutationParticipationCancelInvitationArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.memberCancelInvitation(args, ctx),
+    ) => ParticipationWriteUseCase.memberCancelInvitation(args, ctx),
 
     participationAcceptMyInvitation: async (
       _: unknown,
       args: GqlMutationParticipationAcceptMyInvitationArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.userAcceptMyInvitation(args, ctx),
+    ) => ParticipationWriteUseCase.userAcceptMyInvitation(args, ctx),
 
     participationDenyMyInvitation: async (
       _: unknown,
       args: GqlMutationParticipationDenyMyInvitationArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.userDenyMyInvitation(args, ctx),
+    ) => ParticipationWriteUseCase.userDenyMyInvitation(args, ctx),
 
     participationApply: async (
       _: unknown,
       args: GqlMutationParticipationApplyArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.userApplyForOpportunity(args, ctx),
+    ) => ParticipationWriteUseCase.userApplyForOpportunity(args, ctx),
 
     participationCancelMyApplication: async (
       _: unknown,
       args: GqlMutationParticipationCancelMyApplicationArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.userCancelMyApplication(args, ctx),
+    ) => ParticipationWriteUseCase.userCancelMyApplication(args, ctx),
 
     participationAcceptApplication: async (
       _: unknown,
       args: GqlMutationParticipationAcceptApplicationArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.managerAcceptApplication(args, ctx),
+    ) => ParticipationWriteUseCase.managerAcceptApplication(args, ctx),
 
     participationDenyApplication: async (
       _: unknown,
       args: GqlMutationParticipationDenyApplicationArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.managerDenyApplication(args, ctx),
+    ) => ParticipationWriteUseCase.managerDenyApplication(args, ctx),
 
     participationApprovePerformance: async (
       _: unknown,
       args: GqlMutationParticipationApprovePerformanceArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.managerApprovePerformance(args, ctx),
+    ) => ParticipationWriteUseCase.managerApprovePerformance(args, ctx),
 
     participationDenyPerformance: async (
       _: unknown,
       args: GqlMutationParticipationDenyPerformanceArgs,
       ctx: IContext,
-    ) => ParticipationUseCase.managerDenyPerformance(args, ctx),
+    ) => ParticipationWriteUseCase.managerDenyPerformance(args, ctx),
   },
 
   Participation: {
@@ -100,7 +101,7 @@ const participationResolver = {
       args: GqlParticipationStatusHistoriesArgs,
       ctx: IContext,
     ) => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
+      return ParticipationStatusHistoryReadUseCase.visitorBrowseStatusHistoriesByParticipation(
         parent,
         args,
         ctx,
@@ -112,7 +113,7 @@ const participationResolver = {
       args: GqlParticipationTransactionsArgs,
       ctx: IContext,
     ) => {
-      return TransactionUseCase.visitorBrowseTransactionsByParticipation(parent, args, ctx);
+      return TransactionReadUseCase.visitorBrowseTransactionsByParticipation(parent, args, ctx);
     },
   },
 };

@@ -5,17 +5,17 @@ import {
   GqlTransactionsConnection,
   GqlWalletTransactionsArgs,
 } from "@/types/graphql";
-import WalletUseCase from "@/application/membership/wallet/usecase";
+import WalletReadUseCase from "@/application/membership/wallet/usecase/read";
 import { IContext } from "@/types/server";
-import TransactionUseCase from "@/application/transaction/usecase";
+import TransactionReadUseCase from "@/application/transaction/usecase/read";
 
 const walletResolver = {
   Query: {
     wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
-      WalletUseCase.userBrowseWallets(args, ctx),
+      WalletReadUseCase.userBrowseWallets(args, ctx),
     wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
       if (!ctx.loaders?.wallet) {
-        return WalletUseCase.userViewWallet(args, ctx);
+        return WalletReadUseCase.userViewWallet(args, ctx);
       }
       return await ctx.loaders.wallet.load(args.id);
     },
@@ -27,7 +27,7 @@ const walletResolver = {
       args: GqlWalletTransactionsArgs,
       ctx: IContext,
     ): Promise<GqlTransactionsConnection> => {
-      return TransactionUseCase.visitorBrowseTransactionsByWallet(parent, args, ctx);
+      return TransactionReadUseCase.visitorBrowseTransactionsByWallet(parent, args, ctx);
     },
   },
 };

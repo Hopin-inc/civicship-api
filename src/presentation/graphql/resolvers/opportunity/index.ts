@@ -8,36 +8,37 @@ import {
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
-import OpportunityUseCase from "@/application/opportunity/usecase";
+import OpportunityWriteUseCase from "@/application/opportunity/usecase/write";
 import { IContext } from "@/types/server";
-import ParticipationUseCase from "@/application/opportunity/participation/usecase";
+import ParticipationReadUseCase from "@/application/opportunity/participation/usecase/read";
+import OpportunityReadUseCase from "@/application/opportunity/usecase/read";
 
 const opportunityResolver = {
   Query: {
     opportunities: async (_: unknown, args: GqlQueryOpportunitiesArgs, ctx: IContext) =>
-      OpportunityUseCase.visitorBrowsePublicOpportunities(args, ctx),
+      OpportunityReadUseCase.visitorBrowsePublicOpportunities(args, ctx),
     opportunity: async (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
       if (!ctx.loaders?.opportunity) {
-        return OpportunityUseCase.visitorViewOpportunity(args, ctx);
+        return OpportunityReadUseCase.visitorViewOpportunity(args, ctx);
       }
       return ctx.loaders.opportunity.load(args.id);
     },
   },
   Mutation: {
     opportunityCreate: async (_: unknown, args: GqlMutationOpportunityCreateArgs, ctx: IContext) =>
-      OpportunityUseCase.managerCreateOpportunity(args, ctx),
+      OpportunityWriteUseCase.managerCreateOpportunity(args, ctx),
     opportunityDelete: async (_: unknown, args: GqlMutationOpportunityDeleteArgs, ctx: IContext) =>
-      OpportunityUseCase.managerDeleteOpportunity(args, ctx),
+      OpportunityWriteUseCase.managerDeleteOpportunity(args, ctx),
     opportunityUpdateContent: async (
       _: unknown,
       args: GqlMutationOpportunityUpdateContentArgs,
       ctx: IContext,
-    ) => OpportunityUseCase.managerUpdateOpportunityContent(args, ctx),
+    ) => OpportunityWriteUseCase.managerUpdateOpportunityContent(args, ctx),
     opportunitySetPublishStatus: async (
       _: unknown,
       args: GqlMutationOpportunitySetPublishStatusArgs,
       ctx: IContext,
-    ) => OpportunityUseCase.managerSetOpportunityPublishStatus(args, ctx),
+    ) => OpportunityWriteUseCase.managerSetOpportunityPublishStatus(args, ctx),
   },
   Opportunity: {
     participations: async (
@@ -45,7 +46,7 @@ const opportunityResolver = {
       args: GqlOpportunityParticipationsArgs,
       ctx: IContext,
     ) => {
-      return ParticipationUseCase.visitorBrowseParticipationsByOpportunity(parent, args, ctx);
+      return ParticipationReadUseCase.visitorBrowseParticipationsByOpportunity(parent, args, ctx);
     },
   },
 };

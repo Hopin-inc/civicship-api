@@ -3,7 +3,7 @@ import {
   GqlQueryParticipationStatusHistoryArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationStatusHistoryUseCase from "@/application/opportunity/participation/statusHistory/usecase";
+import ParticipationStatusHistoryReadUseCase from "@/application/opportunity/participation/statusHistory/usecase/read";
 
 const participationStatusHistoryResolver = {
   Query: {
@@ -12,7 +12,10 @@ const participationStatusHistoryResolver = {
       args: GqlQueryParticipationStatusHistoriesArgs,
       ctx: IContext,
     ) => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseParticipationStatusHistories(args, ctx);
+      return ParticipationStatusHistoryReadUseCase.visitorBrowseParticipationStatusHistories(
+        args,
+        ctx,
+      );
     },
     participationStatusHistory: async (
       _: unknown,
@@ -20,7 +23,10 @@ const participationStatusHistoryResolver = {
       ctx: IContext,
     ) => {
       if (!ctx.loaders?.participationStatusHistory) {
-        return ParticipationStatusHistoryUseCase.visitorViewParticipationStatusHistory(args, ctx);
+        return ParticipationStatusHistoryReadUseCase.visitorViewParticipationStatusHistory(
+          args,
+          ctx,
+        );
       }
       return ctx.loaders.participationStatusHistory.load(args.id);
     },

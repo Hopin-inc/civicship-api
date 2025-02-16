@@ -9,7 +9,7 @@ import CommunityService from "@/application/community/service";
 import CommunityOutputFormat from "@/presentation/graphql/dto/community/output";
 import { clampFirst } from "@/utils";
 
-export class CommunityQueryUseCase {
+export default class CommunityReadUseCase {
   static async userBrowseCommunities(
     { filter, sort, cursor, first }: GqlQueryCommunitiesArgs,
     ctx: IContext,

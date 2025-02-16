@@ -1,6 +1,4 @@
 import {
-  GqlCommunity,
-  GqlCommunityParticipationsArgs,
   GqlMutationParticipationAcceptApplicationArgs,
   GqlMutationParticipationAcceptMyInvitationArgs,
   GqlMutationParticipationApplyArgs,
@@ -11,20 +9,10 @@ import {
   GqlMutationParticipationDenyMyInvitationArgs,
   GqlMutationParticipationDenyPerformanceArgs,
   GqlMutationParticipationInviteArgs,
-  GqlOpportunity,
-  GqlOpportunityParticipationsArgs,
-  GqlOpportunitySlot,
-  GqlOpportunitySlotParticipationsArgs,
-  GqlParticipation,
   GqlParticipationApplyPayload,
   GqlParticipationInvitePayload,
-  GqlParticipationsConnection,
   GqlParticipationSetStatusPayload,
-  GqlQueryParticipationArgs,
-  GqlQueryParticipationsArgs,
   GqlTransactionGiveRewardPointInput,
-  GqlUser,
-  GqlUserParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationService from "@/application/opportunity/participation/service";
@@ -41,79 +29,8 @@ import ParticipationRepository from "@/infrastructure/repositories/opportunity/p
 import TransactionService from "@/application/transaction/service";
 import ParticipationStatusHistoryService from "@/application/opportunity/participation/statusHistory/service";
 
-export default class ParticipationUseCase {
+export default class ParticipationWriteUseCase {
   private static issuer = new PrismaClientIssuer();
-
-  static async visitorBrowseParticipations(
-    { cursor, filter, sort, first }: GqlQueryParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
-  }
-
-  static async visitorBrowseParticipationsByCommunity(
-    { id }: GqlCommunity,
-    { first, cursor }: GqlCommunityParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
-      cursor,
-      filter: { communityId: id },
-      first,
-    });
-  }
-
-  static async visitorBrowseParticipationsByUser(
-    { id }: GqlUser,
-    { first, cursor }: GqlUserParticipationsArgs,
-    ctx: IContext,
-  ) {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
-      cursor,
-      filter: { userId: id },
-      first,
-    });
-  }
-
-  static async visitorBrowseParticipationsByOpportunity(
-    { id }: GqlOpportunity,
-    { first, cursor }: GqlOpportunityParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
-      cursor,
-      filter: { opportunityId: id },
-      first,
-    });
-  }
-
-  static async visitorBrowseParticipationsByOpportunitySlot(
-    { id }: GqlOpportunitySlot,
-    { first, cursor }: GqlOpportunitySlotParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
-      cursor,
-      filter: { opportunitySlotId: id },
-      first,
-    });
-  }
-
-  static async visitorViewParticipation(
-    { id }: GqlQueryParticipationArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipation | null> {
-    const res = await ParticipationService.findParticipation(ctx, id);
-    if (!res) {
-      return null;
-    }
-    return ParticipationOutputFormat.get(res);
-  }
 
   static async memberInviteUserToOpportunity(
     { input }: GqlMutationParticipationInviteArgs,

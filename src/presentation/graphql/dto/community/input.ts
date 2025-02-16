@@ -28,7 +28,6 @@ export default class CommunityInputFormat {
 
     return {
       ...properties,
-      // city: { connect: { code: cityCode } },
       memberships: {
         create: [
           {

@@ -9,9 +9,9 @@ import {
 import { IContext } from "@/types/server";
 import OpportunityInvitationHistoryService from "@/application/opportunity/invitation/history/service";
 import OpportunityInvitationHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/history/output";
-import OpportunityInvitationHistoryUtils from "@/application/opportunity/invitation/history/utilis";
+import OpportunityInvitationHistoryUtils from "@/application/opportunity/invitation/history/utils";
 
-export default class OpportunityInvitationHistoryUseCase {
+export default class OpportunityInvitationHistoryReadUseCase {
   static async visitorBrowseOpportunityInvitationHistories(
     { filter, sort, cursor, first }: GqlQueryOpportunityInvitationHistoriesArgs,
     ctx: IContext,

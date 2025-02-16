@@ -1,4 +1,4 @@
-import UtilityUseCase from "@/application/utility/usecase";
+import UtilityUseCase from "@/application/utility/usecase/read";
 import {
   GqlQueryUtilitiesArgs,
   GqlQueryUtilityArgs,
@@ -11,7 +11,7 @@ import {
   GqlTransactionsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import TransactionUseCase from "@/application/transaction/usecase";
+import TransactionUseCase from "@/application/transaction/usecase/read";
 
 const utilityResolver = {
   Query: {

@@ -1,47 +1,18 @@
 import {
-  GqlQueryOpportunityInvitationsArgs,
-  GqlQueryOpportunityInvitationArgs,
   GqlMutationOpportunityInvitationCreateArgs,
   GqlMutationOpportunityInvitationDisableArgs,
   GqlMutationOpportunityInvitationDeleteArgs,
-  GqlOpportunityInvitationsConnection,
-  GqlOpportunityInvitation,
   GqlOpportunityInvitationCreatePayload,
   GqlOpportunityInvitationDisablePayload,
   GqlOpportunityInvitationDeletePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { clampFirst } from "@/utils";
 import OpportunityInvitationService from "@/application/opportunity/invitation/service";
 import OpportunityInvitationOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/output";
 
-export default class OpportunityInvitationUseCase {
+export default class OpportunityInvitationWriteUseCase {
   private static issuer = new PrismaClientIssuer();
-
-  static async visitorBrowseOpportunityInvitations(
-    { filter, sort, cursor, first }: GqlQueryOpportunityInvitationsArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityInvitationsConnection> {
-    const take = clampFirst(first);
-    const rows = await OpportunityInvitationService.fetchOpportunityInvitations(
-      ctx,
-      { filter, sort, cursor },
-      take,
-    );
-    const hasNextPage = rows.length > take;
-    const data = rows.slice(0, take).map((record) => OpportunityInvitationOutputFormat.get(record));
-    return OpportunityInvitationOutputFormat.query(data, hasNextPage);
-  }
-
-  static async visitorViewOpportunityInvitation(
-    { id }: GqlQueryOpportunityInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityInvitation | null> {
-    const invitation = await OpportunityInvitationService.findOpportunityInvitation(ctx, id);
-    if (!invitation) return null;
-    return OpportunityInvitationOutputFormat.get(invitation);
-  }
 
   static async managerCreateOpportunityInvitation(
     { input }: GqlMutationOpportunityInvitationCreateArgs,

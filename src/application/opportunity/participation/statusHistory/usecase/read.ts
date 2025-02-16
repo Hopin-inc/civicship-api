@@ -13,7 +13,7 @@ import ParticipationStatusHistoryUtils from "@/application/opportunity/participa
 import ParticipationStatusHistoryService from "@/application/opportunity/participation/statusHistory/service";
 import ParticipationStatusHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/participation/statusHistory/output";
 
-export default class ParticipationStatusHistoryUseCase {
+export default class ParticipationStatusHistoryReadUseCase {
   static async visitorBrowseParticipationStatusHistories(
     { cursor, filter, sort, first }: GqlQueryParticipationStatusHistoriesArgs,
     ctx: IContext,

@@ -1,16 +1,8 @@
 import {
   GqlCommunity,
   GqlCommunityOpportunitiesArgs,
-  GqlMutationOpportunityCreateArgs,
-  GqlMutationOpportunityDeleteArgs,
-  GqlMutationOpportunitySetPublishStatusArgs,
-  GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunitiesConnection,
   GqlOpportunity,
-  GqlOpportunityCreatePayload,
-  GqlOpportunityDeletePayload,
-  GqlOpportunitySetPublishStatusPayload,
-  GqlOpportunityUpdateContentPayload,
   GqlPlace,
   GqlPlaceOpportunitiesArgs,
   GqlQueryOpportunitiesArgs,
@@ -21,9 +13,9 @@ import {
 import { IContext } from "@/types/server";
 import OpportunityService from "@/application/opportunity/service";
 import OpportunityOutputFormat from "@/presentation/graphql/dto/opportunity/output";
-import { OpportunityUtils } from "@/application/opportunity/utlis";
+import { OpportunityUtils } from "@/application/opportunity/utils";
 
-export default class OpportunityUseCase {
+export default class OpportunityReadUseCase {
   static async visitorBrowsePublicOpportunities(
     { cursor, filter, sort, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
@@ -81,37 +73,5 @@ export default class OpportunityUseCase {
       return null;
     }
     return OpportunityOutputFormat.get(res);
-  }
-
-  static async managerCreateOpportunity(
-    { input }: GqlMutationOpportunityCreateArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityCreatePayload> {
-    const res = await OpportunityService.createOpportunity(ctx, input);
-    return OpportunityOutputFormat.create(res);
-  }
-
-  static async managerDeleteOpportunity(
-    { id }: GqlMutationOpportunityDeleteArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityDeletePayload> {
-    const res = await OpportunityService.deleteOpportunity(ctx, id);
-    return OpportunityOutputFormat.delete(res);
-  }
-
-  static async managerUpdateOpportunityContent(
-    { id, input }: GqlMutationOpportunityUpdateContentArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityUpdateContentPayload> {
-    const res = await OpportunityService.updateOpportunityContent(ctx, id, input);
-    return OpportunityOutputFormat.update(res);
-  }
-
-  static async managerSetOpportunityPublishStatus(
-    { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(ctx, id, input.status);
-    return OpportunityOutputFormat.setPublishStatus(res);
   }
 }

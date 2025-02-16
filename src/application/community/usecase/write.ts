@@ -14,7 +14,7 @@ import MembershipService from "@/application/membership/service";
 import { getCurrentUserId } from "@/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
-export class CommunityMutationUseCase {
+export default class CommunityWriteUseCase {
   private static issuer = new PrismaClientIssuer();
 
   static async userCreateCommunityAndJoin(

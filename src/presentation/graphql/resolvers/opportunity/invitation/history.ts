@@ -3,7 +3,7 @@ import {
   GqlQueryOpportunityInvitationHistoryArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityInvitationHistoryUseCase from "@/application/opportunity/invitation/history/usecase";
+import OpportunityInvitationHistoryReadUseCase from "@/application/opportunity/invitation/history/usecse/read";
 
 const invitationHistoryResolver = {
   Query: {
@@ -12,7 +12,7 @@ const invitationHistoryResolver = {
       args: GqlQueryOpportunityInvitationHistoriesArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationHistoryUseCase.visitorBrowseOpportunityInvitationHistories(
+      return OpportunityInvitationHistoryReadUseCase.visitorBrowseOpportunityInvitationHistories(
         args,
         ctx,
       );
@@ -24,7 +24,7 @@ const invitationHistoryResolver = {
       ctx: IContext,
     ) => {
       if (!ctx.loaders?.opportunityInvitationHistory) {
-        return OpportunityInvitationHistoryUseCase.visitorViewOpportunityInvitationHistory(
+        return OpportunityInvitationHistoryReadUseCase.visitorViewOpportunityInvitationHistory(
           args,
           ctx,
         );

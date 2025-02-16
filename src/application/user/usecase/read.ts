@@ -1,17 +1,10 @@
-import {
-  GqlMutationUserUpdateMyProfileArgs,
-  GqlQueryUserArgs,
-  GqlQueryUsersArgs,
-  GqlUser,
-  GqlUsersConnection,
-  GqlUserUpdateProfilePayload,
-} from "@/types/graphql";
+import { GqlQueryUserArgs, GqlQueryUsersArgs, GqlUser, GqlUsersConnection } from "@/types/graphql";
 import UserService from "@/application/user/service";
 import UserResponseFormat from "@/presentation/graphql/dto/user/output";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 
-export default class UserUseCase {
+export default class UserReadUseCase {
   static async visitorBrowseCommunityMembers(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUsersArgs,
@@ -32,13 +25,5 @@ export default class UserUseCase {
       return null;
     }
     return UserResponseFormat.get(user);
-  }
-
-  static async userUpdateProfile(
-    ctx: IContext,
-    { input }: GqlMutationUserUpdateMyProfileArgs,
-  ): Promise<GqlUserUpdateProfilePayload> {
-    const res = await UserService.updateProfile(ctx, { input });
-    return UserResponseFormat.updateProfile(res);
   }
 }
