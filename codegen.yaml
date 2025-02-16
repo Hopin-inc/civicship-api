@@ -35,4 +35,4 @@ generates:
         Transaction: "@prisma/client/index.d#Transaction"
         City: "@prisma/client/index.d#City"
         State: "@prisma/client/index.d#State"
-      contextType: "@/prisma/client#Context"
+#      contextType: "@/prisma/client#Context"
