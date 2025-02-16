@@ -1,0 +1,49 @@
+import {
+  GqlMutationCommunityCreateArgs,
+  GqlMutationCommunityDeleteArgs,
+  GqlMutationCommunityUpdateProfileArgs,
+  GqlCommunityCreatePayload,
+  GqlCommunityDeletePayload,
+  GqlCommunityUpdateProfilePayload,
+} from "@/types/graphql";
+import { IContext } from "@/types/server";
+import CommunityService from "@/app/community/service";
+import CommunityOutputFormat from "@/presen/graphql/dto/community/output";
+import WalletService from "@/app/membership/wallet/service";
+import MembershipService from "@/app/membership/service";
+import { getCurrentUserId } from "@/utils";
+import { PrismaClientIssuer } from "@/infra/prisma/client";
+
+export default class CommunityWriteUseCase {
+  private static issuer = new PrismaClientIssuer();
+
+  static async userCreateCommunityAndJoin(
+    { input }: GqlMutationCommunityCreateArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunityCreatePayload> {
+    return this.issuer.public(ctx, async (tx) => {
+      const userId = getCurrentUserId(ctx);
+      const community = await CommunityService.createCommunity(ctx, input, tx);
+      await WalletService.createCommunityWallet(ctx, community.id, tx);
+      await MembershipService.joinIfNeeded(ctx, userId, community.id, tx);
+      await WalletService.createMemberWalletIfNeeded(ctx, userId, community.id, tx);
+      return CommunityOutputFormat.create(community);
+    });
+  }
+
+  static async managerDeleteCommunity(
+    { id }: GqlMutationCommunityDeleteArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunityDeletePayload> {
+    const res = await CommunityService.deleteCommunity(ctx, id);
+    return CommunityOutputFormat.delete(res);
+  }
+
+  static async managerUpdateCommunityProfile(
+    { id, input }: GqlMutationCommunityUpdateProfileArgs,
+    ctx: IContext,
+  ): Promise<GqlCommunityUpdateProfilePayload> {
+    const res = await CommunityService.updateCommunityProfile(ctx, id, input);
+    return CommunityOutputFormat.update(res);
+  }
+}

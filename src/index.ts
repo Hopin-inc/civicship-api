@@ -1,10 +1,10 @@
 import http from "http";
 import { createServer } from "https";
 import fs from "fs";
-import { createExpressApp } from "@/presentation/app";
-import { createApolloServer } from "@/presentation/graphql/server";
-import logger from "@/infrastructure/logging";
-import { authHandler } from "@/presentation/middleware/auth";
+import { createExpressApp } from "@/presen/app";
+import { createApolloServer } from "@/presen/graphql/server";
+import logger from "@/infra/logging";
+import { authHandler } from "@/presen/middleware/auth";
 
 const port = Number(process.env.PORT ?? 3000);
 

@@ -1,4 +1,4 @@
-import { prismaClient } from "@/infrastructure/prisma/client";
+import { prismaClient } from "@/infra/prisma/client";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;

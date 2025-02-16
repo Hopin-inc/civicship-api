@@ -1,6 +1,6 @@
 import { IdentityPlatform, Role } from "@prisma/client";
 import { GqlUser } from "@/types/graphql";
-import { Loaders } from "@/presentation/graphql/dataloader";
+import { Loaders } from "@/presen/graphql/dataloader";
 
 export type LoggedInUserInfo = {
   uid: string;
