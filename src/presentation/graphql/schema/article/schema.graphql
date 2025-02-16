@@ -1,0 +1,48 @@
+extend type Query {
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
+
+    article(id: ID!): Article
+}
+
+extend type Mutation {
+    articleCreate(input: ArticleCreateInput!): ArticleCreatePayload
+    articleUpdate(input: ArticleUpdateInput!): ArticleUpdatePayload
+    articleDelete(id: ID!): ArticleDeletePayload
+}
+
+# Type definitions
+
+# TODO: 記事の登場人物を複数紐付けられるように、コミュニティも複数紐付けられるように
+type Article {
+    id: ID!
+    title: String!
+    introduction: String!
+    category: ArticleCategory!
+    publishStatus: PublishStatus!
+    body: String!
+    thumbnail: JSON
+    publishedAt: Datetime
+
+    community: Community
+    writtenByUser: User
+
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum ArticleCategory {
+    ACTIVITY_REPORT
+    INTERVIEW
+}

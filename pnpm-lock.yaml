@@ -710,14 +710,14 @@ packages:
   '@babel/plugin-proposal-class-properties@7.18.6':
     resolution: {integrity: sha512-cumfXOF0+nzZrrN8Rf0t7M+tF6sZc7vhQwYQck9q1/5w2OExlD+b4v4RpMJFaV1Z7WcDRgO6FqvxqxGlwo+RHQ==}
     engines: {node: '>=6.9.0'}
-    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-class-properties instead.
+    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugins is no longer maintained. Please use @babel/plugins-transform-class-properties instead.
     peerDependencies:
       '@babel/core': ^7.0.0-0
 
   '@babel/plugin-proposal-object-rest-spread@7.20.7':
     resolution: {integrity: sha512-d2S98yCiLxDVmBmE8UjGcfPvNEUbA1U5q5WxaWFUGRzJSVAZqm5W6MbPct0jxnegUZ0niLeNX+IOzEs7wYg9Dg==}
     engines: {node: '>=6.9.0'}
-    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-object-rest-spread instead.
+    deprecated: This proposal has been merged to the ECMAScript standard and thus this plugins is no longer maintained. Please use @babel/plugins-transform-object-rest-spread instead.
     peerDependencies:
       '@babel/core': ^7.0.0-0
 
@@ -11071,7 +11071,7 @@ snapshots:
       slash: 3.0.0
       strip-ansi: 6.0.1
     transitivePeerDependencies:
-      - babel-plugin-macros
+      - babel-plugins-macros
       - supports-color
       - ts-node
 
@@ -13632,7 +13632,7 @@ snapshots:
       prompts: 2.4.2
     transitivePeerDependencies:
       - '@types/node'
-      - babel-plugin-macros
+      - babel-plugins-macros
       - supports-color
       - ts-node
 
@@ -15420,7 +15420,7 @@ snapshots:
       slash: 3.0.0
       stack-utils: 2.0.6
     transitivePeerDependencies:
-      - babel-plugin-macros
+      - babel-plugins-macros
       - supports-color
 
   jest-cli@29.7.0(@types/node@22.13.1)(ts-node@10.9.2(@types/node@22.13.1)(typescript@5.7.3)):
@@ -15438,7 +15438,7 @@ snapshots:
       yargs: 17.7.2
     transitivePeerDependencies:
       - '@types/node'
-      - babel-plugin-macros
+      - babel-plugins-macros
       - supports-color
       - ts-node
 
@@ -15470,7 +15470,7 @@ snapshots:
       '@types/node': 22.13.1
       ts-node: 10.9.2(@types/node@22.13.1)(typescript@5.7.3)
     transitivePeerDependencies:
-      - babel-plugin-macros
+      - babel-plugins-macros
       - supports-color
 
   jest-diff@29.7.0:
@@ -15717,7 +15717,7 @@ snapshots:
       jest-cli: 29.7.0(@types/node@22.13.1)(ts-node@10.9.2(@types/node@22.13.1)(typescript@5.7.3))
     transitivePeerDependencies:
       - '@types/node'
-      - babel-plugin-macros
+      - babel-plugins-macros
       - supports-color
       - ts-node
 

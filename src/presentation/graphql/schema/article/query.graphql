@@ -1,0 +1,29 @@
+# ===================
+# Connection / Edge
+# ===================
+type ArticlesConnection {
+    edges: [ArticleEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ArticleEdge implements Edge {
+    cursor: String!
+    node: Article
+}
+
+# ===================
+# Filter / Sort Input
+# ===================
+input ArticleFilterInput {
+    keyword: String
+    category: ArticleCategory
+    publishStatus: PublishStatus
+    writtenByUserId: String
+    communityId: String
+}
+
+input ArticleSortInput {
+    createdAt: SortDirection
+    publishedAt: SortDirection
+}

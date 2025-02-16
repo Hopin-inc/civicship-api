@@ -1,0 +1,64 @@
+# =========================
+#  Create
+# =========================
+
+input ArticleCreateInput {
+    title: String!
+    introduction: String!
+    category: ArticleCategory!
+    publishStatus: PublishStatus
+    body: String!
+    thumbnail: JSON
+    publishedAt: Datetime
+
+    communityId: ID!
+    writtenByUserId: ID
+}
+
+type ArticleCreateSuccess {
+    article: Article
+}
+
+union ArticleCreatePayload =
+    ArticleCreateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================
+#  Update
+# =========================
+
+input ArticleUpdateInput {
+    title: String
+    introduction: String
+    category: ArticleCategory
+    publishStatus: PublishStatus
+    body: String
+    thumbnail: JSON
+    publishedAt: Datetime
+}
+
+type ArticleUpdateSuccess {
+    article: Article
+}
+
+union ArticleUpdatePayload =
+    ArticleUpdateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================
+#  Delete
+# =========================
+
+type ArticleDeleteSuccess {
+    id: ID!
+}
+
+union ArticleDeletePayload =
+    ArticleDeleteSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
