@@ -14,11 +14,6 @@ export const transactionInclude = Prisma.validator<Prisma.TransactionInclude>()(
     },
   },
   participation: true,
-  utility: {
-    include: {
-      community: true,
-    },
-  },
 });
 
 export type TransactionPayloadWithArgs = Prisma.TransactionGetPayload<{

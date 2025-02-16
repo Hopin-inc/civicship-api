@@ -1,29 +1,82 @@
 import {
+  GqlQueryMembershipsArgs,
+  GqlQueryMembershipArgs,
+  GqlMembershipsConnection,
+  GqlMembership,
+  GqlCommunity,
+  GqlCommunityMembershipsArgs,
+  GqlUserMembershipsArgs,
+  GqlUser,
   GqlMutationMembershipInviteArgs,
+  GqlMembershipInvitePayload,
   GqlMutationMembershipCancelInvitationArgs,
+  GqlMembershipSetInvitationStatusPayload,
   GqlMutationMembershipAcceptMyInvitationArgs,
   GqlMutationMembershipDenyMyInvitationArgs,
   GqlMutationMembershipWithdrawArgs,
+  GqlMembershipWithdrawPayload,
   GqlMutationMembershipRemoveArgs,
+  GqlMembershipRemovePayload,
   GqlMutationMembershipAssignOwnerArgs,
+  GqlMembershipSetRolePayload,
   GqlMutationMembershipAssignManagerArgs,
   GqlMutationMembershipAssignMemberArgs,
-  GqlMembershipInvitePayload,
-  GqlMembershipSetInvitationStatusPayload,
-  GqlMembershipWithdrawPayload,
-  GqlMembershipSetRolePayload,
-  GqlMembershipRemovePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import MembershipService from "@/app/membership/service";
+import MembershipUtils from "@/app/membership/utils";
 import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
-import { Prisma, Role } from "@prisma/client";
+import MembershipService from "@/app/membership/service";
 import { getCurrentUserId } from "@/utils";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import WalletService from "@/app/membership/wallet/service";
+import { PrismaClientIssuer } from "@/infra/prisma/client";
 
-export default class MembershipWriteUseCase {
+export default class MembershipUseCase {
   private static issuer = new PrismaClientIssuer();
+
+  static async visitorBrowseMemberships(
+    { filter, sort, cursor, first }: GqlQueryMembershipsArgs,
+    ctx: IContext,
+  ): Promise<GqlMembershipsConnection> {
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      sort,
+      filter,
+      first,
+    });
+  }
+
+  static async visitorBrowseMembershipsByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityMembershipsArgs,
+    ctx: IContext,
+  ): Promise<GqlMembershipsConnection> {
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseMembershipsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserMembershipsArgs,
+    ctx: IContext,
+  ): Promise<GqlMembershipsConnection> {
+    return MembershipUtils.fetchMembershipsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
+      first,
+    });
+  }
+
+  static async visitorViewMembership(
+    { userId, communityId }: GqlQueryMembershipArgs,
+    ctx: IContext,
+  ): Promise<GqlMembership | null> {
+    const membership = await MembershipService.findMembership(ctx, userId, communityId);
+    return membership ? MembershipOutputFormat.get(membership) : null;
+  }
 
   static async ownerInviteMember(
     { input }: GqlMutationMembershipInviteArgs,

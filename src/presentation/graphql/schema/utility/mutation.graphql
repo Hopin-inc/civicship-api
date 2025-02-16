@@ -18,13 +18,7 @@ input UtilityUpdateInfoInput {
     pointsRequired: Int!
 }
 
-input UtilityGetInput {
-    communityId: String!
-
-    userWalletId: String!
-}
-
-input UtilityDonateInput {
+input UtilityRedeemedInput {
     communityId: String!
 
     userWalletId: String!
@@ -50,16 +44,12 @@ type UtilityUpdateInfoSuccess {
     utility: Utility!
 }
 
-type UtilityGetSuccess {
-    transaction: Transaction!
-}
-
-type UtilityDonateSuccess {
+type UtilityRedeemedSuccess {
     transaction: Transaction!
 }
 
 type UtilityUseSuccess {
-    transaction: Transaction!
+    utility: Utility!
 }
 
 # Union definitions
@@ -82,14 +72,8 @@ union UtilityUpdateInfoPayload =
     AuthError |
     ComplexQueryError
 
-union UtilityGetPayload =
-    UtilityGetSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UtilityDonatePayload =
-    UtilityDonateSuccess |
+union UtilityRedeemedPayload =
+    UtilityRedeemedSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

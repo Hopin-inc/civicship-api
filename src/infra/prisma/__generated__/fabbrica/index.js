@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityHistoryFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -40,9 +40,13 @@ const modelFieldDefinitions = [{
                 type: "ParticipationStatusHistory",
                 relationName: "ParticipationStatusHistoryToUser"
             }, {
-                name: "articles",
+                name: "articlesWrittenByMe",
                 type: "Article",
-                relationName: "ArticleToUser"
+                relationName: "t_author_users_on_articles"
+            }, {
+                name: "articlesAboutMe",
+                type: "Article",
+                relationName: "t_related_users_on_articles"
             }, {
                 name: "wallets",
                 type: "Wallet",
@@ -119,6 +123,10 @@ const modelFieldDefinitions = [{
                 name: "toTransactions",
                 type: "Transaction",
                 relationName: "to_wallet"
+            }, {
+                name: "utilityHistories",
+                type: "UtilityHistory",
+                relationName: "UtilityHistoryToWallet"
             }]
     }, {
         name: "Opportunity",
@@ -244,9 +252,13 @@ const modelFieldDefinitions = [{
                 type: "Community",
                 relationName: "ArticleToCommunity"
             }, {
-                name: "writtenByUser",
+                name: "authors",
                 type: "User",
-                relationName: "ArticleToUser"
+                relationName: "t_author_users_on_articles"
+            }, {
+                name: "relatedUsers",
+                type: "User",
+                relationName: "t_related_users_on_articles"
             }, {
                 name: "opportunities",
                 type: "Opportunity",
@@ -259,9 +271,24 @@ const modelFieldDefinitions = [{
                 type: "Community",
                 relationName: "CommunityToUtility"
             }, {
-                name: "transactions",
+                name: "utilityHistories",
+                type: "UtilityHistory",
+                relationName: "UtilityToUtilityHistory"
+            }]
+    }, {
+        name: "UtilityHistory",
+        fields: [{
+                name: "wallet",
+                type: "Wallet",
+                relationName: "UtilityHistoryToWallet"
+            }, {
+                name: "utility",
+                type: "Utility",
+                relationName: "UtilityToUtilityHistory"
+            }, {
+                name: "transaction",
                 type: "Transaction",
-                relationName: "TransactionToUtility"
+                relationName: "TransactionToUtilityHistory"
             }]
     }, {
         name: "Transaction",
@@ -278,9 +305,9 @@ const modelFieldDefinitions = [{
                 type: "Participation",
                 relationName: "ParticipationToTransaction"
             }, {
-                name: "utility",
-                type: "Utility",
-                relationName: "TransactionToUtility"
+                name: "utilityHistories",
+                type: "UtilityHistory",
+                relationName: "TransactionToUtilityHistory"
             }]
     }, {
         name: "City",
@@ -1499,9 +1526,6 @@ exports.defineParticipationStatusHistoryFactory.withTransientFields = defaultTra
 function isArticlecommunityFactory(x) {
     return x?._factoryFor === "Community";
 }
-function isArticlewrittenByUserFactory(x) {
-    return x?._factoryFor === "User";
-}
 function autoGenerateArticleScalarsOrEnums({ seq }) {
     return {
         title: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Article", fieldName: "title", isId: false, isUnique: false, seq }),
@@ -1546,10 +1570,7 @@ function defineArticleFactoryInternal({ defaultData: defaultDataResolver, onAfte
             const defaultAssociations = {
                 community: isArticlecommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community,
-                writtenByUser: isArticlewrittenByUserFactory(defaultData.writtenByUser) ? {
-                    create: await defaultData.writtenByUser.build()
-                } : defaultData.writtenByUser
+                } : defaultData.community
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1693,6 +1714,109 @@ exports.defineUtilityFactory = ((options) => {
     return defineUtilityFactoryInternal(options, {});
 });
 exports.defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
+function isUtilityHistorywalletFactory(x) {
+    return x?._factoryFor === "Wallet";
+}
+function isUtilityHistoryutilityFactory(x) {
+    return x?._factoryFor === "Utility";
+}
+function isUtilityHistorytransactionFactory(x) {
+    return x?._factoryFor === "Transaction";
+}
+function autoGenerateUtilityHistoryScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineUtilityHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("UtilityHistory", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUtilityHistoryScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                wallet: isUtilityHistorywalletFactory(defaultData.wallet) ? {
+                    create: await defaultData.wallet.build()
+                } : defaultData.wallet,
+                utility: isUtilityHistoryutilityFactory(defaultData.utility) ? {
+                    create: await defaultData.utility.build()
+                } : defaultData.utility,
+                transaction: isUtilityHistorytransactionFactory(defaultData.transaction) ? {
+                    create: await defaultData.transaction.build()
+                } : defaultData.transaction
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().utilityHistory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "UtilityHistory",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link UtilityHistory} model.
+ *
+ * @param options
+ * @returns factory {@link UtilityHistoryFactoryInterface}
+ */
+exports.defineUtilityHistoryFactory = ((options) => {
+    return defineUtilityHistoryFactoryInternal(options, {});
+});
+exports.defineUtilityHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityHistoryFactoryInternal(options, defaultTransientFieldValues);
 function isTransactionfromWalletFactory(x) {
     return x?._factoryFor === "Wallet";
 }
@@ -1701,9 +1825,6 @@ function isTransactiontoWalletFactory(x) {
 }
 function isTransactionparticipationFactory(x) {
     return x?._factoryFor === "Participation";
-}
-function isTransactionutilityFactory(x) {
-    return x?._factoryFor === "Utility";
 }
 function autoGenerateTransactionScalarsOrEnums({ seq }) {
     return {
@@ -1751,10 +1872,7 @@ function defineTransactionFactoryInternal({ defaultData: defaultDataResolver, on
                 } : defaultData.toWallet,
                 participation: isTransactionparticipationFactory(defaultData.participation) ? {
                     create: await defaultData.participation.build()
-                } : defaultData.participation,
-                utility: isTransactionutilityFactory(defaultData.utility) ? {
-                    create: await defaultData.utility.build()
-                } : defaultData.utility
+                } : defaultData.participation
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);

@@ -9,7 +9,7 @@ import { clampFirst } from "@/utils";
 import PlaceService from "@/app/place/service";
 import PlaceOutputFormat from "@/presentation/graphql/dto/place/output";
 
-export default class PlaceReadUseCase {
+export default class PlaceUseCase {
   static async userBrowsePlaces(
     { filter, sort, cursor, first }: GqlQueryPlacesArgs,
     ctx: IContext,

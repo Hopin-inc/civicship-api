@@ -30,15 +30,11 @@ input TransactionGiveRewardPointInput {
     participationId: String!
 }
 
-input TransactionUseUtilityInput {
-    communityId: String!
-
+input TransactionRedeemedUtilityInput {
     fromWalletId: String!
-    fromPointChange: Int!
     toWalletId: String!
-    toPointChange: Int!
 
-    utilityId: String!
+    transferPoints: Int!
 }
 
 # Type definitions for Responses
@@ -59,7 +55,7 @@ type TransactionGiveRewardPointSuccess {
     transaction: Transaction!
 }
 
-type TransactionUseUtilitySuccess {
+type TransactionRedeemedUtilitySuccess {
     transaction: Transaction!
 }
 
@@ -84,8 +80,8 @@ union TransactionDonateSelfPointPayload =
     AuthError |
     ComplexQueryError
 
-union TransactionUseUtilityPayload =
-    TransactionUseUtilitySuccess |
+union TransactionRedeemedUtilityPayload =
+    TransactionRedeemedUtilitySuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

@@ -1,25 +1,81 @@
 import {
+  GqlQueryTransactionsArgs,
+  GqlQueryTransactionArgs,
+  GqlTransactionsConnection,
+  GqlTransaction,
+  GqlParticipation,
+  GqlParticipationTransactionsArgs,
+  GqlWallet,
+  GqlWalletTransactionsArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlTransactionIssueCommunityPointPayload,
-  GqlTransactionGrantCommunityPointPayload,
-  GqlTransactionDonateSelfPointPayload,
-  GqlTransactionDonateSelfPointInput,
   GqlTransactionGrantCommunityPointInput,
+  GqlTransactionGrantCommunityPointPayload,
+  GqlTransactionDonateSelfPointInput,
+  GqlTransactionDonateSelfPointPayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/app/transaction/service";
 import TransactionOutputFormat from "@/presentation/graphql/dto/transaction/output";
+import TransactionUtils from "@/app/transaction/utils";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
-import MembershipService from "@/app/membership/service";
 import { Prisma } from "@prisma/client";
+import MembershipService from "@/app/membership/service";
 import WalletService from "@/app/membership/wallet/service";
-import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
-import TransactionRepository from "@/infra/repositories/transaction";
 import WalletRepository from "@/infra/repositories/membership/wallet";
 import WalletUtils from "@/app/membership/wallet/utils";
+import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
+import TransactionRepository from "@/infra/repositories/transaction";
 
-export default class TransactionWriteUseCase {
+export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();
+
+  static async visitorBrowseTransactions(
+    { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter,
+      sort,
+      cursor,
+      first,
+    });
+  }
+
+  static async visitorBrowseTransactionsByParticipation(
+    { id }: GqlParticipation,
+    { first, cursor }: GqlParticipationTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter: { participationId: id },
+      cursor,
+      first,
+    });
+  }
+
+  static async visitorBrowseTransactionsByWallet(
+    { id }: GqlWallet,
+    { first, cursor }: GqlWalletTransactionsArgs,
+    ctx: IContext,
+  ): Promise<GqlTransactionsConnection> {
+    return TransactionUtils.fetchTransactionsCommon(ctx, {
+      filter: { fromWalletId: id, toWalletId: id },
+      cursor,
+      first,
+    });
+  }
+
+  static async visitorViewTransaction(
+    { id }: GqlQueryTransactionArgs,
+    ctx: IContext,
+  ): Promise<GqlTransaction | null> {
+    const res = await TransactionService.findTransaction(ctx, id);
+    if (!res) {
+      return null;
+    }
+    return TransactionOutputFormat.get(res);
+  }
 
   static async ownerIssueCommunityPoint(
     { input }: GqlMutationTransactionIssueCommunityPointArgs,

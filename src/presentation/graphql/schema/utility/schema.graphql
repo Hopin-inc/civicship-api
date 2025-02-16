@@ -15,7 +15,7 @@ extend type Mutation {
     utilityDelete(id: ID!): UtilityDeletePayload
     utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!): UtilityUpdateInfoPayload
 
-    utilityGet(id: ID!, input: UtilityGetInput!): UtilityGetPayload
+    utilityRedeemed(id: ID!, input: UtilityRedeemedInput!): UtilityRedeemedPayload
     utilityUse(id: ID!, input: UtilityUseInput!): UtilityUsePayload
 }
 
@@ -35,7 +35,7 @@ type Utility {
         sort: UtilityHistorySortInput
         cursor: String
         first: Int
-    ): UtilityHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): UtilityHistoriesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

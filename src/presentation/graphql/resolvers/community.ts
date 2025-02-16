@@ -17,35 +17,34 @@ import {
   GqlCommunityUtilitiesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import UtilityReadUseCase from "@/app/utility/usecase/read";
-import WalletReadUseCase from "@/app/membership/wallet/usecase/read";
-import ParticipationReadUseCase from "@/app/opportunity/participation/usecase/read";
-import CommunityReadUseCase from "@/app/community/usecase/read";
-import CommunityWriteUseCase from "@/app/community/usecase/write";
-import MembershipReadUseCase from "@/app/membership/usecase/read";
-import OpportunityReadUseCase from "@/app/opportunity/usecase/read";
+import ParticipationUseCase from "@/app/opportunity/participation/usecase";
+import WalletUseCase from "@/app/membership/wallet/usecase";
+import CommunityUseCase from "@/app/community/usecase";
+import MembershipUseCase from "@/app/membership/usecase";
+import OpportunityUseCase from "@/app/opportunity/usecase";
+import UtilityUseCase from "@/app/utility/usecase";
 
 const communityResolver = {
   Query: {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) =>
-      CommunityReadUseCase.userBrowseCommunities(args, ctx),
+      CommunityUseCase.userBrowseCommunities(args, ctx),
     community: async (_: unknown, args: GqlQueryCommunityArgs, ctx: IContext) => {
       if (!ctx.loaders?.community) {
-        return CommunityReadUseCase.userViewCommunity(args, ctx);
+        return CommunityUseCase.userViewCommunity(args, ctx);
       }
       return await ctx.loaders.community.load(args.id);
     },
   },
   Mutation: {
     communityCreate: async (_: unknown, args: GqlMutationCommunityCreateArgs, ctx: IContext) =>
-      CommunityWriteUseCase.userCreateCommunityAndJoin(args, ctx),
+      CommunityUseCase.userCreateCommunityAndJoin(args, ctx),
     communityDelete: async (_: unknown, args: GqlMutationCommunityDeleteArgs, ctx: IContext) =>
-      CommunityWriteUseCase.managerDeleteCommunity(args, ctx),
+      CommunityUseCase.managerDeleteCommunity(args, ctx),
     communityUpdateProfile: async (
       _: unknown,
       args: GqlMutationCommunityUpdateProfileArgs,
       ctx: IContext,
-    ) => CommunityWriteUseCase.managerUpdateCommunityProfile(args, ctx),
+    ) => CommunityUseCase.managerUpdateCommunityProfile(args, ctx),
   },
   Community: {
     memberships: async (
@@ -53,7 +52,7 @@ const communityResolver = {
       args: GqlCommunityMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
-      return MembershipReadUseCase.visitorBrowseMembershipsByCommunity(parent, args, ctx);
+      return MembershipUseCase.visitorBrowseMembershipsByCommunity(parent, args, ctx);
     },
 
     opportunities: async (
@@ -61,7 +60,7 @@ const communityResolver = {
       args: GqlCommunityOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityReadUseCase.visitorBrowseOpportunitiesByCommunity(parent, args, ctx);
+      return OpportunityUseCase.visitorBrowseOpportunitiesByCommunity(parent, args, ctx);
     },
 
     participations: async (
@@ -69,7 +68,7 @@ const communityResolver = {
       args: GqlCommunityParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      return ParticipationReadUseCase.visitorBrowseParticipationsByCommunity(parent, args, ctx);
+      return ParticipationUseCase.visitorBrowseParticipationsByCommunity(parent, args, ctx);
     },
 
     wallets: async (
@@ -77,7 +76,7 @@ const communityResolver = {
       args: GqlCommunityWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
-      return WalletReadUseCase.visitorBrowseWalletsByCommunity(parent, args, ctx);
+      return WalletUseCase.visitorBrowseWalletsByCommunity(parent, args, ctx);
     },
 
     utilities: async (
@@ -85,7 +84,7 @@ const communityResolver = {
       args: GqlCommunityUtilitiesArgs,
       ctx: IContext,
     ): Promise<GqlUtilitiesConnection> => {
-      return UtilityReadUseCase.visitorBrowseUtilitiesByCommunity(parent, args, ctx);
+      return UtilityUseCase.visitorBrowseUtilitiesByCommunity(parent, args, ctx);
     },
   },
 };

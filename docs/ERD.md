@@ -76,11 +76,11 @@ MEMBER MEMBER
 
         TransactionReason {
             POINT_ISSUED POINT_ISSUED
-PARTICIPATION_APPROVED PARTICIPATION_APPROVED
-UTILITY_USAGE UTILITY_USAGE
+POINT_REWARD POINT_REWARD
+DONATION DONATION
+GRANT GRANT
+UTILITY_REDEEMED UTILITY_REDEEMED
 MEMBERSHIP_DELETED MEMBERSHIP_DELETED
-GIFT GIFT
-OTHER OTHER
         }
     
   "t_users" {
@@ -245,7 +245,6 @@ OTHER OTHER
     Json thumbnail "❓"
     DateTime published_at 
     String community_id 
-    String written_by_user_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -263,6 +262,17 @@ OTHER OTHER
     }
   
 
+  "t_utility_histories" {
+    String id "🗝️"
+    DateTime used_at "❓"
+    String wallet_id 
+    String utility_id 
+    String transaction_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_transactions" {
     String id "🗝️"
     TransactionReason reason 
@@ -271,7 +281,6 @@ OTHER OTHER
     String to "❓"
     Int to_point_change "❓"
     String participation_id "❓"
-    String utility_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -311,7 +320,8 @@ OTHER OTHER
     "t_users" o{--}o "t_opportunity_invitations" : "opportunityInvitations"
     "t_users" o{--}o "t_opportunity_invitation_histories" : "opportunityInvitationHistories"
     "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
-    "t_users" o{--}o "t_articles" : "articles"
+    "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
+    "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_users" o{--}o "t_wallets" : "wallets"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
@@ -332,6 +342,7 @@ OTHER OTHER
     "t_wallets" o{--}o "mv_accumulated_points" : "accumulatedPointView"
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
+    "t_wallets" o{--}o "t_utility_histories" : "utilityHistories"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|o "t_places" : "place"
@@ -363,15 +374,19 @@ OTHER OTHER
     "t_articles" o|--|| "ArticleCategory" : "enum:category"
     "t_articles" o|--|| "PublishStatus" : "enum:publish_status"
     "t_articles" o|--|| "t_communities" : "community"
-    "t_articles" o|--|o "t_users" : "writtenByUser"
+    "t_articles" o{--}o "t_users" : "authors"
+    "t_articles" o{--}o "t_users" : "relatedUsers"
     "t_articles" o{--}o "t_opportunities" : "opportunities"
     "t_utilities" o|--|| "t_communities" : "community"
-    "t_utilities" o{--}o "t_transactions" : "transactions"
+    "t_utilities" o{--}o "t_utility_histories" : "utilityHistories"
+    "t_utility_histories" o|--|| "t_wallets" : "wallet"
+    "t_utility_histories" o|--|| "t_utilities" : "utility"
+    "t_utility_histories" o|--|| "t_transactions" : "transaction"
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
-    "t_transactions" o|--|o "t_utilities" : "utility"
+    "t_transactions" o{--}o "t_utility_histories" : "utilityHistories"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "m_states" o{--}o "m_cities" : "cities"

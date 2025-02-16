@@ -3,9 +3,9 @@ import {
   GqlQueryTransactionsArgs,
   GqlTransactionGiveRewardPointInput,
   GqlTransactionIssueCommunityPointInput,
-  GqlTransactionUseUtilityInput,
+  GqlTransactionRedeemedUtilityInput,
 } from "@/types/graphql";
-import { Prisma, TransactionReason } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
 
@@ -22,6 +22,10 @@ export default class TransactionService {
   }
 
   static async findTransaction(ctx: IContext, id: string) {
+    return await TransactionRepository.find(ctx, id);
+  }
+
+  static async findExistingTransaction(ctx: IContext, id: string) {
     return await TransactionRepository.find(ctx, id);
   }
 
@@ -45,14 +49,15 @@ export default class TransactionService {
     return res;
   }
 
-  static async useUtility(ctx: IContext, input: GqlTransactionUseUtilityInput) {
-    const data: Prisma.TransactionCreateInput = {
-      ...input,
-      reason: TransactionReason.UTILITY_USAGE,
-    };
+  static async redeemedUtility(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    input: GqlTransactionRedeemedUtilityInput,
+  ) {
+    const data: Prisma.TransactionCreateInput = TransactionInputFormat.redeemedUtility(input);
 
-    const res = await TransactionRepository.create(ctx, data);
-    await TransactionRepository.refreshCurrentPoints(ctx);
+    const res = await TransactionRepository.create(ctx, data, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 }

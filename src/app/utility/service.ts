@@ -1,16 +1,13 @@
 import {
   GqlQueryUtilitiesArgs,
   GqlMutationUtilityUpdateInfoArgs,
-  GqlMutationUtilityUseArgs,
   GqlUtilityCreateInput,
+  GqlUtility,
 } from "@/types/graphql";
 import UtilityRepository from "@/infra/repositories/utility";
 import { IContext } from "@/types/server";
 import UtilityInputFormat from "@/presentation/graphql/dto/utility/input";
 import { Prisma } from "@prisma/client";
-import CommunityRepository from "@/infra/repositories/community";
-import TransactionService from "@/app/transaction/service";
-import WalletRepository from "@/infra/repositories/membership/wallet";
 
 export default class UtilityService {
   static async fetchUtilities(
@@ -27,6 +24,14 @@ export default class UtilityService {
     return await UtilityRepository.find(ctx, id);
   }
 
+  static async findUtilityOrThrow(ctx: IContext, id: string): Promise<GqlUtility> {
+    const utility = await UtilityRepository.find(ctx, id);
+    if (!utility) {
+      throw new Error(`UtilityNotFound: ID=${id}`);
+    }
+    return utility;
+  }
+
   static async createUtility(ctx: IContext, input: GqlUtilityCreateInput) {
     const data: Prisma.UtilityCreateInput = UtilityInputFormat.create(input);
     return UtilityRepository.create(ctx, data);
@@ -39,30 +44,5 @@ export default class UtilityService {
   static async updateUtilityInfo(ctx: IContext, { id, input }: GqlMutationUtilityUpdateInfoArgs) {
     const data: Prisma.UtilityUpdateInput = UtilityInputFormat.updateInfo(input);
     return UtilityRepository.update(ctx, id, data);
-  }
-
-  static async useUtility(ctx: IContext, { id, input }: GqlMutationUtilityUseArgs) {
-    const utility = await UtilityRepository.find(ctx, id);
-    if (!utility) {
-      throw new Error(`UtilityNotFound: ID=${id}`);
-    }
-    const community = await CommunityRepository.find(ctx, utility.communityId);
-    if (!community) {
-      throw new Error(`CommunityNotFound: ID=${utility.communityId}`);
-    }
-
-    const communityWallet = await WalletRepository.findCommunityWallet(ctx, utility.communityId);
-    if (!communityWallet?.id) {
-      throw new Error("Wallet information is missing for points transfer");
-    }
-
-    return await TransactionService.useUtility(ctx, {
-      communityId: input.communityId,
-      fromWalletId: input.userWalletId,
-      fromPointChange: -utility.pointsRequired,
-      toWalletId: communityWallet.id,
-      toPointChange: utility.pointsRequired,
-      utilityId: id,
-    });
   }
 }

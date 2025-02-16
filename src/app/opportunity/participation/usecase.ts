@@ -1,4 +1,6 @@
 import {
+  GqlCommunity,
+  GqlCommunityParticipationsArgs,
   GqlMutationParticipationAcceptApplicationArgs,
   GqlMutationParticipationAcceptMyInvitationArgs,
   GqlMutationParticipationApplyArgs,
@@ -9,28 +11,109 @@ import {
   GqlMutationParticipationDenyMyInvitationArgs,
   GqlMutationParticipationDenyPerformanceArgs,
   GqlMutationParticipationInviteArgs,
+  GqlOpportunity,
+  GqlOpportunityParticipationsArgs,
+  GqlOpportunitySlot,
+  GqlOpportunitySlotParticipationsArgs,
+  GqlParticipation,
   GqlParticipationApplyPayload,
   GqlParticipationInvitePayload,
+  GqlParticipationsConnection,
   GqlParticipationSetStatusPayload,
+  GqlQueryParticipationArgs,
+  GqlQueryParticipationsArgs,
   GqlTransactionGiveRewardPointInput,
+  GqlUser,
+  GqlUserParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationService from "@/app/opportunity/participation/service";
 import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
 import ParticipationUtils from "@/app/opportunity/participation/utils";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
 import { getCurrentUserId } from "@/utils";
 import { OpportunityCategory, ParticipationStatus, Prisma } from "@prisma/client";
-import OpportunityRepository from "@/infra/repositories/opportunity";
-import ParticipationInputFormat from "@/presentation/graphql/dto/opportunity/participation/input";
+import ParticipationRepository from "@/infra/repositories/opportunity/participation";
 import MembershipService from "@/app/membership/service";
 import WalletService from "@/app/membership/wallet/service";
-import ParticipationRepository from "@/infra/repositories/opportunity/participation";
-import TransactionService from "@/app/transaction/service";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
+import OpportunityRepository from "@/infra/repositories/opportunity";
+import ParticipationInputFormat from "@/presentation/graphql/dto/opportunity/participation/input";
+import TransactionService from "@/app/transaction/service";
+import { PrismaClientIssuer } from "@/infra/prisma/client";
 
-export default class ParticipationWriteUseCase {
+export default class ParticipationUseCase {
   private static issuer = new PrismaClientIssuer();
+
+  static async visitorBrowseParticipations(
+    { cursor, filter, sort, first }: GqlQueryParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      sort,
+      filter,
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByUser(
+    { id }: GqlUser,
+    { first, cursor }: GqlUserParticipationsArgs,
+    ctx: IContext,
+  ) {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { userId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByOpportunity(
+    { id }: GqlOpportunity,
+    { first, cursor }: GqlOpportunityParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { opportunityId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseParticipationsByOpportunitySlot(
+    { id }: GqlOpportunitySlot,
+    { first, cursor }: GqlOpportunitySlotParticipationsArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationsConnection> {
+    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+      cursor,
+      filter: { opportunitySlotId: id },
+      first,
+    });
+  }
+
+  static async visitorViewParticipation(
+    { id }: GqlQueryParticipationArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipation | null> {
+    const res = await ParticipationService.findParticipation(ctx, id);
+    if (!res) {
+      return null;
+    }
+    return ParticipationOutputFormat.get(res);
+  }
 
   static async memberInviteUserToOpportunity(
     { input }: GqlMutationParticipationInviteArgs,
@@ -207,10 +290,6 @@ export default class ParticipationWriteUseCase {
         ParticipationStatus.APPROVED,
         tx,
       );
-
-      if (!communityId) {
-        throw new Error(`communityId is required for managerApprovePerformance`);
-      }
 
       const participation = await ParticipationRepository.find(ctx, id, tx);
       if (!participation) {

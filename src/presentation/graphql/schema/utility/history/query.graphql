@@ -15,6 +15,7 @@ type UtilityHistoryEdge {
 input UtilityHistoryFilterInput {
     walletId: ID
     utilityId: ID
+    transactionId: ID
     usedAtExists: Boolean
 }
 

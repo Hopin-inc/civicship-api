@@ -12,6 +12,7 @@ import { createOpportunitySlotLoader } from "@/presentation/graphql/dataloader/o
 import { createParticipationStatusHistoryLoader } from "@/presentation/graphql/dataloader/opportunity/participation/status-history";
 import { createOpportunityInvitationLoader } from "@/presentation/graphql/dataloader/opportunity/invitation";
 import { createOpportunityInvitationHistoryLoader } from "@/presentation/graphql/dataloader/opportunity/invitation/history";
+import { createUtilityHistoryLoader } from "@/presentation/graphql/dataloader/utility/history";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -31,7 +32,9 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     participationStatusHistory: createParticipationStatusHistoryLoader(issuer),
 
     transaction: createTransactionLoader(issuer),
+
     utility: createUtilityLoader(issuer),
+    utilityHistory: createUtilityHistoryLoader(issuer),
 
     place: createPlaceLoader(issuer),
   };

@@ -29,6 +29,13 @@ type Wallet {
         first: Int
     ): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
 
+    utilityHistories(
+        filter: UtilityHistoryFilterInput
+        sort: UtilityHistorySortInput
+        cursor: String
+        first: Int
+    ): UtilityHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+
     createdAt: Datetime!
     updatedAt: Datetime
 }

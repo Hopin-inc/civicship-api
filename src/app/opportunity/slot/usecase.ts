@@ -3,13 +3,18 @@ import {
   GqlQueryOpportunitySlotArgs,
   GqlOpportunitySlot,
   GqlOpportunitySlotsConnection,
+  GqlMutationOpportunitySlotsBulkUpdateArgs,
+  GqlOpportunitySlotsBulkUpdatePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 import OpportunitySlotService from "@/app/opportunity/slot/service";
 import OpportunitySlotOutputFormat from "@/presentation/graphql/dto/opportunity/slot/output";
+import { PrismaClientIssuer } from "@/infra/prisma/client";
 
-export default class OpportunitySlotReadUseCase {
+export default class OpportunitySlotUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseOpportunitySlots(
     { filter, sort, cursor, first }: GqlQueryOpportunitySlotsArgs,
     ctx: IContext,
@@ -32,5 +37,30 @@ export default class OpportunitySlotReadUseCase {
     const slot = await OpportunitySlotService.findOpportunitySlot(ctx, id);
     if (!slot) return null;
     return OpportunitySlotOutputFormat.get(slot);
+  }
+
+  static async managerBulkUpdateOpportunitySlots(
+    { input }: GqlMutationOpportunitySlotsBulkUpdateArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
+    return this.issuer.public(ctx, async (tx) => {
+      await OpportunitySlotService.bulkCreateOpportunitySlots(
+        ctx,
+        input.opportunityId,
+        input.create ?? [],
+        tx,
+      );
+      await OpportunitySlotService.bulkUpdateOpportunitySlots(ctx, input.update ?? [], tx);
+      await OpportunitySlotService.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
+
+      const rows = await OpportunitySlotService.fetchAllSlotByOpportunityId(
+        ctx,
+        input.opportunityId,
+        tx,
+      );
+      return OpportunitySlotOutputFormat.bulkUpdate(
+        rows.map((r) => OpportunitySlotOutputFormat.get(r)),
+      );
+    });
   }
 }

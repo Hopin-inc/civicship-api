@@ -4,18 +4,21 @@ import {
   GqlWallet,
   GqlTransactionsConnection,
   GqlWalletTransactionsArgs,
+  GqlUtilityHistoriesConnection,
+  GqlWalletUtilityHistoriesArgs,
 } from "@/types/graphql";
-import WalletReadUseCase from "@/app/membership/wallet/usecase/read";
+import WalletUseCase from "@/app/membership/wallet/usecase";
 import { IContext } from "@/types/server";
-import TransactionReadUseCase from "@/app/transaction/usecase/read";
+import TransactionUseCase from "@/app/transaction/usecase";
+import UtilityHistoryUseCase from "@/app/utility/history/usecase";
 
 const walletResolver = {
   Query: {
     wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
-      WalletReadUseCase.userBrowseWallets(args, ctx),
+      WalletUseCase.userBrowseWallets(args, ctx),
     wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
       if (!ctx.loaders?.wallet) {
-        return WalletReadUseCase.userViewWallet(args, ctx);
+        return WalletUseCase.userViewWallet(args, ctx);
       }
       return await ctx.loaders.wallet.load(args.id);
     },
@@ -27,7 +30,15 @@ const walletResolver = {
       args: GqlWalletTransactionsArgs,
       ctx: IContext,
     ): Promise<GqlTransactionsConnection> => {
-      return TransactionReadUseCase.visitorBrowseTransactionsByWallet(parent, args, ctx);
+      return TransactionUseCase.visitorBrowseTransactionsByWallet(parent, args, ctx);
+    },
+
+    utilityHistories: async (
+      parent: GqlWallet,
+      args: GqlWalletUtilityHistoriesArgs,
+      ctx: IContext,
+    ): Promise<GqlUtilityHistoriesConnection> => {
+      return UtilityHistoryUseCase.visitorBrowseUtilityHistoriesByWallet(parent, args, ctx);
     },
   },
 };

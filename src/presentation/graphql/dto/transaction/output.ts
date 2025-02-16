@@ -25,14 +25,13 @@ export default class TransactionOutputFormat {
   }
 
   static get(r: TransactionPayloadWithArgs): GqlTransaction {
-    const { fromWallet, toWallet, participation, utility, ...prop } = r;
+    const { fromWallet, toWallet, participation, ...prop } = r;
 
     return {
       ...prop,
       fromWallet,
       toWallet,
       participation,
-      utility,
     };
   }
 

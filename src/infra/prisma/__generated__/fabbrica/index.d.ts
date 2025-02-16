@@ -12,6 +12,7 @@ import type { Participation } from "@prisma/client";
 import type { ParticipationStatusHistory } from "@prisma/client";
 import type { Article } from "@prisma/client";
 import type { Utility } from "@prisma/client";
+import type { UtilityHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
 import type { City } from "@prisma/client";
 import type { State } from "@prisma/client";
@@ -62,7 +63,8 @@ type UserFactoryDefineInput = {
     opportunityInvitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutCreatedByUserInput;
     opportunityInvitationHistories?: Prisma.OpportunityInvitationHistoryCreateNestedManyWithoutInivitedUserInput;
     participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
-    articles?: Prisma.ArticleCreateNestedManyWithoutWrittenByUserInput;
+    articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
+    articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
 };
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
@@ -284,6 +286,7 @@ type WalletFactoryDefineInput = {
     accumulatedPointView?: WalletaccumulatedPointViewFactory | Prisma.AccumulatedPointViewCreateNestedOneWithoutWalletInput;
     fromTransactions?: Prisma.TransactionCreateNestedManyWithoutFromWalletInput;
     toTransactions?: Prisma.TransactionCreateNestedManyWithoutToWalletInput;
+    utilityHistories?: Prisma.UtilityHistoryCreateNestedManyWithoutWalletInput;
 };
 type WalletTransientFields = Record<string, unknown> & Partial<Record<keyof WalletFactoryDefineInput, never>>;
 type WalletFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -732,10 +735,6 @@ type ArticlecommunityFactory = {
     _factoryFor: "Community";
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutArticlesInput["create"]>;
 };
-type ArticlewrittenByUserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutArticlesInput["create"]>;
-};
 type ArticleFactoryDefineInput = {
     id?: string;
     title?: string;
@@ -748,7 +747,8 @@ type ArticleFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     community: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput;
-    writtenByUser?: ArticlewrittenByUserFactory | Prisma.UserCreateNestedOneWithoutArticlesInput;
+    authors?: Prisma.UserCreateNestedManyWithoutArticlesWrittenByMeInput;
+    relatedUsers?: Prisma.UserCreateNestedManyWithoutArticlesAboutMeInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutArticlesInput;
 };
 type ArticleTransientFields = Record<string, unknown> & Partial<Record<keyof ArticleFactoryDefineInput, never>>;
@@ -801,7 +801,7 @@ type UtilityFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
-    transactions?: Prisma.TransactionCreateNestedManyWithoutUtilityInput;
+    utilityHistories?: Prisma.UtilityHistoryCreateNestedManyWithoutUtilityInput;
 };
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
 type UtilityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -840,6 +840,64 @@ interface UtilityFactoryBuilder {
  * @returns factory {@link UtilityFactoryInterface}
  */
 export declare const defineUtilityFactory: UtilityFactoryBuilder;
+type UtilityHistorywalletFactory = {
+    _factoryFor: "Wallet";
+    build: () => PromiseLike<Prisma.WalletCreateNestedOneWithoutUtilityHistoriesInput["create"]>;
+};
+type UtilityHistoryutilityFactory = {
+    _factoryFor: "Utility";
+    build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutUtilityHistoriesInput["create"]>;
+};
+type UtilityHistorytransactionFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutUtilityHistoriesInput["create"]>;
+};
+type UtilityHistoryFactoryDefineInput = {
+    id?: string;
+    usedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    wallet: UtilityHistorywalletFactory | Prisma.WalletCreateNestedOneWithoutUtilityHistoriesInput;
+    utility: UtilityHistoryutilityFactory | Prisma.UtilityCreateNestedOneWithoutUtilityHistoriesInput;
+    transaction: UtilityHistorytransactionFactory | Prisma.TransactionCreateNestedOneWithoutUtilityHistoriesInput;
+};
+type UtilityHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityHistoryFactoryDefineInput, never>>;
+type UtilityHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UtilityHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<UtilityHistory, Prisma.UtilityHistoryCreateInput, TTransients>;
+type UtilityHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<UtilityHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: UtilityHistoryFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<UtilityHistory, Prisma.UtilityHistoryCreateInput, TTransients>;
+type UtilityHistoryTraitKeys<TOptions extends UtilityHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface UtilityHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "UtilityHistory";
+    build(inputData?: Partial<Prisma.UtilityHistoryCreateInput & TTransients>): PromiseLike<Prisma.UtilityHistoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UtilityHistoryCreateInput & TTransients>): PromiseLike<Prisma.UtilityHistoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.UtilityHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.UtilityHistoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UtilityHistoryCreateInput & TTransients>): PromiseLike<Prisma.UtilityHistoryCreateInput[]>;
+    pickForConnect(inputData: UtilityHistory): Pick<UtilityHistory, "id">;
+    create(inputData?: Partial<Prisma.UtilityHistoryCreateInput & TTransients>): PromiseLike<UtilityHistory>;
+    createList(list: readonly Partial<Prisma.UtilityHistoryCreateInput & TTransients>[]): PromiseLike<UtilityHistory[]>;
+    createList(count: number, item?: Partial<Prisma.UtilityHistoryCreateInput & TTransients>): PromiseLike<UtilityHistory[]>;
+    createForConnect(inputData?: Partial<Prisma.UtilityHistoryCreateInput & TTransients>): PromiseLike<Pick<UtilityHistory, "id">>;
+}
+export interface UtilityHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UtilityHistoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UtilityHistoryFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface UtilityHistoryFactoryBuilder {
+    <TOptions extends UtilityHistoryFactoryDefineOptions>(options: TOptions): UtilityHistoryFactoryInterface<{}, UtilityHistoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UtilityHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UtilityHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => UtilityHistoryFactoryInterface<TTransients, UtilityHistoryTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link UtilityHistory} model.
+ *
+ * @param options
+ * @returns factory {@link UtilityHistoryFactoryInterface}
+ */
+export declare const defineUtilityHistoryFactory: UtilityHistoryFactoryBuilder;
 type TransactionfromWalletFactory = {
     _factoryFor: "Wallet";
     build: () => PromiseLike<Prisma.WalletCreateNestedOneWithoutFromTransactionsInput["create"]>;
@@ -852,10 +910,6 @@ type TransactionparticipationFactory = {
     _factoryFor: "Participation";
     build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutTransactionsInput["create"]>;
 };
-type TransactionutilityFactory = {
-    _factoryFor: "Utility";
-    build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutTransactionsInput["create"]>;
-};
 type TransactionFactoryDefineInput = {
     id?: string;
     reason?: TransactionReason;
@@ -866,7 +920,7 @@ type TransactionFactoryDefineInput = {
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;
     toWallet?: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput;
     participation?: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput;
-    utility?: TransactionutilityFactory | Prisma.UtilityCreateNestedOneWithoutTransactionsInput;
+    utilityHistories?: Prisma.UtilityHistoryCreateNestedManyWithoutTransactionInput;
 };
 type TransactionTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionFactoryDefineInput, never>>;
 type TransactionFactoryTrait<TTransients extends Record<string, unknown>> = {

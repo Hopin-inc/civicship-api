@@ -35,7 +35,7 @@ type Transaction {
         sort: UtilityHistorySortInput
         cursor: String
         first: Int
-    ): UtilityHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): UtilityHistoriesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
@@ -43,9 +43,9 @@ type Transaction {
 
 enum TransactionReason {
     POINT_ISSUED
-    PARTICIPATION_APPROVED
-    UTILITY_USAGE
+    POINT_REWARD
+    DONATION
+    GRANT
+    UTILITY_REDEEMED
     MEMBERSHIP_DELETED
-    GIFT
-    OTHER
 }

@@ -6,18 +6,17 @@ import {
   GqlMutationOpportunitySlotsBulkUpdateArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationReadUseCase from "@/app/opportunity/participation/usecase/read";
-import OpportunitySlotReadUseCase from "@/app/opportunity/slot/usecase/read";
-import OpportunitySlotWriteUseCase from "@/app/opportunity/slot/usecase/write";
+import OpportunitySlotUseCase from "@/app/opportunity/slot/usecase";
+import ParticipationUseCase from "@/app/opportunity/participation/usecase";
 
 const opportunitySlotResolver = {
   Query: {
     opportunitySlots: async (_: unknown, args: GqlQueryOpportunitySlotsArgs, ctx: IContext) => {
-      return OpportunitySlotReadUseCase.visitorBrowseOpportunitySlots(args, ctx);
+      return OpportunitySlotUseCase.visitorBrowseOpportunitySlots(args, ctx);
     },
     opportunitySlot: async (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
       if (!ctx.loaders?.opportunitySlot) {
-        return OpportunitySlotReadUseCase.visitorViewOpportunitySlot(args, ctx);
+        return OpportunitySlotUseCase.visitorViewOpportunitySlot(args, ctx);
       }
       return ctx.loaders.opportunitySlot.load(args.id);
     },
@@ -29,7 +28,7 @@ const opportunitySlotResolver = {
       args: GqlMutationOpportunitySlotsBulkUpdateArgs,
       ctx: IContext,
     ) => {
-      return OpportunitySlotWriteUseCase.managerBulkUpdateOpportunitySlots(args, ctx);
+      return OpportunitySlotUseCase.managerBulkUpdateOpportunitySlots(args, ctx);
     },
 
     OpportunitySlot: {
@@ -38,11 +37,7 @@ const opportunitySlotResolver = {
         args: GqlOpportunitySlotParticipationsArgs,
         ctx: IContext,
       ) => {
-        return ParticipationReadUseCase.visitorBrowseParticipationsByOpportunitySlot(
-          parent,
-          args,
-          ctx,
-        );
+        return ParticipationUseCase.visitorBrowseParticipationsByOpportunitySlot(parent, args, ctx);
       },
     },
   },

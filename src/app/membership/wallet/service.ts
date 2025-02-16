@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import WalletInputFormat from "@/presentation/graphql/dto/membership/wallet/input";
 import WalletRepository from "@/infra/repositories/membership/wallet";
 import { IContext } from "@/types/server";
-import { GqlQueryWalletsArgs } from "@/types/graphql";
+import { GqlQueryWalletsArgs, GqlWallet } from "@/types/graphql";
 import WalletUtils from "@/app/membership/wallet/utils";
 
 export default class WalletService {
@@ -21,12 +21,41 @@ export default class WalletService {
     return WalletRepository.find(ctx, id);
   }
 
+  static async findCommunityWalletOrThrow(ctx: IContext, communityId: string): Promise<GqlWallet> {
+    const wallet = await WalletRepository.findCommunityWallet(ctx, communityId);
+    if (!wallet?.id) {
+      throw new Error("Wallet information is missing for points transfer");
+    }
+    return wallet;
+  }
+
+  static async findWalletsForRedeemedUtility(
+    ctx: IContext,
+    memberWalletId: string,
+    communityId: string,
+    requiredPoints: number,
+  ) {
+    const memberWallet = await WalletRepository.find(ctx, memberWalletId);
+    if (!memberWallet) {
+      throw new Error("MemberWallet information is missing for points transfer");
+    }
+
+    const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId);
+    if (!communityWallet) {
+      throw new Error(`No community wallet found for communityId: ${communityId}`);
+    }
+
+    await WalletUtils.validateTransfer(requiredPoints, memberWallet, communityWallet);
+
+    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
+  }
+
   static async findWalletsForGiveReward(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     communityId: string,
-    participationId: string,
-    fromPointChange: number,
+    participantId: string,
+    transferPoints: number,
   ) {
     const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId, tx);
     if (!communityWallet) {
@@ -36,14 +65,14 @@ export default class WalletService {
     const participantWallet = await WalletRepository.checkIfExistingMemberWallet(
       ctx,
       communityId,
-      participationId,
+      participantId,
       tx,
     );
     if (!participantWallet) {
-      throw new Error(`No participant wallet found for participationId: ${participationId}`);
+      throw new Error(`No participant wallet found for participantId: ${participantId}`);
     }
 
-    await WalletUtils.validateTransfer(fromPointChange, communityWallet, participantWallet);
+    await WalletUtils.validateTransfer(transferPoints, communityWallet, participantWallet);
 
     return { fromWalletId: communityWallet.id, toWalletId: participantWallet.id };
   }

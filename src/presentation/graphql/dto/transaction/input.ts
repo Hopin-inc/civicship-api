@@ -5,6 +5,7 @@ import {
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionDonateSelfPointInput,
   GqlTransactionGiveRewardPointInput,
+  GqlTransactionRedeemedUtilityInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 
@@ -17,7 +18,6 @@ export default class TransactionInputFormat {
         filter?.fromWalletId ? { from: filter?.fromWalletId } : {},
         filter?.toWalletId ? { to: filter?.toWalletId } : {},
         filter?.participationId ? { participationId: filter?.participationId } : {},
-        filter?.utilityId ? { utilityId: filter?.utilityId } : {},
       ],
     };
   }
@@ -30,7 +30,7 @@ export default class TransactionInputFormat {
     const { fromWalletId, toWalletId, fromPointChange, toPointChange, participationId } = input;
 
     return {
-      reason: TransactionReason.PARTICIPATION_APPROVED,
+      reason: TransactionReason.POINT_REWARD,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange,
       toWallet: { connect: { id: toWalletId } },
@@ -58,7 +58,7 @@ export default class TransactionInputFormat {
     const { fromWalletId, fromPointChange, toPointChange } = input;
 
     return {
-      reason: TransactionReason.GIFT,
+      reason: TransactionReason.GRANT,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange,
       toWallet: { connect: { id: toWalletId } },
@@ -73,11 +73,23 @@ export default class TransactionInputFormat {
     const { fromWalletId, fromPointChange, toPointChange } = input;
 
     return {
-      reason: TransactionReason.GIFT,
+      reason: TransactionReason.DONATION,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange,
       toWallet: { connect: { id: toWalletId } },
       toPointChange,
+    };
+  }
+
+  static redeemedUtility(input: GqlTransactionRedeemedUtilityInput): Prisma.TransactionCreateInput {
+    const { fromWalletId, toWalletId, transferPoints } = input;
+
+    return {
+      reason: TransactionReason.UTILITY_REDEEMED,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: -transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
     };
   }
 }

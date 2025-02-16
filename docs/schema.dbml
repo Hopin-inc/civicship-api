@@ -22,7 +22,8 @@ Table t_users {
   opportunityInvitations t_opportunity_invitations [not null]
   opportunityInvitationHistories t_opportunity_invitation_histories [not null]
   participationStatusChangedByMe t_participation_status_histories [not null]
-  articles t_articles [not null]
+  articlesWrittenByMe t_articles [not null]
+  articlesAboutMe t_articles [not null]
   wallets t_wallets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -83,6 +84,7 @@ Table t_wallets {
   updatedAt DateTime
   fromTransactions t_transactions [not null]
   toTransactions t_transactions [not null]
+  utilityHistories t_utility_histories [not null]
 }
 
 Table t_opportunities {
@@ -205,8 +207,8 @@ Table t_articles {
   publishedAt DateTime [not null]
   communityId String [not null]
   community t_communities [not null]
-  writtenByUserId String
-  writtenByUser t_users
+  authors t_users [not null]
+  relatedUsers t_users [not null]
   opportunities t_opportunities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -220,7 +222,20 @@ Table t_utilities {
   pointsRequired Int [not null]
   communityId String [not null]
   community t_communities [not null]
-  transactions t_transactions [not null]
+  utilityHistories t_utility_histories [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_utility_histories {
+  id String [pk]
+  usedAt DateTime
+  walletId String [not null]
+  wallet t_wallets [not null]
+  utilityId String [not null]
+  utility t_utilities [not null]
+  transactionId String [not null]
+  transaction t_transactions [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -236,8 +251,7 @@ Table t_transactions {
   toPointChange Int
   participationId String
   participation t_participations
-  utilityId String
-  utility t_utilities
+  utilityHistories t_utility_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -272,6 +286,16 @@ Table mv_accumulated_points {
   walletId String [pk]
   accumulatedPoint Int [not null]
   wallet t_wallets [not null]
+}
+
+Table t_author_users_on_articles {
+  articleswrittenbymeId String [ref: > t_articles.id]
+  authorsId String [ref: > t_users.id]
+}
+
+Table t_related_users_on_articles {
+  articlesaboutmeId String [ref: > t_articles.id]
+  relatedusersId String [ref: > t_users.id]
 }
 
 Table t_opportunities_on_articles {
@@ -336,11 +360,11 @@ Enum WalletType {
 
 Enum TransactionReason {
   POINT_ISSUED
-  PARTICIPATION_APPROVED
-  UTILITY_USAGE
+  POINT_REWARD
+  DONATION
+  GRANT
+  UTILITY_REDEEMED
   MEMBERSHIP_DELETED
-  GIFT
-  OTHER
 }
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
@@ -385,17 +409,19 @@ Ref: t_participation_status_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_articles.communityId > t_communities.id [delete: Cascade]
 
-Ref: t_articles.writtenByUserId > t_users.id [delete: Set Null]
-
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_utility_histories.walletId > t_wallets.id [delete: Restrict]
+
+Ref: t_utility_histories.utilityId > t_utilities.id [delete: Restrict]
+
+Ref: t_utility_histories.transactionId > t_transactions.id [delete: Restrict]
 
 Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
-
-Ref: t_transactions.utilityId > t_utilities.id [delete: Set Null]
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 

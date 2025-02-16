@@ -1,10 +1,16 @@
 import { IContext } from "@/types/server";
 import { GqlCurrentUserPayload, GqlMutationUserSignUpArgs } from "@/types/graphql";
-import IdentityService from "@/app/user/identity/service";
 import IdentityInputFormat from "@/presentation/graphql/dto/user/identity/input";
+import IdentityService from "@/app/user/identity/service";
 import IdentityResponseFormat from "@/presentation/graphql/dto/user/identity/output";
 
-export default class IdentityWriteUseCase {
+export default class IdentityUseCase {
+  static async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
+    return {
+      user: context.currentUser,
+    };
+  }
+
   static async userCreateAccount(
     context: IContext,
     args: GqlMutationUserSignUpArgs,

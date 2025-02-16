@@ -4,18 +4,21 @@ import {
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionDonateSelfPointArgs,
+  GqlUtilityHistoriesConnection,
+  GqlTransaction,
+  GqlTransactionUtilityHistoriesArgs,
 } from "@/types/graphql";
-import TransactionReadUseCase from "@/app/transaction/usecase/read";
 import { IContext } from "@/types/server";
-import TransactionWriteUseCase from "@/app/transaction/usecase/write";
+import TransactionUseCase from "@/app/transaction/usecase";
+import UtilityHistoryUseCase from "@/app/utility/history/usecase";
 
 const transactionResolver = {
   Query: {
     transactions: async (_: unknown, args: GqlQueryTransactionsArgs, ctx: IContext) =>
-      TransactionReadUseCase.visitorBrowseTransactions(args, ctx),
+      TransactionUseCase.visitorBrowseTransactions(args, ctx),
     transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
       if (!ctx.loaders?.transaction) {
-        return TransactionReadUseCase.visitorViewTransaction(args, ctx);
+        return TransactionUseCase.visitorViewTransaction(args, ctx);
       }
       return await ctx.loaders.transaction.load(args.id);
     },
@@ -25,17 +28,27 @@ const transactionResolver = {
       _: unknown,
       args: GqlMutationTransactionIssueCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionWriteUseCase.ownerIssueCommunityPoint(args, ctx),
+    ) => TransactionUseCase.ownerIssueCommunityPoint(args, ctx),
     transactionGrantCommunityPoint: async (
       _: unknown,
       { input }: GqlMutationTransactionGrantCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionWriteUseCase.managerGrantCommunityPoint(ctx, input),
+    ) => TransactionUseCase.managerGrantCommunityPoint(ctx, input),
     transactionDonateSelfPoint: async (
       _: unknown,
       { input }: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
-    ) => TransactionWriteUseCase.userDonateSelfPointToAnother(ctx, input),
+    ) => TransactionUseCase.userDonateSelfPointToAnother(ctx, input),
+  },
+
+  Transaction: {
+    utilityHistories: async (
+      parent: GqlTransaction,
+      args: GqlTransactionUtilityHistoriesArgs,
+      ctx: IContext,
+    ): Promise<GqlUtilityHistoriesConnection> => {
+      return UtilityHistoryUseCase.visitorBrowseUtilityHistoriesByTransaction(parent, args, ctx);
+    },
   },
 };
 

@@ -6,17 +6,17 @@ import {
   GqlOpportunitiesConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import PlaceReadUseCase from "@/app/place/usecase/read";
-import OpportunityReadUseCase from "@/app/opportunity/usecase/read";
+import PlaceUseCase from "@/app/place/usecase";
+import OpportunityUseCase from "@/app/opportunity/usecase";
 
 const placeResolver = {
   Query: {
     places: async (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
-      return PlaceReadUseCase.userBrowsePlaces(args, ctx);
+      return PlaceUseCase.userBrowsePlaces(args, ctx);
     },
     place: async (_: unknown, args: GqlQueryPlaceArgs, ctx: IContext) => {
       if (!ctx.loaders?.place) {
-        return PlaceReadUseCase.userViewPlace(args, ctx);
+        return PlaceUseCase.userViewPlace(args, ctx);
       }
       return await ctx.loaders.place.load(args.id);
     },
@@ -27,7 +27,7 @@ const placeResolver = {
       args: GqlPlaceOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityReadUseCase.visitorBrowseOpportunitiesByPlace(parent, args, ctx);
+      return OpportunityUseCase.visitorBrowseOpportunitiesByPlace(parent, args, ctx);
     },
   },
 };

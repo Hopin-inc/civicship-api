@@ -11,7 +11,7 @@ import OpportunityInvitationHistoryService from "@/app/opportunity/invitation/hi
 import OpportunityInvitationHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/history/output";
 import OpportunityInvitationHistoryUtils from "@/app/opportunity/invitation/history/utils";
 
-export default class OpportunityInvitationHistoryReadUseCase {
+export default class OpportunityInvitationHistoryUseCase {
   static async visitorBrowseOpportunityInvitationHistories(
     { filter, sort, cursor, first }: GqlQueryOpportunityInvitationHistoriesArgs,
     ctx: IContext,

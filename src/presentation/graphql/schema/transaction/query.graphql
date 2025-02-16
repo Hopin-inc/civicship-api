@@ -16,7 +16,6 @@ input TransactionFilterInput {
     toWalletId: String
 
     participationId: String
-    utilityId: String
 }
 
 input TransactionSortInput {

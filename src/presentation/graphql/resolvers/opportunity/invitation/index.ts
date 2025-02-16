@@ -8,9 +8,8 @@ import {
   GqlOpportunityInvitationHistoriesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityInvitationReadUseCase from "@/app/opportunity/invitation/usecase/read";
-import OpportunityInvitationHistoryReadUseCase from "@/app/opportunity/invitation/history/usecse/read";
-import OpportunityInvitationWriteUseCase from "@/app/opportunity/invitation/usecase/write";
+import OpportunityInvitationUseCase from "@/app/opportunity/invitation/usecase";
+import OpportunityInvitationHistoryUseCase from "@/app/opportunity/invitation/history/usecase";
 
 const OpportunityInvitationResolver = {
   Query: {
@@ -19,7 +18,7 @@ const OpportunityInvitationResolver = {
       args: GqlQueryOpportunityInvitationsArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationReadUseCase.visitorBrowseOpportunityInvitations(args, ctx);
+      return OpportunityInvitationUseCase.visitorBrowseOpportunityInvitations(args, ctx);
     },
     opportunityInvitation: async (
       _: unknown,
@@ -27,7 +26,7 @@ const OpportunityInvitationResolver = {
       ctx: IContext,
     ) => {
       if (!ctx.loaders?.opportunityInvitation) {
-        return OpportunityInvitationReadUseCase.visitorViewOpportunityInvitation(args, ctx);
+        return OpportunityInvitationUseCase.visitorViewOpportunityInvitation(args, ctx);
       }
       return ctx.loaders.opportunityInvitation.load(args.id);
     },
@@ -39,21 +38,21 @@ const OpportunityInvitationResolver = {
       args: GqlMutationOpportunityInvitationCreateArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationWriteUseCase.memberCreateOpportunityInvitation(args, ctx);
+      return OpportunityInvitationUseCase.memberCreateOpportunityInvitation(args, ctx);
     },
     opportunityInvitationDisable: async (
       _: unknown,
       args: GqlMutationOpportunityInvitationDisableArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationWriteUseCase.memberDisableOpportunityInvitation(args, ctx);
+      return OpportunityInvitationUseCase.memberDisableOpportunityInvitation(args, ctx);
     },
     opportunityInvitationDelete: async (
       _: unknown,
       args: GqlMutationOpportunityInvitationDeleteArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationWriteUseCase.memberDeleteOpportunityInvitation(args, ctx);
+      return OpportunityInvitationUseCase.memberDeleteOpportunityInvitation(args, ctx);
     },
   },
 
@@ -63,7 +62,7 @@ const OpportunityInvitationResolver = {
       args: GqlOpportunityInvitationHistoriesArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationHistoryReadUseCase.visitorBrowseInvitationHistories(
+      return OpportunityInvitationHistoryUseCase.visitorBrowseInvitationHistories(
         parent,
         args,
         ctx,
