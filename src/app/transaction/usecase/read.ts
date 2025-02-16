@@ -12,7 +12,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/app/transaction/service";
-import TransactionOutputFormat from "@/presen/graphql/dto/transaction/output";
+import TransactionOutputFormat from "@/presentation/graphql/dto/transaction/output";
 import TransactionUtils from "@/app/transaction/utils";
 
 export default class TransactionReadUseCase {

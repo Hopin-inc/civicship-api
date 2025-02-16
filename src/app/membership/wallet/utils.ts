@@ -8,7 +8,7 @@ import {
 
 import { clampFirst } from "@/utils";
 import WalletService from "@/app/membership/wallet/service";
-import WalletOutputFormat from "@/presen/graphql/dto/membership/wallet/output";
+import WalletOutputFormat from "@/presentation/graphql/dto/membership/wallet/output";
 
 export default class WalletUtils {
   static async fetchWalletsCommon(

@@ -12,7 +12,7 @@ import { PrismaClientIssuer } from "@/infra/prisma/client";
 import ParticipationRepository from "@/infra/repositories/opportunity/participation";
 import { clampFirst } from "@/utils";
 import ParticipationService from "@/app/opportunity/participation/service";
-import ParticipationOutputFormat from "@/presen/graphql/dto/opportunity/participation/output";
+import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
 import { getCurrentUserId } from "@/utils";
 import OpportunityRepository from "@/infra/repositories/opportunity";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";

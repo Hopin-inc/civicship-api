@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import UtilityRepository from "@/infra/repositories/utility";
 import { IContext } from "@/types/server";
-import UtilityInputFormat from "@/presen/graphql/dto/utility/input";
+import UtilityInputFormat from "@/presentation/graphql/dto/utility/input";
 import { Prisma } from "@prisma/client";
 import CommunityRepository from "@/infra/repositories/community";
 import TransactionService from "@/app/transaction/service";

@@ -5,7 +5,7 @@ import {
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import OpportunitySlotService from "@/app/opportunity/slot/service";
-import OpportunitySlotOutputFormat from "@/presen/graphql/dto/opportunity/slot/output";
+import OpportunitySlotOutputFormat from "@/presentation/graphql/dto/opportunity/slot/output";
 
 export default class OpportunitySlotWriteUseCase {
   private static issuer = new PrismaClientIssuer();

@@ -8,7 +8,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityInvitationHistoryService from "@/app/opportunity/invitation/history/service";
-import OpportunityInvitationHistoryOutputFormat from "@/presen/graphql/dto/opportunity/invitation/history/output";
+import OpportunityInvitationHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/history/output";
 import OpportunityInvitationHistoryUtils from "@/app/opportunity/invitation/history/utils";
 
 export default class OpportunityInvitationHistoryReadUseCase {

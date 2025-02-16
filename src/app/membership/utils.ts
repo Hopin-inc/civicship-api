@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma } from "@prisma/client";
 import MembershipRepository from "@/infra/repositories/membership";
-import MembershipInputFormat from "@/presen/graphql/dto/membership/input";
+import MembershipInputFormat from "@/presentation/graphql/dto/membership/input";
 import {
   GqlMembershipCursorInput,
   GqlMembershipFilterInput,
@@ -10,7 +10,7 @@ import {
 } from "@/types/graphql";
 import { clampFirst } from "@/utils";
 import MembershipService from "@/app/membership/service";
-import MembershipOutputFormat from "@/presen/graphql/dto/membership/output";
+import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
 
 export default class MembershipUtils {
   static async fetchMembershipsCommon(

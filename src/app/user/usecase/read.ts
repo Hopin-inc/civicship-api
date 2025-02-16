@@ -1,6 +1,6 @@
 import { GqlQueryUserArgs, GqlQueryUsersArgs, GqlUser, GqlUsersConnection } from "@/types/graphql";
 import UserService from "@/app/user/service";
-import UserResponseFormat from "@/presen/graphql/dto/user/output";
+import UserResponseFormat from "@/presentation/graphql/dto/user/output";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 

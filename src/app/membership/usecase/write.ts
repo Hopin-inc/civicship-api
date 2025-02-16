@@ -16,7 +16,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipService from "@/app/membership/service";
-import MembershipOutputFormat from "@/presen/graphql/dto/membership/output";
+import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
 import { Prisma, Role } from "@prisma/client";
 import { getCurrentUserId } from "@/utils";
 import { PrismaClientIssuer } from "@/infra/prisma/client";

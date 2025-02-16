@@ -8,12 +8,12 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/app/transaction/service";
-import TransactionOutputFormat from "@/presen/graphql/dto/transaction/output";
+import TransactionOutputFormat from "@/presentation/graphql/dto/transaction/output";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import MembershipService from "@/app/membership/service";
 import { Prisma } from "@prisma/client";
 import WalletService from "@/app/membership/wallet/service";
-import TransactionInputFormat from "@/presen/graphql/dto/transaction/input";
+import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
 import TransactionRepository from "@/infra/repositories/transaction";
 import WalletRepository from "@/infra/repositories/membership/wallet";
 import WalletUtils from "@/app/membership/wallet/utils";

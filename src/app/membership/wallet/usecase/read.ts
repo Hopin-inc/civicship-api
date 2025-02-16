@@ -9,7 +9,7 @@ import {
   GqlUserWalletsArgs,
 } from "@/types/graphql";
 import WalletService from "@/app/membership/wallet/service";
-import WalletOutputFormat from "@/presen/graphql/dto/membership/wallet/output";
+import WalletOutputFormat from "@/presentation/graphql/dto/membership/wallet/output";
 import { IContext } from "@/types/server";
 import WalletUtils from "@/app/membership/wallet/utils";
 

@@ -7,7 +7,7 @@ import {
 } from "@/types/graphql";
 import { clampFirst } from "@/utils";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
-import ParticipationStatusHistoryOutputFormat from "@/presen/graphql/dto/opportunity/participation/statusHistory/output";
+import ParticipationStatusHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/participation/statusHistory/output";
 
 export default class ParticipationStatusHistoryUtils {
   static async fetchParticipationStatusHistoriesCommon(

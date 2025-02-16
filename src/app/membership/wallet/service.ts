@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import WalletInputFormat from "@/presen/graphql/dto/membership/wallet/input";
+import WalletInputFormat from "@/presentation/graphql/dto/membership/wallet/input";
 import WalletRepository from "@/infra/repositories/membership/wallet";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";

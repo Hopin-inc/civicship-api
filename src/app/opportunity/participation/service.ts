@@ -1,6 +1,6 @@
 import { GqlParticipationInviteInput, GqlQueryParticipationsArgs } from "@/types/graphql";
 import { ParticipationStatus, Prisma } from "@prisma/client";
-import ParticipationInputFormat from "@/presen/graphql/dto/opportunity/participation/input";
+import ParticipationInputFormat from "@/presentation/graphql/dto/opportunity/participation/input";
 import ParticipationRepository from "@/infra/repositories/opportunity/participation";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import { IContext } from "@/types/server";

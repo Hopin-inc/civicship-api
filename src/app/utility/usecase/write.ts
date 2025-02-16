@@ -9,7 +9,7 @@ import {
   GqlUtilityUsePayload,
 } from "@/types/graphql";
 import UtilityService from "@/app/utility/service";
-import UtilityOutputFormat from "@/presen/graphql/dto/utility/output";
+import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
 import { IContext } from "@/types/server";
 
 export default class UtilityWriteUseCase {

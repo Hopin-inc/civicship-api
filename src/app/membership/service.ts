@@ -4,7 +4,7 @@ import {
   GqlMembershipInviteInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
-import MembershipInputFormat from "@/presen/graphql/dto/membership/input";
+import MembershipInputFormat from "@/presentation/graphql/dto/membership/input";
 import MembershipRepository from "@/infra/repositories/membership";
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";

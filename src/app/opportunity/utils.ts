@@ -5,7 +5,7 @@ import {
   GqlOpportunitySortInput,
 } from "@/types/graphql";
 import OpportunityService from "@/app/opportunity/service";
-import OpportunityOutputFormat from "@/presen/graphql/dto/opportunity/output";
+import OpportunityOutputFormat from "@/presentation/graphql/dto/opportunity/output";
 import { clampFirst } from "@/utils";
 
 export const OpportunityUtils = {

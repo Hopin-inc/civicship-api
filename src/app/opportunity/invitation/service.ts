@@ -5,7 +5,7 @@ import {
   GqlOpportunityInvitationDisableInput,
   GqlQueryOpportunityInvitationsArgs,
 } from "@/types/graphql";
-import OpportunityInvitationInputFormat from "@/presen/graphql/dto/opportunity/invitation/input";
+import OpportunityInvitationInputFormat from "@/presentation/graphql/dto/opportunity/invitation/input";
 import OpportunityInvitationRepository from "@/infra/repositories/opportunity/invitation";
 import { getCurrentUserId } from "@/utils";
 

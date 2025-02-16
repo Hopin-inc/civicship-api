@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { GqlCurrentUserPayload, GqlMutationUserSignUpArgs } from "@/types/graphql";
 import IdentityService from "@/app/user/identity/service";
-import IdentityInputFormat from "@/presen/graphql/dto/user/identity/input";
-import IdentityResponseFormat from "@/presen/graphql/dto/user/identity/output";
+import IdentityInputFormat from "@/presentation/graphql/dto/user/identity/input";
+import IdentityResponseFormat from "@/presentation/graphql/dto/user/identity/output";
 
 export default class IdentityWriteUseCase {
   static async userCreateAccount(

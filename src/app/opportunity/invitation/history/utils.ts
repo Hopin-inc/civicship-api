@@ -6,7 +6,7 @@ import {
   GqlOpportunityInvitationHistoriesConnection,
 } from "@/types/graphql";
 import OpportunityInvitationHistoryService from "@/app/opportunity/invitation/history/service";
-import OpportunityInvitationHistoryOutputFormat from "@/presen/graphql/dto/opportunity/invitation/history/output";
+import OpportunityInvitationHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/history/output";
 
 export default class OpportunityInvitationHistoryUtils {
   static async fetchInvitationHistoriesCommon(

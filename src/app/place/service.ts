@@ -2,7 +2,7 @@ import { GqlPlaceCreateInput, GqlPlaceUpdateInput, GqlQueryPlacesArgs } from "@/
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 
-import PlaceInputFormat from "@/presen/graphql/dto/place/input";
+import PlaceInputFormat from "@/presentation/graphql/dto/place/input";
 import PlaceRepository from "@/infra/repositories/place";
 
 export default class PlaceService {

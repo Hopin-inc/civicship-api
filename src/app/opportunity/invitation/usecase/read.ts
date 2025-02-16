@@ -7,7 +7,7 @@ import {
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 import OpportunityInvitationService from "@/app/opportunity/invitation/service";
-import OpportunityInvitationOutputFormat from "@/presen/graphql/dto/opportunity/invitation/output";
+import OpportunityInvitationOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/output";
 
 export default class OpportunityInvitationReadUseCase {
   static async visitorBrowseOpportunityInvitations(

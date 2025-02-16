@@ -10,7 +10,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipUtils from "@/app/membership/utils";
-import MembershipOutputFormat from "@/presen/graphql/dto/membership/output";
+import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
 import MembershipService from "@/app/membership/service";
 
 export default class MembershipReadUseCase {

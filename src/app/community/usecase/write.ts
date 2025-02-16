@@ -8,7 +8,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import CommunityService from "@/app/community/service";
-import CommunityOutputFormat from "@/presen/graphql/dto/community/output";
+import CommunityOutputFormat from "@/presentation/graphql/dto/community/output";
 import WalletService from "@/app/membership/wallet/service";
 import MembershipService from "@/app/membership/service";
 import { getCurrentUserId } from "@/utils";

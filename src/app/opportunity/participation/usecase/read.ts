@@ -14,7 +14,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationService from "@/app/opportunity/participation/service";
-import ParticipationOutputFormat from "@/presen/graphql/dto/opportunity/participation/output";
+import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
 import ParticipationUtils from "@/app/opportunity/participation/utils";
 
 export default class ParticipationReadUseCase {

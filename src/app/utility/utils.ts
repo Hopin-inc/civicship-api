@@ -5,7 +5,7 @@ import {
   GqlUtilitySortInput,
 } from "@/types/graphql";
 import UtilityService from "@/app/utility/service";
-import UtilityOutputFormat from "@/presen/graphql/dto/utility/output";
+import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
 import { clampFirst } from "@/utils";
 
 export const UtilityUtils = {

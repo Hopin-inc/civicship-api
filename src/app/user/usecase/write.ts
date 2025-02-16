@@ -1,6 +1,6 @@
 import { GqlMutationUserUpdateMyProfileArgs, GqlUserUpdateProfilePayload } from "@/types/graphql";
 import UserService from "@/app/user/service";
-import UserResponseFormat from "@/presen/graphql/dto/user/output";
+import UserResponseFormat from "@/presentation/graphql/dto/user/output";
 import { IContext } from "@/types/server";
 
 export default class UserWriteUseCase {

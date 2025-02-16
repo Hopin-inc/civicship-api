@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import CommunityService from "@/app/community/service";
-import CommunityOutputFormat from "@/presen/graphql/dto/community/output";
+import CommunityOutputFormat from "@/presentation/graphql/dto/community/output";
 import { clampFirst } from "@/utils";
 
 export default class CommunityReadUseCase {

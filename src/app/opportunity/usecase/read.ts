@@ -12,7 +12,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityService from "@/app/opportunity/service";
-import OpportunityOutputFormat from "@/presen/graphql/dto/opportunity/output";
+import OpportunityOutputFormat from "@/presentation/graphql/dto/opportunity/output";
 import { OpportunityUtils } from "@/app/opportunity/utils";
 
 export default class OpportunityReadUseCase {

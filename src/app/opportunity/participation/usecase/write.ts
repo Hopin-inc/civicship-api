@@ -16,13 +16,13 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationService from "@/app/opportunity/participation/service";
-import ParticipationOutputFormat from "@/presen/graphql/dto/opportunity/participation/output";
+import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
 import ParticipationUtils from "@/app/opportunity/participation/utils";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import { getCurrentUserId } from "@/utils";
 import { OpportunityCategory, ParticipationStatus, Prisma } from "@prisma/client";
 import OpportunityRepository from "@/infra/repositories/opportunity";
-import ParticipationInputFormat from "@/presen/graphql/dto/opportunity/participation/input";
+import ParticipationInputFormat from "@/presentation/graphql/dto/opportunity/participation/input";
 import MembershipService from "@/app/membership/service";
 import WalletService from "@/app/membership/wallet/service";
 import ParticipationRepository from "@/infra/repositories/opportunity/participation";

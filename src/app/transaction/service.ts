@@ -7,7 +7,7 @@ import {
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
-import TransactionInputFormat from "@/presen/graphql/dto/transaction/input";
+import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
 
 export default class TransactionService {
   static async fetchTransactions(

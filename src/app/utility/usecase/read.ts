@@ -7,7 +7,7 @@ import {
   GqlCommunityUtilitiesArgs,
 } from "@/types/graphql";
 import UtilityService from "@/app/utility/service";
-import UtilityOutputFormat from "@/presen/graphql/dto/utility/output";
+import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
 import { IContext } from "@/types/server";
 import { UtilityUtils } from "@/app/utility/utils";
 
