@@ -62,7 +62,8 @@ model User {
   opportunityInvitations         OpportunityInvitation[]
   opportunityInvitationHistories OpportunityInvitationHistory[]
   participationStatusChangedByMe ParticipationStatusHistory[]
-  articles                       Article[]
+  articlesWrittenByMe            Article[]                      @relation("t_author_users_on_articles")
+  articlesAboutMe                Article[]                      @relation("t_related_users_on_articles")
   wallets                        Wallet[]
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -140,10 +141,11 @@ model Wallet {
   currentPointView     CurrentPointView?
   accumulatedPointView AccumulatedPointView?
 
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime?     @updatedAt @map("updated_at")
-  fromTransactions Transaction[] @relation("from_wallet")
-  toTransactions   Transaction[] @relation("to_wallet")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime?        @updatedAt @map("updated_at")
+  fromTransactions Transaction[]    @relation("from_wallet")
+  toTransactions   Transaction[]    @relation("to_wallet")
+  utilityHistories UtilityHistory[]
 
   @@map("t_wallets")
 }
@@ -337,9 +339,8 @@ model Article {
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  writtenByUserId String? @map("written_by_user_id")
-  writtenByUser   User?   @relation(fields: [writtenByUserId], references: [id], onDelete: SetNull)
-
+  authors       User[]        @relation("t_author_users_on_articles")
+  relatedUsers  User[]        @relation("t_related_users_on_articles")
   opportunities Opportunity[] @relation("t_opportunities_on_articles")
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -360,12 +361,31 @@ model Utility {
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  transactions Transaction[]
+  utilityHistories UtilityHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_utilities")
+}
+
+model UtilityHistory {
+  id     String    @id @default(cuid())
+  usedAt DateTime? @map("used_at")
+
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  utilityId String  @map("utility_id")
+  utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Restrict)
+
+  transactionId String      @map("transaction_id")
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_utility_histories")
 }
 
 // # Transaction
@@ -384,8 +404,7 @@ model Transaction {
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
 
-  utilityId String?  @map("utility_id")
-  utility   Utility? @relation(fields: [utilityId], references: [id], onDelete: SetNull)
+  utilityHistories UtilityHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
