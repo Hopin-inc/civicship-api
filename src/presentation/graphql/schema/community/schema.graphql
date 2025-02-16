@@ -68,10 +68,12 @@ type Community {
         first: Int
     ): UtilitiesConnection @complexity(value: 10, multipliers: ["first"])
 
-#    articles(
-#        first: Int,
-#        cursor: String
-#    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

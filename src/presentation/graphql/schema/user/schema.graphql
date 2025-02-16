@@ -76,10 +76,18 @@ type User {
         first: Int
     ): ParticipationStatusHistoriesConnection @complexity(value: 10, multipliers: ["first"])
 
-#    articles(
-#        first: Int,
-#        cursor: String
-#    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+    articlesWrittenByMe(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+    articlesAboutMe(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
 }
 
 enum SysRole {
