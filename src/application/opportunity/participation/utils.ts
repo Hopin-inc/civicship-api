@@ -14,8 +14,8 @@ import { clampFirst } from "@/utils";
 import ParticipationService from "@/application/opportunity/participation/service";
 import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
 import { getCurrentUserId } from "@/utils";
-import ParticipationStatusHistoryService from "@/application/opportunity/participationStatusHistory/service";
 import OpportunityRepository from "@/infrastructure/repositories/opportunity";
+import ParticipationStatusHistoryService from "@/application/opportunity/participation/statusHistory/service";
 
 export default class ParticipationUtils {
   private static issuer = new PrismaClientIssuer();

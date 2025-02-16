@@ -6,6 +6,7 @@ import {
   GqlParticipationInviteSuccess,
 } from "@/types/graphql";
 import { ParticipationPayloadWithArgs } from "@/infrastructure/prisma/types/opportunity/participation";
+import OpportunityOutputFormat from "@/presentation/graphql/dto/opportunity/output";
 
 export default class ParticipationOutputFormat {
   static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
@@ -31,7 +32,7 @@ export default class ParticipationOutputFormat {
       ...r,
       user,
       community,
-      opportunity,
+      opportunity: opportunity ? OpportunityOutputFormat.get(opportunity) : null,
     };
   }
 

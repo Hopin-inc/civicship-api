@@ -12,8 +12,8 @@ import {
   GqlMutationMembershipAcceptMyInvitationArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { MembershipReadUseCase } from "@/application/membership/usecase/read";
-import { MembershipWriteUseCase } from "@/application/membership/usecase/write";
+import MembershipReadUseCase from "@/application/membership/usecase/read";
+import MembershipWriteUseCase from "@/application/membership/usecase/write";
 
 const membershipResolver = {
   Query: {
