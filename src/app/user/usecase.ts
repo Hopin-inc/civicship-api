@@ -1,4 +1,7 @@
 import {
+  GqlArticle,
+  GqlArticleAuthorsArgs,
+  GqlArticleRelatedUsersArgs,
   GqlMutationUserUpdateMyProfileArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
@@ -10,6 +13,7 @@ import UserService from "@/app/user/service";
 import UserResponseFormat from "@/presentation/graphql/dto/user/output";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
+import UserUtils from "@/app/user/utils";
 
 export default class UserUseCase {
   static async visitorBrowseCommunityMembers(
@@ -24,6 +28,32 @@ export default class UserUseCase {
       return UserResponseFormat.get(record);
     });
     return UserResponseFormat.query(users, hasNextPage);
+  }
+
+  static async visitorBrowseArticleAuthors(
+    ctx: IContext,
+    { id }: GqlArticle,
+    { cursor, sort, first }: GqlArticleAuthorsArgs,
+  ): Promise<GqlUsersConnection> {
+    return UserUtils.fetchUsersCommon(ctx, {
+      filter: { articleAuthorId: id },
+      first,
+      cursor,
+      sort,
+    });
+  }
+
+  static async visitorBrowseArticleRelatedUsers(
+    ctx: IContext,
+    { id }: GqlArticle,
+    { cursor, sort, first }: GqlArticleRelatedUsersArgs,
+  ): Promise<GqlUsersConnection> {
+    return UserUtils.fetchUsersCommon(ctx, {
+      filter: { articleWriterId: id },
+      first,
+      cursor,
+      sort,
+    });
   }
 
   static async visitorViewMember(ctx: IContext, { id }: GqlQueryUserArgs): Promise<GqlUser | null> {

@@ -9,10 +9,12 @@ input ArticleCreateInput {
     publishStatus: PublishStatus
     body: String!
     thumbnail: JSON
-    publishedAt: Datetime
+    publishedAt: String
 
     communityId: ID!
-    writtenByUserId: ID
+    opportunityIds: [ID!]
+    authorIds: [ID!]
+    relatedUserIds: [ID!]
 }
 
 type ArticleCreateSuccess {
@@ -30,13 +32,18 @@ union ArticleCreatePayload =
 # =========================
 
 input ArticleUpdateInput {
-    title: String
-    introduction: String
-    category: ArticleCategory
+    title: String!
+    introduction: String!
+    category: ArticleCategory!
     publishStatus: PublishStatus
-    body: String
+    body: String!
     thumbnail: JSON
-    publishedAt: Datetime
+    publishedAt: String
+
+    communityId: ID!
+    opportunityIds: [ID!]
+    authorIds: [ID!]
+    relatedUserIds: [ID!]
 }
 
 type ArticleUpdateSuccess {

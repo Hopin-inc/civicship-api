@@ -5,6 +5,16 @@ import UserInputFormat from "@/presentation/graphql/dto/user/input";
 import { Prisma } from "@prisma/client";
 
 export default class UserService {
+  static async fetchUsers(
+    ctx: IContext,
+    { cursor, filter, sort }: GqlQueryUsersArgs,
+    take: number,
+  ) {
+    const where = UserInputFormat.filter(filter ?? {});
+    const orderBy = UserInputFormat.sort(sort ?? {});
+    return UserRepository.query(ctx, where, orderBy, take, cursor);
+  }
+
   static async fetchCommunityMembers(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryUsersArgs,

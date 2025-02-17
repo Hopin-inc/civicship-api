@@ -11,7 +11,7 @@ extend type Query {
 
 extend type Mutation {
     articleCreate(input: ArticleCreateInput!): ArticleCreatePayload
-    articleUpdate(input: ArticleUpdateInput!): ArticleUpdatePayload
+    articleUpdate(id: ID!, input: ArticleUpdateInput!): ArticleUpdatePayload
     articleDelete(id: ID!): ArticleDeletePayload
 }
 
@@ -28,8 +28,20 @@ type Article {
     publishedAt: Datetime
 
     community: Community
-    authors: User
-    relatedUsers: User
+
+    authors(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection @complexity(value: 5, multipliers: ["first"])
+
+    relatedUsers(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection @complexity(value: 5, multipliers: ["first"])
 
     opportunities(
         filter: OpportunityFilterInput

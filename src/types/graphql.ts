@@ -29,7 +29,7 @@ export type GqlAccumulatedPointView = {
 
 export type GqlArticle = {
   __typename?: 'Article';
-  authors?: Maybe<GqlUser>;
+  authors?: Maybe<GqlUsersConnection>;
   body: Scalars['String']['output'];
   category: GqlArticleCategory;
   community?: Maybe<GqlCommunity>;
@@ -39,10 +39,18 @@ export type GqlArticle = {
   opportunities?: Maybe<GqlOpportunitiesConnection>;
   publishStatus: GqlPublishStatus;
   publishedAt?: Maybe<Scalars['Datetime']['output']>;
-  relatedUsers?: Maybe<GqlUser>;
+  relatedUsers?: Maybe<GqlUsersConnection>;
   thumbnail?: Maybe<Scalars['JSON']['output']>;
   title: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
+
+export type GqlArticleAuthorsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlUserFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlUserSortInput>;
 };
 
 
@@ -53,6 +61,14 @@ export type GqlArticleOpportunitiesArgs = {
   sort?: InputMaybe<GqlOpportunitySortInput>;
 };
 
+
+export type GqlArticleRelatedUsersArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlUserFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlUserSortInput>;
+};
+
 export const GqlArticleCategory = {
   ActivityReport: 'ACTIVITY_REPORT',
   Interview: 'INTERVIEW'
@@ -60,15 +76,17 @@ export const GqlArticleCategory = {
 
 export type GqlArticleCategory = typeof GqlArticleCategory[keyof typeof GqlArticleCategory];
 export type GqlArticleCreateInput = {
+  authorIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   body: Scalars['String']['input'];
   category: GqlArticleCategory;
   communityId: Scalars['ID']['input'];
   introduction: Scalars['String']['input'];
+  opportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<GqlPublishStatus>;
-  publishedAt?: InputMaybe<Scalars['Datetime']['input']>;
+  publishedAt?: InputMaybe<Scalars['String']['input']>;
+  relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   thumbnail?: InputMaybe<Scalars['JSON']['input']>;
   title: Scalars['String']['input'];
-  writtenByUserId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type GqlArticleCreatePayload = GqlArticleCreateSuccess | GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError;
@@ -105,13 +123,17 @@ export type GqlArticleSortInput = {
 };
 
 export type GqlArticleUpdateInput = {
-  body?: InputMaybe<Scalars['String']['input']>;
-  category?: InputMaybe<GqlArticleCategory>;
-  introduction?: InputMaybe<Scalars['String']['input']>;
+  authorIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  body: Scalars['String']['input'];
+  category: GqlArticleCategory;
+  communityId: Scalars['ID']['input'];
+  introduction: Scalars['String']['input'];
+  opportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<GqlPublishStatus>;
-  publishedAt?: InputMaybe<Scalars['Datetime']['input']>;
+  publishedAt?: InputMaybe<Scalars['String']['input']>;
+  relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   thumbnail?: InputMaybe<Scalars['JSON']['input']>;
-  title?: InputMaybe<Scalars['String']['input']>;
+  title: Scalars['String']['input'];
 };
 
 export type GqlArticleUpdatePayload = GqlArticleUpdateSuccess | GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError;
@@ -526,6 +548,7 @@ export type GqlMutationArticleDeleteArgs = {
 
 
 export type GqlMutationArticleUpdateArgs = {
+  id: Scalars['ID']['input'];
   input: GqlArticleUpdateInput;
 };
 
@@ -861,6 +884,7 @@ export type GqlOpportunityEdge = GqlEdge & {
 };
 
 export type GqlOpportunityFilterInput = {
+  articleId?: InputMaybe<Scalars['String']['input']>;
   category?: InputMaybe<GqlOpportunityCategory>;
   communityId?: InputMaybe<Scalars['String']['input']>;
   createdByUserId?: InputMaybe<Scalars['String']['input']>;
@@ -1867,6 +1891,8 @@ export type GqlUserEdge = GqlEdge & {
 };
 
 export type GqlUserFilterInput = {
+  articleAuthorId?: InputMaybe<Scalars['ID']['input']>;
+  articleWriterId?: InputMaybe<Scalars['ID']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
   sysRole?: InputMaybe<GqlSysRole>;
 };
@@ -2766,7 +2792,7 @@ export type GqlAccumulatedPointViewResolvers<ContextType = any, ParentType exten
 }>;
 
 export type GqlArticleResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Article'] = GqlResolversParentTypes['Article']> = ResolversObject<{
-  authors?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
+  authors?: Resolver<Maybe<GqlResolversTypes['UsersConnection']>, ParentType, ContextType, Partial<GqlArticleAuthorsArgs>>;
   body?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   category?: Resolver<GqlResolversTypes['ArticleCategory'], ParentType, ContextType>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
@@ -2776,7 +2802,7 @@ export type GqlArticleResolvers<ContextType = any, ParentType extends GqlResolve
   opportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlArticleOpportunitiesArgs>>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   publishedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  relatedUsers?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
+  relatedUsers?: Resolver<Maybe<GqlResolversTypes['UsersConnection']>, ParentType, ContextType, Partial<GqlArticleRelatedUsersArgs>>;
   thumbnail?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -3031,7 +3057,7 @@ export type GqlMembershipsConnectionResolvers<ContextType = any, ParentType exte
 export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Mutation'] = GqlResolversParentTypes['Mutation']> = ResolversObject<{
   articleCreate?: Resolver<Maybe<GqlResolversTypes['ArticleCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleCreateArgs, 'input'>>;
   articleDelete?: Resolver<Maybe<GqlResolversTypes['ArticleDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleDeleteArgs, 'id'>>;
-  articleUpdate?: Resolver<Maybe<GqlResolversTypes['ArticleUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleUpdateArgs, 'input'>>;
+  articleUpdate?: Resolver<Maybe<GqlResolversTypes['ArticleUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleUpdateArgs, 'id' | 'input'>>;
   communityCreate?: Resolver<Maybe<GqlResolversTypes['CommunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityCreateArgs, 'input'>>;
   communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'input'>>;
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input'>>;

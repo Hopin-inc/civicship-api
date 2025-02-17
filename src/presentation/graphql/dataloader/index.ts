@@ -13,6 +13,7 @@ import { createParticipationStatusHistoryLoader } from "@/presentation/graphql/d
 import { createOpportunityInvitationLoader } from "@/presentation/graphql/dataloader/opportunity/invitation";
 import { createOpportunityInvitationHistoryLoader } from "@/presentation/graphql/dataloader/opportunity/invitation/history";
 import { createUtilityHistoryLoader } from "@/presentation/graphql/dataloader/utility/history";
+import { createArticleLoader } from "@/presentation/graphql/dataloader/article";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -37,6 +38,8 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     utilityHistory: createUtilityHistoryLoader(issuer),
 
     place: createPlaceLoader(issuer),
+
+    article: createArticleLoader(issuer),
   };
 }
 

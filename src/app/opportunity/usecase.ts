@@ -1,4 +1,6 @@
 import {
+  GqlArticle,
+  GqlArticleOpportunitiesArgs,
   GqlCommunity,
   GqlCommunityOpportunitiesArgs,
   GqlMutationOpportunityCreateArgs,
@@ -68,6 +70,18 @@ export default class OpportunityUseCase {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
       filter: { placeId: id },
+      first,
+    });
+  }
+
+  static async visitorBrowseOpportunitiesByArticle(
+    { id }: GqlArticle,
+    { first, cursor }: GqlArticleOpportunitiesArgs,
+    ctx: IContext,
+  ) {
+    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+      cursor,
+      filter: { articleId: id },
       first,
     });
   }

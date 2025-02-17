@@ -14,6 +14,9 @@ type UserEdge implements Edge {
 input UserFilterInput {
     keyword: String
     sysRole: SysRole
+
+    articleAuthorId: ID
+    articleWriterId: ID
 }
 
 input UserSortInput {

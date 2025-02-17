@@ -18,6 +18,7 @@ input OpportunityFilterInput {
     communityId: String
     createdByUserId: String
     placeId: String
+    articleId: String
 }
 
 input OpportunitySortInput {
