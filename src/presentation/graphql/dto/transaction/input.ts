@@ -5,7 +5,7 @@ import {
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionDonateSelfPointInput,
   GqlTransactionGiveRewardPointInput,
-  GqlTransactionRedeemedUtilityInput,
+  GqlTransactionRedeemUtilityInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 
@@ -81,7 +81,7 @@ export default class TransactionInputFormat {
     };
   }
 
-  static redeemedUtility(input: GqlTransactionRedeemedUtilityInput): Prisma.TransactionCreateInput {
+  static redeemUtility(input: GqlTransactionRedeemUtilityInput): Prisma.TransactionCreateInput {
     const { fromWalletId, toWalletId, transferPoints } = input;
 
     return {

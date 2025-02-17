@@ -20,19 +20,34 @@ export default class UtilityHistoryService {
     return await UtilityHistoryRepository.find(ctx, id);
   }
 
+  static async findUnusedOrThrow(ctx: IContext, historyId: string) {
+    const history = await UtilityHistoryRepository.find(ctx, historyId);
+
+    if (!history) {
+      throw new Error("No such UtilityHistory found.");
+    }
+    if (history.usedAt) {
+      throw new Error("Utility is already used.");
+    }
+
+    return history;
+  }
+
+  static async markAsUsed(ctx: IContext, utilityHistoryId: string, usedAt: Date) {
+    return await UtilityHistoryRepository.insertUsedAt(ctx, utilityHistoryId, usedAt);
+  }
+
   static async recordUtilityHistory(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     walletId: string,
     utilityId: string,
     transactionId: string,
-    usedAt?: Date,
   ) {
     const data = UtilityHistoryInputFormat.create({
       walletId,
       utilityId,
       transactionId,
-      usedAt,
     });
 
     await UtilityHistoryRepository.create(ctx, data, tx);

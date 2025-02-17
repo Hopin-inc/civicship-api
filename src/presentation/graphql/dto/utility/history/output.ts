@@ -2,6 +2,7 @@ import {
   GqlUtilityHistory,
   GqlUtilityHistoriesConnection,
   GqlUtilityHistoryCreateSuccess,
+  GqlUtilityUseSuccess,
 } from "@/types/graphql";
 import { UtilityHistoryPayloadWithArgs } from "@/infra/prisma/types/utility/history";
 
@@ -31,6 +32,13 @@ export default class UtilityHistoryOutputFormat {
   static create(r: UtilityHistoryPayloadWithArgs): GqlUtilityHistoryCreateSuccess {
     return {
       __typename: "UtilityHistoryCreateSuccess",
+      utilityHistory: this.get(r),
+    };
+  }
+
+  static useUtility(r: UtilityHistoryPayloadWithArgs): GqlUtilityUseSuccess {
+    return {
+      __typename: "UtilityUseSuccess",
       utilityHistory: this.get(r),
     };
   }

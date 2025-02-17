@@ -4,7 +4,7 @@ import {
   GqlUtilityCreateSuccess,
   GqlUtilityDeleteSuccess,
   GqlUtilityUpdateInfoSuccess,
-  GqlUtilityRedeemedSuccess,
+  GqlUtilityRedeemSuccess,
 } from "@/types/graphql";
 import { UtilityGetPayloadWithArgs } from "@/infra/prisma/types/utility";
 import { TransactionPayloadWithArgs } from "@/infra/prisma/types/transaction";
@@ -53,9 +53,9 @@ export default class UtilityResponseFormat {
     };
   }
 
-  static redeemedUtility(r: TransactionPayloadWithArgs): GqlUtilityRedeemedSuccess {
+  static redeemUtility(r: TransactionPayloadWithArgs): GqlUtilityRedeemSuccess {
     return {
-      __typename: "UtilityRedeemedSuccess",
+      __typename: "UtilityRedeemSuccess",
       transaction: TransactionOutputFormat.get(r),
     };
   }

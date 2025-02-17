@@ -34,6 +34,19 @@ export default class UtilityHistoryRepository {
     });
   }
 
+  static async queryByWalletIdAndUtilityId(ctx: IContext, walletId: string, utilityId: string) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.utilityHistory.findMany({
+        where: {
+          walletId,
+          utilityId,
+          usedAt: null,
+        },
+        include: utilityHistoryInclude,
+      });
+    });
+  }
+
   static async create(
     ctx: IContext,
     data: Prisma.UtilityHistoryCreateInput,
@@ -45,22 +58,21 @@ export default class UtilityHistoryRepository {
     });
   }
 
+  static async insertUsedAt(ctx: IContext, id: string, usedAt: Date) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.utilityHistory.update({
+        where: { id },
+        data: { usedAt },
+        include: utilityHistoryInclude,
+      });
+    });
+  }
+
   static async delete(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.utilityHistory.delete({
         where: { id },
       });
-    });
-  }
-
-  static async createWithTransaction(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    data: Prisma.UtilityHistoryCreateInput,
-  ) {
-    return tx.utilityHistory.create({
-      data,
-      include: utilityHistoryInclude,
     });
   }
 }

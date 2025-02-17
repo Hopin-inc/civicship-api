@@ -34,7 +34,6 @@ export default class UtilityHistoryInputFormat {
       wallet: { connect: { id: input.walletId } },
       utility: { connect: { id: input.utilityId } },
       transaction: { connect: { id: input.transactionId } },
-      usedAt: input.usedAt,
     };
   }
 }

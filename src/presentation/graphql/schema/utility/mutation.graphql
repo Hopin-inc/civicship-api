@@ -18,7 +18,7 @@ input UtilityUpdateInfoInput {
     pointsRequired: Int!
 }
 
-input UtilityRedeemedInput {
+input UtilityRedeemInput {
     communityId: String!
 
     userWalletId: String!
@@ -27,7 +27,7 @@ input UtilityRedeemedInput {
 input UtilityUseInput {
     communityId: String!
 
-    userWalletId: String!
+    utilityHistoryId: String!
 }
 
 # Type definitions
@@ -44,12 +44,12 @@ type UtilityUpdateInfoSuccess {
     utility: Utility!
 }
 
-type UtilityRedeemedSuccess {
+type UtilityRedeemSuccess {
     transaction: Transaction!
 }
 
 type UtilityUseSuccess {
-    utility: Utility!
+    utilityHistory: UtilityHistory!
 }
 
 # Union definitions
@@ -72,8 +72,8 @@ union UtilityUpdateInfoPayload =
     AuthError |
     ComplexQueryError
 
-union UtilityRedeemedPayload =
-    UtilityRedeemedSuccess |
+union UtilityRedeemPayload =
+    UtilityRedeemSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

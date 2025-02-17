@@ -531,7 +531,7 @@ export type GqlMutation = {
   userUpdateMyProfile?: Maybe<GqlUserUpdateProfilePayload>;
   utilityCreate?: Maybe<GqlUtilityCreatePayload>;
   utilityDelete?: Maybe<GqlUtilityDeletePayload>;
-  utilityRedeemed?: Maybe<GqlUtilityRedeemedPayload>;
+  utilityRedeem?: Maybe<GqlUtilityRedeemPayload>;
   utilityUpdateInfo?: Maybe<GqlUtilityUpdateInfoPayload>;
   utilityUse?: Maybe<GqlUtilityUsePayload>;
 };
@@ -753,9 +753,9 @@ export type GqlMutationUtilityDeleteArgs = {
 };
 
 
-export type GqlMutationUtilityRedeemedArgs = {
+export type GqlMutationUtilityRedeemArgs = {
   id: Scalars['ID']['input'];
-  input: GqlUtilityRedeemedInput;
+  input: GqlUtilityRedeemInput;
 };
 
 
@@ -766,7 +766,6 @@ export type GqlMutationUtilityUpdateInfoArgs = {
 
 
 export type GqlMutationUtilityUseArgs = {
-  id: Scalars['ID']['input'];
   input: GqlUtilityUseInput;
 };
 
@@ -1752,16 +1751,16 @@ export const GqlTransactionReason = {
 } as const;
 
 export type GqlTransactionReason = typeof GqlTransactionReason[keyof typeof GqlTransactionReason];
-export type GqlTransactionRedeemedUtilityInput = {
+export type GqlTransactionRedeemUtilityInput = {
   fromWalletId: Scalars['String']['input'];
   toWalletId: Scalars['String']['input'];
   transferPoints: Scalars['Int']['input'];
 };
 
-export type GqlTransactionRedeemedUtilityPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionRedeemedUtilitySuccess;
+export type GqlTransactionRedeemUtilityPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionRedeemUtilitySuccess;
 
-export type GqlTransactionRedeemedUtilitySuccess = {
-  __typename?: 'TransactionRedeemedUtilitySuccess';
+export type GqlTransactionRedeemUtilitySuccess = {
+  __typename?: 'TransactionRedeemUtilitySuccess';
   transaction: GqlTransaction;
 };
 
@@ -2044,15 +2043,15 @@ export type GqlUtilityHistorySortInput = {
   usedAt: GqlSortDirection;
 };
 
-export type GqlUtilityRedeemedInput = {
+export type GqlUtilityRedeemInput = {
   communityId: Scalars['String']['input'];
   userWalletId: Scalars['String']['input'];
 };
 
-export type GqlUtilityRedeemedPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityRedeemedSuccess;
+export type GqlUtilityRedeemPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityRedeemSuccess;
 
-export type GqlUtilityRedeemedSuccess = {
-  __typename?: 'UtilityRedeemedSuccess';
+export type GqlUtilityRedeemSuccess = {
+  __typename?: 'UtilityRedeemSuccess';
   transaction: GqlTransaction;
 };
 
@@ -2078,14 +2077,14 @@ export type GqlUtilityUpdateInfoSuccess = {
 
 export type GqlUtilityUseInput = {
   communityId: Scalars['String']['input'];
-  userWalletId: Scalars['String']['input'];
+  utilityHistoryId: Scalars['String']['input'];
 };
 
 export type GqlUtilityUsePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityUseSuccess;
 
 export type GqlUtilityUseSuccess = {
   __typename?: 'UtilityUseSuccess';
-  utility: GqlUtility;
+  utilityHistory: GqlUtilityHistory;
 };
 
 export const GqlValueType = {
@@ -2278,14 +2277,14 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   TransactionGiveRewardPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionGiveRewardPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   TransactionGrantCommunityPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionGrantCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   TransactionIssueCommunityPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
-  TransactionRedeemedUtilityPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionRedeemedUtilitySuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
+  TransactionRedeemUtilityPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionRedeemUtilitySuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   UserUpdateProfilePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
   UtilityCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: _RefType['Utility'] } );
   UtilityDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlUtilityDeleteSuccess );
   UtilityHistoryCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityHistoryCreateSuccess, 'utilityHistory'> & { utilityHistory: _RefType['UtilityHistory'] } );
-  UtilityRedeemedPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityRedeemedSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
+  UtilityRedeemPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityRedeemSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   UtilityUpdateInfoPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: _RefType['Utility'] } );
-  UtilityUsePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityUseSuccess, 'utility'> & { utility: _RefType['Utility'] } );
+  UtilityUsePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityUseSuccess, 'utilityHistory'> & { utilityHistory: _RefType['UtilityHistory'] } );
   WalletCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlWalletCreateSuccess, 'wallet'> & { wallet: _RefType['Wallet'] } );
   WalletDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlWalletDeleteSuccess );
 }>;
@@ -2482,9 +2481,9 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionIssueCommunityPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionIssueCommunityPointPayload']>;
   TransactionIssueCommunityPointSuccess: ResolverTypeWrapper<Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   TransactionReason: GqlTransactionReason;
-  TransactionRedeemedUtilityInput: GqlTransactionRedeemedUtilityInput;
-  TransactionRedeemedUtilityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionRedeemedUtilityPayload']>;
-  TransactionRedeemedUtilitySuccess: ResolverTypeWrapper<Omit<GqlTransactionRedeemedUtilitySuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
+  TransactionRedeemUtilityInput: GqlTransactionRedeemUtilityInput;
+  TransactionRedeemUtilityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionRedeemUtilityPayload']>;
+  TransactionRedeemUtilitySuccess: ResolverTypeWrapper<Omit<GqlTransactionRedeemUtilitySuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
   User: ResolverTypeWrapper<User>;
@@ -2515,16 +2514,16 @@ export type GqlResolversTypes = ResolversObject<{
   UtilityHistoryEdge: ResolverTypeWrapper<Omit<GqlUtilityHistoryEdge, 'node'> & { node: GqlResolversTypes['UtilityHistory'] }>;
   UtilityHistoryFilterInput: GqlUtilityHistoryFilterInput;
   UtilityHistorySortInput: GqlUtilityHistorySortInput;
-  UtilityRedeemedInput: GqlUtilityRedeemedInput;
-  UtilityRedeemedPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityRedeemedPayload']>;
-  UtilityRedeemedSuccess: ResolverTypeWrapper<Omit<GqlUtilityRedeemedSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
+  UtilityRedeemInput: GqlUtilityRedeemInput;
+  UtilityRedeemPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityRedeemPayload']>;
+  UtilityRedeemSuccess: ResolverTypeWrapper<Omit<GqlUtilityRedeemSuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   UtilitySortInput: GqlUtilitySortInput;
   UtilityUpdateInfoInput: GqlUtilityUpdateInfoInput;
   UtilityUpdateInfoPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityUpdateInfoPayload']>;
   UtilityUpdateInfoSuccess: ResolverTypeWrapper<Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: GqlResolversTypes['Utility'] }>;
   UtilityUseInput: GqlUtilityUseInput;
   UtilityUsePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityUsePayload']>;
-  UtilityUseSuccess: ResolverTypeWrapper<Omit<GqlUtilityUseSuccess, 'utility'> & { utility: GqlResolversTypes['Utility'] }>;
+  UtilityUseSuccess: ResolverTypeWrapper<Omit<GqlUtilityUseSuccess, 'utilityHistory'> & { utilityHistory: GqlResolversTypes['UtilityHistory'] }>;
   ValueType: GqlValueType;
   Wallet: ResolverTypeWrapper<Wallet>;
   WalletCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['WalletCreatePayload']>;
@@ -2716,9 +2715,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionIssueCommunityPointInput: GqlTransactionIssueCommunityPointInput;
   TransactionIssueCommunityPointPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionIssueCommunityPointPayload'];
   TransactionIssueCommunityPointSuccess: Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
-  TransactionRedeemedUtilityInput: GqlTransactionRedeemedUtilityInput;
-  TransactionRedeemedUtilityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionRedeemedUtilityPayload'];
-  TransactionRedeemedUtilitySuccess: Omit<GqlTransactionRedeemedUtilitySuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
+  TransactionRedeemUtilityInput: GqlTransactionRedeemUtilityInput;
+  TransactionRedeemUtilityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionRedeemUtilityPayload'];
+  TransactionRedeemUtilitySuccess: Omit<GqlTransactionRedeemUtilitySuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
   User: User;
@@ -2749,16 +2748,16 @@ export type GqlResolversParentTypes = ResolversObject<{
   UtilityHistoryEdge: Omit<GqlUtilityHistoryEdge, 'node'> & { node: GqlResolversParentTypes['UtilityHistory'] };
   UtilityHistoryFilterInput: GqlUtilityHistoryFilterInput;
   UtilityHistorySortInput: GqlUtilityHistorySortInput;
-  UtilityRedeemedInput: GqlUtilityRedeemedInput;
-  UtilityRedeemedPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityRedeemedPayload'];
-  UtilityRedeemedSuccess: Omit<GqlUtilityRedeemedSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
+  UtilityRedeemInput: GqlUtilityRedeemInput;
+  UtilityRedeemPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityRedeemPayload'];
+  UtilityRedeemSuccess: Omit<GqlUtilityRedeemSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
   UtilitySortInput: GqlUtilitySortInput;
   UtilityUpdateInfoInput: GqlUtilityUpdateInfoInput;
   UtilityUpdateInfoPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityUpdateInfoPayload'];
   UtilityUpdateInfoSuccess: Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: GqlResolversParentTypes['Utility'] };
   UtilityUseInput: GqlUtilityUseInput;
   UtilityUsePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityUsePayload'];
-  UtilityUseSuccess: Omit<GqlUtilityUseSuccess, 'utility'> & { utility: GqlResolversParentTypes['Utility'] };
+  UtilityUseSuccess: Omit<GqlUtilityUseSuccess, 'utilityHistory'> & { utilityHistory: GqlResolversParentTypes['UtilityHistory'] };
   Wallet: Wallet;
   WalletCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['WalletCreatePayload'];
   WalletCreateSuccess: Omit<GqlWalletCreateSuccess, 'wallet'> & { wallet: GqlResolversParentTypes['Wallet'] };
@@ -3097,9 +3096,9 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   userUpdateMyProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateMyProfileArgs, 'input'>>;
   utilityCreate?: Resolver<Maybe<GqlResolversTypes['UtilityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityCreateArgs, 'input'>>;
   utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id'>>;
-  utilityRedeemed?: Resolver<Maybe<GqlResolversTypes['UtilityRedeemedPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityRedeemedArgs, 'id' | 'input'>>;
+  utilityRedeem?: Resolver<Maybe<GqlResolversTypes['UtilityRedeemPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityRedeemArgs, 'id' | 'input'>>;
   utilityUpdateInfo?: Resolver<Maybe<GqlResolversTypes['UtilityUpdateInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUpdateInfoArgs, 'id' | 'input'>>;
-  utilityUse?: Resolver<Maybe<GqlResolversTypes['UtilityUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUseArgs, 'id' | 'input'>>;
+  utilityUse?: Resolver<Maybe<GqlResolversTypes['UtilityUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUseArgs, 'input'>>;
 }>;
 
 export type GqlOpportunitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitiesConnection'] = GqlResolversParentTypes['OpportunitiesConnection']> = ResolversObject<{
@@ -3552,11 +3551,11 @@ export type GqlTransactionIssueCommunityPointSuccessResolvers<ContextType = any,
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlTransactionRedeemedUtilityPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionRedeemedUtilityPayload'] = GqlResolversParentTypes['TransactionRedeemedUtilityPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TransactionRedeemedUtilitySuccess', ParentType, ContextType>;
+export type GqlTransactionRedeemUtilityPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionRedeemUtilityPayload'] = GqlResolversParentTypes['TransactionRedeemUtilityPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TransactionRedeemUtilitySuccess', ParentType, ContextType>;
 }>;
 
-export type GqlTransactionRedeemedUtilitySuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionRedeemedUtilitySuccess'] = GqlResolversParentTypes['TransactionRedeemedUtilitySuccess']> = ResolversObject<{
+export type GqlTransactionRedeemUtilitySuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionRedeemUtilitySuccess'] = GqlResolversParentTypes['TransactionRedeemUtilitySuccess']> = ResolversObject<{
   transaction?: Resolver<GqlResolversTypes['Transaction'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3698,11 +3697,11 @@ export type GqlUtilityHistoryEdgeResolvers<ContextType = any, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlUtilityRedeemedPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityRedeemedPayload'] = GqlResolversParentTypes['UtilityRedeemedPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UtilityRedeemedSuccess', ParentType, ContextType>;
+export type GqlUtilityRedeemPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityRedeemPayload'] = GqlResolversParentTypes['UtilityRedeemPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UtilityRedeemSuccess', ParentType, ContextType>;
 }>;
 
-export type GqlUtilityRedeemedSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityRedeemedSuccess'] = GqlResolversParentTypes['UtilityRedeemedSuccess']> = ResolversObject<{
+export type GqlUtilityRedeemSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityRedeemSuccess'] = GqlResolversParentTypes['UtilityRedeemSuccess']> = ResolversObject<{
   transaction?: Resolver<GqlResolversTypes['Transaction'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3721,7 +3720,7 @@ export type GqlUtilityUsePayloadResolvers<ContextType = any, ParentType extends 
 }>;
 
 export type GqlUtilityUseSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityUseSuccess'] = GqlResolversParentTypes['UtilityUseSuccess']> = ResolversObject<{
-  utility?: Resolver<GqlResolversTypes['Utility'], ParentType, ContextType>;
+  utilityHistory?: Resolver<GqlResolversTypes['UtilityHistory'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3885,8 +3884,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TransactionGrantCommunityPointSuccess?: GqlTransactionGrantCommunityPointSuccessResolvers<ContextType>;
   TransactionIssueCommunityPointPayload?: GqlTransactionIssueCommunityPointPayloadResolvers<ContextType>;
   TransactionIssueCommunityPointSuccess?: GqlTransactionIssueCommunityPointSuccessResolvers<ContextType>;
-  TransactionRedeemedUtilityPayload?: GqlTransactionRedeemedUtilityPayloadResolvers<ContextType>;
-  TransactionRedeemedUtilitySuccess?: GqlTransactionRedeemedUtilitySuccessResolvers<ContextType>;
+  TransactionRedeemUtilityPayload?: GqlTransactionRedeemUtilityPayloadResolvers<ContextType>;
+  TransactionRedeemUtilitySuccess?: GqlTransactionRedeemUtilitySuccessResolvers<ContextType>;
   TransactionsConnection?: GqlTransactionsConnectionResolvers<ContextType>;
   User?: GqlUserResolvers<ContextType>;
   UserDeletePayload?: GqlUserDeletePayloadResolvers<ContextType>;
@@ -3906,8 +3905,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   UtilityHistoryCreatePayload?: GqlUtilityHistoryCreatePayloadResolvers<ContextType>;
   UtilityHistoryCreateSuccess?: GqlUtilityHistoryCreateSuccessResolvers<ContextType>;
   UtilityHistoryEdge?: GqlUtilityHistoryEdgeResolvers<ContextType>;
-  UtilityRedeemedPayload?: GqlUtilityRedeemedPayloadResolvers<ContextType>;
-  UtilityRedeemedSuccess?: GqlUtilityRedeemedSuccessResolvers<ContextType>;
+  UtilityRedeemPayload?: GqlUtilityRedeemPayloadResolvers<ContextType>;
+  UtilityRedeemSuccess?: GqlUtilityRedeemSuccessResolvers<ContextType>;
   UtilityUpdateInfoPayload?: GqlUtilityUpdateInfoPayloadResolvers<ContextType>;
   UtilityUpdateInfoSuccess?: GqlUtilityUpdateInfoSuccessResolvers<ContextType>;
   UtilityUsePayload?: GqlUtilityUsePayloadResolvers<ContextType>;

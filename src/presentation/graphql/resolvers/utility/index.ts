@@ -8,7 +8,8 @@ import {
   GqlUtility,
   GqlUtilityHistoriesArgs,
   GqlUtilityHistoriesConnection,
-  GqlMutationUtilityRedeemedArgs,
+  GqlMutationUtilityRedeemArgs,
+  GqlMutationUtilityUseArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import UtilityHistoryUseCase from "@/app/utility/history/usecase";
@@ -32,10 +33,10 @@ const utilityResolver = {
       UtilityUseCase.managerDeleteUtility(ctx, args),
     utilityUpdateInfo: async (_: unknown, args: GqlMutationUtilityUpdateInfoArgs, ctx: IContext) =>
       UtilityUseCase.managerUpdateUtilityInfo(ctx, args),
-    utilityGet: async (_: unknown, args: GqlMutationUtilityRedeemedArgs, ctx: IContext) =>
+    utilityRedeem: async (_: unknown, args: GqlMutationUtilityRedeemArgs, ctx: IContext) =>
       UtilityUseCase.memberRedeemedUtility(ctx, args),
-    // utilityUse: async (_: unknown, args: GqlMutationUtilityUseArgs, ctx: IContext) =>
-    //   UtilityUseCase.memberUseUtility(ctx, args),
+    utilityUse: async (_: unknown, args: GqlMutationUtilityUseArgs, ctx: IContext) =>
+      UtilityUseCase.memberUseUtility(ctx, args),
   },
 
   Utility: {

@@ -11,8 +11,10 @@ import {
   GqlUtilityDeletePayload,
   GqlMutationUtilityUpdateInfoArgs,
   GqlUtilityUpdateInfoPayload,
-  GqlMutationUtilityRedeemedArgs,
-  GqlUtilityRedeemedPayload,
+  GqlMutationUtilityRedeemArgs,
+  GqlUtilityRedeemPayload,
+  GqlMutationUtilityUseArgs,
+  GqlUtilityUsePayload,
 } from "@/types/graphql";
 import UtilityService from "@/app/utility/service";
 import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
@@ -23,6 +25,7 @@ import WalletService from "@/app/membership/wallet/service";
 import { Prisma } from "@prisma/client";
 import TransactionService from "@/app/transaction/service";
 import UtilityHistoryService from "@/app/utility/history/service";
+import UtilityHistoryOutputFormat from "@/presentation/graphql/dto/utility/history/output";
 
 export default class UtilityUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -88,8 +91,8 @@ export default class UtilityUseCase {
 
   static async memberRedeemedUtility(
     ctx: IContext,
-    { id, input }: GqlMutationUtilityRedeemedArgs,
-  ): Promise<GqlUtilityRedeemedPayload> {
+    { id, input }: GqlMutationUtilityRedeemArgs,
+  ): Promise<GqlUtilityRedeemPayload> {
     const utility = await UtilityService.findUtilityOrThrow(ctx, id);
     const { fromWalletId, toWalletId } = await WalletService.findWalletsForRedeemedUtility(
       ctx,
@@ -99,7 +102,7 @@ export default class UtilityUseCase {
     );
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const transaction = await TransactionService.redeemedUtility(ctx, tx, {
+      const transaction = await TransactionService.redeemUtility(ctx, tx, {
         fromWalletId,
         toWalletId,
         transferPoints: utility.pointsRequired,
@@ -111,29 +114,22 @@ export default class UtilityUseCase {
         input.userWalletId,
         id,
         transaction.id,
-        new Date(),
       );
 
-      return UtilityOutputFormat.redeemedUtility(transaction);
+      return UtilityOutputFormat.redeemUtility(transaction);
     });
   }
 
-  // static async memberUseUtility(
-  //   ctx: IContext,
-  //   { id, input }: GqlMutationUtilityUseArgs,
-  // ): Promise<GqlUtilityUsePayload> {
-  //   const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
-  //
-  //   return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-  //     await UtilityHistoryService.recordUtilityHistory(
-  //       ctx,
-  //       tx,
-  //       input.userWalletId,
-  //       id,
-  //       transaction.id,
-  //       new Date(),
-  //     );
-  //     return UtilityOutputFormat.useUtility(transaction);
-  //   });
-  // }
+  static async memberUseUtility(
+    ctx: IContext,
+    { input }: GqlMutationUtilityUseArgs,
+  ): Promise<GqlUtilityUsePayload> {
+    const unusedHistory = await UtilityHistoryService.findUnusedOrThrow(
+      ctx,
+      input.utilityHistoryId,
+    );
+
+    const res = await UtilityHistoryService.markAsUsed(ctx, unusedHistory.id, new Date());
+    return UtilityHistoryOutputFormat.useUtility(res);
+  }
 }
