@@ -1,0 +1,35 @@
+
+extend type Query {
+    opportunityInvitations(
+        filter: OpportunityInvitationFilterInput
+        sort: OpportunityInvitationSortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationsConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunityInvitation(id: ID!): OpportunityInvitation
+}
+
+extend type Mutation {
+    opportunityInvitationCreate(input: OpportunityInvitationCreateInput!): OpportunityInvitationCreatePayload
+    opportunityInvitationDisable(id: ID!, input: OpportunityInvitationDisableInput!): OpportunityInvitationDisablePayload
+    opportunityInvitationDelete(id: ID!): OpportunityInvitationDeletePayload
+}
+
+type OpportunityInvitation {
+    id: ID!
+    code: String!
+    isValid: Boolean!
+
+    opportunity: Opportunity
+    createdByUser: User
+
+    histories(
+        filter: OpportunityInvitationHistoryFilterInput
+        sort: OpportunityInvitationHistorySortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

@@ -1,0 +1,28 @@
+# =========================================
+# Connection / Edge
+# =========================================
+
+type OpportunityInvitationsConnection {
+    edges: [OpportunityInvitationEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OpportunityInvitationEdge implements Edge {
+    cursor: String!
+    node: OpportunityInvitation
+}
+
+# =========================================
+# Filter / Sort Input
+# =========================================
+
+input OpportunityInvitationFilterInput {
+    isValid: Boolean
+    opportunityId: ID
+    createdByUserId: ID
+}
+
+input OpportunityInvitationSortInput {
+    createdAt: SortDirection
+}

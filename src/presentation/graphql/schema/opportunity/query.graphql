@@ -1,0 +1,29 @@
+# Opportunity
+
+type OpportunitiesConnection {
+    edges: [OpportunityEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OpportunityEdge implements Edge {
+    cursor: String!
+    node: Opportunity
+}
+
+input OpportunityFilterInput {
+    category: OpportunityCategory
+    publishStatus: PublishStatus
+
+    communityId: String
+    createdByUserId: String
+    placeId: String
+    articleId: String
+}
+
+input OpportunitySortInput {
+    startsAt: SortDirection
+    createdAt: SortDirection
+
+    pointsRequired: SortDirection
+}

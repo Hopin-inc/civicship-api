@@ -1,0 +1,34 @@
+## input definitions
+
+input WalletCreateToCommunityInput {
+    communityId: String!
+}
+
+input WalletCreateToMemberInput {
+    communityId: String!
+    userId: String!
+}
+
+## type definitions
+
+type WalletCreateSuccess {
+    wallet: Wallet!
+}
+
+type WalletDeleteSuccess {
+    walletId: String!
+}
+
+## union definitions
+
+union WalletCreatePayload =
+    WalletCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union WalletDeletePayload =
+    WalletDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

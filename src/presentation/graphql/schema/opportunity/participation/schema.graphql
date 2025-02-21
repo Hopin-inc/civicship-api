@@ -1,0 +1,70 @@
+# Queries and Mutations
+
+extend type Query {
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
+    participation(id: ID!): Participation
+}
+
+extend type Mutation {
+    # invite
+    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
+    participationCancelInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationAcceptMyInvitation(id: ID!): ParticipationSetStatusPayload
+    participationDenyMyInvitation(id: ID!): ParticipationSetStatusPayload
+
+    # apply
+    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
+    participationCancelMyApplication(id: ID!): ParticipationSetStatusPayload
+    participationAcceptApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+
+    # performance
+    participationApprovePerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyPerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+}
+
+# Type definitions
+
+type Participation {
+    id: ID!
+    status: ParticipationStatus!
+
+    images: JSON
+
+    user: User
+    community: Community
+    opportunity: Opportunity
+    opportunitySlot: OpportunitySlot
+
+    statusHistories(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum ParticipationStatus {
+    INVITED
+    APPLIED
+    CANCELED
+    PARTICIPATING
+    NOT_PARTICIPATING
+    APPROVED
+    DENIED
+}

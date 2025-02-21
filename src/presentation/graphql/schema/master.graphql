@@ -1,0 +1,32 @@
+enum IdentityPlatform {
+    LINE
+    FACEBOOK
+}
+
+enum PublishStatus {
+    PUBLIC
+    COMMUNITY_INTERNAL
+    PRIVATE
+}
+
+enum ValueType {
+    INT
+    FLOAT
+}
+
+type State {
+    code: ID!
+    countryCode: ID!
+    name: String!
+}
+
+type City {
+    code: ID!
+    name: String!
+    state: State!
+}
+
+extend type Query {
+    cities(name: String): [City!]!
+    states(name: String): [State!]!
+}

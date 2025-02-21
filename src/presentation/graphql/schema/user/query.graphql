@@ -1,0 +1,24 @@
+# user
+
+type UsersConnection {
+    edges: [UserEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type UserEdge implements Edge {
+    cursor: String!
+    node: User
+}
+
+input UserFilterInput {
+    keyword: String
+    sysRole: SysRole
+
+    articleAuthorId: ID
+    articleWriterId: ID
+}
+
+input UserSortInput {
+    createdAt: SortDirection
+}

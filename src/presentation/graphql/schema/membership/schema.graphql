@@ -1,0 +1,54 @@
+# Queries and Mutations
+
+extend type Query {
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: MembershipCursorInput
+        first: Int
+    ): MembershipsConnection! @complexity(value: 10, multipliers: ["first"])
+    membership(userId: ID!, communityId: ID!): Membership
+}
+
+extend type Mutation {
+    # invite
+    membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
+    membershipCancelInvitation(input: MembershipCancelInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipAcceptMyInvitation(input: MembershipAcceptMyInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipDenyMyInvitation(input: MembershipDenyMyInvitationInput!): MembershipSetInvitationStatusPayload
+
+    # join
+    membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
+
+    # role
+    membershipAssignOwner(input: MembershipAssignOwnerInput!): MembershipSetRolePayload
+    membershipAssignManager(input: MembershipAssignManagerInput!): MembershipSetRolePayload
+    membershipAssignMember(input: MembershipAssignMemberInput!): MembershipSetRolePayload
+    membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
+}
+
+# Type definitions
+
+type Membership {
+    user: User!
+    community: Community!
+
+    status: MembershipStatus
+    role: Role!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum MembershipStatus {
+    INVITED
+    CANCELED
+    JOINED
+    WITHDRAWED
+}
+
+enum Role {
+    OWNER
+    MANAGER
+    MEMBER
+}

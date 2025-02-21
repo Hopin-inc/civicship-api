@@ -1,0 +1,81 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+directive @complexity(
+    value: Int!
+    multipliers: [String!]
+) on FIELD_DEFINITION
+
+directive @requireRole(
+    role: Role!
+) on FIELD_DEFINITION
+
+scalar Datetime
+scalar JSON
+scalar Decimal
+
+type Query {
+    echo: String!
+}
+
+type Mutation {
+    mutationEcho: String!
+}
+
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+type Paging {
+    take: Int!
+    skip: Int!
+}
+
+interface Edge {
+    cursor: String!
+}
+
+input ImageInput {
+    base64: String!
+}
+
+enum SortDirection {
+    asc
+    desc
+}
+
+interface Error {
+    statusCode: Int!
+    message: String!
+}
+
+type InvalidInputValueError implements Error {
+    statusCode: Int!
+    message: String!
+    fields: [Field!]
+}
+
+type AuthError implements Error {
+    statusCode: Int!
+    message: String!
+}
+
+type ComplexQueryError implements Error {
+    statusCode: Int!
+    message: String!
+}
+
+type Field {
+    name: String!
+    message: String
+}
+
+union CommonError =
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

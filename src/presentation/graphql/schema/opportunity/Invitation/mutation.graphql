@@ -1,0 +1,52 @@
+# =========================================
+# Create
+# =========================================
+
+input OpportunityInvitationCreateInput {
+    communityId: ID!
+
+    code: String!
+    opportunityId: ID!
+}
+
+type OpportunityInvitationCreateSuccess {
+    opportunityInvitation: OpportunityInvitation
+}
+
+union OpportunityInvitationCreatePayload =
+    OpportunityInvitationCreateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================================
+# Disable
+# =========================================
+
+input OpportunityInvitationDisableInput {
+    communityId: ID!
+}
+
+type OpportunityInvitationDisableSuccess {
+    opportunityInvitation: OpportunityInvitation
+}
+
+union OpportunityInvitationDisablePayload =
+    OpportunityInvitationDisableSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================================
+# Delete
+# =========================================
+
+type OpportunityInvitationDeleteSuccess {
+    id: ID!
+}
+
+union OpportunityInvitationDeletePayload =
+    OpportunityInvitationDeleteSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError

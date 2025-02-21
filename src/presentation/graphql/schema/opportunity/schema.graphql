@@ -1,0 +1,84 @@
+# Queries and Mutations
+
+extend type Query {
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunity(id: ID!): Opportunity
+}
+
+extend type Mutation {
+    opportunityCreate(input: OpportunityCreateInput!): OpportunityCreatePayload
+    opportunityDelete(id: ID!): OpportunityDeletePayload
+    opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!): OpportunityUpdateContentPayload
+
+    opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!): OpportunitySetPublishStatusPayload
+}
+
+# Type definitions
+
+type Opportunity {
+    id: ID!
+
+    title: String!
+    description: String!
+    body: String
+    image: String
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    capacity: Int
+    pointsRequired: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    place: Place
+    startsAt: Datetime
+    endsAt: Datetime
+
+    community: Community
+    createdByUser: User
+
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    slots(
+        filter: OpportunitySlotFilterInput
+        sort: OpportunitySlotSortInput
+        cursor: String
+        first: Int
+    ): OpportunitySlotsConnection @complexity(value: 5, multipliers: ["first"])
+
+    invitations(
+        filter: OpportunityInvitationFilterInput
+        sort: OpportunityInvitationSortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum OpportunityCategory {
+    QUEST
+    EVENT
+    ACTIVITY
+}

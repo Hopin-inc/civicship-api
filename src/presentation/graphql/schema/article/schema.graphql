@@ -1,0 +1,60 @@
+extend type Query {
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
+
+    article(id: ID!): Article
+}
+
+extend type Mutation {
+    articleCreate(input: ArticleCreateInput!): ArticleCreatePayload
+    articleUpdate(id: ID!, input: ArticleUpdateInput!): ArticleUpdatePayload
+    articleDelete(id: ID!): ArticleDeletePayload
+}
+
+# Type definitions
+
+type Article {
+    id: ID!
+    title: String!
+    introduction: String!
+    category: ArticleCategory!
+    publishStatus: PublishStatus!
+    body: String!
+    thumbnail: JSON
+    publishedAt: Datetime
+
+    community: Community
+
+    authors(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection @complexity(value: 5, multipliers: ["first"])
+
+    relatedUsers(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection @complexity(value: 5, multipliers: ["first"])
+
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum ArticleCategory {
+    ACTIVITY_REPORT
+    INTERVIEW
+}

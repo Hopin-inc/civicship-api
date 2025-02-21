@@ -1,0 +1,20 @@
+type WalletsConnection {
+    edges: [WalletEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type WalletEdge implements Edge {
+    cursor: String!
+    node: Wallet
+}
+
+input WalletFilterInput {
+    type: WalletType
+    userId: String
+    communityId: String
+}
+
+input WalletSortInput {
+    createdAt: SortDirection
+}

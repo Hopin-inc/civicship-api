@@ -1,0 +1,80 @@
+# Queries and Mutations
+
+extend type Query {
+    communities(
+        filter: CommunityFilterInput
+        sort: CommunitySortInput
+        cursor: String
+        first: Int
+    ): CommunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    community(id: ID!): Community
+}
+
+extend type Mutation {
+    communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
+    communityDelete(id: ID!, input: CommunityDeleteInput!): CommunityDeletePayload
+    communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!): CommunityUpdateProfilePayload
+}
+
+# Type definitions
+
+type Communities {
+    total: Int!
+    data: [Community!]!
+}
+
+type Community {
+    id: ID!
+    name: String!
+    pointName: String!
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+#    state: State
+#    city: City!
+
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: MembershipCursorInput
+        first: Int
+    ): MembershipsConnection @complexity(value: 10, multipliers: ["first"])
+    wallets(
+        filter: WalletFilterInput
+        sort: WalletSortInput
+        cursor: String
+        first: Int
+    ): WalletsConnection @complexity(value: 10, multipliers: ["first"])
+
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection @complexity(value: 10, multipliers: ["first"])
+
+    utilities(
+        filter: UtilityFilterInput
+        sort: UtilitySortInput
+        cursor: String
+        first: Int
+    ): UtilitiesConnection @complexity(value: 10, multipliers: ["first"])
+
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
