@@ -1,4 +1,5 @@
 import { prismaClient } from "@/infra/prisma/client";
+import { Prisma } from "@prisma/client";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
@@ -13,6 +14,15 @@ export default class TestDataSourceHelper {
 
   static async disconnect() {
     return this.db.$disconnect();
+  }
+
+  static async create(data: Prisma.UserCreateInput) {
+    return this.db.user.create({
+      data,
+      include: {
+        identities: true,
+      },
+    });
   }
 
   // TODO: 実際テストで使うメソッドを整える
@@ -65,13 +75,6 @@ export default class TestDataSourceHelper {
   //   return this.db.user.update({
   //     where: { id },
   //     data: { isPublic: isPublic },
-  //   });
-  // }
-
-  // static async create(data: Prisma.UserCreateInput) {
-  //   return this.db.user.create({
-  //     data,
-  //     include: userCreateInclude,
   //   });
   // }
 
