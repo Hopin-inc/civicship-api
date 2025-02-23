@@ -247,12 +247,10 @@ export type GqlCommunityWalletsArgs = {
 
 export type GqlCommunityCreateInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
-  cityCode: Scalars['String']['input'];
   establishedAt?: InputMaybe<Scalars['Datetime']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   pointName: Scalars['String']['input'];
-  stateCode: Scalars['String']['input'];
   website?: InputMaybe<Scalars['String']['input']>;
 };
 
