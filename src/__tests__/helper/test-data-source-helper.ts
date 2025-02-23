@@ -1,5 +1,7 @@
 import { prismaClient } from "@/infra/prisma/client";
-import { Prisma } from "@prisma/client";
+import { communityInclude } from "@/infra/prisma/types/community";
+import { walletInclude } from "@/infra/prisma/types/membership/wallet";
+import { Prisma, WalletType } from "@prisma/client";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
@@ -9,7 +11,11 @@ export default class TestDataSourceHelper {
   }
 
   static async deleteAll() {
-    return this.db.user.deleteMany();
+    await Promise.all([
+      this.db.community.deleteMany(),
+      this.db.transaction.deleteMany(),
+      this.db.user.deleteMany(),
+      this.db.wallet.deleteMany()])
   }
 
   static async disconnect() {
@@ -24,6 +30,38 @@ export default class TestDataSourceHelper {
       },
     });
   }
+
+  static async createCommunity(
+    data: Prisma.CommunityCreateInput
+  ) {
+    return this.db.community.create({
+      data,
+      include: communityInclude,
+    });
+  }
+
+  static async createWallet(
+    data: Prisma.WalletCreateInput,
+  ) {
+    return this.db.wallet.create({
+      data,
+      include: walletInclude,
+    });
+  };
+
+  static async findCommunityWallet(
+    communityId: string,
+  ) {
+    return this.db.wallet.findFirst({
+      where: { communityId, type: WalletType.COMMUNITY },
+      include: walletInclude,
+    });
+
+  }
+
+  static async findAllTransactions() {
+    return this.db.transaction.findMany();
+  };
 
   // TODO: 実際テストで使うメソッドを整える
 
