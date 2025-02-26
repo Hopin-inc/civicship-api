@@ -1,7 +1,9 @@
 import { prismaClient } from "@/infra/prisma/client";
 import { communityInclude } from "@/infra/prisma/types/community";
 import { walletInclude } from "@/infra/prisma/types/membership/wallet";
+import { transactionInclude } from "@/infra/prisma/types/transaction";
 import { Prisma, WalletType } from "@prisma/client";
+import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
@@ -56,12 +58,35 @@ export default class TestDataSourceHelper {
       where: { communityId, type: WalletType.COMMUNITY },
       include: walletInclude,
     });
+  }
 
+  static async findMemberWallet(
+    userId: string,
+  ) {
+    return this.db.wallet.findFirst({
+      where: { userId, type: WalletType.MEMBER },
+      include: walletInclude,
+    });
   }
 
   static async findAllTransactions() {
     return this.db.transaction.findMany();
   };
+
+
+  static async createTransaction(
+    data: Prisma.TransactionCreateInput,
+  ) {
+    return this.db.transaction.create({
+      data,
+      include: transactionInclude,
+    });
+  };
+
+
+  static async refreshCurrentPoints() {
+    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+  }
 
   // TODO: 実際テストで使うメソッドを整える
 

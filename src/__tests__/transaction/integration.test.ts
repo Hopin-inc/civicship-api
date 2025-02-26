@@ -172,4 +172,107 @@ describe("Transaction Integration Tests", () => {
 
         // mv_current_pointsがそもそも作成されていない
     });
+
+    it("should donate self points when balance is sufficient", async () => {
+        //////////////////////////////////////////////////
+        // insert seed data
+        //////////////////////////////////////////////////
+        const name = "John Doe"
+        const slug = "user-1-slug"
+        const createUserInput = {
+            name: name,
+            slug: slug,
+            image: undefined
+        }
+        const fromUserInserted = await TestDataSourceHelper.create(createUserInput);
+        const fromUserId = fromUserInserted.id;
+
+        const toUserInserted = await TestDataSourceHelper.create(createUserInput);
+        const toUserId = toUserInserted.id;
+
+        const ctx = { uid: fromUserId } as unknown as IContext;
+
+        const communityName = "community-1";
+        const pointName = "community-1-point";
+
+        const createCommunityInput: GqlCommunityCreateInput = {
+            name: communityName,
+            pointName: pointName,
+            image: undefined,
+            bio: undefined,
+            establishedAt: undefined,
+            website: undefined
+        };
+        const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
+        const communityId = communityInserted.id;
+
+        const createFromMemberWalletInput =
+        {
+            type: WalletType.MEMBER,
+            community: { connect: { id: communityId } },
+            user: { connect: { id: fromUserId } }
+        };
+        const fromMemberWalletInserted = await TestDataSourceHelper.createWallet(createFromMemberWalletInput);
+        const fromMemberWalletId = fromMemberWalletInserted.id;
+        console.log(fromMemberWalletId)
+
+        const createToMemberWalletInput =
+        {
+            type: WalletType.MEMBER,
+            community: { connect: { id: communityId } },
+            user: { connect: { id: toUserId } }
+        };
+        const toMemberWalletInserted = await TestDataSourceHelper.createWallet(createToMemberWalletInput);
+        const toMemberWalletId = toMemberWalletInserted.id;
+
+        const createTransactionInput = { to: fromMemberWalletId, toPointChange: 100, reason: TransactionReason.GRANT };
+        await TestDataSourceHelper.createTransaction(createTransactionInput);
+
+        await TestDataSourceHelper.refreshCurrentPoints()
+
+        //////////////////////////////////////////////////
+        // construct request
+        //////////////////////////////////////////////////
+        const donatedPoints = 100;
+        const input: GqlTransactionDonateSelfPointInput = {
+            communityId: communityId,
+            fromWalletId: fromMemberWalletId,
+            toUserId: toUserId,
+            fromPointChange: donatedPoints,
+            toPointChange: donatedPoints,
+        };
+
+        //////////////////////////////////////////////////
+        // execute
+        //////////////////////////////////////////////////
+
+        await transactionResolver.Mutation.transactionDonateSelfPoint(
+            {},
+            { input: input },
+            ctx
+        );
+
+        //////////////////////////////////////////////////
+        // execute
+        //////////////////////////////////////////////////
+
+        const transactions = await TestDataSourceHelper.findAllTransactions();
+        const transactionActual = transactions.find(t => t.reason === TransactionReason.DONATION);
+
+        // reasonがDONATIONのトランザクションが1件だけ作成されていること
+        expect(transactionActual).toBeDefined();
+
+        // 期待通りのwalletから移動していること
+        expect(transactionActual?.from).toEqual(fromMemberWalletId);
+        // 期待通りのwalletに移動していること
+        expect(transactionActual?.to).toEqual(toMemberWalletId);
+        // 期待通りのポイント数が移動していること
+        expect(transactionActual?.fromPointChange).toEqual(donatedPoints);
+        expect(transactionActual?.toPointChange).toEqual(donatedPoints);
+        // mv_current_pointsの値が期待通りにrefreshされていること
+        const toMemberCurrentPointActual = (await TestDataSourceHelper.findMemberWallet(toUserId))?.currentPointView?.currentPoint;
+        const memberInitialPoint = 0;
+        const toMemberCurrentPointExpected = memberInitialPoint + donatedPoints;
+        expect(toMemberCurrentPointActual).toEqual(toMemberCurrentPointExpected);
+    });
 });
