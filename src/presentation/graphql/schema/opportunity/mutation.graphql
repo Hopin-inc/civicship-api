@@ -1,0 +1,99 @@
+# Opportunity
+
+## input definitions
+
+input OpportunityCreateInput {
+    communityId: String!
+
+    title: String!
+    description: String!
+    body: String
+    image: String
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    capacity: Int
+    pointsRequired: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    placeId: String
+    startsAt: Datetime
+    endsAt: Datetime
+}
+
+input OpportunityUpdateContentInput {
+    communityId: String!
+
+    title: String!
+    description: String!
+    body: String
+    image: String
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    capacity: Int
+    pointsRequired: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    placeId: String
+    startsAt: Datetime
+    endsAt: Datetime
+}
+
+input OpportunitySetPublishStatusInput{
+    communityId: String!
+
+    status: PublishStatus!
+}
+
+## Type definitions
+
+type OpportunityCreateSuccess {
+    opportunity: Opportunity!
+}
+
+type OpportunityDeleteSuccess {
+    opportunityId: String!
+}
+
+type OpportunityUpdateContentSuccess {
+    opportunity: Opportunity!
+}
+
+type OpportunitySetPublishStatusSuccess {
+    opportunity: Opportunity!
+}
+
+## union definitions
+
+union OpportunityCreatePayload =
+    OpportunityCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OpportunityDeletePayload =
+    OpportunityDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OpportunityUpdateContentPayload =
+    OpportunityUpdateContentSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union OpportunitySetPublishStatusPayload =
+    OpportunitySetPublishStatusSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

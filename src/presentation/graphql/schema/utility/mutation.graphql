@@ -1,0 +1,85 @@
+# Input definitions
+
+input UtilityCreateInput {
+    communityId: String!
+
+    name: String!
+    description: String
+    image: ImageInput
+    pointsRequired: Int!
+}
+
+input UtilityUpdateInfoInput {
+    communityId: String!
+
+    name: String!
+    description: String
+    image: ImageInput
+    pointsRequired: Int!
+}
+
+input UtilityRedeemInput {
+    communityId: String!
+
+    userWalletId: String!
+}
+
+input UtilityUseInput {
+    communityId: String!
+
+    utilityHistoryId: String!
+}
+
+# Type definitions
+
+type UtilityCreateSuccess {
+    utility: Utility!
+}
+
+type UtilityDeleteSuccess {
+    utilityId: String!
+}
+
+type UtilityUpdateInfoSuccess {
+    utility: Utility!
+}
+
+type UtilityRedeemSuccess {
+    transaction: Transaction!
+}
+
+type UtilityUseSuccess {
+    utilityHistory: UtilityHistory!
+}
+
+# Union definitions
+
+union UtilityCreatePayload =
+    UtilityCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityDeletePayload =
+    UtilityDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityUpdateInfoPayload =
+    UtilityUpdateInfoSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityRedeemPayload =
+    UtilityRedeemSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union UtilityUsePayload =
+    UtilityUseSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

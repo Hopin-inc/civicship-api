@@ -1,0 +1,23 @@
+type TransactionsConnection {
+    edges: [TransactionEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TransactionEdge implements Edge {
+    cursor: String!
+    node: Transaction
+}
+
+input TransactionFilterInput {
+    id: String
+    reason: TransactionReason
+    fromWalletId: String
+    toWalletId: String
+
+    participationId: String
+}
+
+input TransactionSortInput {
+    createdAt: SortDirection
+}

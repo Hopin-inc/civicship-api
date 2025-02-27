@@ -1,0 +1,24 @@
+type ParticipationsConnection {
+    edges: [ParticipationEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ParticipationEdge implements Edge {
+    cursor: String!
+    node: Participation
+}
+
+input ParticipationFilterInput {
+    status: ParticipationStatus
+
+    communityId: String
+    userId: String
+    opportunityId: String
+    opportunitySlotId: String
+}
+
+input ParticipationSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}

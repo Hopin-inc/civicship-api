@@ -1,0 +1,65 @@
+# Queries/Mutations-related type definitions
+
+input CommunityCreateInput {
+    name: String!
+    pointName: String!
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    stateCode: String!
+    cityCode: String!
+}
+
+input CommunityUpdateProfileInput {
+    communityId: ID!
+
+    name: String
+    pointName: String
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    stateCode: String
+    cityCode: String
+}
+
+input CommunityDeleteInput{
+    communityId: ID!
+}
+
+# Payload Definitions
+
+type CommunityCreateSuccess {
+    community: Community!
+}
+
+type CommunityDeleteSuccess {
+    communityId: String!
+}
+
+type CommunityUpdateProfileSuccess {
+    community: Community!
+}
+
+# Union Definitions
+
+union CommunityCreatePayload =
+    CommunityCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union CommunityDeletePayload =
+    CommunityDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union CommunityUpdateProfilePayload =
+    CommunityUpdateProfileSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

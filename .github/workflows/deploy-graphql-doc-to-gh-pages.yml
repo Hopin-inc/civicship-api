@@ -1,0 +1,57 @@
+name: Deploy GraphQL Docs to Pages
+
+on:
+  push:
+    branches:
+      - feature/update-schema-by-UX
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # リポジトリをチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node.js のセットアップ
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      # pnpm のインストール
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      # 依存関係のインストール
+      - name: Install dependencies
+        working-directory: ./docs/graphql
+        run: pnpm install
+
+      # GraphQL Docs の生成（例: graphql-markdown/cli を使う）
+      # 実際にはご自身の scripts やコマンド名に合わせてください
+      - name: Build GraphQL Docs
+        working-directory: ./docs/graphql
+        run: pnpm run doc
+
+      # GitHub Pages の設定
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # ドキュメントをアップロード
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './docs/graphql'
+
+      # GitHub Pages へのデプロイ
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

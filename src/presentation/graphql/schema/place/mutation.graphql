@@ -1,0 +1,62 @@
+# =========================
+# Create
+# =========================
+input PlaceCreateInput {
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    cityCode: String!
+}
+
+type PlaceCreateSuccess {
+    place: Place
+}
+
+union PlaceCreatePayload =
+    PlaceCreateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================
+# Update
+# =========================
+input PlaceUpdateInput {
+    name: String
+    address: String
+    latitude: Decimal
+    longitude: Decimal
+    isManual: Boolean
+    googlePlaceId: String
+    mapLocation: JSON
+
+    cityCode: String
+}
+
+type PlaceUpdateSuccess {
+    place: Place
+}
+
+union PlaceUpdatePayload =
+    PlaceUpdateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+# =========================
+# Delete
+# =========================
+type PlaceDeleteSuccess {
+    id: ID!
+}
+
+union PlaceDeletePayload =
+    PlaceDeleteSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError

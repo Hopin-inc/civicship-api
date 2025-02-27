@@ -1,11 +1,14 @@
-import { IdentityPlatform, User } from "@prisma/client";
+import { IdentityPlatform, Role } from "@prisma/client";
+import { GqlUser } from "@/types/graphql";
+import { Loaders } from "@/presentation/graphql/dataloader";
 
-type LoggedInUserInfo = {
+export type LoggedInUserInfo = {
   uid: string;
   platform: IdentityPlatform;
-  currentUser: User | null;
+  currentUser: GqlUser | null;
+  memberships: { communityId: string; role: Role }[];
+  opportunitiesCreatedBy: { id: string }[];
+  loaders: Loaders;
 };
-export type IContext = (
-  | Record<string, never>
-  | LoggedInUserInfo
-);
+
+export type IContext = Record<string, never> | LoggedInUserInfo;

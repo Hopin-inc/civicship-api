@@ -1,0 +1,24 @@
+# Queries and Mutations
+
+extend type Query {
+    participationStatusHistories(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    participationStatusHistory(id: ID!): ParticipationStatusHistory
+}
+
+# Type definitions
+
+type ParticipationStatusHistory {
+    id: ID!
+    status: ParticipationStatus!
+
+    participation: Participation!
+    createdByUser: User
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

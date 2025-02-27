@@ -1,7 +1,7 @@
 overwrite: true
 generates:
   ./src/types/graphql.ts:
-    schema: ./src/graphql/**/*.graphql
+    schema: ./src/presentation/graphql/schema/**/*.graphql
     plugins:
       - typescript
       - typescript-resolvers
@@ -13,18 +13,26 @@ generates:
       strictScalars: true
       scalars:
         Datetime: Date
+        Decimal: string
+        JSON: any
       enumsAsConst: true
       mappers:
-        Agenda: "@prisma/client/index.d#Agenda"
+        User: "@prisma/client/index.d#User"
+        Community: "@prisma/client/index.d#Community"
+        Membership: "@prisma/client/index.d#Membership"
+        Wallet: "@prisma/client/index.d#Wallet"
+        CurrentPointView: "@prisma/client/index.d#CurrentPointView"
+        AccumulatedPointView: "@prisma/client/index.d#AccumulatedPointView"
+        Opportunity: "@prisma/client/index.d#Opportunity"
+        OpportunitySlot: "@prisma/client/index.d#OpportunitySlot"
+        OpportunityInvitation: "@prisma/client/index.d#OpportunityInvitation"
+        OpportunityInvitationHistory: "@prisma/client/index.d#OpportunityInvitationHistory"
+        Place: "@prisma/client/index.d#Place"
+        Participation: "@prisma/client/index.d#Participation"
+        ParticipationStatusHistory: "@prisma/client/index.d#ParticipationStatusHistory"
+        Article: "@prisma/client/index.d#Article"
+        Utility: "@prisma/client/index.d#Utility"
+        Transaction: "@prisma/client/index.d#Transaction"
         City: "@prisma/client/index.d#City"
         State: "@prisma/client/index.d#State"
-        Index: "@prisma/client/index.d#Index"
-        Event: "@prisma/client/index.d#Event"
-        Activity: "@prisma/client/index.d#Activity"
-        Like: "@prisma/client/index.d#Like"
-        Comment: "@prisma/client/index.d#Comment"
-        Organization: "@prisma/client/index.d#Organization"
-        Group: "@prisma/client/index.d#Group"
-        Target: "@prisma/client/index.d#Target"
-        User: "@prisma/client/index.d#User"
-      contextType: "@/prisma/client#Context"
+#      contextType: "@/prisma/client#Context"
