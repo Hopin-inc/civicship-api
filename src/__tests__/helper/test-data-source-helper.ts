@@ -2,6 +2,7 @@ import { prismaClient } from "@/infra/prisma/client";
 import { communityInclude } from "@/infra/prisma/types/community";
 import { walletInclude } from "@/infra/prisma/types/membership/wallet";
 import { transactionInclude } from "@/infra/prisma/types/transaction";
+import { utilityInclude } from "@/infra/prisma/types/utility";
 import { Prisma, WalletType } from "@prisma/client";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 
@@ -14,10 +15,30 @@ export default class TestDataSourceHelper {
 
   static async deleteAll() {
     await Promise.all([
-      this.db.community.deleteMany(),
       this.db.transaction.deleteMany(),
+      this.db.utilityHistory.deleteMany(),
+      this.db.opportunityInvitationHistory.deleteMany(),
+      this.db.participationStatusHistory.deleteMany(),
+    ]);
+
+    await Promise.all([
+      this.db.wallet.deleteMany(),
+      this.db.utility.deleteMany(),
+      this.db.membership.deleteMany(),
+      this.db.participation.deleteMany(),
+      this.db.opportunitySlot.deleteMany(),
+      this.db.opportunityInvitation.deleteMany(),
+      this.db.opportunity.deleteMany(),
+      this.db.article.deleteMany(),
+    ]);
+
+    await Promise.all([
+      this.db.community.deleteMany(),
       this.db.user.deleteMany(),
-      this.db.wallet.deleteMany()])
+      this.db.place.deleteMany(),
+      this.db.city.deleteMany(),
+      this.db.state.deleteMany(),
+    ]);
   }
 
   static async disconnect() {
@@ -86,6 +107,13 @@ export default class TestDataSourceHelper {
 
   static async refreshCurrentPoints() {
     return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+  }
+
+  static async createUtility(data: Prisma.UtilityCreateInput) {
+    return this.db.utility.create({
+      data,
+      include: utilityInclude,
+    });
   }
 
   // TODO: 実際テストで使うメソッドを整える
