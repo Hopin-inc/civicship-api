@@ -1,6 +1,9 @@
 import { prismaClient } from "@/infra/prisma/client";
 import { communityInclude } from "@/infra/prisma/types/community";
 import { walletInclude } from "@/infra/prisma/types/membership/wallet";
+import { opportunityInclude } from "@/infra/prisma/types/opportunity";
+import { participationInclude } from "@/infra/prisma/types/opportunity/participation";
+import { placeInclude } from "@/infra/prisma/types/place";
 import { transactionInclude } from "@/infra/prisma/types/transaction";
 import { utilityInclude } from "@/infra/prisma/types/utility";
 import { Prisma, WalletType } from "@prisma/client";
@@ -113,6 +116,35 @@ export default class TestDataSourceHelper {
     return this.db.utility.create({
       data,
       include: utilityInclude,
+    });
+  }
+
+  static async createOpportunity(data: Prisma.OpportunityCreateInput) {
+    return this.db.opportunity.create({
+      data,
+      include: opportunityInclude,
+    });
+  }
+
+  static async createParticipation(data: Prisma.ParticipationCreateInput) {
+    return this.db.participation.create({
+      data,
+      include: participationInclude,
+    });
+  }
+
+
+  static async createPlace(data: Prisma.PlaceCreateInput) {
+    return this.db.place.create({
+      data,
+      include: placeInclude,
+    });
+  }
+
+  static async findParticipationById(id: string) {
+    return this.db.participation.findUnique({
+      where: { id },
+      include: participationInclude,
     });
   }
 
