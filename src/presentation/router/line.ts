@@ -1,6 +1,5 @@
 import express from "express";
 import { lineClient, lineMiddleware } from "@/infra/libs/line";
-import { Event } from "@line/bot-sdk/lib/webhook/model/event";
 
 const router = express();
 
@@ -14,11 +13,11 @@ router.post("/callback", lineMiddleware, (req, res) => {
     });
 });
 
-const handleEvent = (event: Event) => {
+const handleEvent = (event) => {
   if (event.type !== "message" || event.message.type !== "text" || !event.replyToken) {
     // ignore non-text-message event
     return Promise.resolve(null);
-  };
+  }
 
   // use reply API
   return lineClient.replyMessage({
