@@ -75,7 +75,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        pnpm dotenvx run -- docker build -t ${{ env.ARTIFACT_REGISTRY }}/civicship-api:latest .
+        pnpm dotenvx run -- docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest .
 
 
     - name: Authenticate to Google Cloud
@@ -91,6 +91,6 @@ jobs:
       id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
-        service: ${{ env.STAGE }}-${{ env.APPLICATION_NAME }}
+        service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
