@@ -8,7 +8,7 @@ import { membershipAuthSelect } from "@/infra/prisma/types/membership";
 import { opportunityAuthSelect } from "@/infra/prisma/types/opportunity";
 import { createLoaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
-import { auth } from "@/infra/clients";
+import { auth } from "@/infra/libs/firebase";
 
 function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
   const idToken: string | undefined = req.headers["authorization"];

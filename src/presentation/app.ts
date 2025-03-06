@@ -10,7 +10,7 @@ export function createExpressApp() {
 
   app.use("/graphql", express.json({ limit: "50mb" }), corsHandler, requestLogger);
 
-  app.use((err, req, res, next) => {
+  app.use((err, _req, res, _next) => {
     logger.error("Unhandled Express Error:", {
       message: err.message,
       stack: err.stack,

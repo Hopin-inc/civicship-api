@@ -32,6 +32,9 @@ importers:
       '@graphql-tools/schema':
         specifier: ^10.0.6
         version: 10.0.16(graphql@16.10.0)
+      '@line/bot-sdk':
+        specifier: ^9.7.1
+        version: 9.7.1
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -71,9 +74,6 @@ importers:
       graphql-shield:
         specifier: ^7.6.5
         version: 7.6.5(graphql-middleware@6.1.35(graphql@16.10.0))(graphql@16.10.0)
-      ioredis:
-        specifier: ^5.5.0
-        version: 5.5.0
       node-fetch:
         specifier: ^3.3.2
         version: 3.3.2
@@ -2062,6 +2062,10 @@ packages:
 
   '@js-sdsl/ordered-map@4.4.2':
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
+
+  '@line/bot-sdk@9.7.1':
+    resolution: {integrity: sha512-gC7PKZ3p12FqP9Qcw7TdUh4rv2oo3ghORgP/SzoA0eHGmhpsT1ABIDqh7fTS1soyZAx3pR3/8dpTbZdVZGLz3A==}
+    engines: {node: '>=18'}
 
   '@mdx-js/mdx@3.1.0':
     resolution: {integrity: sha512-/QxEhPAvGwbQmy1Px8F899L5Uc2KZ6JtXwlCgJmjSTBedwOZkByYcBG4GceIGPXRDsmfxhHazuS+hlOShRLeDw==}
@@ -11071,7 +11075,7 @@ snapshots:
       slash: 3.0.0
       strip-ansi: 6.0.1
     transitivePeerDependencies:
-      - babel-plugins-macros
+      - babel-plugin-macros
       - supports-color
       - ts-node
 
@@ -11223,6 +11227,14 @@ snapshots:
   '@js-joda/core@5.6.4': {}
 
   '@js-sdsl/ordered-map@4.4.2': {}
+
+  '@line/bot-sdk@9.7.1':
+    dependencies:
+      '@types/node': 22.13.1
+    optionalDependencies:
+      axios: 1.7.9
+    transitivePeerDependencies:
+      - debug
 
   '@mdx-js/mdx@3.1.0(acorn@8.14.0)':
     dependencies:
@@ -13632,7 +13644,7 @@ snapshots:
       prompts: 2.4.2
     transitivePeerDependencies:
       - '@types/node'
-      - babel-plugins-macros
+      - babel-plugin-macros
       - supports-color
       - ts-node
 
@@ -15420,7 +15432,7 @@ snapshots:
       slash: 3.0.0
       stack-utils: 2.0.6
     transitivePeerDependencies:
-      - babel-plugins-macros
+      - babel-plugin-macros
       - supports-color
 
   jest-cli@29.7.0(@types/node@22.13.1)(ts-node@10.9.2(@types/node@22.13.1)(typescript@5.7.3)):
@@ -15438,7 +15450,7 @@ snapshots:
       yargs: 17.7.2
     transitivePeerDependencies:
       - '@types/node'
-      - babel-plugins-macros
+      - babel-plugin-macros
       - supports-color
       - ts-node
 
@@ -15470,7 +15482,7 @@ snapshots:
       '@types/node': 22.13.1
       ts-node: 10.9.2(@types/node@22.13.1)(typescript@5.7.3)
     transitivePeerDependencies:
-      - babel-plugins-macros
+      - babel-plugin-macros
       - supports-color
 
   jest-diff@29.7.0:
@@ -15717,7 +15729,7 @@ snapshots:
       jest-cli: 29.7.0(@types/node@22.13.1)(ts-node@10.9.2(@types/node@22.13.1)(typescript@5.7.3))
     transitivePeerDependencies:
       - '@types/node'
-      - babel-plugins-macros
+      - babel-plugin-macros
       - supports-color
       - ts-node
 
