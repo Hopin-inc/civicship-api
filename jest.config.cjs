@@ -5,6 +5,7 @@ module.exports = {
   testEnvironmentOptions: {
     verboseQuery: true,
   },
+  setupFiles: ['<rootDir>/jest.setup.js'],
   setupFilesAfterEnv: ["@quramy/prisma-fabbrica/scripts/jest-prisma"],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
