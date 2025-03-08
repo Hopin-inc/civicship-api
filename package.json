@@ -11,6 +11,7 @@
     "build": "tsc && tsc-alias tsconfig.json",
     "lint": "eslint --fix src/ && prettier --write src/",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "db:pull": "prisma db pull --schema src/infra/prisma/schema.prisma",
     "db:seed-master": "tsx src/infra/prisma/seeds/index.ts --master",
     "db:seed-domain": "tsx src/infra/prisma/seeds/index.ts --domain",
