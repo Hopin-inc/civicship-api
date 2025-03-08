@@ -3,7 +3,8 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - develop
+      # - develop
+      - feature/fix-graphql-query-complexity
 
 jobs:
   deploy:
