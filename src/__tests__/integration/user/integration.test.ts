@@ -1,5 +1,5 @@
 import userResolver from "@/presentation/graphql/resolvers/user";
-import TestDataSourceHelper from "../helper/test-data-source-helper";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { GqlUserUpdateProfileInput } from "@/types/graphql";
 

@@ -1,5 +1,5 @@
 import utilityResolver from "@/presentation/graphql/resolvers/utility";
-import TestDataSourceHelper from "../helper/test-data-source-helper";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { TransactionReason, WalletType } from "@prisma/client";
 

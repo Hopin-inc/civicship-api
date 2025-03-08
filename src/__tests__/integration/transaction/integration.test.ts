@@ -1,6 +1,6 @@
 import transactionResolver from "@/presentation/graphql/resolvers/transaction";
 import { GqlCommunityCreateInput, GqlTransactionDonateSelfPointInput, GqlTransactionIssueCommunityPointInput } from "@/types/graphql";
-import TestDataSourceHelper from "../helper/test-data-source-helper";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { TransactionReason, WalletType } from "@prisma/client";
 
