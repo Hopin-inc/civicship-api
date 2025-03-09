@@ -20,7 +20,7 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   testPathIgnorePatterns: [
-    '<rootDir>/src/__tests__/helper/'
+    '<rootDir>/src/__tests__/helper/*.*'
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"]
 };
