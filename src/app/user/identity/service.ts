@@ -9,12 +9,14 @@ export default class IdentityService {
     uid: string,
     platform: IdentityPlatform,
   ) {
-    return UserRepository.createWithIdentity({
+    console.log("debug: start createUserAndIdentity")
+    const result = UserRepository.createWithIdentity({
       ...data,
       identities: {
         create: { uid, platform },
       },
     });
+    return result
   }
 
   static async deleteUserAndIdentity(uid: string): Promise<User | null> {

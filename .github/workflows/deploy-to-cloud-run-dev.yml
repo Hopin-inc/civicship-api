@@ -3,7 +3,8 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - develop
+      # - develop
+      - feature/debug-database
 
 jobs:
   deploy:
