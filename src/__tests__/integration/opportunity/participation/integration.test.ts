@@ -7,9 +7,10 @@ import { OpportunityCategory, ParticipationStatus, PublishStatus } from "@prisma
 describe("Participation Integration Tests", () => {
     beforeEach(async () => {
         await TestDataSourceHelper.deleteAll();
+        TestDataSourceHelper.disconnect();
     });
 
-    afterEach(async () => {
+    afterAll(async () => {
         TestDataSourceHelper.disconnect();
     });
 

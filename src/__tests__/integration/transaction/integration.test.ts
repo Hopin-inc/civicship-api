@@ -8,9 +8,10 @@ describe("Transaction Integration Tests", () => {
     beforeEach(async () => {
         // clean up data before each test
         await TestDataSourceHelper.deleteAll();
+        TestDataSourceHelper.disconnect();
     });
 
-    afterEach(async () => {
+    afterAll(async () => {
         // close DB transaction after each test
         TestDataSourceHelper.disconnect();
     });

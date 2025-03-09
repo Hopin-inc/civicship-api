@@ -7,6 +7,7 @@ describe("User Integration Tests", () => {
     beforeAll(async () => {
         // clean up data before each test
         await TestDataSourceHelper.deleteAll();
+        TestDataSourceHelper.disconnect();
     });
 
     afterAll(async () => {
