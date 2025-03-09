@@ -17,39 +17,32 @@ export default class TestDataSourceHelper {
   }
 
   static async deleteAll() {
-    await Promise.all([
-      this.db.transaction.deleteMany(),
-      this.db.utilityHistory.deleteMany(),
-      this.db.opportunityInvitationHistory.deleteMany(),
-      this.db.participationStatusHistory.deleteMany(),
-    ]);
-
-    await Promise.all([
-      this.db.wallet.deleteMany(),
-      this.db.utility.deleteMany(),
-      this.db.membership.deleteMany(),
-      this.db.participation.deleteMany(),
-      this.db.opportunitySlot.deleteMany(),
-      this.db.opportunityInvitation.deleteMany(),
-      this.db.opportunity.deleteMany(),
-      this.db.article.deleteMany(),
-    ]);
-
-    await Promise.all([
-      this.db.community.deleteMany(),
-      this.db.user.deleteMany(),
-      this.db.place.deleteMany(),
-      this.db.city.deleteMany(),
-      this.db.state.deleteMany(),
-    ]);
+    await this.db.utilityHistory.deleteMany();
+    await this.db.transaction.deleteMany();
+    await this.db.opportunityInvitationHistory.deleteMany();
+    await this.db.participationStatusHistory.deleteMany();
+    await this.db.wallet.deleteMany();
+    await this.db.utility.deleteMany();
+    await this.db.membership.deleteMany();
+    await this.db.participation.deleteMany();
+    await this.db.opportunitySlot.deleteMany();
+    await this.db.opportunityInvitation.deleteMany();
+    await this.db.opportunity.deleteMany();
+    await this.db.article.deleteMany();
+    await this.db.community.deleteMany();
+    await this.db.user.deleteMany();
+    await this.db.place.deleteMany();
+    await this.db.city.deleteMany();
+    await this.db.state.deleteMany();
   }
 
+
   static async disconnect() {
-    return this.db.$disconnect();
+    return await this.db.$disconnect();
   }
 
   static async create(data: Prisma.UserCreateInput) {
-    return this.db.user.create({
+    return await this.db.user.create({
       data,
       include: {
         identities: true,
@@ -60,7 +53,7 @@ export default class TestDataSourceHelper {
   static async createCommunity(
     data: Prisma.CommunityCreateInput
   ) {
-    return this.db.community.create({
+    return await this.db.community.create({
       data,
       include: communityInclude,
     });
@@ -69,7 +62,7 @@ export default class TestDataSourceHelper {
   static async createWallet(
     data: Prisma.WalletCreateInput,
   ) {
-    return this.db.wallet.create({
+    return await this.db.wallet.create({
       data,
       include: walletInclude,
     });
@@ -78,7 +71,7 @@ export default class TestDataSourceHelper {
   static async findCommunityWallet(
     communityId: string,
   ) {
-    return this.db.wallet.findFirst({
+    return await this.db.wallet.findFirst({
       where: { communityId, type: WalletType.COMMUNITY },
       include: walletInclude,
     });
@@ -87,21 +80,21 @@ export default class TestDataSourceHelper {
   static async findMemberWallet(
     userId: string,
   ) {
-    return this.db.wallet.findFirst({
+    return await this.db.wallet.findFirst({
       where: { userId, type: WalletType.MEMBER },
       include: walletInclude,
     });
   }
 
   static async findAllTransactions() {
-    return this.db.transaction.findMany();
+    return await this.db.transaction.findMany();
   };
 
 
   static async createTransaction(
     data: Prisma.TransactionCreateInput,
   ) {
-    return this.db.transaction.create({
+    return await this.db.transaction.create({
       data,
       include: transactionInclude,
     });
@@ -109,7 +102,7 @@ export default class TestDataSourceHelper {
 
 
   static async refreshCurrentPoints() {
-    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return await this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
   static async createUtility(data: Prisma.UtilityCreateInput) {
@@ -120,14 +113,14 @@ export default class TestDataSourceHelper {
   }
 
   static async createOpportunity(data: Prisma.OpportunityCreateInput) {
-    return this.db.opportunity.create({
+    return await this.db.opportunity.create({
       data,
       include: opportunityInclude,
     });
   }
 
   static async createParticipation(data: Prisma.ParticipationCreateInput) {
-    return this.db.participation.create({
+    return await this.db.participation.create({
       data,
       include: participationInclude,
     });
@@ -135,14 +128,14 @@ export default class TestDataSourceHelper {
 
 
   static async createPlace(data: Prisma.PlaceCreateInput) {
-    return this.db.place.create({
+    return await this.db.place.create({
       data,
       include: placeInclude,
     });
   }
 
   static async findParticipationById(id: string) {
-    return this.db.participation.findUnique({
+    return await this.db.participation.findUnique({
       where: { id },
       include: participationInclude,
     });
