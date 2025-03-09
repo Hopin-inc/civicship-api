@@ -21,7 +21,7 @@ pnpm db:studio
 ## Set initial data in your database
 
 ```shell
-# Seed data by executing `src/prisma/seeds/index.ts`
+# Seed data by executing `src/prisma/seeds/firebase.ts`
 pnpm db:seed
 ```
 

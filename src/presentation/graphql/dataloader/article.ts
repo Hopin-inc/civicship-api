@@ -2,6 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import { GqlArticle } from "@/types/graphql";
 import { articleInclude } from "@/infra/prisma/types/article";
+import ArticleOutputFormat from "@/presentation/graphql/dto/article/output";
 
 async function batchArticlesById(
   issuer: PrismaClientIssuer,

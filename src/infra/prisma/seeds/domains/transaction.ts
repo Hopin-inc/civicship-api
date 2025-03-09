@@ -48,7 +48,7 @@ export async function seedTransactions(
           const points = faker.number.int({ min: 10, max: 50 });
 
           return {
-            reason: TransactionReason.GIFT,
+            reason: TransactionReason.GRANT,
             fromWallet: { connect: { id: communityWalletId } },
             fromPointChange: -points,
             toWallet: { connect: { id: toWallet } },
@@ -65,7 +65,7 @@ export async function seedTransactions(
           const points = faker.number.int({ min: 10, max: 50 });
 
           return {
-            reason: TransactionReason.GIFT,
+            reason: TransactionReason.DONATION,
             fromWallet: { connect: { id: fromWallet } },
             fromPointChange: -points,
             toWallet: { connect: { id: toWallet } },
@@ -80,7 +80,7 @@ export async function seedTransactions(
           const points = faker.number.int({ min: 10, max: 50 });
 
           return {
-            reason: TransactionReason.PARTICIPATION_APPROVED,
+            reason: TransactionReason.POINT_REWARD,
             fromWallet: { connect: { id: communityWalletId } },
             fromPointChange: -points,
             toWallet: { connect: { id: toWallet } },
@@ -96,7 +96,7 @@ export async function seedTransactions(
           const points = faker.number.int({ min: 10, max: 50 });
 
           return {
-            reason: TransactionReason.UTILITY_USAGE,
+            reason: TransactionReason.UTILITY_REDEEMED,
             fromWallet: { connect: { id: fromWallet } },
             fromPointChange: -points,
             toWallet: { connect: { id: communityWalletId } },

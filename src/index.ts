@@ -5,6 +5,8 @@ import { createExpressApp } from "@/presentation/app";
 import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infra/logging";
 import { authHandler } from "@/presentation/middleware/auth";
+import lineRouter from "@/presentation/router/line";
+import { batchProcess } from "@/batch";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -27,12 +29,19 @@ async function startServer() {
   const apolloServer = await createApolloServer(server);
 
   app.use("/graphql", authHandler(apolloServer));
+  app.use("/line", lineRouter);
 
   server.listen(port, () => {
-    const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
-    const uri = `${protocol}://localhost:${port}/graphql`;
-    logger.info(`🚀 Server ready at ${uri}`);
+    logger.info(`🚀 Server ready at port ${ port }`);
   });
 }
 
-startServer();
+async function main() {
+  if (process.env.PROCESS_TYPE === "batch") {
+    await batchProcess();
+  } else {
+    await startServer();
+  }
+}
+
+main();

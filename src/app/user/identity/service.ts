@@ -1,5 +1,5 @@
 import { IdentityPlatform, Prisma, User } from "@prisma/client";
-import { auth } from "@/infra/clients";
+import { auth } from "@/infra/libs/firebase";
 import UserRepository from "@/infra/repositories/user";
 import IdentityRepository from "@/infra/repositories/user/identity";
 
