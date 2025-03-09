@@ -2,6 +2,7 @@ import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infra/libs/firebase";
 import UserRepository from "@/infra/repositories/user";
 import IdentityRepository from "@/infra/repositories/user/identity";
+import logger from "@/infra/logging";
 
 export default class IdentityService {
   static async createUserAndIdentity(
@@ -9,8 +10,8 @@ export default class IdentityService {
     uid: string,
     platform: IdentityPlatform,
   ) {
-    console.log("debug: start createUserAndIdentity")
-    const result = UserRepository.createWithIdentity({
+    logger.info("debug: start createUserAndIdentity")
+    const result = await UserRepository.createWithIdentity({
       ...data,
       identities: {
         create: { uid, platform },
