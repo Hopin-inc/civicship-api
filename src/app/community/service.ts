@@ -25,7 +25,7 @@ export default class CommunityService {
     return await CommunityRepository.find(ctx, id);
   }
 
-  static async createCommunity(
+  static async createCommunityAndJoinAsOwner(
     ctx: IContext,
     input: GqlCommunityCreateInput,
     tx: Prisma.TransactionClient,
