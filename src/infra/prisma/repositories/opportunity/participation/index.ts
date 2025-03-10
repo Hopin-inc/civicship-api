@@ -56,12 +56,22 @@ export default class ParticipationRepository {
     ctx: IContext,
     id: string,
     status: ParticipationStatus,
-    tx: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient,
   ) {
-    return tx.participation.update({
-      where: { id },
-      data: { status },
-      include: participationInclude,
-    });
+    if (tx) {
+      return tx.participation.update({
+        where: { id },
+        data: { status },
+        include: participationInclude,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.participation.update({
+          where: { id },
+          data: { status },
+          include: participationInclude,
+        });
+      });
+    }
   }
 }

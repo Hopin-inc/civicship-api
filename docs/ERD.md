@@ -82,7 +82,11 @@ MEMBER MEMBER
 
         UtilityStatus {
             PURCHASED PURCHASED
+RESERVED RESERVED
+USED USED
 REFUNDED REFUNDED
+EXPIRED EXPIRED
+DISABLED DISABLED
         }
     
 
@@ -210,6 +214,7 @@ UTILITY_REFUNDED UTILITY_REFUNDED
   
 
   "t_opportunity_required_utilities" {
+    UtilityStatus status 
     String opportunity_id 
     String utility_id 
     }
@@ -284,10 +289,9 @@ UTILITY_REFUNDED UTILITY_REFUNDED
   "t_utility_histories" {
     String id "🗝️"
     UtilityStatus status 
-    DateTime used_at "❓"
     String wallet_id 
     String utility_id 
-    String transaction_id 
+    String transaction_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -380,6 +384,7 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
     "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
     "t_opportunity_invitation_histories" o|--|| "t_users" : "inivitedUser"
+    "t_opportunity_required_utilities" o|--|| "UtilityStatus" : "enum:status"
     "t_opportunity_required_utilities" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_required_utilities" o|--|| "t_utilities" : "utility"
     "t_places" o|--|| "m_cities" : "city"
@@ -407,7 +412,7 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_utility_histories" o|--|| "UtilityStatus" : "enum:status"
     "t_utility_histories" o|--|| "t_wallets" : "wallet"
     "t_utility_histories" o|--|| "t_utilities" : "utility"
-    "t_utility_histories" o|--|| "t_transactions" : "transaction"
+    "t_utility_histories" o|--|o "t_transactions" : "transaction"
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"

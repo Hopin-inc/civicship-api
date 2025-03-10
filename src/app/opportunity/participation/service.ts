@@ -26,6 +26,41 @@ export default class ParticipationService {
     return await ParticipationRepository.find(ctx, id);
   }
 
+  static async findParticipationOrThrow(ctx: IContext, id: string) {
+    const participation = await ParticipationRepository.find(ctx, id);
+    if (!participation) {
+      throw new Error(`ParticipationNotFound: ID=${id}`);
+    }
+    return participation;
+  }
+
+  static async applyParticipation(
+    ctx: IContext,
+    currentUserId: string,
+    data: Prisma.ParticipationCreateInput,
+    status: ParticipationStatus,
+    tx: Prisma.TransactionClient,
+  ) {
+    const participation = await ParticipationRepository.create(
+      ctx,
+      {
+        ...data,
+        status,
+      },
+      tx,
+    );
+
+    await ParticipationStatusHistoryService.recordParticipationHistory(
+      ctx,
+      tx,
+      participation.id,
+      status,
+      currentUserId,
+    );
+
+    return participation;
+  }
+
   static async inviteParticipation(ctx: IContext, input: GqlParticipationInviteInput) {
     const userId = getCurrentUserId(ctx);
 
@@ -54,30 +89,59 @@ export default class ParticipationService {
   }
 
   static async cancelInvitation(ctx: IContext, id: string) {
-    return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.CANCELED);
-  }
+    const currentUserId = getCurrentUserId(ctx);
 
-  static async denyInvitation(ctx: IContext, id: string) {
     return ParticipationUtils.setParticipationStatus(
       ctx,
       id,
+      currentUserId,
+      ParticipationStatus.CANCELED,
+    );
+  }
+
+  static async denyInvitation(ctx: IContext, id: string) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    return ParticipationUtils.setParticipationStatus(
+      ctx,
+      id,
+      currentUserId,
       ParticipationStatus.NOT_PARTICIPATING,
     );
   }
 
-  static async cancelApplication(ctx: IContext, id: string) {
-    return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.CANCELED);
-  }
+  static async cancelApplication(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+    const currentUserId = getCurrentUserId(ctx);
 
-  static async denyApplication(ctx: IContext, id: string) {
     return ParticipationUtils.setParticipationStatus(
       ctx,
       id,
+      currentUserId,
+      ParticipationStatus.CANCELED,
+      tx,
+    );
+  }
+
+  static async denyApplication(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    return ParticipationUtils.setParticipationStatus(
+      ctx,
+      id,
+      currentUserId,
       ParticipationStatus.NOT_PARTICIPATING,
+      tx,
     );
   }
 
   static async denyPerformance(ctx: IContext, id: string) {
-    return ParticipationUtils.setParticipationStatus(ctx, id, ParticipationStatus.DENIED);
+    const currentUserId = getCurrentUserId(ctx);
+
+    return ParticipationUtils.setParticipationStatus(
+      ctx,
+      id,
+      currentUserId,
+      ParticipationStatus.DENIED,
+    );
   }
 }

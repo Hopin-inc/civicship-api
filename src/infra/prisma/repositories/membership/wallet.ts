@@ -61,7 +61,7 @@ export default class WalletRepository {
     }
   }
 
-  static async checkIfExistingMemberWallet(
+  static async findFirstExistingMemberWallet(
     ctx: IContext,
     communityId: string,
     userId: string,

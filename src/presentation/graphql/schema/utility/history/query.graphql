@@ -16,10 +16,9 @@ input UtilityHistoryFilterInput {
     walletId: ID
     utilityId: ID
     transactionId: ID
-    usedAtExists: Boolean
+    status: UtilityStatus
 }
 
 input UtilityHistorySortInput {
     createdAt: SortDirection!
-    usedAt: SortDirection!
 }

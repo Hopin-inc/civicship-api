@@ -689,6 +689,7 @@ export type GqlMutationParticipationCancelInvitationArgs = {
 
 export type GqlMutationParticipationCancelMyApplicationArgs = {
   id: Scalars['ID']['input'];
+  input: GqlParticipationSetStatusInput;
 };
 
 
@@ -805,7 +806,7 @@ export type GqlOpportunity = {
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
   publishStatus: GqlPublishStatus;
   requireApproval: Scalars['Boolean']['output'];
-  requiredUtilities?: Maybe<Array<GqlUtility>>;
+  requiredUtilities?: Maybe<Array<GqlOpportunityRequiredUtility>>;
   slots?: Maybe<GqlOpportunitySlotsConnection>;
   startsAt?: Maybe<Scalars['Datetime']['output']>;
   title: Scalars['String']['output'];
@@ -1016,6 +1017,15 @@ export type GqlOpportunityInvitationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlOpportunityRequiredUtility = {
+  __typename?: 'OpportunityRequiredUtility';
+  Utility: GqlUtility;
+  createdAt: Scalars['Datetime']['output'];
+  opportunity: GqlOpportunity;
+  status: GqlUtilityStatus;
+  updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
 export type GqlOpportunitySetPublishStatusInput = {
   communityId: Scalars['String']['input'];
   status: GqlPublishStatus;
@@ -1097,7 +1107,6 @@ export type GqlOpportunitySlotsConnection = {
 
 export type GqlOpportunitySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
-  pointsRequired?: InputMaybe<GqlSortDirection>;
   startsAt?: InputMaybe<GqlSortDirection>;
 };
 
@@ -1174,7 +1183,8 @@ export type GqlParticipationTransactionsArgs = {
 
 export type GqlParticipationApplyInput = {
   opportunityId: Scalars['String']['input'];
-  utilityId: Scalars['String']['input'];
+  userWalletId?: InputMaybe<Scalars['String']['input']>;
+  utilityId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlParticipationApplyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationApplySuccess;
@@ -1213,6 +1223,7 @@ export type GqlParticipationInviteSuccess = {
 
 export type GqlParticipationSetStatusInput = {
   communityId: Scalars['String']['input'];
+  utilityId?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlParticipationSetStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationSetStatusSuccess;
@@ -1773,6 +1784,12 @@ export const GqlTransactionReason = {
 } as const;
 
 export type GqlTransactionReason = typeof GqlTransactionReason[keyof typeof GqlTransactionReason];
+export type GqlTransactionRefundUtilityInput = {
+  fromWalletId: Scalars['String']['input'];
+  toWalletId: Scalars['String']['input'];
+  transferPoints: Scalars['Int']['input'];
+};
+
 export type GqlTransactionSortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
@@ -1960,7 +1977,7 @@ export type GqlUtility = {
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
-  requiredForOpportunities?: Maybe<Array<GqlOpportunity>>;
+  requiredForOpportunities?: Maybe<Array<GqlOpportunityRequiredUtility>>;
   type: GqlUtilityType;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
@@ -2016,16 +2033,15 @@ export type GqlUtilityHistory = {
   createdAt: Scalars['Datetime']['output'];
   id: Scalars['ID']['output'];
   status: GqlUtilityStatus;
-  transaction: GqlTransaction;
+  transaction?: Maybe<GqlTransaction>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-  usedAt?: Maybe<Scalars['Datetime']['output']>;
   utility: GqlUtility;
   wallet: GqlWallet;
 };
 
 export type GqlUtilityHistoryCreateInput = {
   status: GqlUtilityStatus;
-  transactionId: Scalars['String']['input'];
+  transactionId?: InputMaybe<Scalars['String']['input']>;
   usedAt?: InputMaybe<Scalars['Datetime']['input']>;
   utilityId: Scalars['String']['input'];
   walletId: Scalars['String']['input'];
@@ -2045,15 +2061,14 @@ export type GqlUtilityHistoryEdge = {
 };
 
 export type GqlUtilityHistoryFilterInput = {
+  status?: InputMaybe<GqlUtilityStatus>;
   transactionId?: InputMaybe<Scalars['ID']['input']>;
-  usedAtExists?: InputMaybe<Scalars['Boolean']['input']>;
   utilityId?: InputMaybe<Scalars['ID']['input']>;
   walletId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type GqlUtilityHistorySortInput = {
   createdAt: GqlSortDirection;
-  usedAt: GqlSortDirection;
 };
 
 export type GqlUtilityPurchaseInput = {
@@ -2086,8 +2101,12 @@ export type GqlUtilitySortInput = {
 };
 
 export const GqlUtilityStatus = {
+  Disabled: 'DISABLED',
+  Expired: 'EXPIRED',
   Purchased: 'PURCHASED',
-  Refunded: 'REFUNDED'
+  Refunded: 'REFUNDED',
+  Reserved: 'RESERVED',
+  Used: 'USED'
 } as const;
 
 export type GqlUtilityStatus = typeof GqlUtilityStatus[keyof typeof GqlUtilityStatus];
@@ -2440,6 +2459,7 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityInvitationHistorySortInput: GqlOpportunityInvitationHistorySortInput;
   OpportunityInvitationSortInput: GqlOpportunityInvitationSortInput;
   OpportunityInvitationsConnection: ResolverTypeWrapper<Omit<GqlOpportunityInvitationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OpportunityInvitationEdge']>>> }>;
+  OpportunityRequiredUtility: ResolverTypeWrapper<Omit<GqlOpportunityRequiredUtility, 'Utility' | 'opportunity'> & { Utility: GqlResolversTypes['Utility'], opportunity: GqlResolversTypes['Opportunity'] }>;
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySetPublishStatusPayload']>;
   OpportunitySetPublishStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
@@ -2521,6 +2541,7 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionPurchaseUtilityPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionPurchaseUtilityPayload']>;
   TransactionPurchaseUtilitySuccess: ResolverTypeWrapper<Omit<GqlTransactionPurchaseUtilitySuccess, 'transaction'> & { transaction: GqlResolversTypes['Transaction'] }>;
   TransactionReason: GqlTransactionReason;
+  TransactionRefundUtilityInput: GqlTransactionRefundUtilityInput;
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
   User: ResolverTypeWrapper<User>;
@@ -2544,7 +2565,7 @@ export type GqlResolversTypes = ResolversObject<{
   UtilityEdge: ResolverTypeWrapper<Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Utility']> }>;
   UtilityFilterInput: GqlUtilityFilterInput;
   UtilityHistoriesConnection: ResolverTypeWrapper<Omit<GqlUtilityHistoriesConnection, 'edges'> & { edges: Array<GqlResolversTypes['UtilityHistoryEdge']> }>;
-  UtilityHistory: ResolverTypeWrapper<Omit<GqlUtilityHistory, 'transaction' | 'utility' | 'wallet'> & { transaction: GqlResolversTypes['Transaction'], utility: GqlResolversTypes['Utility'], wallet: GqlResolversTypes['Wallet'] }>;
+  UtilityHistory: ResolverTypeWrapper<Omit<GqlUtilityHistory, 'transaction' | 'utility' | 'wallet'> & { transaction?: Maybe<GqlResolversTypes['Transaction']>, utility: GqlResolversTypes['Utility'], wallet: GqlResolversTypes['Wallet'] }>;
   UtilityHistoryCreateInput: GqlUtilityHistoryCreateInput;
   UtilityHistoryCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityHistoryCreatePayload']>;
   UtilityHistoryCreateSuccess: ResolverTypeWrapper<Omit<GqlUtilityHistoryCreateSuccess, 'utilityHistory'> & { utilityHistory: GqlResolversTypes['UtilityHistory'] }>;
@@ -2685,6 +2706,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityInvitationHistorySortInput: GqlOpportunityInvitationHistorySortInput;
   OpportunityInvitationSortInput: GqlOpportunityInvitationSortInput;
   OpportunityInvitationsConnection: Omit<GqlOpportunityInvitationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['OpportunityInvitationEdge']>>> };
+  OpportunityRequiredUtility: Omit<GqlOpportunityRequiredUtility, 'Utility' | 'opportunity'> & { Utility: GqlResolversParentTypes['Utility'], opportunity: GqlResolversParentTypes['Opportunity'] };
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySetPublishStatusPayload'];
   OpportunitySetPublishStatusSuccess: Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
@@ -2760,6 +2782,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionPurchaseUtilityInput: GqlTransactionPurchaseUtilityInput;
   TransactionPurchaseUtilityPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TransactionPurchaseUtilityPayload'];
   TransactionPurchaseUtilitySuccess: Omit<GqlTransactionPurchaseUtilitySuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
+  TransactionRefundUtilityInput: GqlTransactionRefundUtilityInput;
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
   User: User;
@@ -2783,7 +2806,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   UtilityEdge: Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Utility']> };
   UtilityFilterInput: GqlUtilityFilterInput;
   UtilityHistoriesConnection: Omit<GqlUtilityHistoriesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['UtilityHistoryEdge']> };
-  UtilityHistory: Omit<GqlUtilityHistory, 'transaction' | 'utility' | 'wallet'> & { transaction: GqlResolversParentTypes['Transaction'], utility: GqlResolversParentTypes['Utility'], wallet: GqlResolversParentTypes['Wallet'] };
+  UtilityHistory: Omit<GqlUtilityHistory, 'transaction' | 'utility' | 'wallet'> & { transaction?: Maybe<GqlResolversParentTypes['Transaction']>, utility: GqlResolversParentTypes['Utility'], wallet: GqlResolversParentTypes['Wallet'] };
   UtilityHistoryCreateInput: GqlUtilityHistoryCreateInput;
   UtilityHistoryCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityHistoryCreatePayload'];
   UtilityHistoryCreateSuccess: Omit<GqlUtilityHistoryCreateSuccess, 'utilityHistory'> & { utilityHistory: GqlResolversParentTypes['UtilityHistory'] };
@@ -3128,7 +3151,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   participationApply?: Resolver<Maybe<GqlResolversTypes['ParticipationApplyPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApplyArgs, 'input'>>;
   participationApprovePerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApprovePerformanceArgs, 'id' | 'input'>>;
   participationCancelInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelInvitationArgs, 'id' | 'input'>>;
-  participationCancelMyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelMyApplicationArgs, 'id'>>;
+  participationCancelMyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelMyApplicationArgs, 'id' | 'input'>>;
   participationDenyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyApplicationArgs, 'id' | 'input'>>;
   participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id'>>;
   participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id' | 'input'>>;
@@ -3174,7 +3197,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
-  requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
+  requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['OpportunityRequiredUtility']>>, ParentType, ContextType>;
   slots?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsConnection']>, ParentType, ContextType, Partial<GqlOpportunitySlotsArgs>>;
   startsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -3286,6 +3309,15 @@ export type GqlOpportunityInvitationsConnectionResolvers<ContextType = any, Pare
   edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['OpportunityInvitationEdge']>>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOpportunityRequiredUtilityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityRequiredUtility'] = GqlResolversParentTypes['OpportunityRequiredUtility']> = ResolversObject<{
+  Utility?: Resolver<GqlResolversTypes['Utility'], ParentType, ContextType>;
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['UtilityStatus'], ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3683,7 +3715,7 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
+  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['OpportunityRequiredUtility']>>, ParentType, ContextType>;
   type?: Resolver<GqlResolversTypes['UtilityType'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3723,9 +3755,8 @@ export type GqlUtilityHistoryResolvers<ContextType = any, ParentType extends Gql
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['UtilityStatus'], ParentType, ContextType>;
-  transaction?: Resolver<GqlResolversTypes['Transaction'], ParentType, ContextType>;
+  transaction?: Resolver<Maybe<GqlResolversTypes['Transaction']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  usedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utility?: Resolver<GqlResolversTypes['Utility'], ParentType, ContextType>;
   wallet?: Resolver<GqlResolversTypes['Wallet'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3896,6 +3927,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   OpportunityInvitationHistoryCreateSuccess?: GqlOpportunityInvitationHistoryCreateSuccessResolvers<ContextType>;
   OpportunityInvitationHistoryEdge?: GqlOpportunityInvitationHistoryEdgeResolvers<ContextType>;
   OpportunityInvitationsConnection?: GqlOpportunityInvitationsConnectionResolvers<ContextType>;
+  OpportunityRequiredUtility?: GqlOpportunityRequiredUtilityResolvers<ContextType>;
   OpportunitySetPublishStatusPayload?: GqlOpportunitySetPublishStatusPayloadResolvers<ContextType>;
   OpportunitySetPublishStatusSuccess?: GqlOpportunitySetPublishStatusSuccessResolvers<ContextType>;
   OpportunitySlot?: GqlOpportunitySlotResolvers<ContextType>;

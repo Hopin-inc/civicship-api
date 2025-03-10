@@ -3,6 +3,7 @@ import { GqlQueryUtilityHistoriesArgs } from "@/types/graphql";
 import { Prisma, UtilityStatus } from "@prisma/client";
 import UtilityHistoryRepository from "@/infra/prisma/repositories/utility/history";
 import UtilityHistoryInputFormat from "@/presentation/graphql/dto/utility/history/input";
+import { OpportunityRequiredUtilityPayloadWithArgs } from "@/infra/prisma/types/opportunity/requiredUtility";
 
 export default class UtilityHistoryService {
   static async fetchUtilityHistories(
@@ -20,25 +21,105 @@ export default class UtilityHistoryService {
     return await UtilityHistoryRepository.find(ctx, id);
   }
 
-  static async findUnusedUtilitiesOrThrow(ctx: IContext, walletId: string, utilityId: string) {
-    const history = await UtilityHistoryRepository.queryAvailableUtilities(
+  static async fetchAvailableUtilitiesOrThrow(ctx: IContext, walletId: string, utilityId: string) {
+    const histories = await UtilityHistoryRepository.queryAvailableUtilities(
       ctx,
       walletId,
       utilityId,
     );
 
-    if (!history) {
+    if (!histories) {
       throw new Error("No such UtilityHistory found.");
     }
-    if (history.length > 0) {
-      throw new Error("Utility is already used.");
+    if (histories.length > 0) {
+      throw new Error(`Available utility with ID ${utilityId} not found in wallet ${walletId}.`);
     }
 
-    return history;
+    return histories;
   }
 
-  static async markAsUsed(ctx: IContext, utilityHistoryId: string, usedAt: Date) {
-    return await UtilityHistoryRepository.insertUsedAt(ctx, utilityHistoryId, usedAt);
+  static async consumeFirstAvailableUtilityForOpportunity(
+    ctx: IContext,
+    requiredUtilities: OpportunityRequiredUtilityPayloadWithArgs[],
+    userWalletId: string,
+    utilityId: string,
+    status: UtilityStatus,
+    tx: Prisma.TransactionClient,
+    transactionId?: string,
+  ): Promise<void> {
+    const availableUtilities = await this.fetchAvailableUtilitiesOrThrow(
+      ctx,
+      userWalletId,
+      utilityId,
+    );
+
+    let matchedRequiredUtilities;
+
+    const hasRequiredUtility = requiredUtilities.some((requiredUtility) => {
+      const foundUtility = availableUtilities.find(
+        (availableUtility) => availableUtility.utilityId === requiredUtility.utilityId,
+      );
+      if (foundUtility) {
+        matchedRequiredUtilities = foundUtility;
+        return true;
+      }
+      return false;
+    });
+
+    if (!hasRequiredUtility) {
+      const requiredUtilityIds = requiredUtilities.map((ru) => ru.utilityId).join(", ");
+      throw new Error(
+        `Required utility not found. ` +
+          `Required utility IDs: ${requiredUtilityIds}, ` +
+          `Wallet ID: ${userWalletId}, Specified utility ID: ${utilityId}`,
+      );
+    }
+
+    await this.recordUtilityHistory(
+      ctx,
+      tx,
+      status,
+      userWalletId,
+      matchedRequiredUtilities[0].id,
+      transactionId,
+    );
+  }
+
+  static async refundReservedUtilityForOpportunity(
+    ctx: IContext,
+    requiredUtilities: OpportunityRequiredUtilityPayloadWithArgs[],
+    reservedUtilityId: string,
+    userWalletId: string,
+    tx: Prisma.TransactionClient,
+    transactionId?: string,
+  ): Promise<void> {
+    let matchedRequiredUtility: OpportunityRequiredUtilityPayloadWithArgs | undefined;
+
+    const hasRequiredUtility = requiredUtilities.some((requiredUtility) => {
+      if (reservedUtilityId === requiredUtility.utilityId) {
+        matchedRequiredUtility = requiredUtility;
+        return true;
+      }
+      return false;
+    });
+
+    if (!hasRequiredUtility || !matchedRequiredUtility) {
+      const requiredUtilityIds = requiredUtilities.map((ru) => ru.utilityId).join(", ");
+      throw new Error(
+        `Required utility not found. ` +
+          `Required utility IDs: ${requiredUtilityIds}, ` +
+          `Wallet ID: ${userWalletId}`,
+      );
+    }
+
+    await this.recordUtilityHistory(
+      ctx,
+      tx,
+      UtilityStatus.REFUNDED,
+      userWalletId,
+      matchedRequiredUtility.utilityId,
+      transactionId,
+    );
   }
 
   static async recordUtilityHistory(
@@ -47,7 +128,7 @@ export default class UtilityHistoryService {
     status: UtilityStatus,
     walletId: string,
     utilityId: string,
-    transactionId: string,
+    transactionId?: string,
   ) {
     const data = UtilityHistoryInputFormat.create({
       status,
@@ -56,6 +137,6 @@ export default class UtilityHistoryService {
       transactionId,
     });
 
-    await UtilityHistoryRepository.create(ctx, data, tx);
+    return await UtilityHistoryRepository.create(ctx, data, tx);
   }
 }

@@ -21,33 +21,31 @@ export default class WalletService {
     return WalletRepository.find(ctx, id);
   }
 
+  static async findMemberWalletOrThrow(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const wallet = await WalletRepository.findFirstExistingMemberWallet(
+      ctx,
+      communityId,
+      userId,
+      tx,
+    );
+    if (!wallet) {
+      throw new Error(`WalletNotFound: userId=${userId}, communityId=${communityId}`);
+    }
+
+    return wallet;
+  }
+
   static async findCommunityWalletOrThrow(ctx: IContext, communityId: string): Promise<GqlWallet> {
     const wallet = await WalletRepository.findCommunityWallet(ctx, communityId);
     if (!wallet?.id) {
       throw new Error("Wallet information is missing for points transfer");
     }
     return wallet;
-  }
-
-  static async findWalletsForPurchaseUtility(
-    ctx: IContext,
-    memberWalletId: string,
-    communityId: string,
-    requiredPoints: number,
-  ) {
-    const memberWallet = await WalletRepository.find(ctx, memberWalletId);
-    if (!memberWallet) {
-      throw new Error("MemberWallet information is missing for points transfer");
-    }
-
-    const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId);
-    if (!communityWallet) {
-      throw new Error(`No community wallet found for communityId: ${communityId}`);
-    }
-
-    await WalletUtils.validateTransfer(requiredPoints, memberWallet, communityWallet);
-
-    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
   }
 
   static async checkIfMemberWalletExists(ctx: IContext, memberWalletId: string) {
@@ -59,31 +57,47 @@ export default class WalletService {
     return memberWallet;
   }
 
+  static async findWalletsForPurchaseUtility(
+    ctx: IContext,
+    memberWalletId: string,
+    communityId: string,
+    requiredPoints: number,
+  ) {
+    const memberWallet = await this.checkIfMemberWalletExists(ctx, memberWalletId);
+    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+
+    await WalletUtils.validateTransfer(requiredPoints, memberWallet, communityWallet);
+
+    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
+  }
+
+  static async findWalletsForRefundUtility(
+    ctx: IContext,
+    memberWalletId: string,
+    communityId: string,
+    requiredPoints: number,
+  ) {
+    const memberWallet = await this.checkIfMemberWalletExists(ctx, memberWalletId);
+    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+
+    await WalletUtils.validateTransfer(requiredPoints, communityWallet, memberWallet);
+
+    return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
+  }
+
   static async findWalletsForGiveReward(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     communityId: string,
-    participantId: string,
+    userId: string,
     transferPoints: number,
   ) {
-    const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId, tx);
-    if (!communityWallet) {
-      throw new Error(`No community wallet found for communityId: ${communityId}`);
-    }
+    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
 
-    const participantWallet = await WalletRepository.checkIfExistingMemberWallet(
-      ctx,
-      communityId,
-      participantId,
-      tx,
-    );
-    if (!participantWallet) {
-      throw new Error(`No participant wallet found for participantId: ${participantId}`);
-    }
+    await WalletUtils.validateTransfer(transferPoints, communityWallet, memberWallet);
 
-    await WalletUtils.validateTransfer(transferPoints, communityWallet, participantWallet);
-
-    return { fromWalletId: communityWallet.id, toWalletId: participantWallet.id };
+    return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
   }
 
   static async createCommunityWallet(
@@ -103,7 +117,7 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const existingWallet = await WalletRepository.checkIfExistingMemberWallet(
+    const existingWallet = await WalletRepository.findFirstExistingMemberWallet(
       ctx,
       communityId,
       userId,
@@ -126,11 +140,7 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const wallet = await WalletRepository.checkIfExistingMemberWallet(ctx, communityId, userId, tx);
-    if (!wallet) {
-      throw new Error(`WalletNotFound: userId=${userId}, communityId=${communityId}`);
-    }
-
-    return WalletRepository.delete(ctx, wallet.id);
+    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
+    return WalletRepository.delete(ctx, memberWallet.id);
   }
 }

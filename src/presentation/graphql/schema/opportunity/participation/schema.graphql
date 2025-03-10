@@ -19,7 +19,7 @@ extend type Mutation {
 
     # apply
     participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationCancelMyApplication(id: ID!): ParticipationSetStatusPayload
+    participationCancelMyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
     participationAcceptApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
     participationDenyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
 

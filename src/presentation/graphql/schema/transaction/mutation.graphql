@@ -37,6 +37,13 @@ input TransactionPurchaseUtilityInput {
     transferPoints: Int!
 }
 
+input TransactionRefundUtilityInput {
+    fromWalletId: String!
+    toWalletId: String!
+
+    transferPoints: Int!
+}
+
 # Type definitions for Responses
 
 type TransactionIssueCommunityPointSuccess {

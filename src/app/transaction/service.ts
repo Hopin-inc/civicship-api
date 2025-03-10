@@ -4,6 +4,7 @@ import {
   GqlTransactionGiveRewardPointInput,
   GqlTransactionIssueCommunityPointInput,
   GqlTransactionPurchaseUtilityInput,
+  GqlTransactionRefundUtilityInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
@@ -55,6 +56,18 @@ export default class TransactionService {
     input: GqlTransactionPurchaseUtilityInput,
   ) {
     const data: Prisma.TransactionCreateInput = TransactionInputFormat.purchaseUtility(input);
+
+    const res = await TransactionRepository.create(ctx, data, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    return res;
+  }
+
+  static async refundUtility(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    input: GqlTransactionRefundUtilityInput,
+  ) {
+    const data: Prisma.TransactionCreateInput = TransactionInputFormat.refundUtility(input);
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);

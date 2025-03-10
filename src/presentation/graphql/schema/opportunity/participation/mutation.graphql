@@ -2,6 +2,9 @@
 
 input ParticipationApplyInput {
     opportunityId: String!
+
+    utilityId: String
+    userWalletId: String
 }
 
 input ParticipationInviteInput{
@@ -13,6 +16,8 @@ input ParticipationInviteInput{
 
 input ParticipationSetStatusInput{
     communityId: String!
+
+    utilityId: String
 }
 
 ## Type definitions

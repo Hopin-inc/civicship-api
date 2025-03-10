@@ -6,6 +6,7 @@ import {
   GqlTransactionDonateSelfPointInput,
   GqlTransactionGiveRewardPointInput,
   GqlTransactionPurchaseUtilityInput,
+  GqlTransactionRefundUtilityInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 
@@ -87,6 +88,18 @@ export default class TransactionInputFormat {
 
     return {
       reason: TransactionReason.UTILITY_PURCHASED,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: -transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
+    };
+  }
+
+  static refundUtility(input: GqlTransactionRefundUtilityInput): Prisma.TransactionCreateInput {
+    const { fromWalletId, toWalletId, transferPoints } = input;
+
+    return {
+      reason: TransactionReason.UTILITY_REFUNDED,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange: -transferPoints,
       toWallet: { connect: { id: toWalletId } },

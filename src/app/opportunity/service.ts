@@ -24,6 +24,14 @@ export default class OpportunityService {
     return await OpportunityRepository.find(ctx, id);
   }
 
+  static async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
+    const opportunity = await OpportunityRepository.find(ctx, opportunityId);
+    if (!opportunity) {
+      throw new Error(`OpportunityNotFound: ID=${opportunityId}`);
+    }
+    return opportunity;
+  }
+
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
     const currentUserId = ctx.currentUser?.id;
     if (!currentUserId) {

@@ -261,6 +261,8 @@ model OpportunityInvitationHistory {
 }
 
 model OpportunityRequiredUtility {
+  status UtilityStatus @default(PURCHASED)
+
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   opportunityId String      @map("opportunity_id")
 
@@ -386,7 +388,6 @@ model Utility {
 model UtilityHistory {
   id     String        @id @default(cuid())
   status UtilityStatus @default(PURCHASED)
-  usedAt DateTime?     @map("used_at")
 
   walletId String @map("wallet_id")
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
@@ -394,8 +395,8 @@ model UtilityHistory {
   utilityId String  @map("utility_id")
   utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Restrict)
 
-  transactionId String      @map("transaction_id")
-  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  transactionId String?      @map("transaction_id")
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -516,7 +517,11 @@ enum UtilityType {
 
 enum UtilityStatus {
   PURCHASED
+  RESERVED
+  USED
   REFUNDED
+  EXPIRED
+  DISABLED
 }
 
 enum TransactionReason {

@@ -24,6 +24,4 @@ input OpportunityFilterInput {
 input OpportunitySortInput {
     startsAt: SortDirection
     createdAt: SortDirection
-
-    pointsRequired: SortDirection
 }

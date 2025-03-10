@@ -128,13 +128,22 @@ export default class UtilityUseCase {
     const utility = await UtilityService.findUtilityOrThrow(ctx, id);
     const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.userWalletId);
 
-    const unusedHistories = await UtilityHistoryService.findUnusedUtilitiesOrThrow(
+    const availableHistories = await UtilityHistoryService.fetchAvailableUtilitiesOrThrow(
       ctx,
       memberWallet.id,
       utility.id,
     );
 
-    const res = await UtilityHistoryService.markAsUsed(ctx, unusedHistories[0].id, new Date());
-    return UtilityHistoryOutputFormat.useUtility(res);
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const res = await UtilityHistoryService.recordUtilityHistory(
+        ctx,
+        tx,
+        UtilityStatus.USED,
+        memberWallet.id,
+        availableHistories[0].id,
+      );
+
+      return UtilityHistoryOutputFormat.useUtility(res);
+    });
   }
 }

@@ -11,11 +11,7 @@ export default class UtilityHistoryInputFormat {
       AND: [
         filter?.walletId ? { walletId: filter.walletId } : {},
         filter?.utilityId ? { utilityId: filter.utilityId } : {},
-        filter?.usedAtExists !== undefined
-          ? filter.usedAtExists
-            ? { usedAt: { not: null } }
-            : { usedAt: null }
-          : {},
+        filter?.status ? { status: filter?.status } : {},
       ],
     };
   }
@@ -24,7 +20,6 @@ export default class UtilityHistoryInputFormat {
     return [
       {
         createdAt: sort?.createdAt ?? Prisma.SortOrder.desc,
-        usedAt: sort?.usedAt,
       },
     ];
   }

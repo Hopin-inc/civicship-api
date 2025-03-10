@@ -152,6 +152,7 @@ Table t_opportunity_invitation_histories {
 }
 
 Table t_opportunity_required_utilities {
+  status UtilityStatus [not null, default: 'PURCHASED']
   opportunity t_opportunities [not null]
   opportunityId String [not null]
   utility t_utilities [not null]
@@ -243,13 +244,12 @@ Table t_utilities {
 Table t_utility_histories {
   id String [pk]
   status UtilityStatus [not null, default: 'PURCHASED']
-  usedAt DateTime
   walletId String [not null]
   wallet t_wallets [not null]
   utilityId String [not null]
   utility t_utilities [not null]
-  transactionId String [not null]
-  transaction t_transactions [not null]
+  transactionId String
+  transaction t_transactions
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -378,7 +378,11 @@ Enum UtilityType {
 
 Enum UtilityStatus {
   PURCHASED
+  RESERVED
+  USED
   REFUNDED
+  EXPIRED
+  DISABLED
 }
 
 Enum TransactionReason {

@@ -42,9 +42,10 @@ export default class ParticipationInputFormat {
     { opportunityId }: GqlParticipationApplyInput,
     currentUserId: string,
     communityId: string,
+    status: ParticipationStatus,
   ): Prisma.ParticipationCreateInput {
     return {
-      status: ParticipationStatus.APPLIED,
+      status,
       community: { connect: { id: communityId } },
       user: { connect: { id: currentUserId } },
       opportunity: { connect: { id: opportunityId } },

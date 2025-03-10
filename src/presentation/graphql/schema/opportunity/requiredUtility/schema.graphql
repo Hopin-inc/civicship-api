@@ -1,0 +1,11 @@
+# Type definitions
+
+type OpportunityRequiredUtility {
+    opportunity: Opportunity!
+    Utility: Utility!
+
+    status: UtilityStatus!
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

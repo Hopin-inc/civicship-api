@@ -1,5 +1,5 @@
 import { PrismaClientIssuer } from "@/infra/prisma/client";
-import { Prisma } from "@prisma/client";
+import { Prisma, UtilityStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { utilityHistoryInclude } from "@/infra/prisma/types/utility/history";
 
@@ -40,7 +40,7 @@ export default class UtilityHistoryRepository {
         where: {
           walletId,
           utilityId,
-          usedAt: null,
+          status: { in: [UtilityStatus.PURCHASED, UtilityStatus.REFUNDED] },
         },
         include: utilityHistoryInclude,
       });
@@ -52,20 +52,19 @@ export default class UtilityHistoryRepository {
     data: Prisma.UtilityHistoryCreateInput,
     tx: Prisma.TransactionClient,
   ) {
-    return tx.utilityHistory.create({
-      data,
-      include: utilityHistoryInclude,
-    });
-  }
-
-  static async insertUsedAt(ctx: IContext, id: string, usedAt: Date) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.utilityHistory.update({
-        where: { id },
-        data: { usedAt },
+    if (tx) {
+      return tx.utilityHistory.create({
+        data,
         include: utilityHistoryInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.utilityHistory.create({
+          data,
+          include: utilityHistoryInclude,
+        });
+      });
+    }
   }
 
   static async delete(ctx: IContext, id: string) {

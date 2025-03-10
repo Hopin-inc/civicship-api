@@ -31,7 +31,7 @@ type Utility {
     pointsRequired: Int!
 
     community: Community
-    requiredForOpportunities: [Opportunity!]
+    requiredForOpportunities: [OpportunityRequiredUtility!]
 
     histories(
         filter: UtilityHistoryFilterInput

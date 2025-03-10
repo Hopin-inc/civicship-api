@@ -4,7 +4,7 @@ input UtilityHistoryCreateInput {
     status: UtilityStatus!
     walletId: String!
     utilityId: String!
-    transactionId: String!
+    transactionId: String
 
     usedAt: Datetime
 }

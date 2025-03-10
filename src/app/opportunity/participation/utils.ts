@@ -13,7 +13,6 @@ import ParticipationRepository from "@/infra/prisma/repositories/opportunity/par
 import { clampFirst } from "@/utils";
 import ParticipationService from "@/app/opportunity/participation/service";
 import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
-import { getCurrentUserId } from "@/utils";
 import OpportunityRepository from "@/infra/prisma/repositories/opportunity";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
 
@@ -46,20 +45,36 @@ export default class ParticipationUtils {
     return ParticipationOutputFormat.query(data, hasNextPage);
   }
 
-  static async setParticipationStatus(ctx: IContext, id: string, status: ParticipationStatus) {
-    const userId = getCurrentUserId(ctx);
-    return this.issuer.public(ctx, async (tx) => {
+  static async setParticipationStatus(
+    ctx: IContext,
+    id: string,
+    currentUserId: string,
+    status: ParticipationStatus,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       const res = await ParticipationRepository.setStatus(ctx, id, status, tx);
       await ParticipationStatusHistoryService.recordParticipationHistory(
         ctx,
         tx,
         id,
         status,
-        userId,
+        currentUserId,
       );
-
       return res;
-    });
+    } else {
+      return this.issuer.public(ctx, async (innerTx) => {
+        const res = await ParticipationRepository.setStatus(ctx, id, status, innerTx);
+        await ParticipationStatusHistoryService.recordParticipationHistory(
+          ctx,
+          innerTx,
+          id,
+          status,
+          currentUserId,
+        );
+        return res;
+      });
+    }
   }
 
   static async validateParticipation(
@@ -84,5 +99,25 @@ export default class ParticipationUtils {
     }
 
     return { opportunity, participation };
+  }
+
+  static extractParticipationData(participation: ParticipationPayloadWithArgs) {
+    const communityId = participation.communityId ?? participation.opportunity?.communityId ?? null;
+    if (!communityId) {
+      throw new Error(`Cannot determine communityId from participation: id=${participation.id}`);
+    }
+
+    const opportunityId = participation.opportunity?.id ?? null;
+    if (!opportunityId) {
+      throw new Error(`Cannot determine opportunityId from participation: id=${participation.id}`);
+    }
+
+    const participantId = participation.user?.id ?? null;
+
+    if (!participantId) {
+      throw new Error(`Cannot determine userId from participation: id=${participation.id}`);
+    }
+
+    return { communityId, opportunityId, participantId };
   }
 }
