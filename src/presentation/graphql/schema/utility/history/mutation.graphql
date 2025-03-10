@@ -1,9 +1,11 @@
 # Input definitions
 
 input UtilityHistoryCreateInput {
+    status: UtilityStatus!
     walletId: String!
     utilityId: String!
     transactionId: String!
+
     usedAt: Datetime
 }
 

@@ -156,7 +156,6 @@ Table t_opportunity_required_utilities {
   opportunityId String [not null]
   utility t_utilities [not null]
   utilityId String [not null]
-  status OpportunityUtilityStatus [not null, default: 'AVAILABLE']
 
   indexes {
     (opportunityId, utilityId) [pk]
@@ -230,7 +229,7 @@ Table t_utilities {
   id String [pk]
   name String [not null]
   description String
-  utilityType UtilityType [not null, default: 'TICKET']
+  type UtilityType [not null, default: 'TICKET']
   image String
   pointsRequired Int [not null]
   communityId String [not null]
@@ -243,6 +242,7 @@ Table t_utilities {
 
 Table t_utility_histories {
   id String [pk]
+  status UtilityStatus [not null, default: 'PURCHASED']
   usedAt DateTime
   walletId String [not null]
   wallet t_wallets [not null]
@@ -259,10 +259,10 @@ Table t_transactions {
   reason TransactionReason [not null]
   from String
   fromWallet t_wallets
-  fromPointChange Int
+  fromPointChange Int [not null]
   to String
   toWallet t_wallets
-  toPointChange Int
+  toPointChange Int [not null]
   participationId String
   participation t_participations
   utilityHistories t_utility_histories [not null]
@@ -372,13 +372,13 @@ Enum WalletType {
   MEMBER
 }
 
-Enum OpportunityUtilityStatus {
-  AVAILABLE
-  USED
-}
-
 Enum UtilityType {
   TICKET
+}
+
+Enum UtilityStatus {
+  PURCHASED
+  REFUNDED
 }
 
 Enum TransactionReason {
@@ -386,8 +386,8 @@ Enum TransactionReason {
   POINT_REWARD
   DONATION
   GRANT
-  UTILITY_REDEEMED
-  MEMBERSHIP_DELETED
+  UTILITY_PURCHASED
+  UTILITY_REFUNDED
 }
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]

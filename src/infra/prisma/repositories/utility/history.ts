@@ -34,7 +34,7 @@ export default class UtilityHistoryRepository {
     });
   }
 
-  static async queryByWalletIdAndUtilityId(ctx: IContext, walletId: string, utilityId: string) {
+  static async queryAvailableUtilities(ctx: IContext, walletId: string, utilityId: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.utilityHistory.findMany({
         where: {

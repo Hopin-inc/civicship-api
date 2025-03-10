@@ -11,6 +11,7 @@ export const opportunityInclude = Prisma.validator<Prisma.OpportunityInclude>()(
   community: { include: communityInclude },
   createdByUser: { include: userInclude },
   place: { include: placeInclude },
+  requiredUtilities: true,
 });
 
 export type OpportunityPayloadWithArgs = Prisma.OpportunityGetPayload<{

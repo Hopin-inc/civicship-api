@@ -11,10 +11,10 @@ import {
   GqlUtilityDeletePayload,
   GqlMutationUtilityUpdateInfoArgs,
   GqlUtilityUpdateInfoPayload,
-  GqlMutationUtilityRedeemArgs,
-  GqlUtilityRedeemPayload,
   GqlMutationUtilityUseArgs,
   GqlUtilityUsePayload,
+  GqlMutationUtilityPurchaseArgs,
+  GqlUtilityPurchasePayload,
 } from "@/types/graphql";
 import UtilityService from "@/app/utility/service";
 import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
@@ -22,7 +22,7 @@ import { IContext } from "@/types/server";
 import { UtilityUtils } from "@/app/utility/utils";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import WalletService from "@/app/membership/wallet/service";
-import { Prisma } from "@prisma/client";
+import { Prisma, UtilityStatus } from "@prisma/client";
 import TransactionService from "@/app/transaction/service";
 import UtilityHistoryService from "@/app/utility/history/service";
 import UtilityHistoryOutputFormat from "@/presentation/graphql/dto/utility/history/output";
@@ -89,12 +89,12 @@ export default class UtilityUseCase {
     return UtilityOutputFormat.updateInfo(res);
   }
 
-  static async memberRedeemedUtility(
+  static async memberPurchaseUtility(
     ctx: IContext,
-    { id, input }: GqlMutationUtilityRedeemArgs,
-  ): Promise<GqlUtilityRedeemPayload> {
+    { id, input }: GqlMutationUtilityPurchaseArgs,
+  ): Promise<GqlUtilityPurchasePayload> {
     const utility = await UtilityService.findUtilityOrThrow(ctx, id);
-    const { fromWalletId, toWalletId } = await WalletService.findWalletsForRedeemedUtility(
+    const { fromWalletId, toWalletId } = await WalletService.findWalletsForPurchaseUtility(
       ctx,
       input.userWalletId,
       input.communityId,
@@ -102,7 +102,7 @@ export default class UtilityUseCase {
     );
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const transaction = await TransactionService.redeemUtility(ctx, tx, {
+      const transaction = await TransactionService.purchaseUtility(ctx, tx, {
         fromWalletId,
         toWalletId,
         transferPoints: utility.pointsRequired,
@@ -111,25 +111,30 @@ export default class UtilityUseCase {
       await UtilityHistoryService.recordUtilityHistory(
         ctx,
         tx,
+        UtilityStatus.PURCHASED,
         input.userWalletId,
         id,
         transaction.id,
       );
 
-      return UtilityOutputFormat.redeemUtility(transaction);
+      return UtilityOutputFormat.purchaseUtility(transaction);
     });
   }
 
   static async memberUseUtility(
     ctx: IContext,
-    { input }: GqlMutationUtilityUseArgs,
+    { id, input }: GqlMutationUtilityUseArgs,
   ): Promise<GqlUtilityUsePayload> {
-    const unusedHistory = await UtilityHistoryService.findUnusedOrThrow(
+    const utility = await UtilityService.findUtilityOrThrow(ctx, id);
+    const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.userWalletId);
+
+    const unusedHistories = await UtilityHistoryService.findUnusedUtilitiesOrThrow(
       ctx,
-      input.utilityHistoryId,
+      memberWallet.id,
+      utility.id,
     );
 
-    const res = await UtilityHistoryService.markAsUsed(ctx, unusedHistory.id, new Date());
+    const res = await UtilityHistoryService.markAsUsed(ctx, unusedHistories[0].id, new Date());
     return UtilityHistoryOutputFormat.useUtility(res);
   }
 }

@@ -31,6 +31,7 @@ export default class UtilityHistoryInputFormat {
 
   static create(input: GqlUtilityHistoryCreateInput): Prisma.UtilityHistoryCreateInput {
     return {
+      status: input.status,
       wallet: { connect: { id: input.walletId } },
       utility: { connect: { id: input.utilityId } },
       transaction: { connect: { id: input.transactionId } },

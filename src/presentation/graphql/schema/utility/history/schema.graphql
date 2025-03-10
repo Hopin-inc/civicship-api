@@ -15,6 +15,7 @@ extend type Query {
 
 type UtilityHistory {
     id: ID!
+    status: UtilityStatus!
     usedAt: Datetime
 
     wallet: Wallet!
@@ -23,4 +24,9 @@ type UtilityHistory {
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+enum UtilityStatus {
+    PURCHASED
+    REFUNDED
 }

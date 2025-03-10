@@ -1945,7 +1945,9 @@ function isTransactionparticipationFactory(x) {
 }
 function autoGenerateTransactionScalarsOrEnums({ seq }) {
     return {
-        reason: "POINT_ISSUED"
+        reason: "POINT_ISSUED",
+        fromPointChange: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Transaction", fieldName: "fromPointChange", isId: false, isUnique: false, seq }),
+        toPointChange: (0, internal_1.getScalarFieldValueGenerator)().Int({ modelName: "Transaction", fieldName: "toPointChange", isId: false, isUnique: false, seq })
     };
 }
 function defineTransactionFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {

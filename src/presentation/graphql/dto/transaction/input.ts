@@ -5,7 +5,7 @@ import {
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionDonateSelfPointInput,
   GqlTransactionGiveRewardPointInput,
-  GqlTransactionRedeemUtilityInput,
+  GqlTransactionPurchaseUtilityInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 
@@ -47,6 +47,7 @@ export default class TransactionInputFormat {
     return {
       reason: TransactionReason.POINT_ISSUED,
       toWallet: { connect: { id: toWalletId } },
+      fromPointChange: 0,
       toPointChange,
     };
   }
@@ -81,11 +82,11 @@ export default class TransactionInputFormat {
     };
   }
 
-  static redeemUtility(input: GqlTransactionRedeemUtilityInput): Prisma.TransactionCreateInput {
+  static purchaseUtility(input: GqlTransactionPurchaseUtilityInput): Prisma.TransactionCreateInput {
     const { fromWalletId, toWalletId, transferPoints } = input;
 
     return {
-      reason: TransactionReason.UTILITY_REDEEMED,
+      reason: TransactionReason.UTILITY_PURCHASED,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange: -transferPoints,
       toWallet: { connect: { id: toWalletId } },

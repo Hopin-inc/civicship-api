@@ -15,8 +15,9 @@ extend type Mutation {
     utilityDelete(id: ID!): UtilityDeletePayload
     utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!): UtilityUpdateInfoPayload
 
-    utilityRedeem(id: ID!, input: UtilityRedeemInput!): UtilityRedeemPayload
-    utilityUse(input: UtilityUseInput!): UtilityUsePayload
+    utilityPurchase(id: ID!, input: UtilityPurchaseInput!): UtilityPurchasePayload
+    utilityUse(id: ID!, input: UtilityUseInput!): UtilityUsePayload
+    utilityRefund(id: ID!, input: UtilityRefundInput!): UtilityRefundPayload
 }
 
 # Type definitions
@@ -25,6 +26,7 @@ type Utility {
     id: ID!
     name: String!
     description: String
+    type: UtilityType!
     image: String
     pointsRequired: Int!
 
@@ -40,4 +42,8 @@ type Utility {
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+enum UtilityType {
+    TICKET
 }

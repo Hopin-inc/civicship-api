@@ -267,8 +267,6 @@ model OpportunityRequiredUtility {
   utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Cascade)
   utilityId String  @map("utility_id")
 
-  status OpportunityUtilityStatus @default(AVAILABLE)
-
   @@id([opportunityId, utilityId])
   @@map("t_opportunity_required_utilities")
 }
@@ -369,7 +367,7 @@ model Utility {
   id             String      @id @default(cuid())
   name           String
   description    String?
-  utilityType    UtilityType @default(TICKET) @map("utility_type")
+  type           UtilityType @default(TICKET)
   image          String?
   pointsRequired Int         @map("points_required")
 
@@ -386,8 +384,9 @@ model Utility {
 }
 
 model UtilityHistory {
-  id     String    @id @default(cuid())
-  usedAt DateTime? @map("used_at")
+  id     String        @id @default(cuid())
+  status UtilityStatus @default(PURCHASED)
+  usedAt DateTime?     @map("used_at")
 
   walletId String @map("wallet_id")
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
@@ -412,10 +411,10 @@ model Transaction {
 
   from            String?
   fromWallet      Wallet? @relation("from_wallet", fields: [from], references: [id], onDelete: SetNull)
-  fromPointChange Int?    @map("from_point_change")
+  fromPointChange Int     @map("from_point_change")
   to              String?
   toWallet        Wallet? @relation("to_wallet", fields: [to], references: [id], onDelete: SetNull)
-  toPointChange   Int?    @map("to_point_change")
+  toPointChange   Int     @map("to_point_change")
 
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
@@ -511,13 +510,13 @@ enum WalletType {
   MEMBER
 }
 
-enum OpportunityUtilityStatus {
-  AVAILABLE
-  USED
-}
-
 enum UtilityType {
   TICKET
+}
+
+enum UtilityStatus {
+  PURCHASED
+  REFUNDED
 }
 
 enum TransactionReason {
@@ -525,6 +524,6 @@ enum TransactionReason {
   POINT_REWARD
   DONATION
   GRANT
-  UTILITY_REDEEMED
-  MEMBERSHIP_DELETED
+  UTILITY_PURCHASED
+  UTILITY_REFUNDED
 }

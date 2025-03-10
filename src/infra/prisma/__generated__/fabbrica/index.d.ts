@@ -26,10 +26,10 @@ import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
-import type { OpportunityUtilityStatus } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
 import type { UtilityType } from "@prisma/client";
+import type { UtilityStatus } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { Resolver } from "@quramy/prisma-fabbrica/lib/internal";
@@ -569,7 +569,6 @@ type OpportunityRequiredUtilityutilityFactory = {
     build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutRequiredForOpportunitiesInput["create"]>;
 };
 type OpportunityRequiredUtilityFactoryDefineInput = {
-    status?: OpportunityUtilityStatus;
     opportunity: OpportunityRequiredUtilityopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutRequiredUtilitiesInput;
     utility: OpportunityRequiredUtilityutilityFactory | Prisma.UtilityCreateNestedOneWithoutRequiredForOpportunitiesInput;
 };
@@ -849,7 +848,7 @@ type UtilityFactoryDefineInput = {
     id?: string;
     name?: string;
     description?: string | null;
-    utilityType?: UtilityType;
+    type?: UtilityType;
     image?: string | null;
     pointsRequired?: number;
     createdAt?: Date;
@@ -909,6 +908,7 @@ type UtilityHistorytransactionFactory = {
 };
 type UtilityHistoryFactoryDefineInput = {
     id?: string;
+    status?: UtilityStatus;
     usedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -968,8 +968,8 @@ type TransactionparticipationFactory = {
 type TransactionFactoryDefineInput = {
     id?: string;
     reason?: TransactionReason;
-    fromPointChange?: number | null;
-    toPointChange?: number | null;
+    fromPointChange?: number;
+    toPointChange?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;

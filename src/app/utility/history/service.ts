@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { GqlQueryUtilityHistoriesArgs } from "@/types/graphql";
-import { Prisma } from "@prisma/client";
+import { Prisma, UtilityStatus } from "@prisma/client";
 import UtilityHistoryRepository from "@/infra/prisma/repositories/utility/history";
 import UtilityHistoryInputFormat from "@/presentation/graphql/dto/utility/history/input";
 
@@ -20,13 +20,17 @@ export default class UtilityHistoryService {
     return await UtilityHistoryRepository.find(ctx, id);
   }
 
-  static async findUnusedOrThrow(ctx: IContext, historyId: string) {
-    const history = await UtilityHistoryRepository.find(ctx, historyId);
+  static async findUnusedUtilitiesOrThrow(ctx: IContext, walletId: string, utilityId: string) {
+    const history = await UtilityHistoryRepository.queryAvailableUtilities(
+      ctx,
+      walletId,
+      utilityId,
+    );
 
     if (!history) {
       throw new Error("No such UtilityHistory found.");
     }
-    if (history.usedAt) {
+    if (history.length > 0) {
       throw new Error("Utility is already used.");
     }
 
@@ -40,11 +44,13 @@ export default class UtilityHistoryService {
   static async recordUtilityHistory(
     ctx: IContext,
     tx: Prisma.TransactionClient,
+    status: UtilityStatus,
     walletId: string,
     utilityId: string,
     transactionId: string,
   ) {
     const data = UtilityHistoryInputFormat.create({
+      status,
       walletId,
       utilityId,
       transactionId,

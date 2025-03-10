@@ -29,7 +29,7 @@ export default class WalletService {
     return wallet;
   }
 
-  static async findWalletsForRedeemedUtility(
+  static async findWalletsForPurchaseUtility(
     ctx: IContext,
     memberWalletId: string,
     communityId: string,
@@ -48,6 +48,15 @@ export default class WalletService {
     await WalletUtils.validateTransfer(requiredPoints, memberWallet, communityWallet);
 
     return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
+  }
+
+  static async checkIfMemberWalletExists(ctx: IContext, memberWalletId: string) {
+    const memberWallet = await WalletRepository.find(ctx, memberWalletId);
+    if (!memberWallet) {
+      throw new Error("MemberWallet information is missing for points transfer");
+    }
+
+    return memberWallet;
   }
 
   static async findWalletsForGiveReward(

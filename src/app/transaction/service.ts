@@ -3,7 +3,7 @@ import {
   GqlQueryTransactionsArgs,
   GqlTransactionGiveRewardPointInput,
   GqlTransactionIssueCommunityPointInput,
-  GqlTransactionRedeemUtilityInput,
+  GqlTransactionPurchaseUtilityInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
@@ -49,12 +49,12 @@ export default class TransactionService {
     return res;
   }
 
-  static async redeemUtility(
+  static async purchaseUtility(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    input: GqlTransactionRedeemUtilityInput,
+    input: GqlTransactionPurchaseUtilityInput,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionInputFormat.redeemUtility(input);
+    const data: Prisma.TransactionCreateInput = TransactionInputFormat.purchaseUtility(input);
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
