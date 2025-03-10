@@ -26,6 +26,7 @@ import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
+import type { OpportunityUtilityStatus } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
 import type { UtilityType } from "@prisma/client";
@@ -568,6 +569,7 @@ type OpportunityRequiredUtilityutilityFactory = {
     build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutRequiredForOpportunitiesInput["create"]>;
 };
 type OpportunityRequiredUtilityFactoryDefineInput = {
+    status?: OpportunityUtilityStatus;
     opportunity: OpportunityRequiredUtilityopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutRequiredUtilitiesInput;
     utility: OpportunityRequiredUtilityutilityFactory | Prisma.UtilityCreateNestedOneWithoutRequiredForOpportunitiesInput;
 };
