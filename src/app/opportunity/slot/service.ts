@@ -5,7 +5,7 @@ import {
   GqlOpportunitySlotUpdateInput,
   GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
-import OpportunitySlotRepository from "@/infra/repositories/opportunity/slot";
+import OpportunitySlotRepository from "@/infra/prisma/repositories/opportunity/slot";
 import OpportunitySlotInputFormat from "@/presentation/graphql/dto/opportunity/slot/input";
 
 export default class OpportunitySlotService {

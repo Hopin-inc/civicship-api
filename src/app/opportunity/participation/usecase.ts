@@ -32,11 +32,11 @@ import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/pa
 import ParticipationUtils from "@/app/opportunity/participation/utils";
 import { getCurrentUserId } from "@/utils";
 import { OpportunityCategory, ParticipationStatus, Prisma } from "@prisma/client";
-import ParticipationRepository from "@/infra/repositories/opportunity/participation";
+import ParticipationRepository from "@/infra/prisma/repositories/opportunity/participation";
 import MembershipService from "@/app/membership/service";
 import WalletService from "@/app/membership/wallet/service";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
-import OpportunityRepository from "@/infra/repositories/opportunity";
+import OpportunityRepository from "@/infra/prisma/repositories/opportunity";
 import ParticipationInputFormat from "@/presentation/graphql/dto/opportunity/participation/input";
 import TransactionService from "@/app/transaction/service";
 import { PrismaClientIssuer } from "@/infra/prisma/client";

@@ -1,4 +1,4 @@
-import TransactionRepository from "@/infra/repositories/transaction";
+import TransactionRepository from "@/infra/prisma/repositories/transaction";
 import {
   GqlQueryTransactionsArgs,
   GqlTransactionGiveRewardPointInput,

@@ -4,7 +4,7 @@ import {
   GqlQueryOpportunitiesArgs,
 } from "@/types/graphql";
 import OpportunityInputFormat from "@/presentation/graphql/dto/opportunity/input";
-import OpportunityRepository from "@/infra/repositories/opportunity";
+import OpportunityRepository from "@/infra/prisma/repositories/opportunity";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 

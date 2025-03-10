@@ -9,12 +9,12 @@ import {
   GqlParticipationSortInput,
 } from "@/types/graphql";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
-import ParticipationRepository from "@/infra/repositories/opportunity/participation";
+import ParticipationRepository from "@/infra/prisma/repositories/opportunity/participation";
 import { clampFirst } from "@/utils";
 import ParticipationService from "@/app/opportunity/participation/service";
 import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/participation/output";
 import { getCurrentUserId } from "@/utils";
-import OpportunityRepository from "@/infra/repositories/opportunity";
+import OpportunityRepository from "@/infra/prisma/repositories/opportunity";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
 
 export default class ParticipationUtils {

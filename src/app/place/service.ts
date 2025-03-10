@@ -3,7 +3,7 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 
 import PlaceInputFormat from "@/presentation/graphql/dto/place/input";
-import PlaceRepository from "@/infra/repositories/place";
+import PlaceRepository from "@/infra/prisma/repositories/place";
 
 export default class PlaceService {
   static async fetchPlaces(

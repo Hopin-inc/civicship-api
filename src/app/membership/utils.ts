@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma } from "@prisma/client";
-import MembershipRepository from "@/infra/repositories/membership";
+import MembershipRepository from "@/infra/prisma/repositories/membership";
 import MembershipInputFormat from "@/presentation/graphql/dto/membership/input";
 import {
   GqlMembershipCursorInput,

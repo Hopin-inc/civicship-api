@@ -6,7 +6,7 @@ import {
   GqlQueryOpportunityInvitationsArgs,
 } from "@/types/graphql";
 import OpportunityInvitationInputFormat from "@/presentation/graphql/dto/opportunity/invitation/input";
-import OpportunityInvitationRepository from "@/infra/repositories/opportunity/invitation";
+import OpportunityInvitationRepository from "@/infra/prisma/repositories/opportunity/invitation";
 import { getCurrentUserId } from "@/utils";
 
 export default class OpportunityInvitationService {

@@ -4,7 +4,7 @@ import {
   GqlQueryCommunitiesArgs,
 } from "@/types/graphql";
 import CommunityInputFormat from "@/presentation/graphql/dto/community/input";
-import CommunityRepository from "@/infra/repositories/community";
+import CommunityRepository from "@/infra/prisma/repositories/community";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/utils";

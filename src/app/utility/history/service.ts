@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { GqlQueryUtilityHistoriesArgs } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import UtilityHistoryRepository from "@/infra/repositories/utility/history";
+import UtilityHistoryRepository from "@/infra/prisma/repositories/utility/history";
 import UtilityHistoryInputFormat from "@/presentation/graphql/dto/utility/history/input";
 
 export default class UtilityHistoryService {

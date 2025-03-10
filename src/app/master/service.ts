@@ -1,4 +1,4 @@
-import MasterRepository from "@/infra/repositories/master";
+import MasterRepository from "@/infra/prisma/repositories/master";
 
 export default class MasterService {
   static async checkIfCityExists(id: string) {
