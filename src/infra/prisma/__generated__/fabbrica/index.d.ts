@@ -7,6 +7,7 @@ import type { Opportunity } from "@prisma/client";
 import type { OpportunitySlot } from "@prisma/client";
 import type { OpportunityInvitation } from "@prisma/client";
 import type { OpportunityInvitationHistory } from "@prisma/client";
+import type { OpportunityRequiredUtility } from "@prisma/client";
 import type { Place } from "@prisma/client";
 import type { Participation } from "@prisma/client";
 import type { ParticipationStatusHistory } from "@prisma/client";
@@ -27,6 +28,7 @@ import type { OpportunityCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
+import type { UtilityType } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { Resolver } from "@quramy/prisma-fabbrica/lib/internal";
@@ -346,7 +348,6 @@ type OpportunityFactoryDefineInput = {
     publishStatus?: PublishStatus;
     requireApproval?: boolean;
     capacity?: number | null;
-    pointsRequired?: number | null;
     pointsToEarn?: number | null;
     feeRequired?: number | null;
     image?: string | null;
@@ -362,6 +363,7 @@ type OpportunityFactoryDefineInput = {
     participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInput;
     slots?: Prisma.OpportunitySlotCreateNestedManyWithoutOpportunityInput;
     invitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutOpportunityInput;
+    requiredUtilities?: Prisma.OpportunityRequiredUtilityCreateNestedManyWithoutOpportunityInput;
 };
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
 type OpportunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -557,6 +559,55 @@ interface OpportunityInvitationHistoryFactoryBuilder {
  * @returns factory {@link OpportunityInvitationHistoryFactoryInterface}
  */
 export declare const defineOpportunityInvitationHistoryFactory: OpportunityInvitationHistoryFactoryBuilder;
+type OpportunityRequiredUtilityopportunityFactory = {
+    _factoryFor: "Opportunity";
+    build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutRequiredUtilitiesInput["create"]>;
+};
+type OpportunityRequiredUtilityutilityFactory = {
+    _factoryFor: "Utility";
+    build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutRequiredForOpportunitiesInput["create"]>;
+};
+type OpportunityRequiredUtilityFactoryDefineInput = {
+    opportunity: OpportunityRequiredUtilityopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutRequiredUtilitiesInput;
+    utility: OpportunityRequiredUtilityutilityFactory | Prisma.UtilityCreateNestedOneWithoutRequiredForOpportunitiesInput;
+};
+type OpportunityRequiredUtilityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityRequiredUtilityFactoryDefineInput, never>>;
+type OpportunityRequiredUtilityFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<OpportunityRequiredUtilityFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<OpportunityRequiredUtility, Prisma.OpportunityRequiredUtilityCreateInput, TTransients>;
+type OpportunityRequiredUtilityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<OpportunityRequiredUtilityFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: OpportunityRequiredUtilityFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<OpportunityRequiredUtility, Prisma.OpportunityRequiredUtilityCreateInput, TTransients>;
+type OpportunityRequiredUtilityTraitKeys<TOptions extends OpportunityRequiredUtilityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface OpportunityRequiredUtilityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "OpportunityRequiredUtility";
+    build(inputData?: Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>): PromiseLike<Prisma.OpportunityRequiredUtilityCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>): PromiseLike<Prisma.OpportunityRequiredUtilityCreateInput>;
+    buildList(list: readonly Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>[]): PromiseLike<Prisma.OpportunityRequiredUtilityCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>): PromiseLike<Prisma.OpportunityRequiredUtilityCreateInput[]>;
+    pickForConnect(inputData: OpportunityRequiredUtility): Pick<OpportunityRequiredUtility, "opportunityId" | "utilityId">;
+    create(inputData?: Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>): PromiseLike<OpportunityRequiredUtility>;
+    createList(list: readonly Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>[]): PromiseLike<OpportunityRequiredUtility[]>;
+    createList(count: number, item?: Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>): PromiseLike<OpportunityRequiredUtility[]>;
+    createForConnect(inputData?: Partial<Prisma.OpportunityRequiredUtilityCreateInput & TTransients>): PromiseLike<Pick<OpportunityRequiredUtility, "opportunityId" | "utilityId">>;
+}
+export interface OpportunityRequiredUtilityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends OpportunityRequiredUtilityFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): OpportunityRequiredUtilityFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface OpportunityRequiredUtilityFactoryBuilder {
+    <TOptions extends OpportunityRequiredUtilityFactoryDefineOptions>(options: TOptions): OpportunityRequiredUtilityFactoryInterface<{}, OpportunityRequiredUtilityTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends OpportunityRequiredUtilityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends OpportunityRequiredUtilityFactoryDefineOptions<TTransients>>(options: TOptions) => OpportunityRequiredUtilityFactoryInterface<TTransients, OpportunityRequiredUtilityTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link OpportunityRequiredUtility} model.
+ *
+ * @param options
+ * @returns factory {@link OpportunityRequiredUtilityFactoryInterface}
+ */
+export declare const defineOpportunityRequiredUtilityFactory: OpportunityRequiredUtilityFactoryBuilder;
 type PlacecityFactory = {
     _factoryFor: "City";
     build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutPlacesInput["create"]>;
@@ -796,12 +847,14 @@ type UtilityFactoryDefineInput = {
     id?: string;
     name?: string;
     description?: string | null;
+    utilityType?: UtilityType;
     image?: string | null;
     pointsRequired?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
     community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
     utilityHistories?: Prisma.UtilityHistoryCreateNestedManyWithoutUtilityInput;
+    requiredForOpportunities?: Prisma.OpportunityRequiredUtilityCreateNestedManyWithoutUtilityInput;
 };
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
 type UtilityFactoryTrait<TTransients extends Record<string, unknown>> = {
