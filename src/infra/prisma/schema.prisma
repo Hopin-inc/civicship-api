@@ -179,7 +179,6 @@ model Opportunity {
   publishStatus   PublishStatus       @default(PUBLIC) @map("publish_status")
   requireApproval Boolean             @default(false) @map("require_approval")
   capacity        Int?
-  pointsRequired  Int?                @map("points_required")
   pointsToEarn    Int?                @map("points_to_earn")
   feeRequired     Int?                @map("fee_required")
   image           String?
@@ -202,6 +201,8 @@ model Opportunity {
   participations Participation[]
   slots          OpportunitySlot[]
   invitations    OpportunityInvitation[]
+
+  requiredUtilities OpportunityRequiredUtility[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -257,6 +258,17 @@ model OpportunityInvitationHistory {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_opportunity_invitation_histories")
+}
+
+model OpportunityRequiredUtility {
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  opportunityId String      @map("opportunity_id")
+
+  utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Cascade)
+  utilityId String  @map("utility_id")
+
+  @@id([opportunityId, utilityId])
+  @@map("t_opportunity_required_utilities")
 }
 
 model Place {
@@ -352,16 +364,18 @@ model Article {
 // # Utility
 
 model Utility {
-  id             String  @id @default(cuid())
+  id             String      @id @default(cuid())
   name           String
   description    String?
+  utilityType    UtilityType @default(TICKET) @map("utility_type")
   image          String?
-  pointsRequired Int     @map("points_required")
+  pointsRequired Int         @map("points_required")
 
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  utilityHistories UtilityHistory[]
+  utilityHistories         UtilityHistory[]
+  requiredForOpportunities OpportunityRequiredUtility[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -493,6 +507,10 @@ enum ParticipationStatus {
 enum WalletType {
   COMMUNITY
   MEMBER
+}
+
+enum UtilityType {
+  TICKET
 }
 
 enum TransactionReason {

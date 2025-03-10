@@ -74,6 +74,12 @@ MEMBER MEMBER
     
 
 
+        UtilityType {
+            TICKET TICKET
+        }
+    
+
+
         TransactionReason {
             POINT_ISSUED POINT_ISSUED
 POINT_REWARD POINT_REWARD
@@ -152,7 +158,6 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     PublishStatus publish_status 
     Boolean require_approval 
     Int capacity "❓"
-    Int points_required "❓"
     Int points_to_earn "❓"
     Int fee_required "❓"
     String image "❓"
@@ -194,6 +199,12 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     String invited_user_id 
     DateTime created_at 
     DateTime updated_at "❓"
+    }
+  
+
+  "t_opportunity_required_utilities" {
+    String opportunity_id 
+    String utility_id 
     }
   
 
@@ -254,6 +265,7 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     String id "🗝️"
     String name 
     String description "❓"
+    UtilityType utility_type 
     String image "❓"
     Int points_required 
     String community_id 
@@ -352,6 +364,7 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     "t_opportunities" o{--}o "t_participations" : "participations"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "t_opportunity_invitations" : "invitations"
+    "t_opportunities" o{--}o "t_opportunity_required_utilities" : "requiredUtilities"
     "t_opportunity_slots" o|--|o "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
@@ -359,6 +372,8 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
     "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
     "t_opportunity_invitation_histories" o|--|| "t_users" : "inivitedUser"
+    "t_opportunity_required_utilities" o|--|| "t_opportunities" : "opportunity"
+    "t_opportunity_required_utilities" o|--|| "t_utilities" : "utility"
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
@@ -377,8 +392,10 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     "t_articles" o{--}o "t_users" : "authors"
     "t_articles" o{--}o "t_users" : "relatedUsers"
     "t_articles" o{--}o "t_opportunities" : "opportunities"
+    "t_utilities" o|--|| "UtilityType" : "enum:utility_type"
     "t_utilities" o|--|| "t_communities" : "community"
     "t_utilities" o{--}o "t_utility_histories" : "utilityHistories"
+    "t_utilities" o{--}o "t_opportunity_required_utilities" : "requiredForOpportunities"
     "t_utility_histories" o|--|| "t_wallets" : "wallet"
     "t_utility_histories" o|--|| "t_utilities" : "utility"
     "t_utility_histories" o|--|| "t_transactions" : "transaction"
