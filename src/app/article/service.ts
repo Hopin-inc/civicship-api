@@ -4,7 +4,7 @@ import {
   GqlQueryArticlesArgs,
 } from "@/types/graphql";
 import ArticleInputFormat from "@/presentation/graphql/dto/article/input";
-import ArticleRepository from "@/infra/repositories/article";
+import ArticleRepository from "@/infra/prisma/repositories/article";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
