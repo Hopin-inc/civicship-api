@@ -794,10 +794,10 @@ export type GqlOpportunity = {
   invitations?: Maybe<GqlOpportunityInvitationsConnection>;
   participations?: Maybe<GqlParticipationsConnection>;
   place?: Maybe<GqlPlace>;
-  pointsRequired?: Maybe<Scalars['Int']['output']>;
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
   publishStatus: GqlPublishStatus;
   requireApproval: Scalars['Boolean']['output'];
+  requiredUtilities?: Maybe<Array<GqlUtility>>;
   slots?: Maybe<GqlOpportunitySlotsConnection>;
   startsAt?: Maybe<Scalars['Datetime']['output']>;
   title: Scalars['String']['output'];
@@ -1951,6 +1951,7 @@ export type GqlUtility = {
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
+  requiredForOpportunities?: Maybe<Array<GqlOpportunity>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
@@ -3125,10 +3126,10 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   invitations?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationsConnection']>, ParentType, ContextType, Partial<GqlOpportunityInvitationsArgs>>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlOpportunityParticipationsArgs>>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
-  pointsRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
   slots?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsConnection']>, ParentType, ContextType, Partial<GqlOpportunitySlotsArgs>>;
   startsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -3637,6 +3638,7 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

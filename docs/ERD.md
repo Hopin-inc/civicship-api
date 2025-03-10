@@ -74,6 +74,13 @@ MEMBER MEMBER
     
 
 
+        OpportunityUtilityStatus {
+            AVAILABLE AVAILABLE
+USED USED
+        }
+    
+
+
         UtilityType {
             TICKET TICKET
         }
@@ -205,6 +212,7 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
   "t_opportunity_required_utilities" {
     String opportunity_id 
     String utility_id 
+    OpportunityUtilityStatus status 
     }
   
 
@@ -374,6 +382,7 @@ MEMBERSHIP_DELETED MEMBERSHIP_DELETED
     "t_opportunity_invitation_histories" o|--|| "t_users" : "inivitedUser"
     "t_opportunity_required_utilities" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_required_utilities" o|--|| "t_utilities" : "utility"
+    "t_opportunity_required_utilities" o|--|| "OpportunityUtilityStatus" : "enum:status"
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"

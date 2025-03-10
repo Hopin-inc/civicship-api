@@ -156,6 +156,7 @@ Table t_opportunity_required_utilities {
   opportunityId String [not null]
   utility t_utilities [not null]
   utilityId String [not null]
+  status OpportunityUtilityStatus [not null, default: 'AVAILABLE']
 
   indexes {
     (opportunityId, utilityId) [pk]
@@ -369,6 +370,11 @@ Enum ParticipationStatus {
 Enum WalletType {
   COMMUNITY
   MEMBER
+}
+
+Enum OpportunityUtilityStatus {
+  AVAILABLE
+  USED
 }
 
 Enum UtilityType {

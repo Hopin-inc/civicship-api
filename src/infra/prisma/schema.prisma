@@ -267,6 +267,8 @@ model OpportunityRequiredUtility {
   utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Cascade)
   utilityId String  @map("utility_id")
 
+  status OpportunityUtilityStatus @default(AVAILABLE)
+
   @@id([opportunityId, utilityId])
   @@map("t_opportunity_required_utilities")
 }
@@ -507,6 +509,11 @@ enum ParticipationStatus {
 enum WalletType {
   COMMUNITY
   MEMBER
+}
+
+enum OpportunityUtilityStatus {
+  AVAILABLE
+  USED
 }
 
 enum UtilityType {

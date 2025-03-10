@@ -34,7 +34,6 @@ type Opportunity {
     requireApproval: Boolean!
 
     capacity: Int
-    pointsRequired: Int
     pointsToEarn: Int
     feeRequired: Int
 
@@ -44,6 +43,8 @@ type Opportunity {
 
     community: Community
     createdByUser: User
+
+    requiredUtilities: [Utility!]
 
     participations(
         filter: ParticipationFilterInput
