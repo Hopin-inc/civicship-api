@@ -38,7 +38,7 @@ export default class ArticleOutputFormat {
   static delete(r: ArticlePayloadWithArgs): GqlArticleDeleteSuccess {
     return {
       __typename: "ArticleDeleteSuccess",
-      id: r.id,
+      articleId: r.id,
     };
   }
 
