@@ -1,7 +1,15 @@
-# =========================
-#  Create
-# =========================
+# ------------------------------
+# Article Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    articleCreate(input: ArticleCreateInput!): ArticleCreatePayload
+    articleUpdate(id: ID!, input: ArticleUpdateInput!): ArticleUpdatePayload
+    articleDelete(id: ID!, input:ArticleDeleteInput!): ArticleDeletePayload
+}
 
+# ------------------------------
+# Article Mutation Input Definitions
+# ------------------------------
 input ArticleCreateInput {
     title: String!
     introduction: String!
@@ -11,25 +19,13 @@ input ArticleCreateInput {
     thumbnail: JSON
     publishedAt: String
 
-    communityId: ID!
     opportunityIds: [ID!]
     authorIds: [ID!]
     relatedUserIds: [ID!]
+
+    """Used for permission checking."""
+    communityId: ID!
 }
-
-type ArticleCreateSuccess {
-    article: Article
-}
-
-union ArticleCreatePayload =
-    ArticleCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
-
-# =========================
-#  Update
-# =========================
 
 input ArticleUpdateInput {
     title: String!
@@ -40,32 +36,51 @@ input ArticleUpdateInput {
     thumbnail: JSON
     publishedAt: String
 
-    communityId: ID!
     opportunityIds: [ID!]
     authorIds: [ID!]
     relatedUserIds: [ID!]
+
+    """Used for permission checking."""
+    communityId: ID!
+}
+
+input ArticleDeleteInput {
+    """Used for permission checking."""
+    communityId: ID!
+}
+
+# ------------------------------
+# Article Mutation Success Type Definitions
+# ------------------------------
+type ArticleCreateSuccess {
+    article: Article
 }
 
 type ArticleUpdateSuccess {
     article: Article
 }
 
-union ArticleUpdatePayload =
-    ArticleUpdateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
-
-# =========================
-#  Delete
-# =========================
-
 type ArticleDeleteSuccess {
-    id: ID!
+    articleId: ID!
 }
 
+# ------------------------------
+# Article Mutation Union (Payload) Definitions
+# ------------------------------
+union ArticleCreatePayload =
+    ArticleCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union ArticleUpdatePayload =
+    ArticleUpdateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
 union ArticleDeletePayload =
-    ArticleDeleteSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+    ArticleDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

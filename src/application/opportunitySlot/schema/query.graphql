@@ -1,7 +1,19 @@
-# =========================================
-# Connection / Edge
-# =========================================
+# ------------------------------
+# Opportunity Slot Query Definitions
+# ------------------------------
+extend type Query {
+    opportunitySlots(
+        filter: OpportunitySlotFilterInput
+        sort: OpportunitySlotSortInput
+        cursor: String
+        first: Int
+    ): OpportunitySlotsConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunitySlot(id: ID!): OpportunitySlot
+}
 
+# ------------------------------
+# Opportunity Slot Connection Type Definitions
+# ------------------------------
 type OpportunitySlotsConnection {
     edges: [OpportunitySlotEdge]
     pageInfo: PageInfo!
@@ -13,10 +25,9 @@ type OpportunitySlotEdge implements Edge {
     node: OpportunitySlot
 }
 
-# =========================================
-# Filter / Sort Input
-# =========================================
-
+# ------------------------------
+# Opportunity Slot Query Input Definitions
+# ------------------------------
 input OpportunitySlotFilterInput {
     opportunityId: ID
 }

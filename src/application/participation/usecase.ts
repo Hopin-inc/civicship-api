@@ -28,7 +28,7 @@ import ParticipationUtils from "@/application/participation/utils";
 import { getCurrentUserId } from "@/utils";
 import { OpportunityCategory, ParticipationStatus, Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
-import WalletService from "@/application/wallet/service";
+import WalletService from "@/application/membership/wallet/service";
 import TransactionService from "@/application/transaction/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 

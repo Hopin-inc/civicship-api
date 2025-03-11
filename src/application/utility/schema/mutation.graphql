@@ -1,43 +1,52 @@
-# Input definitions
+# ------------------------------
+# Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    utilityCreate(input: UtilityCreateInput!): UtilityCreatePayload
+    utilityDelete(id: ID!, input: UtilityDeleteInput!): UtilityDeletePayload
+    utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!): UtilityUpdateInfoPayload
 
+    utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!): UtilitySetPublishStatusPayload
+}
+
+# ------------------------------
+# Input Definitions
+# ------------------------------
 input UtilityCreateInput {
-    communityId: String!
-
     name: String!
     description: String
     image: ImageInput
     pointsRequired: Int!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input UtilityUpdateInfoInput {
-    communityId: String!
-
     name: String!
     description: String
     image: ImageInput
     pointsRequired: Int!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-input UtilityPurchaseInput {
-    communityId: String!
+input UtilitySetPublishStatusInput {
+    publishStatus: PublishStatus!
 
-    userWalletId: String!
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-input UtilityUseInput {
-    communityId: String!
-
-    userWalletId: String!
+input UtilityDeleteInput {
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-input UtilityRefundInput {
-    communityId: String!
-
-    userWalletId: String!
-}
-
-# Type definitions
-
+# ------------------------------
+# Success Type Definitions
+# ------------------------------
 type UtilityCreateSuccess {
     utility: Utility!
 }
@@ -50,20 +59,13 @@ type UtilityUpdateInfoSuccess {
     utility: Utility!
 }
 
-type UtilityPurchaseSuccess {
-    transaction: Transaction!
+type UtilitySetPublishStatusSuccess {
+    utility: Utility!
 }
 
-type UtilityUseSuccess {
-    transaction: Transaction!
-}
-
-type UtilityRefundSuccess {
-    transaction: Transaction!
-}
-
-# Union definitions
-
+# ------------------------------
+# Union (Payload) Definitions
+# ------------------------------
 union UtilityCreatePayload =
     UtilityCreateSuccess |
     InvalidInputValueError |
@@ -82,20 +84,8 @@ union UtilityUpdateInfoPayload =
     AuthError |
     ComplexQueryError
 
-union UtilityPurchasePayload =
-    UtilityPurchaseSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UtilityUsePayload =
-    UtilityUseSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union UtilityRefundPayload =
-    UtilityRefundSuccess |
+union UtilitySetPublishStatusPayload =
+    UtilitySetPublishStatusSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

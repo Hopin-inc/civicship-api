@@ -1,40 +1,51 @@
+# ------------------------------
 # Ticket Mutation Definitions
-
-input TicketCreateInput {
-    walletId: String!
-    utilityId: String!
+# ------------------------------
+extend type Mutation {
+    ticketPurchase(input: TicketPurchaseInput!): TicketPurchasePayload
+    ticketRefund(id: ID!, input: TicketRefundInput!): TicketRefundPayload
 }
 
-input TicketUpdateStatusInput {
-    newStatus: TicketStatus!
+# ------------------------------
+# Ticket Mutation Input Definitions
+# ------------------------------
+input TicketPurchaseInput {
+    walletId: ID!
+    utilityId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-type TicketCreateSuccess {
+input TicketRefundInput {
+    walletId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
+}
+
+# ------------------------------
+# Ticket Mutation Success Type Definitions
+# ------------------------------
+type TicketPurchaseSuccess {
     ticket: Ticket!
 }
 
-type TicketDeleteSuccess {
-    ticketId: String!
-}
-
-type TicketUpdateStatusSuccess {
+type TicketRefundSuccess {
     ticket: Ticket!
 }
 
-union TicketCreatePayload =
-    TicketCreateSuccess |
+# ------------------------------
+# Ticket Mutation Union (Payload) Definitions
+# ------------------------------
+union TicketPurchasePayload =
+    TicketPurchaseSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
 
-union TicketDeletePayload =
-    TicketDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TicketUpdateStatusPayload =
-    TicketUpdateStatusSuccess |
+union TicketRefundPayload =
+    TicketRefundSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

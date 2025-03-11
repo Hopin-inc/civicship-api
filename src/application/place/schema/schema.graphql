@@ -1,21 +1,12 @@
-extend type Query {
-    places(
-        filter: PlaceFilterInput
-        sort: PlaceSortInput
-        cursor: String
-        first: Int
-    ): PlacesConnection! @complexity(value: 10, multipliers: ["first"])
-    place(id: ID!): Place
-}
-
+# ------------------------------
+# Place Object Type Definitions
+# ------------------------------
 type Place {
     id: ID!
-
     name: String!
     address: String!
     latitude: Decimal!
     longitude: Decimal!
-
     isManual: Boolean!
     googlePlaceId: String
     mapLocation: JSON
@@ -27,7 +18,7 @@ type Place {
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+    ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

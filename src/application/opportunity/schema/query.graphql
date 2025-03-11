@@ -1,5 +1,19 @@
-# Opportunity
+# ------------------------------
+# Opportunity Query Definitions
+# ------------------------------
+extend type Query {
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunity(id: ID!): Opportunity
+}
 
+# ------------------------------
+# Opportunity Connection Type Definitions
+# ------------------------------
 type OpportunitiesConnection {
     edges: [OpportunityEdge!]!
     pageInfo: PageInfo!
@@ -11,14 +25,17 @@ type OpportunityEdge implements Edge {
     node: Opportunity
 }
 
+# ------------------------------
+# Opportunity Query Input Definitions
+# ------------------------------
 input OpportunityFilterInput {
     category: OpportunityCategory
     publishStatus: PublishStatus
 
-    communityId: String
-    createdByUserId: String
-    placeId: String
-    articleId: String
+    communityId: ID
+    createdByUserId: ID
+    placeId: ID
+    articleId: ID
 }
 
 input OpportunitySortInput {

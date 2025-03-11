@@ -1,20 +1,6 @@
-
-extend type Query {
-    opportunityInvitations(
-        filter: OpportunityInvitationFilterInput
-        sort: OpportunityInvitationSortInput
-        cursor: String
-        first: Int
-    ): OpportunityInvitationsConnection! @complexity(value: 10, multipliers: ["first"])
-    opportunityInvitation(id: ID!): OpportunityInvitation
-}
-
-extend type Mutation {
-    opportunityInvitationCreate(input: OpportunityInvitationCreateInput!): OpportunityInvitationCreatePayload
-    opportunityInvitationDisable(id: ID!, input: OpportunityInvitationDisableInput!): OpportunityInvitationDisablePayload
-    opportunityInvitationDelete(id: ID!): OpportunityInvitationDeletePayload
-}
-
+# ------------------------------
+# OpportunityInvitation Object Type Definitions
+# ------------------------------
 type OpportunityInvitation {
     id: ID!
     code: String!
@@ -28,7 +14,7 @@ type OpportunityInvitation {
         sort: OpportunityInvitationHistorySortInput
         cursor: String
         first: Int
-    ): OpportunityInvitationHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+    ): OpportunityInvitationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -6,7 +6,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
 import ParticipationUtils from "@/application/participation/utils";
 import { getCurrentUserId } from "@/utils";
-import ParticipationStatusHistoryService from "@/application/participationStatusHistory/service";
+import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 
 export default class ParticipationService {
   private static issuer = new PrismaClientIssuer();

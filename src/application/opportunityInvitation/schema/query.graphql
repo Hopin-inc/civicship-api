@@ -1,7 +1,19 @@
-# =========================================
-# Connection / Edge
-# =========================================
+# ------------------------------
+# OpportunityInvitation Query Definitions
+# ------------------------------
+extend type Query {
+    opportunityInvitations(
+        filter: OpportunityInvitationFilterInput
+        sort: OpportunityInvitationSortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationsConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunityInvitation(id: ID!): OpportunityInvitation
+}
 
+# ------------------------------
+# OpportunityInvitation Connection Type Definitions
+# ------------------------------
 type OpportunityInvitationsConnection {
     edges: [OpportunityInvitationEdge]
     pageInfo: PageInfo!
@@ -13,10 +25,9 @@ type OpportunityInvitationEdge implements Edge {
     node: OpportunityInvitation
 }
 
-# =========================================
-# Filter / Sort Input
-# =========================================
-
+# ------------------------------
+# OpportunityInvitation Query Input Definitions
+# ------------------------------
 input OpportunityInvitationFilterInput {
     isValid: Boolean
     opportunityId: ID

@@ -1,51 +1,47 @@
+# ------------------------------
+# Transaction Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!): TransactionIssueCommunityPointPayload
+
+    transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!): TransactionGrantCommunityPointPayload
+    transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!): TransactionDonateSelfPointPayload
+}
+
+# ------------------------------
+# Transaction Mutation Input Definitions
+# ------------------------------
 input TransactionIssueCommunityPointInput {
-    toWalletId: String!
+    toWalletId: ID!
     toPointChange: Int!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input TransactionGrantCommunityPointInput {
-    communityId: String!
-
-    fromWalletId: String!
+    fromWalletId: ID!
     fromPointChange: Int!
-    toUserId: String!
+    toUserId: ID!
     toPointChange: Int!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input TransactionDonateSelfPointInput {
-    communityId: String!
-
-    fromWalletId: String!
+    fromWalletId: ID!
     fromPointChange: Int!
-    toUserId: String!
-    toPointChange: Int!
-}
-
-input TransactionGiveRewardPointInput {
-    fromWalletId: String!
-    fromPointChange: Int!
-    toWalletId: String!
+    toUserId: ID!
     toPointChange: Int!
 
-    participationId: String!
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-input TransactionPurchaseUtilityInput {
-    fromWalletId: String!
-    toWalletId: String!
-
-    transferPoints: Int!
-}
-
-input TransactionRefundUtilityInput {
-    fromWalletId: String!
-    toWalletId: String!
-
-    transferPoints: Int!
-}
-
-# Type definitions for Responses
-
+# ------------------------------
+# Transaction Mutation Success Type Definitions
+# ------------------------------
 type TransactionIssueCommunityPointSuccess {
     transaction: Transaction!
 }
@@ -58,17 +54,9 @@ type TransactionDonateSelfPointSuccess {
     transaction: Transaction!
 }
 
-type TransactionGiveRewardPointSuccess {
-    transaction: Transaction!
-}
-
-type TransactionPurchaseUtilitySuccess {
-    transaction: Transaction!
-}
-
-
-# Union definitions
-
+# ------------------------------
+# Transaction Mutation Union (Payload) Definitions
+# ------------------------------
 union TransactionIssueCommunityPointPayload =
     TransactionIssueCommunityPointSuccess |
     InvalidInputValueError |
@@ -83,18 +71,6 @@ union TransactionGrantCommunityPointPayload =
 
 union TransactionDonateSelfPointPayload =
     TransactionDonateSelfPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TransactionPurchaseUtilityPayload =
-    TransactionPurchaseUtilitySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
-
-union TransactionGiveRewardPointPayload =
-    TransactionGiveRewardPointSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError

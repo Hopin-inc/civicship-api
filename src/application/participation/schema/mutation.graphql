@@ -1,27 +1,51 @@
-## input definitions
+# ------------------------------
+# Participation Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    # invite
+    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
+    participationCancelInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationAcceptMyInvitation(id: ID!): ParticipationSetStatusPayload
+    participationDenyMyInvitation(id: ID!): ParticipationSetStatusPayload
 
+    # apply
+    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
+    participationCancelMyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationAcceptApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+
+    # performance
+    participationApprovePerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyPerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+}
+
+# ------------------------------
+# Participation Mutation Input Definitions
+# ------------------------------
 input ParticipationApplyInput {
-    opportunityId: String!
-
-    utilityId: String
-    userWalletId: String
+    opportunityId: ID!
+    utilityId: ID
+    userWalletId: ID
 }
 
-input ParticipationInviteInput{
-    communityId: String!
-    
-    opportunityId: String!
-    invitedUserId: String!
+input ParticipationInviteInput {
+    opportunityId: ID!
+    invitedUserId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-input ParticipationSetStatusInput{
-    communityId: String!
+input ParticipationSetStatusInput {
+    utilityId: ID
 
-    utilityId: String
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-## Type definitions
-
+# ------------------------------
+# Participation Mutation Success Type Definitions
+# ------------------------------
 type ParticipationApplySuccess {
     participation: Participation!
 }
@@ -34,8 +58,9 @@ type ParticipationSetStatusSuccess {
     participation: Participation!
 }
 
-## union definitions
-
+# ------------------------------
+# Participation Mutation Union (Payload) Definitions
+# ------------------------------
 union ParticipationApplyPayload =
     ParticipationApplySuccess |
     InvalidInputValueError |

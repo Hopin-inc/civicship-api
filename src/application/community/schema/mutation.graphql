@@ -1,5 +1,15 @@
-# Queries/Mutations-related type definitions
+# ------------------------------
+# Community Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
+    communityDelete(id: ID!, input: CommunityDeleteInput!): CommunityDeletePayload
+    communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!): CommunityUpdateProfilePayload
+}
 
+# ------------------------------
+# Community Mutation Input Definitions
+# ------------------------------
 input CommunityCreateInput {
     name: String!
     pointName: String!
@@ -7,31 +17,28 @@ input CommunityCreateInput {
     bio: String
     establishedAt: Datetime
     website: String
-
-    stateCode: String!
-    cityCode: String!
 }
 
 input CommunityUpdateProfileInput {
-    communityId: ID!
-
-    name: String
-    pointName: String
+    name: String!
+    pointName: String!
     image: String
     bio: String
     establishedAt: Datetime
     website: String
 
-    stateCode: String
-    cityCode: String
-}
-
-input CommunityDeleteInput{
+    """Used for permission checking."""
     communityId: ID!
 }
 
-# Payload Definitions
+input CommunityDeleteInput {
+    """Used for permission checking."""
+    communityId: ID!
+}
 
+# ------------------------------
+# Community Mutation Success Type Definitions
+# ------------------------------
 type CommunityCreateSuccess {
     community: Community!
 }
@@ -44,8 +51,9 @@ type CommunityUpdateProfileSuccess {
     community: Community!
 }
 
-# Union Definitions
-
+# ------------------------------
+# Community Mutation Union (Payload) Definitions
+# ------------------------------
 union CommunityCreatePayload =
     CommunityCreateSuccess |
     InvalidInputValueError |

@@ -1,39 +1,9 @@
-# Queries and Mutations
-
-extend type Query {
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
-    participation(id: ID!): Participation
-}
-
-extend type Mutation {
-    # invite
-    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
-    participationCancelInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationAcceptMyInvitation(id: ID!): ParticipationSetStatusPayload
-    participationDenyMyInvitation(id: ID!): ParticipationSetStatusPayload
-
-    # apply
-    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationCancelMyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationAcceptApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationDenyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-
-    # performance
-    participationApprovePerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationDenyPerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-}
-
-# Type definitions
-
+# ------------------------------
+# Participation Object Type Definitions
+# ------------------------------
 type Participation {
     id: ID!
     status: ParticipationStatus!
-
     images: JSON
 
     user: User
@@ -59,6 +29,9 @@ type Participation {
     updatedAt: Datetime
 }
 
+# ------------------------------
+# Participation Enum Definitions
+# ------------------------------
 enum ParticipationStatus {
     INVITED
     APPLIED

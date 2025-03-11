@@ -1,52 +1,49 @@
-# =========================================
-# Create
-# =========================================
+# ------------------------------
+# OpportunityInvitation Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    opportunityInvitationCreate(input: OpportunityInvitationCreateInput!): OpportunityInvitationCreatePayload
+    opportunityInvitationDisable(id: ID!, input: OpportunityInvitationDisableInput!): OpportunityInvitationDisablePayload
+}
 
+# ------------------------------
+# OpportunityInvitation Mutation Input Definitions
+# ------------------------------
 input OpportunityInvitationCreateInput {
-    communityId: ID!
-
     code: String!
     opportunityId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
-
-type OpportunityInvitationCreateSuccess {
-    opportunityInvitation: OpportunityInvitation
-}
-
-union OpportunityInvitationCreatePayload =
-    OpportunityInvitationCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
-
-# =========================================
-# Disable
-# =========================================
 
 input OpportunityInvitationDisableInput {
+    """Used for permission checking."""
     communityId: ID!
+}
+
+# ------------------------------
+# OpportunityInvitation Mutation Success Type Definitions
+# ------------------------------
+type OpportunityInvitationCreateSuccess {
+    opportunityInvitation: OpportunityInvitation
 }
 
 type OpportunityInvitationDisableSuccess {
     opportunityInvitation: OpportunityInvitation
 }
 
+# ------------------------------
+# OpportunityInvitation Mutation Union (Payload) Definitions
+# ------------------------------
+union OpportunityInvitationCreatePayload =
+    OpportunityInvitationCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
 union OpportunityInvitationDisablePayload =
-    OpportunityInvitationDisableSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
-
-# =========================================
-# Delete
-# =========================================
-
-type OpportunityInvitationDeleteSuccess {
-    id: ID!
-}
-
-union OpportunityInvitationDeletePayload =
-    OpportunityInvitationDeleteSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+    OpportunityInvitationDisableSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

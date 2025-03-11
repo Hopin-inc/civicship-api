@@ -9,7 +9,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityInvitationUseCase from "@/application/opportunityInvitation/usecase";
-import OpportunityInvitationHistoryUseCase from "@/application/opportunityInvitationHistory/usecase";
+import OpportunityInvitationHistoryUseCase from "@/application/opportunityInvitation/invitationHistory/usecase";
 
 const OpportunityInvitationResolver = {
   Query: {

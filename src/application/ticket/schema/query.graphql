@@ -1,5 +1,19 @@
+# ------------------------------
 # Ticket Query Definitions
+# ------------------------------
+extend type Query {
+    tickets(
+        filter: TicketFilterInput
+        sort: TicketSortInput
+        cursor: String
+        first: Int
+    ): TicketsConnection! @complexity(value: 10, multipliers: ["first"])
+    ticket(id: ID!): Ticket
+}
 
+# ------------------------------
+# Ticket Connection Type Definitions
+# ------------------------------
 type TicketsConnection {
     edges: [TicketEdge]
     pageInfo: PageInfo!
@@ -11,9 +25,12 @@ type TicketEdge implements Edge {
     node: Ticket
 }
 
+# ------------------------------
+# Ticket Query Input Definitions
+# ------------------------------
 input TicketFilterInput {
-    walletId: String
-    utilityId: String
+    walletId: ID
+    utilityId: ID
     status: TicketStatus
 }
 

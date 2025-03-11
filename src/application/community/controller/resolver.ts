@@ -18,7 +18,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/application/participation/usecase";
-import WalletUseCase from "@/application/wallet/usecase";
+import WalletUseCase from "@/application/membership/wallet/usecase";
 import CommunityUseCase from "@/application/community/usecase";
 import MembershipUseCase from "@/application/membership/usecase";
 import OpportunityUseCase from "@/application/opportunity/usecase";

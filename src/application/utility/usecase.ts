@@ -21,7 +21,7 @@ import UtilityOutputFormat from "@/application/utility/presenter";
 import { IContext } from "@/types/server";
 import { UtilityUtils } from "@/application/utility/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import WalletService from "@/application/wallet/service";
+import WalletService from "@/application/membership/wallet/service";
 import { Prisma } from "@prisma/client";
 import TransactionService from "@/application/transaction/service";
 

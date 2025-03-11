@@ -3,16 +3,15 @@ import { createUserLoader } from "@/application/user/controller/dataloader";
 import { createTransactionLoader } from "@/application/transaction/controller/dataloader";
 import { createOpportunityLoader } from "@/application/opportunity/controller/dataloader";
 import { createParticipationLoader } from "@/application/participation/controller/dataloader";
-import { createWalletLoader } from "@/application/wallet/controller/dataloader";
+import { createWalletLoader } from "@/application/membership/wallet/controller/dataloader";
 import { createCommunityLoader } from "@/application/community/controller/dataloader";
 import { createMembershipLoader } from "@/application/membership/controller/dataloader";
 import { createUtilityLoader } from "@/application/utility/controller/dataloader";
 import { createPlaceLoader } from "@/application/place/controller/dataloader";
 import { createOpportunitySlotLoader } from "@/application/opportunitySlot/controller/dataloader";
-import { createParticipationStatusHistoryLoader } from "@/application/participationStatusHistory/controller/dataloader";
+import { createParticipationStatusHistoryLoader } from "@/application/participation/statusHistory/controller/dataloader";
 import { createOpportunityInvitationLoader } from "@/application/opportunityInvitation/controller/dataloader";
-import { createOpportunityInvitationHistoryLoader } from "@/application/opportunityInvitationHistory/controller/dataloader";
-import { createUtilityHistoryLoader } from "@/application/utilityHistory/controller/dataloader";
+import { createOpportunityInvitationHistoryLoader } from "@/application/opportunityInvitation/invitationHistory/controller/dataloader";
 import { createArticleLoader } from "@/application/article/controller/dataloader";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
@@ -35,7 +34,6 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     transaction: createTransactionLoader(issuer),
 
     utility: createUtilityLoader(issuer),
-    utilityHistory: createUtilityHistoryLoader(issuer),
 
     place: createPlaceLoader(issuer),
 

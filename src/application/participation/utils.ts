@@ -15,7 +15,7 @@ import ParticipationService from "@/application/participation/service";
 import ParticipationOutputFormat from "@/application/participation/presenter";
 import { NotFoundError } from "@/errors/graphql";
 import OpportunityRepository from "@/application/opportunity/data/repository";
-import ParticipationStatusHistoryService from "@/application/participationStatusHistory/service";
+import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 
 export default class ParticipationUtils {
   private static issuer = new PrismaClientIssuer();

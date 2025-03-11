@@ -1,0 +1,37 @@
+# ------------------------------
+# OpportunityInvitationHistory Query Definitions
+# ------------------------------
+extend type Query {
+    opportunityInvitationHistories(
+        filter: OpportunityInvitationHistoryFilterInput
+        sort: OpportunityInvitationHistorySortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunityInvitationHistory(id: ID!): OpportunityInvitationHistory
+}
+
+# ------------------------------
+# OpportunityInvitationHistory Connection Type Definitions
+# ------------------------------
+type OpportunityInvitationHistoriesConnection {
+    edges: [OpportunityInvitationHistoryEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OpportunityInvitationHistoryEdge implements Edge {
+    cursor: String!
+    node: OpportunityInvitationHistory
+}
+
+# ------------------------------
+# OpportunityInvitationHistory Query Input Definitions
+# ------------------------------
+input OpportunityInvitationHistoryFilterInput {
+    invitationId: ID
+}
+
+input OpportunityInvitationHistorySortInput {
+    createdAt: SortDirection
+}

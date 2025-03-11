@@ -1,25 +1,6 @@
-# Queries and Mutations
-
-extend type Query {
-    opportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
-    opportunity(id: ID!): Opportunity
-}
-
-extend type Mutation {
-    opportunityCreate(input: OpportunityCreateInput!): OpportunityCreatePayload
-    opportunityDelete(id: ID!): OpportunityDeletePayload
-    opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!): OpportunityUpdateContentPayload
-
-    opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!): OpportunitySetPublishStatusPayload
-}
-
-# Type definitions
-
+# ------------------------------
+# Opportunity Object Type Definitions
+# ------------------------------
 type Opportunity {
     id: ID!
 
@@ -72,12 +53,15 @@ type Opportunity {
         sort: ArticleSortInput
         cursor: String
         first: Int
-    ): ArticlesConnection @complexity(value: 10, multipliers: ["first"])
+    ): ArticlesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
 }
 
+# ------------------------------
+# Opportunity Enum Definitions
+# ------------------------------
 enum OpportunityCategory {
     QUEST
     EVENT

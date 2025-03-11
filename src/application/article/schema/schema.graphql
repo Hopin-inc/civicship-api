@@ -1,22 +1,6 @@
-extend type Query {
-    articles(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
-
-    article(id: ID!): Article
-}
-
-extend type Mutation {
-    articleCreate(input: ArticleCreateInput!): ArticleCreatePayload
-    articleUpdate(id: ID!, input: ArticleUpdateInput!): ArticleUpdatePayload
-    articleDelete(id: ID!): ArticleDeletePayload
-}
-
-# Type definitions
-
+# ------------------------------
+# Article Object Type Definitions
+# ------------------------------
 type Article {
     id: ID!
     title: String!
@@ -48,12 +32,15 @@ type Article {
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+    ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
 }
 
+# ------------------------------
+# Article Enum Definitions
+# ------------------------------
 enum ArticleCategory {
     ACTIVITY_REPORT
     INTERVIEW

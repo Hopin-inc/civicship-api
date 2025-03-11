@@ -21,9 +21,9 @@ import TransactionUtils from "@/application/transaction/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
-import WalletService from "@/application/wallet/service";
-import WalletRepository from "@/application/wallet/data/repository";
-import WalletUtils from "@/application/wallet/utils";
+import WalletService from "@/application/membership/wallet/service";
+import WalletRepository from "@/application/membership/wallet/data/repository";
+import WalletUtils from "@/application/membership/wallet/utils";
 import TransactionInputFormat from "@/application/transaction/data/converter";
 import TransactionRepository from "@/application/transaction/data/repository";
 

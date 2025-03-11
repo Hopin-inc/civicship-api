@@ -1,8 +1,14 @@
-## Input definition
+# ------------------------------
+# User Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    userUpdateMyProfile(input: UserUpdateProfileInput!): UserUpdateProfilePayload
+}
 
+# ------------------------------
+# User Mutation Input Definitions
+# ------------------------------
 input UserUpdateProfileInput {
-    userId: String!
-
     name: String!
     slug: String!
     image: ImageInput
@@ -13,16 +19,21 @@ input UserUpdateProfileInput {
     urlInstagram: String
     urlYoutube: String
     urlTiktok: String
+
+    """Used for permission checking."""
+    userId: ID!
 }
 
-## Type definitions
-
+# ------------------------------
+# User Mutation Success Type Definitions
+# ------------------------------
 type UserUpdateProfileSuccess {
     user: User
 }
 
-## Union definitions
-
+# ------------------------------
+# User Mutation Union (Payload) Definitions
+# ------------------------------
 union UserUpdateProfilePayload =
     UserUpdateProfileSuccess |
     InvalidInputValueError |

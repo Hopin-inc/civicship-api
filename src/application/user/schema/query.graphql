@@ -1,5 +1,19 @@
-# user
+# ------------------------------
+# User Query Definitions
+# ------------------------------
+extend type Query {
+    users(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection! @complexity(value: 10, multipliers: ["first"])
+    user(id: ID!): User
+}
 
+# ------------------------------
+# User Connection Type Definitions
+# ------------------------------
 type UsersConnection {
     edges: [UserEdge]
     pageInfo: PageInfo!
@@ -11,12 +25,12 @@ type UserEdge implements Edge {
     node: User
 }
 
+# ------------------------------
+# User Query Input Definitions
+# ------------------------------
 input UserFilterInput {
     keyword: String
     sysRole: SysRole
-
-    articleAuthorId: ID
-    articleWriterId: ID
 }
 
 input UserSortInput {

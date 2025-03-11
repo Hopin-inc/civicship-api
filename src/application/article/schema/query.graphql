@@ -1,6 +1,19 @@
-# ===================
-# Connection / Edge
-# ===================
+# ------------------------------
+# Article Query Definitions
+# ------------------------------
+extend type Query {
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
+    article(id: ID!): Article
+}
+
+# ------------------------------
+# Article Connection Type Definitions
+# ------------------------------
 type ArticlesConnection {
     edges: [ArticleEdge]
     pageInfo: PageInfo!
@@ -12,15 +25,16 @@ type ArticleEdge implements Edge {
     node: Article
 }
 
-# ===================
-# Filter / Sort Input
-# ===================
+# ------------------------------
+# Article Query Input Definitions
+# ------------------------------
 input ArticleFilterInput {
     keyword: String
     category: ArticleCategory
     publishStatus: PublishStatus
-    writtenByUserId: String
-    communityId: String
+    authors: [ID!]
+    relatedUserIds: [ID!]
+    communityId: ID
 }
 
 input ArticleSortInput {

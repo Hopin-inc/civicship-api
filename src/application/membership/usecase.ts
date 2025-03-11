@@ -28,7 +28,7 @@ import MembershipOutputFormat from "@/application/membership/presenter";
 import MembershipService from "@/application/membership/service";
 import { getCurrentUserId } from "@/utils";
 import { Prisma, Role } from "@prisma/client";
-import WalletService from "@/application/wallet/service";
+import WalletService from "@/application/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class MembershipUseCase {

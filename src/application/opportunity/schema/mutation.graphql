@@ -1,10 +1,18 @@
-# Opportunity
+# ------------------------------
+# Opportunity Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    opportunityCreate(input: OpportunityCreateInput!): OpportunityCreatePayload
+    opportunityDelete(id: ID!): OpportunityDeletePayload
+    opportunityUpdateContent(id: ID!, input: OpportunityUpdateContentInput!): OpportunityUpdateContentPayload
 
-## input definitions
+    opportunitySetPublishStatus(id: ID!, input: OpportunitySetPublishStatusInput!): OpportunitySetPublishStatusPayload
+}
 
+# ------------------------------
+# Opportunity Mutation Input Definitions
+# ------------------------------
 input OpportunityCreateInput {
-    communityId: String!
-
     title: String!
     description: String!
     body: String
@@ -15,19 +23,20 @@ input OpportunityCreateInput {
     publishStatus: PublishStatus!
     requireApproval: Boolean!
 
+    requiredUtilityIds: [ID!]
     capacity: Int
-    pointsRequired: Int
     pointsToEarn: Int
     feeRequired: Int
 
-    placeId: String
+    placeId: ID
     startsAt: Datetime
     endsAt: Datetime
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input OpportunityUpdateContentInput {
-    communityId: String!
-
     title: String!
     description: String!
     body: String
@@ -38,30 +47,35 @@ input OpportunityUpdateContentInput {
     publishStatus: PublishStatus!
     requireApproval: Boolean!
 
+    requiredUtilityIds: [ID!]
     capacity: Int
-    pointsRequired: Int
     pointsToEarn: Int
     feeRequired: Int
 
-    placeId: String
+    placeId: ID
     startsAt: Datetime
     endsAt: Datetime
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-input OpportunitySetPublishStatusInput{
-    communityId: String!
-
+input OpportunitySetPublishStatusInput {
     status: PublishStatus!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-## Type definitions
-
+# ------------------------------
+# Opportunity Mutation Success Type Definitions
+# ------------------------------
 type OpportunityCreateSuccess {
     opportunity: Opportunity!
 }
 
 type OpportunityDeleteSuccess {
-    opportunityId: String!
+    opportunityId: ID!
 }
 
 type OpportunityUpdateContentSuccess {
@@ -72,8 +86,9 @@ type OpportunitySetPublishStatusSuccess {
     opportunity: Opportunity!
 }
 
-## union definitions
-
+# ------------------------------
+# Opportunity Mutation Union (Payload) Definitions
+# ------------------------------
 union OpportunityCreatePayload =
     OpportunityCreateSuccess |
     InvalidInputValueError |

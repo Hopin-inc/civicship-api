@@ -1,3 +1,19 @@
+# ------------------------------
+# Participation Query Definitions
+# ------------------------------
+extend type Query {
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
+    participation(id: ID!): Participation
+}
+
+# ------------------------------
+# Participation Connection Type Definitions
+# ------------------------------
 type ParticipationsConnection {
     edges: [ParticipationEdge!]!
     pageInfo: PageInfo!
@@ -9,13 +25,15 @@ type ParticipationEdge implements Edge {
     node: Participation
 }
 
+# ------------------------------
+# Participation Query Input Definitions
+# ------------------------------
 input ParticipationFilterInput {
     status: ParticipationStatus
 
-    communityId: String
-    userId: String
-    opportunityId: String
-    opportunitySlotId: String
+    communityId: ID
+    userId: ID
+    opportunityId: ID
 }
 
 input ParticipationSortInput {

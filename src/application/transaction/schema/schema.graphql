@@ -1,24 +1,6 @@
-# Queries and Mutations
-
-extend type Query {
-    transactions(
-        filter: TransactionFilterInput
-        sort: TransactionSortInput
-        cursor: String
-        first: Int
-    ): TransactionsConnection! @complexity(value: 10, multipliers: ["first"])
-    transaction(id: ID!): Transaction
-}
-
-extend type Mutation {
-    transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!): TransactionIssueCommunityPointPayload
-    transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!): TransactionGrantCommunityPointPayload
-
-    transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!): TransactionDonateSelfPointPayload
-}
-
-# Type definitions
-
+# ------------------------------
+# Transaction Object Type Definitions
+# ------------------------------
 type Transaction {
     id: ID!
     reason: TransactionReason!
@@ -35,12 +17,15 @@ type Transaction {
         sort: TicketStatusHistorySortInput
         cursor: String
         first: Int
-    ): TicketStatusHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+    ): TicketStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
 }
 
+# ------------------------------
+# Transaction Enum Definitions
+# ------------------------------
 enum TransactionReason {
     POINT_ISSUED
     POINT_REWARD

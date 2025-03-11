@@ -1,4 +1,19 @@
+# ------------------------------
+# Membership Query Definitions
+# ------------------------------
+extend type Query {
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: MembershipCursorInput
+        first: Int
+    ): MembershipsConnection! @complexity(value: 10, multipliers: ["first"])
+    membership(userId: ID!, communityId: ID!): Membership
+}
 
+# ------------------------------
+# Membership Connection Type Definitions
+# ------------------------------
 type MembershipsConnection {
     edges: [MembershipEdge]
     pageInfo: PageInfo!
@@ -10,9 +25,12 @@ type MembershipEdge implements Edge {
     node: Membership
 }
 
+# ------------------------------
+# Membership Query Input Definitions
+# ------------------------------
 input MembershipFilterInput {
-    userId: String
-    communityId: String
+    userId: ID
+    communityId: ID
     status: MembershipStatus
     role: Role
 }

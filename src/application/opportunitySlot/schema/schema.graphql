@@ -1,18 +1,6 @@
-extend type Query {
-    opportunitySlots(
-        filter: OpportunitySlotFilterInput
-        sort: OpportunitySlotSortInput
-        cursor: String
-        first: Int
-    ): OpportunitySlotsConnection! @complexity(value: 10, multipliers: ["first"])
-
-    opportunitySlot(id: ID!): OpportunitySlot
-}
-
-extend type Mutation {
-    opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!): OpportunitySlotsBulkUpdatePayload
-}
-
+# ------------------------------
+# Opportunity Slot Object Type Definitions
+# ------------------------------
 type OpportunitySlot {
     id: ID!
 
@@ -25,7 +13,7 @@ type OpportunitySlot {
         sort: ParticipationSortInput
         cursor: String
         first: Int
-    ): ParticipationsConnection @complexity(value: 10, multipliers: ["first"])
+    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -17,10 +17,10 @@ import {
 import { IContext } from "@/types/server";
 import UserUseCase from "@/application/user/usecase";
 import MembershipUseCase from "@/application/membership/usecase";
-import WalletUseCase from "@/application/wallet/usecase";
+import WalletUseCase from "@/application/membership/wallet/usecase";
 import OpportunityUseCase from "@/application/opportunity/usecase";
 import ParticipationUseCase from "@/application/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/application/participationStatusHistory/usecase";
+import ParticipationStatusHistoryUseCase from "@/application/participation/statusHistory/usecase";
 
 const userResolver = {
   Query: {

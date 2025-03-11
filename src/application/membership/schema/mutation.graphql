@@ -1,55 +1,93 @@
-# membership
+# ------------------------------
+# Membership Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    # invite
+    membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
+    membershipCancelInvitation(input: MembershipCancelInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipAcceptMyInvitation(input: MembershipAcceptMyInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipDenyMyInvitation(input: MembershipDenyMyInvitationInput!): MembershipSetInvitationStatusPayload
 
-## input definitions
+    # join
+    membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
+
+    # role
+    membershipAssignOwner(input: MembershipAssignOwnerInput!): MembershipSetRolePayload
+    membershipAssignManager(input: MembershipAssignManagerInput!): MembershipSetRolePayload
+    membershipAssignMember(input: MembershipAssignMemberInput!): MembershipSetRolePayload
+    membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
+}
+
+# ------------------------------
+# Membership Mutation Input Definitions
+# ------------------------------
 input MembershipInviteInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
     role: Role
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipCancelInvitationInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipAcceptMyInvitationInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipDenyMyInvitationInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipWithdrawInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipAssignOwnerInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipAssignManagerInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipAssignMemberInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input MembershipRemoveInput {
-    userId: String!
-    communityId: String!
+    userId: ID!
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
-
-## Type definitions
-
+# ------------------------------
+# Membership Mutation Success Type Definitions
+# ------------------------------
 type MembershipInviteSuccess {
     membership: Membership!
 }
@@ -59,21 +97,22 @@ type MembershipSetRoleSuccess {
 }
 
 type MembershipRemoveSuccess {
-    userId: String!
-    communityId: String!
+    userId: ID!
+    communityId: ID!
 }
 
 type MembershipWithdrawSuccess {
-    userId: String!
-    communityId: String!
+    userId: ID!
+    communityId: ID!
 }
 
 type MembershipSetInvitationStatusSuccess {
     membership: Membership!
 }
 
-## Union definitions
-
+# ------------------------------
+# Membership Mutation Union (Payload) Definitions
+# ------------------------------
 union MembershipInvitePayload =
     MembershipInviteSuccess |
     InvalidInputValueError |

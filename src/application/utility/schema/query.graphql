@@ -1,3 +1,19 @@
+# ------------------------------
+# Query Definitions
+# ------------------------------
+extend type Query {
+    utilities(
+        filter: UtilityFilterInput
+        sort: UtilitySortInput
+        cursor: String
+        first: Int
+    ): UtilitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    utility(id: ID!): Utility
+}
+
+# ------------------------------
+# Type Definitions for Queries
+# ------------------------------
 type UtilitiesConnection {
     edges: [UtilityEdge]
     pageInfo: PageInfo!
@@ -9,8 +25,12 @@ type UtilityEdge implements Edge {
     node: Utility
 }
 
+# ------------------------------
+# Input Definitions for Queries
+# ------------------------------
 input UtilityFilterInput {
-    communityId: String
+    communityId: ID
+    status: PublishStatus
 }
 
 input UtilitySortInput {

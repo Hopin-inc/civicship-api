@@ -1,9 +1,22 @@
+# ------------------------------
+# Opportunity Slot Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!): OpportunitySlotsBulkUpdatePayload
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Input Definitions
+# ------------------------------
 input OpportunitySlotsBulkUpdateInput {
     opportunityId: ID!
 
     create: [OpportunitySlotCreateInput!]
     update: [OpportunitySlotUpdateInput!]
     delete: [ID!]
+
+    """Used for permission checking."""
+    communityId: ID!
 }
 
 input OpportunitySlotCreateInput {
@@ -17,12 +30,18 @@ input OpportunitySlotUpdateInput {
     endsAt: Datetime
 }
 
+# ------------------------------
+# Opportunity Slot Mutation Success Type Definitions
+# ------------------------------
 type OpportunitySlotsBulkUpdateSuccess {
     slots: [OpportunitySlot!]!
 }
 
+# ------------------------------
+# Opportunity Slot Mutation Union (Payload) Definitions
+# ------------------------------
 union OpportunitySlotsBulkUpdatePayload =
-    OpportunitySlotsBulkUpdateSuccess
-    | AuthError
-    | InvalidInputValueError
-    | ComplexQueryError
+    OpportunitySlotsBulkUpdateSuccess |
+    AuthError |
+    InvalidInputValueError |
+    ComplexQueryError

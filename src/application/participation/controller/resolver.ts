@@ -13,7 +13,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/application/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/application/participationStatusHistory/usecase";
+import ParticipationStatusHistoryUseCase from "@/application/participation/statusHistory/usecase";
 import TransactionUseCase from "@/application/transaction/usecase";
 
 const participationResolver = {

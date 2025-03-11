@@ -1,5 +1,19 @@
-# Queries/Mutations-related type definitions
+# ------------------------------
+# Community Query Definitions
+# ------------------------------
+extend type Query {
+    communities(
+        filter: CommunityFilterInput
+        sort: CommunitySortInput
+        cursor: String
+        first: Int
+    ): CommunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    community(id: ID!): Community
+}
 
+# ------------------------------
+# Community Connection Type Definitions
+# ------------------------------
 type CommunitiesConnection {
     edges: [CommunityEdge]
     pageInfo: PageInfo!
@@ -11,9 +25,11 @@ type CommunityEdge implements Edge {
     node: Community
 }
 
+# ------------------------------
+# Community Query Input Definitions
+# ------------------------------
 input CommunityFilterInput {
-    stateCode: String
-    cityCode: String
+    keyword: String
 }
 
 input CommunitySortInput {
