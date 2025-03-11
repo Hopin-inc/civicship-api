@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma } from "@prisma/client";
 import MembershipRepository from "@/application/membership/data/repository";
-import MembershipInputFormat from "@/application/membership/data/converter";
+import MembershipConverter from "@/application/membership/data/converter";
 import {
   GqlMembershipCursorInput,
   GqlMembershipFilterInput,
@@ -54,7 +54,7 @@ export default class MembershipUtils {
     }
 
     const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
-      MembershipInputFormat.setStatus(status);
+      MembershipConverter.setStatus(status);
 
     return MembershipRepository.setStatus(
       ctx,

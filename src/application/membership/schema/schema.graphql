@@ -5,7 +5,7 @@ type Membership {
     user: User!
     community: Community!
 
-    status: MembershipStatus
+    status: MembershipStatus!
     role: Role!
 
     createdAt: Datetime!

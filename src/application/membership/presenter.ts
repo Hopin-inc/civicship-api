@@ -7,9 +7,9 @@ import {
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
 } from "@/types/graphql";
-import { MembershipPayloadWithArgs } from "@/application/membership/data/type";
+import { PrismaMembership } from "@/application/membership/data/type";
 
-export default class MembershipOutputFormat {
+export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
     return {
       totalCount: r.length,
@@ -28,20 +28,18 @@ export default class MembershipOutputFormat {
     };
   }
 
-  static get(r: MembershipPayloadWithArgs): GqlMembership {
+  static get(r: PrismaMembership): GqlMembership {
     return r;
   }
 
-  static invite(r: MembershipPayloadWithArgs): GqlMembershipInviteSuccess {
+  static invite(r: PrismaMembership): GqlMembershipInviteSuccess {
     return {
       __typename: "MembershipInviteSuccess",
       membership: this.get(r),
     };
   }
 
-  static setInvitationStatus(
-    r: MembershipPayloadWithArgs,
-  ): GqlMembershipSetInvitationStatusSuccess {
+  static setInvitationStatus(r: PrismaMembership): GqlMembershipSetInvitationStatusSuccess {
     return {
       __typename: "MembershipSetInvitationStatusSuccess",
       membership: this.get(r),
@@ -69,7 +67,7 @@ export default class MembershipOutputFormat {
     };
   }
 
-  static setRole(r: MembershipPayloadWithArgs): GqlMembershipSetRoleSuccess {
+  static setRole(r: PrismaMembership): GqlMembershipSetRoleSuccess {
     return {
       __typename: "MembershipSetRoleSuccess",
       membership: this.get(r),

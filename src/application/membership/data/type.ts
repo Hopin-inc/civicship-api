@@ -1,4 +1,6 @@
 import { Prisma } from "@prisma/client";
+import { communityInclude } from "@/application/community/data/type";
+import { userInclude } from "@/application/user/data/type";
 
 export const membershipAuthSelect = Prisma.validator<Prisma.MembershipSelect>()({
   role: true,
@@ -6,15 +8,10 @@ export const membershipAuthSelect = Prisma.validator<Prisma.MembershipSelect>()(
 });
 
 export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
-  community: true,
-  // community: {
-  // include: {
-  //   city: { include: { state: true } },
-  // },
-  // },
-  user: true,
+  community: { include: communityInclude },
+  user: { include: userInclude },
 });
 
-export type MembershipPayloadWithArgs = Prisma.MembershipGetPayload<{
+export type PrismaMembership = Prisma.MembershipGetPayload<{
   include: typeof membershipInclude;
 }>;

@@ -4,17 +4,17 @@
 extend type Mutation {
     # invite
     membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
-    membershipCancelInvitation(input: MembershipCancelInvitationInput!): MembershipSetInvitationStatusPayload
-    membershipAcceptMyInvitation(input: MembershipAcceptMyInvitationInput!): MembershipSetInvitationStatusPayload
-    membershipDenyMyInvitation(input: MembershipDenyMyInvitationInput!): MembershipSetInvitationStatusPayload
+    membershipCancelInvitation(input: MembershipSetInvitationStatusInput!): MembershipSetInvitationStatusPayload
+    membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!): MembershipSetInvitationStatusPayload
+    membershipDenyMyInvitation(input: MembershipSetInvitationStatusInput!): MembershipSetInvitationStatusPayload
 
     # join
     membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
 
     # role
-    membershipAssignOwner(input: MembershipAssignOwnerInput!): MembershipSetRolePayload
-    membershipAssignManager(input: MembershipAssignManagerInput!): MembershipSetRolePayload
-    membershipAssignMember(input: MembershipAssignMemberInput!): MembershipSetRolePayload
+    membershipAssignOwner(input: MembershipSetRoleInput!): MembershipSetRolePayload
+    membershipAssignManager(input: MembershipSetRoleInput!): MembershipSetRolePayload
+    membershipAssignMember(input: MembershipSetRoleInput!): MembershipSetRolePayload
     membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
 }
 
@@ -29,21 +29,7 @@ input MembershipInviteInput {
     communityId: ID!
 }
 
-input MembershipCancelInvitationInput {
-    userId: ID!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input MembershipAcceptMyInvitationInput {
-    userId: ID!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input MembershipDenyMyInvitationInput {
+input MembershipSetInvitationStatusInput {
     userId: ID!
 
     """Used for permission checking."""
@@ -57,21 +43,7 @@ input MembershipWithdrawInput {
     communityId: ID!
 }
 
-input MembershipAssignOwnerInput {
-    userId: ID!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input MembershipAssignManagerInput {
-    userId: ID!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input MembershipAssignMemberInput {
+input MembershipSetRoleInput {
     userId: ID!
 
     """Used for permission checking."""

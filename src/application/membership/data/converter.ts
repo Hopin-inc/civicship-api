@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import { Prisma, MembershipStatus, Role } from "@prisma/client";
 
-export default class MembershipInputFormat {
+export default class MembershipConverter {
   static filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
     return {
       AND: [
