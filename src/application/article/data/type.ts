@@ -10,6 +10,6 @@ export const articleInclude = Prisma.validator<Prisma.ArticleInclude>()({
   opportunities: { include: opportunityInclude },
 });
 
-export type ArticlePayloadWithArgs = Prisma.ArticleGetPayload<{
+export type PrismaArticle = Prisma.ArticleGetPayload<{
   include: typeof articleInclude;
 }>;

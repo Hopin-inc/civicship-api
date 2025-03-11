@@ -5,7 +5,7 @@ import {
   GqlArticleDeleteSuccess,
   GqlArticleUpdateSuccess,
 } from "@/types/graphql";
-import { ArticlePayloadWithArgs } from "@/application/article/data/type";
+import { PrismaArticle } from "@/application/article/data/type";
 import CommunityPresenter from "@/application/community/presenter";
 import UserPresenter from "@/application/user/presenter";
 import OpportunityPresenter from "@/application/opportunity/presenter";
@@ -27,7 +27,7 @@ export default class ArticlePresenter {
     };
   }
 
-  static get(r: ArticlePayloadWithArgs): GqlArticle {
+  static get(r: PrismaArticle): GqlArticle {
     const { community, opportunities, authors, relatedUsers, ...prop } = r;
 
     return {
@@ -39,21 +39,21 @@ export default class ArticlePresenter {
     };
   }
 
-  static create(r: ArticlePayloadWithArgs): GqlArticleCreateSuccess {
+  static create(r: PrismaArticle): GqlArticleCreateSuccess {
     return {
       __typename: "ArticleCreateSuccess",
       article: this.get(r),
     };
   }
 
-  static delete(r: ArticlePayloadWithArgs): GqlArticleDeleteSuccess {
+  static delete(r: PrismaArticle): GqlArticleDeleteSuccess {
     return {
       __typename: "ArticleDeleteSuccess",
       articleId: r.id,
     };
   }
 
-  static update(r: ArticlePayloadWithArgs): GqlArticleUpdateSuccess {
+  static update(r: PrismaArticle): GqlArticleUpdateSuccess {
     return {
       __typename: "ArticleUpdateSuccess",
       article: this.get(r),
