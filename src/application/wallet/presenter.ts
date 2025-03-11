@@ -1,5 +1,5 @@
 import { GqlWallet, GqlWalletsConnection } from "@/types/graphql";
-import { WalletPayloadWithArgs } from "@/application/wallet/infrastructure/type";
+import { WalletPayloadWithArgs } from "@/application/wallet/data/type";
 
 export default class WalletOutputFormat {
   static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {

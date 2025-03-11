@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlPlace } from "@/types/graphql";
 import PlaceOutputFormat from "@/application/place/presenter";
-import { placeInclude } from "@/application/place/infrastructure/type";
+import { placeInclude } from "@/application/place/data/type";
 
 async function batchPlacesById(
   issuer: PrismaClientIssuer,

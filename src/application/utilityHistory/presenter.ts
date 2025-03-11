@@ -4,7 +4,7 @@ import {
   GqlUtilityHistoryCreateSuccess,
   GqlUtilityUseSuccess,
 } from "@/types/graphql";
-import { UtilityHistoryPayloadWithArgs } from "@/application/utilityHistory/infrastructure/type";
+import { UtilityHistoryPayloadWithArgs } from "@/application/utilityHistory/data/type";
 
 export default class UtilityHistoryOutputFormat {
   static query(

@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { GqlQueryOpportunityInvitationHistoriesArgs } from "@/types/graphql";
-import OpportunityInvitationHistoryInputFormat from "@/application/opportunityInvitationHistory/infrastructure/converter";
-import OpportunityInvitationHistoryRepository from "@/application/opportunityInvitationHistory/infrastructure/repository";
+import OpportunityInvitationHistoryInputFormat from "@/application/opportunityInvitationHistory/data/converter";
+import OpportunityInvitationHistoryRepository from "@/application/opportunityInvitationHistory/data/repository";
 
 export default class OpportunityInvitationHistoryService {
   static async fetchInvitationHistories(

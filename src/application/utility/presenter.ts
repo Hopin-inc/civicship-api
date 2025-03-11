@@ -7,8 +7,8 @@ import {
   GqlUtilityPurchaseSuccess,
   GqlUtilityRefundSuccess,
 } from "@/types/graphql";
-import { UtilityGetPayloadWithArgs } from "@/application/utility/infrastructure/type";
-import { TransactionPayloadWithArgs } from "@/application/transaction/infrastructure/type";
+import { UtilityGetPayloadWithArgs } from "@/application/utility/data/type";
+import { TransactionPayloadWithArgs } from "@/application/transaction/data/type";
 import { Utility } from "@prisma/client";
 import TransactionOutputFormat from "@/application/transaction/presenter";
 

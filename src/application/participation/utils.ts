@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { ParticipationStatus, Prisma } from "@prisma/client";
-import { ParticipationPayloadWithArgs } from "@/application/participation/infrastructure/type";
+import { ParticipationPayloadWithArgs } from "@/application/participation/data/type";
 
 import {
   GqlParticipation,
@@ -9,12 +9,12 @@ import {
   GqlParticipationSortInput,
 } from "@/types/graphql";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import ParticipationRepository from "@/application/participation/infrastructure/repository";
+import ParticipationRepository from "@/application/participation/data/repository";
 import { clampFirst } from "@/utils";
 import ParticipationService from "@/application/participation/service";
 import ParticipationOutputFormat from "@/application/participation/presenter";
 import { NotFoundError } from "@/errors/graphql";
-import OpportunityRepository from "@/application/opportunity/infrastructure/repository";
+import OpportunityRepository from "@/application/opportunity/data/repository";
 import ParticipationStatusHistoryService from "@/application/participationStatusHistory/service";
 
 export default class ParticipationUtils {

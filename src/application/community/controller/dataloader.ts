@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlCommunity } from "@/types/graphql";
 import CommunityOutputFormat from "@/application/community/presenter";
-import { communityInclude } from "@/application/community/infrastructure/type";
+import { communityInclude } from "@/application/community/data/type";
 
 async function batchCommunitiesById(
   issuer: PrismaClientIssuer,

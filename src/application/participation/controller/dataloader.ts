@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlParticipation } from "@/types/graphql";
-import { participationInclude } from "@/application/participation/infrastructure/type";
+import { participationInclude } from "@/application/participation/data/type";
 import ParticipationOutputFormat from "@/application/participation/presenter";
 
 async function batchParticipationsById(

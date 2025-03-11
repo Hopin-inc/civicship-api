@@ -1,5 +1,5 @@
 import { GqlUser, GqlUsersConnection, GqlUserUpdateProfileSuccess } from "@/types/graphql";
-import { UserGetPayloadWithArgs } from "@/application/user/infrastructure/type";
+import { UserGetPayloadWithArgs } from "@/application/user/data/type";
 
 export default class UserOutputFormat {
   static query(users: GqlUser[], hasNextPage: boolean): GqlUsersConnection {

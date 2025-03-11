@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlUtilityHistory } from "@/types/graphql";
 import UtilityHistoryOutputFormat from "@/application/utilityHistory/presenter";
-import { utilityHistoryInclude } from "@/application/utilityHistory/infrastructure/type";
+import { utilityHistoryInclude } from "@/application/utilityHistory/data/type";
 
 async function batchUtilityHistoriesById(
   issuer: PrismaClientIssuer,

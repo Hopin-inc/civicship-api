@@ -22,10 +22,10 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/wallet/service";
-import WalletRepository from "@/application/wallet/infrastructure/repository";
+import WalletRepository from "@/application/wallet/data/repository";
 import WalletUtils from "@/application/wallet/utils";
-import TransactionInputFormat from "@/application/transaction/infrastructure/converter";
-import TransactionRepository from "@/application/transaction/infrastructure/repository";
+import TransactionInputFormat from "@/application/transaction/data/converter";
+import TransactionRepository from "@/application/transaction/data/repository";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();

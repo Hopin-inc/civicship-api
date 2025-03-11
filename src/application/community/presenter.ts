@@ -5,7 +5,7 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { CommunityPayloadWithArgs } from "@/application/community/infrastructure/type";
+import { CommunityPayloadWithArgs } from "@/application/community/data/type";
 
 export default class CommunityOutputFormat {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {

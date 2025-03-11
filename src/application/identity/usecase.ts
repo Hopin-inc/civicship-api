@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { GqlCurrentUserPayload, GqlMutationUserSignUpArgs } from "@/types/graphql";
-import IdentityInputFormat from "@/application/identity/infrastructure/converter";
+import IdentityInputFormat from "@/application/identity/data/converter";
 import IdentityService from "@/application/identity/service";
 import IdentityResponseFormat from "@/application/identity/presenter";
 

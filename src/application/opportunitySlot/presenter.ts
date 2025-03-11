@@ -3,7 +3,7 @@ import {
   GqlOpportunitySlotsBulkUpdateSuccess,
   GqlOpportunitySlotsConnection,
 } from "@/types/graphql";
-import { OpportunitySlotPayloadWithArgs } from "@/application/opportunitySlot/infrastructure/type";
+import { OpportunitySlotPayloadWithArgs } from "@/application/opportunitySlot/data/type";
 import OpportunityOutputFormat from "@/application/opportunity/presenter";
 
 export default class OpportunitySlotOutputFormat {

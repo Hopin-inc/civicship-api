@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlMembership } from "@/types/graphql";
 import MembershipOutputFormat from "@/application/membership/presenter";
-import { membershipInclude } from "@/application/membership/infrastructure/type";
+import { membershipInclude } from "@/application/membership/data/type";
 
 async function batchMembershipsByCompositeKey(
   issuer: PrismaClientIssuer,

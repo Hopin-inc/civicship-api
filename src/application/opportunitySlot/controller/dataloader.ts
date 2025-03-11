@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlOpportunitySlot } from "@/types/graphql";
-import { opportunitySlotInclude } from "@/application/opportunitySlot/infrastructure/type";
+import { opportunitySlotInclude } from "@/application/opportunitySlot/data/type";
 import OpportunitySlotOutputFormat from "@/application/opportunitySlot/presenter";
 
 async function batchOpportunitySlotsById(

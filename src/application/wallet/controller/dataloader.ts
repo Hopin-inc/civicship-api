@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlWallet } from "@/types/graphql";
 import WalletOutputFormat from "@/application/wallet/presenter";
-import { walletInclude } from "@/application/wallet/infrastructure/type";
+import { walletInclude } from "@/application/wallet/data/type";
 
 async function batchWalletsById(
   issuer: PrismaClientIssuer,

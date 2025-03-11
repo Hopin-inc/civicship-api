@@ -5,7 +5,7 @@ import {
   GqlPlaceDeleteSuccess,
   GqlPlaceUpdateSuccess,
 } from "@/types/graphql";
-import { PlacePayloadWithArgs } from "@/application/place/infrastructure/type";
+import { PlacePayloadWithArgs } from "@/application/place/data/type";
 
 export default class PlaceOutputFormat {
   static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {

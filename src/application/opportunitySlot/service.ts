@@ -5,8 +5,8 @@ import {
   GqlOpportunitySlotUpdateInput,
   GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
-import OpportunitySlotRepository from "@/application/opportunitySlot/infrastructure/repository";
-import OpportunitySlotInputFormat from "@/application/opportunitySlot/infrastructure/converter";
+import OpportunitySlotRepository from "@/application/opportunitySlot/data/repository";
+import OpportunitySlotInputFormat from "@/application/opportunitySlot/data/converter";
 
 export default class OpportunitySlotService {
   static async fetchOpportunitySlots(

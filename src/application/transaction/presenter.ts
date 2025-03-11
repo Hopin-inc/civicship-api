@@ -5,7 +5,7 @@ import {
   GqlTransactionGrantCommunityPointSuccess,
   GqlTransactionDonateSelfPointSuccess,
 } from "@/types/graphql";
-import { TransactionPayloadWithArgs } from "@/application/transaction/infrastructure/type";
+import { TransactionPayloadWithArgs } from "@/application/transaction/data/type";
 
 export default class TransactionOutputFormat {
   static query(r: GqlTransaction[], hasNextPage: boolean): GqlTransactionsConnection {

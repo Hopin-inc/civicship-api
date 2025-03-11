@@ -1,5 +1,5 @@
 import { NotFoundError } from "@/errors/graphql";
-import MasterRepository from "@/application/master/infrastructure/repository";
+import MasterRepository from "@/application/master/data/repository";
 
 export default class MasterService {
   static async checkIfCityExists(id: string) {

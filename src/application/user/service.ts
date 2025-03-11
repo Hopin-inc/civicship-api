@@ -1,7 +1,7 @@
 import { GqlMutationUserUpdateMyProfileArgs, GqlQueryUsersArgs } from "@/types/graphql";
-import UserRepository from "@/application/user/infrastructure/repository";
+import UserRepository from "@/application/user/data/repository";
 import { IContext } from "@/types/server";
-import UserInputFormat from "@/application/user/infrastructure/converter";
+import UserInputFormat from "@/application/user/data/converter";
 import { Prisma } from "@prisma/client";
 
 export default class UserService {

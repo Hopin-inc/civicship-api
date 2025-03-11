@@ -5,7 +5,7 @@ import {
   GqlArticleDeleteSuccess,
   GqlArticleUpdateSuccess,
 } from "@/types/graphql";
-import { ArticlePayloadWithArgs } from "@/application/article/infrastructure/type";
+import { ArticlePayloadWithArgs } from "@/application/article/data/type";
 
 export default class ArticleOutputFormat {
   static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {

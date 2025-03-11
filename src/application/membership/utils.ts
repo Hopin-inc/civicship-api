@@ -1,7 +1,7 @@
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma } from "@prisma/client";
-import MembershipRepository from "@/application/membership/infrastructure/repository";
-import MembershipInputFormat from "@/application/membership/infrastructure/converter";
+import MembershipRepository from "@/application/membership/data/repository";
+import MembershipInputFormat from "@/application/membership/data/converter";
 import {
   GqlMembershipCursorInput,
   GqlMembershipFilterInput,

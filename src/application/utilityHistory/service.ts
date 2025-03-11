@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { GqlQueryUtilityHistoriesArgs } from "@/types/graphql";
 import { Prisma, UtilityStatus } from "@prisma/client";
-import UtilityHistoryRepository from "@/application/utilityHistory/infrastructure/repository";
-import UtilityHistoryInputFormat from "@/application/utilityHistory/infrastructure/converter";
+import UtilityHistoryRepository from "@/application/utilityHistory/data/repository";
+import UtilityHistoryInputFormat from "@/application/utilityHistory/data/converter";
 import { OpportunityRequiredUtilityPayloadWithArgs } from "@/infrastructure/prisma/types/opportunity/requiredUtility";
 
 export default class UtilityHistoryService {

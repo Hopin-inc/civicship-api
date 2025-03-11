@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { GqlQueryParticipationStatusHistoriesArgs } from "@/types/graphql";
 import { ParticipationStatus, Prisma } from "@prisma/client";
-import ParticipationStatusHistoryRepository from "@/application/participationStatusHistory/infrastructure/repository";
-import ParticipationStatusHistoryInputFormat from "@/application/participationStatusHistory/infrastructure/converter";
+import ParticipationStatusHistoryRepository from "@/application/participationStatusHistory/data/repository";
+import ParticipationStatusHistoryInputFormat from "@/application/participationStatusHistory/data/converter";
 
 export default class ParticipationStatusHistoryService {
   static async fetchStatusHistories(

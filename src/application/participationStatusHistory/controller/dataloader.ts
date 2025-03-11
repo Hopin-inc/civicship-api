@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlParticipationStatusHistory } from "@/types/graphql";
-import { participationStatusHistoryInclude } from "@/application/participationStatusHistory/infrastructure/type";
+import { participationStatusHistoryInclude } from "@/application/participationStatusHistory/data/type";
 import ParticipationStatusHistoryOutputFormat from "@/application/participationStatusHistory/presenter";
 
 async function batchParticipationStatusHistoriesById(

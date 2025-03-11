@@ -2,7 +2,7 @@ import {
   GqlParticipationStatusHistoriesConnection,
   GqlParticipationStatusHistory,
 } from "@/types/graphql";
-import { ParticipationStatusHistoryPayloadWithArgs } from "@/application/participationStatusHistory/infrastructure/type";
+import { ParticipationStatusHistoryPayloadWithArgs } from "@/application/participationStatusHistory/data/type";
 
 export default class ParticipationStatusHistoryOutputFormat {
   static query(

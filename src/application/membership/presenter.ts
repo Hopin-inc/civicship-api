@@ -7,7 +7,7 @@ import {
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
 } from "@/types/graphql";
-import { MembershipPayloadWithArgs } from "@/application/membership/infrastructure/type";
+import { MembershipPayloadWithArgs } from "@/application/membership/data/type";
 
 export default class MembershipOutputFormat {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {

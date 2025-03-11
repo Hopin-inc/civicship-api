@@ -5,7 +5,7 @@ import {
   GqlParticipationSetStatusPayload,
   GqlParticipationInviteSuccess,
 } from "@/types/graphql";
-import { ParticipationPayloadWithArgs } from "@/application/participation/infrastructure/type";
+import { ParticipationPayloadWithArgs } from "@/application/participation/data/type";
 import OpportunityOutputFormat from "@/application/opportunity/presenter";
 
 export default class ParticipationOutputFormat {

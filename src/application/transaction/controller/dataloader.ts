@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlTransaction } from "@/types/graphql";
-import { transactionInclude } from "@/application/transaction/infrastructure/type";
+import { transactionInclude } from "@/application/transaction/data/type";
 import TransactionOutputFormat from "@/application/transaction/presenter";
 
 async function batchTransactionsById(

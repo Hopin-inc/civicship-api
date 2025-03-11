@@ -3,8 +3,8 @@ import {
   GqlArticleUpdateInput,
   GqlQueryArticlesArgs,
 } from "@/types/graphql";
-import ArticleInputFormat from "@/application/article/infrastructure/converter";
-import ArticleRepository from "@/application/article/infrastructure/repository";
+import ArticleInputFormat from "@/application/article/data/converter";
+import ArticleRepository from "@/application/article/data/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
