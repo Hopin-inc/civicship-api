@@ -4,15 +4,12 @@ import {
   GqlOpportunityInvitationHistorySortInput,
 } from "@/types/graphql";
 
-export default class OpportunityInvitationHistoryInputFormat {
+export default class OpportunityInvitationHistoryConverter {
   static filter(
     filter: GqlOpportunityInvitationHistoryFilterInput,
   ): Prisma.OpportunityInvitationHistoryWhereInput {
     return {
-      AND: [
-        filter?.invitationId ? { invitationId: filter.invitationId } : {},
-        filter?.invitedUserId ? { invitedUserId: filter.invitedUserId } : {},
-      ],
+      AND: [filter?.invitationId ? { invitationId: filter.invitationId } : {}],
     };
   }
 

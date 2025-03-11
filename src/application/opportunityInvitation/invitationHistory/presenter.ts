@@ -2,9 +2,9 @@ import {
   GqlOpportunityInvitationHistory,
   GqlOpportunityInvitationHistoriesConnection,
 } from "@/types/graphql";
-import { InvitationHistoryPayloadWithArgs } from "@/application/opportunityInvitation/invitationHistory/data/type";
+import { PrismaInvitationHistory } from "@/application/opportunityInvitation/invitationHistory/data/type";
 
-export default class OpportunityInvitationHistoryOutputFormat {
+export default class OpportunityInvitationHistoryPresenter {
   static query(
     list: GqlOpportunityInvitationHistory[],
     hasNextPage: boolean,
@@ -24,9 +24,7 @@ export default class OpportunityInvitationHistoryOutputFormat {
     };
   }
 
-  static get(r: InvitationHistoryPayloadWithArgs): GqlOpportunityInvitationHistory {
-    return {
-      ...r,
-    };
+  static get(r: PrismaInvitationHistory): GqlOpportunityInvitationHistory {
+    return r;
   }
 }

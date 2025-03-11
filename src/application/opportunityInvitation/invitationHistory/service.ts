@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { GqlQueryOpportunityInvitationHistoriesArgs } from "@/types/graphql";
-import OpportunityInvitationHistoryInputFormat from "@/application/opportunityInvitation/invitationHistory/data/converter";
+import OpportunityInvitationHistoryConverter from "@/application/opportunityInvitation/invitationHistory/data/converter";
 import OpportunityInvitationHistoryRepository from "@/application/opportunityInvitation/invitationHistory/data/repository";
 
 export default class OpportunityInvitationHistoryService {
@@ -9,8 +9,8 @@ export default class OpportunityInvitationHistoryService {
     { filter, sort, cursor }: GqlQueryOpportunityInvitationHistoriesArgs,
     take: number,
   ) {
-    const where = OpportunityInvitationHistoryInputFormat.filter(filter ?? {});
-    const orderBy = OpportunityInvitationHistoryInputFormat.sort(sort ?? {});
+    const where = OpportunityInvitationHistoryConverter.filter(filter ?? {});
+    const orderBy = OpportunityInvitationHistoryConverter.sort(sort ?? {});
     return OpportunityInvitationHistoryRepository.query(ctx, where, orderBy, take, cursor);
   }
 

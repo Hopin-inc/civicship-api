@@ -8,7 +8,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityInvitationHistoryService from "@/application/opportunityInvitation/invitationHistory/service";
-import OpportunityInvitationHistoryOutputFormat from "@/application/opportunityInvitation/invitationHistory/presenter";
+import OpportunityInvitationHistoryPresenter from "@/application/opportunityInvitation/invitationHistory/presenter";
 import OpportunityInvitationHistoryUtils from "@/application/opportunityInvitation/invitationHistory/utils";
 
 export default class OpportunityInvitationHistoryUseCase {
@@ -46,6 +46,6 @@ export default class OpportunityInvitationHistoryUseCase {
   ): Promise<GqlOpportunityInvitationHistory | null> {
     const history = await OpportunityInvitationHistoryService.findInvitationHistory(ctx, id);
     if (!history) return null;
-    return OpportunityInvitationHistoryOutputFormat.get(history);
+    return OpportunityInvitationHistoryPresenter.get(history);
   }
 }

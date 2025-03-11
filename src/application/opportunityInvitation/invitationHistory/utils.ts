@@ -6,7 +6,7 @@ import {
   GqlOpportunityInvitationHistoriesConnection,
 } from "@/types/graphql";
 import OpportunityInvitationHistoryService from "@/application/opportunityInvitation/invitationHistory/service";
-import OpportunityInvitationHistoryOutputFormat from "@/application/opportunityInvitation/invitationHistory/presenter";
+import OpportunityInvitationHistoryPresenter from "@/application/opportunityInvitation/invitationHistory/presenter";
 
 export default class OpportunityInvitationHistoryUtils {
   static async fetchInvitationHistoriesCommon(
@@ -32,7 +32,7 @@ export default class OpportunityInvitationHistoryUtils {
     const hasNextPage = rows.length > take;
     const data = rows
       .slice(0, take)
-      .map((record) => OpportunityInvitationHistoryOutputFormat.get(record));
-    return OpportunityInvitationHistoryOutputFormat.query(data, hasNextPage);
+      .map((record) => OpportunityInvitationHistoryPresenter.get(record));
+    return OpportunityInvitationHistoryPresenter.query(data, hasNextPage);
   }
 }
