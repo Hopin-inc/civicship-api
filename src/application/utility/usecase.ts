@@ -17,15 +17,15 @@ import {
   GqlUtilityPurchasePayload,
 } from "@/types/graphql";
 import UtilityService from "@/application/utility/service";
-import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
+import UtilityOutputFormat from "@/application/utility/presenter";
 import { IContext } from "@/types/server";
 import { UtilityUtils } from "@/application/utility/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import WalletService from "@/application/membership/wallet/service";
+import WalletService from "@/application/wallet/service";
 import { Prisma, UtilityStatus } from "@prisma/client";
 import TransactionService from "@/application/transaction/service";
-import UtilityHistoryService from "@/application/utility/history/service";
-import UtilityHistoryOutputFormat from "@/presentation/graphql/dto/utility/history/output";
+import UtilityHistoryService from "@/application/utilityHistory/service";
+import UtilityHistoryOutputFormat from "@/application/utilityHistory/presenter";
 
 export default class UtilityUseCase {
   private static issuer = new PrismaClientIssuer();

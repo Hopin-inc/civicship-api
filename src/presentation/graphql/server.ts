@@ -1,5 +1,5 @@
 import { ApolloServer } from "@apollo/server";
-import rateLimitPlugin from "@/presentation/graphql/plugins/rate-limit";
+import rateLimitPlugin from "@/presentation/graphql/plugin";
 import logger from "@/infrastructure/logging";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import http from "http";

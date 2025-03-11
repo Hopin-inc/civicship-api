@@ -3,8 +3,8 @@ import {
   GqlCommunityUpdateProfileInput,
   GqlQueryCommunitiesArgs,
 } from "@/types/graphql";
-import CommunityInputFormat from "@/presentation/graphql/dto/community/input";
-import CommunityRepository from "@/infrastructure/prisma/repositories/community";
+import CommunityInputFormat from "@/application/community/infrastructure/converter";
+import CommunityRepository from "@/application/community/infrastructure/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/utils";

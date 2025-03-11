@@ -22,7 +22,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityService from "@/application/opportunity/service";
-import OpportunityOutputFormat from "@/presentation/graphql/dto/opportunity/output";
+import OpportunityOutputFormat from "@/application/opportunity/presenter";
 import { OpportunityUtils } from "@/application/opportunity/utils";
 
 export default class OpportunityUseCase {

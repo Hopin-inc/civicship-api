@@ -6,7 +6,7 @@ import {
   GqlTransactionSortInput,
 } from "@/types/graphql";
 import TransactionService from "@/application/transaction/service";
-import TransactionOutputFormat from "@/presentation/graphql/dto/transaction/output";
+import TransactionOutputFormat from "@/application/transaction/presenter";
 import { clampFirst } from "@/utils";
 
 export default class TransactionUtils {

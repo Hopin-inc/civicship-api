@@ -16,16 +16,16 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionService from "@/application/transaction/service";
-import TransactionOutputFormat from "@/presentation/graphql/dto/transaction/output";
+import TransactionOutputFormat from "@/application/transaction/presenter";
 import TransactionUtils from "@/application/transaction/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
-import WalletService from "@/application/membership/wallet/service";
-import WalletRepository from "@/infrastructure/prisma/repositories/membership/wallet";
-import WalletUtils from "@/application/membership/wallet/utils";
-import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
-import TransactionRepository from "@/infrastructure/prisma/repositories/transaction";
+import WalletService from "@/application/wallet/service";
+import WalletRepository from "@/application/wallet/infrastructure/repository";
+import WalletUtils from "@/application/wallet/utils";
+import TransactionInputFormat from "@/application/transaction/infrastructure/converter";
+import TransactionRepository from "@/application/transaction/infrastructure/repository";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();

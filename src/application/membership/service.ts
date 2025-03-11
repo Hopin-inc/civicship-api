@@ -4,13 +4,12 @@ import {
   GqlMembershipInviteInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
-import MembershipInputFormat from "@/presentation/graphql/dto/membership/input";
-import MembershipRepository from "@/infrastructure/prisma/repositories/membership";
+import MembershipInputFormat from "@/application/membership/infrastructure/converter";
+import MembershipRepository from "@/application/membership/infrastructure/repository";
 import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import { getCurrentUserId } from "@/utils";
 import MembershipUtils from "@/application/membership/utils";
-import MembershipUtils from "@/app/membership/utils";
 import { NotFoundError } from "@/errors/graphql";
 
 export default class MembershipService {

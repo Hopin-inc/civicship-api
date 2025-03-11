@@ -4,9 +4,9 @@ import {
   GqlUtilityCreateInput,
   GqlUtility,
 } from "@/types/graphql";
-import UtilityRepository from "@/infrastructure/prisma/repositories/utility";
+import UtilityRepository from "@/application/utility/infrastructure/repository";
 import { IContext } from "@/types/server";
-import UtilityInputFormat from "@/presentation/graphql/dto/utility/input";
+import UtilityInputFormat from "@/application/utility/infrastructure/converter";
 import { Prisma } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
 

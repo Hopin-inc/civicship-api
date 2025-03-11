@@ -1,6 +1,5 @@
-import MasterRepository from "@/infra/repositories/master";
 import { NotFoundError } from "@/errors/graphql";
-import MasterRepository from "@/infrastructure/prisma/repositories/master";
+import MasterRepository from "@/application/master/infrastructure/repository";
 
 export default class MasterService {
   static async checkIfCityExists(id: string) {

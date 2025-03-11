@@ -12,10 +12,10 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/community/service";
-import CommunityOutputFormat from "@/presentation/graphql/dto/community/output";
+import CommunityOutputFormat from "@/application/community/presenter";
 import { clampFirst, getCurrentUserId } from "@/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import WalletService from "@/application/membership/wallet/service";
+import WalletService from "@/application/wallet/service";
 
 export default class CommunityUseCase {
   private static issuer = new PrismaClientIssuer();

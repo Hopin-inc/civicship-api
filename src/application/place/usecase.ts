@@ -7,7 +7,7 @@ import {
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 import PlaceService from "@/application/place/service";
-import PlaceOutputFormat from "@/presentation/graphql/dto/place/output";
+import PlaceOutputFormat from "@/application/place/presenter";
 
 export default class PlaceUseCase {
   static async userBrowsePlaces(

@@ -3,6 +3,27 @@ schema {
     mutation: Mutation
 }
 
+extend type Query {
+    cities(name: String): [City!]!
+    states(name: String): [State!]!
+}
+
+enum IdentityPlatform {
+    LINE
+    FACEBOOK
+}
+
+enum PublishStatus {
+    PUBLIC
+    COMMUNITY_INTERNAL
+    PRIVATE
+}
+
+enum ValueType {
+    INT
+    FLOAT
+}
+
 directive @complexity(
     value: Int!
     multipliers: [String!]
@@ -48,34 +69,3 @@ enum SortDirection {
     asc
     desc
 }
-
-interface Error {
-    statusCode: Int!
-    message: String!
-}
-
-type InvalidInputValueError implements Error {
-    statusCode: Int!
-    message: String!
-    fields: [Field!]
-}
-
-type AuthError implements Error {
-    statusCode: Int!
-    message: String!
-}
-
-type ComplexQueryError implements Error {
-    statusCode: Int!
-    message: String!
-}
-
-type Field {
-    name: String!
-    message: String
-}
-
-union CommonError =
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError

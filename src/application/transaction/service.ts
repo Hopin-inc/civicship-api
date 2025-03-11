@@ -1,4 +1,4 @@
-import TransactionRepository from "@/infrastructure/prisma/repositories/transaction";
+import TransactionRepository from "@/application/transaction/infrastructure/repository";
 import {
   GqlQueryTransactionsArgs,
   GqlTransactionGiveRewardPointInput,
@@ -8,7 +8,7 @@ import {
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import TransactionInputFormat from "@/presentation/graphql/dto/transaction/input";
+import TransactionInputFormat from "@/application/transaction/infrastructure/converter";
 
 export default class TransactionService {
   static async fetchTransactions(

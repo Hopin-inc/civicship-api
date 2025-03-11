@@ -10,7 +10,7 @@ import {
   GqlUserUpdateProfilePayload,
 } from "@/types/graphql";
 import UserService from "@/application/user/service";
-import UserResponseFormat from "@/presentation/graphql/dto/user/output";
+import UserResponseFormat from "@/application/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 import UserUtils from "@/application/user/utils";

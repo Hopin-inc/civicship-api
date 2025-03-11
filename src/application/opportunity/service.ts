@@ -3,8 +3,8 @@ import {
   GqlOpportunityUpdateContentInput,
   GqlQueryOpportunitiesArgs,
 } from "@/types/graphql";
-import OpportunityInputFormat from "@/presentation/graphql/dto/opportunity/input";
-import OpportunityRepository from "@/infrastructure/prisma/repositories/opportunity";
+import OpportunityInputFormat from "@/application/opportunity/infrastructure/converter";
+import OpportunityRepository from "@/application/opportunity/infrastructure/repository";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { AuthorizationError, NotFoundError } from "@/errors/graphql";

@@ -806,7 +806,7 @@ export type GqlOpportunity = {
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
   publishStatus: GqlPublishStatus;
   requireApproval: Scalars['Boolean']['output'];
-  requiredUtilities?: Maybe<Array<GqlOpportunityRequiredUtility>>;
+  requiredUtilities?: Maybe<Array<GqlUtility>>;
   slots?: Maybe<GqlOpportunitySlotsConnection>;
   startsAt?: Maybe<Scalars['Datetime']['output']>;
   title: Scalars['String']['output'];
@@ -1015,15 +1015,6 @@ export type GqlOpportunityInvitationsConnection = {
   edges?: Maybe<Array<Maybe<GqlOpportunityInvitationEdge>>>;
   pageInfo: GqlPageInfo;
   totalCount: Scalars['Int']['output'];
-};
-
-export type GqlOpportunityRequiredUtility = {
-  __typename?: 'OpportunityRequiredUtility';
-  Utility: GqlUtility;
-  createdAt: Scalars['Datetime']['output'];
-  opportunity: GqlOpportunity;
-  status: GqlUtilityStatus;
-  updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
 
 export type GqlOpportunitySetPublishStatusInput = {
@@ -1977,7 +1968,7 @@ export type GqlUtility = {
   image?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
-  requiredForOpportunities?: Maybe<Array<GqlOpportunityRequiredUtility>>;
+  requiredForOpportunities?: Maybe<Array<GqlOpportunity>>;
   type: GqlUtilityType;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
@@ -2459,7 +2450,6 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityInvitationHistorySortInput: GqlOpportunityInvitationHistorySortInput;
   OpportunityInvitationSortInput: GqlOpportunityInvitationSortInput;
   OpportunityInvitationsConnection: ResolverTypeWrapper<Omit<GqlOpportunityInvitationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OpportunityInvitationEdge']>>> }>;
-  OpportunityRequiredUtility: ResolverTypeWrapper<Omit<GqlOpportunityRequiredUtility, 'Utility' | 'opportunity'> & { Utility: GqlResolversTypes['Utility'], opportunity: GqlResolversTypes['Opportunity'] }>;
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySetPublishStatusPayload']>;
   OpportunitySetPublishStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
@@ -2706,7 +2696,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityInvitationHistorySortInput: GqlOpportunityInvitationHistorySortInput;
   OpportunityInvitationSortInput: GqlOpportunityInvitationSortInput;
   OpportunityInvitationsConnection: Omit<GqlOpportunityInvitationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['OpportunityInvitationEdge']>>> };
-  OpportunityRequiredUtility: Omit<GqlOpportunityRequiredUtility, 'Utility' | 'opportunity'> & { Utility: GqlResolversParentTypes['Utility'], opportunity: GqlResolversParentTypes['Opportunity'] };
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySetPublishStatusPayload'];
   OpportunitySetPublishStatusSuccess: Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
@@ -3197,7 +3186,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
-  requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['OpportunityRequiredUtility']>>, ParentType, ContextType>;
+  requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
   slots?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsConnection']>, ParentType, ContextType, Partial<GqlOpportunitySlotsArgs>>;
   startsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -3309,15 +3298,6 @@ export type GqlOpportunityInvitationsConnectionResolvers<ContextType = any, Pare
   edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['OpportunityInvitationEdge']>>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOpportunityRequiredUtilityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityRequiredUtility'] = GqlResolversParentTypes['OpportunityRequiredUtility']> = ResolversObject<{
-  Utility?: Resolver<GqlResolversTypes['Utility'], ParentType, ContextType>;
-  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
-  status?: Resolver<GqlResolversTypes['UtilityStatus'], ParentType, ContextType>;
-  updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3715,7 +3695,7 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['OpportunityRequiredUtility']>>, ParentType, ContextType>;
+  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
   type?: Resolver<GqlResolversTypes['UtilityType'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3927,7 +3907,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   OpportunityInvitationHistoryCreateSuccess?: GqlOpportunityInvitationHistoryCreateSuccessResolvers<ContextType>;
   OpportunityInvitationHistoryEdge?: GqlOpportunityInvitationHistoryEdgeResolvers<ContextType>;
   OpportunityInvitationsConnection?: GqlOpportunityInvitationsConnectionResolvers<ContextType>;
-  OpportunityRequiredUtility?: GqlOpportunityRequiredUtilityResolvers<ContextType>;
   OpportunitySetPublishStatusPayload?: GqlOpportunitySetPublishStatusPayloadResolvers<ContextType>;
   OpportunitySetPublishStatusSuccess?: GqlOpportunitySetPublishStatusSuccessResolvers<ContextType>;
   OpportunitySlot?: GqlOpportunitySlotResolvers<ContextType>;

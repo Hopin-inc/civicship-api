@@ -12,7 +12,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ArticleService from "@/application/article/service";
-import ArticleOutputFormat from "@/presentation/graphql/dto/article/output";
+import ArticleOutputFormat from "@/application/article/presenter";
 import { clampFirst } from "@/utils";
 
 export default class ArticleUseCase {

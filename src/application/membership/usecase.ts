@@ -24,11 +24,11 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipUtils from "@/application/membership/utils";
-import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
+import MembershipOutputFormat from "@/application/membership/presenter";
 import MembershipService from "@/application/membership/service";
 import { getCurrentUserId } from "@/utils";
 import { Prisma, Role } from "@prisma/client";
-import WalletService from "@/application/membership/wallet/service";
+import WalletService from "@/application/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class MembershipUseCase {

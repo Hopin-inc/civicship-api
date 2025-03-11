@@ -2,7 +2,7 @@ import { IContext } from "@/types/server";
 import { GqlUserFilterInput, GqlUserSortInput, GqlUsersConnection, GqlUser } from "@/types/graphql";
 import { clampFirst } from "@/utils";
 import UserService from "@/application/user/service";
-import UserOutputFormat from "@/presentation/graphql/dto/user/output";
+import UserOutputFormat from "@/application/user/presenter";
 
 export default class UserUtils {
   static async fetchUsersCommon(
