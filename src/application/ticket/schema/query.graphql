@@ -1,0 +1,23 @@
+# Ticket Query Definitions
+
+type TicketsConnection {
+    edges: [TicketEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TicketEdge implements Edge {
+    cursor: String!
+    node: Ticket
+}
+
+input TicketFilterInput {
+    walletId: String
+    utilityId: String
+    status: TicketStatus
+}
+
+input TicketSortInput {
+    createdAt: SortDirection
+    status: SortDirection
+}

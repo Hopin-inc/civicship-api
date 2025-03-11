@@ -31,14 +31,8 @@ type Utility {
     pointsRequired: Int!
 
     community: Community
+    tickets: [Ticket!]
     requiredForOpportunities: [Opportunity!]
-
-    histories(
-        filter: UtilityHistoryFilterInput
-        sort: UtilityHistorySortInput
-        cursor: String
-        first: Int
-    ): UtilityHistoriesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

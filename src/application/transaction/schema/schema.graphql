@@ -30,12 +30,12 @@ type Transaction {
 
     participation: Participation
 
-    utilityHistories(
-        filter: UtilityHistoryFilterInput
-        sort: UtilityHistorySortInput
+    ticketStatusHistories(
+        filter: TicketStatusHistoryFilterInput
+        sort: TicketStatusHistorySortInput
         cursor: String
         first: Int
-    ): UtilityHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+    ): TicketStatusHistoriesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

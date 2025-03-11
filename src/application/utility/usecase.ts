@@ -22,10 +22,8 @@ import { IContext } from "@/types/server";
 import { UtilityUtils } from "@/application/utility/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletService from "@/application/wallet/service";
-import { Prisma, UtilityStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import TransactionService from "@/application/transaction/service";
-import UtilityHistoryService from "@/application/utilityHistory/service";
-import UtilityHistoryOutputFormat from "@/application/utilityHistory/presenter";
 
 export default class UtilityUseCase {
   private static issuer = new PrismaClientIssuer();

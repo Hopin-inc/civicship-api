@@ -55,7 +55,7 @@ type UtilityPurchaseSuccess {
 }
 
 type UtilityUseSuccess {
-    utilityHistory: UtilityHistory!
+    transaction: Transaction!
 }
 
 type UtilityRefundSuccess {

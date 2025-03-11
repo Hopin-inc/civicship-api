@@ -1,0 +1,37 @@
+# Ticket Schema
+
+extend type Query {
+    tickets(
+        filter: TicketFilterInput
+        sort: TicketSortInput
+        cursor: String
+        first: Int
+    ): TicketsConnection! @complexity(value: 10, multipliers: ["first"])
+    ticket(id: ID!): Ticket
+}
+
+extend type Mutation {
+    ticketCreate(input: TicketCreateInput!): TicketCreatePayload
+    ticketDelete(id: ID!): TicketDeletePayload
+    ticketUpdateStatus(id: ID!, input: TicketUpdateStatusInput!): TicketUpdateStatusPayload
+}
+
+type Ticket {
+    id: ID!
+    status: TicketStatus!
+    wallet: Wallet!
+    utility: Utility!
+    ticketStatusHistories(
+        filter: TicketStatusHistoryFilterInput
+        sort: TicketStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): TicketStatusHistoriesConnection @complexity(value: 10, multipliers: ["first"])
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum TicketStatus {
+    AVAILABLE
+    DISABLED
+}

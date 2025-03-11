@@ -1,0 +1,23 @@
+# TicketStatusHistory Mutation Definitions
+
+extend type Mutation {
+    ticketStatusHistoryCreate(input: TicketStatusHistoryCreateInput!): TicketStatusHistoryCreatePayload
+}
+
+input TicketStatusHistoryCreateInput {
+    ticketId: String!
+    status: TicketStatus
+    reason: TicketStatusReason
+    createdBy: String
+    transactionId: String
+}
+
+type TicketStatusHistoryCreateSuccess {
+    ticketStatusHistory: TicketStatusHistory!
+}
+
+union TicketStatusHistoryCreatePayload =
+    TicketStatusHistoryCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError

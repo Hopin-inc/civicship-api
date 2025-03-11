@@ -22,19 +22,19 @@ type Wallet {
     currentPointView: CurrentPointView
     accumulatedPointView: AccumulatedPointView
 
+    tickets(
+        filter: TicketFilterInput
+        sort: TicketSortInput
+        cursor: String
+        first: Int
+    ): TicketsConnection! @complexity(value: 10, multipliers: ["first"])
+
     transactions(
         filter: TransactionFilterInput
         sort: TransactionSortInput
         cursor: String
         first: Int
     ): TransactionsConnection @complexity(value: 10, multipliers: ["first"])
-
-    utilityHistories(
-        filter: UtilityHistoryFilterInput
-        sort: UtilityHistorySortInput
-        cursor: String
-        first: Int
-    ): UtilityHistoriesConnection @complexity(value: 10, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

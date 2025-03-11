@@ -1,0 +1,23 @@
+# TicketStatusHistory Schema
+
+type TicketStatusHistory {
+    id: ID!
+    status: TicketStatus!
+    reason: TicketStatusReason!
+
+    ticket: Ticket!
+    createdByUser: User
+    transaction: Transaction
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+enum TicketStatusReason {
+    PURCHASED
+    CANCELED
+    RESERVED
+    USED
+    REFUNDED
+    EXPIRED
+}

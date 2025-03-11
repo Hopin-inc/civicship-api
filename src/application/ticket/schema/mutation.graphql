@@ -1,0 +1,40 @@
+# Ticket Mutation Definitions
+
+input TicketCreateInput {
+    walletId: String!
+    utilityId: String!
+}
+
+input TicketUpdateStatusInput {
+    newStatus: TicketStatus!
+}
+
+type TicketCreateSuccess {
+    ticket: Ticket!
+}
+
+type TicketDeleteSuccess {
+    ticketId: String!
+}
+
+type TicketUpdateStatusSuccess {
+    ticket: Ticket!
+}
+
+union TicketCreatePayload =
+    TicketCreateSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TicketDeletePayload =
+    TicketDeleteSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TicketUpdateStatusPayload =
+    TicketUpdateStatusSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
