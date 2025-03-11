@@ -5,7 +5,7 @@ import {
   GqlOpportunityInvitationDisableInput,
   GqlQueryOpportunityInvitationsArgs,
 } from "@/types/graphql";
-import OpportunityInvitationInputFormat from "@/application/opportunityInvitation/data/converter";
+import OpportunityInvitationConverter from "@/application/opportunityInvitation/data/converter";
 import OpportunityInvitationRepository from "@/application/opportunityInvitation/data/repository";
 import { getCurrentUserId } from "@/utils";
 
@@ -15,8 +15,8 @@ export default class OpportunityInvitationService {
     { filter, sort, cursor }: GqlQueryOpportunityInvitationsArgs,
     take: number,
   ) {
-    const where = OpportunityInvitationInputFormat.filter(filter ?? {});
-    const orderBy = OpportunityInvitationInputFormat.sort(sort ?? {});
+    const where = OpportunityInvitationConverter.filter(filter ?? {});
+    const orderBy = OpportunityInvitationConverter.sort(sort ?? {});
     return OpportunityInvitationRepository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -31,7 +31,7 @@ export default class OpportunityInvitationService {
   ) {
     const userId = getCurrentUserId(ctx);
 
-    const data = OpportunityInvitationInputFormat.create(userId, input);
+    const data = OpportunityInvitationConverter.create(userId, input);
     return OpportunityInvitationRepository.create(ctx, data, tx);
   }
 

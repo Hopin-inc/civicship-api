@@ -3,11 +3,10 @@ import {
   GqlOpportunityInvitationsConnection,
   GqlOpportunityInvitationCreateSuccess,
   GqlOpportunityInvitationDisableSuccess,
-  GqlOpportunityInvitationDeleteSuccess,
 } from "@/types/graphql";
-import { OpportunityInvitationPayloadWithArgs } from "@/application/opportunityInvitation/data/type";
+import { PrismaOpportunityInvitation } from "@/application/opportunityInvitation/data/type";
 
-export default class OpportunityInvitationOutputFormat {
+export default class OpportunityInvitationPresenter {
   static query(
     r: GqlOpportunityInvitation[],
     hasNextPage: boolean,
@@ -27,30 +26,21 @@ export default class OpportunityInvitationOutputFormat {
     };
   }
 
-  static get(r: OpportunityInvitationPayloadWithArgs): GqlOpportunityInvitation {
-    return {
-      ...r,
-    };
+  static get(r: PrismaOpportunityInvitation): GqlOpportunityInvitation {
+    return r;
   }
 
-  static create(r: OpportunityInvitationPayloadWithArgs): GqlOpportunityInvitationCreateSuccess {
+  static create(r: PrismaOpportunityInvitation): GqlOpportunityInvitationCreateSuccess {
     return {
       __typename: "OpportunityInvitationCreateSuccess",
       opportunityInvitation: this.get(r),
     };
   }
 
-  static disable(r: OpportunityInvitationPayloadWithArgs): GqlOpportunityInvitationDisableSuccess {
+  static disable(r: PrismaOpportunityInvitation): GqlOpportunityInvitationDisableSuccess {
     return {
       __typename: "OpportunityInvitationDisableSuccess",
       opportunityInvitation: this.get(r),
-    };
-  }
-
-  static delete(r: OpportunityInvitationPayloadWithArgs): GqlOpportunityInvitationDeleteSuccess {
-    return {
-      __typename: "OpportunityInvitationDeleteSuccess",
-      id: r.id,
     };
   }
 }

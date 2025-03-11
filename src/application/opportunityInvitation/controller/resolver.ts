@@ -3,7 +3,6 @@ import {
   GqlQueryOpportunityInvitationArgs,
   GqlMutationOpportunityInvitationCreateArgs,
   GqlMutationOpportunityInvitationDisableArgs,
-  GqlMutationOpportunityInvitationDeleteArgs,
   GqlOpportunityInvitation,
   GqlOpportunityInvitationHistoriesArgs,
 } from "@/types/graphql";
@@ -46,13 +45,6 @@ const OpportunityInvitationResolver = {
       ctx: IContext,
     ) => {
       return OpportunityInvitationUseCase.memberDisableOpportunityInvitation(args, ctx);
-    },
-    opportunityInvitationDelete: async (
-      _: unknown,
-      args: GqlMutationOpportunityInvitationDeleteArgs,
-      ctx: IContext,
-    ) => {
-      return OpportunityInvitationUseCase.memberDeleteOpportunityInvitation(args, ctx);
     },
   },
 

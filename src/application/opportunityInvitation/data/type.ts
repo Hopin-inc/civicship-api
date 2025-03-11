@@ -7,6 +7,6 @@ export const opportunityInvitationInclude = Prisma.validator<Prisma.OpportunityI
   },
 );
 
-export type OpportunityInvitationPayloadWithArgs = Prisma.OpportunityInvitationGetPayload<{
+export type PrismaOpportunityInvitation = Prisma.OpportunityInvitationGetPayload<{
   include: typeof opportunityInvitationInclude;
 }>;

@@ -5,7 +5,7 @@ import {
   GqlOpportunityInvitationCreateInput,
 } from "@/types/graphql";
 
-export default class OpportunityInvitationInputFormat {
+export default class OpportunityInvitationConverter {
   static filter(
     filter: GqlOpportunityInvitationFilterInput,
   ): Prisma.OpportunityInvitationWhereInput {
