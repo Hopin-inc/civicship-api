@@ -9,6 +9,7 @@ import {
 import { clampFirst } from "@/utils";
 import WalletService from "@/application/membership/wallet/service";
 import WalletOutputFormat from "@/presentation/graphql/dto/membership/wallet/output";
+import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 
 export default class WalletUtils {
   static async fetchWalletsCommon(
@@ -43,14 +44,16 @@ export default class WalletUtils {
     toWallet: GqlWallet | null,
   ) {
     if (!fromWallet || !toWallet) {
-      throw new Error("Wallet information is missing for points transfer");
+      const invalidArgs = [
+        ...(!fromWallet ? ["fromWallet"] : []),
+        ...(!toWallet ? ["toWallet"] : []),
+      ];
+      throw new ValidationError("Wallet information is missing for points transfer", invalidArgs);
     }
     const { currentPoint } = fromWallet.currentPointView || {};
 
     if (!currentPoint || currentPoint < requiredPoints) {
-      throw new Error(
-        `Insufficient points in community wallet. Required: ${requiredPoints}, Available: ${currentPoint || 0}`,
-      );
+      throw new InsufficientBalanceError(currentPoint ?? 0, requiredPoints);
     }
   }
 }

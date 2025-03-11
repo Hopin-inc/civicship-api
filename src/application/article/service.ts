@@ -7,6 +7,7 @@ import ArticleInputFormat from "@/presentation/graphql/dto/article/input";
 import ArticleRepository from "@/infrastructure/prisma/repositories/article";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class ArticleService {
   static async fetchArticles(
@@ -31,7 +32,7 @@ export default class ArticleService {
   static async deleteArticle(ctx: IContext, id: string) {
     const article = await ArticleRepository.find(ctx, id);
     if (!article) {
-      throw new Error(`ArticleNotFound: ID=${id}`);
+      throw new NotFoundError("Article", { id });
     }
     return ArticleRepository.delete(ctx, id);
   }
@@ -39,7 +40,7 @@ export default class ArticleService {
   static async updateArticle(ctx: IContext, id: string, input: GqlArticleUpdateInput) {
     const article = await ArticleRepository.find(ctx, id);
     if (!article) {
-      throw new Error(`ArticleNotFound: ID=${id}`);
+      throw new NotFoundError("Article", { id });
     }
     const data: Prisma.ArticleUpdateInput = ArticleInputFormat.update(input);
     return ArticleRepository.update(ctx, id, data);

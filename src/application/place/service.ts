@@ -4,6 +4,8 @@ import { Prisma } from "@prisma/client";
 
 import PlaceInputFormat from "@/presentation/graphql/dto/place/input";
 import PlaceRepository from "@/infrastructure/prisma/repositories/place";
+import PlaceRepository from "@/infra/repositories/place";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class PlaceService {
   static async fetchPlaces(
@@ -34,7 +36,7 @@ export default class PlaceService {
   static async deletePlace(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     const place = await PlaceRepository.find(ctx, id);
     if (!place) {
-      throw new Error(`PlaceNotFound: ID=${id}`);
+      throw new NotFoundError("Place", { id });
     }
 
     return await PlaceRepository.delete(ctx, id, tx);
@@ -48,7 +50,7 @@ export default class PlaceService {
   ) {
     const place = await PlaceRepository.find(ctx, id);
     if (!place) {
-      throw new Error(`PlaceNotFound: ID=${id}`);
+      throw new NotFoundError("Place", { id });
     }
 
     const data: Prisma.PlaceUpdateInput = PlaceInputFormat.update(input);

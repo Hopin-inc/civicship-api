@@ -11,6 +11,7 @@ import {
 import { clampFirst } from "@/utils";
 import MembershipService from "@/application/membership/service";
 import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class MembershipUtils {
   static async fetchMembershipsCommon(
@@ -49,7 +50,7 @@ export default class MembershipUtils {
       userId_communityId: { userId, communityId },
     });
     if (!membership) {
-      throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
+      throw new NotFoundError("Membership", { userId, communityId });
     }
 
     const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
