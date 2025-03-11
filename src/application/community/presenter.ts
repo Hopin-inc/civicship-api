@@ -5,9 +5,9 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { CommunityPayloadWithArgs } from "@/application/community/data/type";
+import { PrismaCommunity } from "@/application/community/data/type";
 
-export default class CommunityOutputFormat {
+export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
     return {
       totalCount: r.length,
@@ -24,25 +24,25 @@ export default class CommunityOutputFormat {
     };
   }
 
-  static get(r: CommunityPayloadWithArgs): GqlCommunity {
+  static get(r: PrismaCommunity): GqlCommunity {
     return r;
   }
 
-  static create(r: CommunityPayloadWithArgs): GqlCommunityCreateSuccess {
+  static create(r: PrismaCommunity): GqlCommunityCreateSuccess {
     return {
       __typename: "CommunityCreateSuccess",
       community: this.get(r),
     };
   }
 
-  static delete(r: CommunityPayloadWithArgs): GqlCommunityDeleteSuccess {
+  static delete(r: PrismaCommunity): GqlCommunityDeleteSuccess {
     return {
       __typename: "CommunityDeleteSuccess",
       communityId: r.id,
     };
   }
 
-  static update(r: CommunityPayloadWithArgs): GqlCommunityUpdateProfileSuccess {
+  static update(r: PrismaCommunity): GqlCommunityUpdateProfileSuccess {
     return {
       __typename: "CommunityUpdateProfileSuccess",
       community: this.get(r),

@@ -15,6 +15,8 @@ import {
   GqlCommunityParticipationsArgs,
   GqlCommunityWalletsArgs,
   GqlCommunityUtilitiesArgs,
+  GqlCommunityArticlesArgs,
+  GqlArticlesConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/application/participation/usecase";
@@ -23,6 +25,7 @@ import CommunityUseCase from "@/application/community/usecase";
 import MembershipUseCase from "@/application/membership/usecase";
 import OpportunityUseCase from "@/application/opportunity/usecase";
 import UtilityUseCase from "@/application/utility/usecase";
+import ArticleUseCase from "@/application/article/usecase";
 
 const communityResolver = {
   Query: {
@@ -85,6 +88,14 @@ const communityResolver = {
       ctx: IContext,
     ): Promise<GqlUtilitiesConnection> => {
       return UtilityUseCase.visitorBrowseUtilitiesByCommunity(parent, args, ctx);
+    },
+
+    articles: async (
+      parent: GqlCommunity,
+      args: GqlCommunityArticlesArgs,
+      ctx: IContext,
+    ): Promise<GqlArticlesConnection> => {
+      return ArticleUseCase.visitorBrowseArticlesByCommunity(parent, args, ctx);
     },
   },
 };

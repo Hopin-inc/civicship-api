@@ -13,19 +13,23 @@ extend type Mutation {
 input CommunityCreateInput {
     name: String!
     pointName: String!
-    image: String
+    image: ImageInput
     bio: String
     establishedAt: Datetime
     website: String
+
+    place: [PlaceInput!]
 }
 
 input CommunityUpdateProfileInput {
     name: String!
     pointName: String!
-    image: String
+    image: ImageInput
     bio: String
     establishedAt: Datetime
     website: String
+
+    place: [PlaceInput!]
 
     """Used for permission checking."""
     communityId: ID!

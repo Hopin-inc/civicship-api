@@ -6,13 +6,26 @@ import {
 } from "@/types/graphql";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
 
-export default class CommunityInputFormat {
+export default class CommunityConverter {
   static filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
     return {
-      // AND: [
-      // filter?.stateCode ? { stateCode: filter.stateCode } : {},
-      // filter?.cityCode ? { cityCode: filter.cityCode } : {},
-      // ],
+      AND: [
+        filter?.keyword
+          ? {
+              OR: [
+                { name: { contains: filter.keyword } },
+                { pointName: { contains: filter.keyword } },
+                { bio: { contains: filter.keyword } },
+              ],
+            }
+          : {},
+        filter?.placeIds && filter.placeIds.length
+          ? { places: { some: { id: { in: filter.placeIds } } } }
+          : {},
+        filter?.cityCodes && filter.cityCodes.length
+          ? { places: { some: { cityCode: { in: filter.cityCodes } } } }
+          : {},
+      ],
     };
   }
 
@@ -24,10 +37,10 @@ export default class CommunityInputFormat {
     input: GqlCommunityCreateInput,
     currentUserId: string,
   ): Prisma.CommunityCreateInput {
-    const { ...properties } = input;
+    const { ...prop } = input;
 
     return {
-      ...properties,
+      ...prop,
       memberships: {
         create: [
           {
@@ -45,7 +58,6 @@ export default class CommunityInputFormat {
 
     return {
       ...properties,
-      // city: cityCode ? { connect: { code: cityCode } } : undefined,
     };
   }
 }

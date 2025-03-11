@@ -3,7 +3,7 @@ import {
   GqlCommunityUpdateProfileInput,
   GqlQueryCommunitiesArgs,
 } from "@/types/graphql";
-import CommunityInputFormat from "@/application/community/data/converter";
+import CommunityConverter from "@/application/community/data/converter";
 import CommunityRepository from "@/application/community/data/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
@@ -16,8 +16,8 @@ export default class CommunityService {
     { cursor, filter, sort }: GqlQueryCommunitiesArgs,
     take: number,
   ) {
-    const where = CommunityInputFormat.filter(filter ?? {});
-    const orderBy = CommunityInputFormat.sort(sort ?? {});
+    const where = CommunityConverter.filter(filter ?? {});
+    const orderBy = CommunityConverter.sort(sort ?? {});
 
     return await CommunityRepository.query(ctx, where, orderBy, take, cursor);
   }
@@ -32,7 +32,9 @@ export default class CommunityService {
     tx: Prisma.TransactionClient,
   ) {
     const userId = getCurrentUserId(ctx);
-    const data: Prisma.CommunityCreateInput = CommunityInputFormat.create(input, userId);
+
+    // TODO place登録のためのデータ整形
+    const data: Prisma.CommunityCreateInput = CommunityConverter.create(input, userId);
 
     return CommunityRepository.create(ctx, data, tx);
   }
@@ -56,7 +58,8 @@ export default class CommunityService {
       throw new NotFoundError("Community", { id });
     }
 
-    const data: Prisma.CommunityUpdateInput = CommunityInputFormat.update(input);
+    // TODO place登録のためのデータ整形
+    const data: Prisma.CommunityUpdateInput = CommunityConverter.update(input);
     return await CommunityRepository.update(ctx, id, data);
   }
 }

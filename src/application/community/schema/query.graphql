@@ -30,6 +30,8 @@ type CommunityEdge implements Edge {
 # ------------------------------
 input CommunityFilterInput {
     keyword: String
+    placeIds: [ID!]
+    cityCodes: [ID!]
 }
 
 input CommunitySortInput {

@@ -10,6 +10,8 @@ type Community {
     establishedAt: Datetime
     website: String
 
+    places: [Place!]
+
     memberships(
         filter: MembershipFilterInput
         sort: MembershipSortInput
