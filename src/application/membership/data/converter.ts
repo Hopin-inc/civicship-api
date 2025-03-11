@@ -2,7 +2,7 @@ import {
   GqlMembershipFilterInput,
   GqlMembershipSortInput,
   GqlMembershipInviteInput,
-  GqlMembershipAcceptMyInvitationInput,
+  GqlMembershipSetInvitationStatusInput,
 } from "@/types/graphql";
 import { Prisma, MembershipStatus, Role } from "@prisma/client";
 
@@ -22,7 +22,7 @@ export default class MembershipConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static join(input: GqlMembershipAcceptMyInvitationInput): Prisma.MembershipCreateInput {
+  static join(input: GqlMembershipSetInvitationStatusInput): Prisma.MembershipCreateInput {
     return {
       user: { connect: { id: input.userId } },
       community: { connect: { id: input.communityId } },

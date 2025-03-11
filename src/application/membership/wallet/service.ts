@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import WalletInputFormat from "@/application/membership/wallet/data/converter";
+import WalletConverter from "@/application/membership/wallet/data/converter";
 import WalletRepository from "@/application/membership/wallet/data/repository";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs, GqlWallet } from "@/types/graphql";
@@ -12,8 +12,8 @@ export default class WalletService {
     { filter, sort, cursor }: GqlQueryWalletsArgs,
     take: number,
   ) {
-    const where = WalletInputFormat.filter(filter ?? {});
-    const orderBy = WalletInputFormat.sort(sort ?? {});
+    const where = WalletConverter.filter(filter ?? {});
+    const orderBy = WalletConverter.sort(sort ?? {});
 
     return WalletRepository.query(ctx, where, orderBy, take, cursor);
   }
@@ -106,7 +106,7 @@ export default class WalletService {
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const data: Prisma.WalletCreateInput = WalletInputFormat.createCommunityWallet({
+    const data: Prisma.WalletCreateInput = WalletConverter.createCommunityWallet({
       communityId,
     });
     return WalletRepository.create(ctx, data, tx);
@@ -128,7 +128,7 @@ export default class WalletService {
       return existingWallet;
     }
 
-    const data: Prisma.WalletCreateInput = WalletInputFormat.createMemberWallet({
+    const data: Prisma.WalletCreateInput = WalletConverter.createMemberWallet({
       userId,
       communityId,
     });

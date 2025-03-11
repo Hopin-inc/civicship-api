@@ -9,7 +9,7 @@ import {
   GqlUserWalletsArgs,
 } from "@/types/graphql";
 import WalletService from "@/application/membership/wallet/service";
-import WalletOutputFormat from "@/application/membership/wallet/presenter";
+import WalletPresenter from "@/application/membership/wallet/presenter";
 import { IContext } from "@/types/server";
 import WalletUtils from "@/application/membership/wallet/utils";
 
@@ -55,6 +55,6 @@ export default class WalletUseCase {
     ctx: IContext,
   ): Promise<GqlWallet | null> {
     const wallet = await WalletService.findWallet(ctx, id);
-    return wallet ? WalletOutputFormat.get(wallet) : null;
+    return wallet ? WalletPresenter.get(wallet) : null;
   }
 }

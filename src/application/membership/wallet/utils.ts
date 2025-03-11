@@ -8,7 +8,7 @@ import {
 
 import { clampFirst } from "@/utils";
 import WalletService from "@/application/membership/wallet/service";
-import WalletOutputFormat from "@/application/membership/wallet/presenter";
+import WalletPresenter from "@/application/membership/wallet/presenter";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 
 export default class WalletUtils {
@@ -32,10 +32,10 @@ export default class WalletUtils {
     const hasNextPage = res.length > take;
 
     const data = res.slice(0, take).map((record) => {
-      return WalletOutputFormat.get(record);
+      return WalletPresenter.get(record);
     });
 
-    return WalletOutputFormat.query(data, hasNextPage);
+    return WalletPresenter.query(data, hasNextPage);
   }
 
   static async validateTransfer(

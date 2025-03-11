@@ -1,7 +1,7 @@
 import { GqlWallet, GqlWalletsConnection } from "@/types/graphql";
-import { WalletPayloadWithArgs } from "@/application/membership/wallet/data/type";
+import { PrismaWallet } from "@/application/membership/wallet/data/type";
 
-export default class WalletOutputFormat {
+export default class WalletPresenter {
   static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {
     return {
       totalCount: r.length,
@@ -18,7 +18,7 @@ export default class WalletOutputFormat {
     };
   }
 
-  static get(r: WalletPayloadWithArgs): GqlWallet {
+  static get(r: PrismaWallet): GqlWallet {
     const { community, user, currentPointView, ...prop } = r;
 
     return {

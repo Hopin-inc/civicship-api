@@ -1,12 +1,7 @@
-import {
-  GqlWalletCreateToCommunityInput,
-  GqlWalletCreateToMemberInput,
-  GqlWalletFilterInput,
-  GqlWalletSortInput,
-} from "@/types/graphql";
+import { GqlWalletFilterInput, GqlWalletSortInput } from "@/types/graphql";
 import { Prisma, WalletType } from "@prisma/client";
 
-export default class WalletInputFormat {
+export default class WalletConverter {
   static filter(filter?: GqlWalletFilterInput): Prisma.WalletWhereInput {
     return {
       AND: [
