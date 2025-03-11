@@ -5,7 +5,7 @@ model OpportunityInvitationHistory {
   invitation   OpportunityInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   invitedUserId String @map("invited_user_id")
-  inivitedUser  User   @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
+  invitedUser   User   @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

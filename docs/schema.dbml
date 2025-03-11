@@ -137,7 +137,7 @@ Table t_opportunity_invitation_histories {
   invitationId String [not null]
   invitation t_opportunity_invitations [not null]
   invitedUserId String [not null]
-  inivitedUser t_users [not null]
+  invitedUser t_users [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -329,6 +329,12 @@ Enum ArticleCategory {
   INTERVIEW
 }
 
+Enum PublishStatus {
+  PUBLIC
+  COMMUNITY_INTERNAL
+  PRIVATE
+}
+
 Enum Role {
   OWNER
   MANAGER
@@ -361,12 +367,6 @@ Enum ParticipationStatus {
   NOT_PARTICIPATING
   APPROVED
   DENIED
-}
-
-Enum PublishStatus {
-  PUBLIC
-  COMMUNITY_INTERNAL
-  PRIVATE
 }
 
 Enum TicketStatus {

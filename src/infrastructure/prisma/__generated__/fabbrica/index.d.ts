@@ -498,7 +498,7 @@ type OpportunityInvitationHistoryinvitationFactory = {
     _factoryFor: "OpportunityInvitation";
     build: () => PromiseLike<Prisma.OpportunityInvitationCreateNestedOneWithoutHistoriesInput["create"]>;
 };
-type OpportunityInvitationHistoryinivitedUserFactory = {
+type OpportunityInvitationHistoryinvitedUserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunityInvitationHistoriesInput["create"]>;
 };
@@ -507,7 +507,7 @@ type OpportunityInvitationHistoryFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     invitation: OpportunityInvitationHistoryinvitationFactory | Prisma.OpportunityInvitationCreateNestedOneWithoutHistoriesInput;
-    inivitedUser: OpportunityInvitationHistoryinivitedUserFactory | Prisma.UserCreateNestedOneWithoutOpportunityInvitationHistoriesInput;
+    invitedUser: OpportunityInvitationHistoryinvitedUserFactory | Prisma.UserCreateNestedOneWithoutOpportunityInvitationHistoriesInput;
 };
 type OpportunityInvitationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityInvitationHistoryFactoryDefineInput, never>>;
 type OpportunityInvitationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -1016,7 +1016,7 @@ type UserFactoryDefineInput = {
     participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
     opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
     opportunityInvitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutCreatedByUserInput;
-    opportunityInvitationHistories?: Prisma.OpportunityInvitationHistoryCreateNestedManyWithoutInivitedUserInput;
+    opportunityInvitationHistories?: Prisma.OpportunityInvitationHistoryCreateNestedManyWithoutInvitedUserInput;
     participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;

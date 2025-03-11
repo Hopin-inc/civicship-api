@@ -8,6 +8,14 @@ INTERVIEW INTERVIEW
     
 
 
+        PublishStatus {
+            PUBLIC PUBLIC
+COMMUNITY_INTERNAL COMMUNITY_INTERNAL
+PRIVATE PRIVATE
+        }
+    
+
+
         Role {
             OWNER OWNER
 MANAGER MANAGER
@@ -48,14 +56,6 @@ PARTICIPATING PARTICIPATING
 NOT_PARTICIPATING NOT_PARTICIPATING
 APPROVED APPROVED
 DENIED DENIED
-        }
-    
-
-
-        PublishStatus {
-            PUBLIC PUBLIC
-COMMUNITY_INTERNAL COMMUNITY_INTERNAL
-PRIVATE PRIVATE
         }
     
 
@@ -382,7 +382,7 @@ USER USER
     "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"
     "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
     "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
-    "t_opportunity_invitation_histories" o|--|| "t_users" : "inivitedUser"
+    "t_opportunity_invitation_histories" o|--|| "t_users" : "invitedUser"
     "t_opportunity_slots" o|--|o "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"

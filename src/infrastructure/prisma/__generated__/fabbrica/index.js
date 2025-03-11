@@ -172,7 +172,7 @@ const modelFieldDefinitions = [{
                 type: "OpportunityInvitation",
                 relationName: "OpportunityInvitationToOpportunityInvitationHistory"
             }, {
-                name: "inivitedUser",
+                name: "invitedUser",
                 type: "User",
                 relationName: "OpportunityInvitationHistoryToUser"
             }]
@@ -1154,7 +1154,7 @@ exports.defineOpportunityInvitationFactory.withTransientFields = defaultTransien
 function isOpportunityInvitationHistoryinvitationFactory(x) {
     return x?._factoryFor === "OpportunityInvitation";
 }
-function isOpportunityInvitationHistoryinivitedUserFactory(x) {
+function isOpportunityInvitationHistoryinvitedUserFactory(x) {
     return x?._factoryFor === "User";
 }
 function autoGenerateOpportunityInvitationHistoryScalarsOrEnums({ seq }) {
@@ -1196,9 +1196,9 @@ function defineOpportunityInvitationHistoryFactoryInternal({ defaultData: defaul
                 invitation: isOpportunityInvitationHistoryinvitationFactory(defaultData.invitation) ? {
                     create: await defaultData.invitation.build()
                 } : defaultData.invitation,
-                inivitedUser: isOpportunityInvitationHistoryinivitedUserFactory(defaultData.inivitedUser) ? {
-                    create: await defaultData.inivitedUser.build()
-                } : defaultData.inivitedUser
+                invitedUser: isOpportunityInvitationHistoryinvitedUserFactory(defaultData.invitedUser) ? {
+                    create: await defaultData.invitedUser.build()
+                } : defaultData.invitedUser
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
