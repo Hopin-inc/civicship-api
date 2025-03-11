@@ -41,6 +41,7 @@ export default class CommunityConverter {
 
     return {
       ...prop,
+      image: input.image?.base64,
       memberships: {
         create: [
           {
@@ -54,10 +55,11 @@ export default class CommunityConverter {
   }
 
   static update(input: GqlCommunityUpdateProfileInput): Prisma.CommunityUpdateInput {
-    const { ...properties } = input;
+    const { ...prop } = input;
 
     return {
-      ...properties,
+      ...prop,
+      image: input.image?.base64,
     };
   }
 }
