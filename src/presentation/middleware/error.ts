@@ -1,5 +1,5 @@
 import { GraphQLError } from "graphql/error";
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
 import { GraphQLResolveInfo } from "graphql";
 

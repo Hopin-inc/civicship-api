@@ -1,5 +1,5 @@
 import { GqlWallet, GqlWalletsConnection } from "@/types/graphql";
-import { WalletPayloadWithArgs } from "@/infra/prisma/types/membership/wallet";
+import { WalletPayloadWithArgs } from "@/infrastructure/prisma/types/membership/wallet";
 
 export default class WalletOutputFormat {
   static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {

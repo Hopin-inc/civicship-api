@@ -5,7 +5,7 @@ import {
   GqlArticleDeleteSuccess,
   GqlArticleUpdateSuccess,
 } from "@/types/graphql";
-import { ArticlePayloadWithArgs } from "@/infra/prisma/types/article";
+import { ArticlePayloadWithArgs } from "@/infrastructure/prisma/types/article";
 
 export default class ArticleOutputFormat {
   static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {

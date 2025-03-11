@@ -6,8 +6,8 @@ import {
   GqlMutationOpportunitySlotsBulkUpdateArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunitySlotUseCase from "@/app/opportunity/slot/usecase";
-import ParticipationUseCase from "@/app/opportunity/participation/usecase";
+import OpportunitySlotUseCase from "@/application/opportunity/slot/usecase";
+import ParticipationUseCase from "@/application/opportunity/participation/usecase";
 
 const opportunitySlotResolver = {
   Query: {

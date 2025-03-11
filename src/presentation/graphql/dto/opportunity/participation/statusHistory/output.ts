@@ -2,7 +2,7 @@ import {
   GqlParticipationStatusHistoriesConnection,
   GqlParticipationStatusHistory,
 } from "@/types/graphql";
-import { ParticipationStatusHistoryPayloadWithArgs } from "@/infra/prisma/types/opportunity/participation/status-history";
+import { ParticipationStatusHistoryPayloadWithArgs } from "@/infrastructure/prisma/types/opportunity/participation/status-history";
 
 export default class ParticipationStatusHistoryOutputFormat {
   static query(

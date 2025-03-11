@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlOpportunityInvitationHistory } from "@/types/graphql";
-import { invitationHistoryInclude } from "@/infra/prisma/types/opportunity/invitation/history";
+import { invitationHistoryInclude } from "@/infrastructure/prisma/types/opportunity/invitation/history";
 import OpportunityInvitationHistoryOutputFormat from "@/presentation/graphql/dto/opportunity/invitation/history/output";
 
 async function batchInvitationHistoriesById(

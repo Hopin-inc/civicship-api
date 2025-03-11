@@ -1,7 +1,7 @@
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 
 export function createExpressApp() {
   const app = express();

@@ -1,4 +1,4 @@
-import ArticleUseCase from "@/app/article/usecase";
+import ArticleUseCase from "@/application/article/usecase";
 import {
   GqlQueryArticlesArgs,
   GqlQueryArticleArgs,
@@ -12,8 +12,8 @@ import {
   GqlArticleRelatedUsersArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityUseCase from "@/app/opportunity/usecase";
-import UserUseCase from "@/app/user/usecase";
+import OpportunityUseCase from "@/application/opportunity/usecase";
+import UserUseCase from "@/application/user/usecase";
 
 const articleResolver = {
   Query: {

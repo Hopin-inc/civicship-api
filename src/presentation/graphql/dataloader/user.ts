@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlUser } from "@/types/graphql";
 import UserOutputFormat from "@/presentation/graphql/dto/user/output";
-import { userInclude } from "@/infra/prisma/types/user";
+import { userInclude } from "@/infrastructure/prisma/types/user";
 
 async function batchUsersById(
   issuer: PrismaClientIssuer,

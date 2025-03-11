@@ -1,4 +1,4 @@
-import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { createUserLoader } from "@/presentation/graphql/dataloader/user";
 import { createTransactionLoader } from "@/presentation/graphql/dataloader/transaction";
 import { createOpportunityLoader } from "@/presentation/graphql/dataloader/opportunity";

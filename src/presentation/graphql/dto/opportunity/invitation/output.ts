@@ -5,7 +5,7 @@ import {
   GqlOpportunityInvitationDisableSuccess,
   GqlOpportunityInvitationDeleteSuccess,
 } from "@/types/graphql";
-import { OpportunityInvitationPayloadWithArgs } from "@/infra/prisma/types/opportunity/invitation";
+import { OpportunityInvitationPayloadWithArgs } from "@/infrastructure/prisma/types/opportunity/invitation";
 
 export default class OpportunityInvitationOutputFormat {
   static query(

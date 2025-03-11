@@ -3,12 +3,12 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
 import { SignInProvider } from "@/consts/utils";
-import { userAuthInclude } from "@/infra/prisma/types/user";
-import { membershipAuthSelect } from "@/infra/prisma/types/membership";
-import { opportunityAuthSelect } from "@/infra/prisma/types/opportunity";
+import { userAuthInclude } from "@/infrastructure/prisma/types/user";
+import { membershipAuthSelect } from "@/infrastructure/prisma/types/membership";
+import { opportunityAuthSelect } from "@/infrastructure/prisma/types/opportunity";
 import { createLoaders } from "@/presentation/graphql/dataloader";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
-import { auth } from "@/infra/libs/firebase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { auth } from "@/infrastructure/libs/firebase";
 
 function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
   const idToken: string | undefined = req.headers["authorization"];

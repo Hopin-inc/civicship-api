@@ -9,8 +9,8 @@ import {
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityUseCase from "@/app/opportunity/usecase";
-import ParticipationUseCase from "@/app/opportunity/participation/usecase";
+import OpportunityUseCase from "@/application/opportunity/usecase";
+import ParticipationUseCase from "@/application/opportunity/participation/usecase";
 
 const opportunityResolver = {
   Query: {

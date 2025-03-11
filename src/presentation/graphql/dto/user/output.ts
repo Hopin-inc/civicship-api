@@ -1,5 +1,5 @@
 import { GqlUser, GqlUsersConnection, GqlUserUpdateProfileSuccess } from "@/types/graphql";
-import { UserGetPayloadWithArgs } from "@/infra/prisma/types/user";
+import { UserGetPayloadWithArgs } from "@/infrastructure/prisma/types/user";
 
 export default class UserOutputFormat {
   static query(users: GqlUser[], hasNextPage: boolean): GqlUsersConnection {

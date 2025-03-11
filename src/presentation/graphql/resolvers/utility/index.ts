@@ -1,4 +1,4 @@
-import UtilityUseCase from "@/app/utility/usecase";
+import UtilityUseCase from "@/application/utility/usecase";
 import {
   GqlQueryUtilitiesArgs,
   GqlQueryUtilityArgs,
@@ -12,7 +12,7 @@ import {
   GqlMutationUtilityPurchaseArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import UtilityHistoryUseCase from "@/app/utility/history/usecase";
+import UtilityHistoryUseCase from "@/application/utility/history/usecase";
 
 const utilityResolver = {
   Query: {

@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlMembership } from "@/types/graphql";
 import MembershipOutputFormat from "@/presentation/graphql/dto/membership/output";
-import { membershipInclude } from "@/infra/prisma/types/membership";
+import { membershipInclude } from "@/infrastructure/prisma/types/membership";
 
 async function batchMembershipsByCompositeKey(
   issuer: PrismaClientIssuer,

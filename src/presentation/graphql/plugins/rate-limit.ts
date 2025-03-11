@@ -2,7 +2,7 @@ import { ApolloServerPlugin, GraphQLRequestContext } from "@apollo/server";
 import { getComplexity, directiveEstimator, simpleEstimator } from "graphql-query-complexity";
 import { GraphQLError } from "graphql/error";
 import type { IContext } from "@/types/server";
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 import {
   DEFAULT_COMPLEXITY,
   MAX_COMPLEXITY_PER_MINUTE,

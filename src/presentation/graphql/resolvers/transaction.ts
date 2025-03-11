@@ -9,8 +9,8 @@ import {
   GqlTransactionUtilityHistoriesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import TransactionUseCase from "@/app/transaction/usecase";
-import UtilityHistoryUseCase from "@/app/utility/history/usecase";
+import TransactionUseCase from "@/application/transaction/usecase";
+import UtilityHistoryUseCase from "@/application/utility/history/usecase";
 
 const transactionResolver = {
   Query: {

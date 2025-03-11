@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
-import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlUtility } from "@/types/graphql";
 import UtilityOutputFormat from "@/presentation/graphql/dto/utility/output";
-import { utilityInclude } from "@/infra/prisma/types/utility";
+import { utilityInclude } from "@/infrastructure/prisma/types/utility";
 
 async function batchUtilitiesById(
   issuer: PrismaClientIssuer,

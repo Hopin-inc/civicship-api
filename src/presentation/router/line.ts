@@ -1,5 +1,5 @@
 import express from "express";
-import { lineClient, lineMiddleware } from "@/infra/libs/line";
+import { lineClient, lineMiddleware } from "@/infrastructure/libs/line";
 
 const router = express();
 

@@ -3,7 +3,7 @@ import {
   GqlQueryParticipationStatusHistoryArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationStatusHistoryUseCase from "@/app/opportunity/participation/statusHistory/usecase";
+import ParticipationStatusHistoryUseCase from "@/application/opportunity/participation/statusHistory/usecase";
 
 const participationStatusHistoryResolver = {
   Query: {

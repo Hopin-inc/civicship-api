@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 
 export const requestLogger = (req: Request, _res: Response, next: NextFunction) => {
   logger.info(`${req.method} ${req.originalUrl}`, {

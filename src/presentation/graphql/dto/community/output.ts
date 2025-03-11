@@ -5,7 +5,7 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { CommunityPayloadWithArgs } from "@/infra/prisma/types/community";
+import { CommunityPayloadWithArgs } from "@/infrastructure/prisma/types/community";
 
 export default class CommunityOutputFormat {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {

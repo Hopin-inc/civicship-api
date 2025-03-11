@@ -12,7 +12,7 @@ import {
   GqlMutationMembershipAcceptMyInvitationArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import MembershipUseCase from "@/app/membership/usecase";
+import MembershipUseCase from "@/application/membership/usecase";
 
 const membershipResolver = {
   Query: {

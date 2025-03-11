@@ -4,7 +4,7 @@ import {
   GqlUtilityHistoryCreateSuccess,
   GqlUtilityUseSuccess,
 } from "@/types/graphql";
-import { UtilityHistoryPayloadWithArgs } from "@/infra/prisma/types/utility/history";
+import { UtilityHistoryPayloadWithArgs } from "@/infrastructure/prisma/types/utility/history";
 
 export default class UtilityHistoryOutputFormat {
   static query(

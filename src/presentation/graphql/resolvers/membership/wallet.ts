@@ -7,10 +7,10 @@ import {
   GqlUtilityHistoriesConnection,
   GqlWalletUtilityHistoriesArgs,
 } from "@/types/graphql";
-import WalletUseCase from "@/app/membership/wallet/usecase";
+import WalletUseCase from "@/application/membership/wallet/usecase";
 import { IContext } from "@/types/server";
-import TransactionUseCase from "@/app/transaction/usecase";
-import UtilityHistoryUseCase from "@/app/utility/history/usecase";
+import TransactionUseCase from "@/application/transaction/usecase";
+import UtilityHistoryUseCase from "@/application/utility/history/usecase";
 
 const walletResolver = {
   Query: {

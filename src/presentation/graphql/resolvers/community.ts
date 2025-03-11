@@ -17,12 +17,12 @@ import {
   GqlCommunityUtilitiesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationUseCase from "@/app/opportunity/participation/usecase";
-import WalletUseCase from "@/app/membership/wallet/usecase";
-import CommunityUseCase from "@/app/community/usecase";
-import MembershipUseCase from "@/app/membership/usecase";
-import OpportunityUseCase from "@/app/opportunity/usecase";
-import UtilityUseCase from "@/app/utility/usecase";
+import ParticipationUseCase from "@/application/opportunity/participation/usecase";
+import WalletUseCase from "@/application/membership/wallet/usecase";
+import CommunityUseCase from "@/application/community/usecase";
+import MembershipUseCase from "@/application/membership/usecase";
+import OpportunityUseCase from "@/application/opportunity/usecase";
+import UtilityUseCase from "@/application/utility/usecase";
 
 const communityResolver = {
   Query: {

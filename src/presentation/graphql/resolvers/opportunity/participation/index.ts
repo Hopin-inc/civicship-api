@@ -16,9 +16,9 @@ import {
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationUseCase from "@/app/opportunity/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/app/opportunity/participation/statusHistory/usecase";
-import TransactionUseCase from "@/app/transaction/usecase";
+import ParticipationUseCase from "@/application/opportunity/participation/usecase";
+import ParticipationStatusHistoryUseCase from "@/application/opportunity/participation/statusHistory/usecase";
+import TransactionUseCase from "@/application/transaction/usecase";
 
 const participationResolver = {
   Query: {

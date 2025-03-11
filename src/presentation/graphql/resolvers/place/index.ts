@@ -6,8 +6,8 @@ import {
   GqlOpportunitiesConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import PlaceUseCase from "@/app/place/usecase";
-import OpportunityUseCase from "@/app/opportunity/usecase";
+import PlaceUseCase from "@/application/place/usecase";
+import OpportunityUseCase from "@/application/opportunity/usecase";
 
 const placeResolver = {
   Query: {

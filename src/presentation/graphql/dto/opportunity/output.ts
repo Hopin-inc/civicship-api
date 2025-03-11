@@ -6,7 +6,7 @@ import {
   GqlOpportunitySetPublishStatusSuccess,
   GqlOpportunityUpdateContentSuccess,
 } from "@/types/graphql";
-import { OpportunityPayloadWithArgs } from "@/infra/prisma/types/opportunity";
+import { OpportunityPayloadWithArgs } from "@/infrastructure/prisma/types/opportunity";
 import PlaceOutputFormat from "@/presentation/graphql/dto/place/output";
 
 export default class OpportunityOutputFormat {

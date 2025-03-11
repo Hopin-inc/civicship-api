@@ -5,7 +5,7 @@ import {
   GqlPlaceDeleteSuccess,
   GqlPlaceUpdateSuccess,
 } from "@/types/graphql";
-import { PlacePayloadWithArgs } from "@/infra/prisma/types/place";
+import { PlacePayloadWithArgs } from "@/infrastructure/prisma/types/place";
 
 export default class PlaceOutputFormat {
   static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {

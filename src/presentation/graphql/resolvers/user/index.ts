@@ -15,12 +15,12 @@ import {
   GqlWalletsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import UserUseCase from "@/app/user/usecase";
-import MembershipUseCase from "@/app/membership/usecase";
-import WalletUseCase from "@/app/membership/wallet/usecase";
-import OpportunityUseCase from "@/app/opportunity/usecase";
-import ParticipationUseCase from "@/app/opportunity/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/app/opportunity/participation/statusHistory/usecase";
+import UserUseCase from "@/application/user/usecase";
+import MembershipUseCase from "@/application/membership/usecase";
+import WalletUseCase from "@/application/membership/wallet/usecase";
+import OpportunityUseCase from "@/application/opportunity/usecase";
+import ParticipationUseCase from "@/application/opportunity/participation/usecase";
+import ParticipationStatusHistoryUseCase from "@/application/opportunity/participation/statusHistory/usecase";
 
 const userResolver = {
   Query: {

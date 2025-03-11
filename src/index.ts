@@ -3,7 +3,7 @@ import { createServer } from "https";
 import fs from "fs";
 import { createExpressApp } from "@/presentation/app";
 import { createApolloServer } from "@/presentation/graphql/server";
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
 import { batchProcess } from "@/batch";

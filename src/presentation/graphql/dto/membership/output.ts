@@ -7,7 +7,7 @@ import {
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
 } from "@/types/graphql";
-import { MembershipPayloadWithArgs } from "@/infra/prisma/types/membership";
+import { MembershipPayloadWithArgs } from "@/infrastructure/prisma/types/membership";
 
 export default class MembershipOutputFormat {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {

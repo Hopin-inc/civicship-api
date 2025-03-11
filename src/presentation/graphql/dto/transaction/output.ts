@@ -5,7 +5,7 @@ import {
   GqlTransactionGrantCommunityPointSuccess,
   GqlTransactionDonateSelfPointSuccess,
 } from "@/types/graphql";
-import { TransactionPayloadWithArgs } from "@/infra/prisma/types/transaction";
+import { TransactionPayloadWithArgs } from "@/infrastructure/prisma/types/transaction";
 
 export default class TransactionOutputFormat {
   static query(r: GqlTransaction[], hasNextPage: boolean): GqlTransactionsConnection {

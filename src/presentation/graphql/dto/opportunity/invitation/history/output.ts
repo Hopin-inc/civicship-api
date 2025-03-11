@@ -2,7 +2,7 @@ import {
   GqlOpportunityInvitationHistory,
   GqlOpportunityInvitationHistoriesConnection,
 } from "@/types/graphql";
-import { InvitationHistoryPayloadWithArgs } from "@/infra/prisma/types/opportunity/invitation/history";
+import { InvitationHistoryPayloadWithArgs } from "@/infrastructure/prisma/types/opportunity/invitation/history";
 
 export default class OpportunityInvitationHistoryOutputFormat {
   static query(

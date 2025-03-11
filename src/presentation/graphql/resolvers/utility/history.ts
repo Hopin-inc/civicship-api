@@ -1,6 +1,6 @@
 import { GqlQueryUtilityHistoriesArgs, GqlQueryUtilityHistoryArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import UtilityHistoryUseCase from "@/app/utility/history/usecase";
+import UtilityHistoryUseCase from "@/application/utility/history/usecase";
 
 const utilityHistoryResolver = {
   Query: {
