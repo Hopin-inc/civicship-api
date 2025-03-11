@@ -1,5 +1,6 @@
 import { GqlWallet, GqlWalletsConnection } from "@/types/graphql";
 import { PrismaWallet } from "@/application/membership/wallet/data/type";
+import CommunityPresenter from "@/application/community/presenter";
 
 export default class WalletPresenter {
   static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {
@@ -23,7 +24,7 @@ export default class WalletPresenter {
 
     return {
       ...prop,
-      community,
+      community: CommunityPresenter.get(community),
       user,
       currentPointView,
     };

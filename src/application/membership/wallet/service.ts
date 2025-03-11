@@ -5,6 +5,7 @@ import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs, GqlWallet } from "@/types/graphql";
 import WalletUtils from "@/application/membership/wallet/utils";
 import { NotFoundError } from "@/errors/graphql";
+import WalletPresenter from "@/application/membership/wallet/presenter";
 
 export default class WalletService {
   static async fetchWallets(
@@ -27,7 +28,7 @@ export default class WalletService {
     userId: string,
     communityId: string,
     tx?: Prisma.TransactionClient,
-  ) {
+  ): Promise<GqlWallet> {
     const wallet = await WalletRepository.findFirstExistingMemberWallet(
       ctx,
       communityId,
@@ -35,10 +36,10 @@ export default class WalletService {
       tx,
     );
     if (!wallet) {
-      throw new Error(`WalletNotFound: userId=${userId}, communityId=${communityId}`);
+      throw new NotFoundError("Member wallet" + `userId:${userId}, communityId:${communityId}`);
     }
 
-    return wallet;
+    return WalletPresenter.get(wallet);
   }
 
   static async findCommunityWalletOrThrow(ctx: IContext, communityId: string): Promise<GqlWallet> {
@@ -46,16 +47,19 @@ export default class WalletService {
     if (!wallet?.id) {
       throw new NotFoundError("Community wallet", { communityId });
     }
-    return wallet;
+    return WalletPresenter.get(wallet);
   }
 
-  static async checkIfMemberWalletExists(ctx: IContext, memberWalletId: string) {
-    const memberWallet = await WalletRepository.find(ctx, memberWalletId);
-    if (!memberWallet) {
-      throw new Error("MemberWallet information is missing for points transfer");
+  static async checkIfMemberWalletExists(
+    ctx: IContext,
+    memberWalletId: string,
+  ): Promise<GqlWallet> {
+    const wallet = await WalletRepository.find(ctx, memberWalletId);
+    if (!wallet) {
+      throw new NotFoundError("Member wallet", { memberWalletId });
     }
 
-    return memberWallet;
+    return WalletPresenter.get(wallet);
   }
 
   static async findWalletsForPurchaseUtility(

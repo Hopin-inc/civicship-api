@@ -16,18 +16,27 @@ export default class WalletConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static createCommunityWallet(input: GqlWalletCreateToCommunityInput): Prisma.WalletCreateInput {
+  static createCommunityWallet(params: CommunityWalletCreationParams): Prisma.WalletCreateInput {
     return {
       type: WalletType.COMMUNITY,
-      community: { connect: { id: input.communityId } },
+      community: { connect: { id: params.communityId } },
     };
   }
 
-  static createMemberWallet(input: GqlWalletCreateToMemberInput): Prisma.WalletCreateInput {
+  static createMemberWallet(params: MemberWalletCreationParams): Prisma.WalletCreateInput {
     return {
       type: WalletType.MEMBER,
-      community: { connect: { id: input.communityId } },
-      user: { connect: { id: input.userId } },
+      community: { connect: { id: params.communityId } },
+      user: { connect: { id: params.userId } },
     };
   }
 }
+
+type CommunityWalletCreationParams = {
+  communityId: string;
+};
+
+type MemberWalletCreationParams = {
+  communityId: string;
+  userId: string;
+};
