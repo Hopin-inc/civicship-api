@@ -28,7 +28,7 @@ export default class OpportunityService {
   static async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
     const opportunity = await OpportunityRepository.find(ctx, opportunityId);
     if (!opportunity) {
-      throw new Error(`OpportunityNotFound: ID=${opportunityId}`);
+      throw new NotFoundError("Opportunity", { opportunityId });
     }
     return opportunity;
   }

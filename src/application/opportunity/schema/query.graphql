@@ -32,10 +32,12 @@ input OpportunityFilterInput {
     category: OpportunityCategory
     publishStatus: PublishStatus
 
-    communityId: ID
-    createdByUserId: ID
-    placeId: ID
-    articleId: ID
+    communityIds: [ID!]
+    createdByUserIds: [ID!]
+    placeIds: [ID!]
+    cityCodes: [ID!]
+    articleIds: [ID!]
+    requiredUtilityIds: [ID!]
 }
 
 input OpportunitySortInput {

@@ -10,10 +10,16 @@ export default class OpportunityInputFormat {
   static filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
     return {
       AND: [
-        filter?.category ? { category: filter?.category } : {},
-        filter?.publishStatus ? { publishStatus: filter?.publishStatus } : {},
-        filter?.communityId ? { communityId: filter?.communityId } : {},
-        filter?.createdByUserId ? { createdBy: filter?.createdByUserId } : {},
+        filter?.category ? { category: filter.category } : {},
+        filter?.publishStatus ? { publishStatus: filter.publishStatus } : {},
+        filter?.communityIds ? { communityId: { in: filter.communityIds } } : {},
+        filter?.createdByUserIds ? { createdBy: { in: filter.createdByUserIds } } : {},
+        filter?.placeIds ? { placeId: { in: filter.placeIds } } : {},
+        filter?.cityCodes ? { place: { cityCode: { in: filter.cityCodes } } } : {},
+        filter?.articleIds ? { articles: { some: { id: { in: filter.articleIds } } } } : {},
+        filter?.requiredUtilityIds
+          ? { requiredUtilities: { some: { id: { in: filter.requiredUtilityIds } } } }
+          : {},
       ],
     };
   }
@@ -25,24 +31,26 @@ export default class OpportunityInputFormat {
     ];
   }
 
+  // TODO place登録のためのデータ整形
   static create(
     input: GqlOpportunityCreateInput,
     currentUserId: string,
   ): Prisma.OpportunityCreateInput {
-    const { communityId, placeId, ...properties } = input;
+    const { communityId, ...prop } = input;
 
     return {
-      ...properties,
+      ...prop,
+      image: input.image?.base64,
       community: { connect: { id: communityId } },
       createdByUser: { connect: { id: currentUserId } },
-      place: { connect: { id: placeId } },
     };
   }
 
-  // TODO updatedByUserをDBに加えるか判断
+  // TODO place登録のためのデータ整形
   static update(input: GqlOpportunityUpdateContentInput): Prisma.OpportunityUpdateInput {
     return {
       ...input,
+      image: input.image?.base64,
     };
   }
 }

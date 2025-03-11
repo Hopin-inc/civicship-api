@@ -6,10 +6,12 @@ import {
   GqlOpportunitySetPublishStatusSuccess,
   GqlOpportunityUpdateContentSuccess,
 } from "@/types/graphql";
-import { OpportunityPayloadWithArgs } from "@/application/opportunity/data/type";
-import PlaceOutputFormat from "@/application/place/presenter";
+import { PrismaOpportunity } from "@/application/opportunity/data/type";
+import PlacePresenter from "@/application/place/presenter";
+import UtilityPresenter from "@/application/utility/presenter";
+import CommunityPresenter from "@/application/community/presenter";
 
-export default class OpportunityOutputFormat {
+export default class OpportunityPresenter {
   static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
     return {
       totalCount: r.length,
@@ -26,39 +28,40 @@ export default class OpportunityOutputFormat {
     };
   }
 
-  static get(r: OpportunityPayloadWithArgs): GqlOpportunity {
-    const { createdByUser, community, place, ...prop } = r;
+  static get(r: PrismaOpportunity): GqlOpportunity {
+    const { createdByUser, community, place, requiredUtilities, ...prop } = r;
 
     return {
       ...prop,
-      community,
-      place: place ? PlaceOutputFormat.get(place) : null,
+      community: CommunityPresenter.get(community),
+      place: place ? PlacePresenter.get(place) : null,
       createdByUser,
+      requiredUtilities: requiredUtilities.map(UtilityPresenter.get),
     };
   }
 
-  static create(r: OpportunityPayloadWithArgs): GqlOpportunityCreateSuccess {
+  static create(r: PrismaOpportunity): GqlOpportunityCreateSuccess {
     return {
       __typename: "OpportunityCreateSuccess",
       opportunity: this.get(r),
     };
   }
 
-  static delete(r: OpportunityPayloadWithArgs): GqlOpportunityDeleteSuccess {
+  static delete(r: PrismaOpportunity): GqlOpportunityDeleteSuccess {
     return {
       __typename: "OpportunityDeleteSuccess",
       opportunityId: r.id,
     };
   }
 
-  static update(r: OpportunityPayloadWithArgs): GqlOpportunityUpdateContentSuccess {
+  static update(r: PrismaOpportunity): GqlOpportunityUpdateContentSuccess {
     return {
       __typename: "OpportunityUpdateContentSuccess",
       opportunity: this.get(r),
     };
   }
 
-  static setPublishStatus(r: OpportunityPayloadWithArgs): GqlOpportunitySetPublishStatusSuccess {
+  static setPublishStatus(r: PrismaOpportunity): GqlOpportunitySetPublishStatusSuccess {
     return {
       __typename: "OpportunitySetPublishStatusSuccess",
       opportunity: this.get(r),

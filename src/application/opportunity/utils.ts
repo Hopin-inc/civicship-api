@@ -5,11 +5,11 @@ import {
   GqlOpportunitySortInput,
 } from "@/types/graphql";
 import OpportunityService from "@/application/opportunity/service";
-import OpportunityOutputFormat from "@/application/opportunity/presenter";
+import OpportunityPresenter from "@/application/opportunity/presenter";
 import { clampFirst } from "@/utils";
 
-export const OpportunityUtils = {
-  async fetchOpportunitiesCommon(
+export default class OpportunityUtils {
+  static async fetchOpportunitiesCommon(
     ctx: IContext,
     {
       cursor,
@@ -33,9 +33,9 @@ export const OpportunityUtils = {
     const hasNextPage = res.length > take;
 
     const data = res.slice(0, take).map((record) => {
-      return OpportunityOutputFormat.get(record);
+      return OpportunityPresenter.get(record);
     });
 
-    return OpportunityOutputFormat.query(data, hasNextPage);
-  },
-};
+    return OpportunityPresenter.query(data, hasNextPage);
+  }
+}

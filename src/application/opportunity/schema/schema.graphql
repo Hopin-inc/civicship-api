@@ -26,6 +26,7 @@ type Opportunity {
     createdByUser: User
 
     requiredUtilities: [Utility!]
+    articles: [Article!]
 
     participations(
         filter: ParticipationFilterInput
@@ -47,13 +48,6 @@ type Opportunity {
         cursor: String
         first: Int
     ): OpportunityInvitationsConnection @complexity(value: 5, multipliers: ["first"])
-
-    articles(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime

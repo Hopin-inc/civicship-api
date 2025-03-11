@@ -4,13 +4,17 @@ import {
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunity,
+  GqlOpportunityInvitationsArgs,
   GqlOpportunityParticipationsArgs,
+  GqlOpportunitySlotsArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityUseCase from "@/application/opportunity/usecase";
 import ParticipationUseCase from "@/application/participation/usecase";
+import OpportunitySlotUseCase from "@/application/opportunitySlot/usecase";
+import OpportunityInvitationUseCase from "@/application/opportunityInvitation/usecase";
 
 const opportunityResolver = {
   Query: {
@@ -46,6 +50,22 @@ const opportunityResolver = {
       ctx: IContext,
     ) => {
       return ParticipationUseCase.visitorBrowseParticipationsByOpportunity(parent, args, ctx);
+    },
+
+    slots: async (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
+      return OpportunitySlotUseCase.visitorBrowseOpportunitySlotsByOpportunity(parent, args, ctx);
+    },
+
+    invitations: async (
+      parent: GqlOpportunity,
+      args: GqlOpportunityInvitationsArgs,
+      ctx: IContext,
+    ) => {
+      return OpportunityInvitationUseCase.visitorBrowseOpportunityInvitationsByOpportunity(
+        parent,
+        args,
+        ctx,
+      );
     },
   },
 };

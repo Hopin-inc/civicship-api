@@ -1,6 +1,4 @@
 import {
-  GqlArticle,
-  GqlArticleOpportunitiesArgs,
   GqlCommunity,
   GqlCommunityOpportunitiesArgs,
   GqlMutationOpportunityCreateArgs,
@@ -22,8 +20,8 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityService from "@/application/opportunity/service";
-import OpportunityOutputFormat from "@/application/opportunity/presenter";
-import { OpportunityUtils } from "@/application/opportunity/utils";
+import OpportunityPresenter from "@/application/opportunity/presenter";
+import OpportunityUtils from "@/application/opportunity/utils";
 
 export default class OpportunityUseCase {
   static async visitorBrowsePublicOpportunities(
@@ -45,7 +43,7 @@ export default class OpportunityUseCase {
   ): Promise<GqlOpportunitiesConnection> {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
-      filter: { communityId: id },
+      filter: { communityIds: [id] },
       first,
     });
   }
@@ -57,7 +55,7 @@ export default class OpportunityUseCase {
   ) {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
-      filter: { createdByUserId: id },
+      filter: { createdByUserIds: [id] },
       first,
     });
   }
@@ -69,19 +67,7 @@ export default class OpportunityUseCase {
   ) {
     return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
       cursor,
-      filter: { placeId: id },
-      first,
-    });
-  }
-
-  static async visitorBrowseOpportunitiesByArticle(
-    { id }: GqlArticle,
-    { first, cursor }: GqlArticleOpportunitiesArgs,
-    ctx: IContext,
-  ) {
-    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
-      cursor,
-      filter: { articleId: id },
+      filter: { placeIds: [id] },
       first,
     });
   }
@@ -94,7 +80,7 @@ export default class OpportunityUseCase {
     if (!res) {
       return null;
     }
-    return OpportunityOutputFormat.get(res);
+    return OpportunityPresenter.get(res);
   }
 
   static async managerCreateOpportunity(
@@ -102,7 +88,7 @@ export default class OpportunityUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
     const res = await OpportunityService.createOpportunity(ctx, input);
-    return OpportunityOutputFormat.create(res);
+    return OpportunityPresenter.create(res);
   }
 
   static async managerDeleteOpportunity(
@@ -110,7 +96,7 @@ export default class OpportunityUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunityDeletePayload> {
     const res = await OpportunityService.deleteOpportunity(ctx, id);
-    return OpportunityOutputFormat.delete(res);
+    return OpportunityPresenter.delete(res);
   }
 
   static async managerUpdateOpportunityContent(
@@ -118,7 +104,7 @@ export default class OpportunityUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunityUpdateContentPayload> {
     const res = await OpportunityService.updateOpportunityContent(ctx, id, input);
-    return OpportunityOutputFormat.update(res);
+    return OpportunityPresenter.update(res);
   }
 
   static async managerSetOpportunityPublishStatus(
@@ -126,6 +112,6 @@ export default class OpportunityUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
     const res = await OpportunityService.setOpportunityStatus(ctx, id, input.status);
-    return OpportunityOutputFormat.setPublishStatus(res);
+    return OpportunityPresenter.setPublishStatus(res);
   }
 }

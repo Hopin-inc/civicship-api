@@ -16,7 +16,7 @@ input OpportunityCreateInput {
     title: String!
     description: String!
     body: String
-    image: String
+    image: ImageInput
     files: JSON
 
     category: OpportunityCategory!
@@ -28,7 +28,7 @@ input OpportunityCreateInput {
     pointsToEarn: Int
     feeRequired: Int
 
-    placeId: ID
+    place: PlaceInput
     startsAt: Datetime
     endsAt: Datetime
 
@@ -40,7 +40,7 @@ input OpportunityUpdateContentInput {
     title: String!
     description: String!
     body: String
-    image: String
+    image: ImageInput
     files: JSON
 
     category: OpportunityCategory!
@@ -52,7 +52,7 @@ input OpportunityUpdateContentInput {
     pointsToEarn: Int
     feeRequired: Int
 
-    placeId: ID
+    place: PlaceInput
     startsAt: Datetime
     endsAt: Datetime
 
