@@ -7,15 +7,19 @@ model Community {
   establishedAt DateTime? @map("established_at")
   website       String?
 
-  memberships    Membership[]
+  places Place[]
+
+  memberships Membership[]
+  wallets     Wallet[]
+  utilities   Utility[]
+
   opportunities  Opportunity[]
   participations Participation[]
-  wallets        Wallet[]
+
+  articles Article[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-  utilities Utility[]
-  articles  Article[]
 
   @@map("t_communities")
 }

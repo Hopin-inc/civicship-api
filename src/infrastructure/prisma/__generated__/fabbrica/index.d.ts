@@ -111,11 +111,12 @@ type CommunityFactoryDefineInput = {
     website?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
+    places?: Prisma.PlaceCreateNestedManyWithoutCommunitiesInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
-    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
 };
 type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
@@ -731,6 +732,7 @@ type PlaceFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
+    communities?: Prisma.CommunityCreateNestedManyWithoutPlacesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
 };
 type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;

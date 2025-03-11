@@ -31,17 +31,13 @@ const modelFieldDefinitions = [{
     }, {
         name: "Community",
         fields: [{
+                name: "places",
+                type: "Place",
+                relationName: "CommunityToPlace"
+            }, {
                 name: "memberships",
                 type: "Membership",
                 relationName: "CommunityToMembership"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "CommunityToOpportunity"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "CommunityToParticipation"
             }, {
                 name: "wallets",
                 type: "Wallet",
@@ -50,6 +46,14 @@ const modelFieldDefinitions = [{
                 name: "utilities",
                 type: "Utility",
                 relationName: "CommunityToUtility"
+            }, {
+                name: "opportunities",
+                type: "Opportunity",
+                relationName: "CommunityToOpportunity"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "CommunityToParticipation"
             }, {
                 name: "articles",
                 type: "Article",
@@ -231,6 +235,10 @@ const modelFieldDefinitions = [{
                 name: "city",
                 type: "City",
                 relationName: "CityToPlace"
+            }, {
+                name: "communities",
+                type: "Community",
+                relationName: "CommunityToPlace"
             }, {
                 name: "opportunities",
                 type: "Opportunity",

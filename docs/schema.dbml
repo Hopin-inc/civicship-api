@@ -28,14 +28,15 @@ Table t_communities {
   bio String
   establishedAt DateTime
   website String
+  places t_places [not null]
   memberships t_memberships [not null]
+  wallets t_wallets [not null]
+  utilities t_utilities [not null]
   opportunities t_opportunities [not null]
   participations t_participations [not null]
-  wallets t_wallets [not null]
+  articles t_articles [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-  utilities t_utilities [not null]
-  articles t_articles [not null]
 }
 
 Table m_cities {
@@ -193,6 +194,7 @@ Table t_places {
   mapLocation Json
   cityCode String [not null]
   city m_cities [not null]
+  communities t_communities [not null]
   opportunities t_opportunities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -317,6 +319,11 @@ Table t_related_users_on_articles {
 Table t_opportunities_on_articles {
   opportunitiesId String [ref: > t_opportunities.id]
   articlesId String [ref: > t_articles.id]
+}
+
+Table CommunityToPlace {
+  placesId String [ref: > t_places.id]
+  communitiesId String [ref: > t_communities.id]
 }
 
 Table OpportunityToUtility {
