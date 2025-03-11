@@ -24,7 +24,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import MembershipUtils from "@/application/membership/utils";
-import MembershipOutputFormat from "@/application/membership/presenter";
+import MembershipPresenter from "@/application/membership/presenter";
 import MembershipService from "@/application/membership/service";
 import { getCurrentUserId } from "@/utils";
 import { Prisma, Role } from "@prisma/client";
@@ -75,7 +75,7 @@ export default class MembershipUseCase {
     ctx: IContext,
   ): Promise<GqlMembership | null> {
     const membership = await MembershipService.findMembership(ctx, userId, communityId);
-    return membership ? MembershipOutputFormat.get(membership) : null;
+    return membership ? MembershipPresenter.get(membership) : null;
   }
 
   static async ownerInviteMember(
@@ -83,7 +83,7 @@ export default class MembershipUseCase {
     ctx: IContext,
   ): Promise<GqlMembershipInvitePayload> {
     const membership = await MembershipService.inviteMember(ctx, input);
-    return MembershipOutputFormat.invite(membership);
+    return MembershipPresenter.invite(membership);
   }
 
   static async ownerCancelInvitation(
@@ -91,7 +91,7 @@ export default class MembershipUseCase {
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
     const membership = await MembershipService.cancelInvitation(ctx, input);
-    return MembershipOutputFormat.setInvitationStatus(membership);
+    return MembershipPresenter.setInvitationStatus(membership);
   }
 
   static async userAcceptMyInvitation(
@@ -102,7 +102,7 @@ export default class MembershipUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       const membership = await MembershipService.joinIfNeeded(ctx, userId, input.communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, userId, input.communityId, tx);
-      return MembershipOutputFormat.setInvitationStatus(membership);
+      return MembershipPresenter.setInvitationStatus(membership);
     });
   }
 
@@ -111,7 +111,7 @@ export default class MembershipUseCase {
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
     const membership = await MembershipService.denyInvitation(ctx, input);
-    return MembershipOutputFormat.setInvitationStatus(membership);
+    return MembershipPresenter.setInvitationStatus(membership);
   }
 
   static async memberWithdrawCommunity(
@@ -123,7 +123,7 @@ export default class MembershipUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.deleteMembership(ctx, tx, userId, communityId);
       await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
-      return MembershipOutputFormat.withdraw({ userId, communityId });
+      return MembershipPresenter.withdraw({ userId, communityId });
     });
   }
 
@@ -135,7 +135,7 @@ export default class MembershipUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.deleteMembership(ctx, tx, userId, communityId);
       await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
-      return MembershipOutputFormat.remove({ userId, communityId });
+      return MembershipPresenter.remove({ userId, communityId });
     });
   }
 
@@ -149,7 +149,7 @@ export default class MembershipUseCase {
       input.communityId,
       Role.OWNER,
     );
-    return MembershipOutputFormat.setRole(membership);
+    return MembershipPresenter.setRole(membership);
   }
 
   static async managerAssignManager(
@@ -162,7 +162,7 @@ export default class MembershipUseCase {
       input.communityId,
       Role.MANAGER,
     );
-    return MembershipOutputFormat.setRole(membership);
+    return MembershipPresenter.setRole(membership);
   }
 
   static async managerAssignMember(
@@ -175,6 +175,6 @@ export default class MembershipUseCase {
       input.communityId,
       Role.MEMBER,
     );
-    return MembershipOutputFormat.setRole(membership);
+    return MembershipPresenter.setRole(membership);
   }
 }
