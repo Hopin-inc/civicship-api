@@ -1,0 +1,29 @@
+model TicketStatusHistory {
+  id     String             @id @default(cuid())
+  status TicketStatus       @default(AVAILABLE)
+  reason TicketStatusReason @default(PURCHASED)
+
+  ticketId String @map("ticket_id")
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  transactionId String?      @unique @map("transaction_id")
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_ticket_status_histories")
+}
+
+enum TicketStatusReason {
+  PURCHASED
+  CANCELED
+
+  RESERVED
+  USED
+  REFUNDED
+  EXPIRED
+}

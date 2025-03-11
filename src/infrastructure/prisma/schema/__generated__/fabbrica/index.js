@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineWalletFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineStateFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunityFactory = exports.defineMembershipFactory = exports.defineIdentityFactory = exports.defineCommunityFactory = exports.defineCityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -27,6 +27,17 @@ const modelFieldDefinitions = [{
                 name: "opportunities",
                 type: "Opportunity",
                 relationName: "t_opportunities_on_articles"
+            }]
+    }, {
+        name: "City",
+        fields: [{
+                name: "state",
+                type: "State",
+                relationName: "CityToState"
+            }, {
+                name: "places",
+                type: "Place",
+                relationName: "CityToPlace"
             }]
     }, {
         name: "Community",
@@ -56,22 +67,11 @@ const modelFieldDefinitions = [{
                 relationName: "ArticleToCommunity"
             }]
     }, {
-        name: "City",
+        name: "Identity",
         fields: [{
-                name: "state",
-                type: "State",
-                relationName: "CityToState"
-            }, {
-                name: "places",
-                type: "Place",
-                relationName: "CityToPlace"
-            }]
-    }, {
-        name: "State",
-        fields: [{
-                name: "cities",
-                type: "City",
-                relationName: "CityToState"
+                name: "user",
+                type: "User",
+                relationName: "IdentityToUser"
             }]
     }, {
         name: "Membership",
@@ -83,37 +83,6 @@ const modelFieldDefinitions = [{
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToMembership"
-            }]
-    }, {
-        name: "Wallet",
-        fields: [{
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToWallet"
-            }, {
-                name: "user",
-                type: "User",
-                relationName: "UserToWallet"
-            }, {
-                name: "currentPointView",
-                type: "CurrentPointView",
-                relationName: "CurrentPointViewToWallet"
-            }, {
-                name: "accumulatedPointView",
-                type: "AccumulatedPointView",
-                relationName: "AccumulatedPointViewToWallet"
-            }, {
-                name: "fromTransactions",
-                type: "Transaction",
-                relationName: "from_wallet"
-            }, {
-                name: "toTransactions",
-                type: "Transaction",
-                relationName: "to_wallet"
-            }, {
-                name: "tickets",
-                type: "Ticket",
-                relationName: "TicketToWallet"
             }]
     }, {
         name: "Opportunity",
@@ -237,6 +206,13 @@ const modelFieldDefinitions = [{
                 relationName: "OpportunityToPlace"
             }]
     }, {
+        name: "State",
+        fields: [{
+                name: "cities",
+                type: "City",
+                relationName: "CityToState"
+            }]
+    }, {
         name: "Ticket",
         fields: [{
                 name: "wallet",
@@ -284,13 +260,6 @@ const modelFieldDefinitions = [{
                 name: "ticketStatusHistory",
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
-            }]
-    }, {
-        name: "Identity",
-        fields: [{
-                name: "user",
-                type: "User",
-                relationName: "IdentityToUser"
             }]
     }, {
         name: "User",
@@ -353,6 +322,37 @@ const modelFieldDefinitions = [{
                 name: "requiredForOpportunities",
                 type: "Opportunity",
                 relationName: "OpportunityToUtility"
+            }]
+    }, {
+        name: "Wallet",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToWallet"
+            }, {
+                name: "user",
+                type: "User",
+                relationName: "UserToWallet"
+            }, {
+                name: "currentPointView",
+                type: "CurrentPointView",
+                relationName: "CurrentPointViewToWallet"
+            }, {
+                name: "accumulatedPointView",
+                type: "AccumulatedPointView",
+                relationName: "AccumulatedPointViewToWallet"
+            }, {
+                name: "fromTransactions",
+                type: "Transaction",
+                relationName: "from_wallet"
+            }, {
+                name: "toTransactions",
+                type: "Transaction",
+                relationName: "to_wallet"
+            }, {
+                name: "tickets",
+                type: "Ticket",
+                relationName: "TicketToWallet"
             }]
     }, {
         name: "CurrentPointView",
@@ -466,93 +466,6 @@ exports.defineArticleFactory = ((options) => {
     return defineArticleFactoryInternal(options, {});
 });
 exports.defineArticleFactory.withTransientFields = defaultTransientFieldValues => options => defineArticleFactoryInternal(options, defaultTransientFieldValues);
-function autoGenerateCommunityScalarsOrEnums({ seq }) {
-    return {
-        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Community", fieldName: "name", isId: false, isUnique: false, seq }),
-        pointName: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Community", fieldName: "pointName", isId: false, isUnique: false, seq })
-    };
-}
-function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
-    const getFactoryWithTraits = (traitKeys = []) => {
-        const seqKey = {};
-        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("Community", modelFieldDefinitions);
-        const handleAfterBuild = (0, internal_1.createCallbackChain)([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = (0, internal_1.createCallbackChain)([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateCommunityScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
-            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {};
-            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
-        const pickForConnect = (inputData) => ({
-            id: inputData.id
-        });
-        const create = async (inputData = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().community.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
-        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Community",
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name, ...names) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-/**
- * Define factory for {@link Community} model.
- *
- * @param options
- * @returns factory {@link CommunityFactoryInterface}
- */
-exports.defineCommunityFactory = ((options) => {
-    return defineCommunityFactoryInternal(options ?? {}, {});
-});
-exports.defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
 function isCitystateFactory(x) {
     return x?._factoryFor === "State";
 }
@@ -647,18 +560,17 @@ exports.defineCityFactory = ((options) => {
     return defineCityFactoryInternal(options, {});
 });
 exports.defineCityFactory.withTransientFields = defaultTransientFieldValues => options => defineCityFactoryInternal(options, defaultTransientFieldValues);
-function autoGenerateStateScalarsOrEnums({ seq }) {
+function autoGenerateCommunityScalarsOrEnums({ seq }) {
     return {
-        code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "code", isId: true, isUnique: false, seq }),
-        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "name", isId: false, isUnique: false, seq }),
-        countryCode: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "countryCode", isId: true, isUnique: false, seq })
+        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Community", fieldName: "name", isId: false, isUnique: false, seq }),
+        pointName: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Community", fieldName: "pointName", isId: false, isUnique: false, seq })
     };
 }
-function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+function defineCommunityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
     const getFactoryWithTraits = (traitKeys = []) => {
         const seqKey = {};
         const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("State", modelFieldDefinitions);
+        const screen = (0, internal_1.createScreener)("Community", modelFieldDefinitions);
         const handleAfterBuild = (0, internal_1.createCallbackChain)([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -673,7 +585,7 @@ function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterB
         ]);
         const build = async (inputData = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateStateScalarsOrEnums({ seq });
+            const requiredScalarData = autoGenerateCommunityScalarsOrEnums({ seq });
             const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
@@ -693,21 +605,20 @@ function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterB
         };
         const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
         const pickForConnect = (inputData) => ({
-            code: inputData.code,
-            countryCode: inputData.countryCode
+            id: inputData.id
         });
         const create = async (inputData = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().state.create({ data });
+            const createdData = await getClient().community.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
         const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
         const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "State",
+            _factoryFor: "Community",
             build,
             buildList,
             buildCreateInput: build,
@@ -727,15 +638,109 @@ function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterB
     };
 }
 /**
- * Define factory for {@link State} model.
+ * Define factory for {@link Community} model.
  *
  * @param options
- * @returns factory {@link StateFactoryInterface}
+ * @returns factory {@link CommunityFactoryInterface}
  */
-exports.defineStateFactory = ((options) => {
-    return defineStateFactoryInternal(options ?? {}, {});
+exports.defineCommunityFactory = ((options) => {
+    return defineCommunityFactoryInternal(options ?? {}, {});
 });
-exports.defineStateFactory.withTransientFields = defaultTransientFieldValues => options => defineStateFactoryInternal(options ?? {}, defaultTransientFieldValues);
+exports.defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isIdentityuserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateIdentityScalarsOrEnums({ seq }) {
+    return {
+        uid: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Identity", fieldName: "uid", isId: true, isUnique: false, seq }),
+        platform: "LINE"
+    };
+}
+function defineIdentityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Identity", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIdentityScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isIdentityuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            uid: inputData.uid
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().identity.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Identity",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Identity} model.
+ *
+ * @param options
+ * @returns factory {@link IdentityFactoryInterface}
+ */
+exports.defineIdentityFactory = ((options) => {
+    return defineIdentityFactoryInternal(options, {});
+});
+exports.defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
 function isMembershipuserFactory(x) {
     return x?._factoryFor === "User";
 }
@@ -836,115 +841,6 @@ exports.defineMembershipFactory = ((options) => {
     return defineMembershipFactoryInternal(options, {});
 });
 exports.defineMembershipFactory.withTransientFields = defaultTransientFieldValues => options => defineMembershipFactoryInternal(options, defaultTransientFieldValues);
-function isWalletcommunityFactory(x) {
-    return x?._factoryFor === "Community";
-}
-function isWalletuserFactory(x) {
-    return x?._factoryFor === "User";
-}
-function isWalletcurrentPointViewFactory(x) {
-    return x?._factoryFor === "CurrentPointView";
-}
-function isWalletaccumulatedPointViewFactory(x) {
-    return x?._factoryFor === "AccumulatedPointView";
-}
-function autoGenerateWalletScalarsOrEnums({ seq }) {
-    return {};
-}
-function defineWalletFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
-    const getFactoryWithTraits = (traitKeys = []) => {
-        const seqKey = {};
-        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("Wallet", modelFieldDefinitions);
-        const handleAfterBuild = (0, internal_1.createCallbackChain)([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = (0, internal_1.createCallbackChain)([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateWalletScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
-            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                community: isWalletcommunityFactory(defaultData.community) ? {
-                    create: await defaultData.community.build()
-                } : defaultData.community,
-                user: isWalletuserFactory(defaultData.user) ? {
-                    create: await defaultData.user.build()
-                } : defaultData.user,
-                currentPointView: isWalletcurrentPointViewFactory(defaultData.currentPointView) ? {
-                    create: await defaultData.currentPointView.build()
-                } : defaultData.currentPointView,
-                accumulatedPointView: isWalletaccumulatedPointViewFactory(defaultData.accumulatedPointView) ? {
-                    create: await defaultData.accumulatedPointView.build()
-                } : defaultData.accumulatedPointView
-            };
-            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
-        const pickForConnect = (inputData) => ({
-            id: inputData.id
-        });
-        const create = async (inputData = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().wallet.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
-        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Wallet",
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name, ...names) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-/**
- * Define factory for {@link Wallet} model.
- *
- * @param options
- * @returns factory {@link WalletFactoryInterface}
- */
-exports.defineWalletFactory = ((options) => {
-    return defineWalletFactoryInternal(options, {});
-});
-exports.defineWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineWalletFactoryInternal(options, defaultTransientFieldValues);
 function isOpportunityplaceFactory(x) {
     return x?._factoryFor === "Place";
 }
@@ -1649,6 +1545,95 @@ exports.definePlaceFactory = ((options) => {
     return definePlaceFactoryInternal(options, {});
 });
 exports.definePlaceFactory.withTransientFields = defaultTransientFieldValues => options => definePlaceFactoryInternal(options, defaultTransientFieldValues);
+function autoGenerateStateScalarsOrEnums({ seq }) {
+    return {
+        code: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "code", isId: true, isUnique: false, seq }),
+        name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "name", isId: false, isUnique: false, seq }),
+        countryCode: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "State", fieldName: "countryCode", isId: true, isUnique: false, seq })
+    };
+}
+function defineStateFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("State", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateStateScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {};
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            code: inputData.code,
+            countryCode: inputData.countryCode
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().state.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "State",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link State} model.
+ *
+ * @param options
+ * @returns factory {@link StateFactoryInterface}
+ */
+exports.defineStateFactory = ((options) => {
+    return defineStateFactoryInternal(options ?? {}, {});
+});
+exports.defineStateFactory.withTransientFields = defaultTransientFieldValues => options => defineStateFactoryInternal(options ?? {}, defaultTransientFieldValues);
 function isTicketwalletFactory(x) {
     return x?._factoryFor === "Wallet";
 }
@@ -1962,100 +1947,6 @@ exports.defineTransactionFactory = ((options) => {
     return defineTransactionFactoryInternal(options ?? {}, {});
 });
 exports.defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
-function isIdentityuserFactory(x) {
-    return x?._factoryFor === "User";
-}
-function autoGenerateIdentityScalarsOrEnums({ seq }) {
-    return {
-        uid: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Identity", fieldName: "uid", isId: true, isUnique: false, seq }),
-        platform: "LINE"
-    };
-}
-function defineIdentityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
-    const getFactoryWithTraits = (traitKeys = []) => {
-        const seqKey = {};
-        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("Identity", modelFieldDefinitions);
-        const handleAfterBuild = (0, internal_1.createCallbackChain)([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = (0, internal_1.createCallbackChain)([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateIdentityScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
-            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                user: isIdentityuserFactory(defaultData.user) ? {
-                    create: await defaultData.user.build()
-                } : defaultData.user
-            };
-            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
-        const pickForConnect = (inputData) => ({
-            uid: inputData.uid
-        });
-        const create = async (inputData = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().identity.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
-        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Identity",
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name, ...names) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-/**
- * Define factory for {@link Identity} model.
- *
- * @param options
- * @returns factory {@link IdentityFactoryInterface}
- */
-exports.defineIdentityFactory = ((options) => {
-    return defineIdentityFactoryInternal(options, {});
-});
-exports.defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
 function autoGenerateUserScalarsOrEnums({ seq }) {
     return {
         name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "User", fieldName: "name", isId: false, isUnique: false, seq }),
@@ -2237,6 +2128,115 @@ exports.defineUtilityFactory = ((options) => {
     return defineUtilityFactoryInternal(options, {});
 });
 exports.defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
+function isWalletcommunityFactory(x) {
+    return x?._factoryFor === "Community";
+}
+function isWalletuserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function isWalletcurrentPointViewFactory(x) {
+    return x?._factoryFor === "CurrentPointView";
+}
+function isWalletaccumulatedPointViewFactory(x) {
+    return x?._factoryFor === "AccumulatedPointView";
+}
+function autoGenerateWalletScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineWalletFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Wallet", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateWalletScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isWalletcommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                user: isWalletuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user,
+                currentPointView: isWalletcurrentPointViewFactory(defaultData.currentPointView) ? {
+                    create: await defaultData.currentPointView.build()
+                } : defaultData.currentPointView,
+                accumulatedPointView: isWalletaccumulatedPointViewFactory(defaultData.accumulatedPointView) ? {
+                    create: await defaultData.accumulatedPointView.build()
+                } : defaultData.accumulatedPointView
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().wallet.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Wallet",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Wallet} model.
+ *
+ * @param options
+ * @returns factory {@link WalletFactoryInterface}
+ */
+exports.defineWalletFactory = ((options) => {
+    return defineWalletFactoryInternal(options, {});
+});
+exports.defineWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineWalletFactoryInternal(options, defaultTransientFieldValues);
 function isCurrentPointViewwalletFactory(x) {
     return x?._factoryFor === "Wallet";
 }

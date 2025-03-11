@@ -1,0 +1,36 @@
+model Participation {
+  id     String              @id @default(cuid())
+  status ParticipationStatus
+  /// [ArrayOfImageInfo]
+  images Json?
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+
+  opportunityId String?      @map("opportunity_id")
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  opportunitySlotId String?          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id], onDelete: SetNull)
+
+  statusHistories ParticipationStatusHistory[]
+  transactions    Transaction[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_participations")
+}
+
+enum ParticipationStatus {
+  INVITED
+  APPLIED
+  CANCELED
+  PARTICIPATING
+  NOT_PARTICIPATING
+  APPROVED
+  DENIED
+}

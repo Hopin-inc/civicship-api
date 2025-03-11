@@ -1,0 +1,21 @@
+model Community {
+  id            String    @id @default(cuid())
+  name          String
+  pointName     String    @map("point_name")
+  image         String?
+  bio           String?
+  establishedAt DateTime? @map("established_at")
+  website       String?
+
+  memberships    Membership[]
+  opportunities  Opportunity[]
+  participations Participation[]
+  wallets        Wallet[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  utilities Utility[]
+  articles  Article[]
+
+  @@map("t_communities")
+}

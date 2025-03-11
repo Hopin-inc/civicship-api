@@ -1,0 +1,14 @@
+model OpportunityInvitationHistory {
+  id String @id @default(cuid())
+
+  invitationId String                @map("invitation_id")
+  invitation   OpportunityInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  invitedUserId String @map("invited_user_id")
+  inivitedUser  User   @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_opportunity_invitation_histories")
+}

@@ -1,0 +1,36 @@
+model User {
+  id           String  @id @default(cuid())
+  name         String
+  slug         String
+  image        String?
+  bio          String?
+  sysRole      SysRole @default(USER) @map("sys_role")
+  urlWebsite   String? @map("url_website")
+  urlX         String? @map("url_x")
+  urlFacebook  String? @map("url_facebook")
+  urlInstagram String? @map("url_instagram")
+  urlYoutube   String? @map("url_youtube")
+  urlTiktok    String? @map("url_tiktok")
+
+  identities                     Identity[]
+  memberships                    Membership[]
+  participations                 Participation[]
+  opportunitiesCreatedByMe       Opportunity[]
+  opportunityInvitations         OpportunityInvitation[]
+  opportunityInvitationHistories OpportunityInvitationHistory[]
+  participationStatusChangedByMe ParticipationStatusHistory[]
+  articlesWrittenByMe            Article[]                      @relation("t_author_users_on_articles")
+  articlesAboutMe                Article[]                      @relation("t_related_users_on_articles")
+  wallets                        Wallet[]
+  ticketStatusChangedByMe        TicketStatusHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_users")
+}
+
+enum SysRole {
+  SYS_ADMIN
+  USER
+}
