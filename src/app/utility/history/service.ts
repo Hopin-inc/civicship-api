@@ -3,6 +3,7 @@ import { GqlQueryUtilityHistoriesArgs } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import UtilityHistoryRepository from "@/infra/repositories/utility/history";
 import UtilityHistoryInputFormat from "@/presentation/graphql/dto/utility/history/input";
+import { NotFoundError, UtilityAlreadyUsedError } from "@/errors/graphql";
 
 export default class UtilityHistoryService {
   static async fetchUtilityHistories(
@@ -24,10 +25,10 @@ export default class UtilityHistoryService {
     const history = await UtilityHistoryRepository.find(ctx, historyId);
 
     if (!history) {
-      throw new Error("No such UtilityHistory found.");
+      throw new NotFoundError("Utility history", { id: historyId });
     }
     if (history.usedAt) {
-      throw new Error("Utility is already used.");
+      throw new UtilityAlreadyUsedError(history.usedAt);
     }
 
     return history;

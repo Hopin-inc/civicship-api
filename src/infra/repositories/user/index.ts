@@ -26,25 +26,6 @@ export default class UserRepository {
     });
   }
 
-  static async queryOnlyCommunity(
-    ctx: IContext,
-    where: Prisma.UserWhereInput,
-    orderBy: Prisma.UserOrderByWithRelationInput,
-    take: number,
-    cursor?: string,
-  ) {
-    return this.issuer.onlyBelongingCommunity(ctx, (tx) => {
-      return tx.user.findMany({
-        where,
-        orderBy,
-        include: userInclude,
-        take: take + 1,
-        skip: cursor ? 1 : 0,
-        cursor: cursor ? { id: cursor } : undefined,
-      });
-    });
-  }
-
   static async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.user.findUnique({

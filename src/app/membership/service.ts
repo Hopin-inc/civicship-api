@@ -10,6 +10,7 @@ import { IContext } from "@/types/server";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
 import { getCurrentUserId } from "@/utils";
 import MembershipUtils from "@/app/membership/utils";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class MembershipService {
   static async fetchMemberships(
@@ -89,7 +90,7 @@ export default class MembershipService {
       userId_communityId: { userId, communityId },
     });
     if (!membership) {
-      throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
+      throw new NotFoundError("Membership", { userId, communityId });
     }
 
     const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipInputFormat.setRole(role);
@@ -108,7 +109,7 @@ export default class MembershipService {
       tx,
     );
     if (!membership) {
-      throw new Error(`MembershipNotFound: userId=${userId}, communityId=${communityId}`);
+      throw new NotFoundError("Membership", { userId, communityId });
     }
 
     await MembershipRepository.delete(ctx, { userId_communityId: { userId, communityId } }, tx);
