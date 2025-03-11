@@ -3,10 +3,10 @@ import {
   GqlOpportunitySlotsBulkUpdateSuccess,
   GqlOpportunitySlotsConnection,
 } from "@/types/graphql";
-import { OpportunitySlotPayloadWithArgs } from "@/application/opportunitySlot/data/type";
-import OpportunityOutputFormat from "@/application/opportunity/presenter";
+import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
+import OpportunityPresenter from "@/application/opportunity/presenter";
 
-export default class OpportunitySlotOutputFormat {
+export default class OpportunitySlotPresenter {
   static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
     return {
       totalCount: r.length,
@@ -23,10 +23,10 @@ export default class OpportunitySlotOutputFormat {
     };
   }
 
-  static get(r: OpportunitySlotPayloadWithArgs): GqlOpportunitySlot {
+  static get(r: PrismaOpportunitySlot): GqlOpportunitySlot {
     return {
       ...r,
-      opportunity: r.opportunity ? OpportunityOutputFormat.get(r.opportunity) : null,
+      opportunity: r.opportunity ? OpportunityPresenter.get(r.opportunity) : null,
     };
   }
 

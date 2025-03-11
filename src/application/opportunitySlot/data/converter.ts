@@ -6,7 +6,7 @@ import {
   GqlOpportunitySlotUpdateInput,
 } from "@/types/graphql";
 
-export default class OpportunitySlotInputFormat {
+export default class OpportunitySlotConverter {
   static filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
     return {
       AND: [filter?.opportunityId ? { opportunityId: filter.opportunityId } : {}],

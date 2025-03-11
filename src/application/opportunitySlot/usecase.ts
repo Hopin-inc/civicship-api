@@ -5,29 +5,34 @@ import {
   GqlOpportunitySlotsConnection,
   GqlMutationOpportunitySlotsBulkUpdateArgs,
   GqlOpportunitySlotsBulkUpdatePayload,
+  GqlOpportunity,
+  GqlOpportunitySlotsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/utils";
 import OpportunitySlotService from "@/application/opportunitySlot/service";
-import OpportunitySlotOutputFormat from "@/application/opportunitySlot/presenter";
+import OpportunitySlotPresenter from "@/application/opportunitySlot/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import OpportunitySlotUtils from "@/application/opportunitySlot/utilis";
 
 export default class OpportunitySlotUseCase {
   private static issuer = new PrismaClientIssuer();
 
   static async visitorBrowseOpportunitySlots(
-    { filter, sort, cursor, first }: GqlQueryOpportunitySlotsArgs,
+    args: GqlQueryOpportunitySlotsArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsConnection> {
-    const take = clampFirst(first);
-    const rows = await OpportunitySlotService.fetchOpportunitySlots(
-      ctx,
-      { filter, sort, cursor },
-      take,
-    );
-    const hasNextPage = rows.length > take;
-    const data = rows.slice(0, take).map((record) => OpportunitySlotOutputFormat.get(record));
-    return OpportunitySlotOutputFormat.query(data, hasNextPage);
+    return OpportunitySlotUtils.fetchOpportunitySlotsCommon(ctx, args);
+  }
+
+  static async visitorBrowseOpportunitySlotsByOpportunity(
+    { id }: GqlOpportunity,
+    args: GqlOpportunitySlotsArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitySlotsConnection> {
+    return OpportunitySlotUtils.fetchOpportunitySlotsCommon(ctx, {
+      ...args,
+      filter: { opportunityId: id },
+    });
   }
 
   static async visitorViewOpportunitySlot(
@@ -36,7 +41,7 @@ export default class OpportunitySlotUseCase {
   ): Promise<GqlOpportunitySlot | null> {
     const slot = await OpportunitySlotService.findOpportunitySlot(ctx, id);
     if (!slot) return null;
-    return OpportunitySlotOutputFormat.get(slot);
+    return OpportunitySlotPresenter.get(slot);
   }
 
   static async managerBulkUpdateOpportunitySlots(
@@ -58,9 +63,7 @@ export default class OpportunitySlotUseCase {
         input.opportunityId,
         tx,
       );
-      return OpportunitySlotOutputFormat.bulkUpdate(
-        rows.map((r) => OpportunitySlotOutputFormat.get(r)),
-      );
+      return OpportunitySlotPresenter.bulkUpdate(rows.map((r) => OpportunitySlotPresenter.get(r)));
     });
   }
 }

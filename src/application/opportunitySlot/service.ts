@@ -6,7 +6,7 @@ import {
   GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
 import OpportunitySlotRepository from "@/application/opportunitySlot/data/repository";
-import OpportunitySlotInputFormat from "@/application/opportunitySlot/data/converter";
+import OpportunitySlotConverter from "@/application/opportunitySlot/data/converter";
 
 export default class OpportunitySlotService {
   static async fetchOpportunitySlots(
@@ -14,8 +14,8 @@ export default class OpportunitySlotService {
     { filter, sort, cursor }: GqlQueryOpportunitySlotsArgs,
     take: number,
   ) {
-    const where = OpportunitySlotInputFormat.filter(filter ?? {});
-    const orderBy = OpportunitySlotInputFormat.sort(sort ?? {});
+    const where = OpportunitySlotConverter.filter(filter ?? {});
+    const orderBy = OpportunitySlotConverter.sort(sort ?? {});
     return OpportunitySlotRepository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -39,9 +39,7 @@ export default class OpportunitySlotService {
   ) {
     if (inputs.length === 0) return;
 
-    const createData = inputs.map((input) =>
-      OpportunitySlotInputFormat.create(opportunityId, input),
-    );
+    const createData = inputs.map((input) => OpportunitySlotConverter.create(opportunityId, input));
     await OpportunitySlotRepository.createMany(ctx, createData, tx);
   }
 
@@ -54,12 +52,7 @@ export default class OpportunitySlotService {
 
     await Promise.all(
       inputs.map((input) =>
-        OpportunitySlotRepository.update(
-          ctx,
-          input.id,
-          OpportunitySlotInputFormat.update(input),
-          tx,
-        ),
+        OpportunitySlotRepository.update(ctx, input.id, OpportunitySlotConverter.update(input), tx),
       ),
     );
   }
