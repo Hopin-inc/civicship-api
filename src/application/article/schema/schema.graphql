@@ -3,36 +3,22 @@
 # ------------------------------
 type Article {
     id: ID!
+    category: ArticleCategory!
+
     title: String!
     introduction: String!
-    category: ArticleCategory!
-    publishStatus: PublishStatus!
     body: String!
     thumbnail: JSON
+
+    publishStatus: PublishStatus!
     publishedAt: Datetime
 
     community: Community
 
-    authors(
-        filter: UserFilterInput
-        sort: UserSortInput
-        cursor: String
-        first: Int
-    ): UsersConnection @complexity(value: 5, multipliers: ["first"])
+    authors: [User!]
+    relatedUsers: [User!]
 
-    relatedUsers(
-        filter: UserFilterInput
-        sort: UserSortInput
-        cursor: String
-        first: Int
-    ): UsersConnection @complexity(value: 5, multipliers: ["first"])
-
-    opportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
+    opportunities: [Opportunity!]
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -3,7 +3,7 @@ import {
   GqlArticleUpdateInput,
   GqlQueryArticlesArgs,
 } from "@/types/graphql";
-import ArticleInputFormat from "@/application/article/data/converter";
+import ArticleConverter from "@/application/article/data/converter";
 import ArticleRepository from "@/application/article/data/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
@@ -15,8 +15,8 @@ export default class ArticleService {
     { cursor, filter, sort }: GqlQueryArticlesArgs,
     take: number,
   ) {
-    const where = ArticleInputFormat.filter(filter ?? {});
-    const orderBy = ArticleInputFormat.sort(sort ?? {});
+    const where = ArticleConverter.filter(filter ?? {});
+    const orderBy = ArticleConverter.sort(sort ?? {});
     return ArticleRepository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -25,7 +25,7 @@ export default class ArticleService {
   }
 
   static async createArticle(ctx: IContext, input: GqlArticleCreateInput) {
-    const data: Prisma.ArticleCreateInput = ArticleInputFormat.create(input);
+    const data: Prisma.ArticleCreateInput = ArticleConverter.create(input);
     return ArticleRepository.create(ctx, data);
   }
 
@@ -42,7 +42,7 @@ export default class ArticleService {
     if (!article) {
       throw new NotFoundError("Article", { id });
     }
-    const data: Prisma.ArticleUpdateInput = ArticleInputFormat.update(input);
+    const data: Prisma.ArticleUpdateInput = ArticleConverter.update(input);
     return ArticleRepository.update(ctx, id, data);
   }
 }

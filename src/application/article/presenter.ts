@@ -6,8 +6,11 @@ import {
   GqlArticleUpdateSuccess,
 } from "@/types/graphql";
 import { ArticlePayloadWithArgs } from "@/application/article/data/type";
+import CommunityPresenter from "@/application/community/presenter";
+import UserPresenter from "@/application/user/presenter";
+import OpportunityPresenter from "@/application/opportunity/presenter";
 
-export default class ArticleOutputFormat {
+export default class ArticlePresenter {
   static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {
     return {
       totalCount: r.length,
@@ -25,7 +28,15 @@ export default class ArticleOutputFormat {
   }
 
   static get(r: ArticlePayloadWithArgs): GqlArticle {
-    return r;
+    const { community, opportunities, authors, relatedUsers, ...prop } = r;
+
+    return {
+      ...prop,
+      community: CommunityPresenter.get(community),
+      authors: authors.map(UserPresenter.get),
+      relatedUsers: relatedUsers.map(UserPresenter.get),
+      opportunities: opportunities.map(OpportunityPresenter.get),
+    };
   }
 
   static create(r: ArticlePayloadWithArgs): GqlArticleCreateSuccess {

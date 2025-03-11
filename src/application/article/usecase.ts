@@ -9,22 +9,37 @@ import {
   GqlArticleDeletePayload,
   GqlMutationArticleUpdateArgs,
   GqlArticleUpdatePayload,
+  GqlCommunity,
+  GqlCommunityArticlesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ArticleService from "@/application/article/service";
-import ArticleOutputFormat from "@/application/article/presenter";
-import { clampFirst } from "@/utils";
+import ArticlePresenter from "@/application/article/presenter";
+import ArticleUtils from "@/application/article/utils";
 
 export default class ArticleUseCase {
   static async visitorBrowseArticles(
     ctx: IContext,
     { filter, sort, cursor, first }: GqlQueryArticlesArgs,
   ): Promise<GqlArticlesConnection> {
-    const take = clampFirst(first);
-    const records = await ArticleService.fetchArticles(ctx, { filter, sort, cursor }, take);
-    const hasNextPage = records.length > take;
-    const data: GqlArticle[] = records.slice(0, take).map((r) => ArticleOutputFormat.get(r));
-    return ArticleOutputFormat.query(data, hasNextPage);
+    return ArticleUtils.fetchArticlesCommon(ctx, {
+      cursor,
+      sort,
+      filter,
+      first,
+    });
+  }
+
+  static async visitorBrowseArticlesByCommunity(
+    { id }: GqlCommunity,
+    { first, cursor }: GqlCommunityArticlesArgs,
+    ctx: IContext,
+  ): Promise<GqlArticlesConnection> {
+    return ArticleUtils.fetchArticlesCommon(ctx, {
+      cursor,
+      filter: { communityId: id },
+      first,
+    });
   }
 
   static async visitorViewArticle(
@@ -32,7 +47,7 @@ export default class ArticleUseCase {
     { id }: GqlQueryArticleArgs,
   ): Promise<GqlArticle | null> {
     const record = await ArticleService.findArticle(ctx, id);
-    return record ? ArticleOutputFormat.get(record) : null;
+    return record ? ArticlePresenter.get(record) : null;
   }
 
   static async managerCreateArticle(
@@ -40,7 +55,7 @@ export default class ArticleUseCase {
     { input }: GqlMutationArticleCreateArgs,
   ): Promise<GqlArticleCreatePayload> {
     const record = await ArticleService.createArticle(ctx, input);
-    return ArticleOutputFormat.create(record);
+    return ArticlePresenter.create(record);
   }
 
   static async managerUpdateArticle(
@@ -48,7 +63,7 @@ export default class ArticleUseCase {
     { id, input }: GqlMutationArticleUpdateArgs,
   ): Promise<GqlArticleUpdatePayload> {
     const record = await ArticleService.updateArticle(ctx, id, input);
-    return ArticleOutputFormat.update(record);
+    return ArticlePresenter.update(record);
   }
 
   static async managerDeleteArticle(
@@ -56,6 +71,6 @@ export default class ArticleUseCase {
     { id }: GqlMutationArticleDeleteArgs,
   ): Promise<GqlArticleDeletePayload> {
     const record = await ArticleService.deleteArticle(ctx, id);
-    return ArticleOutputFormat.delete(record);
+    return ArticlePresenter.delete(record);
   }
 }

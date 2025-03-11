@@ -5,15 +5,8 @@ import {
   GqlMutationArticleCreateArgs,
   GqlMutationArticleUpdateArgs,
   GqlMutationArticleDeleteArgs,
-  GqlArticle,
-  GqlArticleOpportunitiesArgs,
-  GqlOpportunitiesConnection,
-  GqlArticleAuthorsArgs,
-  GqlArticleRelatedUsersArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityUseCase from "@/application/opportunity/usecase";
-import UserUseCase from "@/application/user/usecase";
 
 const articleResolver = {
   Query: {
@@ -33,21 +26,6 @@ const articleResolver = {
       ArticleUseCase.managerUpdateArticle(ctx, args),
     articleDelete: async (_: unknown, args: GqlMutationArticleDeleteArgs, ctx: IContext) =>
       ArticleUseCase.managerDeleteArticle(ctx, args),
-  },
-  Article: {
-    opportunities: async (
-      parent: GqlArticle,
-      args: GqlArticleOpportunitiesArgs,
-      ctx: IContext,
-    ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.visitorBrowseOpportunitiesByArticle(parent, args, ctx);
-    },
-    authors: async (parent: GqlArticle, args: GqlArticleAuthorsArgs, ctx: IContext) => {
-      return UserUseCase.visitorBrowseArticleAuthors(ctx, parent, args);
-    },
-    relatedUsers: async (parent: GqlArticle, args: GqlArticleRelatedUsersArgs, ctx: IContext) => {
-      return UserUseCase.visitorBrowseArticleRelatedUsers(ctx, parent, args);
-    },
   },
 };
 
