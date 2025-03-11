@@ -6,6 +6,7 @@ import {
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
 import { PrismaCommunity } from "@/application/community/data/type";
+import PlacePresenter from "@/application/place/presenter";
 
 export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
@@ -25,7 +26,12 @@ export default class CommunityPresenter {
   }
 
   static get(r: PrismaCommunity): GqlCommunity {
-    return r;
+    const { places, ...prop } = r;
+
+    return {
+      ...prop,
+      places: places.map(PlacePresenter.get),
+    };
   }
 
   static create(r: PrismaCommunity): GqlCommunityCreateSuccess {
