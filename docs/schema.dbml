@@ -25,6 +25,7 @@ Table t_users {
   articlesWrittenByMe t_articles [not null]
   articlesAboutMe t_articles [not null]
   wallets t_wallets [not null]
+  ticketStatusChangedByMe t_ticket_status_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -84,7 +85,7 @@ Table t_wallets {
   updatedAt DateTime
   fromTransactions t_transactions [not null]
   toTransactions t_transactions [not null]
-  utilityHistories t_utility_histories [not null]
+  tickets t_tickets [not null]
 }
 
 Table t_opportunities {
@@ -112,7 +113,7 @@ Table t_opportunities {
   participations t_participations [not null]
   slots t_opportunity_slots [not null]
   invitations t_opportunity_invitations [not null]
-  requiredUtilities t_opportunity_required_utilities [not null]
+  requiredUtilities t_utilities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -149,18 +150,6 @@ Table t_opportunity_invitation_histories {
   inivitedUser t_users [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-}
-
-Table t_opportunity_required_utilities {
-  status UtilityStatus [not null, default: 'PURCHASED']
-  opportunity t_opportunities [not null]
-  opportunityId String [not null]
-  utility t_utilities [not null]
-  utilityId String [not null]
-
-  indexes {
-    (opportunityId, utilityId) [pk]
-  }
 }
 
 Table t_places {
@@ -230,25 +219,38 @@ Table t_utilities {
   id String [pk]
   name String [not null]
   description String
-  type UtilityType [not null, default: 'TICKET']
   image String
   pointsRequired Int [not null]
+  publishStatus PublishStatus [not null, default: 'PUBLIC']
   communityId String [not null]
   community t_communities [not null]
-  utilityHistories t_utility_histories [not null]
-  requiredForOpportunities t_opportunity_required_utilities [not null]
+  tickets t_tickets [not null]
+  requiredForOpportunities t_opportunities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
 
-Table t_utility_histories {
+Table t_tickets {
   id String [pk]
-  status UtilityStatus [not null, default: 'PURCHASED']
+  status TicketStatus [not null, default: 'AVAILABLE']
   walletId String [not null]
   wallet t_wallets [not null]
   utilityId String [not null]
   utility t_utilities [not null]
-  transactionId String
+  ticketStatusHistories t_ticket_status_histories [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_ticket_status_histories {
+  id String [pk]
+  status TicketStatus [not null, default: 'AVAILABLE']
+  reason TicketStatusReason [not null, default: 'PURCHASED']
+  ticketId String [not null]
+  ticket t_tickets [not null]
+  createdBy String
+  createdByUser t_users
+  transactionId String [unique]
   transaction t_transactions
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -265,7 +267,7 @@ Table t_transactions {
   toPointChange Int [not null]
   participationId String
   participation t_participations
-  utilityHistories t_utility_histories [not null]
+  ticketStatusHistory t_ticket_status_histories
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -315,6 +317,11 @@ Table t_related_users_on_articles {
 Table t_opportunities_on_articles {
   articlesId String [ref: > t_articles.id]
   opportunitiesId String [ref: > t_opportunities.id]
+}
+
+Table OpportunityToUtility {
+  requiredutilitiesId String [ref: > t_utilities.id]
+  requiredforopportunitiesId String [ref: > t_opportunities.id]
 }
 
 Enum IdentityPlatform {
@@ -372,17 +379,18 @@ Enum WalletType {
   MEMBER
 }
 
-Enum UtilityType {
-  TICKET
+Enum TicketStatus {
+  AVAILABLE
+  DISABLED
 }
 
-Enum UtilityStatus {
+Enum TicketStatusReason {
   PURCHASED
+  CANCELED
   RESERVED
   USED
   REFUNDED
   EXPIRED
-  DISABLED
 }
 
 Enum TransactionReason {
@@ -420,10 +428,6 @@ Ref: t_opportunity_invitation_histories.invitationId > t_opportunity_invitations
 
 Ref: t_opportunity_invitation_histories.invitedUserId > t_users.id [delete: Cascade]
 
-Ref: t_opportunity_required_utilities.opportunityId > t_opportunities.id [delete: Cascade]
-
-Ref: t_opportunity_required_utilities.utilityId > t_utilities.id [delete: Cascade]
-
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
@@ -442,11 +446,15 @@ Ref: t_articles.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 
-Ref: t_utility_histories.walletId > t_wallets.id [delete: Restrict]
+Ref: t_tickets.walletId > t_wallets.id [delete: Restrict]
 
-Ref: t_utility_histories.utilityId > t_utilities.id [delete: Restrict]
+Ref: t_tickets.utilityId > t_utilities.id [delete: Restrict]
 
-Ref: t_utility_histories.transactionId > t_transactions.id [delete: Restrict]
+Ref: t_ticket_status_histories.ticketId > t_tickets.id [delete: Restrict]
+
+Ref: t_ticket_status_histories.createdBy > t_users.id [delete: Set Null]
+
+Ref: t_ticket_status_histories.transactionId - t_transactions.id [delete: Restrict]
 
 Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 

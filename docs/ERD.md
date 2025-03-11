@@ -74,19 +74,20 @@ MEMBER MEMBER
     
 
 
-        UtilityType {
-            TICKET TICKET
+        TicketStatus {
+            AVAILABLE AVAILABLE
+DISABLED DISABLED
         }
     
 
 
-        UtilityStatus {
+        TicketStatusReason {
             PURCHASED PURCHASED
+CANCELED CANCELED
 RESERVED RESERVED
 USED USED
 REFUNDED REFUNDED
 EXPIRED EXPIRED
-DISABLED DISABLED
         }
     
 
@@ -213,13 +214,6 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     }
   
 
-  "t_opportunity_required_utilities" {
-    UtilityStatus status 
-    String opportunity_id 
-    String utility_id 
-    }
-  
-
   "t_places" {
     String id "🗝️"
     String name 
@@ -277,20 +271,31 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     String id "🗝️"
     String name 
     String description "❓"
-    UtilityType type 
     String image "❓"
     Int points_required 
+    PublishStatus publish_status 
     String community_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
   
 
-  "t_utility_histories" {
+  "t_tickets" {
     String id "🗝️"
-    UtilityStatus status 
+    TicketStatus status 
     String wallet_id 
     String utility_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_ticket_status_histories" {
+    String id "🗝️"
+    TicketStatus status 
+    TicketStatusReason reason 
+    String ticket_id 
+    String created_by "❓"
     String transaction_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -347,6 +352,7 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_users" o{--}o "t_wallets" : "wallets"
+    "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_communities" o{--}o "t_memberships" : "memberships"
@@ -366,7 +372,7 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_wallets" o{--}o "mv_accumulated_points" : "accumulatedPointView"
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
-    "t_wallets" o{--}o "t_utility_histories" : "utilityHistories"
+    "t_wallets" o{--}o "t_tickets" : "tickets"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|o "t_places" : "place"
@@ -376,7 +382,7 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_opportunities" o{--}o "t_participations" : "participations"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "t_opportunity_invitations" : "invitations"
-    "t_opportunities" o{--}o "t_opportunity_required_utilities" : "requiredUtilities"
+    "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunity_slots" o|--|o "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
@@ -384,9 +390,6 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
     "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
     "t_opportunity_invitation_histories" o|--|| "t_users" : "inivitedUser"
-    "t_opportunity_required_utilities" o|--|| "UtilityStatus" : "enum:status"
-    "t_opportunity_required_utilities" o|--|| "t_opportunities" : "opportunity"
-    "t_opportunity_required_utilities" o|--|| "t_utilities" : "utility"
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
@@ -405,19 +408,24 @@ UTILITY_REFUNDED UTILITY_REFUNDED
     "t_articles" o{--}o "t_users" : "authors"
     "t_articles" o{--}o "t_users" : "relatedUsers"
     "t_articles" o{--}o "t_opportunities" : "opportunities"
-    "t_utilities" o|--|| "UtilityType" : "enum:type"
+    "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_utilities" o|--|| "t_communities" : "community"
-    "t_utilities" o{--}o "t_utility_histories" : "utilityHistories"
-    "t_utilities" o{--}o "t_opportunity_required_utilities" : "requiredForOpportunities"
-    "t_utility_histories" o|--|| "UtilityStatus" : "enum:status"
-    "t_utility_histories" o|--|| "t_wallets" : "wallet"
-    "t_utility_histories" o|--|| "t_utilities" : "utility"
-    "t_utility_histories" o|--|o "t_transactions" : "transaction"
+    "t_utilities" o{--}o "t_tickets" : "tickets"
+    "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
+    "t_tickets" o|--|| "TicketStatus" : "enum:status"
+    "t_tickets" o|--|| "t_wallets" : "wallet"
+    "t_tickets" o|--|| "t_utilities" : "utility"
+    "t_tickets" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
+    "t_ticket_status_histories" o|--|| "TicketStatus" : "enum:status"
+    "t_ticket_status_histories" o|--|| "TicketStatusReason" : "enum:reason"
+    "t_ticket_status_histories" o|--|| "t_tickets" : "ticket"
+    "t_ticket_status_histories" o|--|o "t_users" : "createdByUser"
+    "t_ticket_status_histories" o|--|o "t_transactions" : "transaction"
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
-    "t_transactions" o{--}o "t_utility_histories" : "utilityHistories"
+    "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "m_states" o{--}o "m_cities" : "cities"

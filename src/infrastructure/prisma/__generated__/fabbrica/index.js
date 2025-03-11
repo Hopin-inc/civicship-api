@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityHistoryFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityRequiredUtilityFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -51,6 +51,10 @@ const modelFieldDefinitions = [{
                 name: "wallets",
                 type: "Wallet",
                 relationName: "UserToWallet"
+            }, {
+                name: "ticketStatusChangedByMe",
+                type: "TicketStatusHistory",
+                relationName: "TicketStatusHistoryToUser"
             }]
     }, {
         name: "Identity",
@@ -124,9 +128,9 @@ const modelFieldDefinitions = [{
                 type: "Transaction",
                 relationName: "to_wallet"
             }, {
-                name: "utilityHistories",
-                type: "UtilityHistory",
-                relationName: "UtilityHistoryToWallet"
+                name: "tickets",
+                type: "Ticket",
+                relationName: "TicketToWallet"
             }]
     }, {
         name: "Opportunity",
@@ -160,8 +164,8 @@ const modelFieldDefinitions = [{
                 relationName: "OpportunityToOpportunityInvitation"
             }, {
                 name: "requiredUtilities",
-                type: "OpportunityRequiredUtility",
-                relationName: "OpportunityToOpportunityRequiredUtility"
+                type: "Utility",
+                relationName: "OpportunityToUtility"
             }]
     }, {
         name: "OpportunitySlot",
@@ -199,17 +203,6 @@ const modelFieldDefinitions = [{
                 name: "inivitedUser",
                 type: "User",
                 relationName: "OpportunityInvitationHistoryToUser"
-            }]
-    }, {
-        name: "OpportunityRequiredUtility",
-        fields: [{
-                name: "opportunity",
-                type: "Opportunity",
-                relationName: "OpportunityToOpportunityRequiredUtility"
-            }, {
-                name: "utility",
-                type: "Utility",
-                relationName: "OpportunityRequiredUtilityToUtility"
             }]
     }, {
         name: "Place",
@@ -286,28 +279,43 @@ const modelFieldDefinitions = [{
                 type: "Community",
                 relationName: "CommunityToUtility"
             }, {
-                name: "utilityHistories",
-                type: "UtilityHistory",
-                relationName: "UtilityToUtilityHistory"
+                name: "tickets",
+                type: "Ticket",
+                relationName: "TicketToUtility"
             }, {
                 name: "requiredForOpportunities",
-                type: "OpportunityRequiredUtility",
-                relationName: "OpportunityRequiredUtilityToUtility"
+                type: "Opportunity",
+                relationName: "OpportunityToUtility"
             }]
     }, {
-        name: "UtilityHistory",
+        name: "Ticket",
         fields: [{
                 name: "wallet",
                 type: "Wallet",
-                relationName: "UtilityHistoryToWallet"
+                relationName: "TicketToWallet"
             }, {
                 name: "utility",
                 type: "Utility",
-                relationName: "UtilityToUtilityHistory"
+                relationName: "TicketToUtility"
+            }, {
+                name: "ticketStatusHistories",
+                type: "TicketStatusHistory",
+                relationName: "TicketToTicketStatusHistory"
+            }]
+    }, {
+        name: "TicketStatusHistory",
+        fields: [{
+                name: "ticket",
+                type: "Ticket",
+                relationName: "TicketToTicketStatusHistory"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "TicketStatusHistoryToUser"
             }, {
                 name: "transaction",
                 type: "Transaction",
-                relationName: "TransactionToUtilityHistory"
+                relationName: "TicketStatusHistoryToTransaction"
             }]
     }, {
         name: "Transaction",
@@ -324,9 +332,9 @@ const modelFieldDefinitions = [{
                 type: "Participation",
                 relationName: "ParticipationToTransaction"
             }, {
-                name: "utilityHistories",
-                type: "UtilityHistory",
-                relationName: "TransactionToUtilityHistory"
+                name: "ticketStatusHistory",
+                type: "TicketStatusHistory",
+                relationName: "TicketStatusHistoryToTransaction"
             }]
     }, {
         name: "City",
@@ -1235,104 +1243,6 @@ exports.defineOpportunityInvitationHistoryFactory = ((options) => {
     return defineOpportunityInvitationHistoryFactoryInternal(options, {});
 });
 exports.defineOpportunityInvitationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityInvitationHistoryFactoryInternal(options, defaultTransientFieldValues);
-function isOpportunityRequiredUtilityopportunityFactory(x) {
-    return x?._factoryFor === "Opportunity";
-}
-function isOpportunityRequiredUtilityutilityFactory(x) {
-    return x?._factoryFor === "Utility";
-}
-function autoGenerateOpportunityRequiredUtilityScalarsOrEnums({ seq }) {
-    return {};
-}
-function defineOpportunityRequiredUtilityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
-    const getFactoryWithTraits = (traitKeys = []) => {
-        const seqKey = {};
-        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("OpportunityRequiredUtility", modelFieldDefinitions);
-        const handleAfterBuild = (0, internal_1.createCallbackChain)([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = (0, internal_1.createCallbackChain)([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateOpportunityRequiredUtilityScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
-            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                opportunity: isOpportunityRequiredUtilityopportunityFactory(defaultData.opportunity) ? {
-                    create: await defaultData.opportunity.build()
-                } : defaultData.opportunity,
-                utility: isOpportunityRequiredUtilityutilityFactory(defaultData.utility) ? {
-                    create: await defaultData.utility.build()
-                } : defaultData.utility
-            };
-            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
-        const pickForConnect = (inputData) => ({
-            opportunityId: inputData.opportunityId,
-            utilityId: inputData.utilityId
-        });
-        const create = async (inputData = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().opportunityRequiredUtility.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
-        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "OpportunityRequiredUtility",
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name, ...names) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-/**
- * Define factory for {@link OpportunityRequiredUtility} model.
- *
- * @param options
- * @returns factory {@link OpportunityRequiredUtilityFactoryInterface}
- */
-exports.defineOpportunityRequiredUtilityFactory = ((options) => {
-    return defineOpportunityRequiredUtilityFactoryInternal(options, {});
-});
-exports.defineOpportunityRequiredUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityRequiredUtilityFactoryInternal(options, defaultTransientFieldValues);
 function isPlacecityFactory(x) {
     return x?._factoryFor === "City";
 }
@@ -1831,23 +1741,20 @@ exports.defineUtilityFactory = ((options) => {
     return defineUtilityFactoryInternal(options, {});
 });
 exports.defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
-function isUtilityHistorywalletFactory(x) {
+function isTicketwalletFactory(x) {
     return x?._factoryFor === "Wallet";
 }
-function isUtilityHistoryutilityFactory(x) {
+function isTicketutilityFactory(x) {
     return x?._factoryFor === "Utility";
 }
-function isUtilityHistorytransactionFactory(x) {
-    return x?._factoryFor === "Transaction";
-}
-function autoGenerateUtilityHistoryScalarsOrEnums({ seq }) {
+function autoGenerateTicketScalarsOrEnums({ seq }) {
     return {};
 }
-function defineUtilityHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+function defineTicketFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
     const getFactoryWithTraits = (traitKeys = []) => {
         const seqKey = {};
         const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("UtilityHistory", modelFieldDefinitions);
+        const screen = (0, internal_1.createScreener)("Ticket", modelFieldDefinitions);
         const handleAfterBuild = (0, internal_1.createCallbackChain)([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -1862,7 +1769,7 @@ function defineUtilityHistoryFactoryInternal({ defaultData: defaultDataResolver,
         ]);
         const build = async (inputData = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateUtilityHistoryScalarsOrEnums({ seq });
+            const requiredScalarData = autoGenerateTicketScalarsOrEnums({ seq });
             const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
             const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
@@ -1876,15 +1783,12 @@ function defineUtilityHistoryFactoryInternal({ defaultData: defaultDataResolver,
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                wallet: isUtilityHistorywalletFactory(defaultData.wallet) ? {
+                wallet: isTicketwalletFactory(defaultData.wallet) ? {
                     create: await defaultData.wallet.build()
                 } : defaultData.wallet,
-                utility: isUtilityHistoryutilityFactory(defaultData.utility) ? {
+                utility: isTicketutilityFactory(defaultData.utility) ? {
                     create: await defaultData.utility.build()
-                } : defaultData.utility,
-                transaction: isUtilityHistorytransactionFactory(defaultData.transaction) ? {
-                    create: await defaultData.transaction.build()
-                } : defaultData.transaction
+                } : defaultData.utility
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1898,14 +1802,14 @@ function defineUtilityHistoryFactoryInternal({ defaultData: defaultDataResolver,
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().utilityHistory.create({ data });
+            const createdData = await getClient().ticket.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
         const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
         const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "UtilityHistory",
+            _factoryFor: "Ticket",
             build,
             buildList,
             buildCreateInput: build,
@@ -1925,15 +1829,118 @@ function defineUtilityHistoryFactoryInternal({ defaultData: defaultDataResolver,
     };
 }
 /**
- * Define factory for {@link UtilityHistory} model.
+ * Define factory for {@link Ticket} model.
  *
  * @param options
- * @returns factory {@link UtilityHistoryFactoryInterface}
+ * @returns factory {@link TicketFactoryInterface}
  */
-exports.defineUtilityHistoryFactory = ((options) => {
-    return defineUtilityHistoryFactoryInternal(options, {});
+exports.defineTicketFactory = ((options) => {
+    return defineTicketFactoryInternal(options, {});
 });
-exports.defineUtilityHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityHistoryFactoryInternal(options, defaultTransientFieldValues);
+exports.defineTicketFactory.withTransientFields = defaultTransientFieldValues => options => defineTicketFactoryInternal(options, defaultTransientFieldValues);
+function isTicketStatusHistoryticketFactory(x) {
+    return x?._factoryFor === "Ticket";
+}
+function isTicketStatusHistorycreatedByUserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function isTicketStatusHistorytransactionFactory(x) {
+    return x?._factoryFor === "Transaction";
+}
+function autoGenerateTicketStatusHistoryScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineTicketStatusHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("TicketStatusHistory", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTicketStatusHistoryScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                ticket: isTicketStatusHistoryticketFactory(defaultData.ticket) ? {
+                    create: await defaultData.ticket.build()
+                } : defaultData.ticket,
+                createdByUser: isTicketStatusHistorycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser,
+                transaction: isTicketStatusHistorytransactionFactory(defaultData.transaction) ? {
+                    create: await defaultData.transaction.build()
+                } : defaultData.transaction
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().ticketStatusHistory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TicketStatusHistory",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link TicketStatusHistory} model.
+ *
+ * @param options
+ * @returns factory {@link TicketStatusHistoryFactoryInterface}
+ */
+exports.defineTicketStatusHistoryFactory = ((options) => {
+    return defineTicketStatusHistoryFactoryInternal(options, {});
+});
+exports.defineTicketStatusHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineTicketStatusHistoryFactoryInternal(options, defaultTransientFieldValues);
 function isTransactionfromWalletFactory(x) {
     return x?._factoryFor === "Wallet";
 }
@@ -1942,6 +1949,9 @@ function isTransactiontoWalletFactory(x) {
 }
 function isTransactionparticipationFactory(x) {
     return x?._factoryFor === "Participation";
+}
+function isTransactionticketStatusHistoryFactory(x) {
+    return x?._factoryFor === "TicketStatusHistory";
 }
 function autoGenerateTransactionScalarsOrEnums({ seq }) {
     return {
@@ -1991,7 +2001,10 @@ function defineTransactionFactoryInternal({ defaultData: defaultDataResolver, on
                 } : defaultData.toWallet,
                 participation: isTransactionparticipationFactory(defaultData.participation) ? {
                     create: await defaultData.participation.build()
-                } : defaultData.participation
+                } : defaultData.participation,
+                ticketStatusHistory: isTransactionticketStatusHistoryFactory(defaultData.ticketStatusHistory) ? {
+                    create: await defaultData.ticketStatusHistory.build()
+                } : defaultData.ticketStatusHistory
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
