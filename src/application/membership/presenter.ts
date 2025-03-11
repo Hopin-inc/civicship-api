@@ -8,6 +8,7 @@ import {
   GqlMembershipRemoveSuccess,
 } from "@/types/graphql";
 import { PrismaMembership } from "@/application/membership/data/type";
+import CommunityPresenter from "@/application/community/presenter";
 
 export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
@@ -29,7 +30,12 @@ export default class MembershipPresenter {
   }
 
   static get(r: PrismaMembership): GqlMembership {
-    return r;
+    const { community, ...prop } = r;
+
+    return {
+      ...prop,
+      community: CommunityPresenter.get(community),
+    };
   }
 
   static invite(r: PrismaMembership): GqlMembershipInviteSuccess {
