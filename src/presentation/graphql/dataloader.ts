@@ -13,6 +13,8 @@ import { createParticipationStatusHistoryLoader } from "@/application/participat
 import { createOpportunityInvitationLoader } from "@/application/opportunityInvitation/controller/dataloader";
 import { createOpportunityInvitationHistoryLoader } from "@/application/opportunityInvitation/invitationHistory/controller/dataloader";
 import { createArticleLoader } from "@/application/article/controller/dataloader";
+import { createTicketLoader } from "@/application/ticket/controller/dataloader";
+import { createTicketStatusHistoryLoader } from "@/application/ticket/statusHistory/controller/dataloader";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -31,13 +33,14 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     participation: createParticipationLoader(issuer),
     participationStatusHistory: createParticipationStatusHistoryLoader(issuer),
 
-    transaction: createTransactionLoader(issuer),
-
     utility: createUtilityLoader(issuer),
+    ticket: createTicketLoader(issuer),
+    ticketStatusHistory: createTicketStatusHistoryLoader(issuer),
 
     place: createPlaceLoader(issuer),
-
     article: createArticleLoader(issuer),
+
+    transaction: createTransactionLoader(issuer),
   };
 }
 
