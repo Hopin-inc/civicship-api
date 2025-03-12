@@ -14,8 +14,15 @@ import { IContext } from "@/types/server";
 import TicketService from "@/application/ticket/service";
 import TicketPresenter from "@/application/ticket/presenter";
 import { TicketUtils } from "@/application/ticket/utils";
+import WalletService from "@/application/membership/wallet/service";
+import WalletUtils from "@/application/membership/wallet/utils";
+import TransactionService from "@/application/transaction/service";
+import { Prisma } from "@prisma/client";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class TicketUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseTickets(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryTicketsArgs,
@@ -36,25 +43,57 @@ export default class TicketUseCase {
 
   static async memberPurchaseTicket(
     ctx: IContext,
-    args: GqlMutationTicketPurchaseArgs,
+    { input }: GqlMutationTicketPurchaseArgs,
   ): Promise<GqlTicketPurchasePayload> {
-    const result = await TicketService.purchaseTicket(ctx, args.input);
-    return TicketPresenter.purchase(result);
+    const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.walletId);
+    const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      await WalletUtils.validateTransfer(input.pointsRequired, memberWallet, communityWallet);
+
+      const transaction = await TransactionService.purchaseTicket(ctx, tx, {
+        fromWalletId: memberWallet.id,
+        toWalletId: communityWallet.id,
+        transferPoints: input.pointsRequired,
+      });
+
+      const result = await TicketService.purchaseTicket(
+        ctx,
+        memberWallet.id,
+        input.utilityId,
+        transaction.id,
+        tx,
+      );
+      return TicketPresenter.purchase(result);
+    });
   }
 
   static async memberUseTicket(
     ctx: IContext,
-    args: GqlMutationTicketUseArgs,
+    { id }: GqlMutationTicketUseArgs,
   ): Promise<GqlTicketUsePayload> {
-    const result = await TicketService.useTicket(ctx, args.id, args.input);
+    const result = await TicketService.useTicket(ctx, id);
     return TicketPresenter.use(result);
   }
 
   static async memberRefundTicket(
     ctx: IContext,
-    args: GqlMutationTicketRefundArgs,
+    { id, input }: GqlMutationTicketRefundArgs,
   ): Promise<GqlTicketRefundPayload> {
-    const result = await TicketService.refundTicket(ctx, args.id, args.input);
-    return TicketPresenter.refund(result);
+    const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.walletId);
+    const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
+
+    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      await WalletUtils.validateTransfer(input.pointsRequired, communityWallet, memberWallet);
+
+      const transaction = await TransactionService.refundTicket(ctx, tx, {
+        fromWalletId: memberWallet.id,
+        toWalletId: communityWallet.id,
+        transferPoints: input.pointsRequired,
+      });
+
+      const result = await TicketService.refundTicket(ctx, id, transaction.id, tx);
+      return TicketPresenter.refund(result);
+    });
   }
 }

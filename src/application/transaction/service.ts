@@ -9,8 +9,8 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionConverter, {
   GiveRewardPointParams,
-  PurchaseUtilityParams,
-  RefundUtilityParams,
+  PurchaseTicketParams,
+  RefundTicketParams,
 } from "@/application/transaction/data/converter";
 
 export default class TransactionService {
@@ -74,24 +74,24 @@ export default class TransactionService {
     return res;
   }
 
-  static async purchaseUtility(
+  static async purchaseTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    params: PurchaseUtilityParams,
+    params: PurchaseTicketParams,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.purchaseUtility(params);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.purchaseTicket(params);
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
-  static async refundUtility(
+  static async refundTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    params: RefundUtilityParams,
+    params: RefundTicketParams,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.refundUtility(params);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.refundTicket(params);
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);

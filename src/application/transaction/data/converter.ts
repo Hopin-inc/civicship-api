@@ -76,7 +76,7 @@ export default class TransactionConverter {
     };
   }
 
-  static purchaseUtility(params: PurchaseUtilityParams): Prisma.TransactionCreateInput {
+  static purchaseTicket(params: PurchaseTicketParams): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.UTILITY_PURCHASED,
       fromWallet: { connect: { id: params.fromWalletId } },
@@ -86,7 +86,7 @@ export default class TransactionConverter {
     };
   }
 
-  static refundUtility(params: RefundUtilityParams): Prisma.TransactionCreateInput {
+  static refundTicket(params: RefundTicketParams): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.UTILITY_REFUNDED,
       fromWallet: { connect: { id: params.fromWalletId } },
@@ -105,13 +105,13 @@ export type GiveRewardPointParams = {
   participationId: string;
 };
 
-export type PurchaseUtilityParams = {
+export type PurchaseTicketParams = {
   fromWalletId: string;
   toWalletId: string;
   transferPoints: number;
 };
 
-export type RefundUtilityParams = {
+export type RefundTicketParams = {
   fromWalletId: string;
   toWalletId: string;
   transferPoints: number;

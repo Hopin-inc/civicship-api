@@ -34,12 +34,10 @@ export default class TicketRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.TicketCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.ticket.create({
-        data,
-        include: ticketInclude,
-      });
+  static async create(ctx: IContext, data: Prisma.TicketCreateInput, tx: Prisma.TransactionClient) {
+    return tx.ticket.create({
+      data,
+      include: ticketInclude,
     });
   }
 
@@ -52,13 +50,26 @@ export default class TicketRepository {
     });
   }
 
-  static async update(ctx: IContext, id: string, data: Prisma.TicketUpdateInput) {
-    return this.issuer.public(ctx, (tx) => {
+  static async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.TicketUpdateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.ticket.update({
         where: { id },
         data,
         include: ticketInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.ticket.update({
+          where: { id },
+          data,
+          include: ticketInclude,
+        });
+      });
+    }
   }
 }

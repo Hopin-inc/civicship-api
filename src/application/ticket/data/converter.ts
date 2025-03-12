@@ -1,4 +1,4 @@
-import { GqlTicketFilterInput, GqlTicketSortInput, GqlTicketPurchaseInput } from "@/types/graphql";
+import { GqlTicketFilterInput, GqlTicketSortInput } from "@/types/graphql";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 
 export default class TicketConverter {
@@ -21,13 +21,14 @@ export default class TicketConverter {
 
   static purchase(
     currentUserId: string,
-    input: GqlTicketPurchaseInput,
+    walletId: string,
+    utilityId: string,
     transactionId: string,
   ): Prisma.TicketCreateInput {
     return {
       status: TicketStatus.AVAILABLE,
-      wallet: { connect: { id: input.walletId } },
-      utility: { connect: { id: input.utilityId } },
+      wallet: { connect: { id: walletId } },
+      utility: { connect: { id: utilityId } },
       ticketStatusHistories: {
         create: {
           status: TicketStatus.AVAILABLE,

@@ -1,15 +1,10 @@
-import {
-  GqlQueryTicketsArgs,
-  GqlTicket,
-  GqlTicketPurchaseInput,
-  GqlTicketUseInput,
-  GqlTicketRefundInput,
-} from "@/types/graphql";
+import { GqlQueryTicketsArgs, GqlTicket } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
 import { Prisma } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
+import { getCurrentUserId } from "@/utils";
 
 export default class TicketService {
   static async fetchTickets(
@@ -34,18 +29,54 @@ export default class TicketService {
     return ticket;
   }
 
-  static async purchaseTicket(ctx: IContext, input: GqlTicketPurchaseInput) {
-    const data: Prisma.TicketCreateInput = TicketConverter.purchase(input);
-    return TicketRepository.create(ctx, data);
+  static async purchaseTicket(
+    ctx: IContext,
+    walletId: string,
+    utilityId: string,
+    transactionId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const data: Prisma.TicketCreateInput = TicketConverter.purchase(
+      currentUserId,
+      walletId,
+      utilityId,
+      transactionId,
+    );
+    return TicketRepository.create(ctx, data, tx);
   }
 
-  static async useTicket(ctx: IContext, id: string, input: GqlTicketUseInput) {
-    const data: Prisma.TicketUpdateInput = TicketConverter.use(input);
+  static async reserveTicket(ctx: IContext, id: string) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const data: Prisma.TicketUpdateInput = TicketConverter.reserve(currentUserId);
     return TicketRepository.update(ctx, id, data);
   }
 
-  static async refundTicket(ctx: IContext, id: string, input: GqlTicketRefundInput) {
-    const data: Prisma.TicketUpdateInput = TicketConverter.refund(input);
+  static async cancelTicket(ctx: IContext, id: string) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const data: Prisma.TicketUpdateInput = TicketConverter.cancel(currentUserId);
     return TicketRepository.update(ctx, id, data);
+  }
+
+  static async useTicket(ctx: IContext, id: string) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const data: Prisma.TicketUpdateInput = TicketConverter.use(currentUserId);
+    return TicketRepository.update(ctx, id, data);
+  }
+
+  static async refundTicket(
+    ctx: IContext,
+    id: string,
+    transactionId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const data: Prisma.TicketUpdateInput = TicketConverter.refund(currentUserId, transactionId);
+    return TicketRepository.update(ctx, id, data, tx);
   }
 }
