@@ -4,40 +4,22 @@ import {
   GqlTransactionIssueCommunityPointInput,
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionDonateSelfPointInput,
-  GqlTransactionGiveRewardPointInput,
-  GqlTransactionPurchaseUtilityInput,
-  GqlTransactionRefundUtilityInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 
-export default class TransactionInputFormat {
+export default class TransactionConverter {
   static filter(filter?: GqlTransactionFilterInput): Prisma.TransactionWhereInput {
     return {
       AND: [
-        filter?.id ? { id: filter?.id } : {},
         filter?.reason ? { reason: filter?.reason } : {},
         filter?.fromWalletId ? { from: filter?.fromWalletId } : {},
         filter?.toWalletId ? { to: filter?.toWalletId } : {},
-        filter?.participationId ? { participationId: filter?.participationId } : {},
       ],
     };
   }
 
   static sort(sort?: GqlTransactionSortInput): Prisma.TransactionOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
-  }
-
-  static giveRewardPoint(input: GqlTransactionGiveRewardPointInput): Prisma.TransactionCreateInput {
-    const { fromWalletId, toWalletId, fromPointChange, toPointChange, participationId } = input;
-
-    return {
-      reason: TransactionReason.POINT_REWARD,
-      fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange,
-      toWallet: { connect: { id: toWalletId } },
-      toPointChange,
-      participation: { connect: { id: participationId } },
-    };
   }
 
   static issueCommunityPoint(
@@ -83,27 +65,54 @@ export default class TransactionInputFormat {
     };
   }
 
-  static purchaseUtility(input: GqlTransactionPurchaseUtilityInput): Prisma.TransactionCreateInput {
-    const { fromWalletId, toWalletId, transferPoints } = input;
-
+  static giveRewardPoint(params: GiveRewardPointParams): Prisma.TransactionCreateInput {
     return {
-      reason: TransactionReason.UTILITY_PURCHASED,
-      fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange: -transferPoints,
-      toWallet: { connect: { id: toWalletId } },
-      toPointChange: transferPoints,
+      reason: TransactionReason.POINT_REWARD,
+      fromWallet: { connect: { id: params.fromWalletId } },
+      fromPointChange: params.fromPointChange,
+      toWallet: { connect: { id: params.toWalletId } },
+      toPointChange: params.toPointChange,
+      participation: { connect: { id: params.participationId } },
     };
   }
 
-  static refundUtility(input: GqlTransactionRefundUtilityInput): Prisma.TransactionCreateInput {
-    const { fromWalletId, toWalletId, transferPoints } = input;
+  static purchaseUtility(params: PurchaseUtilityParams): Prisma.TransactionCreateInput {
+    return {
+      reason: TransactionReason.UTILITY_PURCHASED,
+      fromWallet: { connect: { id: params.fromWalletId } },
+      fromPointChange: -params.transferPoints,
+      toWallet: { connect: { id: params.toWalletId } },
+      toPointChange: params.transferPoints,
+    };
+  }
 
+  static refundUtility(params: RefundUtilityParams): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.UTILITY_REFUNDED,
-      fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange: -transferPoints,
-      toWallet: { connect: { id: toWalletId } },
-      toPointChange: transferPoints,
+      fromWallet: { connect: { id: params.fromWalletId } },
+      fromPointChange: -params.transferPoints,
+      toWallet: { connect: { id: params.toWalletId } },
+      toPointChange: params.transferPoints,
     };
   }
 }
+
+export type GiveRewardPointParams = {
+  fromWalletId: string;
+  toWalletId: string;
+  fromPointChange: number;
+  toPointChange: number;
+  participationId: string;
+};
+
+export type PurchaseUtilityParams = {
+  fromWalletId: string;
+  toWalletId: string;
+  transferPoints: number;
+};
+
+export type RefundUtilityParams = {
+  fromWalletId: string;
+  toWalletId: string;
+  transferPoints: number;
+};

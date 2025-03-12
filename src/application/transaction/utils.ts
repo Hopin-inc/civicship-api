@@ -6,7 +6,7 @@ import {
   GqlTransactionSortInput,
 } from "@/types/graphql";
 import TransactionService from "@/application/transaction/service";
-import TransactionOutputFormat from "@/application/transaction/presenter";
+import TransactionPresenter from "@/application/transaction/presenter";
 import { clampFirst } from "@/utils";
 
 export default class TransactionUtils {
@@ -30,9 +30,9 @@ export default class TransactionUtils {
     const hasNextPage = res.length > take;
 
     const data: GqlTransaction[] = res.slice(0, take).map((record) => {
-      return TransactionOutputFormat.get(record);
+      return TransactionPresenter.get(record);
     });
 
-    return TransactionOutputFormat.query(data, hasNextPage);
+    return TransactionPresenter.query(data, hasNextPage);
   }
 }

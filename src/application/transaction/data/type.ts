@@ -16,6 +16,6 @@ export const transactionInclude = Prisma.validator<Prisma.TransactionInclude>()(
   participation: true,
 });
 
-export type TransactionPayloadWithArgs = Prisma.TransactionGetPayload<{
+export type PrismaTransaction = Prisma.TransactionGetPayload<{
   include: typeof transactionInclude;
 }>;

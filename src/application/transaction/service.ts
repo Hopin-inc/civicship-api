@@ -1,14 +1,17 @@
 import TransactionRepository from "@/application/transaction/data/repository";
 import {
   GqlQueryTransactionsArgs,
-  GqlTransactionGiveRewardPointInput,
+  GqlTransactionDonateSelfPointInput,
+  GqlTransactionGrantCommunityPointInput,
   GqlTransactionIssueCommunityPointInput,
-  GqlTransactionPurchaseUtilityInput,
-  GqlTransactionRefundUtilityInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import TransactionInputFormat from "@/application/transaction/data/converter";
+import TransactionConverter, {
+  GiveRewardPointParams,
+  PurchaseUtilityParams,
+  RefundUtilityParams,
+} from "@/application/transaction/data/converter";
 
 export default class TransactionService {
   static async fetchTransactions(
@@ -16,8 +19,8 @@ export default class TransactionService {
     { cursor, filter, sort }: GqlQueryTransactionsArgs,
     take: number,
   ) {
-    const where = TransactionInputFormat.filter(filter ?? {});
-    const orderBy = TransactionInputFormat.sort(sort ?? {});
+    const where = TransactionConverter.filter(filter ?? {});
+    const orderBy = TransactionConverter.sort(sort ?? {});
 
     return await TransactionRepository.query(ctx, where, orderBy, take, cursor);
   }
@@ -26,36 +29,57 @@ export default class TransactionService {
     return await TransactionRepository.find(ctx, id);
   }
 
-  static async findExistingTransaction(ctx: IContext, id: string) {
-    return await TransactionRepository.find(ctx, id);
-  }
-
-  static async giveRewardPoint(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    input: GqlTransactionGiveRewardPointInput,
-  ) {
-    const data: Prisma.TransactionCreateInput = TransactionInputFormat.giveRewardPoint(input);
-
-    const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
-    return res;
-  }
-
   static async issueCommunityPoint(ctx: IContext, input: GqlTransactionIssueCommunityPointInput) {
-    const data: Prisma.TransactionCreateInput = TransactionInputFormat.issueCommunityPoint(input);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.issueCommunityPoint(input);
 
     const res = await TransactionRepository.create(ctx, data);
     await TransactionRepository.refreshCurrentPoints(ctx);
     return res;
   }
 
+  static async grantCommunityPoint(
+    ctx: IContext,
+    input: GqlTransactionGrantCommunityPointInput,
+    memberWalletId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const data = TransactionConverter.grantCommunityPoint(input, memberWalletId);
+    const transaction = await TransactionRepository.create(ctx, data, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+
+    return transaction;
+  }
+
+  static async donateSelfPoint(
+    ctx: IContext,
+    input: GqlTransactionDonateSelfPointInput,
+    toWalletId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const data = TransactionConverter.donateSelfPoint(input, toWalletId);
+    const transaction = await TransactionRepository.create(ctx, data, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    return transaction;
+  }
+
+  static async giveRewardPoint(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    params: GiveRewardPointParams,
+  ) {
+    const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint(params);
+
+    const res = await TransactionRepository.create(ctx, data, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    return res;
+  }
+
   static async purchaseUtility(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    input: GqlTransactionPurchaseUtilityInput,
+    params: PurchaseUtilityParams,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionInputFormat.purchaseUtility(input);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.purchaseUtility(params);
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
@@ -65,9 +89,9 @@ export default class TransactionService {
   static async refundUtility(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    input: GqlTransactionRefundUtilityInput,
+    params: RefundUtilityParams,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionInputFormat.refundUtility(input);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.refundUtility(params);
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);

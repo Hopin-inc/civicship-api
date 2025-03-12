@@ -4,13 +4,9 @@ import {
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionDonateSelfPointArgs,
-  GqlUtilityHistoriesConnection,
-  GqlTransaction,
-  GqlTransactionUtilityHistoriesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TransactionUseCase from "@/application/transaction/usecase";
-import UtilityHistoryUseCase from "@/application/utilityHistory/usecase";
 
 const transactionResolver = {
   Query: {
@@ -39,16 +35,6 @@ const transactionResolver = {
       { input }: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
     ) => TransactionUseCase.userDonateSelfPointToAnother(ctx, input),
-  },
-
-  Transaction: {
-    utilityHistories: async (
-      parent: GqlTransaction,
-      args: GqlTransactionUtilityHistoriesArgs,
-      ctx: IContext,
-    ): Promise<GqlUtilityHistoriesConnection> => {
-      return UtilityHistoryUseCase.visitorBrowseUtilityHistoriesByTransaction(parent, args, ctx);
-    },
   },
 };
 
