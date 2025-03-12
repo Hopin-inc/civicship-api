@@ -30,7 +30,7 @@ export default class CommunityPresenter {
 
     return {
       ...prop,
-      places: places.map(PlacePresenter.get),
+      places: places?.map(PlacePresenter.get) ?? [],
     };
   }
 

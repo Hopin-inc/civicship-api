@@ -6,7 +6,6 @@ import {
   GqlArticleUpdateSuccess,
 } from "@/types/graphql";
 import { PrismaArticle } from "@/application/article/data/type";
-import CommunityPresenter from "@/application/community/presenter";
 import UserPresenter from "@/application/user/presenter";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 
@@ -32,7 +31,7 @@ export default class ArticlePresenter {
 
     return {
       ...prop,
-      community: CommunityPresenter.get(community),
+      community,
       authors: authors.map(UserPresenter.get),
       relatedUsers: relatedUsers.map(UserPresenter.get),
       opportunities: opportunities.map(OpportunityPresenter.get),
