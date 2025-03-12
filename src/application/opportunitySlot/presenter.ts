@@ -4,7 +4,6 @@ import {
   GqlOpportunitySlotsConnection,
 } from "@/types/graphql";
 import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
-import OpportunityPresenter from "@/application/opportunity/presenter";
 
 export default class OpportunitySlotPresenter {
   static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
@@ -24,9 +23,11 @@ export default class OpportunitySlotPresenter {
   }
 
   static get(r: PrismaOpportunitySlot): GqlOpportunitySlot {
+    const { opportunity, ...prop } = r;
+
     return {
-      ...r,
-      opportunity: r.opportunity ? OpportunityPresenter.get(r.opportunity) : null,
+      ...prop,
+      opportunity,
     };
   }
 
