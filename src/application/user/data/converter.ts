@@ -1,25 +1,11 @@
 import { GqlUserFilterInput, GqlUserSortInput, GqlUserUpdateProfileInput } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
-export default class UserInputFormat {
+export default class UserConverter {
   static filter(filter: GqlUserFilterInput): Prisma.UserWhereInput {
     return {
       AND: [
         filter?.sysRole ? { sysRole: filter?.sysRole } : {},
-        filter.articleAuthorId
-          ? {
-              articlesWrittenByMe: {
-                some: { id: filter.articleAuthorId },
-              },
-            }
-          : {},
-        filter.articleWriterId
-          ? {
-              articlesAboutMe: {
-                some: { id: filter.articleWriterId },
-              },
-            }
-          : {},
         filter.keyword
           ? {
               OR: [{ name: { contains: filter.keyword } }, { slug: { contains: filter.keyword } }],

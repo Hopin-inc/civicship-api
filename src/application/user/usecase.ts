@@ -1,7 +1,4 @@
 import {
-  GqlArticle,
-  GqlArticleAuthorsArgs,
-  GqlArticleRelatedUsersArgs,
   GqlMutationUserUpdateMyProfileArgs,
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
@@ -10,10 +7,9 @@ import {
   GqlUserUpdateProfilePayload,
 } from "@/types/graphql";
 import UserService from "@/application/user/service";
-import UserResponseFormat from "@/application/user/presenter";
+import UserPresenter from "@/application/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
-import UserUtils from "@/application/user/utils";
 
 export default class UserUseCase {
   static async visitorBrowseCommunityMembers(
@@ -25,35 +21,9 @@ export default class UserUseCase {
     const hasNextPage = data.length > take;
 
     const users: GqlUser[] = data.slice(0, take).map((record) => {
-      return UserResponseFormat.get(record);
+      return UserPresenter.get(record);
     });
-    return UserResponseFormat.query(users, hasNextPage);
-  }
-
-  static async visitorBrowseArticleAuthors(
-    ctx: IContext,
-    { id }: GqlArticle,
-    { cursor, sort, first }: GqlArticleAuthorsArgs,
-  ): Promise<GqlUsersConnection> {
-    return UserUtils.fetchUsersCommon(ctx, {
-      filter: { articleAuthorId: id },
-      first,
-      cursor,
-      sort,
-    });
-  }
-
-  static async visitorBrowseArticleRelatedUsers(
-    ctx: IContext,
-    { id }: GqlArticle,
-    { cursor, sort, first }: GqlArticleRelatedUsersArgs,
-  ): Promise<GqlUsersConnection> {
-    return UserUtils.fetchUsersCommon(ctx, {
-      filter: { articleWriterId: id },
-      first,
-      cursor,
-      sort,
-    });
+    return UserPresenter.query(users, hasNextPage);
   }
 
   static async visitorViewMember(ctx: IContext, { id }: GqlQueryUserArgs): Promise<GqlUser | null> {
@@ -61,7 +31,7 @@ export default class UserUseCase {
     if (!user) {
       return null;
     }
-    return UserResponseFormat.get(user);
+    return UserPresenter.get(user);
   }
 
   static async userUpdateProfile(
@@ -69,6 +39,6 @@ export default class UserUseCase {
     { input }: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
     const res = await UserService.updateProfile(ctx, { input });
-    return UserResponseFormat.updateProfile(res);
+    return UserPresenter.updateProfile(res);
   }
 }

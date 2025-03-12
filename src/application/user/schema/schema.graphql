@@ -86,7 +86,7 @@ type User {
         sort: TicketStatusHistorySortInput
         cursor: String
         first: Int
-    ): TicketStatusHistoriesConnection! @complexity(value: 5, multipliers: ["first"])
+    ): TicketStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
 }
 
 # ------------------------------

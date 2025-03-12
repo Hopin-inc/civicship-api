@@ -1,7 +1,7 @@
 import { GqlUser, GqlUsersConnection, GqlUserUpdateProfileSuccess } from "@/types/graphql";
-import { UserGetPayloadWithArgs } from "@/application/user/data/type";
+import { PrismaUser } from "@/application/user/data/type";
 
-export default class UserOutputFormat {
+export default class UserPresenter {
   static query(users: GqlUser[], hasNextPage: boolean): GqlUsersConnection {
     return {
       totalCount: users.length,
@@ -18,11 +18,11 @@ export default class UserOutputFormat {
     };
   }
 
-  static get(r: UserGetPayloadWithArgs): GqlUser {
+  static get(r: PrismaUser): GqlUser {
     return r;
   }
 
-  static updateProfile(r: UserGetPayloadWithArgs): GqlUserUpdateProfileSuccess {
+  static updateProfile(r: PrismaUser): GqlUserUpdateProfileSuccess {
     return {
       __typename: "UserUpdateProfileSuccess",
       user: this.get(r),

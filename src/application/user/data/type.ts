@@ -6,6 +6,6 @@ export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
 
 export const userInclude = Prisma.validator<Prisma.UserInclude>()({});
 
-export type UserGetPayloadWithArgs = Prisma.UserGetPayload<{
+export type PrismaUser = Prisma.UserGetPayload<{
   include: typeof userInclude;
 }>;

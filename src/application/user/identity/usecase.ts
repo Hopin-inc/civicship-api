@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { GqlCurrentUserPayload, GqlMutationUserSignUpArgs } from "@/types/graphql";
-import IdentityInputFormat from "@/application/user/identity/data/converter";
+import IdentityConverter from "@/application/user/identity/data/converter";
 import IdentityService from "@/application/user/identity/service";
-import IdentityResponseFormat from "@/application/user/identity/presenter";
+import IdentityPresenter from "@/application/user/identity/presenter";
 
 export default class IdentityUseCase {
   static async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -15,15 +15,15 @@ export default class IdentityUseCase {
     context: IContext,
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
-    const data = IdentityInputFormat.create(args);
+    const data = IdentityConverter.create(args);
     const user = await IdentityService.createUserAndIdentity(data, context.uid, context.platform);
-    return IdentityResponseFormat.create(user);
+    return IdentityPresenter.create(user);
   }
 
   static async userDeleteAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     const uid = context.uid;
     const user = await IdentityService.deleteUserAndIdentity(uid);
     await IdentityService.deleteFirebaseAuthUser(uid);
-    return IdentityResponseFormat.delete(user);
+    return IdentityPresenter.delete(user);
   }
 }

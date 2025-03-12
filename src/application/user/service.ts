@@ -1,7 +1,7 @@
 import { GqlMutationUserUpdateMyProfileArgs, GqlQueryUsersArgs } from "@/types/graphql";
 import UserRepository from "@/application/user/data/repository";
 import { IContext } from "@/types/server";
-import UserInputFormat from "@/application/user/data/converter";
+import UserConverter from "@/application/user/data/converter";
 import { Prisma } from "@prisma/client";
 
 export default class UserService {
@@ -10,8 +10,8 @@ export default class UserService {
     { cursor, filter, sort }: GqlQueryUsersArgs,
     take: number,
   ) {
-    const where = UserInputFormat.filter(filter ?? {});
-    const orderBy = UserInputFormat.sort(sort ?? {});
+    const where = UserConverter.filter(filter ?? {});
+    const orderBy = UserConverter.sort(sort ?? {});
     return UserRepository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -20,8 +20,8 @@ export default class UserService {
     { cursor, filter, sort }: GqlQueryUsersArgs,
     take: number,
   ) {
-    const where = UserInputFormat.filter(filter ?? {});
-    const orderBy = UserInputFormat.sort(sort ?? {});
+    const where = UserConverter.filter(filter ?? {});
+    const orderBy = UserConverter.sort(sort ?? {});
     return UserRepository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -30,7 +30,7 @@ export default class UserService {
   }
 
   static async updateProfile(ctx: IContext, { input }: GqlMutationUserUpdateMyProfileArgs) {
-    const data: Prisma.UserUpdateInput = UserInputFormat.update(input);
+    const data: Prisma.UserUpdateInput = UserConverter.update(input);
     return UserRepository.updateProfile(ctx, ctx.uid, data);
   }
 }
