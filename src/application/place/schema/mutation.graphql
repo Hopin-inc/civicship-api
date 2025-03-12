@@ -1,0 +1,18 @@
+# ------------------------------
+# Place Mutation Input Definitions
+# ------------------------------
+input PlaceInput{
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+
+    isManual: Boolean!
+
+    googlePlaceId: String
+    mapLocation: JSON
+
+    communityId: ID!
+    opportunityIds: [ID!]
+}

@@ -1,8 +1,7 @@
-import { GqlPlaceCreateInput, GqlPlaceUpdateInput, GqlQueryPlacesArgs } from "@/types/graphql";
+import { GqlPlaceInput, GqlQueryPlacesArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-
-import PlaceInputFormat from "@/application/place/data/converter";
+import PlaceConverter from "@/application/place/data/converter";
 import PlaceRepository from "@/application/place/data/repository";
 import { NotFoundError } from "@/errors/graphql";
 
@@ -12,8 +11,8 @@ export default class PlaceService {
     { cursor, filter, sort }: GqlQueryPlacesArgs,
     take: number,
   ) {
-    const where = PlaceInputFormat.filter(filter ?? {});
-    const orderBy = PlaceInputFormat.sort(sort ?? {});
+    const where = PlaceConverter.filter(filter ?? {});
+    const orderBy = PlaceConverter.sort(sort ?? {});
 
     return await PlaceRepository.query(ctx, where, orderBy, take, cursor);
   }
@@ -22,12 +21,8 @@ export default class PlaceService {
     return await PlaceRepository.find(ctx, id);
   }
 
-  static async createPlace(
-    ctx: IContext,
-    input: GqlPlaceCreateInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    const data: Prisma.PlaceCreateInput = PlaceInputFormat.create(input);
+  static async createPlace(ctx: IContext, input: GqlPlaceInput, tx: Prisma.TransactionClient) {
+    const data: Prisma.PlaceCreateInput = PlaceConverter.create(input);
 
     return PlaceRepository.create(ctx, data, tx);
   }
@@ -44,7 +39,7 @@ export default class PlaceService {
   static async updatePlace(
     ctx: IContext,
     id: string,
-    input: GqlPlaceUpdateInput,
+    input: GqlPlaceInput,
     tx: Prisma.TransactionClient,
   ) {
     const place = await PlaceRepository.find(ctx, id);
@@ -52,7 +47,7 @@ export default class PlaceService {
       throw new NotFoundError("Place", { id });
     }
 
-    const data: Prisma.PlaceUpdateInput = PlaceInputFormat.update(input);
+    const data: Prisma.PlaceUpdateInput = PlaceConverter.update(input);
 
     return await PlaceRepository.update(ctx, id, data, tx);
   }

@@ -7,7 +7,7 @@ import {
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 import PlaceService from "@/application/place/service";
-import PlaceOutputFormat from "@/application/place/presenter";
+import PlacePresenter from "@/application/place/presenter";
 
 export default class PlaceUseCase {
   static async userBrowsePlaces(
@@ -19,9 +19,9 @@ export default class PlaceUseCase {
     const res = await PlaceService.fetchPlaces(ctx, { filter, sort, cursor }, take);
 
     const hasNextPage = res.length > take;
-    const data = res.slice(0, take).map((record) => PlaceOutputFormat.get(record));
+    const data = res.slice(0, take).map((record) => PlacePresenter.get(record));
 
-    return PlaceOutputFormat.query(data, hasNextPage);
+    return PlacePresenter.query(data, hasNextPage);
   }
 
   static async userViewPlace({ id }: GqlQueryPlaceArgs, ctx: IContext): Promise<GqlPlace | null> {
@@ -29,6 +29,6 @@ export default class PlaceUseCase {
     if (!place) {
       return null;
     }
-    return PlaceOutputFormat.get(place);
+    return PlacePresenter.get(place);
   }
 }

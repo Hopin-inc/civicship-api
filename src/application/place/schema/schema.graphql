@@ -11,7 +11,8 @@ type Place {
     googlePlaceId: String
     mapLocation: JSON
 
-    city: City
+    city: City!
+    community: Community!
 
     opportunities(
         filter: OpportunityFilterInput

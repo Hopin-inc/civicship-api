@@ -1,13 +1,8 @@
-import {
-  GqlPlacesConnection,
-  GqlPlace,
-  GqlPlaceCreateSuccess,
-  GqlPlaceDeleteSuccess,
-  GqlPlaceUpdateSuccess,
-} from "@/types/graphql";
-import { PlacePayloadWithArgs } from "@/application/place/data/type";
+import { GqlPlacesConnection, GqlPlace } from "@/types/graphql";
+import { PrismaPlace } from "@/application/place/data/type";
+import MasterPresenter from "@/application/master/presenter";
 
-export default class PlaceOutputFormat {
+export default class PlacePresenter {
   static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {
     return {
       totalCount: r.length,
@@ -24,32 +19,15 @@ export default class PlaceOutputFormat {
     };
   }
 
-  static get(r: PlacePayloadWithArgs): GqlPlace {
-    return {
-      ...r,
-      latitude: r.latitude.toString(),
-      longitude: r.longitude.toString(),
-    };
-  }
+  static get(r: PrismaPlace): GqlPlace {
+    const { community, city, latitude, longitude, ...prop } = r;
 
-  static create(r: PlacePayloadWithArgs): GqlPlaceCreateSuccess {
     return {
-      __typename: "PlaceCreateSuccess",
-      place: this.get(r),
-    };
-  }
-
-  static update(r: PlacePayloadWithArgs): GqlPlaceUpdateSuccess {
-    return {
-      __typename: "PlaceUpdateSuccess",
-      place: this.get(r),
-    };
-  }
-
-  static delete(r: PlacePayloadWithArgs): GqlPlaceDeleteSuccess {
-    return {
-      __typename: "PlaceDeleteSuccess",
-      id: r.id,
+      ...prop,
+      community,
+      city: MasterPresenter.getCity(city),
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
     };
   }
 }

@@ -1,9 +1,11 @@
 import { Prisma } from "@prisma/client";
+import { cityInclude } from "@/application/master/data/type";
 
 export const placeInclude = Prisma.validator<Prisma.PlaceInclude>()({
-  city: { include: { state: true } },
+  community: true,
+  city: { include: cityInclude },
 });
 
-export type PlacePayloadWithArgs = Prisma.PlaceGetPayload<{
+export type PrismaPlace = Prisma.PlaceGetPayload<{
   include: typeof placeInclude;
 }>;
