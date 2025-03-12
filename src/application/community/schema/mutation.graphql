@@ -18,7 +18,7 @@ input CommunityCreateInput {
     establishedAt: Datetime
     website: String
 
-    place: [PlaceInput!]
+    places: [NestedPlaceCreateInput!]
 }
 
 input CommunityUpdateProfileInput {
@@ -29,7 +29,7 @@ input CommunityUpdateProfileInput {
     establishedAt: Datetime
     website: String
 
-    place: [PlaceInput!]
+    places: NestedPlacesBulkUpdateInput!
 
     """Used for permission checking."""
     communityId: ID!

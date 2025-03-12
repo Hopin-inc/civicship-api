@@ -28,7 +28,7 @@ input OpportunityCreateInput {
     pointsToEarn: Int
     feeRequired: Int
 
-    place: PlaceInput
+    place: NestedPlaceConnectOrCreateInput!
     startsAt: Datetime
     endsAt: Datetime
 
@@ -52,7 +52,7 @@ input OpportunityUpdateContentInput {
     pointsToEarn: Int
     feeRequired: Int
 
-    place: PlaceInput
+    place: NestedPlaceConnectOrCreateInput
     startsAt: Datetime
     endsAt: Datetime
 

@@ -26,6 +26,14 @@ export default class CommunityService {
     return await CommunityRepository.find(ctx, id);
   }
 
+  static async checkIfCommunityExists(ctx: IContext, id: string) {
+    const community = await CommunityRepository.find(ctx, id);
+    if (!community) {
+      throw new NotFoundError("Community", { id });
+    }
+    return community;
+  }
+
   static async createCommunityAndJoinAsOwner(
     ctx: IContext,
     input: GqlCommunityCreateInput,
@@ -33,18 +41,12 @@ export default class CommunityService {
   ) {
     const userId = getCurrentUserId(ctx);
 
-    // TODO place登録のためのデータ整形
     const data: Prisma.CommunityCreateInput = CommunityConverter.create(input, userId);
-
     return CommunityRepository.create(ctx, data, tx);
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {
-    const community = await CommunityRepository.find(ctx, id);
-    if (!community) {
-      throw new NotFoundError("Community", { id });
-    }
-
+    await this.checkIfCommunityExists(ctx, id);
     return await CommunityRepository.delete(ctx, id);
   }
 
@@ -53,12 +55,8 @@ export default class CommunityService {
     id: string,
     input: GqlCommunityUpdateProfileInput,
   ) {
-    const community = await CommunityRepository.find(ctx, id);
-    if (!community) {
-      throw new NotFoundError("Community", { id });
-    }
+    await this.checkIfCommunityExists(ctx, id);
 
-    // TODO place登録のためのデータ整形
     const data: Prisma.CommunityUpdateInput = CommunityConverter.update(input);
     return await CommunityRepository.update(ctx, id, data);
   }

@@ -1,13 +1,111 @@
+# ------------------------------------------------
+# Schema Entry Points
+# ------------------------------------------------
 schema {
     query: Query
     mutation: Mutation
 }
 
+# ------------------------------------------------
+# Root Query Type
+# ------------------------------------------------
+type Query {
+    echo: String!
+}
+
+# ------------------------------------------------
+# Root Mutation Type
+# ------------------------------------------------
+type Mutation {
+    mutationEcho: String!
+}
+
+# ------------------------------------------------
+# Pagination Types
+# ------------------------------------------------
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+type Paging {
+    take: Int!
+    skip: Int!
+}
+
+# ------------------------------------------------
+# Pagination Interface
+# ------------------------------------------------
+interface Edge {
+    cursor: String!
+}
+
+# ------------------------------------------------
+# Query Extensions
+# ------------------------------------------------
 extend type Query {
     cities(name: String): [City!]!
     states(name: String): [State!]!
 }
 
+# ------------------------------------------------
+# Directives
+# ------------------------------------------------
+directive @complexity(
+    value: Int!
+    multipliers: [String!]
+) on FIELD_DEFINITION
+
+directive @requireRole(
+    role: Role!
+) on FIELD_DEFINITION
+
+# ------------------------------------------------
+# Scalars
+# ------------------------------------------------
+scalar Datetime
+scalar JSON
+scalar Decimal
+
+# ------------------------------------------------
+# Input Types
+# ------------------------------------------------
+input ImageInput {
+    base64: String!
+}
+
+input NestedPlacesBulkUpdateInput {
+    connectOrCreate: [NestedPlaceConnectOrCreateInput!]
+    disconnect: [ID!]
+}
+
+input NestedPlacesBulkConnectOrCreateInput {
+    data: [NestedPlaceConnectOrCreateInput!]
+}
+
+input NestedPlaceConnectOrCreateInput {
+    where: ID
+    create: NestedPlaceCreateInput
+}
+
+input NestedPlaceCreateInput {
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    communityId: ID
+}
+
+# ------------------------------------------------
+# Enums
+# ------------------------------------------------
 enum IdentityPlatform {
     LINE
     FACEBOOK
@@ -22,47 +120,6 @@ enum PublishStatus {
 enum ValueType {
     INT
     FLOAT
-}
-
-directive @complexity(
-    value: Int!
-    multipliers: [String!]
-) on FIELD_DEFINITION
-
-directive @requireRole(
-    role: Role!
-) on FIELD_DEFINITION
-
-scalar Datetime
-scalar JSON
-scalar Decimal
-
-type Query {
-    echo: String!
-}
-
-type Mutation {
-    mutationEcho: String!
-}
-
-type PageInfo {
-    hasNextPage: Boolean!
-    hasPreviousPage: Boolean!
-    startCursor: String
-    endCursor: String
-}
-
-type Paging {
-    take: Int!
-    skip: Int!
-}
-
-interface Edge {
-    cursor: String!
-}
-
-input ImageInput {
-    base64: String!
 }
 
 enum SortDirection {
