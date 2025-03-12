@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlUtility } from "@/types/graphql";
-import UtilityOutputFormat from "@/application/utility/presenter";
+import UtilityPresenter from "@/application/utility/presenter";
 import { utilityInclude } from "@/application/utility/data/type";
 
 async function batchUtilitiesById(
@@ -15,7 +15,7 @@ async function batchUtilitiesById(
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, UtilityOutputFormat.get(record)]));
+  const map = new Map(records.map((record) => [record.id, UtilityPresenter.get(record)]));
 
   return utilityIds.map((id) => map.get(id) ?? null);
 }
