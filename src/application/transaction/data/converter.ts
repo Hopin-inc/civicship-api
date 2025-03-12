@@ -78,7 +78,7 @@ export default class TransactionConverter {
 
   static purchaseTicket(params: PurchaseTicketParams): Prisma.TransactionCreateInput {
     return {
-      reason: TransactionReason.UTILITY_PURCHASED,
+      reason: TransactionReason.TICKET_PURCHASED,
       fromWallet: { connect: { id: params.fromWalletId } },
       fromPointChange: -params.transferPoints,
       toWallet: { connect: { id: params.toWalletId } },
@@ -88,7 +88,7 @@ export default class TransactionConverter {
 
   static refundTicket(params: RefundTicketParams): Prisma.TransactionCreateInput {
     return {
-      reason: TransactionReason.UTILITY_REFUNDED,
+      reason: TransactionReason.TICKET_REFUNDED,
       fromWallet: { connect: { id: params.fromWalletId } },
       fromPointChange: -params.transferPoints,
       toWallet: { connect: { id: params.toWalletId } },

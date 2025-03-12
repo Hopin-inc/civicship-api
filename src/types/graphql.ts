@@ -1697,6 +1697,7 @@ export type GqlTicketFilterInput = {
 export type GqlTicketPurchaseInput = {
   /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
+  pointsRequired: Scalars['Int']['input'];
   utilityId: Scalars['ID']['input'];
   walletId: Scalars['ID']['input'];
 };
@@ -1711,6 +1712,8 @@ export type GqlTicketPurchaseSuccess = {
 export type GqlTicketRefundInput = {
   /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
+  pointsRequired: Scalars['Int']['input'];
+  walletId: Scalars['ID']['input'];
 };
 
 export type GqlTicketRefundPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketRefundSuccess;
@@ -1881,8 +1884,8 @@ export const GqlTransactionReason = {
   Grant: 'GRANT',
   PointIssued: 'POINT_ISSUED',
   PointReward: 'POINT_REWARD',
-  UtilityPurchased: 'UTILITY_PURCHASED',
-  UtilityRefunded: 'UTILITY_REFUNDED'
+  TicketPurchased: 'TICKET_PURCHASED',
+  TicketRefunded: 'TICKET_REFUNDED'
 } as const;
 
 export type GqlTransactionReason = typeof GqlTransactionReason[keyof typeof GqlTransactionReason];
