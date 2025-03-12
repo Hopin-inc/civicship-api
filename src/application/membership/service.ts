@@ -1,7 +1,6 @@
 import {
-  GqlMembershipCancelInvitationInput,
-  GqlMembershipDenyMyInvitationInput,
   GqlMembershipInviteInput,
+  GqlMembershipSetInvitationStatusInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
 import MembershipConverter from "@/application/membership/data/converter";
@@ -35,12 +34,12 @@ export default class MembershipService {
 
   static async cancelInvitation(
     ctx: IContext,
-    { userId, communityId }: GqlMembershipCancelInvitationInput,
+    { userId, communityId }: GqlMembershipSetInvitationStatusInput,
   ) {
     return MembershipUtils.setMembershipStatus(ctx, userId, communityId, MembershipStatus.CANCELED);
   }
 
-  static async denyInvitation(ctx: IContext, input: GqlMembershipDenyMyInvitationInput) {
+  static async denyInvitation(ctx: IContext, input: GqlMembershipSetInvitationStatusInput) {
     const { communityId } = input;
     const currentUserId = getCurrentUserId(ctx);
 
