@@ -236,7 +236,7 @@ const modelFieldDefinitions = [{
                 type: "City",
                 relationName: "CityToPlace"
             }, {
-                name: "communities",
+                name: "community",
                 type: "Community",
                 relationName: "CommunityToPlace"
             }, {
@@ -1563,6 +1563,9 @@ exports.defineParticipationStatusHistoryFactory.withTransientFields = defaultTra
 function isPlacecityFactory(x) {
     return x?._factoryFor === "City";
 }
+function isPlacecommunityFactory(x) {
+    return x?._factoryFor === "Community";
+}
 function autoGeneratePlaceScalarsOrEnums({ seq }) {
     return {
         name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Place", fieldName: "name", isId: false, isUnique: false, seq }),
@@ -1607,7 +1610,10 @@ function definePlaceFactoryInternal({ defaultData: defaultDataResolver, onAfterB
             const defaultAssociations = {
                 city: isPlacecityFactory(defaultData.city) ? {
                     create: await defaultData.city.build()
-                } : defaultData.city
+                } : defaultData.city,
+                community: isPlacecommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);

@@ -11,7 +11,9 @@ model Place {
   cityCode String @map("city_code")
   city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
-  communities   Community[]
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id])
+
   opportunities Opportunity[]
 
   createdAt DateTime  @default(now()) @map("created_at")

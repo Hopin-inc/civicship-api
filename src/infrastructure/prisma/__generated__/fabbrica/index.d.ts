@@ -111,7 +111,7 @@ type CommunityFactoryDefineInput = {
     website?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
-    places?: Prisma.PlaceCreateNestedManyWithoutCommunitiesInput;
+    places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
@@ -720,6 +720,10 @@ type PlacecityFactory = {
     _factoryFor: "City";
     build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutPlacesInput["create"]>;
 };
+type PlacecommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutPlacesInput["create"]>;
+};
 type PlaceFactoryDefineInput = {
     id?: string;
     name?: string;
@@ -732,7 +736,7 @@ type PlaceFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
-    communities?: Prisma.CommunityCreateNestedManyWithoutPlacesInput;
+    community: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
 };
 type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;

@@ -194,7 +194,8 @@ Table t_places {
   mapLocation Json
   cityCode String [not null]
   city m_cities [not null]
-  communities t_communities [not null]
+  communityId String [not null]
+  community t_communities [not null]
   opportunities t_opportunities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -321,11 +322,6 @@ Table t_opportunities_on_articles {
   articlesId String [ref: > t_articles.id]
 }
 
-Table CommunityToPlace {
-  placesId String [ref: > t_places.id]
-  communitiesId String [ref: > t_communities.id]
-}
-
 Table OpportunityToUtility {
   requiredutilitiesId String [ref: > t_utilities.id]
   requiredforopportunitiesId String [ref: > t_opportunities.id]
@@ -450,6 +446,8 @@ Ref: t_participation_status_histories.participationId > t_participations.id [del
 Ref: t_participation_status_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
+
+Ref: t_places.communityId > t_communities.id
 
 Ref: t_tickets.walletId > t_wallets.id [delete: Restrict]
 
