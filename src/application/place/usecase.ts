@@ -3,6 +3,12 @@ import {
   GqlQueryPlaceArgs,
   GqlPlacesConnection,
   GqlPlace,
+  GqlMutationPlaceCreateArgs,
+  GqlPlaceCreatePayload,
+  GqlMutationPlaceUpdateArgs,
+  GqlPlaceUpdatePayload,
+  GqlMutationPlaceDeleteArgs,
+  GqlPlaceDeletePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
@@ -30,5 +36,29 @@ export default class PlaceUseCase {
       return null;
     }
     return PlacePresenter.get(place);
+  }
+
+  static async managerCreatePlace(
+    { input }: GqlMutationPlaceCreateArgs,
+    ctx: IContext,
+  ): Promise<GqlPlaceCreatePayload> {
+    const place = await PlaceService.createPlace(ctx, input);
+    return PlacePresenter.create(place);
+  }
+
+  static async managerUpdatePlace(
+    { id, input }: GqlMutationPlaceUpdateArgs,
+    ctx: IContext,
+  ): Promise<GqlPlaceUpdatePayload> {
+    const place = await PlaceService.updatePlace(ctx, id, input);
+    return PlacePresenter.update(place);
+  }
+
+  static async managerDeletePlace(
+    { id }: GqlMutationPlaceDeleteArgs,
+    ctx: IContext,
+  ): Promise<GqlPlaceDeletePayload> {
+    const deletedPlace = await PlaceService.deletePlace(ctx, id);
+    return PlacePresenter.delete(deletedPlace);
   }
 }

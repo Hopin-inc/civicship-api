@@ -1,4 +1,9 @@
-import { GqlPlaceFilterInput, GqlPlaceInput, GqlPlaceSortInput } from "@/types/graphql";
+import {
+  GqlPlaceCreateInput,
+  GqlPlaceFilterInput,
+  GqlPlaceSortInput,
+  GqlPlaceUpdateInput,
+} from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
 export default class PlaceInputFormat {
@@ -16,7 +21,7 @@ export default class PlaceInputFormat {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static create(input: GqlPlaceInput): Prisma.PlaceCreateInput {
+  static create(input: GqlPlaceCreateInput): Prisma.PlaceCreateInput {
     const { cityCode, opportunityIds, communityId, ...prop } = input;
     return {
       ...prop,
@@ -26,7 +31,7 @@ export default class PlaceInputFormat {
     };
   }
 
-  static update(input: GqlPlaceInput): Prisma.PlaceUpdateInput {
+  static update(input: GqlPlaceUpdateInput): Prisma.PlaceUpdateInput {
     const { cityCode, opportunityIds, communityId, ...prop } = input;
 
     return {

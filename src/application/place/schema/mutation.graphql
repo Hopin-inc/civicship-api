@@ -1,18 +1,78 @@
 # ------------------------------
+# Place Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    placeCreate(input: PlaceCreateInput!): PlaceCreatePayload
+    placeDelete(id: ID!): PlaceDeletePayload
+    placeUpdate(id: ID!, input: PlaceUpdateInput!): PlaceUpdatePayload
+}
+
+# ------------------------------
 # Place Mutation Input Definitions
 # ------------------------------
-input PlaceInput{
+
+input PlaceCreateInput {
     name: String!
     address: String!
     latitude: Decimal!
     longitude: Decimal!
     cityCode: ID!
-
     isManual: Boolean!
-
     googlePlaceId: String
     mapLocation: JSON
 
-    communityId: ID!
+    communityId: ID
     opportunityIds: [ID!]
 }
+
+input PlaceUpdateInput {
+    id: ID!
+
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    communityId: ID
+    opportunityIds: [ID!]
+}
+
+# ------------------------------
+# Place Mutation Success Type Definitions
+# ------------------------------
+type PlaceCreateSuccess {
+    place: Place!
+}
+
+type PlaceUpdateSuccess {
+    place: Place!
+}
+
+type PlaceDeleteSuccess {
+    id: ID!
+}
+
+# ------------------------------
+# Place Mutation Union (Payload) Definitions
+# ------------------------------
+union PlaceCreatePayload =
+    PlaceCreateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+union PlaceUpdatePayload =
+    PlaceUpdateSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError
+
+union PlaceDeletePayload =
+    PlaceDeleteSuccess
+    | InvalidInputValueError
+    | AuthError
+    | ComplexQueryError

@@ -34,30 +34,31 @@ export default class PlaceRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.PlaceCreateInput, tx: Prisma.TransactionClient) {
-    return tx.place.create({
-      data,
-      include: placeInclude,
+  static async create(ctx: IContext, data: Prisma.PlaceCreateInput) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.place.create({
+        data,
+        include: placeInclude,
+      });
     });
   }
 
-  static async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
-    return tx.place.delete({
-      where: { id },
-      include: placeInclude,
+  static async delete(ctx: IContext, id: string) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.place.delete({
+        where: { id },
+        include: placeInclude,
+      });
     });
   }
 
-  static async update(
-    ctx: IContext,
-    id: string,
-    data: Prisma.PlaceUpdateInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.place.update({
-      where: { id },
-      data,
-      include: placeInclude,
+  static async update(ctx: IContext, id: string, data: Prisma.PlaceUpdateInput) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.place.update({
+        where: { id },
+        data,
+        include: placeInclude,
+      });
     });
   }
 }

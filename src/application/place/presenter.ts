@@ -1,4 +1,10 @@
-import { GqlPlacesConnection, GqlPlace } from "@/types/graphql";
+import {
+  GqlPlacesConnection,
+  GqlPlace,
+  GqlPlaceCreateSuccess,
+  GqlPlaceUpdateSuccess,
+  GqlPlaceDeleteSuccess,
+} from "@/types/graphql";
 import { PrismaPlace } from "@/application/place/data/type";
 import MasterPresenter from "@/application/master/presenter";
 
@@ -28,6 +34,27 @@ export default class PlacePresenter {
       city: MasterPresenter.getCity(city),
       latitude: latitude.toString(),
       longitude: longitude.toString(),
+    };
+  }
+
+  static create(r: PrismaPlace): GqlPlaceCreateSuccess {
+    return {
+      __typename: "PlaceCreateSuccess",
+      place: this.get(r),
+    };
+  }
+
+  static update(r: PrismaPlace): GqlPlaceUpdateSuccess {
+    return {
+      __typename: "PlaceUpdateSuccess",
+      place: this.get(r),
+    };
+  }
+
+  static delete(r: PrismaPlace): GqlPlaceDeleteSuccess {
+    return {
+      __typename: "PlaceDeleteSuccess",
+      id: r.id,
     };
   }
 }

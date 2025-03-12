@@ -1,4 +1,4 @@
-import { GqlPlaceInput, GqlQueryPlacesArgs } from "@/types/graphql";
+import { GqlPlaceCreateInput, GqlPlaceUpdateInput, GqlQueryPlacesArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import PlaceConverter from "@/application/place/data/converter";
@@ -21,27 +21,22 @@ export default class PlaceService {
     return await PlaceRepository.find(ctx, id);
   }
 
-  static async createPlace(ctx: IContext, input: GqlPlaceInput, tx: Prisma.TransactionClient) {
+  static async createPlace(ctx: IContext, input: GqlPlaceCreateInput) {
     const data: Prisma.PlaceCreateInput = PlaceConverter.create(input);
 
-    return PlaceRepository.create(ctx, data, tx);
+    return PlaceRepository.create(ctx, data);
   }
 
-  static async deletePlace(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+  static async deletePlace(ctx: IContext, id: string) {
     const place = await PlaceRepository.find(ctx, id);
     if (!place) {
       throw new NotFoundError("Place", { id });
     }
 
-    return await PlaceRepository.delete(ctx, id, tx);
+    return await PlaceRepository.delete(ctx, id);
   }
 
-  static async updatePlace(
-    ctx: IContext,
-    id: string,
-    input: GqlPlaceInput,
-    tx: Prisma.TransactionClient,
-  ) {
+  static async updatePlace(ctx: IContext, id: string, input: GqlPlaceUpdateInput) {
     const place = await PlaceRepository.find(ctx, id);
     if (!place) {
       throw new NotFoundError("Place", { id });
@@ -49,6 +44,6 @@ export default class PlaceService {
 
     const data: Prisma.PlaceUpdateInput = PlaceConverter.update(input);
 
-    return await PlaceRepository.update(ctx, id, data, tx);
+    return await PlaceRepository.update(ctx, id, data);
   }
 }
