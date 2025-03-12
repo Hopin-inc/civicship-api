@@ -1,9 +1,11 @@
 import { Prisma } from "@prisma/client";
+import { opportunityInclude } from "@/application/opportunity/data/type";
+import { userInclude } from "@/application/user/data/type";
 
 export const opportunityInvitationInclude = Prisma.validator<Prisma.OpportunityInvitationInclude>()(
   {
-    opportunity: true,
-    createdByUser: true,
+    opportunity: { include: opportunityInclude },
+    createdByUser: { include: userInclude },
   },
 );
 

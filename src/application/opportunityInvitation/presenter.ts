@@ -5,6 +5,7 @@ import {
   GqlOpportunityInvitationDisableSuccess,
 } from "@/types/graphql";
 import { PrismaOpportunityInvitation } from "@/application/opportunityInvitation/data/type";
+import OpportunityPresenter from "@/application/opportunity/presenter";
 
 export default class OpportunityInvitationPresenter {
   static query(
@@ -27,7 +28,13 @@ export default class OpportunityInvitationPresenter {
   }
 
   static get(r: PrismaOpportunityInvitation): GqlOpportunityInvitation {
-    return r;
+    const { opportunity, createdByUser, ...prop } = r;
+
+    return {
+      ...prop,
+      opportunity: OpportunityPresenter.get(opportunity),
+      createdByUser,
+    };
   }
 
   static create(r: PrismaOpportunityInvitation): GqlOpportunityInvitationCreateSuccess {
