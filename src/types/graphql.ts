@@ -492,6 +492,7 @@ export type GqlMutation = {
   placeUpdate?: Maybe<GqlPlaceUpdatePayload>;
   ticketPurchase?: Maybe<GqlTicketPurchasePayload>;
   ticketRefund?: Maybe<GqlTicketRefundPayload>;
+  ticketUse?: Maybe<GqlTicketUsePayload>;
   transactionDonateSelfPoint?: Maybe<GqlTransactionDonateSelfPointPayload>;
   transactionGrantCommunityPoint?: Maybe<GqlTransactionGrantCommunityPointPayload>;
   transactionIssueCommunityPoint?: Maybe<GqlTransactionIssueCommunityPointPayload>;
@@ -702,6 +703,12 @@ export type GqlMutationTicketPurchaseArgs = {
 export type GqlMutationTicketRefundArgs = {
   id: Scalars['ID']['input'];
   input: GqlTicketRefundInput;
+};
+
+
+export type GqlMutationTicketUseArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlTicketUseInput;
 };
 
 
@@ -982,6 +989,7 @@ export type GqlOpportunityInvitationHistoryEdge = GqlEdge & {
 
 export type GqlOpportunityInvitationHistoryFilterInput = {
   invitationId?: InputMaybe<Scalars['ID']['input']>;
+  invitedUserId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type GqlOpportunityInvitationHistorySortInput = {
@@ -1180,6 +1188,7 @@ export type GqlParticipationEdge = GqlEdge & {
 export type GqlParticipationFilterInput = {
   communityId?: InputMaybe<Scalars['ID']['input']>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
+  opportunitySlotId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlParticipationStatus>;
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1702,7 +1711,6 @@ export type GqlTicketPurchaseSuccess = {
 export type GqlTicketRefundInput = {
   /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
-  walletId: Scalars['ID']['input'];
 };
 
 export type GqlTicketRefundPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketRefundSuccess;
@@ -1769,6 +1777,18 @@ export const GqlTicketStatusReason = {
 } as const;
 
 export type GqlTicketStatusReason = typeof GqlTicketStatusReason[keyof typeof GqlTicketStatusReason];
+export type GqlTicketUseInput = {
+  /** Used for permission checking. */
+  communityId: Scalars['ID']['input'];
+};
+
+export type GqlTicketUsePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketUseSuccess;
+
+export type GqlTicketUseSuccess = {
+  __typename?: 'TicketUseSuccess';
+  ticket: GqlTicket;
+};
+
 export type GqlTicketsConnection = {
   __typename?: 'TicketsConnection';
   edges?: Maybe<Array<Maybe<GqlTicketEdge>>>;
@@ -2302,6 +2322,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   PlaceUpdatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlPlaceUpdateSuccess, 'place'> & { place: _RefType['Place'] } );
   TicketPurchasePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
   TicketRefundPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTicketRefundSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
+  TicketUsePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
   TransactionDonateSelfPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   TransactionGrantCommunityPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionGrantCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
   TransactionIssueCommunityPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
@@ -2497,6 +2518,9 @@ export type GqlResolversTypes = ResolversObject<{
   TicketStatusHistoryFilterInput: GqlTicketStatusHistoryFilterInput;
   TicketStatusHistorySortInput: GqlTicketStatusHistorySortInput;
   TicketStatusReason: GqlTicketStatusReason;
+  TicketUseInput: GqlTicketUseInput;
+  TicketUsePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TicketUsePayload']>;
+  TicketUseSuccess: ResolverTypeWrapper<Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversTypes['Ticket'] }>;
   TicketsConnection: ResolverTypeWrapper<Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TicketEdge']>>> }>;
   Transaction: ResolverTypeWrapper<Transaction>;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
@@ -2718,6 +2742,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   TicketStatusHistoryEdge: Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['TicketStatusHistory']> };
   TicketStatusHistoryFilterInput: GqlTicketStatusHistoryFilterInput;
   TicketStatusHistorySortInput: GqlTicketStatusHistorySortInput;
+  TicketUseInput: GqlTicketUseInput;
+  TicketUsePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TicketUsePayload'];
+  TicketUseSuccess: Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversParentTypes['Ticket'] };
   TicketsConnection: Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TicketEdge']>>> };
   Transaction: Transaction;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
@@ -3084,6 +3111,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input'>>;
   ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input'>>;
   ticketRefund?: Resolver<Maybe<GqlResolversTypes['TicketRefundPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketRefundArgs, 'id' | 'input'>>;
+  ticketUse?: Resolver<Maybe<GqlResolversTypes['TicketUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketUseArgs, 'id' | 'input'>>;
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input'>>;
@@ -3526,6 +3554,15 @@ export type GqlTicketStatusHistoryEdgeResolvers<ContextType = any, ParentType ex
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlTicketUsePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketUsePayload'] = GqlResolversParentTypes['TicketUsePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TicketUseSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlTicketUseSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketUseSuccess'] = GqlResolversParentTypes['TicketUseSuccess']> = ResolversObject<{
+  ticket?: Resolver<GqlResolversTypes['Ticket'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlTicketsConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketsConnection'] = GqlResolversParentTypes['TicketsConnection']> = ResolversObject<{
   edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['TicketEdge']>>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
@@ -3840,6 +3877,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TicketStatusHistoriesConnection?: GqlTicketStatusHistoriesConnectionResolvers<ContextType>;
   TicketStatusHistory?: GqlTicketStatusHistoryResolvers<ContextType>;
   TicketStatusHistoryEdge?: GqlTicketStatusHistoryEdgeResolvers<ContextType>;
+  TicketUsePayload?: GqlTicketUsePayloadResolvers<ContextType>;
+  TicketUseSuccess?: GqlTicketUseSuccessResolvers<ContextType>;
   TicketsConnection?: GqlTicketsConnectionResolvers<ContextType>;
   Transaction?: GqlTransactionResolvers<ContextType>;
   TransactionDonateSelfPointPayload?: GqlTransactionDonateSelfPointPayloadResolvers<ContextType>;
