@@ -9,7 +9,10 @@ export default class OpportunityInvitationHistoryConverter {
     filter: GqlOpportunityInvitationHistoryFilterInput,
   ): Prisma.OpportunityInvitationHistoryWhereInput {
     return {
-      AND: [filter?.invitationId ? { invitationId: filter.invitationId } : {}],
+      AND: [
+        filter?.invitationId ? { invitationId: filter.invitationId } : {},
+        filter?.invitedUserId ? { invitedUserId: filter.invitedUserId } : {},
+      ],
     };
   }
 

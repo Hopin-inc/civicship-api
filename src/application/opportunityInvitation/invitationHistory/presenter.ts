@@ -3,6 +3,7 @@ import {
   GqlOpportunityInvitationHistoriesConnection,
 } from "@/types/graphql";
 import { PrismaInvitationHistory } from "@/application/opportunityInvitation/invitationHistory/data/type";
+import OpportunityInvitationPresenter from "@/application/opportunityInvitation/presenter";
 
 export default class OpportunityInvitationHistoryPresenter {
   static query(
@@ -25,6 +26,12 @@ export default class OpportunityInvitationHistoryPresenter {
   }
 
   static get(r: PrismaInvitationHistory): GqlOpportunityInvitationHistory {
-    return r;
+    const { invitedUser, invitation, ...prop } = r;
+
+    return {
+      ...prop,
+      invitedUser,
+      invitation: OpportunityInvitationPresenter.get(invitation),
+    };
   }
 }
