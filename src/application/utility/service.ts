@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import UtilityRepository from "@/application/utility/data/repository";
 import { IContext } from "@/types/server";
-import UtilityInputFormat from "@/application/utility/data/converter";
+import UtilityConverter from "@/application/utility/data/converter";
 import { Prisma } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
 
@@ -16,8 +16,8 @@ export default class UtilityService {
     { cursor, filter, sort }: GqlQueryUtilitiesArgs,
     take: number,
   ) {
-    const where = UtilityInputFormat.filter(filter ?? {});
-    const orderBy = UtilityInputFormat.sort(sort ?? {});
+    const where = UtilityConverter.filter(filter ?? {});
+    const orderBy = UtilityConverter.sort(sort ?? {});
     return UtilityRepository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -34,7 +34,7 @@ export default class UtilityService {
   }
 
   static async createUtility(ctx: IContext, input: GqlUtilityCreateInput) {
-    const data: Prisma.UtilityCreateInput = UtilityInputFormat.create(input);
+    const data: Prisma.UtilityCreateInput = UtilityConverter.create(input);
     return UtilityRepository.create(ctx, data);
   }
 
@@ -43,7 +43,7 @@ export default class UtilityService {
   }
 
   static async updateUtilityInfo(ctx: IContext, { id, input }: GqlMutationUtilityUpdateInfoArgs) {
-    const data: Prisma.UtilityUpdateInput = UtilityInputFormat.updateInfo(input);
+    const data: Prisma.UtilityUpdateInput = UtilityConverter.updateInfo(input);
     return UtilityRepository.update(ctx, id, data);
   }
 }

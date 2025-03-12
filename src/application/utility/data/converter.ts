@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
-export default class UtilityInputFormat {
+export default class UtilityConverter {
   static filter(filter: GqlUtilityFilterInput): Prisma.UtilityWhereInput {
     return {
       AND: [filter?.communityId ? { communityId: filter.communityId } : {}],

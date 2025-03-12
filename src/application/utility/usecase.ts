@@ -11,23 +11,13 @@ import {
   GqlUtilityDeletePayload,
   GqlMutationUtilityUpdateInfoArgs,
   GqlUtilityUpdateInfoPayload,
-  GqlMutationUtilityUseArgs,
-  GqlUtilityUsePayload,
-  GqlMutationUtilityPurchaseArgs,
-  GqlUtilityPurchasePayload,
 } from "@/types/graphql";
 import UtilityService from "@/application/utility/service";
-import UtilityOutputFormat from "@/application/utility/presenter";
+import UtilityPresenter from "@/application/utility/presenter";
 import { IContext } from "@/types/server";
 import { UtilityUtils } from "@/application/utility/utils";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import WalletService from "@/application/membership/wallet/service";
-import { Prisma } from "@prisma/client";
-import TransactionService from "@/application/transaction/service";
 
 export default class UtilityUseCase {
-  private static issuer = new PrismaClientIssuer();
-
   static async visitorBrowseUtilities(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUtilitiesArgs,
@@ -60,7 +50,7 @@ export default class UtilityUseCase {
     if (!utility) {
       return null;
     }
-    return UtilityOutputFormat.get(utility);
+    return UtilityPresenter.get(utility);
   }
 
   static async managerCreateUtility(
@@ -68,7 +58,7 @@ export default class UtilityUseCase {
     { input }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
     const res = await UtilityService.createUtility(ctx, input);
-    return UtilityOutputFormat.create(res);
+    return UtilityPresenter.create(res);
   }
 
   static async managerDeleteUtility(
@@ -76,7 +66,7 @@ export default class UtilityUseCase {
     { id }: GqlMutationUtilityDeleteArgs,
   ): Promise<GqlUtilityDeletePayload> {
     const res = await UtilityService.deleteUtility(ctx, id);
-    return UtilityOutputFormat.delete(res);
+    return UtilityPresenter.delete(res);
   }
 
   static async managerUpdateUtilityInfo(
@@ -84,64 +74,6 @@ export default class UtilityUseCase {
     { id, input }: GqlMutationUtilityUpdateInfoArgs,
   ): Promise<GqlUtilityUpdateInfoPayload> {
     const res = await UtilityService.updateUtilityInfo(ctx, { id, input });
-    return UtilityOutputFormat.updateInfo(res);
-  }
-
-  static async memberPurchaseUtility(
-    ctx: IContext,
-    { id, input }: GqlMutationUtilityPurchaseArgs,
-  ): Promise<GqlUtilityPurchasePayload> {
-    const utility = await UtilityService.findUtilityOrThrow(ctx, id);
-    const { fromWalletId, toWalletId } = await WalletService.findWalletsForPurchaseUtility(
-      ctx,
-      input.userWalletId,
-      input.communityId,
-      utility.pointsRequired,
-    );
-
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const transaction = await TransactionService.purchaseUtility(ctx, tx, {
-        fromWalletId,
-        toWalletId,
-        transferPoints: utility.pointsRequired,
-      });
-
-      await UtilityHistoryService.recordUtilityHistory(
-        ctx,
-        tx,
-        UtilityStatus.PURCHASED,
-        input.userWalletId,
-        id,
-        transaction.id,
-      );
-
-      return UtilityOutputFormat.purchaseUtility(transaction);
-    });
-  }
-
-  static async memberUseUtility(
-    ctx: IContext,
-    { id, input }: GqlMutationUtilityUseArgs,
-  ): Promise<GqlUtilityUsePayload> {
-    const utility = await UtilityService.findUtilityOrThrow(ctx, id);
-    const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.userWalletId);
-
-    const availableHistories = await UtilityHistoryService.fetchAvailableUtilitiesOrThrow(
-      ctx,
-      memberWallet.id,
-      utility.id,
-    );
-
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const res = await UtilityHistoryService.recordUtilityHistory(
-        ctx,
-        tx,
-        UtilityStatus.USED,
-        memberWallet.id,
-        availableHistories[0].id,
-      );
-
-      return UtilityHistoryOutputFormat.useUtility(res);
-    });
+    return UtilityPresenter.updateInfo(res);
   }
 }

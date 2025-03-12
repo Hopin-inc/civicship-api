@@ -5,7 +5,7 @@ import {
   GqlUtilitySortInput,
 } from "@/types/graphql";
 import UtilityService from "@/application/utility/service";
-import UtilityOutputFormat from "@/application/utility/presenter";
+import UtilityPresenter from "@/application/utility/presenter";
 import { clampFirst } from "@/utils";
 
 export const UtilityUtils = {
@@ -29,9 +29,9 @@ export const UtilityUtils = {
     const hasNextPage = res.length > take;
 
     const data = res.slice(0, take).map((record) => {
-      return UtilityOutputFormat.get(record);
+      return UtilityPresenter.get(record);
     });
 
-    return UtilityOutputFormat.query(data, hasNextPage);
+    return UtilityPresenter.query(data, hasNextPage);
   },
 };

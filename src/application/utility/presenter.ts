@@ -4,15 +4,11 @@ import {
   GqlUtilityCreateSuccess,
   GqlUtilityDeleteSuccess,
   GqlUtilityUpdateInfoSuccess,
-  GqlUtilityPurchaseSuccess,
-  GqlUtilityRefundSuccess,
 } from "@/types/graphql";
-import { UtilityGetPayloadWithArgs } from "@/application/utility/data/type";
-import { TransactionPayloadWithArgs } from "@/application/transaction/data/type";
+import { PrismaUtility } from "@/application/utility/data/type";
 import { Utility } from "@prisma/client";
-import TransactionOutputFormat from "@/application/transaction/presenter";
 
-export default class UtilityResponseFormat {
+export default class UtilityPresenter {
   static query(utilities: GqlUtility[], hasNextPage: boolean): GqlUtilitiesConnection {
     return {
       totalCount: utilities.length,
@@ -29,11 +25,11 @@ export default class UtilityResponseFormat {
     };
   }
 
-  static get(r: UtilityGetPayloadWithArgs): GqlUtility {
+  static get(r: PrismaUtility): GqlUtility {
     return r;
   }
 
-  static create(r: UtilityGetPayloadWithArgs): GqlUtilityCreateSuccess {
+  static create(r: PrismaUtility): GqlUtilityCreateSuccess {
     return {
       __typename: "UtilityCreateSuccess",
       utility: this.get(r),
@@ -47,24 +43,10 @@ export default class UtilityResponseFormat {
     };
   }
 
-  static updateInfo(r: UtilityGetPayloadWithArgs): GqlUtilityUpdateInfoSuccess {
+  static updateInfo(r: PrismaUtility): GqlUtilityUpdateInfoSuccess {
     return {
       __typename: "UtilityUpdateInfoSuccess",
       utility: this.get(r),
-    };
-  }
-
-  static purchaseUtility(r: TransactionPayloadWithArgs): GqlUtilityPurchaseSuccess {
-    return {
-      __typename: "UtilityPurchaseSuccess",
-      transaction: TransactionOutputFormat.get(r),
-    };
-  }
-
-  static refundUtility(r: TransactionPayloadWithArgs): GqlUtilityRefundSuccess {
-    return {
-      __typename: "UtilityRefundSuccess",
-      transaction: TransactionOutputFormat.get(r),
     };
   }
 }

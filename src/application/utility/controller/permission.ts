@@ -10,7 +10,6 @@ const utilityMutationPermissions: Record<string, ShieldRule> = {
   utilityCreate: and(isAuthenticated, isCommunityMember, sanitizeInput),
   utilityDelete: and(isAuthenticated, isCommunityMember, sanitizeInput),
   utilityUpdateInfo: and(isAuthenticated, isCommunityMember, sanitizeInput),
-  utilityUse: and(isAuthenticated, isCommunityMember, sanitizeInput),
 };
 
 export { utilityMutationPermissions };
