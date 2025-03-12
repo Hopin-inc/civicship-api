@@ -3,6 +3,7 @@
 # ------------------------------
 extend type Mutation {
     ticketPurchase(input: TicketPurchaseInput!): TicketPurchasePayload
+    ticketUse(id: ID!, input: TicketUseInput!): TicketUsePayload
     ticketRefund(id: ID!, input: TicketRefundInput!): TicketRefundPayload
 }
 
@@ -17,9 +18,13 @@ input TicketPurchaseInput {
     communityId: ID!
 }
 
-input TicketRefundInput {
-    walletId: ID!
+input TicketUseInput {
+    """Used for permission checking."""
+    communityId: ID!
+}
 
+
+input TicketRefundInput {
     """Used for permission checking."""
     communityId: ID!
 }
@@ -28,6 +33,10 @@ input TicketRefundInput {
 # Ticket Mutation Success Type Definitions
 # ------------------------------
 type TicketPurchaseSuccess {
+    ticket: Ticket!
+}
+
+type TicketUseSuccess {
     ticket: Ticket!
 }
 
@@ -40,6 +49,12 @@ type TicketRefundSuccess {
 # ------------------------------
 union TicketPurchasePayload =
     TicketPurchaseSuccess |
+    InvalidInputValueError |
+    AuthError |
+    ComplexQueryError
+
+union TicketUsePayload =
+    TicketUseSuccess |
     InvalidInputValueError |
     AuthError |
     ComplexQueryError
