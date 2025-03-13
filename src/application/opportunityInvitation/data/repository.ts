@@ -34,30 +34,19 @@ export default class OpportunityInvitationRepository {
     });
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.OpportunityInvitationCreateInput,
-    tx: Prisma.TransactionClient,
-  ) {
+  static async create(data: Prisma.OpportunityInvitationCreateInput, tx: Prisma.TransactionClient) {
     return tx.opportunityInvitation.create({
       data,
       include: opportunityInvitationInclude,
     });
   }
 
-  static async disable(ctx: IContext, id: string, isValid: boolean, tx: Prisma.TransactionClient) {
+  static async disable(id: string, isValid: boolean, tx: Prisma.TransactionClient) {
     return tx.opportunityInvitation.update({
       where: { id },
       data: {
         isValid,
       },
-      include: opportunityInvitationInclude,
-    });
-  }
-
-  static async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
-    return tx.opportunityInvitation.delete({
-      where: { id },
       include: opportunityInvitationInclude,
     });
   }

@@ -2,12 +2,12 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import {
   GqlOpportunityInvitationCreateInput,
-  GqlOpportunityInvitationDisableInput,
   GqlQueryOpportunityInvitationsArgs,
 } from "@/types/graphql";
 import OpportunityInvitationConverter from "@/application/opportunityInvitation/data/converter";
 import OpportunityInvitationRepository from "@/application/opportunityInvitation/data/repository";
 import { getCurrentUserId } from "@/utils";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class OpportunityInvitationService {
   static async fetchOpportunityInvitations(
@@ -24,31 +24,31 @@ export default class OpportunityInvitationService {
     return OpportunityInvitationRepository.find(ctx, id);
   }
 
+  static async findOpportunityInvitationOrThrow(ctx: IContext, id: string) {
+    const opportunityInvitation = await OpportunityInvitationRepository.find(ctx, id);
+    if (!opportunityInvitation) {
+      throw new NotFoundError("OpportunityInvitation", { id });
+    }
+    return opportunityInvitation;
+  }
+
   static async createOpportunityInvitation(
     ctx: IContext,
     input: GqlOpportunityInvitationCreateInput,
     tx: Prisma.TransactionClient,
   ) {
-    const userId = getCurrentUserId(ctx);
+    const currentUserId = getCurrentUserId(ctx);
 
-    const data = OpportunityInvitationConverter.create(userId, input);
-    return OpportunityInvitationRepository.create(ctx, data, tx);
+    const data = OpportunityInvitationConverter.create(currentUserId, input);
+    return OpportunityInvitationRepository.create(data, tx);
   }
 
   static async disableOpportunityInvitation(
     ctx: IContext,
     id: string,
-    input: GqlOpportunityInvitationDisableInput,
     tx: Prisma.TransactionClient,
   ) {
-    return OpportunityInvitationRepository.disable(ctx, id, false, tx);
-  }
-
-  static async deleteOpportunityInvitation(
-    ctx: IContext,
-    id: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    return OpportunityInvitationRepository.delete(ctx, id, tx);
+    await this.findOpportunityInvitationOrThrow(ctx, id);
+    return OpportunityInvitationRepository.disable(id, false, tx);
   }
 }

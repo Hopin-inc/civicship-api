@@ -61,14 +61,13 @@ export default class OpportunityInvitationUseCase {
   }
 
   static async memberDisableOpportunityInvitation(
-    { id, input }: GqlMutationOpportunityInvitationDisableArgs,
+    { id }: GqlMutationOpportunityInvitationDisableArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityInvitationDisablePayload> {
     return this.issuer.public(ctx, async (tx) => {
       const invitation = await OpportunityInvitationService.disableOpportunityInvitation(
         ctx,
         id,
-        input,
         tx,
       );
       return OpportunityInvitationPresenter.disable(invitation);
