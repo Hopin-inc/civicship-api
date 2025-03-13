@@ -7,7 +7,7 @@ import OpportunityInputFormat from "@/application/opportunity/data/converter";
 import OpportunityRepository from "@/application/opportunity/data/repository";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { AuthorizationError, NotFoundError } from "@/errors/graphql";
+import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
 
 export default class OpportunityService {
   static async fetchPublicOpportunities(
@@ -39,6 +39,7 @@ export default class OpportunityService {
       throw new AuthorizationError("User must be logged in");
     }
 
+    validateCreateOpportunityPlaceInput(input);
     const data: Prisma.OpportunityCreateInput = OpportunityInputFormat.create(input, currentUserId);
     return await OpportunityRepository.create(ctx, data);
   }
@@ -67,6 +68,8 @@ export default class OpportunityService {
       throw new NotFoundError("Opportunity", { id });
     }
 
+    validateUpdateOpportunityPlaceInput(input);
+
     const data: Prisma.OpportunityUpdateInput = OpportunityInputFormat.update(input);
     return await OpportunityRepository.update(ctx, id, data);
   }
@@ -78,5 +81,23 @@ export default class OpportunityService {
     }
 
     return await OpportunityRepository.setStatus(ctx, id, status);
+  }
+}
+
+function validateCreateOpportunityPlaceInput(input: GqlOpportunityCreateInput): void {
+  if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
+    throw new ValidationError(
+      `For Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(input.place)}`,
+    );
+  }
+}
+
+function validateUpdateOpportunityPlaceInput(input: GqlOpportunityUpdateContentInput): void {
+  if (input.place) {
+    if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
+      throw new ValidationError(
+        `For Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(input.place)}`,
+      );
+    }
   }
 }

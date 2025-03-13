@@ -8,7 +8,7 @@ import CommunityRepository from "@/application/community/data/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/utils";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 export default class CommunityService {
   static async fetchCommunities(
@@ -57,7 +57,22 @@ export default class CommunityService {
   ) {
     await this.checkIfCommunityExists(ctx, id);
 
+    validateConnectOrCreatePlacesInput(input);
     const data: Prisma.CommunityUpdateInput = CommunityConverter.update(input);
     return await CommunityRepository.update(ctx, id, data);
+  }
+}
+
+function validateConnectOrCreatePlacesInput(input: GqlCommunityUpdateProfileInput): void {
+  if (input.places?.connectOrCreate) {
+    input.places.connectOrCreate.forEach((item) => {
+      if ((item.where && item.create) || (!item.where && !item.create)) {
+        throw new ValidationError(
+          `For each Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(
+            input.places.connectOrCreate,
+          )}`,
+        );
+      }
+    });
   }
 }

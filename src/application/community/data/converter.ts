@@ -5,7 +5,6 @@ import {
   GqlCommunitySortInput,
 } from "@/types/graphql";
 import { MembershipStatus, Prisma, Role } from "@prisma/client";
-import { ValidationError } from "@/errors/graphql";
 
 export default class CommunityConverter {
   static filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
@@ -63,18 +62,9 @@ export default class CommunityConverter {
     };
   }
 
-  //TODO usecase層でplaceの有無確認する
   static update(input: GqlCommunityUpdateProfileInput): Prisma.CommunityUpdateInput {
     const { places, ...prop } = input;
     const { connectOrCreate, disconnect } = places;
-
-    connectOrCreate?.forEach((item) => {
-      if ((item.where && item.create) || (!item.where && !item.create)) {
-        throw new ValidationError(
-          `For each Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(connectOrCreate)}`,
-        );
-      }
-    });
 
     const existingPlaces = connectOrCreate
       ?.filter((item) => item.where && !item.create)

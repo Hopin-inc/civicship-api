@@ -5,7 +5,6 @@ import {
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
-import { ValidationError } from "@/errors/graphql";
 
 export default class OpportunityInputFormat {
   static filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
@@ -32,18 +31,11 @@ export default class OpportunityInputFormat {
     ];
   }
 
-  //TODO usecase層でplaceの有無確認する
   static create(
     input: GqlOpportunityCreateInput,
     currentUserId: string,
   ): Prisma.OpportunityCreateInput {
     const { place, communityId, ...prop } = input;
-
-    if ((place.where && place.create) || (!place.where && !place.create)) {
-      throw new ValidationError(
-        `For Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(place)}`,
-      );
-    }
 
     const finalPlace = place.where
       ? { connect: { id: place.where } }
@@ -70,14 +62,9 @@ export default class OpportunityInputFormat {
   static update(input: GqlOpportunityUpdateContentInput): Prisma.OpportunityUpdateInput {
     const { place, image, ...prop } = input;
 
-    let finalPlace: Prisma.OpportunityUpdateInput["place"] | undefined;
+    let finalPlace: Prisma.PlaceUpdateOneWithoutOpportunitiesNestedInput | undefined = undefined;
 
     if (place) {
-      if ((place.where && place.create) || (!place.where && !place.create)) {
-        throw new ValidationError(
-          `For Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(place)}`,
-        );
-      }
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
