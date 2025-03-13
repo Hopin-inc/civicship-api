@@ -1,0 +1,17 @@
+# ------------------------------
+# MembershipHistory Object Type Definitions
+# ------------------------------
+type MembershipHistory {
+    id: ID!
+
+    membership: Membership!
+
+    status: MembershipStatus!
+    reason: MembershipStatusReason!
+    role: Role!
+
+    createdByUser: User
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
