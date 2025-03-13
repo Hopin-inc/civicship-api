@@ -1,10 +1,4 @@
-import {
-  GqlArticlesConnection,
-  GqlArticle,
-  GqlArticleCreateSuccess,
-  GqlArticleDeleteSuccess,
-  GqlArticleUpdateSuccess,
-} from "@/types/graphql";
+import { GqlArticlesConnection, GqlArticle } from "@/types/graphql";
 import { PrismaArticle } from "@/application/article/data/type";
 import UserPresenter from "@/application/user/presenter";
 import OpportunityPresenter from "@/application/opportunity/presenter";
@@ -35,27 +29,6 @@ export default class ArticlePresenter {
       authors: authors.map(UserPresenter.get),
       relatedUsers: relatedUsers.map(UserPresenter.get),
       opportunities: opportunities.map(OpportunityPresenter.get),
-    };
-  }
-
-  static create(r: PrismaArticle): GqlArticleCreateSuccess {
-    return {
-      __typename: "ArticleCreateSuccess",
-      article: this.get(r),
-    };
-  }
-
-  static delete(r: PrismaArticle): GqlArticleDeleteSuccess {
-    return {
-      __typename: "ArticleDeleteSuccess",
-      articleId: r.id,
-    };
-  }
-
-  static update(r: PrismaArticle): GqlArticleUpdateSuccess {
-    return {
-      __typename: "ArticleUpdateSuccess",
-      article: this.get(r),
     };
   }
 }
