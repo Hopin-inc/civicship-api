@@ -3,7 +3,7 @@ name: Deploy GraphQL Docs to Pages
 on:
   push:
     branches:
-      - feature/update-schema-by-UX
+      - develop
   workflow_dispatch:
 
 permissions:
