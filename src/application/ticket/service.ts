@@ -2,7 +2,7 @@ import { GqlQueryTicketsArgs, GqlTicket } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
-import { Prisma } from "@prisma/client";
+import { ParticipationStatus, Prisma } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/utils";
 
@@ -45,6 +45,24 @@ export default class TicketService {
       transactionId,
     );
     return TicketRepository.create(ctx, data, tx);
+  }
+
+  static async reserveOrUseTicket(
+    ctx: IContext,
+    participationStatus: ParticipationStatus,
+    ticketId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    switch (participationStatus) {
+      case ParticipationStatus.PENDING:
+        await this.reserveTicket(ctx, ticketId, tx);
+        break;
+      case ParticipationStatus.PARTICIPATING:
+        await this.useTicket(ctx, ticketId, tx);
+        break;
+      default:
+        break;
+    }
   }
 
   static async reserveTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
