@@ -150,7 +150,7 @@ const isOpportunityInvitationOwner = rule({ cache: "contextual" })(async (
 });
 
 // Validate the input by sanitizing it. Throws an error if disallowed HTML tags are detected.
-const sanitizeInput = rule()(async (parent, { input }) => {
+const sanitizeInput = rule()(async (_parent, { input }) => {
   recursiveSanitize(input);
   return true;
 });
