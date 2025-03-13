@@ -787,6 +787,7 @@ type TicketutilityFactory = {
 type TicketFactoryDefineInput = {
     id?: string;
     status?: TicketStatus;
+    reason?: TicketStatusReason;
     createdAt?: Date;
     updatedAt?: Date | null;
     wallet: TicketwalletFactory | Prisma.WalletCreateNestedOneWithoutTicketsInput;

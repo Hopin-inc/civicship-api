@@ -259,6 +259,7 @@ USER USER
   "t_tickets" {
     String id "🗝️"
     TicketStatus status 
+    TicketStatusReason reason 
     String wallet_id 
     String utility_id 
     DateTime created_at 
@@ -401,6 +402,7 @@ USER USER
     "t_places" o|--|| "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_tickets" o|--|| "TicketStatus" : "enum:status"
+    "t_tickets" o|--|| "TicketStatusReason" : "enum:reason"
     "t_tickets" o|--|| "t_wallets" : "wallet"
     "t_tickets" o|--|| "t_utilities" : "utility"
     "t_tickets" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"

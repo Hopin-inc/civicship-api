@@ -1,6 +1,7 @@
 model Ticket {
-  id     String       @id @default(cuid())
-  status TicketStatus @default(AVAILABLE)
+  id     String             @id @default(cuid())
+  status TicketStatus       @default(AVAILABLE)
+  reason TicketStatusReason @default(PURCHASED)
 
   walletId String @map("wallet_id")
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
@@ -19,4 +20,14 @@ model Ticket {
 enum TicketStatus {
   AVAILABLE
   DISABLED
+}
+
+enum TicketStatusReason {
+  PURCHASED
+  CANCELED
+
+  RESERVED
+  USED
+  REFUNDED
+  EXPIRED
 }

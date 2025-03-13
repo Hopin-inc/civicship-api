@@ -27,6 +27,7 @@ export default class TicketConverter {
   ): Prisma.TicketCreateInput {
     return {
       status: TicketStatus.AVAILABLE,
+      reason: TicketStatusReason.PURCHASED,
       wallet: { connect: { id: walletId } },
       utility: { connect: { id: utilityId } },
       ticketStatusHistories: {
@@ -43,6 +44,7 @@ export default class TicketConverter {
   static reserve(currentUserId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
+      reason: TicketStatusReason.RESERVED,
       ticketStatusHistories: {
         create: {
           status: TicketStatus.DISABLED,
@@ -53,9 +55,10 @@ export default class TicketConverter {
     };
   }
 
-  static cancel(currentUserId: string): Prisma.TicketUpdateInput {
+  static cancelReserved(currentUserId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.AVAILABLE,
+      reason: TicketStatusReason.CANCELED,
       ticketStatusHistories: {
         create: {
           status: TicketStatus.AVAILABLE,
@@ -69,6 +72,7 @@ export default class TicketConverter {
   static use(currentUserId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
+      reason: TicketStatusReason.USED,
       ticketStatusHistories: {
         create: {
           status: TicketStatus.DISABLED,
@@ -82,6 +86,7 @@ export default class TicketConverter {
   static refund(currentUserId: string, transactionId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
+      reason: TicketStatusReason.REFUNDED,
       ticketStatusHistories: {
         create: {
           status: TicketStatus.DISABLED,

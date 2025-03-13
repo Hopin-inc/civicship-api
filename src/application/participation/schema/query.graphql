@@ -34,6 +34,7 @@ input ParticipationFilterInput {
     communityId: ID
     userId: ID
     opportunityId: ID
+    opportunitySlotId: ID
 }
 
 input ParticipationSortInput {

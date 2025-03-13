@@ -1,6 +1,5 @@
 import { IContext } from "@/types/server";
 import { GqlQueryParticipationStatusHistoriesArgs } from "@/types/graphql";
-import { ParticipationStatus, Prisma } from "@prisma/client";
 import ParticipationStatusHistoryRepository from "@/application/participation/statusHistory/data/repository";
 import ParticipationStatusHistoryInputFormat from "@/application/participation/statusHistory/data/converter";
 
@@ -18,21 +17,5 @@ export default class ParticipationStatusHistoryService {
 
   static async findParticipationStatusHistory(ctx: IContext, id: string) {
     return await ParticipationStatusHistoryRepository.find(ctx, id);
-  }
-
-  static async recordParticipationHistory(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    participationId: string,
-    status: ParticipationStatus,
-    createdById: string,
-  ) {
-    const data = ParticipationStatusHistoryInputFormat.create({
-      participationId,
-      status,
-      createdById,
-    });
-
-    await ParticipationStatusHistoryRepository.create(ctx, data, tx);
   }
 }

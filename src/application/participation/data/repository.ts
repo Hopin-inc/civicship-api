@@ -1,5 +1,5 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { Prisma, ParticipationStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { participationInclude } from "@/application/participation/data/type";
 import { IContext } from "@/types/server";
 
@@ -41,34 +41,32 @@ export default class ParticipationRepository {
     }
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.ParticipationCreateInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.participation.create({
-      data,
-      include: participationInclude,
+  static async create(ctx: IContext, data: Prisma.ParticipationCreateInput) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.participation.create({
+        data,
+        include: participationInclude,
+      });
     });
   }
 
   static async setStatus(
     ctx: IContext,
     id: string,
-    status: ParticipationStatus,
+    data: Prisma.ParticipationUpdateInput,
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
       return tx.participation.update({
         where: { id },
-        data: { status },
+        data,
         include: participationInclude,
       });
     } else {
       return this.issuer.public(ctx, (dbTx) => {
         return dbTx.participation.update({
           where: { id },
-          data: { status },
+          data,
           include: participationInclude,
         });
       });

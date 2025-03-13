@@ -17,13 +17,3 @@ model TicketStatusHistory {
 
   @@map("t_ticket_status_histories")
 }
-
-enum TicketStatusReason {
-  PURCHASED
-  CANCELED
-
-  RESERVED
-  USED
-  REFUNDED
-  EXPIRED
-}

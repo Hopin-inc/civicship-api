@@ -5,8 +5,8 @@ extend type Mutation {
     # invite
     participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
     participationCancelInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationAcceptMyInvitation(id: ID!): ParticipationSetStatusPayload
-    participationDenyMyInvitation(id: ID!): ParticipationSetStatusPayload
+    participationAcceptMyInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationDenyMyInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
 
     # apply
     participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
@@ -24,8 +24,7 @@ extend type Mutation {
 # ------------------------------
 input ParticipationApplyInput {
     opportunityId: ID!
-    utilityId: ID
-    userWalletId: ID
+    ticketId: ID
 }
 
 input ParticipationInviteInput {
@@ -37,7 +36,7 @@ input ParticipationInviteInput {
 }
 
 input ParticipationSetStatusInput {
-    utilityId: ID
+    ticketId: ID
 
     """Used for permission checking."""
     communityId: ID!

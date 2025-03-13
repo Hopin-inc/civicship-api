@@ -1,23 +1,18 @@
 import { GqlParticipationInviteInput, GqlQueryParticipationsArgs } from "@/types/graphql";
 import { ParticipationStatus, Prisma } from "@prisma/client";
-import ParticipationInputFormat from "@/application/participation/data/converter";
+import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
-import ParticipationUtils from "@/application/participation/utils";
 import { getCurrentUserId } from "@/utils";
-import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 
 export default class ParticipationService {
-  private static issuer = new PrismaClientIssuer();
-
   static async fetchParticipations(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryParticipationsArgs,
     take: number,
   ) {
-    const where = ParticipationInputFormat.filter(filter ?? {});
-    const orderBy = ParticipationInputFormat.sort(sort ?? {});
+    const where = ParticipationConverter.filter(filter ?? {});
+    const orderBy = ParticipationConverter.sort(sort ?? {});
 
     return await ParticipationRepository.query(ctx, where, orderBy, take, cursor);
   }
@@ -38,110 +33,31 @@ export default class ParticipationService {
     ctx: IContext,
     currentUserId: string,
     data: Prisma.ParticipationCreateInput,
-    status: ParticipationStatus,
-    tx: Prisma.TransactionClient,
   ) {
-    const participation = await ParticipationRepository.create(
-      ctx,
-      {
-        ...data,
-        status,
-      },
-      tx,
-    );
-
-    await ParticipationStatusHistoryService.recordParticipationHistory(
-      ctx,
-      tx,
-      participation.id,
-      status,
-      currentUserId,
-    );
-
-    return participation;
+    return await ParticipationRepository.create(ctx, data);
   }
 
   static async inviteParticipation(ctx: IContext, input: GqlParticipationInviteInput) {
-    const userId = getCurrentUserId(ctx);
+    const currentUserId = getCurrentUserId(ctx);
+    const data: Prisma.ParticipationCreateInput = ParticipationConverter.invite(
+      input,
+      currentUserId,
+    );
 
-    return this.issuer.public(ctx, async (tx) => {
-      const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.invite(input);
-
-      const participation = await ParticipationRepository.create(
-        ctx,
-        {
-          ...data,
-          status: ParticipationStatus.INVITED,
-        },
-        tx,
-      );
-
-      await ParticipationStatusHistoryService.recordParticipationHistory(
-        ctx,
-        tx,
-        participation.id,
-        ParticipationStatus.INVITED,
-        userId,
-      );
-
-      return participation;
-    });
+    return await ParticipationRepository.create(ctx, data);
   }
 
-  static async cancelInvitation(ctx: IContext, id: string) {
+  static async setStatus(
+    ctx: IContext,
+    id: string,
+    status: ParticipationStatus,
+    tx?: Prisma.TransactionClient,
+  ) {
     const currentUserId = getCurrentUserId(ctx);
-
-    return ParticipationUtils.setParticipationStatus(
-      ctx,
-      id,
+    const data: Prisma.ParticipationUpdateInput = ParticipationConverter.setStatus(
       currentUserId,
-      ParticipationStatus.CANCELED,
+      status,
     );
-  }
-
-  static async denyInvitation(ctx: IContext, id: string) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    return ParticipationUtils.setParticipationStatus(
-      ctx,
-      id,
-      currentUserId,
-      ParticipationStatus.NOT_PARTICIPATING,
-    );
-  }
-
-  static async cancelApplication(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    return ParticipationUtils.setParticipationStatus(
-      ctx,
-      id,
-      currentUserId,
-      ParticipationStatus.CANCELED,
-      tx,
-    );
-  }
-
-  static async denyApplication(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    return ParticipationUtils.setParticipationStatus(
-      ctx,
-      id,
-      currentUserId,
-      ParticipationStatus.NOT_PARTICIPATING,
-      tx,
-    );
-  }
-
-  static async denyPerformance(ctx: IContext, id: string) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    return ParticipationUtils.setParticipationStatus(
-      ctx,
-      id,
-      currentUserId,
-      ParticipationStatus.DENIED,
-    );
+    return ParticipationRepository.setStatus(ctx, id, data, tx);
   }
 }

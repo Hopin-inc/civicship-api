@@ -4,6 +4,7 @@
 type Ticket {
     id: ID!
     status: TicketStatus!
+    reason: TicketStatusReason!
 
     wallet: Wallet!
     utility: Utility!
@@ -25,4 +26,13 @@ type Ticket {
 enum TicketStatus {
     AVAILABLE
     DISABLED
+}
+
+enum TicketStatusReason {
+    PURCHASED
+    CANCELED
+    RESERVED
+    USED
+    REFUNDED
+    EXPIRED
 }

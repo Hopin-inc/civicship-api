@@ -204,6 +204,7 @@ Table t_places {
 Table t_tickets {
   id String [pk]
   status TicketStatus [not null, default: 'AVAILABLE']
+  reason TicketStatusReason [not null, default: 'PURCHASED']
   walletId String [not null]
   wallet t_wallets [not null]
   utilityId String [not null]

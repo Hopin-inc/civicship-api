@@ -1,5 +1,4 @@
 import {
-  GqlParticipationStatusHistoryCreateInput,
   GqlParticipationStatusHistoryFilterInput,
   GqlParticipationStatusHistorySortInput,
 } from "@/types/graphql";
@@ -22,18 +21,5 @@ export default class ParticipationStatusHistoryInputFormat {
     sort?: GqlParticipationStatusHistorySortInput,
   ): Prisma.ParticipationStatusHistoryOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
-  }
-
-  static create(
-    input: GqlParticipationStatusHistoryCreateInput,
-  ): Prisma.ParticipationStatusHistoryCreateInput {
-    const { participationId, createdById, status, ...properties } = input;
-
-    return {
-      ...properties,
-      status,
-      participation: { connect: { id: participationId } },
-      createdByUser: { connect: { id: createdById } },
-    };
   }
 }

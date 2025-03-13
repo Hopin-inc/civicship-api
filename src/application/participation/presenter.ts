@@ -5,10 +5,10 @@ import {
   GqlParticipationSetStatusPayload,
   GqlParticipationInviteSuccess,
 } from "@/types/graphql";
-import { ParticipationPayloadWithArgs } from "@/application/participation/data/type";
-import OpportunityOutputFormat from "@/application/opportunity/presenter";
+import { PrismaParticipation } from "@/application/participation/data/type";
+import OpportunityPresenter from "@/application/opportunity/presenter";
 
-export default class ParticipationOutputFormat {
+export default class ParticipationPresenter {
   static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
     return {
       totalCount: r.length,
@@ -25,32 +25,32 @@ export default class ParticipationOutputFormat {
     };
   }
 
-  static get(r: ParticipationPayloadWithArgs): GqlParticipation {
+  static get(r: PrismaParticipation): GqlParticipation {
     const { user, opportunity, community } = r;
 
     return {
       ...r,
       user,
       community,
-      opportunity: opportunity ? OpportunityOutputFormat.get(opportunity) : null,
+      opportunity: opportunity ? OpportunityPresenter.get(opportunity) : null,
     };
   }
 
-  static invite(r: ParticipationPayloadWithArgs): GqlParticipationInviteSuccess {
+  static invite(r: PrismaParticipation): GqlParticipationInviteSuccess {
     return {
       __typename: "ParticipationInviteSuccess",
       participation: this.get(r),
     };
   }
 
-  static apply(r: ParticipationPayloadWithArgs): GqlParticipationApplySuccess {
+  static apply(r: PrismaParticipation): GqlParticipationApplySuccess {
     return {
       __typename: "ParticipationApplySuccess",
       participation: this.get(r),
     };
   }
 
-  static setStatus(r: ParticipationPayloadWithArgs): GqlParticipationSetStatusPayload {
+  static setStatus(r: PrismaParticipation): GqlParticipationSetStatusPayload {
     return {
       __typename: "ParticipationSetStatusSuccess",
       participation: this.get(r),

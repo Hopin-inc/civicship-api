@@ -631,6 +631,7 @@ export type GqlMutationParticipationAcceptApplicationArgs = {
 
 export type GqlMutationParticipationAcceptMyInvitationArgs = {
   id: Scalars['ID']['input'];
+  input: GqlParticipationSetStatusInput;
 };
 
 
@@ -665,6 +666,7 @@ export type GqlMutationParticipationDenyApplicationArgs = {
 
 export type GqlMutationParticipationDenyMyInvitationArgs = {
   id: Scalars['ID']['input'];
+  input: GqlParticipationSetStatusInput;
 };
 
 
@@ -1168,8 +1170,7 @@ export type GqlParticipationTransactionsArgs = {
 
 export type GqlParticipationApplyInput = {
   opportunityId: Scalars['ID']['input'];
-  userWalletId?: InputMaybe<Scalars['ID']['input']>;
-  utilityId?: InputMaybe<Scalars['ID']['input']>;
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type GqlParticipationApplyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationApplySuccess;
@@ -1210,7 +1211,7 @@ export type GqlParticipationInviteSuccess = {
 export type GqlParticipationSetStatusInput = {
   /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
-  utilityId?: InputMaybe<Scalars['ID']['input']>;
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type GqlParticipationSetStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationSetStatusSuccess;
@@ -1667,6 +1668,7 @@ export type GqlTicket = {
   __typename?: 'Ticket';
   createdAt: Scalars['Datetime']['output'];
   id: Scalars['ID']['output'];
+  reason: GqlTicketStatusReason;
   status: GqlTicketStatus;
   ticketStatusHistories?: Maybe<GqlTicketStatusHistoriesConnection>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -3100,13 +3102,13 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input'>>;
   participationAcceptApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptApplicationArgs, 'id' | 'input'>>;
-  participationAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptMyInvitationArgs, 'id'>>;
+  participationAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptMyInvitationArgs, 'id' | 'input'>>;
   participationApply?: Resolver<Maybe<GqlResolversTypes['ParticipationApplyPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApplyArgs, 'input'>>;
   participationApprovePerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApprovePerformanceArgs, 'id' | 'input'>>;
   participationCancelInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelInvitationArgs, 'id' | 'input'>>;
   participationCancelMyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelMyApplicationArgs, 'id' | 'input'>>;
   participationDenyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyApplicationArgs, 'id' | 'input'>>;
-  participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id'>>;
+  participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id' | 'input'>>;
   participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id' | 'input'>>;
   participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'input'>>;
   placeCreate?: Resolver<Maybe<GqlResolversTypes['PlaceCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceCreateArgs, 'input'>>;
@@ -3500,6 +3502,7 @@ export type GqlStateResolvers<ContextType = any, ParentType extends GqlResolvers
 export type GqlTicketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Ticket'] = GqlResolversParentTypes['Ticket']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  reason?: Resolver<GqlResolversTypes['TicketStatusReason'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['TicketStatus'], ParentType, ContextType>;
   ticketStatusHistories?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlTicketTicketStatusHistoriesArgs>>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;

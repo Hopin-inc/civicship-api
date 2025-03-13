@@ -1,14 +1,13 @@
 import { Prisma } from "@prisma/client";
 import { opportunityInclude } from "@/application/opportunity/data/type";
 import { userInclude } from "@/application/user/data/type";
-import { communityInclude } from "@/application/community/data/type";
 
 export const participationInclude = Prisma.validator<Prisma.ParticipationInclude>()({
   user: { include: userInclude },
-  community: { include: communityInclude },
+  community: true,
   opportunity: { include: opportunityInclude },
 });
 
-export type ParticipationPayloadWithArgs = Prisma.ParticipationGetPayload<{
+export type PrismaParticipation = Prisma.ParticipationGetPayload<{
   include: typeof participationInclude;
 }>;

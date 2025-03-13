@@ -13,15 +13,3 @@ type TicketStatusHistory {
     createdAt: Datetime!
     updatedAt: Datetime
 }
-
-# ------------------------------
-# TicketStatusHistory Enum Definitions
-# ------------------------------
-enum TicketStatusReason {
-    PURCHASED
-    CANCELED
-    RESERVED
-    USED
-    REFUNDED
-    EXPIRED
-}
