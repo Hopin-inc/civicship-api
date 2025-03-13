@@ -21,6 +21,14 @@ export default class PlaceService {
     return await PlaceRepository.find(ctx, id);
   }
 
+  static async findPlaceOrThrow(ctx: IContext, id: string) {
+    const place = await PlaceRepository.find(ctx, id);
+    if (!place) {
+      throw new NotFoundError("Place", { id });
+    }
+    return place;
+  }
+
   static async createPlace(ctx: IContext, input: GqlPlaceCreateInput) {
     const data: Prisma.PlaceCreateInput = PlaceConverter.create(input);
 
@@ -28,22 +36,15 @@ export default class PlaceService {
   }
 
   static async deletePlace(ctx: IContext, id: string) {
-    const place = await PlaceRepository.find(ctx, id);
-    if (!place) {
-      throw new NotFoundError("Place", { id });
-    }
+    await this.findPlaceOrThrow(ctx, id);
 
     return await PlaceRepository.delete(ctx, id);
   }
 
   static async updatePlace(ctx: IContext, id: string, input: GqlPlaceUpdateInput) {
-    const place = await PlaceRepository.find(ctx, id);
-    if (!place) {
-      throw new NotFoundError("Place", { id });
-    }
+    await this.findPlaceOrThrow(ctx, id);
 
     const data: Prisma.PlaceUpdateInput = PlaceConverter.update(input);
-
     return await PlaceRepository.update(ctx, id, data);
   }
 }

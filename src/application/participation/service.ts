@@ -8,6 +8,9 @@ import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/utils";
+import { PrismaParticipation } from "@/application/participation/data/type";
+import OpportunityRepository from "@/application/opportunity/data/repository";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class ParticipationService {
   static async fetchParticipations(
@@ -73,5 +76,29 @@ export default class ParticipationService {
       reason,
     );
     return ParticipationRepository.setStatus(ctx, id, data, tx);
+  }
+
+  static async validateParticipation(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participation: PrismaParticipation,
+  ): Promise<{
+    opportunity: NonNullable<Awaited<ReturnType<typeof OpportunityRepository.find>>>;
+    participation: PrismaParticipation;
+  }> {
+    if (!participation.opportunityId) {
+      throw new NotFoundError("Opportunity", { id: participation.opportunityId });
+    }
+
+    const opportunity = await OpportunityRepository.find(ctx, participation.opportunityId, tx);
+    if (!opportunity) {
+      throw new NotFoundError("Opportunity", { id: participation.opportunityId });
+    }
+
+    if (!participation.userId) {
+      throw new NotFoundError("Participated user", { userId: participation.userId });
+    }
+
+    return { opportunity, participation };
   }
 }

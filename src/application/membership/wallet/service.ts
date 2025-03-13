@@ -62,35 +62,7 @@ export default class WalletService {
     return WalletPresenter.get(wallet);
   }
 
-  static async findWalletsForPurchaseUtility(
-    ctx: IContext,
-    memberWalletId: string,
-    communityId: string,
-    requiredPoints: number,
-  ) {
-    const memberWallet = await this.checkIfMemberWalletExists(ctx, memberWalletId);
-    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
-
-    await WalletUtils.validateTransfer(requiredPoints, memberWallet, communityWallet);
-
-    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
-  }
-
-  static async findWalletsForRefundUtility(
-    ctx: IContext,
-    memberWalletId: string,
-    communityId: string,
-    requiredPoints: number,
-  ) {
-    const memberWallet = await this.checkIfMemberWalletExists(ctx, memberWalletId);
-    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
-
-    await WalletUtils.validateTransfer(requiredPoints, communityWallet, memberWallet);
-
-    return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
-  }
-
-  static async findWalletsForGiveReward(
+  static async validateWalletsForGiveReward(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     communityId: string,
@@ -99,6 +71,21 @@ export default class WalletService {
   ) {
     const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
     const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
+
+    await WalletUtils.validateTransfer(transferPoints, communityWallet, memberWallet);
+
+    return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
+  }
+
+  static async validateWalletsForGrantOrDonation(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    communityId: string,
+    userId: string,
+    transferPoints: number,
+  ) {
+    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+    const memberWallet = await this.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
 
     await WalletUtils.validateTransfer(transferPoints, communityWallet, memberWallet);
 

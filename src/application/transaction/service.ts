@@ -8,7 +8,6 @@ import {
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionConverter, {
-  GiveRewardPointParams,
   PurchaseTicketParams,
   RefundTicketParams,
 } from "@/application/transaction/data/converter";
@@ -44,9 +43,9 @@ export default class TransactionService {
     tx: Prisma.TransactionClient,
   ) {
     const data = TransactionConverter.grantCommunityPoint(input, memberWalletId);
+
     const transaction = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
-
     return transaction;
   }
 
@@ -57,6 +56,7 @@ export default class TransactionService {
     tx: Prisma.TransactionClient,
   ) {
     const data = TransactionConverter.donateSelfPoint(input, toWalletId);
+
     const transaction = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
     return transaction;
@@ -65,9 +65,21 @@ export default class TransactionService {
   static async giveRewardPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    params: GiveRewardPointParams,
+    participationId: string,
+    pointsToEarn: number,
+    fromWalletId: string,
+    toWalletId: string,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint(params);
+    const fromPointChange = -pointsToEarn;
+    const toPointChange = pointsToEarn;
+
+    const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint({
+      fromWalletId,
+      fromPointChange,
+      toWalletId,
+      toPointChange,
+      participationId,
+    });
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);

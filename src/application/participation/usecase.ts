@@ -35,8 +35,6 @@ import {
   ParticipationStatus,
   ParticipationStatusReason,
   Prisma,
-  TicketStatus,
-  TicketStatusReason,
 } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/membership/wallet/service";
@@ -44,7 +42,6 @@ import TransactionService from "@/application/transaction/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import OpportunityService from "@/application/opportunity/service";
 import TicketService from "@/application/ticket/service";
-import { GiveRewardPointParams } from "@/application/transaction/data/converter";
 
 export default class ParticipationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -222,14 +219,7 @@ export default class ParticipationUseCase {
       );
 
       if (ticketId) {
-        const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
-        if (
-          participation.status === ParticipationStatus.PENDING &&
-          ticket.status === TicketStatus.DISABLED &&
-          ticket.reason === TicketStatusReason.RESERVED
-        ) {
-          await TicketService.cancelReservedTicket(ctx, ticketId, tx);
-        }
+        await TicketService.cancelReservedTicketIfNeeded(ctx, ticketId, tx, participation.status);
       }
 
       return ParticipationPresenter.setStatus(res);
@@ -258,13 +248,7 @@ export default class ParticipationUseCase {
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
       if (ticketId) {
-        const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
-        if (
-          participation.status === ParticipationStatus.PENDING &&
-          ticket.status === TicketStatus.AVAILABLE
-        ) {
-          await TicketService.useTicket(ctx, ticketId, tx);
-        }
+        await TicketService.useTicketIfAvailable(ctx, ticketId, tx, participation.status);
       }
 
       return ParticipationPresenter.setStatus(res);
@@ -288,14 +272,7 @@ export default class ParticipationUseCase {
       );
 
       if (ticketId) {
-        const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
-        if (
-          participation.status === ParticipationStatus.PENDING &&
-          ticket.status === TicketStatus.DISABLED &&
-          ticket.reason === TicketStatusReason.RESERVED
-        ) {
-          await TicketService.cancelReservedTicket(ctx, ticketId, tx);
-        }
+        await TicketService.cancelReservedTicketIfNeeded(ctx, ticketId, tx, participation.status);
       }
 
       return ParticipationPresenter.setStatus(res);
@@ -317,32 +294,29 @@ export default class ParticipationUseCase {
         ParticipationStatusReason.QUALIFIED_PARTICIPATION,
         tx,
       );
-      const { opportunity } = await ParticipationUtils.validateParticipation(
+      const { opportunity } = await ParticipationService.validateParticipation(
         ctx,
         tx,
         participation,
       );
 
       if (opportunity.pointsToEarn && opportunity.category === OpportunityCategory.QUEST) {
-        const fromPointChange = -opportunity.pointsToEarn;
-        const toPointChange = opportunity.pointsToEarn;
-
-        const { fromWalletId, toWalletId } = await WalletService.findWalletsForGiveReward(
+        const { fromWalletId, toWalletId } = await WalletService.validateWalletsForGiveReward(
           ctx,
           tx,
           communityId,
           id,
-          fromPointChange,
+          opportunity.pointsToEarn,
         );
 
-        const data: GiveRewardPointParams = {
+        await TransactionService.giveRewardPoint(
+          ctx,
+          tx,
+          id,
+          opportunity.pointsToEarn,
           fromWalletId,
-          fromPointChange,
           toWalletId,
-          toPointChange,
-          participationId: id,
-        };
-        await TransactionService.giveRewardPoint(ctx, tx, data);
+        );
       }
 
       return ParticipationPresenter.setStatus(res);

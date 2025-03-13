@@ -39,10 +39,13 @@ export default class UtilityService {
   }
 
   static async deleteUtility(ctx: IContext, id: string) {
+    await this.findUtilityOrThrow(ctx, id);
     return UtilityRepository.delete(ctx, id);
   }
 
   static async updateUtilityInfo(ctx: IContext, { id, input }: GqlMutationUtilityUpdateInfoArgs) {
+    await this.findUtilityOrThrow(ctx, id);
+
     const data: Prisma.UtilityUpdateInput = UtilityConverter.updateInfo(input);
     return UtilityRepository.update(ctx, id, data);
   }

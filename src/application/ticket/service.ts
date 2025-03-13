@@ -2,7 +2,7 @@ import { GqlQueryTicketsArgs, GqlTicket } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
-import { ParticipationStatus, Prisma } from "@prisma/client";
+import { ParticipationStatus, Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/utils";
 
@@ -65,6 +65,38 @@ export default class TicketService {
     }
   }
 
+  static async cancelReservedTicketIfNeeded(
+    ctx: IContext,
+    ticketId: string,
+    tx: Prisma.TransactionClient,
+    participationStatus: ParticipationStatus,
+  ): Promise<void> {
+    const ticket = await this.findTicketOrThrow(ctx, ticketId);
+    if (
+      participationStatus === ParticipationStatus.PENDING &&
+      ticket.status === TicketStatus.DISABLED &&
+      ticket.reason === TicketStatusReason.RESERVED
+    ) {
+      await this.cancelReservedTicket(ctx, ticketId, tx);
+    }
+  }
+
+  static async useTicketIfAvailable(
+    ctx: IContext,
+    ticketId: string,
+    tx: Prisma.TransactionClient,
+    participationStatus: ParticipationStatus,
+  ): Promise<void> {
+    const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
+
+    if (
+      participationStatus === ParticipationStatus.PENDING &&
+      ticket.status === TicketStatus.AVAILABLE
+    ) {
+      await TicketService.useTicket(ctx, ticketId, tx);
+    }
+  }
+
   static async reserveTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
     const currentUserId = getCurrentUserId(ctx);
 
@@ -93,6 +125,7 @@ export default class TicketService {
     tx: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
+    await this.findTicketOrThrow(ctx, id);
 
     const data: Prisma.TicketUpdateInput = TicketConverter.refund(currentUserId, transactionId);
     return TicketRepository.update(ctx, id, data, tx);
