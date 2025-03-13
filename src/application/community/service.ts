@@ -26,11 +26,12 @@ export default class CommunityService {
     return await CommunityRepository.find(ctx, id);
   }
 
-  static async checkIfCommunityExists(ctx: IContext, id: string) {
+  static async findCommunityOrThrow(ctx: IContext, id: string) {
     const community = await CommunityRepository.find(ctx, id);
     if (!community) {
       throw new NotFoundError("Community", { id });
     }
+    return community;
   }
 
   static async createCommunityAndJoinAsOwner(
@@ -45,7 +46,7 @@ export default class CommunityService {
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {
-    await this.checkIfCommunityExists(ctx, id);
+    await this.findCommunityOrThrow(ctx, id);
     return await CommunityRepository.delete(ctx, id);
   }
 
@@ -54,7 +55,7 @@ export default class CommunityService {
     id: string,
     input: GqlCommunityUpdateProfileInput,
   ) {
-    await this.checkIfCommunityExists(ctx, id);
+    await this.findCommunityOrThrow(ctx, id);
 
     validateConnectOrCreatePlacesInput(input);
     const data: Prisma.CommunityUpdateInput = CommunityConverter.update(input);
@@ -66,10 +67,9 @@ function validateConnectOrCreatePlacesInput(input: GqlCommunityUpdateProfileInpu
   if (input.places?.connectOrCreate) {
     input.places.connectOrCreate.forEach((item) => {
       if ((item.where && item.create) || (!item.where && !item.create)) {
-        throw new ValidationError(
-          `For each Place, please specify only one of either 'where' or 'create'`,
-          [JSON.stringify(input.places.connectOrCreate)],
-        );
+        throw new ValidationError(`For each Place, choose only one of "where" or "create."`, [
+          JSON.stringify(input.places.connectOrCreate),
+        ]);
       }
     });
   }
