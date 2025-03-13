@@ -1,11 +1,5 @@
 import ArticleUseCase from "@/application/article/usecase";
-import {
-  GqlQueryArticlesArgs,
-  GqlQueryArticleArgs,
-  GqlMutationArticleCreateArgs,
-  GqlMutationArticleUpdateArgs,
-  GqlMutationArticleDeleteArgs,
-} from "@/types/graphql";
+import { GqlQueryArticlesArgs, GqlQueryArticleArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 
 const articleResolver = {
@@ -18,14 +12,6 @@ const articleResolver = {
       }
       return ctx.loaders.article.load(args.id);
     },
-  },
-  Mutation: {
-    articleCreate: async (_: unknown, args: GqlMutationArticleCreateArgs, ctx: IContext) =>
-      ArticleUseCase.managerCreateArticle(ctx, args),
-    articleUpdate: async (_: unknown, args: GqlMutationArticleUpdateArgs, ctx: IContext) =>
-      ArticleUseCase.managerUpdateArticle(ctx, args),
-    articleDelete: async (_: unknown, args: GqlMutationArticleDeleteArgs, ctx: IContext) =>
-      ArticleUseCase.managerDeleteArticle(ctx, args),
   },
 };
 
