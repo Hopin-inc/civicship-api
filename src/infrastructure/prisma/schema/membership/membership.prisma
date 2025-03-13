@@ -6,7 +6,8 @@ model Membership {
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   status MembershipStatus
-  role   Role             @default(MEMBER)
+  reason MembershipStatusReason
+  role   Role                   @default(MEMBER)
 
   histories MembershipHistory[]
 

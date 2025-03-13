@@ -1,10 +1,5 @@
-import {
-  GqlMembershipFilterInput,
-  GqlMembershipSortInput,
-  GqlMembershipInviteInput,
-  GqlMembershipSetInvitationStatusInput,
-} from "@/types/graphql";
-import { Prisma, MembershipStatus, Role } from "@prisma/client";
+import { GqlMembershipFilterInput, GqlMembershipSortInput } from "@/types/graphql";
+import { Prisma, MembershipStatus, Role, MembershipStatusReason } from "@prisma/client";
 
 export default class MembershipConverter {
   static filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
@@ -22,30 +17,67 @@ export default class MembershipConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static join(input: GqlMembershipSetInvitationStatusInput): Prisma.MembershipCreateInput {
+  static join(
+    currentUserId: string,
+    communityId: string,
+    joinedUserId?: string,
+  ): Prisma.MembershipCreateInput {
     return {
-      user: { connect: { id: input.userId } },
-      community: { connect: { id: input.communityId } },
+      user: { connect: { id: joinedUserId ?? currentUserId } },
+      community: { connect: { id: communityId } },
       status: MembershipStatus.JOINED,
+      reason: MembershipStatusReason.ACCEPTED_INVITATION,
+      histories: {
+        create: {
+          status: MembershipStatus.JOINED,
+          reason: MembershipStatusReason.ACCEPTED_INVITATION,
+          createdByUser: { connect: { id: currentUserId } },
+        },
+      },
     };
   }
 
-  static invite(input: GqlMembershipInviteInput): Prisma.MembershipCreateInput {
+  static invite(
+    invitedUserId: string,
+    communityId: string,
+    currentUserId: string,
+    role?: Role,
+  ): Prisma.MembershipCreateInput {
     return {
-      user: { connect: { id: input.userId } },
-      community: { connect: { id: input.communityId } },
-      status: MembershipStatus.INVITED,
-      role: input.role ?? Role.MEMBER,
+      user: { connect: { id: invitedUserId } },
+      community: { connect: { id: communityId } },
+      status: MembershipStatus.PENDING,
+      reason: MembershipStatusReason.INVITED,
+      role: role ?? Role.MEMBER,
+      histories: {
+        create: {
+          status: MembershipStatus.PENDING,
+          reason: MembershipStatusReason.INVITED,
+          role: role ?? Role.MEMBER,
+          createdByUser: { connect: { id: currentUserId } },
+        },
+      },
     };
   }
 
-  static setStatus(
+  static update(
     status: MembershipStatus,
-  ): Prisma.EnumMembershipStatusFieldUpdateOperationsInput {
-    return { set: status };
-  }
-
-  static setRole(role: Role): Prisma.EnumRoleFieldUpdateOperationsInput {
-    return { set: role };
+    reason: MembershipStatusReason,
+    role: Role,
+    currentUserId: string,
+  ): Prisma.MembershipUpdateInput {
+    return {
+      status,
+      reason,
+      role,
+      histories: {
+        create: {
+          status,
+          reason,
+          role,
+          createdByUser: { connect: { id: currentUserId } },
+        },
+      },
+    };
   }
 }

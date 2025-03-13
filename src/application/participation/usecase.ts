@@ -244,7 +244,8 @@ export default class ParticipationUseCase {
         tx,
       );
 
-      await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
+      const userId = await ParticipationService.validateParticipationHasUserId(ctx, participation);
+      await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, userId);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
       if (ticketId) {
@@ -294,9 +295,8 @@ export default class ParticipationUseCase {
         ParticipationStatusReason.QUALIFIED_PARTICIPATION,
         tx,
       );
-      const { opportunity } = await ParticipationService.validateParticipation(
+      const opportunity = await ParticipationService.validateParticipationHasOpportunity(
         ctx,
-        tx,
         participation,
       );
 

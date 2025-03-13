@@ -23,8 +23,8 @@ import type { AccumulatedPointView } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
-import type { Role } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
@@ -259,6 +259,7 @@ type MembershipcommunityFactory = {
 };
 type MembershipFactoryDefineInput = {
     status?: MembershipStatus;
+    reason?: MembershipStatusReason;
     role?: Role;
     createdAt?: Date;
     updatedAt?: Date | null;

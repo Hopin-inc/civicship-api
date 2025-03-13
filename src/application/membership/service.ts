@@ -1,14 +1,14 @@
 import {
   GqlMembershipInviteInput,
   GqlMembershipSetInvitationStatusInput,
+  GqlMembershipSetRoleInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
 import MembershipConverter from "@/application/membership/data/converter";
 import MembershipRepository from "@/application/membership/data/repository";
 import { IContext } from "@/types/server";
-import { MembershipStatus, Prisma, Role } from "@prisma/client";
+import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 import { getCurrentUserId } from "@/utils";
-import MembershipUtils from "@/application/membership/utils";
 import { NotFoundError } from "@/errors/graphql";
 
 export default class MembershipService {
@@ -27,54 +27,59 @@ export default class MembershipService {
     return MembershipRepository.find(ctx, { userId_communityId: { userId, communityId } });
   }
 
+  static async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string) {
+    const membership = await MembershipRepository.find(ctx, {
+      userId_communityId: { userId, communityId },
+    });
+    if (!membership) {
+      throw new NotFoundError("Membership", { userId, communityId });
+    }
+    return membership;
+  }
+
   static async inviteMember(ctx: IContext, input: GqlMembershipInviteInput) {
-    const data: Prisma.MembershipCreateInput = MembershipConverter.invite(input);
-    return MembershipRepository.create(ctx, data);
-  }
-
-  static async cancelInvitation(
-    ctx: IContext,
-    { userId, communityId }: GqlMembershipSetInvitationStatusInput,
-  ) {
-    return MembershipUtils.setMembershipStatus(ctx, userId, communityId, MembershipStatus.CANCELED);
-  }
-
-  static async denyInvitation(ctx: IContext, input: GqlMembershipSetInvitationStatusInput) {
-    const { communityId } = input;
     const currentUserId = getCurrentUserId(ctx);
 
-    return MembershipUtils.setMembershipStatus(
-      ctx,
+    const data: Prisma.MembershipCreateInput = MembershipConverter.invite(
+      input.userId,
+      input.communityId,
       currentUserId,
-      communityId,
-      MembershipStatus.CANCELED,
+      input.role,
     );
+    return MembershipRepository.create(ctx, data);
   }
 
   static async joinIfNeeded(
     ctx: IContext,
-    userId: string,
+    currentUserId: string,
     communityId: string,
     tx: Prisma.TransactionClient,
+    joinedUserId?: string,
   ) {
     let membership = await MembershipRepository.find(
       ctx,
-      { userId_communityId: { userId, communityId } },
+      { userId_communityId: { userId: joinedUserId ?? currentUserId, communityId } },
       tx,
     );
 
     if (!membership) {
-      const data: Prisma.MembershipCreateInput = MembershipConverter.join({
-        userId,
+      const data: Prisma.MembershipCreateInput = MembershipConverter.join(
+        currentUserId,
         communityId,
-      });
+        joinedUserId,
+      );
       membership = await MembershipRepository.create(ctx, data, tx);
     } else {
       if (membership.status !== MembershipStatus.JOINED) {
-        const data = MembershipConverter.setStatus(MembershipStatus.JOINED);
-        membership = await MembershipRepository.setStatus(
+        const data = MembershipConverter.update(
+          MembershipStatus.JOINED,
+          MembershipStatusReason.ACCEPTED_INVITATION,
+          membership.role,
+          currentUserId,
+        );
+        membership = await MembershipRepository.update(
           ctx,
-          { userId_communityId: { userId, communityId } },
+          { userId_communityId: { userId: joinedUserId ?? currentUserId, communityId } },
           data,
           tx,
         );
@@ -84,16 +89,40 @@ export default class MembershipService {
     return membership;
   }
 
-  static async assignRole(ctx: IContext, userId: string, communityId: string, role: Role) {
-    const membership = await MembershipRepository.find(ctx, {
-      userId_communityId: { userId, communityId },
-    });
-    if (!membership) {
-      throw new NotFoundError("Membership", { userId, communityId });
-    }
+  static async setStatus(
+    ctx: IContext,
+    { userId, communityId }: GqlMembershipSetInvitationStatusInput,
+    status: MembershipStatus,
+    reason: MembershipStatusReason,
+  ) {
+    const currentUserId = getCurrentUserId(ctx);
+    const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
 
-    const data: Prisma.EnumRoleFieldUpdateOperationsInput = MembershipConverter.setRole(role);
-    return MembershipRepository.setRole(ctx, { userId_communityId: { userId, communityId } }, data);
+    const data: Prisma.MembershipUpdateInput = MembershipConverter.update(
+      status,
+      reason,
+      membership.role,
+      currentUserId,
+    );
+    return MembershipRepository.update(ctx, { userId_communityId: { userId, communityId } }, data);
+  }
+
+  static async setRole(
+    ctx: IContext,
+    { userId, communityId }: GqlMembershipSetRoleInput,
+    role: Role,
+  ) {
+    const currentUserId = getCurrentUserId(ctx);
+    const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
+
+    // TODO ロール変更のreasonを作成する
+    const data: Prisma.MembershipUpdateInput = MembershipConverter.update(
+      membership.status,
+      membership.reason,
+      role,
+      currentUserId,
+    );
+    return MembershipRepository.update(ctx, { userId_communityId: { userId, communityId } }, data);
   }
 
   static async deleteMembership(

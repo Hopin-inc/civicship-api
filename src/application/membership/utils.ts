@@ -1,7 +1,4 @@
 import { IContext } from "@/types/server";
-import { MembershipStatus, Prisma } from "@prisma/client";
-import MembershipRepository from "@/application/membership/data/repository";
-import MembershipConverter from "@/application/membership/data/converter";
 import {
   GqlMembershipCursorInput,
   GqlMembershipFilterInput,
@@ -11,7 +8,6 @@ import {
 import { clampFirst } from "@/utils";
 import MembershipService from "@/application/membership/service";
 import MembershipOutputFormat from "@/application/membership/presenter";
-import { NotFoundError } from "@/errors/graphql";
 
 export default class MembershipUtils {
   static async fetchMembershipsCommon(
@@ -38,28 +34,5 @@ export default class MembershipUtils {
     });
 
     return MembershipOutputFormat.query(data, hasNextPage);
-  }
-
-  static async setMembershipStatus(
-    ctx: IContext,
-    userId: string,
-    communityId: string,
-    status: MembershipStatus,
-  ) {
-    const membership = await MembershipRepository.find(ctx, {
-      userId_communityId: { userId, communityId },
-    });
-    if (!membership) {
-      throw new NotFoundError("Membership", { userId, communityId });
-    }
-
-    const data: Prisma.EnumMembershipStatusFieldUpdateOperationsInput =
-      MembershipConverter.setStatus(status);
-
-    return MembershipRepository.setStatus(
-      ctx,
-      { userId_communityId: { userId, communityId } },
-      data,
-    );
   }
 }

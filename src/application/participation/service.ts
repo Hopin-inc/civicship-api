@@ -11,6 +11,7 @@ import { getCurrentUserId } from "@/utils";
 import { PrismaParticipation } from "@/application/participation/data/type";
 import OpportunityRepository from "@/application/opportunity/data/repository";
 import { NotFoundError } from "@/errors/graphql";
+import { PrismaOpportunity } from "@/application/opportunity/data/type";
 
 export default class ParticipationService {
   static async fetchParticipations(
@@ -78,27 +79,30 @@ export default class ParticipationService {
     return ParticipationRepository.setStatus(ctx, id, data, tx);
   }
 
-  static async validateParticipation(
+  static async validateParticipationHasOpportunity(
     ctx: IContext,
-    tx: Prisma.TransactionClient,
     participation: PrismaParticipation,
-  ): Promise<{
-    opportunity: NonNullable<Awaited<ReturnType<typeof OpportunityRepository.find>>>;
-    participation: PrismaParticipation;
-  }> {
+  ): Promise<PrismaOpportunity> {
     if (!participation.opportunityId) {
       throw new NotFoundError("Opportunity", { id: participation.opportunityId });
     }
 
-    const opportunity = await OpportunityRepository.find(ctx, participation.opportunityId, tx);
+    const opportunity = await OpportunityRepository.find(ctx, participation.opportunityId);
     if (!opportunity) {
       throw new NotFoundError("Opportunity", { id: participation.opportunityId });
     }
 
+    return opportunity;
+  }
+
+  static async validateParticipationHasUserId(
+    ctx: IContext,
+    participation: PrismaParticipation,
+  ): Promise<string> {
     if (!participation.userId) {
       throw new NotFoundError("Participated user", { userId: participation.userId });
     }
 
-    return { opportunity, participation };
+    return participation.userId;
   }
 }

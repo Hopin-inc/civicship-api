@@ -171,6 +171,7 @@ USER USER
     String user_id 
     String community_id 
     MembershipStatus status 
+    MembershipStatusReason reason 
     Role role 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -400,6 +401,7 @@ USER USER
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
+    "t_memberships" o|--|| "MembershipStatusReason" : "enum:reason"
     "t_memberships" o|--|| "Role" : "enum:role"
     "t_memberships" o{--}o "t_membership_histories" : "histories"
     "t_membership_histories" o|--|| "Role" : "enum:role"

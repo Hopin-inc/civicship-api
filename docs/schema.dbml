@@ -65,6 +65,7 @@ Table t_memberships {
   communityId String [not null]
   community t_communities [not null]
   status MembershipStatus [not null]
+  reason MembershipStatusReason [not null]
   role Role [not null, default: 'MEMBER']
   histories t_membership_histories [not null]
   createdAt DateTime [default: `now()`, not null]

@@ -71,55 +71,27 @@ export default class MembershipRepository {
     }
   }
 
-  static async setStatus(
+  static async update(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
-    status: Prisma.EnumMembershipStatusFieldUpdateOperationsInput,
+    data: Prisma.MembershipUpdateInput,
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
       return tx.membership.update({
         where,
-        data: { status },
+        data,
         include: membershipInclude,
       });
     } else {
       return this.issuer.public(ctx, (dbTx) => {
         return dbTx.membership.update({
           where,
-          data: { status },
+          data,
           include: membershipInclude,
         });
       });
     }
-  }
-
-  static async setRole(
-    ctx: IContext,
-    where: Prisma.MembershipWhereUniqueInput,
-    role: Prisma.EnumRoleFieldUpdateOperationsInput,
-  ) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.membership.update({
-        where,
-        data: { role },
-        include: membershipInclude,
-      });
-    });
-  }
-
-  static async update(
-    ctx: IContext,
-    where: Prisma.MembershipWhereUniqueInput,
-    data: Prisma.MembershipUpdateInput,
-  ) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.membership.update({
-        where,
-        data,
-        include: membershipInclude,
-      });
-    });
   }
 
   static async delete(

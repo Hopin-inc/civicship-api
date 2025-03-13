@@ -4,7 +4,7 @@ import {
   GqlCommunityFilterInput,
   GqlCommunitySortInput,
 } from "@/types/graphql";
-import { MembershipStatus, Prisma, Role } from "@prisma/client";
+import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 
 export default class CommunityConverter {
   static filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
@@ -47,7 +47,16 @@ export default class CommunityConverter {
           {
             userId: currentUserId,
             status: MembershipStatus.JOINED,
+            reason: MembershipStatusReason.CREATED_COMMUNITY,
             role: Role.OWNER,
+            histories: {
+              create: {
+                status: MembershipStatus.JOINED,
+                reason: MembershipStatusReason.CREATED_COMMUNITY,
+                role: Role.OWNER,
+                createdByUser: { connect: { id: currentUserId } },
+              },
+            },
           },
         ],
       },

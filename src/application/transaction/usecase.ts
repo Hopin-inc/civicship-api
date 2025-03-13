@@ -20,6 +20,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/membership/wallet/service";
+import { getCurrentUserId } from "@/utils";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -72,10 +73,10 @@ export default class TransactionUseCase {
     input: GqlTransactionGrantCommunityPointInput,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {
     const { communityId, toUserId, toPointChange } = input;
+    const currentUserId = getCurrentUserId(ctx);
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await MembershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
-
+      await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
       const { toWalletId } = await WalletService.validateWalletsForGrantOrDonation(
         ctx,
         tx,

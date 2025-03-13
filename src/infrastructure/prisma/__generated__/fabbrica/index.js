@@ -771,7 +771,8 @@ function isMembershipcommunityFactory(x) {
 }
 function autoGenerateMembershipScalarsOrEnums({ seq }) {
     return {
-        status: "PENDING"
+        status: "PENDING",
+        reason: "CREATED_COMMUNITY"
     };
 }
 function defineMembershipFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {

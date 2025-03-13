@@ -27,7 +27,7 @@ import MembershipUtils from "@/application/membership/utils";
 import MembershipPresenter from "@/application/membership/presenter";
 import MembershipService from "@/application/membership/service";
 import { getCurrentUserId } from "@/utils";
-import { Prisma, Role } from "@prisma/client";
+import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 import WalletService from "@/application/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
@@ -90,7 +90,12 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipCancelInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const membership = await MembershipService.cancelInvitation(ctx, input);
+    const membership = await MembershipService.setStatus(
+      ctx,
+      input,
+      MembershipStatus.LEFT,
+      MembershipStatusReason.CANCELED_INVITATION,
+    );
     return MembershipPresenter.setInvitationStatus(membership);
   }
 
@@ -98,10 +103,15 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAcceptMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const userId = getCurrentUserId(ctx);
+    const currentUserId = getCurrentUserId(ctx);
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const membership = await MembershipService.joinIfNeeded(ctx, userId, input.communityId, tx);
-      await WalletService.createMemberWalletIfNeeded(ctx, userId, input.communityId, tx);
+      const membership = await MembershipService.joinIfNeeded(
+        ctx,
+        currentUserId,
+        input.communityId,
+        tx,
+      );
+      await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, input.communityId, tx);
       return MembershipPresenter.setInvitationStatus(membership);
     });
   }
@@ -110,7 +120,15 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipDenyMyInvitationArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const membership = await MembershipService.denyInvitation(ctx, input);
+    const userId = getCurrentUserId(ctx);
+    const { communityId } = input;
+
+    const membership = await MembershipService.setStatus(
+      ctx,
+      { userId, communityId },
+      MembershipStatus.LEFT,
+      MembershipStatusReason.DECLINED_INVITATION,
+    );
     return MembershipPresenter.setInvitationStatus(membership);
   }
 
@@ -143,12 +161,7 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAssignOwnerArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.assignRole(
-      ctx,
-      input.userId,
-      input.communityId,
-      Role.OWNER,
-    );
+    const membership = await MembershipService.setRole(ctx, input, Role.OWNER);
     return MembershipPresenter.setRole(membership);
   }
 
@@ -156,12 +169,7 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAssignManagerArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.assignRole(
-      ctx,
-      input.userId,
-      input.communityId,
-      Role.MANAGER,
-    );
+    const membership = await MembershipService.setRole(ctx, input, Role.MANAGER);
     return MembershipPresenter.setRole(membership);
   }
 
@@ -169,12 +177,7 @@ export default class MembershipUseCase {
     { input }: GqlMutationMembershipAssignMemberArgs,
     ctx: IContext,
   ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.assignRole(
-      ctx,
-      input.userId,
-      input.communityId,
-      Role.MEMBER,
-    );
+    const membership = await MembershipService.setRole(ctx, input, Role.MEMBER);
     return MembershipPresenter.setRole(membership);
   }
 }
