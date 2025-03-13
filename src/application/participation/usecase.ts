@@ -43,7 +43,6 @@ import WalletService from "@/application/membership/wallet/service";
 import TransactionService from "@/application/transaction/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import OpportunityService from "@/application/opportunity/service";
-import ParticipationConverter from "@/application/participation/data/converter";
 import TicketService from "@/application/ticket/service";
 import { GiveRewardPointParams } from "@/application/transaction/data/converter";
 
@@ -186,37 +185,24 @@ export default class ParticipationUseCase {
       ? ParticipationStatus.PENDING
       : ParticipationStatus.PARTICIPATING;
 
-    const data: Prisma.ParticipationCreateInput = ParticipationConverter.apply(
-      input,
-      currentUserId,
-      communityId,
-      participationStatus,
-    );
-
-    const reserveOrUseTicket = async (tx: Prisma.TransactionClient) => {
-      if (requiredUtilities.length > 0 && input.ticketId) {
-        switch (participationStatus) {
-          case ParticipationStatus.PENDING:
-            await TicketService.reserveTicket(ctx, input.ticketId, tx);
-            break;
-          case ParticipationStatus.PARTICIPATING:
-            await TicketService.useTicket(ctx, input.ticketId, tx);
-            break;
-          default:
-            break;
-        }
-      }
-    };
-
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    const participation = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
-      await reserveOrUseTicket(tx);
+      if (requiredUtilities.length > 0 && input.ticketId) {
+        await TicketService.reserveOrUseTicket(ctx, participationStatus, input.ticketId, tx);
+      }
 
-      const participation = await ParticipationService.applyParticipation(ctx, currentUserId, data);
-      return ParticipationPresenter.apply(participation);
+      return await ParticipationService.applyParticipation(
+        ctx,
+        input,
+        currentUserId,
+        communityId,
+        participationStatus,
+      );
     });
+
+    return ParticipationPresenter.apply(participation);
   }
 
   static async userCancelMyApplication(

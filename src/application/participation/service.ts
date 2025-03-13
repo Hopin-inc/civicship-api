@@ -1,4 +1,8 @@
-import { GqlParticipationInviteInput, GqlQueryParticipationsArgs } from "@/types/graphql";
+import {
+  GqlParticipationApplyInput,
+  GqlParticipationInviteInput,
+  GqlQueryParticipationsArgs,
+} from "@/types/graphql";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
@@ -31,9 +35,17 @@ export default class ParticipationService {
 
   static async applyParticipation(
     ctx: IContext,
+    input: GqlParticipationApplyInput,
     currentUserId: string,
-    data: Prisma.ParticipationCreateInput,
+    communityId: string,
+    participationStatus: ParticipationStatus,
   ) {
+    const data: Prisma.ParticipationCreateInput = ParticipationConverter.apply(
+      input,
+      currentUserId,
+      communityId,
+      participationStatus,
+    );
     return await ParticipationRepository.create(ctx, data);
   }
 
