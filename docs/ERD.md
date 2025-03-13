@@ -25,10 +25,21 @@ MEMBER MEMBER
 
 
         MembershipStatus {
-            INVITED INVITED
-CANCELED CANCELED
+            PENDING PENDING
 JOINED JOINED
-WITHDRAWED WITHDRAWED
+LEFT LEFT
+        }
+    
+
+
+        MembershipStatusReason {
+            CREATED_COMMUNITY CREATED_COMMUNITY
+INVITED INVITED
+CANCELED_INVITATION CANCELED_INVITATION
+ACCEPTED_INVITATION ACCEPTED_INVITATION
+DECLINED_INVITATION DECLINED_INVITATION
+WITHDRAWN WITHDRAWN
+REMOVED REMOVED
         }
     
 
@@ -161,6 +172,19 @@ USER USER
     String community_id 
     MembershipStatus status 
     Role role 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_membership_histories" {
+    String id "🗝️"
+    Role role 
+    MembershipStatus status 
+    MembershipStatusReason reason 
+    String userId 
+    String communityId 
+    String created_by "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -377,6 +401,12 @@ USER USER
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
     "t_memberships" o|--|| "Role" : "enum:role"
+    "t_memberships" o{--}o "t_membership_histories" : "histories"
+    "t_membership_histories" o|--|| "Role" : "enum:role"
+    "t_membership_histories" o|--|| "MembershipStatus" : "enum:status"
+    "t_membership_histories" o|--|| "MembershipStatusReason" : "enum:reason"
+    "t_membership_histories" o|--|| "t_memberships" : "membership"
+    "t_membership_histories" o|--|o "t_users" : "createdByUser"
     "t_wallets" o|--|| "WalletType" : "enum:type"
     "t_wallets" o|--|| "t_communities" : "community"
     "t_wallets" o|--|o "t_users" : "user"
@@ -437,14 +467,15 @@ USER USER
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"
-    "t_users" o{--}o "t_participations" : "participations"
+    "t_users" o{--}o "t_membership_histories" : "membershipHistory"
+    "t_users" o{--}o "t_wallets" : "wallets"
     "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
     "t_users" o{--}o "t_opportunity_invitations" : "opportunityInvitations"
     "t_users" o{--}o "t_opportunity_invitation_histories" : "opportunityInvitationHistories"
+    "t_users" o{--}o "t_participations" : "participations"
     "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
-    "t_users" o{--}o "t_wallets" : "wallets"
     "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
     "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_utilities" o|--|| "t_communities" : "community"

@@ -12,17 +12,23 @@ model User {
   urlYoutube   String? @map("url_youtube")
   urlTiktok    String? @map("url_tiktok")
 
-  identities                     Identity[]
-  memberships                    Membership[]
-  participations                 Participation[]
+  identities Identity[]
+
+  memberships       Membership[]
+  membershipHistory MembershipHistory[]
+  wallets           Wallet[]
+
   opportunitiesCreatedByMe       Opportunity[]
   opportunityInvitations         OpportunityInvitation[]
   opportunityInvitationHistories OpportunityInvitationHistory[]
+
+  participations                 Participation[]
   participationStatusChangedByMe ParticipationStatusHistory[]
-  articlesWrittenByMe            Article[]                      @relation("t_author_users_on_articles")
-  articlesAboutMe                Article[]                      @relation("t_related_users_on_articles")
-  wallets                        Wallet[]
-  ticketStatusChangedByMe        TicketStatusHistory[]
+
+  articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
+  articlesAboutMe     Article[] @relation("t_related_users_on_articles")
+
+  ticketStatusChangedByMe TicketStatusHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

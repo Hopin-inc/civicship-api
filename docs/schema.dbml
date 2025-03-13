@@ -66,12 +66,27 @@ Table t_memberships {
   community t_communities [not null]
   status MembershipStatus [not null]
   role Role [not null, default: 'MEMBER']
+  histories t_membership_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
   indexes {
     (userId, communityId) [pk]
   }
+}
+
+Table t_membership_histories {
+  id String [pk]
+  role Role [not null, default: 'MEMBER']
+  status MembershipStatus [not null]
+  reason MembershipStatusReason [not null]
+  userId String [not null]
+  communityId String [not null]
+  membership t_memberships [not null]
+  createdBy String
+  createdByUser t_users
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
 }
 
 Table t_wallets {
@@ -270,14 +285,15 @@ Table t_users {
   urlTiktok String
   identities t_identities [not null]
   memberships t_memberships [not null]
-  participations t_participations [not null]
+  membershipHistory t_membership_histories [not null]
+  wallets t_wallets [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
   opportunityInvitations t_opportunity_invitations [not null]
   opportunityInvitationHistories t_opportunity_invitation_histories [not null]
+  participations t_participations [not null]
   participationStatusChangedByMe t_participation_status_histories [not null]
   articlesWrittenByMe t_articles [not null]
   articlesAboutMe t_articles [not null]
-  wallets t_wallets [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -348,10 +364,19 @@ Enum Role {
 }
 
 Enum MembershipStatus {
-  INVITED
-  CANCELED
+  PENDING
   JOINED
-  WITHDRAWED
+  LEFT
+}
+
+Enum MembershipStatusReason {
+  CREATED_COMMUNITY
+  INVITED
+  CANCELED_INVITATION
+  ACCEPTED_INVITATION
+  DECLINED_INVITATION
+  WITHDRAWN
+  REMOVED
 }
 
 Enum WalletType {
@@ -425,6 +450,10 @@ Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: R
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
 Ref: t_memberships.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_membership_histories.(userId, communityId) > t_memberships.(userId, communityId) [delete: Cascade]
+
+Ref: t_membership_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_wallets.communityId > t_communities.id [delete: Cascade]
 

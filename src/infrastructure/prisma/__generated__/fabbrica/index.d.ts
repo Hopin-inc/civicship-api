@@ -3,6 +3,7 @@ import type { Community } from "@prisma/client";
 import type { City } from "@prisma/client";
 import type { State } from "@prisma/client";
 import type { Membership } from "@prisma/client";
+import type { MembershipHistory } from "@prisma/client";
 import type { Wallet } from "@prisma/client";
 import type { Opportunity } from "@prisma/client";
 import type { OpportunityInvitation } from "@prisma/client";
@@ -23,6 +24,7 @@ import type { ArticleCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
 import type { Role } from "@prisma/client";
+import type { MembershipStatusReason } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
@@ -262,6 +264,7 @@ type MembershipFactoryDefineInput = {
     updatedAt?: Date | null;
     user: MembershipuserFactory | Prisma.UserCreateNestedOneWithoutMembershipsInput;
     community: MembershipcommunityFactory | Prisma.CommunityCreateNestedOneWithoutMembershipsInput;
+    histories?: Prisma.MembershipHistoryCreateNestedManyWithoutMembershipInput;
 };
 type MembershipTransientFields = Record<string, unknown> & Partial<Record<keyof MembershipFactoryDefineInput, never>>;
 type MembershipFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -300,6 +303,61 @@ interface MembershipFactoryBuilder {
  * @returns factory {@link MembershipFactoryInterface}
  */
 export declare const defineMembershipFactory: MembershipFactoryBuilder;
+type MembershipHistorymembershipFactory = {
+    _factoryFor: "Membership";
+    build: () => PromiseLike<Prisma.MembershipCreateNestedOneWithoutHistoriesInput["create"]>;
+};
+type MembershipHistorycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutMembershipHistoryInput["create"]>;
+};
+type MembershipHistoryFactoryDefineInput = {
+    id?: string;
+    role?: Role;
+    status?: MembershipStatus;
+    reason?: MembershipStatusReason;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    membership: MembershipHistorymembershipFactory | Prisma.MembershipCreateNestedOneWithoutHistoriesInput;
+    createdByUser?: MembershipHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutMembershipHistoryInput;
+};
+type MembershipHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof MembershipHistoryFactoryDefineInput, never>>;
+type MembershipHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MembershipHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MembershipHistory, Prisma.MembershipHistoryCreateInput, TTransients>;
+type MembershipHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<MembershipHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: MembershipHistoryFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<MembershipHistory, Prisma.MembershipHistoryCreateInput, TTransients>;
+type MembershipHistoryTraitKeys<TOptions extends MembershipHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface MembershipHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MembershipHistory";
+    build(inputData?: Partial<Prisma.MembershipHistoryCreateInput & TTransients>): PromiseLike<Prisma.MembershipHistoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MembershipHistoryCreateInput & TTransients>): PromiseLike<Prisma.MembershipHistoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.MembershipHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.MembershipHistoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MembershipHistoryCreateInput & TTransients>): PromiseLike<Prisma.MembershipHistoryCreateInput[]>;
+    pickForConnect(inputData: MembershipHistory): Pick<MembershipHistory, "id">;
+    create(inputData?: Partial<Prisma.MembershipHistoryCreateInput & TTransients>): PromiseLike<MembershipHistory>;
+    createList(list: readonly Partial<Prisma.MembershipHistoryCreateInput & TTransients>[]): PromiseLike<MembershipHistory[]>;
+    createList(count: number, item?: Partial<Prisma.MembershipHistoryCreateInput & TTransients>): PromiseLike<MembershipHistory[]>;
+    createForConnect(inputData?: Partial<Prisma.MembershipHistoryCreateInput & TTransients>): PromiseLike<Pick<MembershipHistory, "id">>;
+}
+export interface MembershipHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MembershipHistoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MembershipHistoryFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface MembershipHistoryFactoryBuilder {
+    <TOptions extends MembershipHistoryFactoryDefineOptions>(options: TOptions): MembershipHistoryFactoryInterface<{}, MembershipHistoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MembershipHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MembershipHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => MembershipHistoryFactoryInterface<TTransients, MembershipHistoryTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link MembershipHistory} model.
+ *
+ * @param options
+ * @returns factory {@link MembershipHistoryFactoryInterface}
+ */
+export declare const defineMembershipHistoryFactory: MembershipHistoryFactoryBuilder;
 type WalletcommunityFactory = {
     _factoryFor: "Community";
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutWalletsInput["create"]>;
@@ -1023,14 +1081,15 @@ type UserFactoryDefineInput = {
     updatedAt?: Date | null;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
+    membershipHistory?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
+    wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
     opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
     opportunityInvitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutCreatedByUserInput;
     opportunityInvitationHistories?: Prisma.OpportunityInvitationHistoryCreateNestedManyWithoutInvitedUserInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
     participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
-    wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
     ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
 };
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;

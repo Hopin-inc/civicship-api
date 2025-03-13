@@ -8,6 +8,8 @@ model Membership {
   status MembershipStatus
   role   Role             @default(MEMBER)
 
+  histories MembershipHistory[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -22,8 +24,19 @@ enum Role {
 }
 
 enum MembershipStatus {
-  INVITED
-  CANCELED
+  PENDING
   JOINED
-  WITHDRAWED
+  LEFT
+}
+
+enum MembershipStatusReason {
+  CREATED_COMMUNITY
+
+  INVITED
+  CANCELED_INVITATION
+  ACCEPTED_INVITATION
+  DECLINED_INVITATION
+
+  WITHDRAWN
+  REMOVED
 }
