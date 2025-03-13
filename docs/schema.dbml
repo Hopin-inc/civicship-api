@@ -157,6 +157,7 @@ Table t_opportunity_slots {
 Table t_participations {
   id String [pk]
   status ParticipationStatus [not null]
+  reason ParticipationStatusReason [not null]
   images Json [note: '[ArrayOfImageInfo]']
   userId String
   user t_users
@@ -175,6 +176,7 @@ Table t_participations {
 Table t_participation_status_histories {
   id String [pk]
   status ParticipationStatus [not null]
+  reason ParticipationStatusReason [not null]
   participationId String [not null]
   participation t_participations [not null]
   createdBy String
@@ -364,13 +366,23 @@ Enum OpportunityCategory {
 }
 
 Enum ParticipationStatus {
-  INVITED
-  APPLIED
-  CANCELED
+  PENDING
   PARTICIPATING
+  PARTICIPATED
   NOT_PARTICIPATING
-  APPROVED
-  DENIED
+}
+
+Enum ParticipationStatusReason {
+  INVITED
+  CANCELED_INVITATION
+  ACCEPTED_INVITATION
+  DECLINED_INVITATION
+  APPLIED
+  WITHDRAW_APPLICATION
+  ACCEPTED_APPLICATION
+  DECLINED_APPLICATION
+  QUALIFIED_PARTICIPATION
+  UNQUALIFIED_PARTICIPATION
 }
 
 Enum TicketStatus {

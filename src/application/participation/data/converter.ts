@@ -4,7 +4,7 @@ import {
   GqlParticipationApplyInput,
   GqlParticipationInviteInput,
 } from "@/types/graphql";
-import { ParticipationStatus, Prisma } from "@prisma/client";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 
 export default class ParticipationConverter {
   static filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
@@ -31,13 +31,15 @@ export default class ParticipationConverter {
     currentUserId: string,
   ): Prisma.ParticipationCreateInput {
     return {
-      status: ParticipationStatus.INVITED,
+      status: ParticipationStatus.PENDING,
+      reason: ParticipationStatusReason.INVITED,
       community: { connect: { id: communityId } },
       user: { connect: { id: invitedUserId } },
       opportunity: { connect: { id: opportunityId } },
       statusHistories: {
         create: {
-          status: ParticipationStatus.INVITED,
+          status: ParticipationStatus.PENDING,
+          reason: ParticipationStatusReason.INVITED,
           createdByUser: { connect: { id: currentUserId } },
         },
       },
@@ -52,12 +54,14 @@ export default class ParticipationConverter {
   ): Prisma.ParticipationCreateInput {
     return {
       status,
+      reason: ParticipationStatusReason.APPLIED,
       community: { connect: { id: communityId } },
       user: { connect: { id: currentUserId } },
       opportunity: { connect: { id: opportunityId } },
       statusHistories: {
         create: {
           status,
+          reason: ParticipationStatusReason.APPLIED,
           createdByUser: { connect: { id: currentUserId } },
         },
       },
@@ -67,12 +71,15 @@ export default class ParticipationConverter {
   static setStatus(
     currentUserId: string,
     status: ParticipationStatus,
+    reason: ParticipationStatusReason,
   ): Prisma.ParticipationUpdateInput {
     return {
       status,
+      reason,
       statusHistories: {
         create: {
           status,
+          reason,
           createdByUser: { connect: { id: currentUserId } },
         },
       },

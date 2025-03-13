@@ -33,6 +33,7 @@ import { getCurrentUserId } from "@/utils";
 import {
   OpportunityCategory,
   ParticipationStatus,
+  ParticipationStatusReason,
   Prisma,
   TicketStatus,
   TicketStatusReason,
@@ -126,7 +127,12 @@ export default class ParticipationUseCase {
     { id }: GqlMutationParticipationCancelInvitationArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.setStatus(ctx, id, ParticipationStatus.CANCELED);
+    const res = await ParticipationService.setStatus(
+      ctx,
+      id,
+      ParticipationStatus.NOT_PARTICIPATING,
+      ParticipationStatusReason.CANCELED_INVITATION,
+    );
     return ParticipationPresenter.setStatus(res);
   }
 
@@ -144,6 +150,7 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.PARTICIPATING,
+        ParticipationStatusReason.ACCEPTED_INVITATION,
         tx,
       );
 
@@ -162,6 +169,7 @@ export default class ParticipationUseCase {
       ctx,
       id,
       ParticipationStatus.NOT_PARTICIPATING,
+      ParticipationStatusReason.DECLINED_INVITATION,
     );
     return ParticipationPresenter.setStatus(res);
   }
@@ -175,7 +183,7 @@ export default class ParticipationUseCase {
     const { communityId, requireApproval, requiredUtilities } = opportunity;
 
     const participationStatus = requireApproval
-      ? ParticipationStatus.APPLIED
+      ? ParticipationStatus.PENDING
       : ParticipationStatus.PARTICIPATING;
 
     const data: Prisma.ParticipationCreateInput = ParticipationConverter.apply(
@@ -188,10 +196,10 @@ export default class ParticipationUseCase {
     const reserveOrUseTicket = async (tx: Prisma.TransactionClient) => {
       if (requiredUtilities.length > 0 && input.ticketId) {
         switch (participationStatus) {
-          case ParticipationStatus.PARTICIPATING:
+          case ParticipationStatus.PENDING:
             await TicketService.reserveTicket(ctx, input.ticketId, tx);
             break;
-          case ParticipationStatus.APPLIED:
+          case ParticipationStatus.PARTICIPATING:
             await TicketService.useTicket(ctx, input.ticketId, tx);
             break;
           default:
@@ -223,13 +231,14 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.NOT_PARTICIPATING,
+        ParticipationStatusReason.WITHDRAW_APPLICATION,
         tx,
       );
 
       if (ticketId) {
         const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
         if (
-          participation.status === ParticipationStatus.APPLIED &&
+          participation.status === ParticipationStatus.PENDING &&
           ticket.status === TicketStatus.DISABLED &&
           ticket.reason === TicketStatusReason.RESERVED
         ) {
@@ -255,6 +264,7 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.PARTICIPATING,
+        ParticipationStatusReason.ACCEPTED_APPLICATION,
         tx,
       );
 
@@ -264,7 +274,7 @@ export default class ParticipationUseCase {
       if (ticketId) {
         const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
         if (
-          participation.status === ParticipationStatus.APPLIED &&
+          participation.status === ParticipationStatus.PENDING &&
           ticket.status === TicketStatus.AVAILABLE
         ) {
           await TicketService.useTicket(ctx, ticketId, tx);
@@ -287,13 +297,14 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.NOT_PARTICIPATING,
+        ParticipationStatusReason.DECLINED_APPLICATION,
         tx,
       );
 
       if (ticketId) {
         const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
         if (
-          participation.status === ParticipationStatus.APPLIED &&
+          participation.status === ParticipationStatus.PENDING &&
           ticket.status === TicketStatus.DISABLED &&
           ticket.reason === TicketStatusReason.RESERVED
         ) {
@@ -313,7 +324,13 @@ export default class ParticipationUseCase {
     const participation = await ParticipationService.findParticipationOrThrow(ctx, id);
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const res = await ParticipationService.setStatus(ctx, id, ParticipationStatus.APPROVED, tx);
+      const res = await ParticipationService.setStatus(
+        ctx,
+        id,
+        ParticipationStatus.PARTICIPATED,
+        ParticipationStatusReason.QUALIFIED_PARTICIPATION,
+        tx,
+      );
       const { opportunity } = await ParticipationUtils.validateParticipation(
         ctx,
         tx,
@@ -350,7 +367,12 @@ export default class ParticipationUseCase {
     { id }: GqlMutationParticipationDenyPerformanceArgs,
     ctx: IContext,
   ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.setStatus(ctx, id, ParticipationStatus.DENIED);
+    const res = await ParticipationService.setStatus(
+      ctx,
+      id,
+      ParticipationStatus.PARTICIPATING,
+      ParticipationStatusReason.UNQUALIFIED_PARTICIPATION,
+    );
     return ParticipationPresenter.setStatus(res);
   }
 }

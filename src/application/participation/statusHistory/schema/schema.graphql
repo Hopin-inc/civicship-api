@@ -4,6 +4,7 @@
 type ParticipationStatusHistory {
     id: ID!
     status: ParticipationStatus!
+    reason: ParticipationStatusReason!
 
     participation: Participation!
     createdByUser: User

@@ -1,6 +1,8 @@
 model Participation {
-  id     String              @id @default(cuid())
+  id     String                    @id @default(cuid())
   status ParticipationStatus
+  reason ParticipationStatusReason
+
   /// [ArrayOfImageInfo]
   images Json?
 
@@ -26,11 +28,23 @@ model Participation {
 }
 
 enum ParticipationStatus {
-  INVITED
-  APPLIED
-  CANCELED
+  PENDING
   PARTICIPATING
+  PARTICIPATED
   NOT_PARTICIPATING
-  APPROVED
-  DENIED
+}
+
+enum ParticipationStatusReason {
+  INVITED
+  CANCELED_INVITATION
+  ACCEPTED_INVITATION
+  DECLINED_INVITATION
+
+  APPLIED
+  WITHDRAW_APPLICATION
+  ACCEPTED_APPLICATION
+  DECLINED_APPLICATION
+
+  QUALIFIED_PARTICIPATION
+  UNQUALIFIED_PARTICIPATION
 }

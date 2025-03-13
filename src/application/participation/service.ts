@@ -1,5 +1,5 @@
 import { GqlParticipationInviteInput, GqlQueryParticipationsArgs } from "@/types/graphql";
-import { ParticipationStatus, Prisma } from "@prisma/client";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
 import { IContext } from "@/types/server";
@@ -51,12 +51,14 @@ export default class ParticipationService {
     ctx: IContext,
     id: string,
     status: ParticipationStatus,
+    reason: ParticipationStatusReason,
     tx?: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data: Prisma.ParticipationUpdateInput = ParticipationConverter.setStatus(
       currentUserId,
       status,
+      reason,
     );
     return ParticipationRepository.setStatus(ctx, id, data, tx);
   }

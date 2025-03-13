@@ -1364,7 +1364,8 @@ function isParticipationopportunitySlotFactory(x) {
 }
 function autoGenerateParticipationScalarsOrEnums({ seq }) {
     return {
-        status: "INVITED"
+        status: "PENDING",
+        reason: "INVITED"
     };
 }
 function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -1469,7 +1470,8 @@ function isParticipationStatusHistorycreatedByUserFactory(x) {
 }
 function autoGenerateParticipationStatusHistoryScalarsOrEnums({ seq }) {
     return {
-        status: "INVITED"
+        status: "PENDING",
+        reason: "INVITED"
     };
 }
 function defineParticipationStatusHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {

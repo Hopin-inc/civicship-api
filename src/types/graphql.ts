@@ -1145,6 +1145,7 @@ export type GqlParticipation = {
   images?: Maybe<Scalars['JSON']['output']>;
   opportunity?: Maybe<GqlOpportunity>;
   opportunitySlot?: Maybe<GqlOpportunitySlot>;
+  reason: GqlParticipationStatusReason;
   status: GqlParticipationStatus;
   statusHistories?: Maybe<GqlParticipationStatusHistoriesConnection>;
   transactions?: Maybe<GqlTransactionsConnection>;
@@ -1227,13 +1228,10 @@ export type GqlParticipationSortInput = {
 };
 
 export const GqlParticipationStatus = {
-  Applied: 'APPLIED',
-  Approved: 'APPROVED',
-  Canceled: 'CANCELED',
-  Denied: 'DENIED',
-  Invited: 'INVITED',
   NotParticipating: 'NOT_PARTICIPATING',
-  Participating: 'PARTICIPATING'
+  Participated: 'PARTICIPATED',
+  Participating: 'PARTICIPATING',
+  Pending: 'PENDING'
 } as const;
 
 export type GqlParticipationStatus = typeof GqlParticipationStatus[keyof typeof GqlParticipationStatus];
@@ -1250,6 +1248,7 @@ export type GqlParticipationStatusHistory = {
   createdByUser?: Maybe<GqlUser>;
   id: Scalars['ID']['output'];
   participation: GqlParticipation;
+  reason: GqlParticipationStatusReason;
   status: GqlParticipationStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
@@ -1270,6 +1269,20 @@ export type GqlParticipationStatusHistorySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
 
+export const GqlParticipationStatusReason = {
+  AcceptedApplication: 'ACCEPTED_APPLICATION',
+  AcceptedInvitation: 'ACCEPTED_INVITATION',
+  Applied: 'APPLIED',
+  CanceledInvitation: 'CANCELED_INVITATION',
+  DeclinedApplication: 'DECLINED_APPLICATION',
+  DeclinedInvitation: 'DECLINED_INVITATION',
+  Invited: 'INVITED',
+  QualifiedParticipation: 'QUALIFIED_PARTICIPATION',
+  UnqualifiedParticipation: 'UNQUALIFIED_PARTICIPATION',
+  WithdrawApplication: 'WITHDRAW_APPLICATION'
+} as const;
+
+export type GqlParticipationStatusReason = typeof GqlParticipationStatusReason[keyof typeof GqlParticipationStatusReason];
 export type GqlParticipationsConnection = {
   __typename?: 'ParticipationsConnection';
   edges: Array<GqlParticipationEdge>;
@@ -2485,6 +2498,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusHistoryEdge: ResolverTypeWrapper<Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ParticipationStatusHistory']> }>;
   ParticipationStatusHistoryFilterInput: GqlParticipationStatusHistoryFilterInput;
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
+  ParticipationStatusReason: GqlParticipationStatusReason;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
@@ -3325,6 +3339,7 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
   images?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType>;
   opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
+  reason?: Resolver<GqlResolversTypes['ParticipationStatusReason'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ParticipationStatus'], ParentType, ContextType>;
   statusHistories?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlParticipationStatusHistoriesArgs>>;
   transactions?: Resolver<Maybe<GqlResolversTypes['TransactionsConnection']>, ParentType, ContextType, Partial<GqlParticipationTransactionsArgs>>;
@@ -3378,6 +3393,7 @@ export type GqlParticipationStatusHistoryResolvers<ContextType = any, ParentType
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
+  reason?: Resolver<GqlResolversTypes['ParticipationStatusReason'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ParticipationStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
