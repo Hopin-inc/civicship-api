@@ -39,8 +39,8 @@ export default class OpportunitySlotService {
   ) {
     if (inputs.length === 0) return;
 
-    const createData = inputs.map((input) => OpportunitySlotConverter.create(opportunityId, input));
-    await OpportunitySlotRepository.createMany(ctx, createData, tx);
+    const data = inputs.map((input) => OpportunitySlotConverter.create(opportunityId, input));
+    await OpportunitySlotRepository.createMany(ctx, data, tx);
   }
 
   static async bulkUpdateOpportunitySlots(

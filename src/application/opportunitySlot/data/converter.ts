@@ -31,8 +31,8 @@ export default class OpportunitySlotConverter {
   static update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
     const { startsAt, endsAt } = input;
     return {
-      startsAt: startsAt ?? undefined,
-      endsAt: endsAt ?? undefined,
+      startsAt: startsAt,
+      endsAt: endsAt,
     };
   }
 }

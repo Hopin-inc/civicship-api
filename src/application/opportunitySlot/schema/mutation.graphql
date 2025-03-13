@@ -26,8 +26,8 @@ input OpportunitySlotCreateInput {
 
 input OpportunitySlotUpdateInput {
     id: ID!
-    startsAt: Datetime
-    endsAt: Datetime
+    startsAt: Datetime!
+    endsAt: Datetime!
 }
 
 # ------------------------------
