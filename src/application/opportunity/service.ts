@@ -7,7 +7,8 @@ import OpportunityInputFormat from "@/application/opportunity/data/converter";
 import OpportunityRepository from "@/application/opportunity/data/repository";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { getCurrentUserId } from "@/utils";
 
 export default class OpportunityService {
   static async fetchPublicOpportunities(
@@ -34,10 +35,7 @@ export default class OpportunityService {
   }
 
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
-    const currentUserId = ctx.currentUser?.id;
-    if (!currentUserId) {
-      throw new AuthorizationError("User must be logged in");
-    }
+    const currentUserId = getCurrentUserId(ctx);
 
     validateCreateOpportunityPlaceInput(input);
     const data: Prisma.OpportunityCreateInput = OpportunityInputFormat.create(input, currentUserId);
@@ -45,15 +43,7 @@ export default class OpportunityService {
   }
 
   static async deleteOpportunity(ctx: IContext, id: string) {
-    const currentUserId = ctx.currentUser?.id;
-    if (!currentUserId) {
-      throw new AuthorizationError("User must be logged in");
-    }
-
-    const opportunity = await OpportunityRepository.find(ctx, id);
-    if (!opportunity) {
-      throw new NotFoundError("Opportunity", { id });
-    }
+    await this.findOpportunityOrThrow(ctx, id);
 
     return await OpportunityRepository.delete(ctx, id);
   }
@@ -63,11 +53,7 @@ export default class OpportunityService {
     id: string,
     input: GqlOpportunityUpdateContentInput,
   ) {
-    const opportunity = await OpportunityRepository.find(ctx, id);
-    if (!opportunity) {
-      throw new NotFoundError("Opportunity", { id });
-    }
-
+    await this.findOpportunityOrThrow(ctx, id);
     validateUpdateOpportunityPlaceInput(input);
 
     const data: Prisma.OpportunityUpdateInput = OpportunityInputFormat.update(input);
@@ -75,10 +61,7 @@ export default class OpportunityService {
   }
 
   static async setOpportunityStatus(ctx: IContext, id: string, status: PublishStatus) {
-    const opportunity = await OpportunityRepository.find(ctx, id);
-    if (!opportunity) {
-      throw new NotFoundError("Opportunity", { id });
-    }
+    await this.findOpportunityOrThrow(ctx, id);
 
     return await OpportunityRepository.setStatus(ctx, id, status);
   }
@@ -86,7 +69,7 @@ export default class OpportunityService {
 
 function validateCreateOpportunityPlaceInput(input: GqlOpportunityCreateInput): void {
   if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
-    throw new ValidationError(`For Place, please specify only one of either 'where' or 'create'`, [
+    throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
       JSON.stringify(input.place),
     ]);
   }
@@ -95,10 +78,9 @@ function validateCreateOpportunityPlaceInput(input: GqlOpportunityCreateInput): 
 function validateUpdateOpportunityPlaceInput(input: GqlOpportunityUpdateContentInput): void {
   if (input.place) {
     if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
-      throw new ValidationError(
-        `For Place, please specify only one of either 'where' or 'create'`,
-        [JSON.stringify(input.place)],
-      );
+      throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
+        JSON.stringify(input.place),
+      ]);
     }
   }
 }
