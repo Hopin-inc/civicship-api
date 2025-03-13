@@ -31,7 +31,6 @@ export default class CommunityService {
     if (!community) {
       throw new NotFoundError("Community", { id });
     }
-    return community;
   }
 
   static async createCommunityAndJoinAsOwner(
