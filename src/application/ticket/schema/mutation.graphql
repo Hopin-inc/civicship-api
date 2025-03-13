@@ -23,6 +23,7 @@ input TicketPurchaseInput {
 input TicketUseInput {
     """Used for permission checking."""
     communityId: ID!
+    userId: ID!
 }
 
 
@@ -32,6 +33,7 @@ input TicketRefundInput {
 
     """Used for permission checking."""
     communityId: ID!
+    userId: ID!
 }
 
 # ------------------------------

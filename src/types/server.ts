@@ -8,6 +8,7 @@ export type LoggedInUserInfo = {
   currentUser: GqlUser | null;
   memberships: { communityId: string; role: Role }[];
   opportunitiesCreatedBy: { id: string }[];
+  opportunityInvitationCreatedBy: { id: string }[];
   loaders: Loaders;
 };
 

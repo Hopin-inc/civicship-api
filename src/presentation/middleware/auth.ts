@@ -9,6 +9,7 @@ import { opportunityAuthSelect } from "@/application/opportunity/data/type";
 import { createLoaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
+import { opportunityInvitationAuthSelect } from "@/application/opportunityInvitation/data/type";
 
 function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
   const idToken: string | undefined = req.headers["authorization"];
@@ -48,6 +49,13 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     });
   });
 
+  const opportunityInvitationCreatedBy = await issuer.internal(async (tx) => {
+    return tx.opportunityInvitation.findMany({
+      where: { createdBy: uid },
+      select: opportunityInvitationAuthSelect,
+    });
+  });
+
   const loaders = createLoaders(issuer);
 
   return {
@@ -56,6 +64,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     currentUser,
     memberships,
     opportunitiesCreatedBy,
+    opportunityInvitationCreatedBy,
     loaders,
   } satisfies IContext;
 }

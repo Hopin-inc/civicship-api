@@ -10,6 +10,9 @@ import { participationMutationPermissions } from "@/application/participation/co
 import { utilityMutationPermissions } from "@/application/utility/controller/permission";
 import { transactionMutationPermissions } from "@/application/transaction/controller/permission";
 import { opportunitySlotMutationPermissions } from "@/application/opportunitySlot/controller/permission";
+import { opportunityInvitationMutationPermissions } from "@/application/opportunityInvitation/controller/permission";
+import { placeMutationPermissions } from "@/application/place/controller/permission";
+import { ticketMutationPermissions } from "@/application/ticket/controller/permission";
 
 const permissions = shield(
   {
@@ -18,13 +21,20 @@ const permissions = shield(
     },
     Mutation: {
       ...userMutationPermissions,
+
       ...communityMutationPermissions,
       ...membershipMutationPermissions,
+
       ...opportunityMutationPermissions,
-      ...participationMutationPermissions,
-      ...utilityMutationPermissions,
-      ...transactionMutationPermissions,
       ...opportunitySlotMutationPermissions,
+      ...opportunityInvitationMutationPermissions,
+      ...participationMutationPermissions,
+
+      ...utilityMutationPermissions,
+      ...ticketMutationPermissions,
+
+      ...placeMutationPermissions,
+      ...transactionMutationPermissions,
     },
   },
   {

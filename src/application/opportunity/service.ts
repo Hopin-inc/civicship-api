@@ -86,9 +86,9 @@ export default class OpportunityService {
 
 function validateCreateOpportunityPlaceInput(input: GqlOpportunityCreateInput): void {
   if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
-    throw new ValidationError(
-      `For Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(input.place)}`,
-    );
+    throw new ValidationError(`For Place, please specify only one of either 'where' or 'create'`, [
+      JSON.stringify(input.place),
+    ]);
   }
 }
 
@@ -96,7 +96,8 @@ function validateUpdateOpportunityPlaceInput(input: GqlOpportunityUpdateContentI
   if (input.place) {
     if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
       throw new ValidationError(
-        `For Place, please specify only one of either 'where' or 'create'. Received: ${JSON.stringify(input.place)}`,
+        `For Place, please specify only one of either 'where' or 'create'`,
+        [JSON.stringify(input.place)],
       );
     }
   }
