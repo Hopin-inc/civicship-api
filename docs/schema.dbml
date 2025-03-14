@@ -96,7 +96,6 @@ Table t_opportunities {
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   requireApproval Boolean [not null, default: false]
   capacity Int
-  pointsRequired Int
   pointsToEarn Int
   feeRequired Int
   image String
@@ -113,6 +112,7 @@ Table t_opportunities {
   participations t_participations [not null]
   slots t_opportunity_slots [not null]
   invitations t_opportunity_invitations [not null]
+  requiredUtilities t_opportunity_required_utilities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -149,6 +149,17 @@ Table t_opportunity_invitation_histories {
   inivitedUser t_users [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_opportunity_required_utilities {
+  opportunity t_opportunities [not null]
+  opportunityId String [not null]
+  utility t_utilities [not null]
+  utilityId String [not null]
+
+  indexes {
+    (opportunityId, utilityId) [pk]
+  }
 }
 
 Table t_places {
@@ -218,11 +229,13 @@ Table t_utilities {
   id String [pk]
   name String [not null]
   description String
+  utilityType UtilityType [not null, default: 'TICKET']
   image String
   pointsRequired Int [not null]
   communityId String [not null]
   community t_communities [not null]
   utilityHistories t_utility_histories [not null]
+  requiredForOpportunities t_opportunity_required_utilities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -358,6 +371,10 @@ Enum WalletType {
   MEMBER
 }
 
+Enum UtilityType {
+  TICKET
+}
+
 Enum TransactionReason {
   POINT_ISSUED
   POINT_REWARD
@@ -392,6 +409,10 @@ Ref: t_opportunity_invitations.createdBy > t_users.id [delete: Set Null]
 Ref: t_opportunity_invitation_histories.invitationId > t_opportunity_invitations.id [delete: Cascade]
 
 Ref: t_opportunity_invitation_histories.invitedUserId > t_users.id [delete: Cascade]
+
+Ref: t_opportunity_required_utilities.opportunityId > t_opportunities.id [delete: Cascade]
+
+Ref: t_opportunity_required_utilities.utilityId > t_utilities.id [delete: Cascade]
 
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 

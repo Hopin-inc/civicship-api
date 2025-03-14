@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityHistoryFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineTransactionFactory = exports.defineUtilityHistoryFactory = exports.defineUtilityFactory = exports.defineArticleFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.definePlaceFactory = exports.defineOpportunityRequiredUtilityFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipFactory = exports.defineCommunityFactory = exports.defineIdentityFactory = exports.defineUserFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -158,6 +158,10 @@ const modelFieldDefinitions = [{
                 name: "invitations",
                 type: "OpportunityInvitation",
                 relationName: "OpportunityToOpportunityInvitation"
+            }, {
+                name: "requiredUtilities",
+                type: "OpportunityRequiredUtility",
+                relationName: "OpportunityToOpportunityRequiredUtility"
             }]
     }, {
         name: "OpportunitySlot",
@@ -195,6 +199,17 @@ const modelFieldDefinitions = [{
                 name: "inivitedUser",
                 type: "User",
                 relationName: "OpportunityInvitationHistoryToUser"
+            }]
+    }, {
+        name: "OpportunityRequiredUtility",
+        fields: [{
+                name: "opportunity",
+                type: "Opportunity",
+                relationName: "OpportunityToOpportunityRequiredUtility"
+            }, {
+                name: "utility",
+                type: "Utility",
+                relationName: "OpportunityRequiredUtilityToUtility"
             }]
     }, {
         name: "Place",
@@ -274,6 +289,10 @@ const modelFieldDefinitions = [{
                 name: "utilityHistories",
                 type: "UtilityHistory",
                 relationName: "UtilityToUtilityHistory"
+            }, {
+                name: "requiredForOpportunities",
+                type: "OpportunityRequiredUtility",
+                relationName: "OpportunityRequiredUtilityToUtility"
             }]
     }, {
         name: "UtilityHistory",
@@ -1216,6 +1235,104 @@ exports.defineOpportunityInvitationHistoryFactory = ((options) => {
     return defineOpportunityInvitationHistoryFactoryInternal(options, {});
 });
 exports.defineOpportunityInvitationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityInvitationHistoryFactoryInternal(options, defaultTransientFieldValues);
+function isOpportunityRequiredUtilityopportunityFactory(x) {
+    return x?._factoryFor === "Opportunity";
+}
+function isOpportunityRequiredUtilityutilityFactory(x) {
+    return x?._factoryFor === "Utility";
+}
+function autoGenerateOpportunityRequiredUtilityScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineOpportunityRequiredUtilityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("OpportunityRequiredUtility", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateOpportunityRequiredUtilityScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                opportunity: isOpportunityRequiredUtilityopportunityFactory(defaultData.opportunity) ? {
+                    create: await defaultData.opportunity.build()
+                } : defaultData.opportunity,
+                utility: isOpportunityRequiredUtilityutilityFactory(defaultData.utility) ? {
+                    create: await defaultData.utility.build()
+                } : defaultData.utility
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            opportunityId: inputData.opportunityId,
+            utilityId: inputData.utilityId
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().opportunityRequiredUtility.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "OpportunityRequiredUtility",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link OpportunityRequiredUtility} model.
+ *
+ * @param options
+ * @returns factory {@link OpportunityRequiredUtilityFactoryInterface}
+ */
+exports.defineOpportunityRequiredUtilityFactory = ((options) => {
+    return defineOpportunityRequiredUtilityFactoryInternal(options, {});
+});
+exports.defineOpportunityRequiredUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityRequiredUtilityFactoryInternal(options, defaultTransientFieldValues);
 function isPlacecityFactory(x) {
     return x?._factoryFor === "City";
 }

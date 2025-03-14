@@ -16,7 +16,6 @@ import CommunityOutputFormat from "@/presentation/graphql/dto/community/output";
 import { clampFirst, getCurrentUserId } from "@/utils";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
 import WalletService from "@/app/membership/wallet/service";
-import MembershipService from "@/app/membership/service";
 
 export default class CommunityUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -48,10 +47,11 @@ export default class CommunityUseCase {
   ): Promise<GqlCommunityCreatePayload> {
     return this.issuer.public(ctx, async (tx) => {
       const userId = getCurrentUserId(ctx);
-      const community = await CommunityService.createCommunity(ctx, input, tx);
+      const community = await CommunityService.createCommunityAndJoinAsOwner(ctx, input, tx);
+
       await WalletService.createCommunityWallet(ctx, community.id, tx);
-      await MembershipService.joinIfNeeded(ctx, userId, community.id, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, userId, community.id, tx);
+
       return CommunityOutputFormat.create(community);
     });
   }
