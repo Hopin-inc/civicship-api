@@ -63,7 +63,13 @@ const userResolver = {
       args: GqlUserOpportunitiesCreatedByMeArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.visitorBrowseOpportunitiesCreatedByUser(parent, args, ctx);
+      return OpportunityUseCase.anyoneBrowseOpportunities(
+        {
+          ...args,
+          filter: { ...args.filter, createdByUserIds: [parent.id] },
+        },
+        ctx,
+      );
     },
 
     participations: async (

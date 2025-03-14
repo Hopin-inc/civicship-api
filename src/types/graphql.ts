@@ -87,6 +87,14 @@ export type GqlAuthError = GqlError & {
   statusCode: Scalars['Int']['output'];
 };
 
+export type GqlCheckCommunitiesPermissionInput = {
+  communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
+export type GqlCheckCommunityPermissionInput = {
+  communityId: Scalars['ID']['input'];
+};
+
 export type GqlCity = {
   __typename?: 'City';
   code: Scalars['ID']['output'];
@@ -1266,10 +1274,6 @@ export type GqlParticipationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-export type GqlPermissionsInput = {
-  communityId: Scalars['ID']['input'];
-};
-
 export type GqlPlace = {
   __typename?: 'Place';
   address: Scalars['String']['output'];
@@ -1387,9 +1391,7 @@ export type GqlQuery = {
   membershipHistories: GqlMembershipHistoriesConnection;
   membershipHistory?: Maybe<GqlMembershipHistory>;
   memberships: GqlMembershipsConnection;
-  opportunitiesAll: GqlOpportunitiesConnection;
-  opportunitiesCommunityInternal: GqlOpportunitiesConnection;
-  opportunitiesPublic: GqlOpportunitiesConnection;
+  opportunities: GqlOpportunitiesConnection;
   opportunity?: Maybe<GqlOpportunity>;
   opportunityInvitation?: Maybe<GqlOpportunityInvitation>;
   opportunityInvitationHistories: GqlOpportunityInvitationHistoriesConnection;
@@ -1421,7 +1423,7 @@ export type GqlQuery = {
 
 export type GqlQueryArticleArgs = {
   id: Scalars['ID']['input'];
-  permissions: GqlPermissionsInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -1494,23 +1496,7 @@ export type GqlQueryMembershipsArgs = {
 };
 
 
-export type GqlQueryOpportunitiesAllArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySortInput>;
-};
-
-
-export type GqlQueryOpportunitiesCommunityInternalArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySortInput>;
-};
-
-
-export type GqlQueryOpportunitiesPublicArgs = {
+export type GqlQueryOpportunitiesArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlOpportunityFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -1520,7 +1506,7 @@ export type GqlQueryOpportunitiesPublicArgs = {
 
 export type GqlQueryOpportunityArgs = {
   id: Scalars['ID']['input'];
-  permissions: GqlPermissionsInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -2400,6 +2386,8 @@ export type GqlResolversTypes = ResolversObject<{
   ArticlesConnection: ResolverTypeWrapper<Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ArticleEdge']>>> }>;
   AuthError: ResolverTypeWrapper<GqlAuthError>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  CheckCommunitiesPermissionInput: GqlCheckCommunitiesPermissionInput;
+  CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   City: ResolverTypeWrapper<City>;
   CommonError: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommonError']>;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['CommunityEdge']>>> }>;
@@ -2529,7 +2517,6 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
   ParticipationStatusReason: GqlParticipationStatusReason;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
-  PermissionsInput: GqlPermissionsInput;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
   PlaceCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['PlaceCreatePayload']>;
@@ -2633,6 +2620,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
   AuthError: GqlAuthError;
   Boolean: Scalars['Boolean']['output'];
+  CheckCommunitiesPermissionInput: GqlCheckCommunitiesPermissionInput;
+  CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   City: City;
   CommonError: GqlResolversUnionTypes<GqlResolversParentTypes>['CommonError'];
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['CommunityEdge']>>> };
@@ -2756,7 +2745,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationStatusHistoryFilterInput: GqlParticipationStatusHistoryFilterInput;
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
   ParticipationsConnection: Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ParticipationEdge']> };
-  PermissionsInput: GqlPermissionsInput;
   Place: Place;
   PlaceCreateInput: GqlPlaceCreateInput;
   PlaceCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['PlaceCreatePayload'];
@@ -3493,7 +3481,7 @@ export type GqlPlacesConnectionResolvers<ContextType = any, ParentType extends G
 }>;
 
 export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
-  article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permissions'>>;
+  article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permission'>>;
   articlesAll?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesAllArgs>>;
   articlesCommunityInternal?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesCommunityInternalArgs>>;
   articlesPublic?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesPublicArgs>>;
@@ -3506,10 +3494,8 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   membershipHistories?: Resolver<GqlResolversTypes['MembershipHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryMembershipHistoriesArgs>>;
   membershipHistory?: Resolver<Maybe<GqlResolversTypes['MembershipHistory']>, ParentType, ContextType, RequireFields<GqlQueryMembershipHistoryArgs, 'id'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
-  opportunitiesAll?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesAllArgs>>;
-  opportunitiesCommunityInternal?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesCommunityInternalArgs>>;
-  opportunitiesPublic?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesPublicArgs>>;
-  opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id' | 'permissions'>>;
+  opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
+  opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id' | 'permission'>>;
   opportunityInvitation?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitation']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityInvitationArgs, 'id'>>;
   opportunityInvitationHistories?: Resolver<GqlResolversTypes['OpportunityInvitationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunityInvitationHistoriesArgs>>;
   opportunityInvitationHistory?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationHistory']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityInvitationHistoryArgs, 'id'>>;

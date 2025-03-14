@@ -2,25 +2,13 @@
 # Opportunity Query Definitions
 # ------------------------------
 extend type Query {
-    opportunitiesPublic(
+    opportunities(
         filter: OpportunityFilterInput
         sort: OpportunitySortInput
         cursor: String
         first: Int
     ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
-    opportunitiesCommunityInternal(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
-    opportunitiesAll(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
-    opportunity(id: ID!, permissions: PermissionsInput!): Opportunity
+    opportunity(id: ID!, permission: CheckCommunityPermissionInput!): Opportunity
 }
 
 # ------------------------------

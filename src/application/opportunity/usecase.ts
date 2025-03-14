@@ -1,6 +1,4 @@
 import {
-  GqlCommunity,
-  GqlCommunityOpportunitiesArgs,
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
@@ -12,120 +10,53 @@ import {
   GqlOpportunityFilterInput,
   GqlOpportunitySetPublishStatusPayload,
   GqlOpportunityUpdateContentPayload,
-  GqlPlace,
-  GqlPlaceOpportunitiesArgs,
-  GqlQueryOpportunitiesAllArgs,
-  GqlQueryOpportunitiesCommunityInternalArgs,
-  GqlQueryOpportunitiesPublicArgs,
+  GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
-  GqlUser,
-  GqlUserOpportunitiesCreatedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import { PublishStatus, Role } from "@prisma/client";
 import OpportunityService from "@/application/opportunity/service";
-import { getCurrentUserId } from "@/utils";
 
 export default class OpportunityUseCase {
-  static async visitorBrowsePublicOpportunities(
-    { filter, sort, cursor, first }: GqlQueryOpportunitiesPublicArgs,
+  static async anyoneBrowseOpportunities(
+    { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    await OpportunityService.validatePublishStatus([PublishStatus.PUBLIC], filter);
+    const currentUserId = ctx.currentUser?.id;
+    const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
 
-    return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
-  }
+    const { isManager, isMember } = checkMembershipRoles(ctx, communityIds, currentUserId);
+    const allowedPublishStatuses = isManager
+      ? Object.values(PublishStatus)
+      : isMember
+        ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
+        : [PublishStatus.PUBLIC];
 
-  static async memberBrowseCommunityInternalOpportunities(
-    { filter, sort, cursor, first }: GqlQueryOpportunitiesCommunityInternalArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitiesConnection> {
-    const currentUserId = getCurrentUserId(ctx);
+    await OpportunityService.validatePublishStatus(allowedPublishStatuses, filter);
 
-    await OpportunityService.validatePublishStatus(
-      [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
+    const validatedFilter: GqlOpportunityFilterInput = validateByPermissions(
+      communityIds,
+      isMember,
+      isManager,
+      currentUserId,
       filter,
     );
 
-    return OpportunityService.fetchOpportunitiesConnection(ctx, {
+    return OpportunityService.fetchOpportunities(ctx, {
       cursor,
       sort,
-      filter: {
-        and: [
-          {
-            or: [{ createdByUserIds: [currentUserId] }],
-          },
-          ...(filter ? [filter] : []),
-        ],
-      },
-      first,
-    });
-  }
-
-  static async managerBrowseAllOpportunities(
-    { filter, sort, cursor, first }: GqlQueryOpportunitiesAllArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitiesConnection> {
-    return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
-  }
-
-  static async visitorBrowseOpportunitiesByCommunity(
-    { id }: GqlCommunity,
-    { first, cursor, filter }: GqlCommunityOpportunitiesArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitiesConnection> {
-    return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor,
-      filter: { ...filter, communityIds: [id] },
-      first,
-    });
-  }
-
-  static async visitorBrowseOpportunitiesCreatedByUser(
-    { id }: GqlUser,
-    { first, cursor, filter }: GqlUserOpportunitiesCreatedByMeArgs,
-    ctx: IContext,
-  ) {
-    return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor,
-      filter: { ...filter, createdByUserIds: [id] },
-      first,
-    });
-  }
-
-  static async visitorBrowseOpportunitiesByPlace(
-    { id }: GqlPlace,
-    { first, cursor, filter }: GqlPlaceOpportunitiesArgs,
-    ctx: IContext,
-  ) {
-    return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor,
-      filter: { ...filter, placeIds: [id] },
+      filter: validatedFilter,
       first,
     });
   }
 
   static async visitorViewOpportunity(
+    { id, permission }: GqlQueryOpportunityArgs,
     ctx: IContext,
-    { id, permissions }: GqlQueryOpportunityArgs,
   ): Promise<GqlOpportunity | null> {
     const currentUserId = ctx.currentUser?.id;
-    const { isManager, isMember } = checkMembershipRole(
-      ctx,
-      permissions.communityId,
-      currentUserId,
-    );
+    const { isManager, isMember } = checkMembershipRole(ctx, permission.communityId, currentUserId);
 
     const validatedFilter = validateByPermission(id, currentUserId, isMember, isManager);
 
@@ -188,6 +119,39 @@ function validateByPermission(
   };
 }
 
+function validateByPermissions(
+  communityIds: string[],
+  isManager: Record<string, boolean>,
+  isMember: Record<string, boolean>,
+  currentUserId?: string,
+  filter?: GqlOpportunityFilterInput,
+): GqlOpportunityFilterInput {
+  const orConditions: GqlOpportunityFilterInput[] = [];
+
+  communityIds.forEach((communityId) => {
+    if (isManager[communityId]) {
+      orConditions.push({ communityIds: [communityId] });
+    } else {
+      orConditions.push({
+        and: [
+          { communityIds: [communityId] },
+          {
+            or: [
+              { publishStatus: [PublishStatus.PUBLIC] },
+              ...(isMember[communityId]
+                ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
+                : []),
+              ...(currentUserId ? [{ createdByUserIds: [currentUserId] }] : []),
+            ],
+          },
+        ],
+      });
+    }
+  });
+
+  return filter ? { and: [{ or: orConditions }, filter] } : { or: orConditions };
+}
+
 function checkMembershipRole(
   ctx: IContext,
   communityId: string,
@@ -203,6 +167,35 @@ function checkMembershipRole(
   const isMember = Boolean(
     currentUserId && ctx.hasPermissions?.memberships?.some((m) => m.communityId === communityId),
   );
+
+  return { isManager, isMember };
+}
+
+function checkMembershipRoles(
+  ctx: IContext,
+  communityIds: string[],
+  currentUserId?: string,
+): { isManager: Record<string, boolean>; isMember: Record<string, boolean> } {
+  if (!currentUserId || communityIds.length === 0) {
+    return { isManager: {}, isMember: {} };
+  }
+
+  const userMemberships = ctx.hasPermissions?.memberships || [];
+
+  const isManager: Record<string, boolean> = {};
+  const isMember: Record<string, boolean> = {};
+
+  communityIds.forEach((communityId) => {
+    const membership = userMemberships.find((m) => m.communityId === communityId);
+
+    if (membership) {
+      isManager[communityId] = membership.role === Role.OWNER || membership.role === Role.MANAGER;
+      isMember[communityId] = true;
+    } else {
+      isManager[communityId] = false;
+      isMember[communityId] = false;
+    }
+  });
 
   return { isManager, isMember };
 }

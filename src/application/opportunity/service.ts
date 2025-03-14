@@ -14,7 +14,7 @@ import OpportunityPresenter from "@/application/opportunity/presenter";
 import OpportunityConverter from "@/application/opportunity/data/converter";
 
 export default class OpportunityService {
-  static async fetchOpportunitiesConnection(
+  static async fetchOpportunities(
     ctx: IContext,
     {
       cursor,
@@ -30,36 +30,15 @@ export default class OpportunityService {
   ): Promise<GqlOpportunitiesConnection> {
     const take = clampFirst(first);
 
-    const res = await OpportunityService.fetchPublicOpportunities(
-      ctx,
-      { cursor, filter, sort },
-      take,
-    );
-    const hasNextPage = res.length > take;
-
-    const data = res.slice(0, take).map((record) => {
-      return OpportunityPresenter.get(record);
-    });
-    return OpportunityPresenter.query(data, hasNextPage);
-  }
-
-  static async fetchPublicOpportunities(
-    ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-    }: {
-      cursor?: string;
-      filter?: GqlOpportunityFilterInput;
-      sort?: GqlOpportunitySortInput;
-    },
-    take: number,
-  ) {
     const where = OpportunityConverter.filter(filter ?? {});
     const orderBy = OpportunityConverter.sort(sort ?? {});
 
-    return await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
+    const res = await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
+
+    const hasNextPage = res.length > take;
+    const data = res.slice(0, take).map((record) => OpportunityPresenter.get(record));
+
+    return OpportunityPresenter.query(data, hasNextPage);
   }
 
   static async findOpportunity(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
