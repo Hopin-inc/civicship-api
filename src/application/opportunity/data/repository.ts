@@ -41,6 +41,26 @@ export default class OpportunityRepository {
     }
   }
 
+  static async findAccessible(
+    ctx: IContext,
+    where: Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return tx.opportunity.findUnique({
+        where,
+        include: opportunityInclude,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.opportunity.findUnique({
+          where,
+          include: opportunityInclude,
+        });
+      });
+    }
+  }
+
   static async create(ctx: IContext, data: Prisma.OpportunityCreateInput) {
     return this.issuer.public(ctx, (tx) => {
       return tx.opportunity.create({

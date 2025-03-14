@@ -872,11 +872,14 @@ export type GqlOpportunityEdge = GqlEdge & {
 };
 
 export type GqlOpportunityFilterInput = {
+  and?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   articleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   category?: InputMaybe<GqlOpportunityCategory>;
   cityCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  not?: InputMaybe<GqlOpportunityFilterInput>;
+  or?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -1517,6 +1520,7 @@ export type GqlQueryOpportunitiesPublicArgs = {
 
 export type GqlQueryOpportunityArgs = {
   id: Scalars['ID']['input'];
+  permissions: GqlPermissionsInput;
 };
 
 
@@ -3505,7 +3509,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   opportunitiesAll?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesAllArgs>>;
   opportunitiesCommunityInternal?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesCommunityInternalArgs>>;
   opportunitiesPublic?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesPublicArgs>>;
-  opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id'>>;
+  opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id' | 'permissions'>>;
   opportunityInvitation?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitation']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityInvitationArgs, 'id'>>;
   opportunityInvitationHistories?: Resolver<GqlResolversTypes['OpportunityInvitationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunityInvitationHistoriesArgs>>;
   opportunityInvitationHistory?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationHistory']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityInvitationHistoryArgs, 'id'>>;

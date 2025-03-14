@@ -5,14 +5,13 @@ import {
   GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
-import OpportunityInputFormat from "@/application/opportunity/data/converter";
 import OpportunityRepository from "@/application/opportunity/data/repository";
-import { Prisma, PublishStatus, Role } from "@prisma/client";
+import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/utils";
 import OpportunityPresenter from "@/application/opportunity/presenter";
-import { PrismaOpportunity } from "@/application/opportunity/data/type";
+import OpportunityConverter from "@/application/opportunity/data/converter";
 
 export default class OpportunityService {
   static async fetchOpportunitiesConnection(
@@ -57,19 +56,21 @@ export default class OpportunityService {
     },
     take: number,
   ) {
-    const where = OpportunityInputFormat.filter(filter ?? {});
-    const orderBy = OpportunityInputFormat.sort(sort ?? {});
+    const where = OpportunityConverter.filter(filter ?? {});
+    const orderBy = OpportunityConverter.sort(sort ?? {});
 
     return await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findOpportunity(ctx: IContext, id: string) {
-    const opportunity = await OpportunityRepository.find(ctx, id);
+  static async findOpportunity(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
+    const where = OpportunityConverter.find(id, filter ?? {});
+
+    const opportunity = await OpportunityRepository.findAccessible(ctx, where);
     if (!opportunity) {
       return null;
     }
 
-    return await this.validateOpportunityAccess(ctx, opportunity);
+    return opportunity;
   }
 
   static async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
@@ -77,14 +78,14 @@ export default class OpportunityService {
     if (!opportunity) {
       throw new NotFoundError("Opportunity", { opportunityId });
     }
-    return await this.validateOpportunityAccess(ctx, opportunity);
+    return opportunity;
   }
 
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
     const currentUserId = getCurrentUserId(ctx);
 
     validateCreateOpportunityPlaceInput(input);
-    const data: Prisma.OpportunityCreateInput = OpportunityInputFormat.create(input, currentUserId);
+    const data: Prisma.OpportunityCreateInput = OpportunityConverter.create(input, currentUserId);
     return await OpportunityRepository.create(ctx, data);
   }
 
@@ -102,7 +103,7 @@ export default class OpportunityService {
     await this.findOpportunityOrThrow(ctx, id);
     validateUpdateOpportunityPlaceInput(input);
 
-    const data: Prisma.OpportunityUpdateInput = OpportunityInputFormat.update(input);
+    const data: Prisma.OpportunityUpdateInput = OpportunityConverter.update(input);
     return await OpportunityRepository.update(ctx, id, data);
   }
 
@@ -125,53 +126,6 @@ export default class OpportunityService {
         [JSON.stringify(filter?.publishStatus)],
       );
     }
-  }
-
-  static async validateOpportunityAccess(
-    ctx: IContext,
-    opportunity: PrismaOpportunity,
-  ): Promise<PrismaOpportunity> {
-    if (opportunity.publishStatus === PublishStatus.PUBLIC) {
-      return opportunity;
-    }
-
-    if (opportunity.publishStatus === PublishStatus.COMMUNITY_INTERNAL) {
-      return validateOpportunityCommunityInternalAccess(ctx, opportunity);
-    }
-
-    if (opportunity.publishStatus === PublishStatus.PRIVATE) {
-      if (isOpportunityCreateByUser(ctx, opportunity.id)) {
-        return opportunity;
-      }
-      isCommunityManager(ctx, opportunity.createdBy);
-      return opportunity;
-    }
-
-    throw new AuthorizationError("Unauthorized access");
-  }
-}
-
-function validateOpportunityCommunityInternalAccess(
-  ctx: IContext,
-  opportunity: PrismaOpportunity,
-): PrismaOpportunity {
-  const communityId = opportunity.communityId;
-  const hasMembership =
-    ctx.hasPermissions?.memberships.some((m) => m.communityId === communityId) ?? false;
-  if (!hasMembership) {
-    throw new AuthorizationError("User is not a member of the community");
-  }
-  return opportunity;
-}
-
-function isOpportunityCreateByUser(ctx: IContext, opportunityId: string): boolean {
-  return ctx.hasPermissions?.opportunitiesCreatedByMe?.some((a) => a.id === opportunityId) ?? false;
-}
-
-function isCommunityManager(ctx: IContext, communityId: string): void {
-  const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
-  if (!(membership?.role === Role.OWNER || membership?.role === Role.MANAGER)) {
-    throw new AuthorizationError("User must be community manager");
   }
 }
 

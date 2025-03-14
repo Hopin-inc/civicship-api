@@ -20,7 +20,7 @@ extend type Query {
         cursor: String
         first: Int
     ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
-    opportunity(id: ID!): Opportunity
+    opportunity(id: ID!, permissions: PermissionsInput!): Opportunity
 }
 
 # ------------------------------
@@ -50,6 +50,10 @@ input OpportunityFilterInput {
     cityCodes: [ID!]
     articleIds: [ID!]
     requiredUtilityIds: [ID!]
+
+    and: [OpportunityFilterInput!]
+    or: [OpportunityFilterInput!]
+    not: OpportunityFilterInput
 }
 
 input OpportunitySortInput {

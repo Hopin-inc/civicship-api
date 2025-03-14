@@ -9,6 +9,7 @@ import {
   GqlOpportunity,
   GqlOpportunityCreatePayload,
   GqlOpportunityDeletePayload,
+  GqlOpportunityFilterInput,
   GqlOpportunitySetPublishStatusPayload,
   GqlOpportunityUpdateContentPayload,
   GqlPlace,
@@ -22,56 +23,60 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/opportunity/presenter";
-import { PublishStatus } from "@prisma/client";
+import { PublishStatus, Role } from "@prisma/client";
 import OpportunityService from "@/application/opportunity/service";
+import { getCurrentUserId } from "@/utils";
 
 export default class OpportunityUseCase {
   static async visitorBrowsePublicOpportunities(
-    args: GqlQueryOpportunitiesPublicArgs,
+    { filter, sort, cursor, first }: GqlQueryOpportunitiesPublicArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    await OpportunityService.validatePublishStatus([PublishStatus.PUBLIC], args.filter);
+    await OpportunityService.validatePublishStatus([PublishStatus.PUBLIC], filter);
 
     return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor: args.cursor,
-      sort: args.sort,
-      filter: {
-        ...args.filter,
-        publishStatus: [PublishStatus.PUBLIC],
-      },
-      first: args.first,
+      cursor,
+      sort,
+      filter,
+      first,
     });
   }
 
   static async memberBrowseCommunityInternalOpportunities(
-    args: GqlQueryOpportunitiesCommunityInternalArgs,
+    { filter, sort, cursor, first }: GqlQueryOpportunitiesCommunityInternalArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
+    const currentUserId = getCurrentUserId(ctx);
+
     await OpportunityService.validatePublishStatus(
       [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
-      args.filter,
+      filter,
     );
 
     return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor: args.cursor,
-      sort: args.sort,
+      cursor,
+      sort,
       filter: {
-        ...args.filter,
-        publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
+        and: [
+          {
+            or: [{ createdByUserIds: [currentUserId] }],
+          },
+          ...(filter ? [filter] : []),
+        ],
       },
-      first: args.first,
+      first,
     });
   }
 
   static async managerBrowseAllOpportunities(
-    args: GqlQueryOpportunitiesAllArgs,
+    { filter, sort, cursor, first }: GqlQueryOpportunitiesAllArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
     return OpportunityService.fetchOpportunitiesConnection(ctx, {
-      cursor: args.cursor,
-      sort: args.sort,
-      filter: args.filter,
-      first: args.first,
+      cursor,
+      sort,
+      filter,
+      first,
     });
   }
 
@@ -112,14 +117,20 @@ export default class OpportunityUseCase {
   }
 
   static async visitorViewOpportunity(
-    { id }: GqlQueryOpportunityArgs,
     ctx: IContext,
+    { id, permissions }: GqlQueryOpportunityArgs,
   ): Promise<GqlOpportunity | null> {
-    const res = await OpportunityService.findOpportunity(ctx, id);
-    if (!res) {
-      return null;
-    }
-    return OpportunityPresenter.get(res);
+    const currentUserId = ctx.currentUser?.id;
+    const { isManager, isMember } = checkMembershipRole(
+      ctx,
+      permissions.communityId,
+      currentUserId,
+    );
+
+    const validatedFilter = validateByPermission(id, currentUserId, isMember, isManager);
+
+    const record = await OpportunityService.findOpportunity(ctx, id, validatedFilter);
+    return record ? OpportunityPresenter.get(record) : null;
   }
 
   static async managerCreateOpportunity(
@@ -153,4 +164,45 @@ export default class OpportunityUseCase {
     const res = await OpportunityService.setOpportunityStatus(ctx, id, input.status);
     return OpportunityPresenter.setPublishStatus(res);
   }
+}
+
+function validateByPermission(
+  communityId: string,
+  currentUserId?: string,
+  isMember?: boolean,
+  isManager?: boolean,
+  filter?: GqlOpportunityFilterInput,
+): GqlOpportunityFilterInput {
+  const orConditions: GqlOpportunityFilterInput[] = [
+    { publishStatus: [PublishStatus.PUBLIC] },
+    ...(isMember ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }] : []),
+    ...(currentUserId ? [{ createdByUserIds: [currentUserId] }] : []),
+  ];
+
+  return {
+    and: [
+      { communityIds: [communityId] },
+      isManager ? {} : { or: orConditions },
+      ...(filter ? [filter] : []),
+    ].filter(Boolean),
+  };
+}
+
+function checkMembershipRole(
+  ctx: IContext,
+  communityId: string,
+  currentUserId?: string,
+): { isManager: boolean; isMember: boolean } {
+  const isManager = Boolean(
+    currentUserId &&
+      ctx.hasPermissions?.memberships?.some(
+        (m) => m.communityId === communityId && (m.role === Role.OWNER || m.role === Role.MANAGER),
+      ),
+  );
+
+  const isMember = Boolean(
+    currentUserId && ctx.hasPermissions?.memberships?.some((m) => m.communityId === communityId),
+  );
+
+  return { isManager, isMember };
 }
