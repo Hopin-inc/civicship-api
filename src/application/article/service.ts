@@ -4,9 +4,8 @@ import ArticleRepository from "@/application/article/data/repository";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/utils";
 import ArticlePresenter from "@/application/article/presenter";
-import { PublishStatus, Role } from "@prisma/client";
-import { AuthorizationError, ValidationError } from "@/errors/graphql";
-import { PrismaArticle } from "@/application/article/data/type";
+import { PublishStatus } from "@prisma/client";
+import { ValidationError } from "@/errors/graphql";
 
 export default class ArticleService {
   static async fetchArticlesConnection(
@@ -48,32 +47,15 @@ export default class ArticleService {
     return ArticleRepository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findArticle(ctx: IContext, id: string) {
-    const article = await ArticleRepository.find(ctx, id);
+  static async findArticle(ctx: IContext, id: string, filter: GqlArticleFilterInput) {
+    const where = ArticleConverter.find(id, filter ?? {});
+
+    const article = await ArticleRepository.find(ctx, where);
     if (!article) {
       return null;
     }
 
-    if (article.publishStatus === PublishStatus.PUBLIC) {
-      return article;
-    }
-
-    if (article.publishStatus === PublishStatus.COMMUNITY_INTERNAL) {
-      return validateCommunityInternalAccess(ctx, article);
-    }
-
-    if (article.publishStatus === PublishStatus.PRIVATE) {
-      const articleId = article.id;
-
-      if (isUserArticleOrRelated(ctx, articleId)) {
-        return article;
-      }
-
-      isCommunityManager(ctx, article.communityId);
-      return article;
-    }
-
-    throw new AuthorizationError("Unauthorized access");
+    return article;
   }
 
   static async validatePublishStatus(
@@ -89,29 +71,5 @@ export default class ArticleService {
         [JSON.stringify(filter?.publishStatus)],
       );
     }
-  }
-}
-
-function validateCommunityInternalAccess(ctx: IContext, article: PrismaArticle): PrismaArticle {
-  const communityId = article.communityId;
-  const hasMembership =
-    ctx.hasPermissions?.memberships.some((m) => m.communityId === communityId) ?? false;
-  if (!hasMembership) {
-    throw new AuthorizationError("User is not a member of the community");
-  }
-  return article;
-}
-
-function isUserArticleOrRelated(ctx: IContext, articleId: string): boolean {
-  return (
-    (ctx.hasPermissions?.articlesWrittenByMe?.some((a) => a.id === articleId) ?? false) ||
-    (ctx.hasPermissions?.articlesAboutMe?.some((a) => a.id === articleId) ?? false)
-  );
-}
-
-function isCommunityManager(ctx: IContext, communityId: string): void {
-  const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
-  if (!(membership?.role === Role.OWNER || membership?.role === Role.MANAGER)) {
-    throw new AuthorizationError("User must be community manager");
   }
 }

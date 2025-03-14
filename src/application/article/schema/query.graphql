@@ -20,7 +20,7 @@ extend type Query {
         cursor: String
         first: Int
     ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
-    article(id: ID!): Article
+    article(id: ID!, permissions: PermissionsInput!): Article
 }
 
 # ------------------------------
@@ -47,6 +47,10 @@ input ArticleFilterInput {
     authors: [ID!]
     relatedUserIds: [ID!]
     communityId: ID
+
+    and: [ArticleFilterInput!]
+    or: [ArticleFilterInput!]
+    not: ArticleFilterInput
 }
 
 input ArticleSortInput {

@@ -25,10 +25,13 @@ export default class ArticleRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  static async find(
+    ctx: IContext,
+    where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
+  ) {
     return this.issuer.public(ctx, (tx) => {
       return tx.article.findUnique({
-        where: { id },
+        where,
         include: articleInclude,
       });
     });

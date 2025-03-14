@@ -72,6 +72,10 @@ scalar Decimal
 # ------------------------------------------------
 # Input Types
 # ------------------------------------------------
+input PermissionsInput {
+    communityId: ID!
+}
+
 input ImageInput {
     base64: String!
 }

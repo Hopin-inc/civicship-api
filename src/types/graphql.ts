@@ -58,10 +58,13 @@ export type GqlArticleEdge = GqlEdge & {
 };
 
 export type GqlArticleFilterInput = {
+  and?: InputMaybe<Array<GqlArticleFilterInput>>;
   authors?: InputMaybe<Array<Scalars['ID']['input']>>;
   category?: InputMaybe<GqlArticleCategory>;
   communityId?: InputMaybe<Scalars['ID']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
+  not?: InputMaybe<GqlArticleFilterInput>;
+  or?: InputMaybe<Array<GqlArticleFilterInput>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
@@ -1260,6 +1263,10 @@ export type GqlParticipationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlPermissionsInput = {
+  communityId: Scalars['ID']['input'];
+};
+
 export type GqlPlace = {
   __typename?: 'Place';
   address: Scalars['String']['output'];
@@ -1411,6 +1418,7 @@ export type GqlQuery = {
 
 export type GqlQueryArticleArgs = {
   id: Scalars['ID']['input'];
+  permissions: GqlPermissionsInput;
 };
 
 
@@ -2517,6 +2525,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
   ParticipationStatusReason: GqlParticipationStatusReason;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
+  PermissionsInput: GqlPermissionsInput;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
   PlaceCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['PlaceCreatePayload']>;
@@ -2743,6 +2752,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationStatusHistoryFilterInput: GqlParticipationStatusHistoryFilterInput;
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
   ParticipationsConnection: Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ParticipationEdge']> };
+  PermissionsInput: GqlPermissionsInput;
   Place: Place;
   PlaceCreateInput: GqlPlaceCreateInput;
   PlaceCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['PlaceCreatePayload'];
@@ -3479,7 +3489,7 @@ export type GqlPlacesConnectionResolvers<ContextType = any, ParentType extends G
 }>;
 
 export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
-  article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id'>>;
+  article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permissions'>>;
   articlesAll?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesAllArgs>>;
   articlesCommunityInternal?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesCommunityInternalArgs>>;
   articlesPublic?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesPublicArgs>>;

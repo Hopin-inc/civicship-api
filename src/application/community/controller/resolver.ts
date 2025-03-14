@@ -95,7 +95,7 @@ const communityResolver = {
       args: GqlCommunityArticlesArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
-      return ArticleUseCase.visitorBrowseArticlesByCommunity(parent, args, ctx);
+      return ArticleUseCase.anyoneBrowseArticlesByCommunity(parent, args, ctx);
     },
   },
 };

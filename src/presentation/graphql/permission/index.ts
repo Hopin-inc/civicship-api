@@ -1,8 +1,5 @@
 import { shield, allow } from "graphql-shield";
-import {
-  userMutationPermissions,
-  userQueryPermissions,
-} from "@/application/user/controller/permission";
+import { userMutationPermissions } from "@/application/user/controller/permission";
 import { communityMutationPermissions } from "@/application/community/controller/permission";
 import { membershipMutationPermissions } from "@/application/membership/controller/permission";
 import { opportunityMutationPermissions } from "@/application/opportunity/controller/permission";
@@ -13,11 +10,12 @@ import { opportunitySlotMutationPermissions } from "@/application/opportunitySlo
 import { opportunityInvitationMutationPermissions } from "@/application/opportunityInvitation/controller/permission";
 import { placeMutationPermissions } from "@/application/place/controller/permission";
 import { ticketMutationPermissions } from "@/application/ticket/controller/permission";
+import { articleQueryPermissions } from "@/application/article/controller/permission";
 
 const permissions = shield(
   {
     Query: {
-      ...userQueryPermissions,
+      ...articleQueryPermissions,
     },
     Mutation: {
       ...userMutationPermissions,
