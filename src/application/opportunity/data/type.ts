@@ -6,6 +6,7 @@ import { utilityInclude } from "@/application/utility/data/type";
 
 export const opportunityAuthSelect = Prisma.validator<Prisma.OpportunitySelect>()({
   id: true,
+  invitations: { select: { createdBy: true } },
 });
 
 export const opportunityInclude = Prisma.validator<Prisma.OpportunityInclude>()({

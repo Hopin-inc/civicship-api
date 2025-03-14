@@ -53,7 +53,7 @@ const isCommunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx
     throw new ValidationError("Community ID is required");
   }
   const communityId = args.input.communityId;
-  const membership = ctx.memberships?.find((m) => m.communityId === communityId);
+  const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!membership) {
     throw new AuthorizationError("User is not a member of the community");
   }
@@ -74,7 +74,7 @@ const isCommunityManager = rule({ cache: "contextual" })(async (_parent, args, c
     throw new ValidationError("Community ID is required");
   }
   const communityId = args.input.communityId;
-  const membership = ctx.memberships?.find((m) => m.communityId === communityId);
+  const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!membership) {
     throw new AuthorizationError("User is not a member of the community");
   }
@@ -95,7 +95,7 @@ const isCommunityMember = rule({ cache: "contextual" })(async (_parent, args, ct
     throw new ValidationError("Community ID is required");
   }
   const communityId = args.input.communityId;
-  const membership = ctx.memberships?.find((m) => m.communityId === communityId);
+  const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!membership) {
     throw new AuthorizationError("User is not a member of the community");
   }
@@ -122,7 +122,7 @@ const isOpportunityOwner = rule({ cache: "contextual" })(async (_parent, args, c
     throw new ValidationError("Opportunity ID is required");
   }
   const opportunityId = args.input.opportunityId;
-  if (!ctx.opportunitiesCreatedBy?.find((m) => m.id === opportunityId)) {
+  if (!ctx.hasPermissions?.opportunitiesCreatedByMe?.find((m) => m.id === opportunityId)) {
     throw new AuthorizationError("User is not the opportunity owner");
   }
   return true;
@@ -143,8 +143,10 @@ const isOpportunityInvitationOwner = rule({ cache: "contextual" })(async (
     throw new ValidationError("OpportunityInvitation ID is required");
   }
   const opportunityInvitationId = args.id;
-  if (!ctx.opportunityInvitationCreatedBy.find((m) => m.id === opportunityInvitationId)) {
-    throw new AuthorizationError("User is not the opportunity owner");
+  if (
+    !ctx.hasPermissions?.opportunityInvitations.find((m) => m.createdBy === opportunityInvitationId)
+  ) {
+    throw new AuthorizationError("User is not the opportunity invitation owner");
   }
   return true;
 });

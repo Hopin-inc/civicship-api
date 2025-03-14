@@ -1,14 +1,13 @@
-import { IdentityPlatform, Role } from "@prisma/client";
+import { IdentityPlatform } from "@prisma/client";
 import { GqlUser } from "@/types/graphql";
 import { Loaders } from "@/presentation/graphql/dataloader";
+import { PrismaUserPermission } from "@/application/user/data/type";
 
 export type LoggedInUserInfo = {
   uid: string;
   platform: IdentityPlatform;
   currentUser: GqlUser | null;
-  memberships: { communityId: string; role: Role }[];
-  opportunitiesCreatedBy: { id: string }[];
-  opportunityInvitationCreatedBy: { id: string }[];
+  hasPermissions: PrismaUserPermission | null;
   loaders: Loaders;
 };
 
