@@ -10,13 +10,9 @@ import { opportunitySlotMutationPermissions } from "@/application/opportunitySlo
 import { opportunityInvitationMutationPermissions } from "@/application/opportunityInvitation/controller/permission";
 import { placeMutationPermissions } from "@/application/place/controller/permission";
 import { ticketMutationPermissions } from "@/application/ticket/controller/permission";
-import { articleQueryPermissions } from "@/application/article/controller/permission";
 
 const permissions = shield(
   {
-    Query: {
-      ...articleQueryPermissions,
-    },
     Mutation: {
       ...userMutationPermissions,
 
