@@ -4,7 +4,7 @@ import {
   GqlOpportunityInvitationsConnection,
   GqlOpportunityInvitationSortInput,
 } from "@/types/graphql";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import OpportunityInvitationService from "@/application/opportunityInvitation/service";
 import OpportunityInvitationPresenter from "@/application/opportunityInvitation/presenter";
 

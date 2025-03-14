@@ -13,7 +13,7 @@ import {
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/community/service";
 import CommunityOutputFormat from "@/application/community/presenter";
-import { clampFirst, getCurrentUserId } from "@/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletService from "@/application/membership/wallet/service";
 

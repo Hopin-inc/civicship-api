@@ -26,7 +26,7 @@ import { IContext } from "@/types/server";
 import MembershipUtils from "@/application/membership/utils";
 import MembershipPresenter from "@/application/membership/presenter";
 import MembershipService from "@/application/membership/service";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 import WalletService from "@/application/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";

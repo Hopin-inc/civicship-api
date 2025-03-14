@@ -29,7 +29,7 @@ import { IContext } from "@/types/server";
 import ParticipationService from "@/application/participation/service";
 import ParticipationPresenter from "@/application/participation/presenter";
 import ParticipationUtils from "@/application/participation/utils";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 import {
   OpportunityCategory,
   ParticipationStatus,

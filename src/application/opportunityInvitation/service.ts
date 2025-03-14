@@ -6,7 +6,7 @@ import {
 } from "@/types/graphql";
 import OpportunityInvitationConverter from "@/application/opportunityInvitation/data/converter";
 import OpportunityInvitationRepository from "@/application/opportunityInvitation/data/repository";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 import { NotFoundError } from "@/errors/graphql";
 
 export default class OpportunityInvitationService {

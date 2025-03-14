@@ -20,7 +20,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/membership/wallet/service";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();

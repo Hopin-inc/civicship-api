@@ -5,7 +5,7 @@ import {
   GqlParticipationsConnection,
   GqlParticipationSortInput,
 } from "@/types/graphql";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import ParticipationService from "@/application/participation/service";
 import ParticipationOutputFormat from "@/application/participation/presenter";
 

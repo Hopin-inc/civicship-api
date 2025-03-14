@@ -2,7 +2,7 @@ import { IContext } from "@/types/server";
 import { GqlTicketsConnection, GqlTicketFilterInput, GqlTicketSortInput } from "@/types/graphql";
 import TicketService from "@/application/ticket/service";
 import TicketPresenter from "@/application/ticket/presenter";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 
 export const TicketUtils = {
   async fetchTicketsCommon(

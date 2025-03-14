@@ -4,7 +4,7 @@ import {
   GqlOpportunitySlotsConnection,
   GqlOpportunitySlotSortInput,
 } from "@/types/graphql";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import OpportunitySlotService from "@/application/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/opportunitySlot/presenter";
 

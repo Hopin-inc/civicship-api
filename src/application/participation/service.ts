@@ -7,7 +7,7 @@ import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/
 import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
 import { IContext } from "@/types/server";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 import { PrismaParticipation } from "@/application/participation/data/type";
 import OpportunityRepository from "@/application/opportunity/data/repository";
 import { NotFoundError } from "@/errors/graphql";

@@ -7,7 +7,7 @@ import {
 } from "@/types/graphql";
 import TransactionService from "@/application/transaction/service";
 import TransactionPresenter from "@/application/transaction/presenter";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 
 export default class TransactionUtils {
   static async fetchTransactionsCommon(

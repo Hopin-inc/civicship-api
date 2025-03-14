@@ -6,7 +6,7 @@ import {
   GqlWallet,
 } from "@/types/graphql";
 
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import WalletService from "@/application/membership/wallet/service";
 import WalletPresenter from "@/application/membership/wallet/presenter";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";

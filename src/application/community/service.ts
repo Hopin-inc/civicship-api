@@ -7,7 +7,7 @@ import CommunityConverter from "@/application/community/data/converter";
 import CommunityRepository from "@/application/community/data/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 export default class CommunityService {

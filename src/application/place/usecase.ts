@@ -11,7 +11,7 @@ import {
   GqlPlaceDeletePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import PlaceService from "@/application/place/service";
 import PlacePresenter from "@/application/place/presenter";
 

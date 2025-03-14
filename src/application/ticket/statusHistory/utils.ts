@@ -4,7 +4,7 @@ import {
   GqlTicketStatusHistoryFilterInput,
   GqlTicketStatusHistorySortInput,
 } from "@/types/graphql";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import TicketStatusHistoryService from "@/application/ticket/statusHistory/service";
 import TicketStatusHistoryPresenter from "@/application/ticket/statusHistory/presenter";
 

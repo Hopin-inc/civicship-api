@@ -4,7 +4,7 @@ import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
 import { ParticipationStatus, Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 
 export default class TicketService {
   static async fetchTickets(

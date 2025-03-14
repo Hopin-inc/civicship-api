@@ -8,7 +8,7 @@ import MembershipConverter from "@/application/membership/data/converter";
 import MembershipRepository from "@/application/membership/data/repository";
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
-import { getCurrentUserId } from "@/utils";
+import { getCurrentUserId } from "@/application/utils";
 import { NotFoundError } from "@/errors/graphql";
 
 export default class MembershipService {

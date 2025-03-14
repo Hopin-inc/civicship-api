@@ -9,7 +9,7 @@ import {
 import UserService from "@/application/user/service";
 import UserPresenter from "@/application/user/presenter";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 
 export default class UserUseCase {
   static async visitorBrowseCommunityMembers(

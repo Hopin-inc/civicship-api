@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/utils";
+import { clampFirst } from "@/application/utils";
 import {
   GqlOpportunityInvitationHistoryFilterInput,
   GqlOpportunityInvitationHistorySortInput,
