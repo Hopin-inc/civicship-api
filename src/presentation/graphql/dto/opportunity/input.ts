@@ -21,7 +21,7 @@ export default class OpportunityInputFormat {
   static sort(sort?: GqlOpportunitySortInput): Prisma.OpportunityOrderByWithRelationInput[] {
     return [
       { startsAt: sort?.startsAt ?? Prisma.SortOrder.desc },
-      { pointsRequired: sort?.pointsRequired ?? Prisma.SortOrder.desc },
+      // { pointsRequired: sort?.pointsRequired ?? Prisma.SortOrder.desc },
       { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
     ];
   }
