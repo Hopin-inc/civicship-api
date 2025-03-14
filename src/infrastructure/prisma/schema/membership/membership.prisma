@@ -40,4 +40,6 @@ enum MembershipStatusReason {
 
   WITHDRAWN
   REMOVED
+
+  ASSIGNED
 }

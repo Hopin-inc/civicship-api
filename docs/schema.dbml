@@ -378,6 +378,7 @@ Enum MembershipStatusReason {
   DECLINED_INVITATION
   WITHDRAWN
   REMOVED
+  ASSIGNED
 }
 
 Enum WalletType {

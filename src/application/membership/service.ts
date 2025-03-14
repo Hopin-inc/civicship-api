@@ -115,10 +115,9 @@ export default class MembershipService {
     const currentUserId = getCurrentUserId(ctx);
     const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
 
-    // TODO ロール変更のreasonを作成する
     const data: Prisma.MembershipUpdateInput = MembershipConverter.update(
       membership.status,
-      membership.reason,
+      MembershipStatusReason.ASSIGNED,
       role,
       currentUserId,
     );

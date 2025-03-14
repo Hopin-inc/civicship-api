@@ -411,6 +411,7 @@ export const GqlMembershipStatus = {
 export type GqlMembershipStatus = typeof GqlMembershipStatus[keyof typeof GqlMembershipStatus];
 export const GqlMembershipStatusReason = {
   AcceptedInvitation: 'ACCEPTED_INVITATION',
+  Assigned: 'ASSIGNED',
   CanceledInvitation: 'CANCELED_INVITATION',
   CreatedCommunity: 'CREATED_COMMUNITY',
   DeclinedInvitation: 'DECLINED_INVITATION',
