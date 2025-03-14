@@ -1,22 +1,61 @@
 import {
-  GqlQueryArticlesArgs,
   GqlQueryArticleArgs,
   GqlArticlesConnection,
   GqlArticle,
   GqlCommunity,
   GqlCommunityArticlesArgs,
+  GqlQueryArticlesPublicArgs,
+  GqlQueryArticlesCommunityInternalArgs,
+  GqlQueryArticlesAllArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ArticleService from "@/application/article/service";
 import ArticlePresenter from "@/application/article/presenter";
-import ArticleUtils from "@/application/article/utils";
+import { PublishStatus } from "@prisma/client";
 
 export default class ArticleUseCase {
-  static async visitorBrowseArticles(
+  static async visitorBrowsePublicArticles(
     ctx: IContext,
-    { filter, sort, cursor, first }: GqlQueryArticlesArgs,
+    { filter, sort, cursor, first }: GqlQueryArticlesPublicArgs,
   ): Promise<GqlArticlesConnection> {
-    return ArticleUtils.fetchArticlesCommon(ctx, {
+    await ArticleService.validatePublishStatus([PublishStatus.PUBLIC], filter);
+
+    return ArticleService.fetchArticlesConnection(ctx, {
+      cursor,
+      sort,
+      filter: {
+        ...filter,
+        publishStatus: [PublishStatus.PUBLIC],
+      },
+      first,
+    });
+  }
+
+  static async memberBrowseCommunityInternalArticles(
+    ctx: IContext,
+    { filter, sort, cursor, first }: GqlQueryArticlesCommunityInternalArgs,
+  ): Promise<GqlArticlesConnection> {
+    await ArticleService.validatePublishStatus(
+      [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
+      filter,
+    );
+
+    return ArticleService.fetchArticlesConnection(ctx, {
+      cursor,
+      sort,
+      filter: {
+        ...filter,
+        publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
+      },
+      first,
+    });
+  }
+
+  static async managerBrowseAllArticles(
+    ctx: IContext,
+    { filter, sort, cursor, first }: GqlQueryArticlesAllArgs,
+  ): Promise<GqlArticlesConnection> {
+    return ArticleService.fetchArticlesConnection(ctx, {
       cursor,
       sort,
       filter,
@@ -29,7 +68,7 @@ export default class ArticleUseCase {
     { first, cursor }: GqlCommunityArticlesArgs,
     ctx: IContext,
   ): Promise<GqlArticlesConnection> {
-    return ArticleUtils.fetchArticlesCommon(ctx, {
+    return ArticleService.fetchArticlesConnection(ctx, {
       cursor,
       filter: { communityId: id },
       first,

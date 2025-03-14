@@ -62,7 +62,7 @@ export type GqlArticleFilterInput = {
   category?: InputMaybe<GqlArticleCategory>;
   communityId?: InputMaybe<Scalars['ID']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
-  publishStatus?: InputMaybe<GqlPublishStatus>;
+  publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -1364,7 +1364,9 @@ export type GqlPublishStatus = typeof GqlPublishStatus[keyof typeof GqlPublishSt
 export type GqlQuery = {
   __typename?: 'Query';
   article?: Maybe<GqlArticle>;
-  articles: GqlArticlesConnection;
+  articlesAll: GqlArticlesConnection;
+  articlesCommunityInternal: GqlArticlesConnection;
+  articlesPublic: GqlArticlesConnection;
   cities: Array<GqlCity>;
   communities: GqlCommunitiesConnection;
   community?: Maybe<GqlCommunity>;
@@ -1409,7 +1411,23 @@ export type GqlQueryArticleArgs = {
 };
 
 
-export type GqlQueryArticlesArgs = {
+export type GqlQueryArticlesAllArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlArticleFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlArticleSortInput>;
+};
+
+
+export type GqlQueryArticlesCommunityInternalArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlArticleFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlArticleSortInput>;
+};
+
+
+export type GqlQueryArticlesPublicArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlArticleFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3443,7 +3461,9 @@ export type GqlPlacesConnectionResolvers<ContextType = any, ParentType extends G
 
 export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
   article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id'>>;
-  articles?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesArgs>>;
+  articlesAll?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesAllArgs>>;
+  articlesCommunityInternal?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesCommunityInternalArgs>>;
+  articlesPublic?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesPublicArgs>>;
   cities?: Resolver<Array<GqlResolversTypes['City']>, ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
   communities?: Resolver<GqlResolversTypes['CommunitiesConnection'], ParentType, ContextType, Partial<GqlQueryCommunitiesArgs>>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType, RequireFields<GqlQueryCommunityArgs, 'id'>>;

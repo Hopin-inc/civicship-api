@@ -7,7 +7,9 @@ export default class ArticleConverter {
       AND: [
         filter?.keyword ? { title: { contains: filter.keyword } } : {},
         filter?.category ? { category: filter.category } : {},
-        filter?.publishStatus ? { publishStatus: filter.publishStatus } : {},
+        filter?.publishStatus && filter.publishStatus.length
+          ? { publishStatus: { in: filter.publishStatus } }
+          : {},
         filter?.authors && filter.authors.length
           ? { authors: { some: { id: { in: filter.authors } } } }
           : {},

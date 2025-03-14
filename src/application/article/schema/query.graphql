@@ -2,7 +2,19 @@
 # Article Query Definitions
 # ------------------------------
 extend type Query {
-    articles(
+    articlesPublic(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
+    articlesCommunityInternal(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
+    articlesAll(
         filter: ArticleFilterInput
         sort: ArticleSortInput
         cursor: String
@@ -31,7 +43,7 @@ type ArticleEdge implements Edge {
 input ArticleFilterInput {
     keyword: String
     category: ArticleCategory
-    publishStatus: PublishStatus
+    publishStatus: [PublishStatus!]
     authors: [ID!]
     relatedUserIds: [ID!]
     communityId: ID
