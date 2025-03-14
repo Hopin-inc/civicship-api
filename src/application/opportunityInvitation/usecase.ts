@@ -7,14 +7,11 @@ import {
   GqlOpportunityInvitationCreatePayload,
   GqlMutationOpportunityInvitationDisableArgs,
   GqlOpportunityInvitationDisablePayload,
-  GqlOpportunity,
-  GqlOpportunityInvitationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityInvitationService from "@/application/opportunityInvitation/service";
 import OpportunityInvitationPresenter from "@/application/opportunityInvitation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import OpportunityInvitationUtils from "@/application/opportunityInvitation/utilis";
 
 export default class OpportunityInvitationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -23,18 +20,7 @@ export default class OpportunityInvitationUseCase {
     args: GqlQueryOpportunityInvitationsArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityInvitationsConnection> {
-    return OpportunityInvitationUtils.fetchOpportunityInvitationsCommon(ctx, args);
-  }
-
-  static async visitorBrowseOpportunityInvitationsByOpportunity(
-    { id }: GqlOpportunity,
-    args: GqlOpportunityInvitationsArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityInvitationsConnection> {
-    return OpportunityInvitationUtils.fetchOpportunityInvitationsCommon(ctx, {
-      ...args,
-      filter: { opportunityId: id },
-    });
+    return OpportunityInvitationService.fetchOpportunityInvitations(ctx, args);
   }
 
   static async visitorViewOpportunityInvitation(

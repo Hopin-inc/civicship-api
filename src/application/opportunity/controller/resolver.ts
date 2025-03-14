@@ -61,9 +61,11 @@ const opportunityResolver = {
       args: GqlOpportunityInvitationsArgs,
       ctx: IContext,
     ) => {
-      return OpportunityInvitationUseCase.visitorBrowseOpportunityInvitationsByOpportunity(
-        parent,
-        args,
+      return OpportunityInvitationUseCase.visitorBrowseOpportunityInvitations(
+        {
+          ...args,
+          filter: { ...args.filter, opportunityId: parent.id },
+        },
         ctx,
       );
     },
