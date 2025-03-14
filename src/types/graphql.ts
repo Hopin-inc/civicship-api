@@ -875,7 +875,7 @@ export type GqlOpportunityFilterInput = {
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  publishStatus?: InputMaybe<GqlPublishStatus>;
+  publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -1377,7 +1377,9 @@ export type GqlQuery = {
   membershipHistories: GqlMembershipHistoriesConnection;
   membershipHistory?: Maybe<GqlMembershipHistory>;
   memberships: GqlMembershipsConnection;
-  opportunities: GqlOpportunitiesConnection;
+  opportunitiesAll: GqlOpportunitiesConnection;
+  opportunitiesCommunityInternal: GqlOpportunitiesConnection;
+  opportunitiesPublic: GqlOpportunitiesConnection;
   opportunity?: Maybe<GqlOpportunity>;
   opportunityInvitation?: Maybe<GqlOpportunityInvitation>;
   opportunityInvitationHistories: GqlOpportunityInvitationHistoriesConnection;
@@ -1481,7 +1483,23 @@ export type GqlQueryMembershipsArgs = {
 };
 
 
-export type GqlQueryOpportunitiesArgs = {
+export type GqlQueryOpportunitiesAllArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlOpportunityFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlOpportunitySortInput>;
+};
+
+
+export type GqlQueryOpportunitiesCommunityInternalArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlOpportunityFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlOpportunitySortInput>;
+};
+
+
+export type GqlQueryOpportunitiesPublicArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlOpportunityFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3474,7 +3492,9 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   membershipHistories?: Resolver<GqlResolversTypes['MembershipHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryMembershipHistoriesArgs>>;
   membershipHistory?: Resolver<Maybe<GqlResolversTypes['MembershipHistory']>, ParentType, ContextType, RequireFields<GqlQueryMembershipHistoryArgs, 'id'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
-  opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
+  opportunitiesAll?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesAllArgs>>;
+  opportunitiesCommunityInternal?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesCommunityInternalArgs>>;
+  opportunitiesPublic?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesPublicArgs>>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id'>>;
   opportunityInvitation?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitation']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityInvitationArgs, 'id'>>;
   opportunityInvitationHistories?: Resolver<GqlResolversTypes['OpportunityInvitationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunityInvitationHistoriesArgs>>;

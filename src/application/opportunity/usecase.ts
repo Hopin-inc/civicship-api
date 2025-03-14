@@ -13,61 +13,100 @@ import {
   GqlOpportunityUpdateContentPayload,
   GqlPlace,
   GqlPlaceOpportunitiesArgs,
-  GqlQueryOpportunitiesArgs,
+  GqlQueryOpportunitiesAllArgs,
+  GqlQueryOpportunitiesCommunityInternalArgs,
+  GqlQueryOpportunitiesPublicArgs,
   GqlQueryOpportunityArgs,
   GqlUser,
   GqlUserOpportunitiesCreatedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityService from "@/application/opportunity/service";
 import OpportunityPresenter from "@/application/opportunity/presenter";
-import OpportunityUtils from "@/application/opportunity/utils";
+import { PublishStatus } from "@prisma/client";
+import OpportunityService from "@/application/opportunity/service";
 
 export default class OpportunityUseCase {
   static async visitorBrowsePublicOpportunities(
-    { cursor, filter, sort, first }: GqlQueryOpportunitiesArgs,
+    args: GqlQueryOpportunitiesPublicArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
-      cursor,
-      filter,
-      sort,
-      first,
+    await OpportunityService.validatePublishStatus([PublishStatus.PUBLIC], args.filter);
+
+    return OpportunityService.fetchOpportunitiesConnection(ctx, {
+      cursor: args.cursor,
+      sort: args.sort,
+      filter: {
+        ...args.filter,
+        publishStatus: [PublishStatus.PUBLIC],
+      },
+      first: args.first,
+    });
+  }
+
+  static async memberBrowseCommunityInternalOpportunities(
+    args: GqlQueryOpportunitiesCommunityInternalArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitiesConnection> {
+    await OpportunityService.validatePublishStatus(
+      [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
+      args.filter,
+    );
+
+    return OpportunityService.fetchOpportunitiesConnection(ctx, {
+      cursor: args.cursor,
+      sort: args.sort,
+      filter: {
+        ...args.filter,
+        publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
+      },
+      first: args.first,
+    });
+  }
+
+  static async managerBrowseAllOpportunities(
+    args: GqlQueryOpportunitiesAllArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitiesConnection> {
+    return OpportunityService.fetchOpportunitiesConnection(ctx, {
+      cursor: args.cursor,
+      sort: args.sort,
+      filter: args.filter,
+      first: args.first,
     });
   }
 
   static async visitorBrowseOpportunitiesByCommunity(
     { id }: GqlCommunity,
-    { first, cursor }: GqlCommunityOpportunitiesArgs,
+    { first, cursor, filter }: GqlCommunityOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
-    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+    return OpportunityService.fetchOpportunitiesConnection(ctx, {
       cursor,
-      filter: { communityIds: [id] },
+      filter: { ...filter, communityIds: [id] },
       first,
     });
   }
 
   static async visitorBrowseOpportunitiesCreatedByUser(
     { id }: GqlUser,
-    { first, cursor }: GqlUserOpportunitiesCreatedByMeArgs,
+    { first, cursor, filter }: GqlUserOpportunitiesCreatedByMeArgs,
     ctx: IContext,
   ) {
-    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+    return OpportunityService.fetchOpportunitiesConnection(ctx, {
       cursor,
-      filter: { createdByUserIds: [id] },
+      filter: { ...filter, createdByUserIds: [id] },
       first,
     });
   }
 
   static async visitorBrowseOpportunitiesByPlace(
     { id }: GqlPlace,
-    { first, cursor }: GqlPlaceOpportunitiesArgs,
+    { first, cursor, filter }: GqlPlaceOpportunitiesArgs,
     ctx: IContext,
   ) {
-    return OpportunityUtils.fetchOpportunitiesCommon(ctx, {
+    return OpportunityService.fetchOpportunitiesConnection(ctx, {
       cursor,
-      filter: { placeIds: [id] },
+      filter: { ...filter, placeIds: [id] },
       first,
     });
   }

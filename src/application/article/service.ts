@@ -6,6 +6,7 @@ import { clampFirst } from "@/utils";
 import ArticlePresenter from "@/application/article/presenter";
 import { PublishStatus, Role } from "@prisma/client";
 import { AuthorizationError, ValidationError } from "@/errors/graphql";
+import { PrismaArticle } from "@/application/article/data/type";
 
 export default class ArticleService {
   static async fetchArticlesConnection(
@@ -68,7 +69,7 @@ export default class ArticleService {
         return article;
       }
 
-      validateCommunityMembership(ctx, article.communityId);
+      isCommunityManager(ctx, article.communityId);
       return article;
     }
 
@@ -91,10 +92,7 @@ export default class ArticleService {
   }
 }
 
-function validateCommunityInternalAccess(
-  ctx: IContext,
-  article: { publishStatus: PublishStatus; communityId: string },
-): typeof article {
+function validateCommunityInternalAccess(ctx: IContext, article: PrismaArticle): PrismaArticle {
   const communityId = article.communityId;
   const hasMembership =
     ctx.hasPermissions?.memberships.some((m) => m.communityId === communityId) ?? false;
@@ -111,7 +109,7 @@ function isUserArticleOrRelated(ctx: IContext, articleId: string): boolean {
   );
 }
 
-function validateCommunityMembership(ctx: IContext, communityId: string): void {
+function isCommunityManager(ctx: IContext, communityId: string): void {
   const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!(membership?.role === Role.OWNER || membership?.role === Role.MANAGER)) {
     throw new AuthorizationError("User must be community manager");

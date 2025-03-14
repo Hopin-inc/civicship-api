@@ -11,7 +11,9 @@ export default class OpportunityInputFormat {
     return {
       AND: [
         filter?.category ? { category: filter.category } : {},
-        filter?.publishStatus ? { publishStatus: filter.publishStatus } : {},
+        filter?.publishStatus && filter.publishStatus.length
+          ? { publishStatus: { in: filter.publishStatus } }
+          : {},
         filter?.communityIds ? { communityId: { in: filter.communityIds } } : {},
         filter?.createdByUserIds ? { createdBy: { in: filter.createdByUserIds } } : {},
         filter?.placeIds ? { placeId: { in: filter.placeIds } } : {},

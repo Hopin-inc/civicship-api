@@ -2,7 +2,19 @@
 # Opportunity Query Definitions
 # ------------------------------
 extend type Query {
-    opportunities(
+    opportunitiesPublic(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunitiesCommunityInternal(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunitiesAll(
         filter: OpportunityFilterInput
         sort: OpportunitySortInput
         cursor: String
@@ -30,7 +42,7 @@ type OpportunityEdge implements Edge {
 # ------------------------------
 input OpportunityFilterInput {
     category: OpportunityCategory
-    publishStatus: PublishStatus
+    publishStatus: [PublishStatus!]
 
     communityIds: [ID!]
     createdByUserIds: [ID!]

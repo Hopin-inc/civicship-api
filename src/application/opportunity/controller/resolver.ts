@@ -7,7 +7,9 @@ import {
   GqlOpportunityInvitationsArgs,
   GqlOpportunityParticipationsArgs,
   GqlOpportunitySlotsArgs,
-  GqlQueryOpportunitiesArgs,
+  GqlQueryOpportunitiesAllArgs,
+  GqlQueryOpportunitiesCommunityInternalArgs,
+  GqlQueryOpportunitiesPublicArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
@@ -18,8 +20,15 @@ import OpportunityInvitationUseCase from "@/application/opportunityInvitation/us
 
 const opportunityResolver = {
   Query: {
-    opportunities: async (_: unknown, args: GqlQueryOpportunitiesArgs, ctx: IContext) =>
+    opportunitiesPublic: async (_: unknown, args: GqlQueryOpportunitiesPublicArgs, ctx: IContext) =>
       OpportunityUseCase.visitorBrowsePublicOpportunities(args, ctx),
+    opportunitiesCommunityInternal: async (
+      _: unknown,
+      args: GqlQueryOpportunitiesCommunityInternalArgs,
+      ctx: IContext,
+    ) => OpportunityUseCase.memberBrowseCommunityInternalOpportunities(args, ctx),
+    opportunitiesAll: async (_: unknown, args: GqlQueryOpportunitiesAllArgs, ctx: IContext) =>
+      OpportunityUseCase.managerBrowseAllOpportunities(args, ctx),
     opportunity: async (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
       if (!ctx.loaders?.opportunity) {
         return OpportunityUseCase.visitorViewOpportunity(args, ctx);
