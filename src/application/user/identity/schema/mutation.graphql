@@ -3,7 +3,10 @@
 # ------------------------------
 extend type Mutation {
     userSignUp(input: UserSignUpInput!): CurrentUserPayload
-    userDeleteMe(input: UserDeleteInput!): UserDeletePayload
+    userDeleteMe(
+        input: UserDeleteInput!
+        permission: CheckIsSelfPermissionInput!
+    ): UserDeletePayload
 }
 
 # ------------------------------

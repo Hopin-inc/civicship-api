@@ -2,11 +2,26 @@
 # Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    utilityCreate(input: UtilityCreateInput!): UtilityCreatePayload
-    utilityDelete(id: ID!, input: UtilityDeleteInput!): UtilityDeletePayload
-    utilityUpdateInfo(id: ID!, input: UtilityUpdateInfoInput!): UtilityUpdateInfoPayload
+    utilityCreate(
+        input: UtilityCreateInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityCreatePayload
+    utilityDelete(
+        id: ID!
+        input: UtilityDeleteInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityDeletePayload
+    utilityUpdateInfo(
+        id: ID!
+        input: UtilityUpdateInfoInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityUpdateInfoPayload
 
-    utilitySetPublishStatus(id: ID!, input: UtilitySetPublishStatusInput!): UtilitySetPublishStatusPayload
+    utilitySetPublishStatus(
+        id: ID!
+        input: UtilitySetPublishStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilitySetPublishStatusPayload
 }
 
 # ------------------------------

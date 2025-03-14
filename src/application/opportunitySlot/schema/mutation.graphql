@@ -2,7 +2,10 @@
 # Opportunity Slot Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    opportunitySlotsBulkUpdate(input: OpportunitySlotsBulkUpdateInput!): OpportunitySlotsBulkUpdatePayload
+    opportunitySlotsBulkUpdate(
+        input: OpportunitySlotsBulkUpdateInput!
+        permission: CheckOpportunityPermissionInput!
+    ): OpportunitySlotsBulkUpdatePayload
 }
 
 # ------------------------------

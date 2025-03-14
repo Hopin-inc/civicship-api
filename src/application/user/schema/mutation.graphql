@@ -2,7 +2,10 @@
 # User Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    userUpdateMyProfile(input: UserUpdateProfileInput!): UserUpdateProfilePayload
+    userUpdateMyProfile(
+        input: UserUpdateProfileInput!
+        permission: CheckIsSelfPermissionInput!
+    ): UserUpdateProfilePayload
 }
 
 # ------------------------------

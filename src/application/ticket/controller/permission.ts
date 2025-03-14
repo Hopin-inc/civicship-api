@@ -4,8 +4,8 @@ import { ShieldRule } from "graphql-shield/typings/types";
 
 const ticketMutationPermissions: Record<string, ShieldRule> = {
   ticketPurchase: and(isCommunityMember, sanitizeInput),
-  ticketUse: and(isSelf, isCommunityMember, sanitizeInput),
-  ticketRefund: and(isSelf, isCommunityMember, sanitizeInput),
+  ticketUse: and(isSelf, sanitizeInput),
+  ticketRefund: and(isSelf, sanitizeInput),
 };
 
 export { ticketMutationPermissions };

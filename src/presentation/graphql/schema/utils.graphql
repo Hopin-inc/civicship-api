@@ -72,8 +72,17 @@ scalar Decimal
 # ------------------------------------------------
 # Input Types
 # ------------------------------------------------
-input PermissionsInput {
+input CheckCommunityPermissionInput {
     communityId: ID!
+}
+
+input CheckOpportunityPermissionInput {
+    opportunityId: ID!
+    communityId: ID!
+}
+
+input CheckIsSelfPermissionInput {
+    userId: ID!
 }
 
 input ImageInput {

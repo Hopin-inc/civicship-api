@@ -3,19 +3,47 @@
 # ------------------------------
 extend type Mutation {
     # invite
-    membershipInvite(input: MembershipInviteInput!): MembershipInvitePayload
-    membershipCancelInvitation(input: MembershipSetInvitationStatusInput!): MembershipSetInvitationStatusPayload
-    membershipAcceptMyInvitation(input: MembershipSetInvitationStatusInput!): MembershipSetInvitationStatusPayload
-    membershipDenyMyInvitation(input: MembershipSetInvitationStatusInput!): MembershipSetInvitationStatusPayload
+    membershipInvite(
+        input: MembershipInviteInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipInvitePayload
+    membershipCancelInvitation(
+        input: MembershipSetInvitationStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetInvitationStatusPayload
+
+    membershipAcceptMyInvitation(
+        input: MembershipSetInvitationStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): MembershipSetInvitationStatusPayload
+    membershipDenyMyInvitation(
+        input: MembershipSetInvitationStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): MembershipSetInvitationStatusPayload
 
     # join
-    membershipWithdraw(input: MembershipWithdrawInput!): MembershipWithdrawPayload
+    membershipWithdraw(
+        input: MembershipWithdrawInput!
+        permission: CheckIsSelfPermissionInput!
+    ): MembershipWithdrawPayload
 
     # role
-    membershipAssignOwner(input: MembershipSetRoleInput!): MembershipSetRolePayload
-    membershipAssignManager(input: MembershipSetRoleInput!): MembershipSetRolePayload
-    membershipAssignMember(input: MembershipSetRoleInput!): MembershipSetRolePayload
-    membershipRemove(input: MembershipRemoveInput!): MembershipRemovePayload
+    membershipAssignOwner(
+        input: MembershipSetRoleInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetRolePayload
+    membershipAssignManager(
+        input: MembershipSetRoleInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetRolePayload
+    membershipAssignMember(
+        input: MembershipSetRoleInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetRolePayload
+    membershipRemove(
+        input: MembershipRemoveInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipRemovePayload
 }
 
 # ------------------------------

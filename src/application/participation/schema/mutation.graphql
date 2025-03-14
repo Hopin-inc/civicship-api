@@ -3,20 +3,55 @@
 # ------------------------------
 extend type Mutation {
     # invite
-    participationInvite(input: ParticipationInviteInput!): ParticipationInvitePayload
-    participationCancelInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationAcceptMyInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationDenyMyInvitation(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationInvite(
+        input: ParticipationInviteInput!
+        permission: CheckCommunityPermissionInput!
+    ): ParticipationInvitePayload
+    participationCancelInvitation(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckCommunityPermissionInput!
+    ): ParticipationSetStatusPayload
+    participationAcceptMyInvitation(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): ParticipationSetStatusPayload
+    participationDenyMyInvitation(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): ParticipationSetStatusPayload
 
     # apply
     participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationCancelMyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationAcceptApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationDenyApplication(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationCancelMyApplication(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): ParticipationSetStatusPayload
+    participationAcceptApplication(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckOpportunityPermissionInput!
+    ): ParticipationSetStatusPayload
+    participationDenyApplication(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckOpportunityPermissionInput!
+    ): ParticipationSetStatusPayload
 
     # performance
-    participationApprovePerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
-    participationDenyPerformance(id: ID!, input: ParticipationSetStatusInput!): ParticipationSetStatusPayload
+    participationApprovePerformance(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckOpportunityPermissionInput!
+    ): ParticipationSetStatusPayload
+    participationDenyPerformance(
+        id: ID!
+        input: ParticipationSetStatusInput!
+        permission: CheckOpportunityPermissionInput!
+    ): ParticipationSetStatusPayload
 }
 
 # ------------------------------

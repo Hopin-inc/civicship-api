@@ -2,10 +2,19 @@
 # Transaction Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    transactionIssueCommunityPoint(input: TransactionIssueCommunityPointInput!): TransactionIssueCommunityPointPayload
+    transactionIssueCommunityPoint(
+        input: TransactionIssueCommunityPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionIssueCommunityPointPayload
 
-    transactionGrantCommunityPoint(input: TransactionGrantCommunityPointInput!): TransactionGrantCommunityPointPayload
-    transactionDonateSelfPoint(input: TransactionDonateSelfPointInput!): TransactionDonateSelfPointPayload
+    transactionGrantCommunityPoint(
+        input: TransactionGrantCommunityPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionGrantCommunityPointPayload
+    transactionDonateSelfPoint(
+        input: TransactionDonateSelfPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionDonateSelfPointPayload
 }
 
 # ------------------------------

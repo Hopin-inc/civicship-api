@@ -3,8 +3,17 @@
 # ------------------------------
 extend type Mutation {
     communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
-    communityDelete(id: ID!, input: CommunityDeleteInput!): CommunityDeletePayload
-    communityUpdateProfile(id: ID!, input: CommunityUpdateProfileInput!): CommunityUpdateProfilePayload
+
+    communityDelete(
+        id: ID!,
+        input: CommunityDeleteInput!,
+        permission:CheckCommunityPermissionInput!
+    ): CommunityDeletePayload
+    communityUpdateProfile(
+        id: ID!,
+        input: CommunityUpdateProfileInput!,
+        permission:CheckCommunityPermissionInput!
+    ): CommunityUpdateProfilePayload
 }
 
 # ------------------------------

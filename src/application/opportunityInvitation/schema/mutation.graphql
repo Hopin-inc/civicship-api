@@ -2,8 +2,15 @@
 # OpportunityInvitation Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    opportunityInvitationCreate(input: OpportunityInvitationCreateInput!): OpportunityInvitationCreatePayload
-    opportunityInvitationDisable(id: ID!, input: OpportunityInvitationDisableInput!): OpportunityInvitationDisablePayload
+    opportunityInvitationCreate(
+        input: OpportunityInvitationCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): OpportunityInvitationCreatePayload
+    opportunityInvitationDisable(
+        id: ID!
+        input: OpportunityInvitationDisableInput!
+        permission: CheckCommunityPermissionInput!
+    ): OpportunityInvitationDisablePayload
 }
 
 # ------------------------------

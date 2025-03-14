@@ -32,11 +32,11 @@ const isAuthenticated = or(isUser, isAdmin);
 // Check if the user is performing an operation on their own account.
 // Throws AuthenticationError if the user is not logged in.
 // Throws AuthorizationError if the logged-in user's id does not match the provided userId.
-const isSelf = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
+const isSelf = rule({ cache: "contextual" })(async (_parent, { permission }, ctx: IContext) => {
   if (!ctx.currentUser) {
     throw new AuthenticationError("User must be logged in");
   }
-  if (ctx.currentUser.id !== args.input.userId) {
+  if (ctx.currentUser.id !== permission.userId) {
     throw new AuthorizationError("User is not self");
   }
   return true;
@@ -45,14 +45,18 @@ const isSelf = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext
 // Check if the user is the owner of a community.
 // Validates that the user is logged in and that a communityId is provided.
 // Then checks membership: if the user is not a member or if the role is not OWNER, an error is thrown.
-const isCommunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
+const isCommunityOwner = rule({ cache: "contextual" })(async (
+  _parent,
+  { permission },
+  ctx: IContext,
+) => {
   if (!ctx.currentUser) {
     throw new AuthenticationError("User must be logged in");
   }
-  if (!args.input.communityId) {
+  if (!permission.communityId) {
     throw new ValidationError("Community ID is required");
   }
-  const communityId = args.input.communityId;
+  const communityId = permission.communityId;
   const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!membership) {
     throw new AuthorizationError("User is not a member of the community");
@@ -66,14 +70,18 @@ const isCommunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx
 // Check if the user is a community manager.
 // Validates that the user is logged in and that a communityId is provided.
 // Then verifies that the user's membership role is either OWNER or MANAGER.
-const isCommunityManager = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
+const isCommunityManager = rule({ cache: "contextual" })(async (
+  _parent,
+  { permission },
+  ctx: IContext,
+) => {
   if (!ctx.currentUser) {
     throw new AuthenticationError("User must be logged in");
   }
-  if (!args.input.communityId) {
+  if (!permission.communityId) {
     throw new ValidationError("Community ID is required");
   }
-  const communityId = args.input.communityId;
+  const communityId = permission.communityId;
   const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!membership) {
     throw new AuthorizationError("User is not a member of the community");
@@ -87,14 +95,18 @@ const isCommunityManager = rule({ cache: "contextual" })(async (_parent, args, c
 // Check if the user is a community member.
 // Validates that the user is logged in and that a communityId is provided.
 // Then verifies that the user's membership role is one of OWNER, MANAGER, or MEMBER.
-const isCommunityMember = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
+const isCommunityMember = rule({ cache: "contextual" })(async (
+  _parent,
+  { permission },
+  ctx: IContext,
+) => {
   if (!ctx.currentUser) {
     throw new AuthenticationError("User must be logged in");
   }
-  if (!args.input.communityId) {
+  if (!permission.communityId) {
     throw new ValidationError("Community ID is required");
   }
-  const communityId = args.input.communityId;
+  const communityId = permission.communityId;
   const membership = ctx.hasPermissions?.memberships?.find((m) => m.communityId === communityId);
   if (!membership) {
     throw new AuthorizationError("User is not a member of the community");
@@ -114,39 +126,20 @@ const isCommunityMember = rule({ cache: "contextual" })(async (_parent, args, ct
 // Check if the user is the owner of an opportunity.
 // Validates that the user is logged in and that an opportunityId is provided.
 // Then verifies that the opportunity is among those created by the user.
-const isOpportunityOwner = rule({ cache: "contextual" })(async (_parent, args, ctx: IContext) => {
-  if (!ctx.currentUser) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (!args.input.opportunityId) {
-    throw new ValidationError("Opportunity ID is required");
-  }
-  const opportunityId = args.input.opportunityId;
-  if (!ctx.hasPermissions?.opportunitiesCreatedByMe?.find((m) => m.id === opportunityId)) {
-    throw new AuthorizationError("User is not the opportunity owner");
-  }
-  return true;
-});
-
-// Check if the user is the owner of an opportunity.
-// Validates that the user is logged in and that an opportunityId is provided.
-// Then verifies that the opportunity is among those created by the user.
-const isOpportunityInvitationOwner = rule({ cache: "contextual" })(async (
+const isOpportunityOwner = rule({ cache: "contextual" })(async (
   _parent,
-  args,
+  { permission },
   ctx: IContext,
 ) => {
   if (!ctx.currentUser) {
     throw new AuthenticationError("User must be logged in");
   }
-  if (!args.id) {
-    throw new ValidationError("OpportunityInvitation ID is required");
+  if (!permission.opportunityId) {
+    throw new ValidationError("Opportunity ID is required");
   }
-  const opportunityInvitationId = args.id;
-  if (
-    !ctx.hasPermissions?.opportunityInvitations.find((m) => m.createdBy === opportunityInvitationId)
-  ) {
-    throw new AuthorizationError("User is not the opportunity invitation owner");
+  const opportunityId = permission.opportunityId;
+  if (!ctx.hasPermissions?.opportunitiesCreatedByMe?.find((m) => m.id === opportunityId)) {
+    throw new AuthorizationError("User is not the opportunity owner");
   }
   return true;
 });
@@ -196,5 +189,4 @@ export {
   isCommunityOwner,
   isCommunityMember,
   isOpportunityOwner,
-  isOpportunityInvitationOwner,
 };

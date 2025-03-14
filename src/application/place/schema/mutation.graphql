@@ -2,9 +2,19 @@
 # Place Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    placeCreate(input: PlaceCreateInput!): PlaceCreatePayload
-    placeDelete(id: ID!): PlaceDeletePayload
-    placeUpdate(id: ID!, input: PlaceUpdateInput!): PlaceUpdatePayload
+    placeCreate(
+        input: PlaceCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): PlaceCreatePayload
+    placeDelete(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): PlaceDeletePayload
+    placeUpdate(
+        id: ID!
+        input: PlaceUpdateInput!
+        permission: CheckCommunityPermissionInput!
+    ): PlaceUpdatePayload
 }
 
 # ------------------------------

@@ -87,12 +87,17 @@ export type GqlAuthError = GqlError & {
   statusCode: Scalars['Int']['output'];
 };
 
-export type GqlCheckCommunitiesPermissionInput = {
-  communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
 export type GqlCheckCommunityPermissionInput = {
   communityId: Scalars['ID']['input'];
+};
+
+export type GqlCheckIsSelfPermissionInput = {
+  userId: Scalars['ID']['input'];
+};
+
+export type GqlCheckOpportunityPermissionInput = {
+  communityId: Scalars['ID']['input'];
+  opportunityId: Scalars['ID']['input'];
 };
 
 export type GqlCity = {
@@ -512,107 +517,127 @@ export type GqlMutationCommunityCreateArgs = {
 export type GqlMutationCommunityDeleteArgs = {
   id: Scalars['ID']['input'];
   input: GqlCommunityDeleteInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationCommunityUpdateProfileArgs = {
   id: Scalars['ID']['input'];
   input: GqlCommunityUpdateProfileInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipAcceptMyInvitationArgs = {
   input: GqlMembershipSetInvitationStatusInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationMembershipAssignManagerArgs = {
   input: GqlMembershipSetRoleInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipAssignMemberArgs = {
   input: GqlMembershipSetRoleInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipAssignOwnerArgs = {
   input: GqlMembershipSetRoleInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipCancelInvitationArgs = {
   input: GqlMembershipSetInvitationStatusInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipDenyMyInvitationArgs = {
   input: GqlMembershipSetInvitationStatusInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationMembershipInviteArgs = {
   input: GqlMembershipInviteInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipRemoveArgs = {
   input: GqlMembershipRemoveInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationMembershipWithdrawArgs = {
   input: GqlMembershipWithdrawInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationOpportunityCreateArgs = {
   input: GqlOpportunityCreateInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunityDeleteArgs = {
   id: Scalars['ID']['input'];
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunityInvitationCreateArgs = {
   input: GqlOpportunityInvitationCreateInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunityInvitationDisableArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunityInvitationDisableInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunitySetPublishStatusArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunitySetPublishStatusInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunitySlotsBulkUpdateArgs = {
   input: GqlOpportunitySlotsBulkUpdateInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
 export type GqlMutationOpportunityUpdateContentArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunityUpdateContentInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationParticipationAcceptApplicationArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
 export type GqlMutationParticipationAcceptMyInvitationArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
@@ -624,94 +649,111 @@ export type GqlMutationParticipationApplyArgs = {
 export type GqlMutationParticipationApprovePerformanceArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
 export type GqlMutationParticipationCancelInvitationArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationParticipationCancelMyApplicationArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationParticipationDenyApplicationArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
 export type GqlMutationParticipationDenyMyInvitationArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationParticipationDenyPerformanceArgs = {
   id: Scalars['ID']['input'];
   input: GqlParticipationSetStatusInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
 export type GqlMutationParticipationInviteArgs = {
   input: GqlParticipationInviteInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationPlaceCreateArgs = {
   input: GqlPlaceCreateInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationPlaceDeleteArgs = {
   id: Scalars['ID']['input'];
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationPlaceUpdateArgs = {
   id: Scalars['ID']['input'];
   input: GqlPlaceUpdateInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationTicketPurchaseArgs = {
   input: GqlTicketPurchaseInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationTicketRefundArgs = {
   id: Scalars['ID']['input'];
   input: GqlTicketRefundInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationTicketUseArgs = {
   id: Scalars['ID']['input'];
   input: GqlTicketUseInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationTransactionDonateSelfPointArgs = {
   input: GqlTransactionDonateSelfPointInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationTransactionGrantCommunityPointArgs = {
   input: GqlTransactionGrantCommunityPointInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationTransactionIssueCommunityPointArgs = {
   input: GqlTransactionIssueCommunityPointInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationUserDeleteMeArgs = {
   input: GqlUserDeleteInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
@@ -722,29 +764,34 @@ export type GqlMutationUserSignUpArgs = {
 
 export type GqlMutationUserUpdateMyProfileArgs = {
   input: GqlUserUpdateProfileInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
 export type GqlMutationUtilityCreateArgs = {
   input: GqlUtilityCreateInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationUtilityDeleteArgs = {
   id: Scalars['ID']['input'];
   input: GqlUtilityDeleteInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationUtilitySetPublishStatusArgs = {
   id: Scalars['ID']['input'];
   input: GqlUtilitySetPublishStatusInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
 export type GqlMutationUtilityUpdateInfoArgs = {
   id: Scalars['ID']['input'];
   input: GqlUtilityUpdateInfoInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 export type GqlNestedPlaceConnectOrCreateInput = {
@@ -2368,8 +2415,9 @@ export type GqlResolversTypes = ResolversObject<{
   ArticlesConnection: ResolverTypeWrapper<Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ArticleEdge']>>> }>;
   AuthError: ResolverTypeWrapper<GqlAuthError>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
-  CheckCommunitiesPermissionInput: GqlCheckCommunitiesPermissionInput;
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
+  CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
+  CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: ResolverTypeWrapper<City>;
   CommonError: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommonError']>;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['CommunityEdge']>>> }>;
@@ -2602,8 +2650,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
   AuthError: GqlAuthError;
   Boolean: Scalars['Boolean']['output'];
-  CheckCommunitiesPermissionInput: GqlCheckCommunitiesPermissionInput;
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
+  CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
+  CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: City;
   CommonError: GqlResolversUnionTypes<GqlResolversParentTypes>['CommonError'];
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['CommunityEdge']>>> };
@@ -3089,51 +3138,51 @@ export type GqlMembershipsConnectionResolvers<ContextType = any, ParentType exte
 
 export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Mutation'] = GqlResolversParentTypes['Mutation']> = ResolversObject<{
   communityCreate?: Resolver<Maybe<GqlResolversTypes['CommunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityCreateArgs, 'input'>>;
-  communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'input'>>;
-  communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input'>>;
-  membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input'>>;
-  membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input'>>;
-  membershipAssignMember?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignMemberArgs, 'input'>>;
-  membershipAssignOwner?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignOwnerArgs, 'input'>>;
-  membershipCancelInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipCancelInvitationArgs, 'input'>>;
-  membershipDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipDenyMyInvitationArgs, 'input'>>;
-  membershipInvite?: Resolver<Maybe<GqlResolversTypes['MembershipInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipInviteArgs, 'input'>>;
-  membershipRemove?: Resolver<Maybe<GqlResolversTypes['MembershipRemovePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipRemoveArgs, 'input'>>;
-  membershipWithdraw?: Resolver<Maybe<GqlResolversTypes['MembershipWithdrawPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipWithdrawArgs, 'input'>>;
+  communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'input' | 'permission'>>;
+  communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
+  membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input' | 'permission'>>;
+  membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input' | 'permission'>>;
+  membershipAssignMember?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignMemberArgs, 'input' | 'permission'>>;
+  membershipAssignOwner?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignOwnerArgs, 'input' | 'permission'>>;
+  membershipCancelInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipCancelInvitationArgs, 'input' | 'permission'>>;
+  membershipDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipDenyMyInvitationArgs, 'input' | 'permission'>>;
+  membershipInvite?: Resolver<Maybe<GqlResolversTypes['MembershipInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipInviteArgs, 'input' | 'permission'>>;
+  membershipRemove?: Resolver<Maybe<GqlResolversTypes['MembershipRemovePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipRemoveArgs, 'input' | 'permission'>>;
+  membershipWithdraw?: Resolver<Maybe<GqlResolversTypes['MembershipWithdrawPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipWithdrawArgs, 'input' | 'permission'>>;
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  opportunityCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityCreateArgs, 'input'>>;
-  opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id'>>;
-  opportunityInvitationCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationCreateArgs, 'input'>>;
-  opportunityInvitationDisable?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDisablePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDisableArgs, 'id' | 'input'>>;
-  opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input'>>;
-  opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input'>>;
-  opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input'>>;
-  participationAcceptApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptApplicationArgs, 'id' | 'input'>>;
-  participationAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptMyInvitationArgs, 'id' | 'input'>>;
+  opportunityCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityCreateArgs, 'input' | 'permission'>>;
+  opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id' | 'permission'>>;
+  opportunityInvitationCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationCreateArgs, 'input' | 'permission'>>;
+  opportunityInvitationDisable?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDisablePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDisableArgs, 'id' | 'input' | 'permission'>>;
+  opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
+  opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
+  opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
+  participationAcceptApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptApplicationArgs, 'id' | 'input' | 'permission'>>;
+  participationAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationAcceptMyInvitationArgs, 'id' | 'input' | 'permission'>>;
   participationApply?: Resolver<Maybe<GqlResolversTypes['ParticipationApplyPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApplyArgs, 'input'>>;
-  participationApprovePerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApprovePerformanceArgs, 'id' | 'input'>>;
-  participationCancelInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelInvitationArgs, 'id' | 'input'>>;
-  participationCancelMyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelMyApplicationArgs, 'id' | 'input'>>;
-  participationDenyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyApplicationArgs, 'id' | 'input'>>;
-  participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id' | 'input'>>;
-  participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id' | 'input'>>;
-  participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'input'>>;
-  placeCreate?: Resolver<Maybe<GqlResolversTypes['PlaceCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceCreateArgs, 'input'>>;
-  placeDelete?: Resolver<Maybe<GqlResolversTypes['PlaceDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceDeleteArgs, 'id'>>;
-  placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input'>>;
-  ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input'>>;
-  ticketRefund?: Resolver<Maybe<GqlResolversTypes['TicketRefundPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketRefundArgs, 'id' | 'input'>>;
-  ticketUse?: Resolver<Maybe<GqlResolversTypes['TicketUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketUseArgs, 'id' | 'input'>>;
-  transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input'>>;
-  transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input'>>;
-  transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input'>>;
-  userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'input'>>;
+  participationApprovePerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationApprovePerformanceArgs, 'id' | 'input' | 'permission'>>;
+  participationCancelInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelInvitationArgs, 'id' | 'input' | 'permission'>>;
+  participationCancelMyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCancelMyApplicationArgs, 'id' | 'input' | 'permission'>>;
+  participationDenyApplication?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyApplicationArgs, 'id' | 'input' | 'permission'>>;
+  participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id' | 'input' | 'permission'>>;
+  participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id' | 'input' | 'permission'>>;
+  participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'input' | 'permission'>>;
+  placeCreate?: Resolver<Maybe<GqlResolversTypes['PlaceCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceCreateArgs, 'input' | 'permission'>>;
+  placeDelete?: Resolver<Maybe<GqlResolversTypes['PlaceDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceDeleteArgs, 'id' | 'permission'>>;
+  placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input' | 'permission'>>;
+  ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input' | 'permission'>>;
+  ticketRefund?: Resolver<Maybe<GqlResolversTypes['TicketRefundPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketRefundArgs, 'id' | 'input' | 'permission'>>;
+  ticketUse?: Resolver<Maybe<GqlResolversTypes['TicketUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketUseArgs, 'id' | 'input' | 'permission'>>;
+  transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
+  transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
+  transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
+  userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'input' | 'permission'>>;
   userSignUp?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserSignUpArgs, 'input'>>;
-  userUpdateMyProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateMyProfileArgs, 'input'>>;
-  utilityCreate?: Resolver<Maybe<GqlResolversTypes['UtilityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityCreateArgs, 'input'>>;
-  utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id' | 'input'>>;
-  utilitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['UtilitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilitySetPublishStatusArgs, 'id' | 'input'>>;
-  utilityUpdateInfo?: Resolver<Maybe<GqlResolversTypes['UtilityUpdateInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUpdateInfoArgs, 'id' | 'input'>>;
+  userUpdateMyProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateMyProfileArgs, 'input' | 'permission'>>;
+  utilityCreate?: Resolver<Maybe<GqlResolversTypes['UtilityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityCreateArgs, 'input' | 'permission'>>;
+  utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id' | 'input' | 'permission'>>;
+  utilitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['UtilitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
+  utilityUpdateInfo?: Resolver<Maybe<GqlResolversTypes['UtilityUpdateInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUpdateInfoArgs, 'id' | 'input' | 'permission'>>;
 }>;
 
 export type GqlOpportunitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitiesConnection'] = GqlResolversParentTypes['OpportunitiesConnection']> = ResolversObject<{

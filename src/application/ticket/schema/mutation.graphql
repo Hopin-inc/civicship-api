@@ -2,9 +2,20 @@
 # Ticket Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    ticketPurchase(input: TicketPurchaseInput!): TicketPurchasePayload
-    ticketUse(id: ID!, input: TicketUseInput!): TicketUsePayload
-    ticketRefund(id: ID!, input: TicketRefundInput!): TicketRefundPayload
+    ticketPurchase(
+        input: TicketPurchaseInput!
+        permission: CheckCommunityPermissionInput!
+    ): TicketPurchasePayload
+    ticketUse(
+        id: ID!
+        input: TicketUseInput!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketUsePayload
+    ticketRefund(
+        id: ID!
+        input: TicketRefundInput!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketRefundPayload
 }
 
 # ------------------------------
