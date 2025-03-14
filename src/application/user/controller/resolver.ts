@@ -47,7 +47,13 @@ const userResolver = {
       args: GqlUserMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
-      return MembershipUseCase.visitorBrowseMembershipsByUser(parent, args, ctx);
+      return MembershipUseCase.visitorBrowseMemberships(
+        {
+          ...args,
+          filter: { ...args.filter, userId: parent.id },
+        },
+        ctx,
+      );
     },
 
     wallets: async (

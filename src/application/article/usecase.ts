@@ -13,8 +13,8 @@ import { getMembershipRolesByCtx } from "@/application/utils";
 
 export default class ArticleUseCase {
   static async anyoneBrowseArticles(
-    ctx: IContext,
     { filter, sort, cursor, first }: GqlQueryArticlesArgs,
+    ctx: IContext,
   ): Promise<GqlArticlesConnection> {
     const currentUserId = ctx.currentUser?.id;
     const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];

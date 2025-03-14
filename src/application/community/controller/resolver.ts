@@ -55,7 +55,13 @@ const communityResolver = {
       args: GqlCommunityMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
-      return MembershipUseCase.visitorBrowseMembershipsByCommunity(parent, args, ctx);
+      return MembershipUseCase.visitorBrowseMemberships(
+        {
+          ...args,
+          filter: { ...args.filter, communityId: parent.id },
+        },
+        ctx,
+      );
     },
 
     opportunities: async (
@@ -101,7 +107,13 @@ const communityResolver = {
       args: GqlCommunityArticlesArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
-      return ArticleUseCase.anyoneBrowseArticlesByCommunity(parent, args, ctx);
+      return ArticleUseCase.anyoneBrowseArticles(
+        {
+          ...args,
+          filter: { ...args.filter, communityId: parent.id },
+        },
+        ctx,
+      );
     },
   },
 };
