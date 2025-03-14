@@ -36,7 +36,7 @@ export default class OpportunityConverter {
     ];
   }
 
-  static find(
+  static findAccessible(
     id: string,
     filter?: GqlOpportunityFilterInput,
   ): Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput {

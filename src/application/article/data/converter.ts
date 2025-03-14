@@ -31,7 +31,7 @@ export default class ArticleConverter {
     return orderBy.length ? orderBy : [{ createdAt: Prisma.SortOrder.desc }];
   }
 
-  static find(
+  static findAccessible(
     id: string,
     filter?: GqlArticleFilterInput,
   ): Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput {

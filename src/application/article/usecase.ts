@@ -2,99 +2,43 @@ import {
   GqlArticle,
   GqlArticleFilterInput,
   GqlArticlesConnection,
-  GqlCommunity,
-  GqlCommunityArticlesArgs,
   GqlQueryArticleArgs,
-  GqlQueryArticlesAllArgs,
-  GqlQueryArticlesCommunityInternalArgs,
-  GqlQueryArticlesPublicArgs,
+  GqlQueryArticlesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ArticleService from "@/application/article/service";
 import ArticlePresenter from "@/application/article/presenter";
-import { PublishStatus, Role } from "@prisma/client";
-import { getCurrentUserId } from "@/utils";
+import { PublishStatus } from "@prisma/client";
+import { getMembershipRolesByCtx } from "@/application/utils";
 
 export default class ArticleUseCase {
-  static async visitorBrowsePublicArticles(
+  static async anyoneBrowseArticles(
     ctx: IContext,
-    { filter, sort, cursor, first }: GqlQueryArticlesPublicArgs,
-  ): Promise<GqlArticlesConnection> {
-    await ArticleService.validatePublishStatus([PublishStatus.PUBLIC], filter);
-
-    return ArticleService.fetchArticlesConnection(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
-  }
-
-  static async memberBrowseCommunityInternalArticles(
-    ctx: IContext,
-    { filter, sort, cursor, first }: GqlQueryArticlesCommunityInternalArgs,
-  ): Promise<GqlArticlesConnection> {
-    const currentUserId = getCurrentUserId(ctx);
-
-    await ArticleService.validatePublishStatus(
-      [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL],
-      filter,
-    );
-
-    return ArticleService.fetchArticlesConnection(ctx, {
-      cursor,
-      sort,
-      filter: {
-        and: [
-          {
-            or: [{ authors: [currentUserId] }, { relatedUserIds: [currentUserId] }],
-          },
-          ...(filter ? [filter] : []),
-        ],
-      },
-      first,
-    });
-  }
-
-  static async managerBrowseAllArticles(
-    ctx: IContext,
-    { filter, sort, cursor, first }: GqlQueryArticlesAllArgs,
-  ): Promise<GqlArticlesConnection> {
-    return ArticleService.fetchArticlesConnection(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
-  }
-
-  static async anyoneBrowseArticlesByCommunity(
-    { id }: GqlCommunity,
-    { first, cursor, filter }: GqlCommunityArticlesArgs,
-    ctx: IContext,
+    { filter, sort, cursor, first }: GqlQueryArticlesArgs,
   ): Promise<GqlArticlesConnection> {
     const currentUserId = ctx.currentUser?.id;
+    const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
 
-    const { isManager, isMember } = checkMembershipRole(ctx, id, currentUserId);
-    await ArticleService.validatePublishStatus(
-      isManager
-        ? Object.values(PublishStatus)
-        : isMember
-          ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
-          : [PublishStatus.PUBLIC],
-      filter,
-    );
+    const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
+    const allowedPublishStatuses = isManager
+      ? Object.values(PublishStatus)
+      : isMember
+        ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
+        : [PublishStatus.PUBLIC];
 
-    const validatedFilter: GqlArticleFilterInput = validateByPermission(
-      id,
-      currentUserId,
+    await ArticleService.validatePublishStatus(allowedPublishStatuses, filter);
+
+    const validatedFilter: GqlArticleFilterInput = validateByMembershipRoles(
+      communityIds,
       isMember,
       isManager,
+      currentUserId,
       filter,
     );
 
-    return ArticleService.fetchArticlesConnection(ctx, {
+    return ArticleService.fetchArticles(ctx, {
       cursor,
+      sort,
       filter: validatedFilter,
       first,
     });
@@ -102,59 +46,55 @@ export default class ArticleUseCase {
 
   static async visitorViewArticle(
     ctx: IContext,
-    { id, permissions }: GqlQueryArticleArgs,
+    { id, permission }: GqlQueryArticleArgs,
   ): Promise<GqlArticle | null> {
     const currentUserId = ctx.currentUser?.id;
-    const { isManager, isMember } = checkMembershipRole(
-      ctx,
-      permissions.communityId,
+    const communityIds = [permission.communityId];
+    const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
+
+    const validatedFilter = validateByMembershipRoles(
+      communityIds,
+      isMember,
+      isManager,
       currentUserId,
     );
-
-    const validatedFilter = validateByPermission(id, currentUserId, isMember, isManager);
 
     const record = await ArticleService.findArticle(ctx, id, validatedFilter);
     return record ? ArticlePresenter.get(record) : null;
   }
 }
 
-function validateByPermission(
-  communityId: string,
+function validateByMembershipRoles(
+  communityIds: string[],
+  isManager: Record<string, boolean>,
+  isMember: Record<string, boolean>,
   currentUserId?: string,
-  isMember?: boolean,
-  isManager?: boolean,
   filter?: GqlArticleFilterInput,
 ): GqlArticleFilterInput {
-  const orConditions: GqlArticleFilterInput[] = [
-    { publishStatus: [PublishStatus.PUBLIC] },
-    ...(isMember ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }] : []),
-    ...(currentUserId ? [{ authors: [currentUserId] }, { relatedUserIds: [currentUserId] }] : []),
-  ];
+  const orConditions: GqlArticleFilterInput[] = communityIds.map((communityId) => {
+    if (isManager[communityId]) {
+      return {
+        and: [{ communityId }, ...(filter ? [filter] : [])],
+      };
+    }
+    return {
+      and: [
+        { communityId },
+        {
+          or: [
+            { publishStatus: [PublishStatus.PUBLIC] },
+            ...(isMember[communityId]
+              ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
+              : []),
+            ...(currentUserId
+              ? [{ authors: [currentUserId] }, { relatedUserIds: [currentUserId] }]
+              : []),
+          ],
+        },
+        ...(filter ? [filter] : []),
+      ],
+    };
+  });
 
-  return {
-    and: [
-      { communityId },
-      isManager ? {} : { or: orConditions },
-      ...(filter ? [filter] : []),
-    ].filter(Boolean),
-  };
-}
-
-function checkMembershipRole(
-  ctx: IContext,
-  communityId: string,
-  currentUserId?: string,
-): { isManager: boolean; isMember: boolean } {
-  const isManager = Boolean(
-    currentUserId &&
-      ctx.hasPermissions?.memberships?.some(
-        (m) => m.communityId === communityId && (m.role === Role.OWNER || m.role === Role.MANAGER),
-      ),
-  );
-
-  const isMember = Boolean(
-    currentUserId && ctx.hasPermissions?.memberships?.some((m) => m.communityId === communityId),
-  );
-
-  return { isManager, isMember };
+  return orConditions.length > 0 ? { or: orConditions } : {};
 }

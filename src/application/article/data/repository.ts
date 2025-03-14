@@ -25,7 +25,7 @@ export default class ArticleRepository {
     });
   }
 
-  static async find(
+  static async findAccessible(
     ctx: IContext,
     where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
   ) {

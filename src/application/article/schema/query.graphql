@@ -2,25 +2,13 @@
 # Article Query Definitions
 # ------------------------------
 extend type Query {
-    articlesPublic(
+    articles(
         filter: ArticleFilterInput
         sort: ArticleSortInput
         cursor: String
         first: Int
     ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
-    articlesCommunityInternal(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
-    articlesAll(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
-    article(id: ID!, permissions: PermissionsInput!): Article
+    article(id: ID!, permission: CheckCommunityPermissionInput!): Article
 }
 
 # ------------------------------

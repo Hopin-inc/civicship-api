@@ -9,7 +9,7 @@ import OpportunityRepository from "@/application/opportunity/data/repository";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { clampFirst, getCurrentUserId } from "@/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import OpportunityConverter from "@/application/opportunity/data/converter";
 
@@ -42,7 +42,7 @@ export default class OpportunityService {
   }
 
   static async findOpportunity(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
-    const where = OpportunityConverter.find(id, filter ?? {});
+    const where = OpportunityConverter.findAccessible(id, filter ?? {});
 
     const opportunity = await OpportunityRepository.findAccessible(ctx, where);
     if (!opportunity) {
