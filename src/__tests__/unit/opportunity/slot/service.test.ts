@@ -20,7 +20,7 @@ describe("OpportunitySlotService", () => {
 
     describe("fetchOpportunitySlots", () => {
         it("should fetch opportunity slots", async () => {
-            const mockSlots = [{ id: "1", opportunityId: "1", startTime: "2025-03-15T00:00:00Z" }];
+            const mockSlots = [{ id: "1", opportunityId: "1", startsAt: "2025-03-15T00:00:00Z", endsAt: "2025-03-15T01:00:00Z" }];
             const args: GqlQueryOpportunitySlotsArgs = { filter: {}, sort: {}, cursor: undefined };
             const take = 10;
 
@@ -42,7 +42,7 @@ describe("OpportunitySlotService", () => {
 
     describe("findOpportunitySlot", () => {
         it("should find an opportunity slot by id", async () => {
-            const mockSlot = { id: "1", opportunityId: "1", startTime: "2025-03-15T00:00:00Z" };
+            const mockSlot = { id: "1", opportunityId: "1", startsAt: "2025-03-15T00:00:00Z", endsAt: "2025-03-15T01:00:00Z" };
             const id = "1";
 
             // モック設定
@@ -59,7 +59,7 @@ describe("OpportunitySlotService", () => {
 
     describe("fetchAllSlotByOpportunityId", () => {
         it("should fetch all opportunity slots by opportunityId", async () => {
-            const mockSlots = [{ id: "1", opportunityId: "1", startTime: "2025-03-15T00:00:00Z" }];
+            const mockSlots = [{ id: "1", opportunityId: "1", startsAt: "2025-03-15T00:00:00Z", endsAt: "2025-03-15T01:00:00Z" }];
             const opportunityId = "1";
 
             // モック設定
@@ -76,7 +76,19 @@ describe("OpportunitySlotService", () => {
 
     describe("bulkCreateOpportunitySlots", () => {
         it("should bulk create opportunity slots", async () => {
+            const inputs: GqlOpportunitySlotCreateInput[] = [
+                { startsAt: new Date(), endsAt: new Date() }
+            ];
 
+            // モック設定
+            (OpportunitySlotInputFormat.create as jest.Mock).mockReturnValue({});
+            (OpportunitySlotRepository.createMany as jest.Mock).mockResolvedValue(undefined);
+
+            // メソッド実行
+            await OpportunitySlotService.bulkCreateOpportunitySlots(ctx, "1", inputs, tx);
+
+            // 検証
+            expect(OpportunitySlotRepository.createMany).toHaveBeenCalledWith(ctx, expect.any(Array), tx);
         });
 
         it("should return nothing if inputs are empty", async () => {
@@ -92,7 +104,19 @@ describe("OpportunitySlotService", () => {
 
     describe("bulkUpdateOpportunitySlots", () => {
         it("should bulk update opportunity slots", async () => {
+            const inputs: GqlOpportunitySlotUpdateInput[] = [
+                { id: "1", startsAt: new Date(), endsAt: new Date() }
+            ];
 
+            // モック設定
+            (OpportunitySlotInputFormat.update as jest.Mock).mockReturnValue({});
+            (OpportunitySlotRepository.update as jest.Mock).mockResolvedValue(undefined);
+
+            // メソッド実行
+            await OpportunitySlotService.bulkUpdateOpportunitySlots(ctx, inputs, tx);
+
+            // 検証
+            expect(OpportunitySlotRepository.update).toHaveBeenCalledWith(ctx, "1", {}, tx);
         });
 
         it("should return nothing if inputs are empty", async () => {
