@@ -1,7 +1,7 @@
 import UtilityService from "@/app/utility/service";
 import UtilityRepository from "@/infra/repositories/utility";
 import { IContext } from "@/types/server";
-import { GqlUtility } from "@/types/graphql";
+import { GqlMutationUtilityUpdateInfoArgs, GqlUtility, GqlUtilityCreateInput } from "@/types/graphql";
 
 jest.mock("@/infra/repositories/utility");
 
@@ -63,21 +63,25 @@ describe("UtilityService", () => {
         });
     });
 
-    // describe("createUtility", () => {
-    //     it("should create a new utility", async () => {
-    //         const input: GqlUtilityCreateInput = { name: "New Utility" };
-    //         const mockUtility = { id: "1", name: "New Utility" } as GqlUtility;
-    //         (UtilityRepository.create as jest.Mock).mockResolvedValue(mockUtility);
+    describe("createUtility", () => {
+        it("should create a new utility", async () => {
+            const input: GqlUtilityCreateInput = {
+                name: "New Utility",
+                communityId: "",
+                pointsRequired: 0
+            };
+            const mockUtility = { id: "1", name: "New Utility" } as GqlUtility;
+            (UtilityRepository.create as jest.Mock).mockResolvedValue(mockUtility);
 
-    //         const result = await UtilityService.createUtility(ctx, input);
+            const result = await UtilityService.createUtility(ctx, input);
 
-    //         expect(UtilityRepository.create).toHaveBeenCalledWith(
-    //             ctx,
-    //             expect.objectContaining({ name: "New Utility" })  // UtilityInputFormat.create(input)
-    //         );
-    //         expect(result).toEqual(mockUtility);
-    //     });
-    // });
+            expect(UtilityRepository.create).toHaveBeenCalledWith(
+                ctx,
+                expect.objectContaining({ name: "New Utility" })
+            );
+            expect(result).toEqual(mockUtility);
+        });
+    });
 
     describe("deleteUtility", () => {
         it("should delete a utility by id", async () => {
@@ -91,20 +95,26 @@ describe("UtilityService", () => {
         });
     });
 
-    // describe("updateUtilityInfo", () => {
-    //     it("should update the utility info", async () => {
-    //         const input: GqlMutationUtilityUpdateInfoArgs = { id: "1", input: { name: "Updated Utility" } };
-    //         const mockUtility = { id: "1", name: "Updated Utility" } as GqlUtility;
-    //         (UtilityRepository.update as jest.Mock).mockResolvedValue(mockUtility);
+    describe("updateUtilityInfo", () => {
+        it("should update the utility info", async () => {
+            const input: GqlMutationUtilityUpdateInfoArgs = {
+                id: "1", input: {
+                    name: "Updated Utility",
+                    communityId: "",
+                    pointsRequired: 0
+                }
+            };
+            const mockUtility = { id: "1", name: "Updated Utility" } as GqlUtility;
+            (UtilityRepository.update as jest.Mock).mockResolvedValue(mockUtility);
 
-    //         const result = await UtilityService.updateUtilityInfo(ctx, input);
+            const result = await UtilityService.updateUtilityInfo(ctx, input);
 
-    //         expect(UtilityRepository.update).toHaveBeenCalledWith(
-    //             ctx,
-    //             "1",
-    //             expect.objectContaining({ name: "Updated Utility" })  // UtilityInputFormat.updateInfo(input)
-    //         );
-    //         expect(result).toEqual(mockUtility);
-    //     });
-    // });
+            expect(UtilityRepository.update).toHaveBeenCalledWith(
+                ctx,
+                "1",
+                expect.objectContaining({ name: "Updated Utility" })
+            );
+            expect(result).toEqual(mockUtility);
+        });
+    });
 });
