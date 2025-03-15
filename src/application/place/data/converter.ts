@@ -32,13 +32,12 @@ export default class PlaceInputFormat {
   }
 
   static update(input: GqlPlaceUpdateInput): Prisma.PlaceUpdateInput {
-    const { cityCode, opportunityIds, communityId, ...prop } = input;
+    const { cityCode, opportunityIds, ...prop } = input;
 
     return {
       ...prop,
       city: { connect: { code: cityCode } },
       opportunities: { connect: opportunityIds?.map((id) => ({ id })) },
-      community: { connect: { id: communityId } },
     };
   }
 }

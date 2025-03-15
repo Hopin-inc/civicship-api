@@ -31,7 +31,7 @@ input PlaceCreateInput {
     googlePlaceId: String
     mapLocation: JSON
 
-    communityId: ID
+    communityId: ID!
     opportunityIds: [ID!]
 }
 
@@ -47,7 +47,6 @@ input PlaceUpdateInput {
     googlePlaceId: String
     mapLocation: JSON
 
-    communityId: ID
     opportunityIds: [ID!]
 }
 

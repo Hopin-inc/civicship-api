@@ -63,18 +63,14 @@ input ParticipationApplyInput {
 }
 
 input ParticipationInviteInput {
+    communityId: ID!
     opportunityId: ID!
     invitedUserId: ID!
-
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 input ParticipationSetStatusInput {
-    ticketId: ID
-
-    """Used for permission checking."""
     communityId: ID!
+    ticketId: ID
 }
 
 # ------------------------------

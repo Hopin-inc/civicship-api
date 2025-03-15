@@ -201,11 +201,6 @@ export type GqlCommunityCreateSuccess = {
   community: GqlCommunity;
 };
 
-export type GqlCommunityDeleteInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
-};
-
 export type GqlCommunityDeletePayload = GqlAuthError | GqlCommunityDeleteSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
 
 export type GqlCommunityDeleteSuccess = {
@@ -231,8 +226,6 @@ export type GqlCommunitySortInput = {
 
 export type GqlCommunityUpdateProfileInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   establishedAt?: InputMaybe<Scalars['Datetime']['input']>;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
@@ -361,7 +354,6 @@ export type GqlMembershipHistorySortInput = {
 };
 
 export type GqlMembershipInviteInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   role?: InputMaybe<GqlRole>;
   userId: Scalars['ID']['input'];
@@ -375,7 +367,6 @@ export type GqlMembershipInviteSuccess = {
 };
 
 export type GqlMembershipRemoveInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -389,7 +380,6 @@ export type GqlMembershipRemoveSuccess = {
 };
 
 export type GqlMembershipSetInvitationStatusInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -402,7 +392,6 @@ export type GqlMembershipSetInvitationStatusSuccess = {
 };
 
 export type GqlMembershipSetRoleInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -438,7 +427,6 @@ export const GqlMembershipStatusReason = {
 
 export type GqlMembershipStatusReason = typeof GqlMembershipStatusReason[keyof typeof GqlMembershipStatusReason];
 export type GqlMembershipWithdrawInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
 };
@@ -516,7 +504,6 @@ export type GqlMutationCommunityCreateArgs = {
 
 export type GqlMutationCommunityDeleteArgs = {
   id: Scalars['ID']['input'];
-  input: GqlCommunityDeleteInput;
   permission: GqlCheckCommunityPermissionInput;
 };
 
@@ -602,7 +589,6 @@ export type GqlMutationOpportunityInvitationCreateArgs = {
 
 export type GqlMutationOpportunityInvitationDisableArgs = {
   id: Scalars['ID']['input'];
-  input: GqlOpportunityInvitationDisableInput;
   permission: GqlCheckCommunityPermissionInput;
 };
 
@@ -728,7 +714,6 @@ export type GqlMutationTicketRefundArgs = {
 
 export type GqlMutationTicketUseArgs = {
   id: Scalars['ID']['input'];
-  input: GqlTicketUseInput;
   permission: GqlCheckIsSelfPermissionInput;
 };
 
@@ -776,7 +761,6 @@ export type GqlMutationUtilityCreateArgs = {
 
 export type GqlMutationUtilityDeleteArgs = {
   id: Scalars['ID']['input'];
-  input: GqlUtilityDeleteInput;
   permission: GqlCheckCommunityPermissionInput;
 };
 
@@ -890,7 +874,6 @@ export type GqlOpportunityCreateInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   capacity?: InputMaybe<Scalars['Int']['input']>;
   category: GqlOpportunityCategory;
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   description: Scalars['String']['input'];
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
@@ -962,8 +945,6 @@ export type GqlOpportunityInvitationHistoriesArgs = {
 
 export type GqlOpportunityInvitationCreateInput = {
   code: Scalars['String']['input'];
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   opportunityId: Scalars['ID']['input'];
 };
 
@@ -972,11 +953,6 @@ export type GqlOpportunityInvitationCreatePayload = GqlAuthError | GqlComplexQue
 export type GqlOpportunityInvitationCreateSuccess = {
   __typename?: 'OpportunityInvitationCreateSuccess';
   opportunityInvitation?: Maybe<GqlOpportunityInvitation>;
-};
-
-export type GqlOpportunityInvitationDisableInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
 };
 
 export type GqlOpportunityInvitationDisablePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityInvitationDisableSuccess;
@@ -1041,8 +1017,6 @@ export type GqlOpportunityInvitationsConnection = {
 };
 
 export type GqlOpportunitySetPublishStatusInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   status: GqlPublishStatus;
 };
 
@@ -1100,8 +1074,6 @@ export type GqlOpportunitySlotUpdateInput = {
 };
 
 export type GqlOpportunitySlotsBulkUpdateInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   create?: InputMaybe<Array<GqlOpportunitySlotCreateInput>>;
   delete?: InputMaybe<Array<Scalars['ID']['input']>>;
   opportunityId: Scalars['ID']['input'];
@@ -1131,8 +1103,6 @@ export type GqlOpportunityUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   capacity?: InputMaybe<Scalars['Int']['input']>;
   category: GqlOpportunityCategory;
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   description: Scalars['String']['input'];
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
@@ -1227,7 +1197,6 @@ export type GqlParticipationFilterInput = {
 };
 
 export type GqlParticipationInviteInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   invitedUserId: Scalars['ID']['input'];
   opportunityId: Scalars['ID']['input'];
@@ -1241,7 +1210,6 @@ export type GqlParticipationInviteSuccess = {
 };
 
 export type GqlParticipationSetStatusInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   ticketId?: InputMaybe<Scalars['ID']['input']>;
 };
@@ -1349,7 +1317,7 @@ export type GqlPlaceOpportunitiesArgs = {
 export type GqlPlaceCreateInput = {
   address: Scalars['String']['input'];
   cityCode: Scalars['ID']['input'];
-  communityId?: InputMaybe<Scalars['ID']['input']>;
+  communityId: Scalars['ID']['input'];
   googlePlaceId?: InputMaybe<Scalars['String']['input']>;
   isManual: Scalars['Boolean']['input'];
   latitude: Scalars['Decimal']['input'];
@@ -1391,7 +1359,6 @@ export type GqlPlaceSortInput = {
 export type GqlPlaceUpdateInput = {
   address: Scalars['String']['input'];
   cityCode: Scalars['ID']['input'];
-  communityId?: InputMaybe<Scalars['ID']['input']>;
   googlePlaceId?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['ID']['input'];
   isManual: Scalars['Boolean']['input'];
@@ -1758,7 +1725,6 @@ export type GqlTicketFilterInput = {
 };
 
 export type GqlTicketPurchaseInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   pointsRequired: Scalars['Int']['input'];
   utilityId: Scalars['ID']['input'];
@@ -1773,10 +1739,8 @@ export type GqlTicketPurchaseSuccess = {
 };
 
 export type GqlTicketRefundInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   pointsRequired: Scalars['Int']['input'];
-  userId: Scalars['ID']['input'];
   walletId: Scalars['ID']['input'];
 };
 
@@ -1844,12 +1808,6 @@ export const GqlTicketStatusReason = {
 } as const;
 
 export type GqlTicketStatusReason = typeof GqlTicketStatusReason[keyof typeof GqlTicketStatusReason];
-export type GqlTicketUseInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
 export type GqlTicketUsePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketUseSuccess;
 
 export type GqlTicketUseSuccess = {
@@ -1887,7 +1845,6 @@ export type GqlTransactionTicketStatusHistoriesArgs = {
 };
 
 export type GqlTransactionDonateSelfPointInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   fromPointChange: Scalars['Int']['input'];
   fromWalletId: Scalars['ID']['input'];
@@ -1915,7 +1872,6 @@ export type GqlTransactionFilterInput = {
 };
 
 export type GqlTransactionGrantCommunityPointInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   fromPointChange: Scalars['Int']['input'];
   fromWalletId: Scalars['ID']['input'];
@@ -1931,8 +1887,6 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 };
 
 export type GqlTransactionIssueCommunityPointInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   toPointChange: Scalars['Int']['input'];
   toWalletId: Scalars['ID']['input'];
 };
@@ -2115,8 +2069,6 @@ export type GqlUserUpdateProfileInput = {
   urlWebsite?: InputMaybe<Scalars['String']['input']>;
   urlX?: InputMaybe<Scalars['String']['input']>;
   urlYoutube?: InputMaybe<Scalars['String']['input']>;
-  /** Used for permission checking. */
-  userId: Scalars['ID']['input'];
 };
 
 export type GqlUserUpdateProfilePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserUpdateProfileSuccess;
@@ -2156,7 +2108,6 @@ export type GqlUtility = {
 };
 
 export type GqlUtilityCreateInput = {
-  /** Used for permission checking. */
   communityId: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   image?: InputMaybe<GqlImageInput>;
@@ -2169,11 +2120,6 @@ export type GqlUtilityCreatePayload = GqlAuthError | GqlComplexQueryError | GqlI
 export type GqlUtilityCreateSuccess = {
   __typename?: 'UtilityCreateSuccess';
   utility: GqlUtility;
-};
-
-export type GqlUtilityDeleteInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
 };
 
 export type GqlUtilityDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityDeleteSuccess;
@@ -2195,8 +2141,6 @@ export type GqlUtilityFilterInput = {
 };
 
 export type GqlUtilitySetPublishStatusInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   publishStatus: GqlPublishStatus;
 };
 
@@ -2213,8 +2157,6 @@ export type GqlUtilitySortInput = {
 };
 
 export type GqlUtilityUpdateInfoInput = {
-  /** Used for permission checking. */
-  communityId: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
@@ -2425,7 +2367,6 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityCreateInput: GqlCommunityCreateInput;
   CommunityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityCreatePayload']>;
   CommunityCreateSuccess: ResolverTypeWrapper<Omit<GqlCommunityCreateSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
-  CommunityDeleteInput: GqlCommunityDeleteInput;
   CommunityDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityDeletePayload']>;
   CommunityDeleteSuccess: ResolverTypeWrapper<GqlCommunityDeleteSuccess>;
   CommunityEdge: ResolverTypeWrapper<Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Community']> }>;
@@ -2495,7 +2436,6 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityInvitationCreateInput: GqlOpportunityInvitationCreateInput;
   OpportunityInvitationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityInvitationCreatePayload']>;
   OpportunityInvitationCreateSuccess: ResolverTypeWrapper<Omit<GqlOpportunityInvitationCreateSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<GqlResolversTypes['OpportunityInvitation']> }>;
-  OpportunityInvitationDisableInput: GqlOpportunityInvitationDisableInput;
   OpportunityInvitationDisablePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityInvitationDisablePayload']>;
   OpportunityInvitationDisableSuccess: ResolverTypeWrapper<Omit<GqlOpportunityInvitationDisableSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<GqlResolversTypes['OpportunityInvitation']> }>;
   OpportunityInvitationEdge: ResolverTypeWrapper<Omit<GqlOpportunityInvitationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['OpportunityInvitation']> }>;
@@ -2584,7 +2524,6 @@ export type GqlResolversTypes = ResolversObject<{
   TicketStatusHistoryFilterInput: GqlTicketStatusHistoryFilterInput;
   TicketStatusHistorySortInput: GqlTicketStatusHistorySortInput;
   TicketStatusReason: GqlTicketStatusReason;
-  TicketUseInput: GqlTicketUseInput;
   TicketUsePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TicketUsePayload']>;
   TicketUseSuccess: ResolverTypeWrapper<Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversTypes['Ticket'] }>;
   TicketsConnection: ResolverTypeWrapper<Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TicketEdge']>>> }>;
@@ -2619,7 +2558,6 @@ export type GqlResolversTypes = ResolversObject<{
   UtilityCreateInput: GqlUtilityCreateInput;
   UtilityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityCreatePayload']>;
   UtilityCreateSuccess: ResolverTypeWrapper<Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: GqlResolversTypes['Utility'] }>;
-  UtilityDeleteInput: GqlUtilityDeleteInput;
   UtilityDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['UtilityDeletePayload']>;
   UtilityDeleteSuccess: ResolverTypeWrapper<GqlUtilityDeleteSuccess>;
   UtilityEdge: ResolverTypeWrapper<Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Utility']> }>;
@@ -2660,7 +2598,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityCreateInput: GqlCommunityCreateInput;
   CommunityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityCreatePayload'];
   CommunityCreateSuccess: Omit<GqlCommunityCreateSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
-  CommunityDeleteInput: GqlCommunityDeleteInput;
   CommunityDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityDeletePayload'];
   CommunityDeleteSuccess: GqlCommunityDeleteSuccess;
   CommunityEdge: Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Community']> };
@@ -2726,7 +2663,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityInvitationCreateInput: GqlOpportunityInvitationCreateInput;
   OpportunityInvitationCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityInvitationCreatePayload'];
   OpportunityInvitationCreateSuccess: Omit<GqlOpportunityInvitationCreateSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<GqlResolversParentTypes['OpportunityInvitation']> };
-  OpportunityInvitationDisableInput: GqlOpportunityInvitationDisableInput;
   OpportunityInvitationDisablePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityInvitationDisablePayload'];
   OpportunityInvitationDisableSuccess: Omit<GqlOpportunityInvitationDisableSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<GqlResolversParentTypes['OpportunityInvitation']> };
   OpportunityInvitationEdge: Omit<GqlOpportunityInvitationEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['OpportunityInvitation']> };
@@ -2807,7 +2743,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   TicketStatusHistoryEdge: Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['TicketStatusHistory']> };
   TicketStatusHistoryFilterInput: GqlTicketStatusHistoryFilterInput;
   TicketStatusHistorySortInput: GqlTicketStatusHistorySortInput;
-  TicketUseInput: GqlTicketUseInput;
   TicketUsePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TicketUsePayload'];
   TicketUseSuccess: Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversParentTypes['Ticket'] };
   TicketsConnection: Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TicketEdge']>>> };
@@ -2841,7 +2776,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   UtilityCreateInput: GqlUtilityCreateInput;
   UtilityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityCreatePayload'];
   UtilityCreateSuccess: Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: GqlResolversParentTypes['Utility'] };
-  UtilityDeleteInput: GqlUtilityDeleteInput;
   UtilityDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['UtilityDeletePayload'];
   UtilityDeleteSuccess: GqlUtilityDeleteSuccess;
   UtilityEdge: Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Utility']> };
@@ -3138,7 +3072,7 @@ export type GqlMembershipsConnectionResolvers<ContextType = any, ParentType exte
 
 export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Mutation'] = GqlResolversParentTypes['Mutation']> = ResolversObject<{
   communityCreate?: Resolver<Maybe<GqlResolversTypes['CommunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityCreateArgs, 'input'>>;
-  communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'input' | 'permission'>>;
+  communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'permission'>>;
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
   membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input' | 'permission'>>;
   membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input' | 'permission'>>;
@@ -3153,7 +3087,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunityCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityCreateArgs, 'input' | 'permission'>>;
   opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id' | 'permission'>>;
   opportunityInvitationCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationCreateArgs, 'input' | 'permission'>>;
-  opportunityInvitationDisable?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDisablePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDisableArgs, 'id' | 'input' | 'permission'>>;
+  opportunityInvitationDisable?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDisablePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDisableArgs, 'id' | 'permission'>>;
   opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
@@ -3172,7 +3106,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input' | 'permission'>>;
   ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input' | 'permission'>>;
   ticketRefund?: Resolver<Maybe<GqlResolversTypes['TicketRefundPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketRefundArgs, 'id' | 'input' | 'permission'>>;
-  ticketUse?: Resolver<Maybe<GqlResolversTypes['TicketUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketUseArgs, 'id' | 'input' | 'permission'>>;
+  ticketUse?: Resolver<Maybe<GqlResolversTypes['TicketUsePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketUseArgs, 'id' | 'permission'>>;
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
@@ -3180,7 +3114,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   userSignUp?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserSignUpArgs, 'input'>>;
   userUpdateMyProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateMyProfileArgs, 'input' | 'permission'>>;
   utilityCreate?: Resolver<Maybe<GqlResolversTypes['UtilityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityCreateArgs, 'input' | 'permission'>>;
-  utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id' | 'input' | 'permission'>>;
+  utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id' | 'permission'>>;
   utilitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['UtilitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
   utilityUpdateInfo?: Resolver<Maybe<GqlResolversTypes['UtilityUpdateInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUpdateInfoArgs, 'id' | 'input' | 'permission'>>;
 }>;

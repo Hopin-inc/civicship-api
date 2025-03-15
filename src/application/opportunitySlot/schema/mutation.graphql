@@ -17,9 +17,6 @@ input OpportunitySlotsBulkUpdateInput {
     create: [OpportunitySlotCreateInput!]
     update: [OpportunitySlotUpdateInput!]
     delete: [ID!]
-
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 input OpportunitySlotCreateInput {

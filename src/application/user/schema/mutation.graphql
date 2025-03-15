@@ -22,9 +22,6 @@ input UserUpdateProfileInput {
     urlInstagram: String
     urlYoutube: String
     urlTiktok: String
-
-    """Used for permission checking."""
-    userId: ID!
 }
 
 # ------------------------------

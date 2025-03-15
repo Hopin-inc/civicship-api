@@ -45,7 +45,6 @@ input OpportunityCreateInput {
     startsAt: Datetime
     endsAt: Datetime
 
-    """Used for permission checking."""
     communityId: ID!
 }
 
@@ -68,16 +67,10 @@ input OpportunityUpdateContentInput {
     place: NestedPlaceConnectOrCreateInput
     startsAt: Datetime
     endsAt: Datetime
-
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 input OpportunitySetPublishStatusInput {
     status: PublishStatus!
-
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 # ------------------------------

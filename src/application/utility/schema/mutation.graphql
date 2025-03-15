@@ -8,7 +8,6 @@ extend type Mutation {
     ): UtilityCreatePayload
     utilityDelete(
         id: ID!
-        input: UtilityDeleteInput!
         permission:CheckCommunityPermissionInput!
     ): UtilityDeletePayload
     utilityUpdateInfo(
@@ -33,7 +32,6 @@ input UtilityCreateInput {
     image: ImageInput
     pointsRequired: Int!
 
-    """Used for permission checking."""
     communityId: ID!
 }
 
@@ -42,21 +40,10 @@ input UtilityUpdateInfoInput {
     description: String
     image: ImageInput
     pointsRequired: Int!
-
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 input UtilitySetPublishStatusInput {
     publishStatus: PublishStatus!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input UtilityDeleteInput {
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 # ------------------------------

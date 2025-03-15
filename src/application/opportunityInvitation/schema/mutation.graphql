@@ -8,7 +8,6 @@ extend type Mutation {
     ): OpportunityInvitationCreatePayload
     opportunityInvitationDisable(
         id: ID!
-        input: OpportunityInvitationDisableInput!
         permission: CheckCommunityPermissionInput!
     ): OpportunityInvitationDisablePayload
 }
@@ -19,14 +18,6 @@ extend type Mutation {
 input OpportunityInvitationCreateInput {
     code: String!
     opportunityId: ID!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input OpportunityInvitationDisableInput {
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 # ------------------------------

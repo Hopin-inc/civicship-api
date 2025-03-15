@@ -23,9 +23,6 @@ extend type Mutation {
 input TransactionIssueCommunityPointInput {
     toWalletId: ID!
     toPointChange: Int!
-
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 input TransactionGrantCommunityPointInput {
@@ -33,8 +30,6 @@ input TransactionGrantCommunityPointInput {
     fromPointChange: Int!
     toUserId: ID!
     toPointChange: Int!
-
-    """Used for permission checking."""
     communityId: ID!
 }
 
@@ -43,8 +38,6 @@ input TransactionDonateSelfPointInput {
     fromPointChange: Int!
     toUserId: ID!
     toPointChange: Int!
-
-    """Used for permission checking."""
     communityId: ID!
 }
 

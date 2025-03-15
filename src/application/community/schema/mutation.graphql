@@ -6,7 +6,6 @@ extend type Mutation {
 
     communityDelete(
         id: ID!,
-        input: CommunityDeleteInput!,
         permission:CheckCommunityPermissionInput!
     ): CommunityDeletePayload
     communityUpdateProfile(
@@ -39,14 +38,6 @@ input CommunityUpdateProfileInput {
     website: String
 
     places: NestedPlacesBulkUpdateInput!
-
-    """Used for permission checking."""
-    communityId: ID!
-}
-
-input CommunityDeleteInput {
-    """Used for permission checking."""
-    communityId: ID!
 }
 
 # ------------------------------

@@ -51,37 +51,27 @@ extend type Mutation {
 # ------------------------------
 input MembershipInviteInput {
     userId: ID!
-    role: Role
-
-    """Used for permission checking."""
     communityId: ID!
+    role: Role
 }
 
 input MembershipSetInvitationStatusInput {
     userId: ID!
-
-    """Used for permission checking."""
     communityId: ID!
 }
 
 input MembershipWithdrawInput {
     userId: ID!
-
-    """Used for permission checking."""
     communityId: ID!
 }
 
 input MembershipSetRoleInput {
     userId: ID!
-
-    """Used for permission checking."""
     communityId: ID!
 }
 
 input MembershipRemoveInput {
     userId: ID!
-
-    """Used for permission checking."""
     communityId: ID!
 }
 

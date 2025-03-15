@@ -71,9 +71,9 @@ export default class UtilityUseCase {
 
   static async managerUpdateUtilityInfo(
     ctx: IContext,
-    { id, input }: GqlMutationUtilityUpdateInfoArgs,
+    args: GqlMutationUtilityUpdateInfoArgs,
   ): Promise<GqlUtilityUpdateInfoPayload> {
-    const res = await UtilityService.updateUtilityInfo(ctx, { id, input });
+    const res = await UtilityService.updateUtilityInfo(ctx, args);
     return UtilityPresenter.updateInfo(res);
   }
 }
