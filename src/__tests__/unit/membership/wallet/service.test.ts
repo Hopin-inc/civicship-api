@@ -181,7 +181,89 @@ describe("WalletService", () => {
             ).rejects.toThrow("WalletNotFound: userId=user-id, communityId=community-id");
         });
     });
-    // describe("findWalletsForGiveReward", () => {
+    describe("findWalletsForGiveReward", () => {
+        it("should return wallet ids for points transfer", async () => {
+            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
+            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
+            const transferPoints = 100;
 
-    // });
+            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
+            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
+            (WalletUtils.validateTransfer as jest.Mock).mockResolvedValue(true);
+
+            const result = await WalletService.findWalletsForGiveReward(
+                ctx,  // Ensure ctx is passed correctly here
+                {} as Prisma.TransactionClient,
+                "community-1",
+                "participant-1",
+                transferPoints
+            );
+
+            // Ensure the ctx object is passed correctly during the call
+            expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(ctx, "community-1", {} as Prisma.TransactionClient);
+            expect(WalletRepository.checkIfExistingMemberWallet).toHaveBeenCalledWith(ctx, "community-1", "participant-1", {} as Prisma.TransactionClient);
+            expect(WalletUtils.validateTransfer).toHaveBeenCalledWith(transferPoints, mockCommunityWallet, mockParticipantWallet);
+            expect(result).toEqual({ fromWalletId: mockCommunityWallet.id, toWalletId: mockParticipantWallet.id });
+        });
+
+
+        it("should throw an error if no community wallet is found", async () => {
+            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(null);
+
+            await expect(
+                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", 100)
+            ).rejects.toThrow("No community wallet found for communityId: community-1");
+        });
+
+        it("should throw an error if no participant wallet is found", async () => {
+            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
+            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
+            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(null);
+
+            await expect(
+                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", 100)
+            ).rejects.toThrow("No participant wallet found for participantId: participant-1");
+        });
+
+        it("should throw an error if transfer points validation fails", async () => {
+            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
+            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
+            const transferPoints = 100;
+
+            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
+            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
+            (WalletUtils.validateTransfer as jest.Mock).mockRejectedValue(new Error("Invalid transfer"));
+
+            await expect(
+                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", transferPoints)
+            ).rejects.toThrow("Invalid transfer");
+        });
+
+        it("should throw an error for negative transfer points", async () => {
+            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
+            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
+            const transferPoints = -100;
+
+            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
+            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
+
+            await expect(
+                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", transferPoints)
+            ).rejects.toThrow("Invalid transfer");
+        });
+
+        it("should throw an error if transfer points are zero", async () => {
+            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
+            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
+            const transferPoints = 0;
+
+            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
+            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
+
+            await expect(
+                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", transferPoints)
+            ).rejects.toThrow("Invalid transfer");
+        });
+    });
+
 });
