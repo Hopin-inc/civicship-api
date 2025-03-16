@@ -1,5 +1,5 @@
 import participationResolver from "@/presentation/graphql/resolvers/opportunity/participation";
-import TestDataSourceHelper from "../../../helper/test-data-source-helper";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { GqlCommunityCreateInput, GqlParticipationSetStatusInput } from "@/types/graphql";
 import { OpportunityCategory, ParticipationStatus, PublishStatus } from "@prisma/client";
