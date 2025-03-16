@@ -21,11 +21,7 @@ type ArticleCreateSuccess {
     article: Article
 }
 
-union ArticleCreatePayload =
-    ArticleCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union ArticleCreatePayload = ArticleCreateSuccess
 
 # =========================
 #  Update
@@ -50,11 +46,7 @@ type ArticleUpdateSuccess {
     article: Article
 }
 
-union ArticleUpdatePayload =
-    ArticleUpdateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union ArticleUpdatePayload = ArticleUpdateSuccess
 
 # =========================
 #  Delete
@@ -64,8 +56,4 @@ type ArticleDeleteSuccess {
     id: ID!
 }
 
-union ArticleDeletePayload =
-    ArticleDeleteSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union ArticleDeletePayload = ArticleDeleteSuccess

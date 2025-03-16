@@ -6,7 +6,7 @@ input ParticipationApplyInput {
 
 input ParticipationInviteInput{
     communityId: String!
-    
+
     opportunityId: String!
     invitedUserId: String!
 }
@@ -31,20 +31,8 @@ type ParticipationSetStatusSuccess {
 
 ## union definitions
 
-union ParticipationApplyPayload =
-    ParticipationApplySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union ParticipationApplyPayload = ParticipationApplySuccess
 
-union ParticipationInvitePayload =
-    ParticipationInviteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union ParticipationInvitePayload = ParticipationInviteSuccess
 
-union ParticipationSetStatusPayload =
-    ParticipationSetStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union ParticipationSetStatusPayload = ParticipationSetStatusSuccess

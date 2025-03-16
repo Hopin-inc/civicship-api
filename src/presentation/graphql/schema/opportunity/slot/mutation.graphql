@@ -21,8 +21,4 @@ type OpportunitySlotsBulkUpdateSuccess {
     slots: [OpportunitySlot!]!
 }
 
-union OpportunitySlotsBulkUpdatePayload =
-    OpportunitySlotsBulkUpdateSuccess
-    | AuthError
-    | InvalidInputValueError
-    | ComplexQueryError
+union OpportunitySlotsBulkUpdatePayload = OpportunitySlotsBulkUpdateSuccess

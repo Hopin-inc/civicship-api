@@ -46,20 +46,8 @@ type CommunityUpdateProfileSuccess {
 
 # Union Definitions
 
-union CommunityCreatePayload =
-    CommunityCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union CommunityCreatePayload = CommunityCreateSuccess
 
-union CommunityDeletePayload =
-    CommunityDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union CommunityDeletePayload = CommunityDeleteSuccess
 
-union CommunityUpdateProfilePayload =
-    CommunityUpdateProfileSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union CommunityUpdateProfilePayload = CommunityUpdateProfileSuccess

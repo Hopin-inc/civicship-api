@@ -74,32 +74,12 @@ type MembershipSetInvitationStatusSuccess {
 
 ## Union definitions
 
-union MembershipInvitePayload =
-    MembershipInviteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union MembershipInvitePayload = MembershipInviteSuccess
 
-union MembershipSetRolePayload =
-    MembershipSetRoleSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union MembershipSetRolePayload = MembershipSetRoleSuccess
 
-union MembershipRemovePayload =
-    MembershipRemoveSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union MembershipRemovePayload = MembershipRemoveSuccess
 
-union MembershipWithdrawPayload =
-    MembershipWithdrawSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union MembershipWithdrawPayload = MembershipWithdrawSuccess
 
-union MembershipSetInvitationStatusPayload =
-    MembershipSetInvitationStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union MembershipSetInvitationStatusPayload = MembershipSetInvitationStatusSuccess

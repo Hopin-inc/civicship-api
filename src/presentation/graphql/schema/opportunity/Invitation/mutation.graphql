@@ -13,11 +13,7 @@ type OpportunityInvitationCreateSuccess {
     opportunityInvitation: OpportunityInvitation
 }
 
-union OpportunityInvitationCreatePayload =
-    OpportunityInvitationCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union OpportunityInvitationCreatePayload = OpportunityInvitationCreateSuccess
 
 # =========================================
 # Disable
@@ -31,11 +27,7 @@ type OpportunityInvitationDisableSuccess {
     opportunityInvitation: OpportunityInvitation
 }
 
-union OpportunityInvitationDisablePayload =
-    OpportunityInvitationDisableSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union OpportunityInvitationDisablePayload = OpportunityInvitationDisableSuccess
 
 # =========================================
 # Delete
@@ -45,8 +37,4 @@ type OpportunityInvitationDeleteSuccess {
     id: ID!
 }
 
-union OpportunityInvitationDeletePayload =
-    OpportunityInvitationDeleteSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union OpportunityInvitationDeletePayload = OpportunityInvitationDeleteSuccess

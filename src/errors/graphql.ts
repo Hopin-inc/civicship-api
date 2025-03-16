@@ -53,7 +53,7 @@ export class NotFoundError extends ApolloError {
 
 export class DatabaseError extends ApolloError {
   constructor(message: string = "Database error occurred") {
-    super(message, "DATABASE_ERROR");
+    super(message, "INTERNAL_SERVER_ERROR");
     Object.defineProperty(this, "name", { value: "DatabaseError" });
   }
 }
