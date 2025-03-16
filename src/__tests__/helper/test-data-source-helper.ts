@@ -141,6 +141,11 @@ export default class TestDataSourceHelper {
     });
   }
 
+  static async findAllParticipation() {
+    return this.db.participation.findMany({
+    });
+  }
+
   // TODO: 実際テストで使うメソッドを整える
 
   // static async query(

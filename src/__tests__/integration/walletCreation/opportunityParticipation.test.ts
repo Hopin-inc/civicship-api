@@ -360,4 +360,163 @@ describe("Participation Integration Tests", () => {
             expect(memberWallet?.id).toEqual(memberWalletId);
         });
     })
+
+    describe("apply for opportunity", () => {
+        it("should create a member wallet if not existed", async () => {
+            //////////////////////////////////////////////////
+            // insert seed data
+            //////////////////////////////////////////////////
+            const name = "John Doe"
+            const slug = "user-1-slug"
+            const createUserInput = {
+                name: name,
+                slug: slug,
+                image: undefined
+            }
+            const userInserted = await TestDataSourceHelper.create(createUserInput);
+            const userId = userInserted.id;
+
+            const ctx = { currentUser: { id: userId } } as unknown as IContext;
+
+            const communityName = "community-1";
+            const pointName = "community-1-point";
+
+            const createCommunityInput: GqlCommunityCreateInput = {
+                name: communityName,
+                pointName: pointName,
+                image: undefined,
+                bio: undefined,
+                establishedAt: undefined,
+                website: undefined
+            };
+            const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
+            const communityId = communityInserted.id;
+
+            const createOpportunityInput = {
+                category: OpportunityCategory.EVENT,
+                description: "opportunity",
+                publishStatus: PublishStatus.PUBLIC,
+                requireApproval: true,
+                title: "opportunity",
+                community: { connect: { id: communityId } },
+                createdByUser: { connect: { id: userId } },
+            };
+            const opportunityInserted = await TestDataSourceHelper.createOpportunity(createOpportunityInput);
+            const opportunityId = opportunityInserted.id;
+
+            //////////////////////////////////////////////////
+            // construct request
+            //////////////////////////////////////////////////
+            const input = {
+                opportunityId: opportunityId
+            };
+
+            //////////////////////////////////////////////////
+            // execute
+            //////////////////////////////////////////////////
+            await participationResolver.Mutation.participationApply(
+                {},
+                {
+                    input: input
+                },
+                ctx
+            );
+
+            //////////////////////////////////////////////////
+            // assert result
+            //////////////////////////////////////////////////
+            const participationsActual = await TestDataSourceHelper.findAllParticipation();
+
+            // participationが作成されていること
+            expect(participationsActual).toHaveLength(1)
+
+            // member walletが作成されていること
+            const memberWallet = await TestDataSourceHelper.findMemberWallet(userId);
+            expect(memberWallet).toBeDefined();
+
+            // walletが作られた直後は、mv_current_pointsが作成されていない
+            const memberCurrentPointActual = (await TestDataSourceHelper.findMemberWallet(userId))?.currentPointView?.currentPoint;
+            expect(memberCurrentPointActual).not.toBeDefined;
+        });
+    })
+    it("should not create a member wallet if existed", async () => {
+        //////////////////////////////////////////////////
+        // insert seed data
+        //////////////////////////////////////////////////
+        const name = "John Doe"
+        const slug = "user-1-slug"
+        const createUserInput = {
+            name: name,
+            slug: slug,
+            image: undefined
+        }
+        const userInserted = await TestDataSourceHelper.create(createUserInput);
+        const userId = userInserted.id;
+
+        const ctx = { currentUser: { id: userId } } as unknown as IContext;
+
+        const communityName = "community-1";
+        const pointName = "community-1-point";
+
+        const createCommunityInput: GqlCommunityCreateInput = {
+            name: communityName,
+            pointName: pointName,
+            image: undefined,
+            bio: undefined,
+            establishedAt: undefined,
+            website: undefined
+        };
+        const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
+        const communityId = communityInserted.id;
+
+        const createOpportunityInput = {
+            category: OpportunityCategory.EVENT,
+            description: "opportunity",
+            publishStatus: PublishStatus.PUBLIC,
+            requireApproval: true,
+            title: "opportunity",
+            community: { connect: { id: communityId } },
+            createdByUser: { connect: { id: userId } },
+        };
+        const opportunityInserted = await TestDataSourceHelper.createOpportunity(createOpportunityInput);
+        const opportunityId = opportunityInserted.id;
+
+        const createMemberWalletInput = {
+            type: WalletType.MEMBER,
+            community: { connect: { id: communityId } },
+            user: { connect: { id: userId } },
+        };
+        const memberWalletInserted = await TestDataSourceHelper.createWallet(createMemberWalletInput);
+        const memberWalletId = memberWalletInserted.id;
+
+        //////////////////////////////////////////////////
+        // construct request
+        //////////////////////////////////////////////////
+        const input = {
+            opportunityId: opportunityId
+        };
+
+        //////////////////////////////////////////////////
+        // execute
+        //////////////////////////////////////////////////
+        await participationResolver.Mutation.participationApply(
+            {},
+            {
+                input: input
+            },
+            ctx
+        );
+
+        //////////////////////////////////////////////////
+        // assert result
+        //////////////////////////////////////////////////
+        const participationsActual = await TestDataSourceHelper.findAllParticipation();
+
+        // participationが作成されていること
+        expect(participationsActual).toHaveLength(1)
+
+        // member walletのIDが、事前に作成されたものと一致すること
+        const memberWallet = await TestDataSourceHelper.findMemberWallet(userId);
+        expect(memberWallet?.id).toEqual(memberWalletId);
+    });
 });
