@@ -112,12 +112,13 @@ describe("WalletService", () => {
             const mockWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
             const tx = {} as Prisma.TransactionClient;
             (WalletRepository.create as jest.Mock).mockResolvedValue(mockWallet);
+            const communityId = "community-id"
 
-            const result = await WalletService.createCommunityWallet(ctx, "community-id", tx);
+            const result = await WalletService.createCommunityWallet(ctx, communityId, tx);
 
             expect(WalletRepository.create).toHaveBeenCalledWith(
                 ctx,
-                expect.any(Object),
+                expect.objectContaining({ community: { connect: { id: communityId } } }),
                 tx
             );
             expect(result).toEqual(mockWallet);
@@ -190,22 +191,21 @@ describe("WalletService", () => {
             (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
             (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
             (WalletUtils.validateTransfer as jest.Mock).mockResolvedValue(true);
+            const tx = {} as Prisma.TransactionClient;
 
             const result = await WalletService.findWalletsForGiveReward(
-                ctx,  // Ensure ctx is passed correctly here
+                ctx,
                 {} as Prisma.TransactionClient,
                 "community-1",
                 "participant-1",
                 transferPoints
             );
 
-            // Ensure the ctx object is passed correctly during the call
-            expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(ctx, "community-1", {} as Prisma.TransactionClient);
+            expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(ctx, "community-1", tx);
             expect(WalletRepository.checkIfExistingMemberWallet).toHaveBeenCalledWith(ctx, "community-1", "participant-1", {} as Prisma.TransactionClient);
             expect(WalletUtils.validateTransfer).toHaveBeenCalledWith(transferPoints, mockCommunityWallet, mockParticipantWallet);
             expect(result).toEqual({ fromWalletId: mockCommunityWallet.id, toWalletId: mockParticipantWallet.id });
         });
-
 
         it("should throw an error if no community wallet is found", async () => {
             (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(null);
