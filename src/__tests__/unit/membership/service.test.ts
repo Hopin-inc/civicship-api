@@ -17,10 +17,22 @@ describe("MembershipService", () => {
     const communityId = "community123";
 
 
-    // describe("fetchMemberships", () => {
-    //     it("should call MembershipRepository.query", async () => {
-    //     });
-    //   });
+    describe("fetchMembership", () => {
+        it("should return all membership", async () => {
+            const mockMembership = { userId, communityId, status: MembershipStatus.JOINED };
+            (MembershipRepository.query as jest.Mock).mockResolvedValue(mockMembership);
+
+            const result = await MembershipService.fetchMemberships(mockCtx, {}, 10);
+            expect(MembershipRepository.query).toHaveBeenCalledWith(
+                mockCtx,
+                expect.objectContaining({}),
+                expect.any(Array),
+                10,
+                undefined
+            );
+            expect(result).toEqual(mockMembership);
+        });
+    });
 
 
     describe("findMembership", () => {
