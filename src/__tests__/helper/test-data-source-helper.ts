@@ -146,6 +146,11 @@ export default class TestDataSourceHelper {
     });
   }
 
+  static async findAllCommunity() {
+    return this.db.community.findMany({
+    });
+  }
+
   // TODO: 実際テストで使うメソッドを整える
 
   // static async query(
