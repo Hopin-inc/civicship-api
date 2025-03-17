@@ -27,7 +27,15 @@ import UtilityUseCase from "@/app/utility/usecase";
 const communityResolver = {
   Query: {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) =>
-      CommunityUseCase.userBrowseCommunities(args, ctx),
+    {
+      try {
+        console.log("START!!");
+        return CommunityUseCase.userBrowseCommunities(args, ctx)
+      } catch (e) {
+        console.error(e);
+        return;
+      }
+    },
     community: async (_: unknown, args: GqlQueryCommunityArgs, ctx: IContext) => {
       if (!ctx.loaders?.community) {
         return CommunityUseCase.userViewCommunity(args, ctx);

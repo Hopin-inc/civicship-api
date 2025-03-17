@@ -7,6 +7,7 @@ import OpportunityInputFormat from "@/presentation/graphql/dto/opportunity/input
 import OpportunityRepository from "@/infra/repositories/opportunity";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { AuthorizationError, NotFoundError } from "@/errors/graphql";
 
 export default class OpportunityService {
   static async fetchPublicOpportunities(
@@ -27,7 +28,7 @@ export default class OpportunityService {
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
     const currentUserId = ctx.currentUser?.id;
     if (!currentUserId) {
-      throw new Error("Unauthorized: User must be logged in");
+      throw new AuthorizationError("User must be logged in");
     }
 
     const data: Prisma.OpportunityCreateInput = OpportunityInputFormat.create(input, currentUserId);
@@ -37,12 +38,12 @@ export default class OpportunityService {
   static async deleteOpportunity(ctx: IContext, id: string) {
     const currentUserId = ctx.currentUser?.id;
     if (!currentUserId) {
-      throw new Error("Unauthorized: User must be logged in");
+      throw new AuthorizationError("User must be logged in");
     }
 
     const opportunity = await OpportunityRepository.find(ctx, id);
     if (!opportunity) {
-      throw new Error(`OpportunityNotFound: ID=${id}`);
+      throw new NotFoundError("Opportunity", { id });
     }
 
     return await OpportunityRepository.delete(ctx, id);
@@ -55,7 +56,7 @@ export default class OpportunityService {
   ) {
     const opportunity = await OpportunityRepository.find(ctx, id);
     if (!opportunity) {
-      throw new Error(`OpportunityNotFound: ID=${id}`);
+      throw new NotFoundError("Opportunity", { id });
     }
 
     const data: Prisma.OpportunityUpdateInput = OpportunityInputFormat.update(input);
@@ -65,7 +66,7 @@ export default class OpportunityService {
   static async setOpportunityStatus(ctx: IContext, id: string, status: PublishStatus) {
     const opportunity = await OpportunityRepository.find(ctx, id);
     if (!opportunity) {
-      throw new Error(`OpportunityNotFound: ID=${id}`);
+      throw new NotFoundError("Opportunity", { id });
     }
 
     return await OpportunityRepository.setStatus(ctx, id, status);

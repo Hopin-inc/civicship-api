@@ -15,8 +15,4 @@ type UtilityHistoryCreateSuccess {
 
 # Union definitions
 
-union UtilityHistoryCreatePayload =
-    UtilityHistoryCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UtilityHistoryCreatePayload = UtilityHistoryCreateSuccess

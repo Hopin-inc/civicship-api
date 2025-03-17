@@ -54,32 +54,12 @@ type UtilityUseSuccess {
 
 # Union definitions
 
-union UtilityCreatePayload =
-    UtilityCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UtilityCreatePayload = UtilityCreateSuccess
 
-union UtilityDeletePayload =
-    UtilityDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UtilityDeletePayload = UtilityDeleteSuccess
 
-union UtilityUpdateInfoPayload =
-    UtilityUpdateInfoSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UtilityUpdateInfoPayload = UtilityUpdateInfoSuccess
 
-union UtilityRedeemPayload =
-    UtilityRedeemSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UtilityRedeemPayload = UtilityRedeemSuccess
 
-union UtilityUsePayload =
-    UtilityUseSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UtilityUsePayload = UtilityUseSuccess

@@ -8,6 +8,7 @@ import {
   MAX_COMPLEXITY_PER_MINUTE,
   MAX_COMPLEXITY_PER_USAGE,
 } from "@/consts/graphql";
+import { RateLimitError } from "@/errors/graphql";
 
 /**
  * Apollo Server 用のレートリミットプラグイン（クエリ複雑度ベース）
@@ -47,11 +48,7 @@ const rateLimitPlugin: ApolloServerPlugin<IContext> = {
         logger.info(`Calculated query complexity: ${complexity}`);
 
         if (complexity > MAX_COMPLEXITY_PER_MINUTE) {
-          throw new GraphQLError("Rate limit exceeded: query complexity limit reached.", {
-            extensions: {
-              code: "RATE_LIMIT_EXCEEDED",
-            },
-          });
+          throw new RateLimitError("Query complexity limit reached");
         }
       },
     };

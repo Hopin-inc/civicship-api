@@ -16,6 +16,7 @@ import ParticipationOutputFormat from "@/presentation/graphql/dto/opportunity/pa
 import { getCurrentUserId } from "@/utils";
 import OpportunityRepository from "@/infra/repositories/opportunity";
 import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class ParticipationUtils {
   private static issuer = new PrismaClientIssuer();
@@ -71,16 +72,16 @@ export default class ParticipationUtils {
     participation: ParticipationPayloadWithArgs;
   }> {
     if (!participation.opportunityId) {
-      throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
+      throw new NotFoundError("Opportunity", { id: participation.opportunityId });
     }
 
     const opportunity = await OpportunityRepository.find(ctx, participation.opportunityId, tx);
     if (!opportunity) {
-      throw new Error(`Opportunity with ID ${participation.opportunityId} not found`);
+      throw new NotFoundError("Opportunity", { id: participation.opportunityId });
     }
 
     if (!participation.userId) {
-      throw new Error(`Participation with ID ${participation.userId} not found`);
+      throw new NotFoundError("Participated user", { userId: participation.userId });
     }
 
     return { opportunity, participation };

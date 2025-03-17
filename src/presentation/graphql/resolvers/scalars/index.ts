@@ -1,7 +1,7 @@
 import { GraphQLScalarType, Kind } from "graphql";
 import { Decimal } from "@prisma/client/runtime/library";
 
-export const DecimalScalar = new GraphQLScalarType({
+const DecimalScalar = new GraphQLScalarType({
   name: "Decimal",
   description: "Custom scalar for high-precision decimal (serialized as string)",
   parseValue(value: unknown) {
@@ -23,3 +23,9 @@ export const DecimalScalar = new GraphQLScalarType({
     throw new Error("Invalid decimal literal");
   },
 });
+
+const scalarResolvers = {
+  Decimal: DecimalScalar,
+};
+
+export default scalarResolvers;

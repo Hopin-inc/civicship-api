@@ -30,15 +30,15 @@ const opportunitySlotResolver = {
     ) => {
       return OpportunitySlotUseCase.managerBulkUpdateOpportunitySlots(args, ctx);
     },
+  },
 
-    OpportunitySlot: {
-      participations: async (
-        parent: GqlOpportunitySlot,
-        args: GqlOpportunitySlotParticipationsArgs,
-        ctx: IContext,
-      ) => {
-        return ParticipationUseCase.visitorBrowseParticipationsByOpportunitySlot(parent, args, ctx);
-      },
+  OpportunitySlot: {
+    participations: async (
+      parent: GqlOpportunitySlot,
+      args: GqlOpportunitySlotParticipationsArgs,
+      ctx: IContext,
+    ) => {
+      return ParticipationUseCase.visitorBrowseParticipationsByOpportunitySlot(parent, args, ctx);
     },
   },
 };

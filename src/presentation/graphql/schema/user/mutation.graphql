@@ -23,8 +23,4 @@ type UserUpdateProfileSuccess {
 
 ## Union definitions
 
-union UserUpdateProfilePayload =
-    UserUpdateProfileSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union UserUpdateProfilePayload = UserUpdateProfileSuccess

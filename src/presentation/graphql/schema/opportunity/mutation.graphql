@@ -74,26 +74,10 @@ type OpportunitySetPublishStatusSuccess {
 
 ## union definitions
 
-union OpportunityCreatePayload =
-    OpportunityCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union OpportunityCreatePayload = OpportunityCreateSuccess
 
-union OpportunityDeletePayload =
-    OpportunityDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union OpportunityDeletePayload = OpportunityDeleteSuccess
 
-union OpportunityUpdateContentPayload =
-    OpportunityUpdateContentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union OpportunityUpdateContentPayload = OpportunityUpdateContentSuccess
 
-union OpportunitySetPublishStatusPayload =
-    OpportunitySetPublishStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union OpportunitySetPublishStatusPayload = OpportunitySetPublishStatusSuccess

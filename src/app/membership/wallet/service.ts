@@ -4,6 +4,7 @@ import WalletRepository from "@/infra/repositories/membership/wallet";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs, GqlWallet } from "@/types/graphql";
 import WalletUtils from "@/app/membership/wallet/utils";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 export default class WalletService {
   static async fetchWallets(
@@ -24,7 +25,7 @@ export default class WalletService {
   static async findCommunityWalletOrThrow(ctx: IContext, communityId: string): Promise<GqlWallet> {
     const wallet = await WalletRepository.findCommunityWallet(ctx, communityId);
     if (!wallet?.id) {
-      throw new Error("Wallet information is missing for points transfer");
+      throw new NotFoundError("Community wallet", { communityId });
     }
     return wallet;
   }
@@ -37,12 +38,12 @@ export default class WalletService {
   ) {
     const memberWallet = await WalletRepository.find(ctx, memberWalletId);
     if (!memberWallet) {
-      throw new Error("MemberWallet information is missing for points transfer");
+      throw new ValidationError("MemberWallet information is missing for points transfer");
     }
 
     const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId);
     if (!communityWallet) {
-      throw new Error(`No community wallet found for communityId: ${communityId}`);
+      throw new NotFoundError("Community wallet", { communityId });
     }
 
     await WalletUtils.validateTransfer(requiredPoints, memberWallet, communityWallet);
@@ -59,7 +60,7 @@ export default class WalletService {
   ) {
     const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId, tx);
     if (!communityWallet) {
-      throw new Error(`No community wallet found for communityId: ${communityId}`);
+      throw new NotFoundError("Community wallet", { communityId });
     }
 
     const participantWallet = await WalletRepository.checkIfExistingMemberWallet(
@@ -69,7 +70,7 @@ export default class WalletService {
       tx,
     );
     if (!participantWallet) {
-      throw new Error(`No participant wallet found for participantId: ${participantId}`);
+      throw new NotFoundError("Participant wallet", { participantId });
     }
 
     await WalletUtils.validateTransfer(transferPoints, communityWallet, participantWallet);
@@ -119,7 +120,7 @@ export default class WalletService {
   ) {
     const wallet = await WalletRepository.checkIfExistingMemberWallet(ctx, communityId, userId, tx);
     if (!wallet) {
-      throw new Error(`WalletNotFound: userId=${userId}, communityId=${communityId}`);
+      throw new NotFoundError("Wallet", { userId, communityId });
     }
 
     return WalletRepository.delete(ctx, wallet.id);
