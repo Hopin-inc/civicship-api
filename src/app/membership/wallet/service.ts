@@ -54,7 +54,7 @@ export default class WalletService {
     ctx: IContext,
     tx: Prisma.TransactionClient,
     communityId: string,
-    participantId: string,
+    userId: string,
     transferPoints: number,
   ) {
     const communityWallet = await WalletRepository.findCommunityWallet(ctx, communityId, tx);
@@ -65,11 +65,11 @@ export default class WalletService {
     const participantWallet = await WalletRepository.checkIfExistingMemberWallet(
       ctx,
       communityId,
-      participantId,
+      userId,
       tx,
     );
     if (!participantWallet) {
-      throw new Error(`No participant wallet found for participantId: ${participantId}`);
+      throw new Error(`No participant wallet found for userId: ${userId}`);
     }
 
     await WalletUtils.validateTransfer(transferPoints, communityWallet, participantWallet);
