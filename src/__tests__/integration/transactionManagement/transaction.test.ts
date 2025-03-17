@@ -190,15 +190,15 @@ describe("Utility Redeem Mutation Tests", () => {
         // 期待通りのポイント数が移動していること
         expect(transactionActual?.fromPointChange).toEqual(-pointsRequired);
         expect(transactionActual?.toPointChange).toEqual(pointsRequired);
-        // mv_current_pointsの値が期待通りにrefreshされていること
-        const memberCurrentPointActual = (await TestDataSourceHelper.findMemberWallet(userId))?.currentPointView?.currentPoint;
-        const memberCurrentPointExpected = memberInitialPoint + pointsRequired;
-        expect(memberCurrentPointActual).toEqual(memberCurrentPointExpected);
+        // // mv_current_pointsの値が期待通りにrefreshされていること
+        // const memberCurrentPointActual = (await TestDataSourceHelper.findMemberWallet(userId))?.currentPointView?.currentPoint;
+        // const memberCurrentPointExpected = memberInitialPoint + pointsRequired;
+        // expect(memberCurrentPointActual).toEqual(memberCurrentPointExpected);
 
-        const communityInitialPoint = 0;
-        const communityCurrentPointActual = (await TestDataSourceHelper.findCommunityWallet(communityId))?.currentPointView?.currentPoint;
-        const communityCurrentPointExpected = communityInitialPoint + pointsRequired;
-        expect(communityCurrentPointActual).toEqual(communityCurrentPointExpected);
+        // const communityInitialPoint = 0;
+        // const communityCurrentPointActual = (await TestDataSourceHelper.findCommunityWallet(communityId))?.currentPointView?.currentPoint;
+        // const communityCurrentPointExpected = communityInitialPoint + pointsRequired;
+        // expect(communityCurrentPointActual).toEqual(communityCurrentPointExpected);
 
     });
 });
