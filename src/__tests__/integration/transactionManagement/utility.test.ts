@@ -307,15 +307,24 @@ describe("Transaction Integration Tests", () => {
         const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
         const communityId = communityInserted.id;
 
-        const createWalletInput = {
+        const createCommunityWalletInput = {
             type: WalletType.COMMUNITY,
             community: { connect: { id: communityId } },
         };
-        const walletInserted = await TestDataSourceHelper.createWallet(createWalletInput);
-        const walletId = walletInserted.id;
+        const communityWalletInserted = await TestDataSourceHelper.createWallet(createCommunityWalletInput);
+        const communityWalletId = communityWalletInserted.id;
+
+        const createMemberWalletInput =
+        {
+            type: WalletType.MEMBER,
+            community: { connect: { id: communityId } },
+            user: { connect: { id: userId } }
+        };
+        const memberWalletInserted = await TestDataSourceHelper.createWallet(createMemberWalletInput);
+        const memberWalletId = memberWalletInserted.id;
 
         const initialPoint = 50
-        const createTransactionInput = { to: walletId, toPointChange: initialPoint, reason: TransactionReason.GRANT };
+        const createTransactionInput = { to: communityWalletId, toPointChange: initialPoint, reason: TransactionReason.POINT_ISSUED };
         await TestDataSourceHelper.createTransaction(createTransactionInput);
 
         await TestDataSourceHelper.refreshCurrentPoints()
@@ -325,7 +334,7 @@ describe("Transaction Integration Tests", () => {
         //////////////////////////////////////////////////
         const grantedPoint = 50;
         const input: GqlTransactionGrantCommunityPointInput = {
-            fromWalletId: walletId,
+            fromWalletId: communityWalletId,
             fromPointChange: grantedPoint,
             toPointChange: grantedPoint,
             communityId: communityId,
@@ -352,7 +361,7 @@ describe("Transaction Integration Tests", () => {
         // ポイント付与のレコードが作成されていること
         expect(transactionActual?.reason).toEqual(TransactionReason.GRANT);
         // 期待通りのwalletに移動していること
-        expect(transactionActual?.to).toEqual(walletId);
+        expect(transactionActual?.to).toEqual(memberWalletId);
         // 期待通りのポイント数が移動していること
         expect(transactionActual?.toPointChange).toEqual(grantedPoint);
         // // mv_current_pointsの値が期待通りにrefreshされていること
