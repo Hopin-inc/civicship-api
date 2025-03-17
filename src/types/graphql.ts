@@ -1651,6 +1651,7 @@ export type GqlQueryUtilitiesArgs = {
 
 export type GqlQueryUtilityArgs = {
   id: Scalars['ID']['input'];
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -2137,7 +2138,7 @@ export type GqlUtilityEdge = GqlEdge & {
 
 export type GqlUtilityFilterInput = {
   communityId?: InputMaybe<Scalars['ID']['input']>;
-  status?: InputMaybe<GqlPublishStatus>;
+  status?: InputMaybe<Array<GqlPublishStatus>>;
 };
 
 export type GqlUtilitySetPublishStatusInput = {
@@ -3481,7 +3482,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType, RequireFields<GqlQueryUserArgs, 'id'>>;
   users?: Resolver<GqlResolversTypes['UsersConnection'], ParentType, ContextType, Partial<GqlQueryUsersArgs>>;
   utilities?: Resolver<GqlResolversTypes['UtilitiesConnection'], ParentType, ContextType, Partial<GqlQueryUtilitiesArgs>>;
-  utility?: Resolver<Maybe<GqlResolversTypes['Utility']>, ParentType, ContextType, RequireFields<GqlQueryUtilityArgs, 'id'>>;
+  utility?: Resolver<Maybe<GqlResolversTypes['Utility']>, ParentType, ContextType, RequireFields<GqlQueryUtilityArgs, 'id' | 'permission'>>;
   wallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType, RequireFields<GqlQueryWalletArgs, 'id'>>;
   wallets?: Resolver<GqlResolversTypes['WalletsConnection'], ParentType, ContextType, Partial<GqlQueryWalletsArgs>>;
 }>;

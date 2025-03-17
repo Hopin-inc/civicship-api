@@ -18,7 +18,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const idToken = getIdTokenFromRequest(req);
 
   if (!idToken) {
-    return {} as IContext;
+    return {};
   }
 
   const decoded = await auth.verifyIdToken(idToken);
@@ -48,7 +48,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     currentUser,
     hasPermissions,
     loaders,
-  } satisfies IContext;
+  };
 }
 
 export function authHandler(server: ApolloServer<IContext>) {
