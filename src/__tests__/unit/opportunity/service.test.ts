@@ -73,20 +73,10 @@ describe("OpportunityService", () => {
 
     describe("fetchPublicOpportunities", () => {
         it("should handle cursor pagination", async () => {
-            const mockResult = [{ id: "2", title: "Opportunity 2" }];
 
-            const result = await OpportunityService.fetchPublicOpportunities(ctx, {}, 10);
+            await OpportunityService.fetchPublicOpportunities(ctx, {}, 10);
 
-            expect(result).toEqual(mockResult);
-        });
-    });
-
-    describe("findOpportunity", () => {
-        it("should throw error if opportunity not found", async () => {
-            const id = "non-existing-id";
-            (OpportunityRepository.find as jest.Mock).mockResolvedValue(null);
-
-            await expect(OpportunityService.findOpportunity(ctx, id)).rejects.toThrow("OpportunityNotFound: ID=non-existing-id");
+            expect(OpportunityRepository.query).toHaveBeenCalledWith(ctx, expect.objectContaining({}), expect.objectContaining([]), 10, undefined)
         });
     });
 

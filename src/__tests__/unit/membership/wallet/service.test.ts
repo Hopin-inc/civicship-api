@@ -222,7 +222,7 @@ describe("WalletService", () => {
 
             await expect(
                 WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", 100)
-            ).rejects.toThrow("No participant wallet found for participantId: participant-1");
+            ).rejects.toThrow("No participant wallet found for userId: participant-1");
         });
 
         it("should throw an error if transfer points validation fails", async () => {

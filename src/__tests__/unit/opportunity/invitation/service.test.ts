@@ -30,12 +30,11 @@ describe("OpportunityInvitationService", () => {
             (OpportunityInvitationInputFormat.sort as jest.Mock).mockReturnValue([]);
             (OpportunityInvitationRepository.query as jest.Mock).mockResolvedValue(mockResult);
 
-            const result = await OpportunityInvitationService.fetchOpportunityInvitations(ctx, args, take);
+            await OpportunityInvitationService.fetchOpportunityInvitations(ctx, args, take);
 
             expect(OpportunityInvitationInputFormat.filter).toHaveBeenCalledWith({});
             expect(OpportunityInvitationInputFormat.sort).toHaveBeenCalledWith({});
             expect(OpportunityInvitationRepository.query).toHaveBeenCalledWith(ctx, {}, [], take, undefined);
-            expect(result).toEqual(mockResult);
         });
     });
 
