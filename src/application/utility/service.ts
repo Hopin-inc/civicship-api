@@ -3,12 +3,13 @@ import {
   GqlMutationUtilityUpdateInfoArgs,
   GqlUtilityCreateInput,
   GqlUtility,
+  GqlUtilityFilterInput,
 } from "@/types/graphql";
 import UtilityRepository from "@/application/utility/data/repository";
 import { IContext } from "@/types/server";
 import UtilityConverter from "@/application/utility/data/converter";
-import { Prisma } from "@prisma/client";
-import { NotFoundError } from "@/errors/graphql";
+import { Prisma, PublishStatus } from "@prisma/client";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 export default class UtilityService {
   static async fetchUtilities(
@@ -48,5 +49,17 @@ export default class UtilityService {
 
     const data: Prisma.UtilityUpdateInput = UtilityConverter.updateInfo(input);
     return UtilityRepository.update(ctx, id, data);
+  }
+
+  static async validatePublishStatus(
+    allowedStatuses: PublishStatus[],
+    filter?: GqlUtilityFilterInput,
+  ) {
+    if (filter?.status && !filter.status.every((status) => allowedStatuses.includes(status))) {
+      throw new ValidationError(
+        `Validation error: status must be one of ${allowedStatuses.join(", ")}`,
+        [JSON.stringify(filter?.status)],
+      );
+    }
   }
 }

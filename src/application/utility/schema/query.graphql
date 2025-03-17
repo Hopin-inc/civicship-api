@@ -8,7 +8,10 @@ extend type Query {
         cursor: String
         first: Int
     ): UtilitiesConnection! @complexity(value: 10, multipliers: ["first"])
-    utility(id: ID!): Utility
+    utility(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): Utility
 }
 
 # ------------------------------
@@ -29,8 +32,9 @@ type UtilityEdge implements Edge {
 # Input Definitions for Queries
 # ------------------------------
 input UtilityFilterInput {
+    #TODO multi?
     communityId: ID
-    status: PublishStatus
+    status: [PublishStatus!]
 }
 
 input UtilitySortInput {

@@ -7,6 +7,7 @@ import {
 import { Prisma } from "@prisma/client";
 
 export default class UtilityConverter {
+  // TODO and or not ??
   static filter(filter: GqlUtilityFilterInput): Prisma.UtilityWhereInput {
     return {
       AND: [filter?.communityId ? { communityId: filter.communityId } : {}],

@@ -10,7 +10,7 @@ type Utility {
     publishStatus: PublishStatus!
 
     community: Community!
-
+    # TODO connection?
     tickets: [Ticket!]
     requiredForOpportunities: [Opportunity!]
 
