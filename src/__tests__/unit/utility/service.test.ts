@@ -22,8 +22,8 @@ describe("UtilityService", () => {
 
             expect(UtilityRepository.query).toHaveBeenCalledWith(
                 ctx,
-                expect.any(Object),  // where condition (UtilityInputFormat.filter(filter ?? {}))
-                expect.any(Object),  // orderBy condition (UtilityInputFormat.sort(sort ?? {}))
+                expect.any(Object),
+                expect.any(Object),
                 10,
                 "1"
             );

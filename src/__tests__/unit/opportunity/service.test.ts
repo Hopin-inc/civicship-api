@@ -1,4 +1,3 @@
-// import { OpportunityCategory } from "@prisma/client";
 import { IContext } from "@/types/server";
 import OpportunityService from "@/app/opportunity/service";
 import OpportunityRepository from "@/infra/repositories/opportunity";

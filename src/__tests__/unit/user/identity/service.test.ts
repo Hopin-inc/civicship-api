@@ -4,14 +4,12 @@ import IdentityRepository from "@/infra/repositories/user/identity";
 import { IdentityPlatform } from "@prisma/client";
 import { auth } from "@/infra/libs/firebase";
 
-// Firebaseのモック
 jest.mock("@/infra/libs/firebase", () => ({
     auth: {
         deleteUser: jest.fn(),
     },
 }));
 
-// モック対象のリポジトリ
 jest.mock("@/infra/repositories/user");
 jest.mock("@/infra/repositories/user/identity");
 

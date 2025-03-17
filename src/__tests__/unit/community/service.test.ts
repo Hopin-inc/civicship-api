@@ -1,8 +1,7 @@
 import CommunityService from "@/app/community/service";
 import CommunityRepository from "@/infra/repositories/community";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client"; // Prisma.TransactionClientをインポート
-
+import { Prisma } from "@prisma/client";
 jest.mock("@/infra/repositories/community");
 jest.mock("@/infra/repositories/transaction");
 
@@ -11,7 +10,6 @@ describe("CommunityService", () => {
     let mockTransactionClient: Prisma.TransactionClient;
 
     beforeEach(() => {
-        // モックのTransactionClientを作成
         mockTransactionClient = {} as Prisma.TransactionClient;
         ctx = { currentUser: { id: "test-user" } } as unknown as IContext;
         jest.clearAllMocks();
@@ -87,7 +85,7 @@ describe("CommunityService", () => {
             const updateInput = {
                 name: "Updated Community",
                 pointName: "Updated Points",
-                communityId: "community-1" // communityIdを追加
+                communityId: "community-1"
             };
 
             const communityId = "community-1";
@@ -104,7 +102,7 @@ describe("CommunityService", () => {
             const updateInput = {
                 name: "Updated Community",
                 pointName: "Updated Points",
-                communityId: "community-1" // communityIdを追加
+                communityId: "community-1"
             };
 
             const communityId = "community-1";

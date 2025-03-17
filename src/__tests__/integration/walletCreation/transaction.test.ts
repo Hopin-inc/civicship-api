@@ -58,7 +58,6 @@ describe("Transaction Integration Tests", () => {
         };
         const fromMemberWalletInserted = await TestDataSourceHelper.createWallet(createFromMemberWalletInput);
         const fromMemberWalletId = fromMemberWalletInserted.id;
-        console.log(fromMemberWalletId)
 
 
         const createTransactionInput = { to: fromMemberWalletId, toPointChange: 100, reason: TransactionReason.GRANT };

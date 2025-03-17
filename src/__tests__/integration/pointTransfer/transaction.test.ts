@@ -90,7 +90,6 @@ describe("Transaction Integration Tests", () => {
         expect(transactionActual.toPointChange).toEqual(issuedPoint);
         // // mv_current_pointsの値が期待通りにrefreshされていること
         // const currentPointActual = (await TestDataSourceHelper.findCommunityWallet(communityId))?.currentPointView?.currentPoint;
-        // console.log(currentPointActual)
         // const initialPoint = 0;
         // const currentPointExpected = initialPoint + issuedPoint;
         // expect(currentPointActual).toEqual(currentPointExpected);
@@ -215,7 +214,6 @@ describe("Transaction Integration Tests", () => {
         };
         const fromMemberWalletInserted = await TestDataSourceHelper.createWallet(createFromMemberWalletInput);
         const fromMemberWalletId = fromMemberWalletInserted.id;
-        console.log(fromMemberWalletId)
 
         const createToMemberWalletInput =
         {

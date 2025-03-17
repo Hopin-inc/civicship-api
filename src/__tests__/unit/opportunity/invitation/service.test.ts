@@ -60,15 +60,12 @@ describe("OpportunityInvitationService", () => {
 
             const userId = "test-user";
 
-            // モック設定
             (getCurrentUserId as jest.Mock).mockReturnValue(userId);
             (OpportunityInvitationInputFormat.create as jest.Mock).mockReturnValue(input);
             (OpportunityInvitationRepository.create as jest.Mock).mockResolvedValue(mockResult);
 
-            // メソッド実行
             const result = await OpportunityInvitationService.createOpportunityInvitation(ctx, input, tx);
 
-            // 検証
             expect(getCurrentUserId).toHaveBeenCalledWith(ctx);
             expect(OpportunityInvitationInputFormat.create).toHaveBeenCalledWith(userId, input);
             expect(OpportunityInvitationRepository.create).toHaveBeenCalledWith(ctx, input, tx);
@@ -82,13 +79,10 @@ describe("OpportunityInvitationService", () => {
             const input: GqlOpportunityInvitationDisableInput = { communityId: "community-1" };
             const mockResult = { opportunityInvitation: { id: "1", code: "code123", opportunityId: "1", communityId: "community-1" } };
 
-            // モック設定
             (OpportunityInvitationRepository.disable as jest.Mock).mockResolvedValue(mockResult);
 
-            // メソッド実行
             const result = await OpportunityInvitationService.disableOpportunityInvitation(ctx, id, input, tx);
 
-            // 検証
             expect(OpportunityInvitationRepository.disable).toHaveBeenCalledWith(ctx, id, false, tx);
             expect(result).toEqual(mockResult);
         });

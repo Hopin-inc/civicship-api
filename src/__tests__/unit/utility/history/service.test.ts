@@ -2,7 +2,7 @@ import UtilityHistoryService from "@/app/utility/history/service";
 import UtilityHistoryRepository from "@/infra/repositories/utility/history";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { UtilityHistory } from "@prisma/client"; // Prismaで取得される型を使います
+import { UtilityHistory } from "@prisma/client";
 
 jest.mock("@/infra/repositories/utility/history");
 
@@ -23,8 +23,8 @@ describe("UtilityHistoryService", () => {
 
             expect(UtilityHistoryRepository.query).toHaveBeenCalledWith(
                 ctx,
-                expect.any(Object), // where condition (UtilityHistoryInputFormat.filter)
-                expect.any(Object), // orderBy condition (UtilityHistoryInputFormat.sort)
+                expect.any(Object),
+                expect.any(Object),
                 10,
                 "1"
             );

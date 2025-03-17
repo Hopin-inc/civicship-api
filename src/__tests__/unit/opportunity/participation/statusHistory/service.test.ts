@@ -55,7 +55,7 @@ describe("ParticipationStatusHistoryService", () => {
             (ParticipationStatusHistoryInputFormat.create as jest.Mock).mockReturnValue(mockData);
             (ParticipationStatusHistoryRepository.create as jest.Mock).mockResolvedValue(undefined);
 
-            const tx = {} as any; // mock transaction
+            const tx = {} as any;
             await ParticipationStatusHistoryService.recordParticipationHistory(ctx, tx, "1", ParticipationStatus.APPLIED, "user-id");
             expect(ParticipationStatusHistoryRepository.create).toHaveBeenCalledWith(ctx, mockData, tx);
 
@@ -66,7 +66,7 @@ describe("ParticipationStatusHistoryService", () => {
             (ParticipationStatusHistoryInputFormat.create as jest.Mock).mockReturnValue(mockData);
             (ParticipationStatusHistoryRepository.create as jest.Mock).mockRejectedValue(new Error("Creation failed"));
 
-            const tx = {} as any; // mock transaction
+            const tx = {} as any;
             await expect(ParticipationStatusHistoryService.recordParticipationHistory(ctx, tx, "1", ParticipationStatus.APPLIED, "user-id"))
                 .rejects
                 .toThrow("Creation failed");

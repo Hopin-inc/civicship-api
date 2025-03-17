@@ -24,15 +24,12 @@ describe("OpportunitySlotService", () => {
             const args: GqlQueryOpportunitySlotsArgs = { filter: {}, sort: {}, cursor: undefined };
             const take = 10;
 
-            // モック設定
             (OpportunitySlotInputFormat.filter as jest.Mock).mockReturnValue({});
             (OpportunitySlotInputFormat.sort as jest.Mock).mockReturnValue({});
             (OpportunitySlotRepository.query as jest.Mock).mockResolvedValue(mockSlots);
 
-            // メソッド実行
             const result = await OpportunitySlotService.fetchOpportunitySlots(ctx, args, take);
 
-            // 検証
             expect(OpportunitySlotInputFormat.filter).toHaveBeenCalledWith({});
             expect(OpportunitySlotInputFormat.sort).toHaveBeenCalledWith({});
             expect(OpportunitySlotRepository.query).toHaveBeenCalledWith(ctx, {}, {}, take, undefined);
@@ -45,13 +42,10 @@ describe("OpportunitySlotService", () => {
             const mockSlot = { id: "1", opportunityId: "1", startsAt: "2025-03-15T00:00:00Z", endsAt: "2025-03-15T01:00:00Z" };
             const id = "1";
 
-            // モック設定
             (OpportunitySlotRepository.find as jest.Mock).mockResolvedValue(mockSlot);
 
-            // メソッド実行
             const result = await OpportunitySlotService.findOpportunitySlot(ctx, id);
 
-            // 検証
             expect(OpportunitySlotRepository.find).toHaveBeenCalledWith(ctx, id);
             expect(result).toEqual(mockSlot);
         });
@@ -62,13 +56,10 @@ describe("OpportunitySlotService", () => {
             const mockSlots = [{ id: "1", opportunityId: "1", startsAt: "2025-03-15T00:00:00Z", endsAt: "2025-03-15T01:00:00Z" }];
             const opportunityId = "1";
 
-            // モック設定
             (OpportunitySlotRepository.findByOpportunityId as jest.Mock).mockResolvedValue(mockSlots);
 
-            // メソッド実行
             const result = await OpportunitySlotService.fetchAllSlotByOpportunityId(ctx, opportunityId, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.findByOpportunityId).toHaveBeenCalledWith(ctx, opportunityId, tx);
             expect(result).toEqual(mockSlots);
         });
@@ -80,24 +71,19 @@ describe("OpportunitySlotService", () => {
                 { startsAt: new Date(), endsAt: new Date() }
             ];
 
-            // モック設定
             (OpportunitySlotInputFormat.create as jest.Mock).mockReturnValue({});
             (OpportunitySlotRepository.createMany as jest.Mock).mockResolvedValue(undefined);
 
-            // メソッド実行
             await OpportunitySlotService.bulkCreateOpportunitySlots(ctx, "1", inputs, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.createMany).toHaveBeenCalledWith(ctx, expect.any(Array), tx);
         });
 
         it("should return nothing if inputs are empty", async () => {
             const inputs: GqlOpportunitySlotCreateInput[] = [];
 
-            // メソッド実行
             await OpportunitySlotService.bulkCreateOpportunitySlots(ctx, "1", inputs, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.createMany).not.toHaveBeenCalled();
         });
     });
@@ -108,24 +94,19 @@ describe("OpportunitySlotService", () => {
                 { id: "1", startsAt: new Date(), endsAt: new Date() }
             ];
 
-            // モック設定
             (OpportunitySlotInputFormat.update as jest.Mock).mockReturnValue({});
             (OpportunitySlotRepository.update as jest.Mock).mockResolvedValue(undefined);
 
-            // メソッド実行
             await OpportunitySlotService.bulkUpdateOpportunitySlots(ctx, inputs, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.update).toHaveBeenCalledWith(ctx, "1", {}, tx);
         });
 
         it("should return nothing if inputs are empty", async () => {
             const inputs: GqlOpportunitySlotUpdateInput[] = [];
 
-            // メソッド実行
             await OpportunitySlotService.bulkUpdateOpportunitySlots(ctx, inputs, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.update).not.toHaveBeenCalled();
         });
     });
@@ -134,23 +115,18 @@ describe("OpportunitySlotService", () => {
         it("should bulk delete opportunity slots", async () => {
             const ids = ["1", "2"];
 
-            // モック設定
             (OpportunitySlotRepository.deleteMany as jest.Mock).mockResolvedValue(undefined);
 
-            // メソッド実行
             await OpportunitySlotService.bulkDeleteOpportunitySlots(ctx, ids, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.deleteMany).toHaveBeenCalledWith(ctx, ids, tx);
         });
 
         it("should return nothing if ids are empty", async () => {
             const ids: string[] = [];
 
-            // メソッド実行
             await OpportunitySlotService.bulkDeleteOpportunitySlots(ctx, ids, tx);
 
-            // 検証
             expect(OpportunitySlotRepository.deleteMany).not.toHaveBeenCalled();
         });
     });

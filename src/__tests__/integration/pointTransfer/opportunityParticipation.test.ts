@@ -101,8 +101,7 @@ describe("Point Reward Tests", () => {
         //////////////////////////////////////////////////
         // execute
         //////////////////////////////////////////////////
-        const result = await participationResolver.Mutation.participationApprovePerformance({}, { id: participationId, input }, ctx);
-        console.log(result)
+        await participationResolver.Mutation.participationApprovePerformance({}, { id: participationId, input }, ctx);
 
         //////////////////////////////////////////////////
         // assert result

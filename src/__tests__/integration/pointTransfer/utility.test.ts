@@ -171,8 +171,7 @@ describe("Utility Redeem Mutation Tests", () => {
         //////////////////////////////////////////////////
         // execute
         //////////////////////////////////////////////////
-        const result = await utilityResolver.Mutation.utilityRedeem({}, { id: utilityId, input }, ctx);
-        console.log(result)
+        await utilityResolver.Mutation.utilityRedeem({}, { id: utilityId, input }, ctx);
 
         //////////////////////////////////////////////////
         // assert result
