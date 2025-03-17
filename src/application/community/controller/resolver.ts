@@ -107,13 +107,10 @@ const communityResolver = {
       args: GqlCommunityArticlesArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
-      return ArticleUseCase.anyoneBrowseArticles(
-        {
-          ...args,
-          filter: { ...args.filter, communityId: parent.id },
-        },
-        ctx,
-      );
+      return ArticleUseCase.anyoneBrowseArticles(ctx, {
+        ...args,
+        filter: { ...args.filter, communityId: parent.id },
+      });
     },
   },
 };
