@@ -70,18 +70,9 @@ type PlaceDeleteSuccess {
 # ------------------------------
 union PlaceCreatePayload =
     PlaceCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
 
 union PlaceUpdatePayload =
     PlaceUpdateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
 
 union PlaceDeletePayload =
     PlaceDeleteSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError

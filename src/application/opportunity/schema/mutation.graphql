@@ -96,25 +96,13 @@ type OpportunitySetPublishStatusSuccess {
 # Opportunity Mutation Union (Payload) Definitions
 # ------------------------------
 union OpportunityCreatePayload =
-    OpportunityCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    OpportunityCreateSuccess
 
 union OpportunityDeletePayload =
-    OpportunityDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    OpportunityDeleteSuccess
 
 union OpportunityUpdateContentPayload =
-    OpportunityUpdateContentSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    OpportunityUpdateContentSuccess
 
 union OpportunitySetPublishStatusPayload =
-    OpportunitySetPublishStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    OpportunitySetPublishStatusSuccess

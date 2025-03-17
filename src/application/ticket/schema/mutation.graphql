@@ -52,19 +52,10 @@ type TicketRefundSuccess {
 # Ticket Mutation Union (Payload) Definitions
 # ------------------------------
 union TicketPurchasePayload =
-    TicketPurchaseSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    TicketPurchaseSuccess
 
 union TicketUsePayload =
-    TicketUseSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    TicketUseSuccess
 
 union TicketRefundPayload =
-    TicketRefundSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    TicketRefundSuccess

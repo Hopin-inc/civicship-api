@@ -35,7 +35,4 @@ type UserUpdateProfileSuccess {
 # User Mutation Union (Payload) Definitions
 # ------------------------------
 union UserUpdateProfilePayload =
-    UserUpdateProfileSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    UserUpdateProfileSuccess

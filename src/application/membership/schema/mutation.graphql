@@ -104,31 +104,16 @@ type MembershipSetInvitationStatusSuccess {
 # Membership Mutation Union (Payload) Definitions
 # ------------------------------
 union MembershipInvitePayload =
-    MembershipInviteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    MembershipInviteSuccess
 
 union MembershipSetRolePayload =
-    MembershipSetRoleSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    MembershipSetRoleSuccess
 
 union MembershipRemovePayload =
-    MembershipRemoveSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    MembershipRemoveSuccess
 
 union MembershipWithdrawPayload =
-    MembershipWithdrawSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    MembershipWithdrawSuccess
 
 union MembershipSetInvitationStatusPayload =
-    MembershipSetInvitationStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    MembershipSetInvitationStatusSuccess

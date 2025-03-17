@@ -41,7 +41,4 @@ type OpportunitySlotsBulkUpdateSuccess {
 # Opportunity Slot Mutation Union (Payload) Definitions
 # ------------------------------
 union OpportunitySlotsBulkUpdatePayload =
-    OpportunitySlotsBulkUpdateSuccess |
-    AuthError |
-    InvalidInputValueError |
-    ComplexQueryError
+    OpportunitySlotsBulkUpdateSuccess

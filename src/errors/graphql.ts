@@ -39,10 +39,12 @@ export class NotFoundError extends ApolloError {
   public entityData?: Record<string, unknown>;
 
   constructor(entityName?: string, entityData?: Record<string, unknown>) {
-    let message = entityName ? `${ entityName } not found` : "Resource not found";
+    let message = entityName ? `${entityName} not found` : "Resource not found";
     if (entityData) {
-      const formattedData = Object.entries(entityData).map(([k, v]) => `${ k }: ${ v }`).join(", ");
-      message += ` (${ formattedData })`;
+      const formattedData = Object.entries(entityData)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ");
+      message += ` (${formattedData})`;
     }
     super(message, "NOT_FOUND");
     this.entityName = entityName;
@@ -53,7 +55,7 @@ export class NotFoundError extends ApolloError {
 
 export class DatabaseError extends ApolloError {
   constructor(message: string = "Database error occurred") {
-    super(message, "DATABASE_ERROR");
+    super(message, "INTERNAL_SERVER_ERROR");
     Object.defineProperty(this, "name", { value: "DatabaseError" });
   }
 }
@@ -70,7 +72,7 @@ export class InsufficientBalanceError extends ApolloError {
   public requestedAmount: number;
 
   constructor(currentBalance: number, requestedAmount: number) {
-    const message = `Insufficient balance: current balance ${ currentBalance } is less than requested amount ${ requestedAmount }`;
+    const message = `Insufficient balance: current balance ${currentBalance} is less than requested amount ${requestedAmount}`;
     super(message, "INSUFFICIENT_BALANCE");
     this.currentBalance = currentBalance;
     this.requestedAmount = requestedAmount;
@@ -82,7 +84,7 @@ export class UtilityAlreadyUsedError extends ApolloError {
   public usedAt: Date;
 
   constructor(usedAt: Date) {
-    const message = `Utility already used at ${ usedAt.toString() }`;
+    const message = `Utility already used at ${usedAt.toString()}`;
     super(message, "UTILITY_ALREADY_USED");
     this.usedAt = usedAt;
     Object.defineProperty(this, "name", { value: "UtilityAlreadyUsedError" });

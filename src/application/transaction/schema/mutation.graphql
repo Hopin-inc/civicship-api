@@ -60,19 +60,10 @@ type TransactionDonateSelfPointSuccess {
 # Transaction Mutation Union (Payload) Definitions
 # ------------------------------
 union TransactionIssueCommunityPointPayload =
-    TransactionIssueCommunityPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    TransactionIssueCommunityPointSuccess
 
 union TransactionGrantCommunityPointPayload =
-    TransactionGrantCommunityPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    TransactionGrantCommunityPointSuccess
 
 union TransactionDonateSelfPointPayload =
-    TransactionDonateSelfPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    TransactionDonateSelfPointSuccess

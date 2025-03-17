@@ -69,25 +69,13 @@ type UtilitySetPublishStatusSuccess {
 # Union (Payload) Definitions
 # ------------------------------
 union UtilityCreatePayload =
-    UtilityCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    UtilityCreateSuccess
 
 union UtilityDeletePayload =
-    UtilityDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    UtilityDeleteSuccess
 
 union UtilityUpdateInfoPayload =
-    UtilityUpdateInfoSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    UtilityUpdateInfoSuccess
 
 union UtilitySetPublishStatusPayload =
-    UtilitySetPublishStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    UtilitySetPublishStatusSuccess

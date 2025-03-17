@@ -59,19 +59,10 @@ type CommunityUpdateProfileSuccess {
 # Community Mutation Union (Payload) Definitions
 # ------------------------------
 union CommunityCreatePayload =
-    CommunityCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    CommunityCreateSuccess
 
 union CommunityDeletePayload =
-    CommunityDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    CommunityDeleteSuccess
 
 union CommunityUpdateProfilePayload =
-    CommunityUpdateProfileSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    CommunityUpdateProfileSuccess

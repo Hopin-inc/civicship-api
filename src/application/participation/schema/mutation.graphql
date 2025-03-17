@@ -92,19 +92,10 @@ type ParticipationSetStatusSuccess {
 # Participation Mutation Union (Payload) Definitions
 # ------------------------------
 union ParticipationApplyPayload =
-    ParticipationApplySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    ParticipationApplySuccess
 
 union ParticipationInvitePayload =
-    ParticipationInviteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    ParticipationInviteSuccess
 
 union ParticipationSetStatusPayload =
-    ParticipationSetStatusSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    ParticipationSetStatusSuccess

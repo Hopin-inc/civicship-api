@@ -35,13 +35,7 @@ type OpportunityInvitationDisableSuccess {
 # OpportunityInvitation Mutation Union (Payload) Definitions
 # ------------------------------
 union OpportunityInvitationCreatePayload =
-    OpportunityInvitationCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    OpportunityInvitationCreateSuccess
 
 union OpportunityInvitationDisablePayload =
-    OpportunityInvitationDisableSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    OpportunityInvitationDisableSuccess
