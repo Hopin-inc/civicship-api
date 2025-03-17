@@ -2,13 +2,17 @@ import ParticipationService from "@/app/opportunity/participation/service";
 import ParticipationRepository from "@/infra/repositories/opportunity/participation";
 import { IContext } from "@/types/server";
 import ParticipationUtils from "@/app/opportunity/participation/utils";
+import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
+import { ParticipationStatus } from "@prisma/client";
 
 jest.mock("@/infra/repositories/opportunity/participation");
 jest.mock("@/infra/repositories/opportunity");
+jest.mock("@/app/opportunity/participation/statusHistory/service");
 jest.mock("@/app/opportunity/participation/utils");
 
 describe("ParticipationService", () => {
     let ctx: IContext;
+    const userId = "test-user"
 
     beforeEach(() => {
         ctx = { user: { id: "test-user" }, currentUser: { id: "test-user" } } as unknown as IContext;
@@ -44,11 +48,21 @@ describe("ParticipationService", () => {
     });
 
     describe("inviteParticipation", () => {
-        // TODO
-    });
+        it("should successfully invite participation", async () => {
+            const mockParticipation = { id: "1", userId: userId, status: ParticipationStatus.INVITED };
+            const input = { communityId: "community-1", invitedUserId: userId, opportunityId: "opportunity-1" };
 
-    describe("applyParticipation", () => {
-        // TODO
+            (ParticipationRepository.create as jest.Mock).mockResolvedValue(mockParticipation);
+            (ParticipationStatusHistoryService.recordParticipationHistory as jest.Mock).mockResolvedValue({});
+
+            const result = await ParticipationService.inviteParticipation(ctx, input);
+            expect(result).toEqual(mockParticipation);
+            expect(ParticipationRepository.create).toHaveBeenCalledWith(
+                ctx,
+                expect.objectContaining({ status: ParticipationStatus.INVITED }),
+                expect.anything()
+            );
+        });
     });
 
     describe("cancelInvitation", () => {
@@ -57,10 +71,6 @@ describe("ParticipationService", () => {
             const result = await ParticipationService.cancelInvitation(ctx, "1");
             expect(result).toBe(true);
         });
-    });
-
-    describe("approveInvitation", () => {
-        // TODO
     });
 
     describe("denyInvitation", () => {
@@ -79,20 +89,12 @@ describe("ParticipationService", () => {
         });
     });
 
-    describe("approveApplication", () => {
-        // TODO
-    });
-
     describe("denyApplication", () => {
         it("should successfully deny application", async () => {
             (ParticipationUtils.setParticipationStatus as jest.Mock).mockResolvedValue(true);
             const result = await ParticipationService.denyApplication(ctx, "1");
             expect(result).toBe(true);
         });
-    });
-
-    describe("approvePerformance", () => {
-        // TODO
     });
 
     describe("denyPerformance", () => {
