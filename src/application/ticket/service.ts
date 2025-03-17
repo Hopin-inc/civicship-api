@@ -1,20 +1,41 @@
-import { GqlQueryTicketsArgs, GqlTicket } from "@/types/graphql";
+import {
+  GqlTicket,
+  GqlTicketFilterInput,
+  GqlTicketsConnection,
+  GqlTicketSortInput,
+} from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
 import { ParticipationStatus, Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
-import { getCurrentUserId } from "@/application/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
+import TicketPresenter from "@/application/ticket/presenter";
 
 export default class TicketService {
   static async fetchTickets(
     ctx: IContext,
-    { cursor, filter, sort }: GqlQueryTicketsArgs,
-    take: number,
-  ) {
+    {
+      cursor,
+      filter,
+      sort,
+      first,
+    }: {
+      cursor?: string;
+      filter?: GqlTicketFilterInput;
+      sort?: GqlTicketSortInput;
+      first?: number;
+    },
+  ): Promise<GqlTicketsConnection> {
+    const take = clampFirst(first);
     const where = TicketConverter.filter(filter ?? {});
     const orderBy = TicketConverter.sort(sort ?? {});
-    return TicketRepository.query(ctx, where, orderBy, take, cursor);
+
+    // 1件多く取得して、hasNextPage を判定
+    const res = await TicketRepository.query(ctx, where, orderBy, take + 1, cursor);
+    const hasNextPage = res.length > take;
+    const data = res.slice(0, take).map((record) => TicketPresenter.get(record));
+    return TicketPresenter.query(data, hasNextPage);
   }
 
   static async findTicket(ctx: IContext, id: string) {

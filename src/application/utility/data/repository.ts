@@ -33,6 +33,19 @@ export default class UtilityRepository {
       });
     });
   }
+  w;
+
+  static async findAccessible(
+    ctx: IContext,
+    where: Prisma.UtilityWhereUniqueInput & Prisma.UtilityWhereInput,
+  ) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.utility.findUnique({
+        where,
+        include: utilityInclude,
+      });
+    });
+  }
 
   static async create(ctx: IContext, data: Prisma.UtilityCreateInput) {
     return this.issuer.public(ctx, (tx) => {

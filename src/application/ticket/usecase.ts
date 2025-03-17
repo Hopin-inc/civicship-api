@@ -13,7 +13,6 @@ import {
 import { IContext } from "@/types/server";
 import TicketService from "@/application/ticket/service";
 import TicketPresenter from "@/application/ticket/presenter";
-import { TicketUtils } from "@/application/ticket/utils";
 import WalletService from "@/application/membership/wallet/service";
 import WalletUtils from "@/application/membership/wallet/utils";
 import TransactionService from "@/application/transaction/service";
@@ -27,7 +26,7 @@ export default class TicketUseCase {
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryTicketsArgs,
   ): Promise<GqlTicketsConnection> {
-    return TicketUtils.fetchTicketsCommon(ctx, { cursor, filter, sort, first });
+    return TicketService.fetchTickets(ctx, { cursor, filter, sort, first });
   }
 
   static async visitorViewTicket(

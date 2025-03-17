@@ -32,9 +32,12 @@ type UtilityEdge implements Edge {
 # Input Definitions for Queries
 # ------------------------------
 input UtilityFilterInput {
-    #TODO multi?
     communityId: ID
-    status: [PublishStatus!]
+    publishStatus: [PublishStatus!]
+
+    and: [UtilityFilterInput!]
+    or: [UtilityFilterInput!]
+    not: UtilityFilterInput
 }
 
 input UtilitySortInput {

@@ -21,8 +21,8 @@ import { getMembershipRolesByCtx } from "@/application/utils";
 
 export default class OpportunityUseCase {
   static async anyoneBrowseOpportunities(
-    { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
+    { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
   ): Promise<GqlOpportunitiesConnection> {
     const currentUserId = ctx.currentUser?.id;
     const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];

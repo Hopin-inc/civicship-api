@@ -194,14 +194,14 @@ export type GqlCommunityCreateInput = {
   website?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCommunityCreatePayload = GqlAuthError | GqlCommunityCreateSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
+export type GqlCommunityCreatePayload = GqlCommunityCreateSuccess;
 
 export type GqlCommunityCreateSuccess = {
   __typename?: 'CommunityCreateSuccess';
   community: GqlCommunity;
 };
 
-export type GqlCommunityDeletePayload = GqlAuthError | GqlCommunityDeleteSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
+export type GqlCommunityDeletePayload = GqlCommunityDeleteSuccess;
 
 export type GqlCommunityDeleteSuccess = {
   __typename?: 'CommunityDeleteSuccess';
@@ -234,7 +234,7 @@ export type GqlCommunityUpdateProfileInput = {
   website?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlCommunityUpdateProfilePayload = GqlAuthError | GqlCommunityUpdateProfileSuccess | GqlComplexQueryError | GqlInvalidInputValueError;
+export type GqlCommunityUpdateProfilePayload = GqlCommunityUpdateProfileSuccess;
 
 export type GqlCommunityUpdateProfileSuccess = {
   __typename?: 'CommunityUpdateProfileSuccess';
@@ -359,7 +359,7 @@ export type GqlMembershipInviteInput = {
   userId: Scalars['ID']['input'];
 };
 
-export type GqlMembershipInvitePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipInviteSuccess;
+export type GqlMembershipInvitePayload = GqlMembershipInviteSuccess;
 
 export type GqlMembershipInviteSuccess = {
   __typename?: 'MembershipInviteSuccess';
@@ -371,7 +371,7 @@ export type GqlMembershipRemoveInput = {
   userId: Scalars['ID']['input'];
 };
 
-export type GqlMembershipRemovePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipRemoveSuccess;
+export type GqlMembershipRemovePayload = GqlMembershipRemoveSuccess;
 
 export type GqlMembershipRemoveSuccess = {
   __typename?: 'MembershipRemoveSuccess';
@@ -384,7 +384,7 @@ export type GqlMembershipSetInvitationStatusInput = {
   userId: Scalars['ID']['input'];
 };
 
-export type GqlMembershipSetInvitationStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipSetInvitationStatusSuccess;
+export type GqlMembershipSetInvitationStatusPayload = GqlMembershipSetInvitationStatusSuccess;
 
 export type GqlMembershipSetInvitationStatusSuccess = {
   __typename?: 'MembershipSetInvitationStatusSuccess';
@@ -396,7 +396,7 @@ export type GqlMembershipSetRoleInput = {
   userId: Scalars['ID']['input'];
 };
 
-export type GqlMembershipSetRolePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipSetRoleSuccess;
+export type GqlMembershipSetRolePayload = GqlMembershipSetRoleSuccess;
 
 export type GqlMembershipSetRoleSuccess = {
   __typename?: 'MembershipSetRoleSuccess';
@@ -431,7 +431,7 @@ export type GqlMembershipWithdrawInput = {
   userId: Scalars['ID']['input'];
 };
 
-export type GqlMembershipWithdrawPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlMembershipWithdrawSuccess;
+export type GqlMembershipWithdrawPayload = GqlMembershipWithdrawSuccess;
 
 export type GqlMembershipWithdrawSuccess = {
   __typename?: 'MembershipWithdrawSuccess';
@@ -889,14 +889,14 @@ export type GqlOpportunityCreateInput = {
   title: Scalars['String']['input'];
 };
 
-export type GqlOpportunityCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityCreateSuccess;
+export type GqlOpportunityCreatePayload = GqlOpportunityCreateSuccess;
 
 export type GqlOpportunityCreateSuccess = {
   __typename?: 'OpportunityCreateSuccess';
   opportunity: GqlOpportunity;
 };
 
-export type GqlOpportunityDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityDeleteSuccess;
+export type GqlOpportunityDeletePayload = GqlOpportunityDeleteSuccess;
 
 export type GqlOpportunityDeleteSuccess = {
   __typename?: 'OpportunityDeleteSuccess';
@@ -948,14 +948,14 @@ export type GqlOpportunityInvitationCreateInput = {
   opportunityId: Scalars['ID']['input'];
 };
 
-export type GqlOpportunityInvitationCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityInvitationCreateSuccess;
+export type GqlOpportunityInvitationCreatePayload = GqlOpportunityInvitationCreateSuccess;
 
 export type GqlOpportunityInvitationCreateSuccess = {
   __typename?: 'OpportunityInvitationCreateSuccess';
   opportunityInvitation?: Maybe<GqlOpportunityInvitation>;
 };
 
-export type GqlOpportunityInvitationDisablePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityInvitationDisableSuccess;
+export type GqlOpportunityInvitationDisablePayload = GqlOpportunityInvitationDisableSuccess;
 
 export type GqlOpportunityInvitationDisableSuccess = {
   __typename?: 'OpportunityInvitationDisableSuccess';
@@ -1020,7 +1020,7 @@ export type GqlOpportunitySetPublishStatusInput = {
   status: GqlPublishStatus;
 };
 
-export type GqlOpportunitySetPublishStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunitySetPublishStatusSuccess;
+export type GqlOpportunitySetPublishStatusPayload = GqlOpportunitySetPublishStatusSuccess;
 
 export type GqlOpportunitySetPublishStatusSuccess = {
   __typename?: 'OpportunitySetPublishStatusSuccess';
@@ -1080,7 +1080,7 @@ export type GqlOpportunitySlotsBulkUpdateInput = {
   update?: InputMaybe<Array<GqlOpportunitySlotUpdateInput>>;
 };
 
-export type GqlOpportunitySlotsBulkUpdatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunitySlotsBulkUpdateSuccess;
+export type GqlOpportunitySlotsBulkUpdatePayload = GqlOpportunitySlotsBulkUpdateSuccess;
 
 export type GqlOpportunitySlotsBulkUpdateSuccess = {
   __typename?: 'OpportunitySlotsBulkUpdateSuccess';
@@ -1117,7 +1117,7 @@ export type GqlOpportunityUpdateContentInput = {
   title: Scalars['String']['input'];
 };
 
-export type GqlOpportunityUpdateContentPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlOpportunityUpdateContentSuccess;
+export type GqlOpportunityUpdateContentPayload = GqlOpportunityUpdateContentSuccess;
 
 export type GqlOpportunityUpdateContentSuccess = {
   __typename?: 'OpportunityUpdateContentSuccess';
@@ -1175,7 +1175,7 @@ export type GqlParticipationApplyInput = {
   ticketId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlParticipationApplyPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationApplySuccess;
+export type GqlParticipationApplyPayload = GqlParticipationApplySuccess;
 
 export type GqlParticipationApplySuccess = {
   __typename?: 'ParticipationApplySuccess';
@@ -1202,7 +1202,7 @@ export type GqlParticipationInviteInput = {
   opportunityId: Scalars['ID']['input'];
 };
 
-export type GqlParticipationInvitePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationInviteSuccess;
+export type GqlParticipationInvitePayload = GqlParticipationInviteSuccess;
 
 export type GqlParticipationInviteSuccess = {
   __typename?: 'ParticipationInviteSuccess';
@@ -1214,7 +1214,7 @@ export type GqlParticipationSetStatusInput = {
   ticketId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlParticipationSetStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlParticipationSetStatusSuccess;
+export type GqlParticipationSetStatusPayload = GqlParticipationSetStatusSuccess;
 
 export type GqlParticipationSetStatusSuccess = {
   __typename?: 'ParticipationSetStatusSuccess';
@@ -1327,14 +1327,14 @@ export type GqlPlaceCreateInput = {
   opportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
-export type GqlPlaceCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlPlaceCreateSuccess;
+export type GqlPlaceCreatePayload = GqlPlaceCreateSuccess;
 
 export type GqlPlaceCreateSuccess = {
   __typename?: 'PlaceCreateSuccess';
   place: GqlPlace;
 };
 
-export type GqlPlaceDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlPlaceDeleteSuccess;
+export type GqlPlaceDeletePayload = GqlPlaceDeleteSuccess;
 
 export type GqlPlaceDeleteSuccess = {
   __typename?: 'PlaceDeleteSuccess';
@@ -1369,7 +1369,7 @@ export type GqlPlaceUpdateInput = {
   opportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
-export type GqlPlaceUpdatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlPlaceUpdateSuccess;
+export type GqlPlaceUpdatePayload = GqlPlaceUpdateSuccess;
 
 export type GqlPlaceUpdateSuccess = {
   __typename?: 'PlaceUpdateSuccess';
@@ -1732,7 +1732,7 @@ export type GqlTicketPurchaseInput = {
   walletId: Scalars['ID']['input'];
 };
 
-export type GqlTicketPurchasePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketPurchaseSuccess;
+export type GqlTicketPurchasePayload = GqlTicketPurchaseSuccess;
 
 export type GqlTicketPurchaseSuccess = {
   __typename?: 'TicketPurchaseSuccess';
@@ -1745,7 +1745,7 @@ export type GqlTicketRefundInput = {
   walletId: Scalars['ID']['input'];
 };
 
-export type GqlTicketRefundPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketRefundSuccess;
+export type GqlTicketRefundPayload = GqlTicketRefundSuccess;
 
 export type GqlTicketRefundSuccess = {
   __typename?: 'TicketRefundSuccess';
@@ -1809,7 +1809,7 @@ export const GqlTicketStatusReason = {
 } as const;
 
 export type GqlTicketStatusReason = typeof GqlTicketStatusReason[keyof typeof GqlTicketStatusReason];
-export type GqlTicketUsePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTicketUseSuccess;
+export type GqlTicketUsePayload = GqlTicketUseSuccess;
 
 export type GqlTicketUseSuccess = {
   __typename?: 'TicketUseSuccess';
@@ -1853,7 +1853,7 @@ export type GqlTransactionDonateSelfPointInput = {
   toUserId: Scalars['ID']['input'];
 };
 
-export type GqlTransactionDonateSelfPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionDonateSelfPointSuccess;
+export type GqlTransactionDonateSelfPointPayload = GqlTransactionDonateSelfPointSuccess;
 
 export type GqlTransactionDonateSelfPointSuccess = {
   __typename?: 'TransactionDonateSelfPointSuccess';
@@ -1880,7 +1880,7 @@ export type GqlTransactionGrantCommunityPointInput = {
   toUserId: Scalars['ID']['input'];
 };
 
-export type GqlTransactionGrantCommunityPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionGrantCommunityPointSuccess;
+export type GqlTransactionGrantCommunityPointPayload = GqlTransactionGrantCommunityPointSuccess;
 
 export type GqlTransactionGrantCommunityPointSuccess = {
   __typename?: 'TransactionGrantCommunityPointSuccess';
@@ -1892,7 +1892,7 @@ export type GqlTransactionIssueCommunityPointInput = {
   toWalletId: Scalars['ID']['input'];
 };
 
-export type GqlTransactionIssueCommunityPointPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlTransactionIssueCommunityPointSuccess;
+export type GqlTransactionIssueCommunityPointPayload = GqlTransactionIssueCommunityPointSuccess;
 
 export type GqlTransactionIssueCommunityPointSuccess = {
   __typename?: 'TransactionIssueCommunityPointSuccess';
@@ -2072,7 +2072,7 @@ export type GqlUserUpdateProfileInput = {
   urlYoutube?: InputMaybe<Scalars['String']['input']>;
 };
 
-export type GqlUserUpdateProfilePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUserUpdateProfileSuccess;
+export type GqlUserUpdateProfilePayload = GqlUserUpdateProfileSuccess;
 
 export type GqlUserUpdateProfileSuccess = {
   __typename?: 'UserUpdateProfileSuccess';
@@ -2103,9 +2103,25 @@ export type GqlUtility = {
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
   publishStatus: GqlPublishStatus;
-  requiredForOpportunities?: Maybe<Array<GqlOpportunity>>;
-  tickets?: Maybe<Array<GqlTicket>>;
+  requiredForOpportunities?: Maybe<GqlOpportunitiesConnection>;
+  tickets?: Maybe<GqlTicketsConnection>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
+
+export type GqlUtilityRequiredForOpportunitiesArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlOpportunityFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlOpportunitySortInput>;
+};
+
+
+export type GqlUtilityTicketsArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlTicketFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlTicketSortInput>;
 };
 
 export type GqlUtilityCreateInput = {
@@ -2116,14 +2132,14 @@ export type GqlUtilityCreateInput = {
   pointsRequired: Scalars['Int']['input'];
 };
 
-export type GqlUtilityCreatePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityCreateSuccess;
+export type GqlUtilityCreatePayload = GqlUtilityCreateSuccess;
 
 export type GqlUtilityCreateSuccess = {
   __typename?: 'UtilityCreateSuccess';
   utility: GqlUtility;
 };
 
-export type GqlUtilityDeletePayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityDeleteSuccess;
+export type GqlUtilityDeletePayload = GqlUtilityDeleteSuccess;
 
 export type GqlUtilityDeleteSuccess = {
   __typename?: 'UtilityDeleteSuccess';
@@ -2137,15 +2153,18 @@ export type GqlUtilityEdge = GqlEdge & {
 };
 
 export type GqlUtilityFilterInput = {
+  and?: InputMaybe<Array<GqlUtilityFilterInput>>;
   communityId?: InputMaybe<Scalars['ID']['input']>;
-  status?: InputMaybe<Array<GqlPublishStatus>>;
+  not?: InputMaybe<GqlUtilityFilterInput>;
+  or?: InputMaybe<Array<GqlUtilityFilterInput>>;
+  publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
 };
 
 export type GqlUtilitySetPublishStatusInput = {
   publishStatus: GqlPublishStatus;
 };
 
-export type GqlUtilitySetPublishStatusPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilitySetPublishStatusSuccess;
+export type GqlUtilitySetPublishStatusPayload = GqlUtilitySetPublishStatusSuccess;
 
 export type GqlUtilitySetPublishStatusSuccess = {
   __typename?: 'UtilitySetPublishStatusSuccess';
@@ -2164,7 +2183,7 @@ export type GqlUtilityUpdateInfoInput = {
   pointsRequired: Scalars['Int']['input'];
 };
 
-export type GqlUtilityUpdateInfoPayload = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError | GqlUtilityUpdateInfoSuccess;
+export type GqlUtilityUpdateInfoPayload = GqlUtilityUpdateInfoSuccess;
 
 export type GqlUtilityUpdateInfoSuccess = {
   __typename?: 'UtilityUpdateInfoSuccess';
@@ -2307,38 +2326,38 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 /** Mapping of union types */
 export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   CommonError: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
-  CommunityCreatePayload: ( GqlAuthError ) | ( Omit<GqlCommunityCreateSuccess, 'community'> & { community: _RefType['Community'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
-  CommunityDeletePayload: ( GqlAuthError ) | ( GqlCommunityDeleteSuccess ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
-  CommunityUpdateProfilePayload: ( GqlAuthError ) | ( Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: _RefType['Community'] } ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
-  MembershipInvitePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: _RefType['Membership'] } );
-  MembershipRemovePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlMembershipRemoveSuccess );
-  MembershipSetInvitationStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipSetInvitationStatusSuccess, 'membership'> & { membership: _RefType['Membership'] } );
-  MembershipSetRolePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlMembershipSetRoleSuccess, 'membership'> & { membership: _RefType['Membership'] } );
-  MembershipWithdrawPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlMembershipWithdrawSuccess );
-  OpportunityCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityCreateSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
-  OpportunityDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlOpportunityDeleteSuccess );
-  OpportunityInvitationCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityInvitationCreateSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
-  OpportunityInvitationDisablePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityInvitationDisableSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
-  OpportunitySetPublishStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
-  OpportunitySlotsBulkUpdatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
-  OpportunityUpdateContentPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
-  ParticipationApplyPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationApplySuccess, 'participation'> & { participation: _RefType['Participation'] } );
-  ParticipationInvitePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: _RefType['Participation'] } );
-  ParticipationSetStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: _RefType['Participation'] } );
-  PlaceCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlPlaceCreateSuccess, 'place'> & { place: _RefType['Place'] } );
-  PlaceDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlPlaceDeleteSuccess );
-  PlaceUpdatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlPlaceUpdateSuccess, 'place'> & { place: _RefType['Place'] } );
-  TicketPurchasePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
-  TicketRefundPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTicketRefundSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
-  TicketUsePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
-  TransactionDonateSelfPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
-  TransactionGrantCommunityPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionGrantCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
-  TransactionIssueCommunityPointPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
-  UserUpdateProfilePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
-  UtilityCreatePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: _RefType['Utility'] } );
-  UtilityDeletePayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( GqlUtilityDeleteSuccess );
-  UtilitySetPublishStatusPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilitySetPublishStatusSuccess, 'utility'> & { utility: _RefType['Utility'] } );
-  UtilityUpdateInfoPayload: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError ) | ( Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: _RefType['Utility'] } );
+  CommunityCreatePayload: ( Omit<GqlCommunityCreateSuccess, 'community'> & { community: _RefType['Community'] } );
+  CommunityDeletePayload: ( GqlCommunityDeleteSuccess );
+  CommunityUpdateProfilePayload: ( Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: _RefType['Community'] } );
+  MembershipInvitePayload: ( Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: _RefType['Membership'] } );
+  MembershipRemovePayload: ( GqlMembershipRemoveSuccess );
+  MembershipSetInvitationStatusPayload: ( Omit<GqlMembershipSetInvitationStatusSuccess, 'membership'> & { membership: _RefType['Membership'] } );
+  MembershipSetRolePayload: ( Omit<GqlMembershipSetRoleSuccess, 'membership'> & { membership: _RefType['Membership'] } );
+  MembershipWithdrawPayload: ( GqlMembershipWithdrawSuccess );
+  OpportunityCreatePayload: ( Omit<GqlOpportunityCreateSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
+  OpportunityDeletePayload: ( GqlOpportunityDeleteSuccess );
+  OpportunityInvitationCreatePayload: ( Omit<GqlOpportunityInvitationCreateSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
+  OpportunityInvitationDisablePayload: ( Omit<GqlOpportunityInvitationDisableSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
+  OpportunitySetPublishStatusPayload: ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
+  OpportunitySlotsBulkUpdatePayload: ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
+  OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
+  ParticipationApplyPayload: ( Omit<GqlParticipationApplySuccess, 'participation'> & { participation: _RefType['Participation'] } );
+  ParticipationInvitePayload: ( Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: _RefType['Participation'] } );
+  ParticipationSetStatusPayload: ( Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: _RefType['Participation'] } );
+  PlaceCreatePayload: ( Omit<GqlPlaceCreateSuccess, 'place'> & { place: _RefType['Place'] } );
+  PlaceDeletePayload: ( GqlPlaceDeleteSuccess );
+  PlaceUpdatePayload: ( Omit<GqlPlaceUpdateSuccess, 'place'> & { place: _RefType['Place'] } );
+  TicketPurchasePayload: ( Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
+  TicketRefundPayload: ( Omit<GqlTicketRefundSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
+  TicketUsePayload: ( Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
+  TransactionDonateSelfPointPayload: ( Omit<GqlTransactionDonateSelfPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
+  TransactionGrantCommunityPointPayload: ( Omit<GqlTransactionGrantCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
+  TransactionIssueCommunityPointPayload: ( Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: _RefType['Transaction'] } );
+  UserUpdateProfilePayload: ( Omit<GqlUserUpdateProfileSuccess, 'user'> & { user?: Maybe<_RefType['User']> } );
+  UtilityCreatePayload: ( Omit<GqlUtilityCreateSuccess, 'utility'> & { utility: _RefType['Utility'] } );
+  UtilityDeletePayload: ( GqlUtilityDeleteSuccess );
+  UtilitySetPublishStatusPayload: ( Omit<GqlUtilitySetPublishStatusSuccess, 'utility'> & { utility: _RefType['Utility'] } );
+  UtilityUpdateInfoPayload: ( Omit<GqlUtilityUpdateInfoSuccess, 'utility'> & { utility: _RefType['Utility'] } );
 }>;
 
 /** Mapping of interface types */
@@ -2890,7 +2909,7 @@ export type GqlCommunityResolvers<ContextType = any, ParentType extends GqlResol
 }>;
 
 export type GqlCommunityCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityCreatePayload'] = GqlResolversParentTypes['CommunityCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'CommunityCreateSuccess' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'CommunityCreateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlCommunityCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityCreateSuccess'] = GqlResolversParentTypes['CommunityCreateSuccess']> = ResolversObject<{
@@ -2899,7 +2918,7 @@ export type GqlCommunityCreateSuccessResolvers<ContextType = any, ParentType ext
 }>;
 
 export type GqlCommunityDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityDeletePayload'] = GqlResolversParentTypes['CommunityDeletePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'CommunityDeleteSuccess' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'CommunityDeleteSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlCommunityDeleteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityDeleteSuccess'] = GqlResolversParentTypes['CommunityDeleteSuccess']> = ResolversObject<{
@@ -2914,7 +2933,7 @@ export type GqlCommunityEdgeResolvers<ContextType = any, ParentType extends GqlR
 }>;
 
 export type GqlCommunityUpdateProfilePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityUpdateProfilePayload'] = GqlResolversParentTypes['CommunityUpdateProfilePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'CommunityUpdateProfileSuccess' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'CommunityUpdateProfileSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlCommunityUpdateProfileSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunityUpdateProfileSuccess'] = GqlResolversParentTypes['CommunityUpdateProfileSuccess']> = ResolversObject<{
@@ -3018,7 +3037,7 @@ export type GqlMembershipHistoryEdgeResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlMembershipInvitePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipInvitePayload'] = GqlResolversParentTypes['MembershipInvitePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'MembershipInviteSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'MembershipInviteSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlMembershipInviteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipInviteSuccess'] = GqlResolversParentTypes['MembershipInviteSuccess']> = ResolversObject<{
@@ -3027,7 +3046,7 @@ export type GqlMembershipInviteSuccessResolvers<ContextType = any, ParentType ex
 }>;
 
 export type GqlMembershipRemovePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipRemovePayload'] = GqlResolversParentTypes['MembershipRemovePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'MembershipRemoveSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'MembershipRemoveSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlMembershipRemoveSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipRemoveSuccess'] = GqlResolversParentTypes['MembershipRemoveSuccess']> = ResolversObject<{
@@ -3037,7 +3056,7 @@ export type GqlMembershipRemoveSuccessResolvers<ContextType = any, ParentType ex
 }>;
 
 export type GqlMembershipSetInvitationStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipSetInvitationStatusPayload'] = GqlResolversParentTypes['MembershipSetInvitationStatusPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'MembershipSetInvitationStatusSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'MembershipSetInvitationStatusSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlMembershipSetInvitationStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipSetInvitationStatusSuccess'] = GqlResolversParentTypes['MembershipSetInvitationStatusSuccess']> = ResolversObject<{
@@ -3046,7 +3065,7 @@ export type GqlMembershipSetInvitationStatusSuccessResolvers<ContextType = any, 
 }>;
 
 export type GqlMembershipSetRolePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipSetRolePayload'] = GqlResolversParentTypes['MembershipSetRolePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'MembershipSetRoleSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'MembershipSetRoleSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlMembershipSetRoleSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipSetRoleSuccess'] = GqlResolversParentTypes['MembershipSetRoleSuccess']> = ResolversObject<{
@@ -3055,7 +3074,7 @@ export type GqlMembershipSetRoleSuccessResolvers<ContextType = any, ParentType e
 }>;
 
 export type GqlMembershipWithdrawPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipWithdrawPayload'] = GqlResolversParentTypes['MembershipWithdrawPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'MembershipWithdrawSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'MembershipWithdrawSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlMembershipWithdrawSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipWithdrawSuccess'] = GqlResolversParentTypes['MembershipWithdrawSuccess']> = ResolversObject<{
@@ -3156,7 +3175,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
 }>;
 
 export type GqlOpportunityCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityCreatePayload'] = GqlResolversParentTypes['OpportunityCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityCreateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunityCreateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunityCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityCreateSuccess'] = GqlResolversParentTypes['OpportunityCreateSuccess']> = ResolversObject<{
@@ -3165,7 +3184,7 @@ export type GqlOpportunityCreateSuccessResolvers<ContextType = any, ParentType e
 }>;
 
 export type GqlOpportunityDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityDeletePayload'] = GqlResolversParentTypes['OpportunityDeletePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityDeleteSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunityDeleteSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunityDeleteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityDeleteSuccess'] = GqlResolversParentTypes['OpportunityDeleteSuccess']> = ResolversObject<{
@@ -3192,7 +3211,7 @@ export type GqlOpportunityInvitationResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlOpportunityInvitationCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityInvitationCreatePayload'] = GqlResolversParentTypes['OpportunityInvitationCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityInvitationCreateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunityInvitationCreateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunityInvitationCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityInvitationCreateSuccess'] = GqlResolversParentTypes['OpportunityInvitationCreateSuccess']> = ResolversObject<{
@@ -3201,7 +3220,7 @@ export type GqlOpportunityInvitationCreateSuccessResolvers<ContextType = any, Pa
 }>;
 
 export type GqlOpportunityInvitationDisablePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityInvitationDisablePayload'] = GqlResolversParentTypes['OpportunityInvitationDisablePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityInvitationDisableSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunityInvitationDisableSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunityInvitationDisableSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityInvitationDisableSuccess'] = GqlResolversParentTypes['OpportunityInvitationDisableSuccess']> = ResolversObject<{
@@ -3245,7 +3264,7 @@ export type GqlOpportunityInvitationsConnectionResolvers<ContextType = any, Pare
 }>;
 
 export type GqlOpportunitySetPublishStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetPublishStatusPayload'] = GqlResolversParentTypes['OpportunitySetPublishStatusPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunitySetPublishStatusSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunitySetPublishStatusSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunitySetPublishStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetPublishStatusSuccess'] = GqlResolversParentTypes['OpportunitySetPublishStatusSuccess']> = ResolversObject<{
@@ -3271,7 +3290,7 @@ export type GqlOpportunitySlotEdgeResolvers<ContextType = any, ParentType extend
 }>;
 
 export type GqlOpportunitySlotsBulkUpdatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySlotsBulkUpdatePayload'] = GqlResolversParentTypes['OpportunitySlotsBulkUpdatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunitySlotsBulkUpdateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunitySlotsBulkUpdateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunitySlotsBulkUpdateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySlotsBulkUpdateSuccess'] = GqlResolversParentTypes['OpportunitySlotsBulkUpdateSuccess']> = ResolversObject<{
@@ -3287,7 +3306,7 @@ export type GqlOpportunitySlotsConnectionResolvers<ContextType = any, ParentType
 }>;
 
 export type GqlOpportunityUpdateContentPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityUpdateContentPayload'] = GqlResolversParentTypes['OpportunityUpdateContentPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'OpportunityUpdateContentSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OpportunityUpdateContentSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOpportunityUpdateContentSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityUpdateContentSuccess'] = GqlResolversParentTypes['OpportunityUpdateContentSuccess']> = ResolversObject<{
@@ -3326,7 +3345,7 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
 }>;
 
 export type GqlParticipationApplyPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationApplyPayload'] = GqlResolversParentTypes['ParticipationApplyPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'ParticipationApplySuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ParticipationApplySuccess', ParentType, ContextType>;
 }>;
 
 export type GqlParticipationApplySuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationApplySuccess'] = GqlResolversParentTypes['ParticipationApplySuccess']> = ResolversObject<{
@@ -3341,7 +3360,7 @@ export type GqlParticipationEdgeResolvers<ContextType = any, ParentType extends 
 }>;
 
 export type GqlParticipationInvitePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationInvitePayload'] = GqlResolversParentTypes['ParticipationInvitePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'ParticipationInviteSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ParticipationInviteSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlParticipationInviteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationInviteSuccess'] = GqlResolversParentTypes['ParticipationInviteSuccess']> = ResolversObject<{
@@ -3350,7 +3369,7 @@ export type GqlParticipationInviteSuccessResolvers<ContextType = any, ParentType
 }>;
 
 export type GqlParticipationSetStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationSetStatusPayload'] = GqlResolversParentTypes['ParticipationSetStatusPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'ParticipationSetStatusSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ParticipationSetStatusSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlParticipationSetStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationSetStatusSuccess'] = GqlResolversParentTypes['ParticipationSetStatusSuccess']> = ResolversObject<{
@@ -3407,7 +3426,7 @@ export type GqlPlaceResolvers<ContextType = any, ParentType extends GqlResolvers
 }>;
 
 export type GqlPlaceCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['PlaceCreatePayload'] = GqlResolversParentTypes['PlaceCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'PlaceCreateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'PlaceCreateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlPlaceCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['PlaceCreateSuccess'] = GqlResolversParentTypes['PlaceCreateSuccess']> = ResolversObject<{
@@ -3416,7 +3435,7 @@ export type GqlPlaceCreateSuccessResolvers<ContextType = any, ParentType extends
 }>;
 
 export type GqlPlaceDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['PlaceDeletePayload'] = GqlResolversParentTypes['PlaceDeletePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'PlaceDeleteSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'PlaceDeleteSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlPlaceDeleteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['PlaceDeleteSuccess'] = GqlResolversParentTypes['PlaceDeleteSuccess']> = ResolversObject<{
@@ -3431,7 +3450,7 @@ export type GqlPlaceEdgeResolvers<ContextType = any, ParentType extends GqlResol
 }>;
 
 export type GqlPlaceUpdatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['PlaceUpdatePayload'] = GqlResolversParentTypes['PlaceUpdatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'PlaceUpdateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'PlaceUpdateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlPlaceUpdateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['PlaceUpdateSuccess'] = GqlResolversParentTypes['PlaceUpdateSuccess']> = ResolversObject<{
@@ -3513,7 +3532,7 @@ export type GqlTicketEdgeResolvers<ContextType = any, ParentType extends GqlReso
 }>;
 
 export type GqlTicketPurchasePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketPurchasePayload'] = GqlResolversParentTypes['TicketPurchasePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TicketPurchaseSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'TicketPurchaseSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTicketPurchaseSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketPurchaseSuccess'] = GqlResolversParentTypes['TicketPurchaseSuccess']> = ResolversObject<{
@@ -3522,7 +3541,7 @@ export type GqlTicketPurchaseSuccessResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlTicketRefundPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketRefundPayload'] = GqlResolversParentTypes['TicketRefundPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TicketRefundSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'TicketRefundSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTicketRefundSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketRefundSuccess'] = GqlResolversParentTypes['TicketRefundSuccess']> = ResolversObject<{
@@ -3556,7 +3575,7 @@ export type GqlTicketStatusHistoryEdgeResolvers<ContextType = any, ParentType ex
 }>;
 
 export type GqlTicketUsePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketUsePayload'] = GqlResolversParentTypes['TicketUsePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TicketUseSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'TicketUseSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTicketUseSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketUseSuccess'] = GqlResolversParentTypes['TicketUseSuccess']> = ResolversObject<{
@@ -3586,7 +3605,7 @@ export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlRes
 }>;
 
 export type GqlTransactionDonateSelfPointPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionDonateSelfPointPayload'] = GqlResolversParentTypes['TransactionDonateSelfPointPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TransactionDonateSelfPointSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'TransactionDonateSelfPointSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTransactionDonateSelfPointSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionDonateSelfPointSuccess'] = GqlResolversParentTypes['TransactionDonateSelfPointSuccess']> = ResolversObject<{
@@ -3601,7 +3620,7 @@ export type GqlTransactionEdgeResolvers<ContextType = any, ParentType extends Gq
 }>;
 
 export type GqlTransactionGrantCommunityPointPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionGrantCommunityPointPayload'] = GqlResolversParentTypes['TransactionGrantCommunityPointPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TransactionGrantCommunityPointSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'TransactionGrantCommunityPointSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTransactionGrantCommunityPointSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionGrantCommunityPointSuccess'] = GqlResolversParentTypes['TransactionGrantCommunityPointSuccess']> = ResolversObject<{
@@ -3610,7 +3629,7 @@ export type GqlTransactionGrantCommunityPointSuccessResolvers<ContextType = any,
 }>;
 
 export type GqlTransactionIssueCommunityPointPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionIssueCommunityPointPayload'] = GqlResolversParentTypes['TransactionIssueCommunityPointPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'TransactionIssueCommunityPointSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'TransactionIssueCommunityPointSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTransactionIssueCommunityPointSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TransactionIssueCommunityPointSuccess'] = GqlResolversParentTypes['TransactionIssueCommunityPointSuccess']> = ResolversObject<{
@@ -3665,7 +3684,7 @@ export type GqlUserEdgeResolvers<ContextType = any, ParentType extends GqlResolv
 }>;
 
 export type GqlUserUpdateProfilePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UserUpdateProfilePayload'] = GqlResolversParentTypes['UserUpdateProfilePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UserUpdateProfileSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'UserUpdateProfileSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlUserUpdateProfileSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UserUpdateProfileSuccess'] = GqlResolversParentTypes['UserUpdateProfileSuccess']> = ResolversObject<{
@@ -3696,14 +3715,14 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
-  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
-  tickets?: Resolver<Maybe<Array<GqlResolversTypes['Ticket']>>, ParentType, ContextType>;
+  requiredForOpportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUtilityRequiredForOpportunitiesArgs>>;
+  tickets?: Resolver<Maybe<GqlResolversTypes['TicketsConnection']>, ParentType, ContextType, Partial<GqlUtilityTicketsArgs>>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlUtilityCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityCreatePayload'] = GqlResolversParentTypes['UtilityCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UtilityCreateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'UtilityCreateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlUtilityCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityCreateSuccess'] = GqlResolversParentTypes['UtilityCreateSuccess']> = ResolversObject<{
@@ -3712,7 +3731,7 @@ export type GqlUtilityCreateSuccessResolvers<ContextType = any, ParentType exten
 }>;
 
 export type GqlUtilityDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityDeletePayload'] = GqlResolversParentTypes['UtilityDeletePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UtilityDeleteSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'UtilityDeleteSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlUtilityDeleteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityDeleteSuccess'] = GqlResolversParentTypes['UtilityDeleteSuccess']> = ResolversObject<{
@@ -3727,7 +3746,7 @@ export type GqlUtilityEdgeResolvers<ContextType = any, ParentType extends GqlRes
 }>;
 
 export type GqlUtilitySetPublishStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilitySetPublishStatusPayload'] = GqlResolversParentTypes['UtilitySetPublishStatusPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UtilitySetPublishStatusSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'UtilitySetPublishStatusSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlUtilitySetPublishStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilitySetPublishStatusSuccess'] = GqlResolversParentTypes['UtilitySetPublishStatusSuccess']> = ResolversObject<{
@@ -3736,7 +3755,7 @@ export type GqlUtilitySetPublishStatusSuccessResolvers<ContextType = any, Parent
 }>;
 
 export type GqlUtilityUpdateInfoPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityUpdateInfoPayload'] = GqlResolversParentTypes['UtilityUpdateInfoPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError' | 'UtilityUpdateInfoSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'UtilityUpdateInfoSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlUtilityUpdateInfoSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UtilityUpdateInfoSuccess'] = GqlResolversParentTypes['UtilityUpdateInfoSuccess']> = ResolversObject<{
