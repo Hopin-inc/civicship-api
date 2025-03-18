@@ -311,7 +311,7 @@ export default class ParticipationUseCase {
           ctx,
           tx,
           communityId,
-          participation.id,
+          userId,
           fromPointChange,
         );
 
