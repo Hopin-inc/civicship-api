@@ -21,14 +21,6 @@ type WalletDeleteSuccess {
 
 ## union definitions
 
-union WalletCreatePayload =
-    WalletCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union WalletCreatePayload = WalletCreateSuccess
 
-union WalletDeletePayload =
-    WalletDeleteSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union WalletDeletePayload = WalletDeleteSuccess

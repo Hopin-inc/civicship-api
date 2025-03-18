@@ -40,6 +40,7 @@ import OpportunityRepository from "@/infra/repositories/opportunity";
 import ParticipationInputFormat from "@/presentation/graphql/dto/opportunity/participation/input";
 import TransactionService from "@/app/transaction/service";
 import { PrismaClientIssuer } from "@/infra/prisma/client";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class ParticipationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -140,7 +141,7 @@ export default class ParticipationUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       const participation = await ParticipationRepository.find(ctx, id, tx);
       if (!participation) {
-        throw new Error(`Participation not found: id=${id}`);
+        throw new NotFoundError("Participation", { id });
       }
 
       const updated = await ParticipationRepository.setStatus(
@@ -187,7 +188,7 @@ export default class ParticipationUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       const opportunity = await OpportunityRepository.find(ctx, input.opportunityId, tx);
       if (!opportunity) {
-        throw new Error(`OpportunityNotFound: ID=${input.opportunityId}`);
+        throw new NotFoundError("Opportunity", { id: input.opportunityId });
       }
 
       const data: Prisma.ParticipationCreateInput = ParticipationInputFormat.apply(
@@ -243,7 +244,7 @@ export default class ParticipationUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       const participation = await ParticipationRepository.find(ctx, id, tx);
       if (!participation) {
-        throw new Error(`Participation not found: id=${id}`);
+        throw new NotFoundError("Participation", { id });
       }
 
       const updated = await ParticipationRepository.setStatus(
@@ -293,7 +294,7 @@ export default class ParticipationUseCase {
 
       const participation = await ParticipationRepository.find(ctx, id, tx);
       if (!participation) {
-        throw new Error(`Participation not found: id=${id}`);
+        throw new NotFoundError("Participation", { id });
       }
 
       const { opportunity } = await ParticipationUtils.validateParticipation(

@@ -8,6 +8,7 @@ import CommunityRepository from "@/infra/repositories/community";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/utils";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class CommunityService {
   static async fetchCommunities(
@@ -39,7 +40,7 @@ export default class CommunityService {
   static async deleteCommunity(ctx: IContext, id: string) {
     const community = await CommunityRepository.find(ctx, id);
     if (!community) {
-      throw new Error(`CommunityNotFound: ID=${id}`);
+      throw new NotFoundError("Community", { id });
     }
 
     return await CommunityRepository.delete(ctx, id);
@@ -52,7 +53,7 @@ export default class CommunityService {
   ) {
     const community = await CommunityRepository.find(ctx, id);
     if (!community) {
-      throw new Error(`CommunityNotFound: ID=${id}`);
+      throw new NotFoundError("Community", { id });
     }
 
     const data: Prisma.CommunityUpdateInput = CommunityInputFormat.update(input);

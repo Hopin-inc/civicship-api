@@ -22,7 +22,7 @@ export default class UserService {
   ) {
     const where = UserInputFormat.filter(filter ?? {});
     const orderBy = UserInputFormat.sort(sort ?? {});
-    return UserRepository.queryOnlyCommunity(ctx, where, orderBy, take, cursor);
+    return UserRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findUser(ctx: IContext, id: string) {

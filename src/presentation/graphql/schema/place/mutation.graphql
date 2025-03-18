@@ -17,11 +17,7 @@ type PlaceCreateSuccess {
     place: Place
 }
 
-union PlaceCreatePayload =
-    PlaceCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union PlaceCreatePayload = PlaceCreateSuccess
 
 # =========================
 # Update
@@ -44,9 +40,6 @@ type PlaceUpdateSuccess {
 
 union PlaceUpdatePayload =
     PlaceUpdateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
 
 # =========================
 # Delete
@@ -55,8 +48,4 @@ type PlaceDeleteSuccess {
     id: ID!
 }
 
-union PlaceDeletePayload =
-    PlaceDeleteSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union PlaceDeletePayload = PlaceDeleteSuccess

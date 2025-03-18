@@ -10,8 +10,4 @@ type OpportunityInvitationHistoryCreateSuccess {
     opportunityInvitationHistory: OpportunityInvitationHistory
 }
 
-union OpportunityInvitationHistoryCreatePayload =
-    OpportunityInvitationHistoryCreateSuccess
-    | InvalidInputValueError
-    | AuthError
-    | ComplexQueryError
+union OpportunityInvitationHistoryCreatePayload = OpportunityInvitationHistoryCreateSuccess

@@ -62,32 +62,12 @@ type TransactionRedeemUtilitySuccess {
 
 # Union definitions
 
-union TransactionIssueCommunityPointPayload =
-    TransactionIssueCommunityPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union TransactionIssueCommunityPointPayload = TransactionIssueCommunityPointSuccess
 
-union TransactionGrantCommunityPointPayload =
-    TransactionGrantCommunityPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union TransactionGrantCommunityPointPayload = TransactionGrantCommunityPointSuccess
 
-union TransactionDonateSelfPointPayload =
-    TransactionDonateSelfPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union TransactionDonateSelfPointPayload = TransactionDonateSelfPointSuccess
 
-union TransactionRedeemUtilityPayload =
-    TransactionRedeemUtilitySuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union TransactionRedeemUtilityPayload = TransactionRedeemUtilitySuccess
 
-union TransactionGiveRewardPointPayload =
-    TransactionGiveRewardPointSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+union TransactionGiveRewardPointPayload = TransactionGiveRewardPointSuccess

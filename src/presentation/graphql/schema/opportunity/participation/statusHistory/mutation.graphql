@@ -15,7 +15,4 @@ type ParticipationStatusHistoryCreateSuccess {
 ## union definitions
 
 union ParticipationStatusHistoryCreatePayload =
-    ParticipationStatusHistoryCreateSuccess |
-    InvalidInputValueError |
-    AuthError |
-    ComplexQueryError
+    ParticipationStatusHistoryCreateSuccess
