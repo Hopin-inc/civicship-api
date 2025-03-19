@@ -69,17 +69,20 @@ NOT_PARTICIPATING NOT_PARTICIPATING
     
 
 
-        ParticipationStatusReason {
-            INVITED INVITED
-CANCELED_INVITATION CANCELED_INVITATION
-ACCEPTED_INVITATION ACCEPTED_INVITATION
-DECLINED_INVITATION DECLINED_INVITATION
-APPLIED APPLIED
-WITHDRAW_APPLICATION WITHDRAW_APPLICATION
-ACCEPTED_APPLICATION ACCEPTED_APPLICATION
-DECLINED_APPLICATION DECLINED_APPLICATION
-QUALIFIED_PARTICIPATION QUALIFIED_PARTICIPATION
-UNQUALIFIED_PARTICIPATION UNQUALIFIED_PARTICIPATION
+        ParticipationEventType {
+            INVITATION INVITATION
+APPLICATION APPLICATION
+EVALUATION EVALUATION
+OPPORTUNITY OPPORTUNITY
+        }
+    
+
+
+        ParticipationEventTrigger {
+            ISSUED ISSUED
+ACCEPTED ACCEPTED
+DECLINED DECLINED
+CANCELED CANCELED
         }
     
 
@@ -258,7 +261,8 @@ USER USER
   "t_participations" {
     String id "🗝️"
     ParticipationStatus status 
-    ParticipationStatusReason reason 
+    ParticipationEventType eventType 
+    ParticipationEventTrigger eventTrigger 
     Json images "❓"
     String user_id "❓"
     String community_id "❓"
@@ -272,7 +276,8 @@ USER USER
   "t_participation_status_histories" {
     String id "🗝️"
     ParticipationStatus status 
-    ParticipationStatusReason reason 
+    ParticipationEventType eventType 
+    ParticipationEventTrigger eventTrigger 
     String participation_id 
     String created_by "❓"
     DateTime created_at 
@@ -436,7 +441,8 @@ USER USER
     "t_opportunity_slots" o|--|o "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
-    "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
+    "t_participations" o|--|| "ParticipationEventType" : "enum:eventType"
+    "t_participations" o|--|| "ParticipationEventTrigger" : "enum:eventTrigger"
     "t_participations" o|--|o "t_users" : "user"
     "t_participations" o|--|o "t_communities" : "community"
     "t_participations" o|--|o "t_opportunities" : "opportunity"
@@ -444,7 +450,8 @@ USER USER
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
     "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
-    "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"
+    "t_participation_status_histories" o|--|| "ParticipationEventType" : "enum:eventType"
+    "t_participation_status_histories" o|--|| "ParticipationEventTrigger" : "enum:eventTrigger"
     "t_participation_status_histories" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
     "t_places" o|--|| "m_cities" : "city"

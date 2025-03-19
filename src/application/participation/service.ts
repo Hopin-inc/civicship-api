@@ -1,28 +1,55 @@
 import {
+  GqlParticipation,
   GqlParticipationApplyInput,
+  GqlParticipationFilterInput,
   GqlParticipationInviteInput,
-  GqlQueryParticipationsArgs,
+  GqlParticipationsConnection,
+  GqlParticipationSortInput,
 } from "@/types/graphql";
-import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import {
+  ParticipationEventTrigger,
+  ParticipationEventType,
+  ParticipationStatus,
+  Prisma,
+} from "@prisma/client";
 import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
 import { IContext } from "@/types/server";
-import { getCurrentUserId } from "@/application/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
 import { PrismaParticipation } from "@/application/participation/data/type";
 import OpportunityRepository from "@/application/opportunity/data/repository";
 import { NotFoundError } from "@/errors/graphql";
 import { PrismaOpportunity } from "@/application/opportunity/data/type";
+import ParticipationPresenter from "@/application/participation/presenter";
 
 export default class ParticipationService {
   static async fetchParticipations(
     ctx: IContext,
-    { cursor, filter, sort }: GqlQueryParticipationsArgs,
-    take: number,
-  ) {
+    {
+      cursor,
+      filter,
+      sort,
+      first,
+    }: {
+      cursor?: string;
+      filter?: GqlParticipationFilterInput;
+      sort?: GqlParticipationSortInput;
+      first?: number;
+    },
+  ): Promise<GqlParticipationsConnection> {
+    const take = clampFirst(first);
+
     const where = ParticipationConverter.filter(filter ?? {});
     const orderBy = ParticipationConverter.sort(sort ?? {});
 
-    return await ParticipationRepository.query(ctx, where, orderBy, take, cursor);
+    const res = await ParticipationRepository.query(ctx, where, orderBy, take, cursor);
+    const hasNextPage = res.length > take;
+
+    const data: GqlParticipation[] = res
+      .slice(0, take)
+      .map((record) => ParticipationPresenter.get(record));
+
+    return ParticipationPresenter.query(data, hasNextPage);
   }
 
   static async findParticipation(ctx: IContext, id: string) {
@@ -67,14 +94,16 @@ export default class ParticipationService {
     ctx: IContext,
     id: string,
     status: ParticipationStatus,
-    reason: ParticipationStatusReason,
+    eventType: ParticipationEventType,
+    eventTrigger: ParticipationEventTrigger,
     tx?: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data: Prisma.ParticipationUpdateInput = ParticipationConverter.setStatus(
       currentUserId,
       status,
-      reason,
+      eventType,
+      eventTrigger,
     );
     return ParticipationRepository.setStatus(ctx, id, data, tx);
   }

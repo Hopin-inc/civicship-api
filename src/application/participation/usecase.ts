@@ -28,12 +28,12 @@ import {
 import { IContext } from "@/types/server";
 import ParticipationService from "@/application/participation/service";
 import ParticipationPresenter from "@/application/participation/presenter";
-import ParticipationUtils from "@/application/participation/utils";
 import { getCurrentUserId } from "@/application/utils";
 import {
   OpportunityCategory,
+  ParticipationEventTrigger,
+  ParticipationEventType,
   ParticipationStatus,
-  ParticipationStatusReason,
   Prisma,
 } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
@@ -50,7 +50,7 @@ export default class ParticipationUseCase {
     args: GqlQueryParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, args);
+    return ParticipationService.fetchParticipations(ctx, args);
   }
 
   static async visitorBrowseParticipationsByCommunity(
@@ -58,7 +58,7 @@ export default class ParticipationUseCase {
     { first, cursor }: GqlCommunityParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+    return ParticipationService.fetchParticipations(ctx, {
       cursor,
       filter: { communityId: id },
       first,
@@ -70,7 +70,7 @@ export default class ParticipationUseCase {
     { first, cursor }: GqlUserParticipationsArgs,
     ctx: IContext,
   ) {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+    return ParticipationService.fetchParticipations(ctx, {
       cursor,
       filter: { userId: id },
       first,
@@ -82,7 +82,7 @@ export default class ParticipationUseCase {
     args: GqlOpportunityParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+    return ParticipationService.fetchParticipations(ctx, {
       ...args,
       filter: { opportunityId: id },
     });
@@ -93,7 +93,7 @@ export default class ParticipationUseCase {
     { first, cursor }: GqlOpportunitySlotParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
-    return ParticipationUtils.fetchParticipationsCommon(ctx, {
+    return ParticipationService.fetchParticipations(ctx, {
       cursor,
       filter: { opportunitySlotId: id },
       first,
@@ -127,7 +127,8 @@ export default class ParticipationUseCase {
       ctx,
       id,
       ParticipationStatus.NOT_PARTICIPATING,
-      ParticipationStatusReason.CANCELED_INVITATION,
+      ParticipationEventType.INVITATION,
+      ParticipationEventTrigger.CANCELED,
     );
     return ParticipationPresenter.setStatus(res);
   }
@@ -146,7 +147,8 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.PARTICIPATING,
-        ParticipationStatusReason.ACCEPTED_INVITATION,
+        ParticipationEventType.INVITATION,
+        ParticipationEventTrigger.ACCEPTED,
         tx,
       );
 
@@ -165,7 +167,8 @@ export default class ParticipationUseCase {
       ctx,
       id,
       ParticipationStatus.NOT_PARTICIPATING,
-      ParticipationStatusReason.DECLINED_INVITATION,
+      ParticipationEventType.INVITATION,
+      ParticipationEventTrigger.DECLINED,
     );
     return ParticipationPresenter.setStatus(res);
   }
@@ -214,7 +217,8 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.NOT_PARTICIPATING,
-        ParticipationStatusReason.WITHDRAW_APPLICATION,
+        ParticipationEventType.APPLICATION,
+        ParticipationEventTrigger.CANCELED,
         tx,
       );
 
@@ -240,7 +244,8 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.PARTICIPATING,
-        ParticipationStatusReason.ACCEPTED_APPLICATION,
+        ParticipationEventType.APPLICATION,
+        ParticipationEventTrigger.ACCEPTED,
         tx,
       );
 
@@ -268,7 +273,8 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.NOT_PARTICIPATING,
-        ParticipationStatusReason.DECLINED_APPLICATION,
+        ParticipationEventType.APPLICATION,
+        ParticipationEventTrigger.DECLINED,
         tx,
       );
 
@@ -292,7 +298,8 @@ export default class ParticipationUseCase {
         ctx,
         id,
         ParticipationStatus.PARTICIPATED,
-        ParticipationStatusReason.QUALIFIED_PARTICIPATION,
+        ParticipationEventType.EVALUATION,
+        ParticipationEventTrigger.ACCEPTED,
         tx,
       );
       const opportunity = await ParticipationService.validateParticipationHasOpportunity(
@@ -331,7 +338,8 @@ export default class ParticipationUseCase {
       ctx,
       id,
       ParticipationStatus.PARTICIPATING,
-      ParticipationStatusReason.UNQUALIFIED_PARTICIPATION,
+      ParticipationEventType.EVALUATION,
+      ParticipationEventTrigger.DECLINED,
     );
     return ParticipationPresenter.setStatus(res);
   }

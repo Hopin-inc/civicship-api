@@ -1,7 +1,8 @@
 model ParticipationStatusHistory {
-  id     String                    @id @default(cuid())
-  status ParticipationStatus
-  reason ParticipationStatusReason
+  id           String                    @id @default(cuid())
+  status       ParticipationStatus
+  eventType    ParticipationEventType
+  eventTrigger ParticipationEventTrigger
 
   participationId String        @map("participation_id")
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)

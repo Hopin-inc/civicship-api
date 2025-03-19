@@ -9,7 +9,6 @@ import {
   GqlUserParticipationStatusChangedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationStatusHistoryUtils from "@/application/participation/statusHistory/utils";
 import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 import ParticipationStatusHistoryOutputFormat from "@/application/participation/statusHistory/presenter";
 
@@ -18,7 +17,7 @@ export default class ParticipationStatusHistoryUseCase {
     { cursor, filter, sort, first }: GqlQueryParticipationStatusHistoriesArgs,
     ctx: IContext,
   ): Promise<GqlParticipationStatusHistoriesConnection> {
-    return ParticipationStatusHistoryUtils.fetchParticipationStatusHistoriesCommon(ctx, {
+    return ParticipationStatusHistoryService.fetchParticipationStatusHistories(ctx, {
       cursor,
       sort,
       filter,
@@ -31,7 +30,7 @@ export default class ParticipationStatusHistoryUseCase {
     { first, cursor }: GqlParticipationStatusHistoriesArgs,
     ctx: IContext,
   ): Promise<GqlParticipationStatusHistoriesConnection> {
-    return ParticipationStatusHistoryUtils.fetchParticipationStatusHistoriesCommon(ctx, {
+    return ParticipationStatusHistoryService.fetchParticipationStatusHistories(ctx, {
       cursor,
       filter: { participationId: id },
       first,
@@ -43,7 +42,7 @@ export default class ParticipationStatusHistoryUseCase {
     { first, cursor }: GqlUserParticipationStatusChangedByMeArgs,
     ctx: IContext,
   ) {
-    return ParticipationStatusHistoryUtils.fetchParticipationStatusHistoriesCommon(ctx, {
+    return ParticipationStatusHistoryService.fetchParticipationStatusHistories(ctx, {
       cursor,
       filter: { createdById: id },
       first,

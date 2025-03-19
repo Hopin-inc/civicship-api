@@ -4,7 +4,12 @@ import {
   GqlParticipationApplyInput,
   GqlParticipationInviteInput,
 } from "@/types/graphql";
-import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import {
+  ParticipationEventTrigger,
+  ParticipationEventType,
+  ParticipationStatus,
+  Prisma,
+} from "@prisma/client";
 
 export default class ParticipationConverter {
   static filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
@@ -32,14 +37,16 @@ export default class ParticipationConverter {
   ): Prisma.ParticipationCreateInput {
     return {
       status: ParticipationStatus.PENDING,
-      reason: ParticipationStatusReason.INVITED,
+      eventType: ParticipationEventType.INVITATION,
+      eventTrigger: ParticipationEventTrigger.ISSUED,
       community: { connect: { id: communityId } },
       user: { connect: { id: invitedUserId } },
       opportunity: { connect: { id: opportunityId } },
       statusHistories: {
         create: {
           status: ParticipationStatus.PENDING,
-          reason: ParticipationStatusReason.INVITED,
+          eventType: ParticipationEventType.INVITATION,
+          eventTrigger: ParticipationEventTrigger.ISSUED,
           createdByUser: { connect: { id: currentUserId } },
         },
       },
@@ -54,14 +61,16 @@ export default class ParticipationConverter {
   ): Prisma.ParticipationCreateInput {
     return {
       status,
-      reason: ParticipationStatusReason.APPLIED,
+      eventType: ParticipationEventType.APPLICATION,
+      eventTrigger: ParticipationEventTrigger.ISSUED,
       community: { connect: { id: communityId } },
       user: { connect: { id: currentUserId } },
       opportunity: { connect: { id: opportunityId } },
       statusHistories: {
         create: {
           status,
-          reason: ParticipationStatusReason.APPLIED,
+          eventType: ParticipationEventType.APPLICATION,
+          eventTrigger: ParticipationEventTrigger.ISSUED,
           createdByUser: { connect: { id: currentUserId } },
         },
       },
@@ -71,15 +80,18 @@ export default class ParticipationConverter {
   static setStatus(
     currentUserId: string,
     status: ParticipationStatus,
-    reason: ParticipationStatusReason,
+    eventType: ParticipationEventType,
+    eventTrigger: ParticipationEventTrigger,
   ): Prisma.ParticipationUpdateInput {
     return {
       status,
-      reason,
+      eventType,
+      eventTrigger,
       statusHistories: {
         create: {
           status,
-          reason,
+          eventType,
+          eventTrigger,
           createdByUser: { connect: { id: currentUserId } },
         },
       },

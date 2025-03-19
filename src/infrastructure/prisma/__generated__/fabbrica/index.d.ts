@@ -28,7 +28,8 @@ import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
-import type { ParticipationStatusReason } from "@prisma/client";
+import type { ParticipationEventType } from "@prisma/client";
+import type { ParticipationEventTrigger } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
@@ -676,7 +677,8 @@ type ParticipationopportunitySlotFactory = {
 type ParticipationFactoryDefineInput = {
     id?: string;
     status?: ParticipationStatus;
-    reason?: ParticipationStatusReason;
+    eventType?: ParticipationEventType;
+    eventTrigger?: ParticipationEventTrigger;
     images?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -735,7 +737,8 @@ type ParticipationStatusHistorycreatedByUserFactory = {
 type ParticipationStatusHistoryFactoryDefineInput = {
     id?: string;
     status?: ParticipationStatus;
-    reason?: ParticipationStatusReason;
+    eventType?: ParticipationEventType;
+    eventTrigger?: ParticipationEventTrigger;
     createdAt?: Date;
     updatedAt?: Date | null;
     participation: ParticipationStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutStatusHistoriesInput;

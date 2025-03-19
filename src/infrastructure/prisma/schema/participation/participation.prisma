@@ -37,7 +37,6 @@ enum ParticipationStatus {
 
 enum ParticipationEventType {
   INVITATION
-  REFERRAL
   APPLICATION
   EVALUATION
   OPPORTUNITY
