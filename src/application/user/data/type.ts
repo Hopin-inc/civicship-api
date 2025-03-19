@@ -37,7 +37,9 @@ export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
   identities: true,
 });
 
-export const userInclude = Prisma.validator<Prisma.UserInclude>()({});
+export const userInclude = Prisma.validator<Prisma.UserInclude>()({
+  identities: true,
+});
 
 export type PrismaUser = Prisma.UserGetPayload<{
   include: typeof userInclude;
