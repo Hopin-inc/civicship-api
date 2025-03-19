@@ -8,8 +8,9 @@ import {
   sanitizeInput,
 } from "@/presentation/graphql/permission/rule";
 import { ShieldRule } from "graphql-shield/typings/types";
+import { GqlMutation } from "@/types/graphql";
 
-const participationMutationPermissions: Record<string, ShieldRule> = {
+const participationMutationPermissions: Partial<Record<keyof GqlMutation, ShieldRule>> = {
   // invite
   participationInvite: and(isCommunityMember, sanitizeInput),
   participationCancelInvitation: and(isCommunityMember, sanitizeInput),

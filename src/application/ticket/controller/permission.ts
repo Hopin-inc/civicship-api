@@ -1,8 +1,9 @@
 import { and } from "graphql-shield";
 import { isCommunityMember, isSelf, sanitizeInput } from "@/presentation/graphql/permission/rule";
 import { ShieldRule } from "graphql-shield/typings/types";
+import { GqlMutation } from "@/types/graphql";
 
-const ticketMutationPermissions: Record<string, ShieldRule> = {
+const ticketMutationPermissions: Partial<Record<keyof GqlMutation, ShieldRule>> = {
   ticketPurchase: and(isCommunityMember, sanitizeInput),
   ticketUse: and(isSelf, sanitizeInput),
   ticketRefund: and(isSelf, sanitizeInput),

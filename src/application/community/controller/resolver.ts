@@ -76,10 +76,13 @@ const communityResolver = {
       args: GqlCommunityOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(ctx, {
-        ...args,
-        filter: { ...args.filter, communityIds: [parent.id] },
-      });
+      return OpportunityUseCase.anyoneBrowseOpportunities(
+        {
+          ...args,
+          filter: { ...args.filter, communityIds: [parent.id] },
+        },
+        ctx,
+      );
     },
 
     participations: async (

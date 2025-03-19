@@ -6,8 +6,9 @@ import {
   sanitizeInput,
 } from "@/presentation/graphql/permission/rule";
 import { ShieldRule } from "graphql-shield/typings/types";
+import { GqlMutation } from "@/types/graphql";
 
-const opportunityMutationPermissions: Record<string, ShieldRule> = {
+const opportunityMutationPermissions: Partial<Record<keyof GqlMutation, ShieldRule>> = {
   opportunityCreate: and(isCommunityMember, sanitizeInput),
   opportunityDelete: or(
     and(isCommunityManager, sanitizeInput),
