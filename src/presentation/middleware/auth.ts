@@ -4,7 +4,7 @@ import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
 import { SignInProvider } from "@/consts/utils";
 import { userAuthInclude, userAuthSelect } from "@/application/user/data/type";
-import { createLoaders } from "@/presentation/graphql/dataloader";
+import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
 
@@ -40,7 +40,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     ),
   ]);
 
-  const loaders = createLoaders(issuer);
+  const loaders: Loaders = createLoaders(issuer);
 
   return {
     uid,

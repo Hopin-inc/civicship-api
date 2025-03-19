@@ -32,7 +32,7 @@ async function startServer() {
   app.use("/line", lineRouter);
 
   server.listen(port, () => {
-    logger.info(`🚀 Server ready at port ${ port }`);
+    logger.info(`🚀 Server ready at port ${port}`);
   });
 }
 
