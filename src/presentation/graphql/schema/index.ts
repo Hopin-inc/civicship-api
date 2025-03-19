@@ -3,8 +3,7 @@ import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { makeExecutableSchema, mergeSchemas, addResolversToSchema } from "@graphql-tools/schema";
 import { DateTimeTypeDefinition } from "graphql-scalars";
 import { applyMiddleware } from "graphql-middleware";
-import permissions from "src/presentation/graphql/permission";
-import errorMiddleware from "@/presentation/middleware/error"; // 例: errorMiddleware がある場合
+import errorMiddleware from "@/presentation/middleware/error";
 import resolvers from "@/presentation/graphql/resolver";
 import { fileURLToPath } from "url";
 import path from "path";
@@ -34,5 +33,6 @@ schema = addResolversToSchema({
   resolvers,
 });
 
-schema = applyMiddleware(schema, permissions, errorMiddleware);
+// TODO add permissions
+schema = applyMiddleware(schema, errorMiddleware);
 export default schema;

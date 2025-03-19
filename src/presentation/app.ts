@@ -10,6 +10,7 @@ export function createExpressApp() {
 
   app.use("/graphql", express.json({ limit: "50mb" }), corsHandler, requestLogger);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err, _req, res, _next) => {
     logger.error("Unhandled Express Error:", {
       message: err.message,
