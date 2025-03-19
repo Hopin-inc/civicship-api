@@ -141,7 +141,11 @@ export default class MembershipService {
       role,
       currentUserId,
     );
-    return MembershipRepository.update(ctx, { userId_communityId: { userId, communityId } }, data);
+    return await MembershipRepository.update(
+      ctx,
+      { userId_communityId: { userId, communityId } },
+      data,
+    );
   }
 
   static async deleteMembership(
