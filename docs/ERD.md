@@ -60,6 +60,14 @@ ACTIVITY ACTIVITY
     
 
 
+        OpportunityHostingStatus {
+            SCHEDULED SCHEDULED
+CANCELLED CANCELLED
+COMPLETED COMPLETED
+        }
+    
+
+
         ParticipationStatus {
             PENDING PENDING
 PARTICIPATING PARTICIPATING
@@ -210,16 +218,17 @@ USER USER
     String title 
     String description 
     String body "❓"
+    String image "❓"
+    Json files 
+    DateTime starts_at "❓"
+    DateTime ends_at "❓"
     OpportunityCategory category 
+    OpportunityHostingStatus hostingStatus 
     PublishStatus publish_status 
     Boolean require_approval 
     Int capacity "❓"
     Int points_to_earn "❓"
     Int fee_required "❓"
-    String image "❓"
-    Json files 
-    DateTime starts_at "❓"
-    DateTime ends_at "❓"
     String place_id "❓"
     String community_id 
     String created_by 
@@ -424,15 +433,16 @@ USER USER
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
     "t_wallets" o{--}o "t_tickets" : "tickets"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
+    "t_opportunities" o|--|| "OpportunityHostingStatus" : "enum:hostingStatus"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o|--|o "t_places" : "place"
-    "t_opportunities" o|--|| "t_communities" : "community"
-    "t_opportunities" o|--|| "t_users" : "createdByUser"
-    "t_opportunities" o{--}o "t_articles" : "articles"
-    "t_opportunities" o{--}o "t_participations" : "participations"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "t_opportunity_invitations" : "invitations"
-    "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
+    "t_opportunities" o{--}o "t_participations" : "participations"
+    "t_opportunities" o{--}o "t_articles" : "articles"
+    "t_opportunities" o|--|| "t_communities" : "community"
+    "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"
     "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"

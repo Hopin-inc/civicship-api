@@ -137,25 +137,13 @@ const modelFieldDefinitions = [{
     }, {
         name: "Opportunity",
         fields: [{
+                name: "requiredUtilities",
+                type: "Utility",
+                relationName: "OpportunityToUtility"
+            }, {
                 name: "place",
                 type: "Place",
                 relationName: "OpportunityToPlace"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToOpportunity"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "OpportunityToUser"
-            }, {
-                name: "articles",
-                type: "Article",
-                relationName: "t_opportunities_on_articles"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "OpportunityToParticipation"
             }, {
                 name: "slots",
                 type: "OpportunitySlot",
@@ -165,9 +153,21 @@ const modelFieldDefinitions = [{
                 type: "OpportunityInvitation",
                 relationName: "OpportunityToOpportunityInvitation"
             }, {
-                name: "requiredUtilities",
-                type: "Utility",
-                relationName: "OpportunityToUtility"
+                name: "participations",
+                type: "Participation",
+                relationName: "OpportunityToParticipation"
+            }, {
+                name: "articles",
+                type: "Article",
+                relationName: "t_opportunities_on_articles"
+            }, {
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToOpportunity"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "OpportunityToUser"
             }]
     }, {
         name: "OpportunityInvitation",

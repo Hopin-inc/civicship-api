@@ -108,6 +108,23 @@ export default class ParticipationService {
     return ParticipationRepository.setStatus(ctx, id, data, tx);
   }
 
+  static async bulkCancelParticipationsByOpportunity(
+    ctx: IContext,
+    ids: string[],
+    tx: Prisma.TransactionClient,
+  ) {
+    return ParticipationRepository.bulkCancelParticipationsByOpportunity(
+      ctx,
+      ids,
+      {
+        status: ParticipationStatus.NOT_PARTICIPATING,
+        eventType: ParticipationEventType.OPPORTUNITY,
+        eventTrigger: ParticipationEventTrigger.CANCELED,
+      },
+      tx,
+    );
+  }
+
   static async validateParticipationHasOpportunity(
     ctx: IContext,
     participation: PrismaParticipation,

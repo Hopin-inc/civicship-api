@@ -45,22 +45,13 @@ export default class ParticipationStatusHistoryRepository {
     });
   }
 
-  static async delete(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.participationStatusHistory.delete({
-        where: { id },
-      });
-    });
-  }
-
-  static async createWithTransaction(
+  static async createMany(
     ctx: IContext,
+    data: Prisma.ParticipationStatusHistoryCreateManyInput[],
     tx: Prisma.TransactionClient,
-    data: Prisma.ParticipationStatusHistoryCreateInput,
   ) {
-    return tx.participationStatusHistory.create({
+    return tx.participationStatusHistory.createMany({
       data,
-      include: participationStatusHistoryInclude,
     });
   }
 }

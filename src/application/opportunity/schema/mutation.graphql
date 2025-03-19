@@ -15,6 +15,13 @@ extend type Mutation {
         input: OpportunityUpdateContentInput!
         permission:CheckCommunityPermissionInput!
     ): OpportunityUpdateContentPayload
+
+    opportunitySetHostingStatus(
+        id: ID!
+        input: OpportunitySetHostingStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): OpportunitySetHostingStatusPayload
+
     opportunitySetPublishStatus(
         id: ID!
         input: OpportunitySetPublishStatusInput!
@@ -70,7 +77,11 @@ input OpportunityUpdateContentInput {
 }
 
 input OpportunitySetPublishStatusInput {
-    status: PublishStatus!
+    publishStatus: PublishStatus!
+}
+
+input OpportunitySetHostingStatusInput {
+    hostingStatus: OpportunityHostingStatus!
 }
 
 # ------------------------------
@@ -92,6 +103,10 @@ type OpportunitySetPublishStatusSuccess {
     opportunity: Opportunity!
 }
 
+type OpportunitySetHostingStatusSuccess {
+    opportunity: Opportunity!
+}
+
 # ------------------------------
 # Opportunity Mutation Union (Payload) Definitions
 # ------------------------------
@@ -106,3 +121,6 @@ union OpportunityUpdateContentPayload =
 
 union OpportunitySetPublishStatusPayload =
     OpportunitySetPublishStatusSuccess
+
+union OpportunitySetHostingStatusPayload =
+    OpportunitySetHostingStatusSuccess

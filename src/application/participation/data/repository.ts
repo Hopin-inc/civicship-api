@@ -72,4 +72,16 @@ export default class ParticipationRepository {
       });
     }
   }
+
+  static async bulkCancelParticipationsByOpportunity(
+    ctx: IContext,
+    ids: string[],
+    data: Prisma.ParticipationUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.participation.updateMany({
+      where: { id: { in: ids } },
+      data,
+    });
+  }
 }

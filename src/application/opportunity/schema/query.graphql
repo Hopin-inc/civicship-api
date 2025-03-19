@@ -30,6 +30,7 @@ type OpportunityEdge implements Edge {
 # ------------------------------
 input OpportunityFilterInput {
     category: OpportunityCategory
+    hostingStatus: [OpportunityHostingStatus!]
     publishStatus: [PublishStatus!]
 
     communityIds: [ID!]

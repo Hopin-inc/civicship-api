@@ -81,12 +81,6 @@ export type GqlArticlesConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-export type GqlAuthError = GqlError & {
-  __typename?: 'AuthError';
-  message: Scalars['String']['output'];
-  statusCode: Scalars['Int']['output'];
-};
-
 export type GqlCheckCommunityPermissionInput = {
   communityId: Scalars['ID']['input'];
 };
@@ -106,8 +100,6 @@ export type GqlCity = {
   name: Scalars['String']['output'];
   state: GqlState;
 };
-
-export type GqlCommonError = GqlAuthError | GqlComplexQueryError | GqlInvalidInputValueError;
 
 export type GqlCommunitiesConnection = {
   __typename?: 'CommunitiesConnection';
@@ -241,12 +233,6 @@ export type GqlCommunityUpdateProfileSuccess = {
   community: GqlCommunity;
 };
 
-export type GqlComplexQueryError = GqlError & {
-  __typename?: 'ComplexQueryError';
-  message: Scalars['String']['output'];
-  statusCode: Scalars['Int']['output'];
-};
-
 export type GqlCurrentPointView = {
   __typename?: 'CurrentPointView';
   currentPoint: Scalars['Int']['output'];
@@ -262,17 +248,6 @@ export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
 
-export type GqlError = {
-  message: Scalars['String']['output'];
-  statusCode: Scalars['Int']['output'];
-};
-
-export type GqlField = {
-  __typename?: 'Field';
-  message?: Maybe<Scalars['String']['output']>;
-  name: Scalars['String']['output'];
-};
-
 export const GqlIdentityPlatform = {
   Facebook: 'FACEBOOK',
   Line: 'LINE'
@@ -281,13 +256,6 @@ export const GqlIdentityPlatform = {
 export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
 export type GqlImageInput = {
   base64: Scalars['String']['input'];
-};
-
-export type GqlInvalidInputValueError = GqlError & {
-  __typename?: 'InvalidInputValueError';
-  fields?: Maybe<Array<GqlField>>;
-  message: Scalars['String']['output'];
-  statusCode: Scalars['Int']['output'];
 };
 
 export type GqlMembership = {
@@ -465,6 +433,7 @@ export type GqlMutation = {
   opportunityDelete?: Maybe<GqlOpportunityDeletePayload>;
   opportunityInvitationCreate?: Maybe<GqlOpportunityInvitationCreatePayload>;
   opportunityInvitationDisable?: Maybe<GqlOpportunityInvitationDisablePayload>;
+  opportunitySetHostingStatus?: Maybe<GqlOpportunitySetHostingStatusPayload>;
   opportunitySetPublishStatus?: Maybe<GqlOpportunitySetPublishStatusPayload>;
   opportunitySlotsBulkUpdate?: Maybe<GqlOpportunitySlotsBulkUpdatePayload>;
   opportunityUpdateContent?: Maybe<GqlOpportunityUpdateContentPayload>;
@@ -589,6 +558,13 @@ export type GqlMutationOpportunityInvitationCreateArgs = {
 
 export type GqlMutationOpportunityInvitationDisableArgs = {
   id: Scalars['ID']['input'];
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationOpportunitySetHostingStatusArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlOpportunitySetHostingStatusInput;
   permission: GqlCheckCommunityPermissionInput;
 };
 
@@ -824,6 +800,7 @@ export type GqlOpportunity = {
   endsAt?: Maybe<Scalars['Datetime']['output']>;
   feeRequired?: Maybe<Scalars['Int']['output']>;
   files?: Maybe<Scalars['JSON']['output']>;
+  hostingStatus: GqlOpportunityHostingStatus;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
   invitations?: Maybe<GqlOpportunityInvitationsConnection>;
@@ -916,6 +893,7 @@ export type GqlOpportunityFilterInput = {
   cityCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  hostingStatus?: InputMaybe<Array<GqlOpportunityHostingStatus>>;
   not?: InputMaybe<GqlOpportunityFilterInput>;
   or?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
@@ -923,6 +901,13 @@ export type GqlOpportunityFilterInput = {
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export const GqlOpportunityHostingStatus = {
+  Cancelled: 'CANCELLED',
+  Completed: 'COMPLETED',
+  Scheduled: 'SCHEDULED'
+} as const;
+
+export type GqlOpportunityHostingStatus = typeof GqlOpportunityHostingStatus[keyof typeof GqlOpportunityHostingStatus];
 export type GqlOpportunityInvitation = {
   __typename?: 'OpportunityInvitation';
   code: Scalars['String']['output'];
@@ -1016,8 +1001,19 @@ export type GqlOpportunityInvitationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlOpportunitySetHostingStatusInput = {
+  hostingStatus: GqlOpportunityHostingStatus;
+};
+
+export type GqlOpportunitySetHostingStatusPayload = GqlOpportunitySetHostingStatusSuccess;
+
+export type GqlOpportunitySetHostingStatusSuccess = {
+  __typename?: 'OpportunitySetHostingStatusSuccess';
+  opportunity: GqlOpportunity;
+};
+
 export type GqlOpportunitySetPublishStatusInput = {
-  status: GqlPublishStatus;
+  publishStatus: GqlPublishStatus;
 };
 
 export type GqlOpportunitySetPublishStatusPayload = GqlOpportunitySetPublishStatusSuccess;
@@ -2329,7 +2325,6 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping of union types */
 export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  CommonError: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
   CommunityCreatePayload: ( Omit<GqlCommunityCreateSuccess, 'community'> & { community: _RefType['Community'] } );
   CommunityDeletePayload: ( GqlCommunityDeleteSuccess );
   CommunityUpdateProfilePayload: ( Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: _RefType['Community'] } );
@@ -2342,6 +2337,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   OpportunityDeletePayload: ( GqlOpportunityDeleteSuccess );
   OpportunityInvitationCreatePayload: ( Omit<GqlOpportunityInvitationCreateSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
   OpportunityInvitationDisablePayload: ( Omit<GqlOpportunityInvitationDisableSuccess, 'opportunityInvitation'> & { opportunityInvitation?: Maybe<_RefType['OpportunityInvitation']> } );
+  OpportunitySetHostingStatusPayload: ( Omit<GqlOpportunitySetHostingStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunitySetPublishStatusPayload: ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunitySlotsBulkUpdatePayload: ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
   OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
@@ -2367,7 +2363,6 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
   Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<_RefType['MembershipHistory']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunityInvitationEdge, 'node'> & { node?: Maybe<_RefType['OpportunityInvitation']> } ) | ( Omit<GqlOpportunityInvitationHistoryEdge, 'node'> & { node?: Maybe<_RefType['OpportunityInvitationHistory']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
-  Error: ( GqlAuthError ) | ( GqlComplexQueryError ) | ( GqlInvalidInputValueError );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -2379,13 +2374,11 @@ export type GqlResolversTypes = ResolversObject<{
   ArticleFilterInput: GqlArticleFilterInput;
   ArticleSortInput: GqlArticleSortInput;
   ArticlesConnection: ResolverTypeWrapper<Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ArticleEdge']>>> }>;
-  AuthError: ResolverTypeWrapper<GqlAuthError>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: ResolverTypeWrapper<City>;
-  CommonError: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommonError']>;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['CommunityEdge']>>> }>;
   Community: ResolverTypeWrapper<Community>;
   CommunityCreateInput: GqlCommunityCreateInput;
@@ -2399,19 +2392,15 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
   CommunityUpdateProfilePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityUpdateProfilePayload']>;
   CommunityUpdateProfileSuccess: ResolverTypeWrapper<Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
-  ComplexQueryError: ResolverTypeWrapper<GqlComplexQueryError>;
   CurrentPointView: ResolverTypeWrapper<CurrentPointView>;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
-  Error: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Error']>;
-  Field: ResolverTypeWrapper<GqlField>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   IdentityPlatform: GqlIdentityPlatform;
   ImageInput: GqlImageInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
-  InvalidInputValueError: ResolverTypeWrapper<GqlInvalidInputValueError>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   Membership: ResolverTypeWrapper<Membership>;
   MembershipCursorInput: GqlMembershipCursorInput;
@@ -2456,6 +2445,7 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityDeleteSuccess: ResolverTypeWrapper<GqlOpportunityDeleteSuccess>;
   OpportunityEdge: ResolverTypeWrapper<Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Opportunity']> }>;
   OpportunityFilterInput: GqlOpportunityFilterInput;
+  OpportunityHostingStatus: GqlOpportunityHostingStatus;
   OpportunityInvitation: ResolverTypeWrapper<OpportunityInvitation>;
   OpportunityInvitationCreateInput: GqlOpportunityInvitationCreateInput;
   OpportunityInvitationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityInvitationCreatePayload']>;
@@ -2471,6 +2461,9 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityInvitationHistorySortInput: GqlOpportunityInvitationHistorySortInput;
   OpportunityInvitationSortInput: GqlOpportunityInvitationSortInput;
   OpportunityInvitationsConnection: ResolverTypeWrapper<Omit<GqlOpportunityInvitationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OpportunityInvitationEdge']>>> }>;
+  OpportunitySetHostingStatusInput: GqlOpportunitySetHostingStatusInput;
+  OpportunitySetHostingStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySetHostingStatusPayload']>;
+  OpportunitySetHostingStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetHostingStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySetPublishStatusPayload']>;
   OpportunitySetPublishStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
@@ -2611,13 +2604,11 @@ export type GqlResolversParentTypes = ResolversObject<{
   ArticleFilterInput: GqlArticleFilterInput;
   ArticleSortInput: GqlArticleSortInput;
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
-  AuthError: GqlAuthError;
   Boolean: Scalars['Boolean']['output'];
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: City;
-  CommonError: GqlResolversUnionTypes<GqlResolversParentTypes>['CommonError'];
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['CommunityEdge']>>> };
   Community: Community;
   CommunityCreateInput: GqlCommunityCreateInput;
@@ -2631,18 +2622,14 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityUpdateProfileInput: GqlCommunityUpdateProfileInput;
   CommunityUpdateProfilePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityUpdateProfilePayload'];
   CommunityUpdateProfileSuccess: Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
-  ComplexQueryError: GqlComplexQueryError;
   CurrentPointView: CurrentPointView;
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   Datetime: Scalars['Datetime']['output'];
   Decimal: Scalars['Decimal']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
-  Error: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Error'];
-  Field: GqlField;
   ID: Scalars['ID']['output'];
   ImageInput: GqlImageInput;
   Int: Scalars['Int']['output'];
-  InvalidInputValueError: GqlInvalidInputValueError;
   JSON: Scalars['JSON']['output'];
   Membership: Membership;
   MembershipCursorInput: GqlMembershipCursorInput;
@@ -2699,6 +2686,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityInvitationHistorySortInput: GqlOpportunityInvitationHistorySortInput;
   OpportunityInvitationSortInput: GqlOpportunityInvitationSortInput;
   OpportunityInvitationsConnection: Omit<GqlOpportunityInvitationsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['OpportunityInvitationEdge']>>> };
+  OpportunitySetHostingStatusInput: GqlOpportunitySetHostingStatusInput;
+  OpportunitySetHostingStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySetHostingStatusPayload'];
+  OpportunitySetHostingStatusSuccess: Omit<GqlOpportunitySetHostingStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySetPublishStatusPayload'];
   OpportunitySetPublishStatusSuccess: Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
@@ -2869,21 +2859,11 @@ export type GqlArticlesConnectionResolvers<ContextType = any, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlAuthErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['AuthError'] = GqlResolversParentTypes['AuthError']> = ResolversObject<{
-  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlCityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['City'] = GqlResolversParentTypes['City']> = ResolversObject<{
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   state?: Resolver<GqlResolversTypes['State'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlCommonErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommonError'] = GqlResolversParentTypes['CommonError']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
 }>;
 
 export type GqlCommunitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunitiesConnection'] = GqlResolversParentTypes['CommunitiesConnection']> = ResolversObject<{
@@ -2946,12 +2926,6 @@ export type GqlCommunityUpdateProfileSuccessResolvers<ContextType = any, ParentT
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlComplexQueryErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ComplexQueryError'] = GqlResolversParentTypes['ComplexQueryError']> = ResolversObject<{
-  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlCurrentPointViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CurrentPointView'] = GqlResolversParentTypes['CurrentPointView']> = ResolversObject<{
   currentPoint?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   walletId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -2974,25 +2948,6 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
   __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'MembershipEdge' | 'MembershipHistoryEdge' | 'OpportunityEdge' | 'OpportunityInvitationEdge' | 'OpportunityInvitationHistoryEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-}>;
-
-export type GqlErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Error'] = GqlResolversParentTypes['Error']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'AuthError' | 'ComplexQueryError' | 'InvalidInputValueError', ParentType, ContextType>;
-  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-}>;
-
-export type GqlFieldResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Field'] = GqlResolversParentTypes['Field']> = ResolversObject<{
-  message?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlInvalidInputValueErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['InvalidInputValueError'] = GqlResolversParentTypes['InvalidInputValueError']> = ResolversObject<{
-  fields?: Resolver<Maybe<Array<GqlResolversTypes['Field']>>, ParentType, ContextType>;
-  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  statusCode?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export interface GqlJsonScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['JSON'], any> {
@@ -3113,6 +3068,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id' | 'permission'>>;
   opportunityInvitationCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationCreateArgs, 'input' | 'permission'>>;
   opportunityInvitationDisable?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationDisablePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityInvitationDisableArgs, 'id' | 'permission'>>;
+  opportunitySetHostingStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetHostingStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetHostingStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
@@ -3163,6 +3119,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   endsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   feeRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   files?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
+  hostingStatus?: Resolver<GqlResolversTypes['OpportunityHostingStatus'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   invitations?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationsConnection']>, ParentType, ContextType, Partial<GqlOpportunityInvitationsArgs>>;
@@ -3265,6 +3222,15 @@ export type GqlOpportunityInvitationsConnectionResolvers<ContextType = any, Pare
   edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['OpportunityInvitationEdge']>>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOpportunitySetHostingStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetHostingStatusPayload'] = GqlResolversParentTypes['OpportunitySetHostingStatusPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'OpportunitySetHostingStatusSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOpportunitySetHostingStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetHostingStatusSuccess'] = GqlResolversParentTypes['OpportunitySetHostingStatusSuccess']> = ResolversObject<{
+  opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3802,9 +3768,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Article?: GqlArticleResolvers<ContextType>;
   ArticleEdge?: GqlArticleEdgeResolvers<ContextType>;
   ArticlesConnection?: GqlArticlesConnectionResolvers<ContextType>;
-  AuthError?: GqlAuthErrorResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
-  CommonError?: GqlCommonErrorResolvers<ContextType>;
   CommunitiesConnection?: GqlCommunitiesConnectionResolvers<ContextType>;
   Community?: GqlCommunityResolvers<ContextType>;
   CommunityCreatePayload?: GqlCommunityCreatePayloadResolvers<ContextType>;
@@ -3814,15 +3778,11 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CommunityEdge?: GqlCommunityEdgeResolvers<ContextType>;
   CommunityUpdateProfilePayload?: GqlCommunityUpdateProfilePayloadResolvers<ContextType>;
   CommunityUpdateProfileSuccess?: GqlCommunityUpdateProfileSuccessResolvers<ContextType>;
-  ComplexQueryError?: GqlComplexQueryErrorResolvers<ContextType>;
   CurrentPointView?: GqlCurrentPointViewResolvers<ContextType>;
   CurrentUserPayload?: GqlCurrentUserPayloadResolvers<ContextType>;
   Datetime?: GraphQLScalarType;
   Decimal?: GraphQLScalarType;
   Edge?: GqlEdgeResolvers<ContextType>;
-  Error?: GqlErrorResolvers<ContextType>;
-  Field?: GqlFieldResolvers<ContextType>;
-  InvalidInputValueError?: GqlInvalidInputValueErrorResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Membership?: GqlMembershipResolvers<ContextType>;
   MembershipEdge?: GqlMembershipEdgeResolvers<ContextType>;
@@ -3858,6 +3818,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   OpportunityInvitationHistory?: GqlOpportunityInvitationHistoryResolvers<ContextType>;
   OpportunityInvitationHistoryEdge?: GqlOpportunityInvitationHistoryEdgeResolvers<ContextType>;
   OpportunityInvitationsConnection?: GqlOpportunityInvitationsConnectionResolvers<ContextType>;
+  OpportunitySetHostingStatusPayload?: GqlOpportunitySetHostingStatusPayloadResolvers<ContextType>;
+  OpportunitySetHostingStatusSuccess?: GqlOpportunitySetHostingStatusSuccessResolvers<ContextType>;
   OpportunitySetPublishStatusPayload?: GqlOpportunitySetPublishStatusPayloadResolvers<ContextType>;
   OpportunitySetPublishStatusSuccess?: GqlOpportunitySetPublishStatusSuccessResolvers<ContextType>;
   OpportunitySlot?: GqlOpportunitySlotResolvers<ContextType>;

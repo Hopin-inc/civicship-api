@@ -11,6 +11,7 @@ type Opportunity {
     files: JSON
 
     category: OpportunityCategory!
+    hostingStatus: OpportunityHostingStatus!
     publishStatus: PublishStatus!
     requireApproval: Boolean!
 
@@ -60,4 +61,10 @@ enum OpportunityCategory {
     QUEST
     EVENT
     ACTIVITY
+}
+
+enum OpportunityHostingStatus {
+    SCHEDULED
+    CANCELLED
+    COMPLETED
 }

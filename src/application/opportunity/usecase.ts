@@ -1,6 +1,7 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
+  GqlMutationOpportunitySetHostingStatusArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunitiesConnection,
@@ -15,11 +16,16 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/opportunity/presenter";
-import { PublishStatus } from "@prisma/client";
+import { OpportunityHostingStatus, PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/opportunity/service";
 import { getMembershipRolesByCtx } from "@/application/utils";
+import ParticipationService from "@/application/participation/service";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 
 export default class OpportunityUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async anyoneBrowseOpportunities(
     { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
@@ -99,8 +105,34 @@ export default class OpportunityUseCase {
     { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityStatus(ctx, id, input.status);
+    const res = await OpportunityService.setOpportunityPublishStatus(ctx, id, input.publishStatus);
     return OpportunityPresenter.setPublishStatus(res);
+  }
+
+  static async managerSetOpportunityHostingStatus(
+    { id, input }: GqlMutationOpportunitySetHostingStatusArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitySetPublishStatusPayload> {
+    return await this.issuer.public(ctx, async (tx) => {
+      const res = await OpportunityService.setOpportunityHostingStatus(
+        ctx,
+        id,
+        input.hostingStatus,
+      );
+
+      if (input.hostingStatus === OpportunityHostingStatus.CANCELLED) {
+        const participationIds = res.participations.map((participation) => participation.id);
+        await Promise.all([
+          ParticipationService.bulkCancelParticipationsByOpportunity(ctx, participationIds, tx),
+          ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunity(
+            ctx,
+            participationIds,
+            tx,
+          ),
+        ]);
+      }
+      return OpportunityPresenter.setPublishStatus(res);
+    });
   }
 }
 

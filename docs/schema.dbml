@@ -111,27 +111,28 @@ Table t_opportunities {
   title String [not null]
   description String [not null]
   body String
+  image String
+  files Json [not null, default: '[]', note: '[ArrayOfString]']
+  startsAt DateTime
+  endsAt DateTime
   category OpportunityCategory [not null]
+  hostingStatus OpportunityHostingStatus [not null, default: 'SCHEDULED']
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   requireApproval Boolean [not null, default: false]
   capacity Int
   pointsToEarn Int
   feeRequired Int
-  image String
-  files Json [not null, default: '[]', note: '[ArrayOfString]']
-  startsAt DateTime
-  endsAt DateTime
+  requiredUtilities t_utilities [not null]
   placeId String
   place t_places
+  slots t_opportunity_slots [not null]
+  invitations t_opportunity_invitations [not null]
+  participations t_participations [not null]
+  articles t_articles [not null]
   communityId String [not null]
   community t_communities [not null]
   createdBy String [not null]
   createdByUser t_users [not null]
-  articles t_articles [not null]
-  participations t_participations [not null]
-  slots t_opportunity_slots [not null]
-  invitations t_opportunity_invitations [not null]
-  requiredUtilities t_utilities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -392,6 +393,12 @@ Enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
+}
+
+Enum OpportunityHostingStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
 }
 
 Enum ParticipationStatus {

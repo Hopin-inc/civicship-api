@@ -1,36 +1,38 @@
 model Opportunity {
-  id              String              @id @default(cuid())
-  title           String
-  description     String
-  body            String?
-  category        OpportunityCategory
-  publishStatus   PublishStatus       @default(PUBLIC) @map("publish_status")
-  requireApproval Boolean             @default(false) @map("require_approval")
-  capacity        Int?
-  pointsToEarn    Int?                @map("points_to_earn")
-  feeRequired     Int?                @map("fee_required")
-  image           String?
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  body        String?
+  image       String?
   /// [ArrayOfString]
-  files           Json                @default("[]")
-  startsAt        DateTime?           @map("starts_at")
-  endsAt          DateTime?           @map("ends_at")
+  files       Json      @default("[]")
+  startsAt    DateTime? @map("starts_at")
+  endsAt      DateTime? @map("ends_at")
+
+  category      OpportunityCategory
+  hostingStatus OpportunityHostingStatus @default(SCHEDULED)
+  publishStatus PublishStatus            @default(PUBLIC) @map("publish_status")
+
+  requireApproval   Boolean   @default(false) @map("require_approval")
+  capacity          Int?
+  pointsToEarn      Int?      @map("points_to_earn")
+  feeRequired       Int?      @map("fee_required")
+  requiredUtilities Utility[]
 
   placeId String? @map("place_id")
   place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
+
+  slots          OpportunitySlot[]
+  invitations    OpportunityInvitation[]
+  participations Participation[]
+
+  articles Article[] @relation("t_opportunities_on_articles")
 
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   createdBy     String @map("created_by")
   createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-
-  articles Article[] @relation("t_opportunities_on_articles")
-
-  participations Participation[]
-  slots          OpportunitySlot[]
-  invitations    OpportunityInvitation[]
-
-  requiredUtilities Utility[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -42,4 +44,10 @@ enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
+}
+
+enum OpportunityHostingStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
 }
