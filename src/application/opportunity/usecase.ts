@@ -1,6 +1,7 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
+  GqlMutationOpportunityLogMyRecordArgs,
   GqlMutationOpportunitySetHostingStatusArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
@@ -9,6 +10,8 @@ import {
   GqlOpportunityCreatePayload,
   GqlOpportunityDeletePayload,
   GqlOpportunityFilterInput,
+  GqlOpportunityLogMyRecordPayload,
+  GqlOpportunitySetHostingStatusPayload,
   GqlOpportunitySetPublishStatusPayload,
   GqlOpportunityUpdateContentPayload,
   GqlQueryOpportunitiesArgs,
@@ -77,6 +80,14 @@ export default class OpportunityUseCase {
     return record ? OpportunityPresenter.get(record) : null;
   }
 
+  static async userLogMyOpportunityRecord(
+    { input }: GqlMutationOpportunityLogMyRecordArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunityLogMyRecordPayload> {
+    const res = await OpportunityService.logOpportunity(ctx, input);
+    return OpportunityPresenter.log(res);
+  }
+
   static async managerCreateOpportunity(
     { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
@@ -112,7 +123,7 @@ export default class OpportunityUseCase {
   static async managerSetOpportunityHostingStatus(
     { id, input }: GqlMutationOpportunitySetHostingStatusArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunitySetPublishStatusPayload> {
+  ): Promise<GqlOpportunitySetHostingStatusPayload> {
     return await this.issuer.public(ctx, async (tx) => {
       const res = await OpportunityService.setOpportunityHostingStatus(
         ctx,
@@ -131,7 +142,7 @@ export default class OpportunityUseCase {
           ),
         ]);
       }
-      return OpportunityPresenter.setPublishStatus(res);
+      return OpportunityPresenter.setHostingStatus(res);
     });
   }
 }

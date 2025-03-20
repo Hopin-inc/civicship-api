@@ -67,6 +67,7 @@ enum OpportunityCategory {
     QUEST
     EVENT
     ACTIVITY
+    UNKNOWN
 }
 
 enum OpportunityHostingStatus {

@@ -57,6 +57,11 @@ extend type Mutation {
 # ------------------------------
 # Participation Mutation Input Definitions
 # ------------------------------
+input ParticipationMyRecordsInput {
+    description: String
+    images: [ImageInput!]
+}
+
 input ParticipationApplyInput {
     opportunityId: ID!
     ticketId: ID

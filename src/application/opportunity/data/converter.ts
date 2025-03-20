@@ -1,10 +1,18 @@
 import {
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
+  GqlOpportunityLogMyRecordInput,
   GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
-import { OpportunitySource, Prisma } from "@prisma/client";
+import {
+  OpportunityCategory,
+  OpportunitySource,
+  ParticipationEventTrigger,
+  ParticipationEventType,
+  ParticipationStatus,
+  Prisma,
+} from "@prisma/client";
 
 export default class OpportunityConverter {
   static filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
@@ -44,6 +52,53 @@ export default class OpportunityConverter {
     return {
       id,
       ...(validatedFilter.AND ? { AND: validatedFilter.AND } : {}),
+    };
+  }
+
+  static log(
+    input: GqlOpportunityLogMyRecordInput,
+    currentUserId: string,
+  ): Prisma.OpportunityCreateInput {
+    const { place, records, ...prop } = input;
+
+    let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
+
+    if (place) {
+      finalPlace = place.where
+        ? { connect: { id: place.where } }
+        : (() => {
+            const { cityCode, communityId, ...restCreate } = place.create!;
+            return {
+              create: {
+                ...restCreate,
+                city: { connect: { code: cityCode } },
+                community: { connect: { id: communityId } },
+              },
+            };
+          })();
+    }
+
+    return {
+      ...prop,
+      source: OpportunitySource.EXTERNAL,
+      category: OpportunityCategory.UNKNOWN,
+      participations: {
+        create: records.map((record) => ({
+          user: { connect: { id: currentUserId } },
+          status: ParticipationStatus.PARTICIPATED,
+          eventType: ParticipationEventType.SELF_LOG,
+          eventTrigger: ParticipationEventTrigger.ISSUED,
+          description: record.description,
+          images: {
+            create: (record.images ?? []).map((image) => ({
+              url: image.base64,
+              caption: image.caption,
+            })),
+          },
+        })),
+      },
+      createdByUser: { connect: { id: currentUserId } },
+      ...(finalPlace ? { place: finalPlace } : {}),
     };
   }
 

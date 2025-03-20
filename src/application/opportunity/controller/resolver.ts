@@ -1,6 +1,7 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
+  GqlMutationOpportunityLogMyRecordArgs,
   GqlMutationOpportunitySetHostingStatusArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
@@ -29,7 +30,11 @@ const opportunityResolver = {
     },
   },
   Mutation: {
-    // TODO add setHostingStatus
+    opportunityLogMyRecord: async (
+      _: unknown,
+      args: GqlMutationOpportunityLogMyRecordArgs,
+      ctx: IContext,
+    ) => OpportunityUseCase.userLogMyOpportunityRecord(args, ctx),
     opportunityCreate: async (_: unknown, args: GqlMutationOpportunityCreateArgs, ctx: IContext) =>
       OpportunityUseCase.managerCreateOpportunity(args, ctx),
     opportunityDelete: async (_: unknown, args: GqlMutationOpportunityDeleteArgs, ctx: IContext) =>
