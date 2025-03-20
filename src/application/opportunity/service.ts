@@ -1,7 +1,9 @@
 import {
+  GqlNestedPlaceConnectOrCreateInput,
   GqlOpportunitiesConnection,
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
+  GqlOpportunityLogMyRecordInput,
   GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
@@ -60,10 +62,18 @@ export default class OpportunityService {
     return opportunity;
   }
 
+  static async logOpportunity(ctx: IContext, input: GqlOpportunityLogMyRecordInput) {
+    const currentUserId = getCurrentUserId(ctx);
+
+    validatePlaceInput(input.place);
+    const data: Prisma.OpportunityCreateInput = OpportunityConverter.log(input, currentUserId);
+    return await OpportunityRepository.create(ctx, data);
+  }
+
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
     const currentUserId = getCurrentUserId(ctx);
 
-    validateCreateOpportunityPlaceInput(input);
+    validatePlaceInput(input.place);
     const data: Prisma.OpportunityCreateInput = OpportunityConverter.create(input, currentUserId);
     return await OpportunityRepository.create(ctx, data);
   }
@@ -80,7 +90,7 @@ export default class OpportunityService {
     input: GqlOpportunityUpdateContentInput,
   ) {
     await this.findOpportunityOrThrow(ctx, id);
-    validateUpdateOpportunityPlaceInput(input);
+    validatePlaceInput(input.place);
 
     const data: Prisma.OpportunityUpdateInput = OpportunityConverter.update(input);
     return await OpportunityRepository.update(ctx, id, data);
@@ -118,22 +128,11 @@ export default class OpportunityService {
   }
 }
 
-function validateCreateOpportunityPlaceInput(input: GqlOpportunityCreateInput): void {
-  if (
-    (input.place?.where && input.place?.create) ||
-    (!input.place?.where && !input.place?.create)
-  ) {
-    throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
-      JSON.stringify(input.place),
-    ]);
-  }
-}
-
-function validateUpdateOpportunityPlaceInput(input: GqlOpportunityUpdateContentInput): void {
-  if (input.place) {
-    if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
+function validatePlaceInput(place?: GqlNestedPlaceConnectOrCreateInput): void {
+  if (place) {
+    if ((place.where && place.create) || (!place.where && !place.create)) {
       throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
-        JSON.stringify(input.place),
+        JSON.stringify(place),
       ]);
     }
   }
