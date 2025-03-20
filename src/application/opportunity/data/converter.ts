@@ -58,9 +58,9 @@ export default class OpportunityConverter {
   static log(
     input: GqlOpportunityLogMyRecordInput,
     currentUserId: string,
+    userName: string,
   ): Prisma.OpportunityCreateInput {
-    const { place, records, ...prop } = input;
-
+    const { place, images, description } = input;
     let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
 
     if (place) {
@@ -78,24 +78,27 @@ export default class OpportunityConverter {
           })();
     }
 
+    const imagesToCreate = (images ?? []).map((image) => ({
+      url: image.base64,
+      caption: image.caption,
+    }));
+
     return {
-      ...prop,
+      title: `${userName}さんの記録`,
+      description: `${userName}さんがご自身で記録したものです`,
       source: OpportunitySource.EXTERNAL,
       category: OpportunityCategory.UNKNOWN,
       participations: {
-        create: records.map((record) => ({
+        create: {
+          description: description,
           user: { connect: { id: currentUserId } },
           status: ParticipationStatus.PARTICIPATED,
           eventType: ParticipationEventType.SELF_LOG,
           eventTrigger: ParticipationEventTrigger.ISSUED,
-          description: record.description,
           images: {
-            create: (record.images ?? []).map((image) => ({
-              url: image.base64,
-              caption: image.caption,
-            })),
+            create: imagesToCreate,
           },
-        })),
+        },
       },
       createdByUser: { connect: { id: currentUserId } },
       ...(finalPlace ? { place: finalPlace } : {}),

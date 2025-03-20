@@ -38,11 +38,9 @@ extend type Mutation {
 # Opportunity Mutation Input Definitions
 # ------------------------------
 input OpportunityLogMyRecordInput {
-    title: String!
-    description: String!
+    description: String
     place: NestedPlaceConnectOrCreateInput
-
-    records: [ParticipationMyRecordsInput!]!
+    images: [ImageInput!]
 }
 
 input OpportunityCreateInput {

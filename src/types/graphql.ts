@@ -1012,10 +1012,9 @@ export type GqlOpportunityInvitationsConnection = {
 };
 
 export type GqlOpportunityLogMyRecordInput = {
-  description: Scalars['String']['input'];
+  description?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   place?: InputMaybe<GqlNestedPlaceConnectOrCreateInput>;
-  records: Array<GqlParticipationMyRecordsInput>;
-  title: Scalars['String']['input'];
 };
 
 export type GqlOpportunityLogMyRecordPayload = GqlOpportunityLogMyRecordSuccess;
@@ -1251,11 +1250,6 @@ export type GqlParticipationInvitePayload = GqlParticipationInviteSuccess;
 export type GqlParticipationInviteSuccess = {
   __typename?: 'ParticipationInviteSuccess';
   participation: GqlParticipation;
-};
-
-export type GqlParticipationMyRecordsInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  images?: InputMaybe<Array<GqlImageInput>>;
 };
 
 export type GqlParticipationSetStatusInput = {
@@ -2535,7 +2529,6 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationInviteInput: GqlParticipationInviteInput;
   ParticipationInvitePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationInvitePayload']>;
   ParticipationInviteSuccess: ResolverTypeWrapper<Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
-  ParticipationMyRecordsInput: GqlParticipationMyRecordsInput;
   ParticipationSetStatusInput: GqlParticipationSetStatusInput;
   ParticipationSetStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationSetStatusPayload']>;
   ParticipationSetStatusSuccess: ResolverTypeWrapper<Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
@@ -2762,7 +2755,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationInviteInput: GqlParticipationInviteInput;
   ParticipationInvitePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationInvitePayload'];
   ParticipationInviteSuccess: Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
-  ParticipationMyRecordsInput: GqlParticipationMyRecordsInput;
   ParticipationSetStatusInput: GqlParticipationSetStatusInput;
   ParticipationSetStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationSetStatusPayload'];
   ParticipationSetStatusSuccess: Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
