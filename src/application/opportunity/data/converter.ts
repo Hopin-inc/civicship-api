@@ -4,7 +4,7 @@ import {
   GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
-import { Prisma } from "@prisma/client";
+import { OpportunitySource, Prisma } from "@prisma/client";
 
 export default class OpportunityConverter {
   static filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
@@ -51,27 +51,32 @@ export default class OpportunityConverter {
     input: GqlOpportunityCreateInput,
     currentUserId: string,
   ): Prisma.OpportunityCreateInput {
-    const { place, communityId, ...prop } = input;
+    const { place, image, communityId, ...prop } = input;
 
-    const finalPlace = place.where
-      ? { connect: { id: place.where } }
-      : (() => {
-          const { cityCode, communityId, ...restCreate } = place.create!;
-          return {
-            create: {
-              ...restCreate,
-              city: { connect: { code: cityCode } },
-              community: { connect: { id: communityId } },
-            },
-          };
-        })();
+    let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
+
+    if (place) {
+      finalPlace = place.where
+        ? { connect: { id: place.where } }
+        : (() => {
+            const { cityCode, communityId, ...restCreate } = place.create!;
+            return {
+              create: {
+                ...restCreate,
+                city: { connect: { code: cityCode } },
+                community: { connect: { id: communityId } },
+              },
+            };
+          })();
+    }
 
     return {
       ...prop,
-      image: input.image?.base64,
+      source: OpportunitySource.INTERNAL,
+      image: image?.base64,
       community: { connect: { id: communityId } },
       createdByUser: { connect: { id: currentUserId } },
-      place: finalPlace,
+      ...(finalPlace ? { place: finalPlace } : {}),
     };
   }
 
