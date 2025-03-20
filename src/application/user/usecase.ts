@@ -31,14 +31,15 @@ export default class UserUseCase {
     if (!user) {
       return null;
     }
+
     return UserPresenter.get(user);
   }
 
   static async userUpdateProfile(
     ctx: IContext,
-    { input }: GqlMutationUserUpdateMyProfileArgs,
+    args: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
-    const res = await UserService.updateProfile(ctx, { input });
+    const res = await UserService.updateProfile(ctx, args);
     return UserPresenter.updateProfile(res);
   }
 }
