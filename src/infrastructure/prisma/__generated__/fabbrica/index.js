@@ -1497,7 +1497,7 @@ function isParticipationopportunitySlotFactory(x) {
 function autoGenerateParticipationScalarsOrEnums({ seq }) {
     return {
         status: "PENDING",
-        eventType: "INVITATION",
+        eventType: "SELF_LOG",
         eventTrigger: "ISSUED"
     };
 }
@@ -1697,7 +1697,7 @@ function isParticipationStatusHistorycreatedByUserFactory(x) {
 function autoGenerateParticipationStatusHistoryScalarsOrEnums({ seq }) {
     return {
         status: "PENDING",
-        eventType: "INVITATION",
+        eventType: "SELF_LOG",
         eventTrigger: "ISSUED"
     };
 }

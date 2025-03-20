@@ -427,6 +427,7 @@ Enum ParticipationStatus {
 }
 
 Enum ParticipationEventType {
+  SELF_LOG
   INVITATION
   APPLICATION
   EVALUATION
