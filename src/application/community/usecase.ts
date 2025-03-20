@@ -12,7 +12,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/community/service";
-import CommunityOutputFormat from "@/application/community/presenter";
+import CommunityPresenter from "@/application/community/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletService from "@/application/membership/wallet/service";
@@ -27,10 +27,8 @@ export default class CommunityUseCase {
     const take = clampFirst(first);
     const res = await CommunityService.fetchCommunities(ctx, { filter, sort, cursor }, take);
     const hasNextPage = res.length > take;
-    const data: GqlCommunity[] = res
-      .slice(0, take)
-      .map((record) => CommunityOutputFormat.get(record));
-    return CommunityOutputFormat.query(data, hasNextPage);
+    const data: GqlCommunity[] = res.slice(0, take).map((record) => CommunityPresenter.get(record));
+    return CommunityPresenter.query(data, hasNextPage);
   }
 
   static async userViewCommunity(
@@ -38,7 +36,7 @@ export default class CommunityUseCase {
     ctx: IContext,
   ): Promise<GqlCommunity | null> {
     const res = await CommunityService.findCommunity(ctx, id);
-    return res ? CommunityOutputFormat.get(res) : null;
+    return res ? CommunityPresenter.get(res) : null;
   }
 
   static async userCreateCommunityAndJoin(
@@ -52,7 +50,7 @@ export default class CommunityUseCase {
       await WalletService.createCommunityWallet(ctx, community.id, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, userId, community.id, tx);
 
-      return CommunityOutputFormat.create(community);
+      return CommunityPresenter.create(community);
     });
   }
 
@@ -61,7 +59,7 @@ export default class CommunityUseCase {
     ctx: IContext,
   ): Promise<GqlCommunityDeletePayload> {
     const res = await CommunityService.deleteCommunity(ctx, id);
-    return CommunityOutputFormat.delete(res);
+    return CommunityPresenter.delete(res);
   }
 
   static async managerUpdateCommunityProfile(
@@ -69,6 +67,6 @@ export default class CommunityUseCase {
     ctx: IContext,
   ): Promise<GqlCommunityUpdateProfilePayload> {
     const res = await CommunityService.updateCommunityProfile(ctx, id, input);
-    return CommunityOutputFormat.update(res);
+    return CommunityPresenter.update(res);
   }
 }
