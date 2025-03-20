@@ -3,10 +3,15 @@ import {
   GqlOpportunity,
   GqlOpportunityCreateSuccess,
   GqlOpportunityDeleteSuccess,
+  GqlOpportunityLogMyRecordSuccess,
+  GqlOpportunitySetHostingStatusSuccess,
   GqlOpportunitySetPublishStatusSuccess,
   GqlOpportunityUpdateContentSuccess,
 } from "@/types/graphql";
-import { PrismaOpportunity } from "@/application/opportunity/data/type";
+import {
+  PrismaOpportunity,
+  PrismaOpportunitySetHostingStatus,
+} from "@/application/opportunity/data/type";
 import PlacePresenter from "@/application/place/presenter";
 import UtilityPresenter from "@/application/utility/presenter";
 import CommunityPresenter from "@/application/community/presenter";
@@ -33,10 +38,17 @@ export default class OpportunityPresenter {
 
     return {
       ...prop,
-      community: CommunityPresenter.get(community),
+      community: community ? CommunityPresenter.get(community) : null,
       place: place ? PlacePresenter.get(place) : null,
       createdByUser,
       requiredUtilities: requiredUtilities.map(UtilityPresenter.get),
+    };
+  }
+
+  static log(r: PrismaOpportunity): GqlOpportunityLogMyRecordSuccess {
+    return {
+      __typename: "OpportunityLogMyRecordSuccess",
+      opportunity: this.get(r),
     };
   }
 
@@ -64,6 +76,15 @@ export default class OpportunityPresenter {
   static setPublishStatus(r: PrismaOpportunity): GqlOpportunitySetPublishStatusSuccess {
     return {
       __typename: "OpportunitySetPublishStatusSuccess",
+      opportunity: this.get(r),
+    };
+  }
+
+  static setHostingStatus(
+    r: PrismaOpportunitySetHostingStatus,
+  ): GqlOpportunitySetHostingStatusSuccess {
+    return {
+      __typename: "OpportunitySetHostingStatusSuccess",
       opportunity: this.get(r),
     };
   }
