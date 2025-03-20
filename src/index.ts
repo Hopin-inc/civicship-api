@@ -1,17 +1,20 @@
 import http from "http";
 import { createServer } from "https";
 import fs from "fs";
-import { createExpressApp } from "@/presentation/app";
 import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infra/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
 import { batchProcess } from "@/batch";
+import express from "express";
+import { corsHandler } from "@/presentation/middleware/cors";
+import { requestLogger } from "@/presentation/middleware/logger";
 
 const port = Number(process.env.PORT ?? 3000);
 
 async function startServer() {
-  const app = createExpressApp();
+  const app = express();
+  app.set("trust proxy", 1);
 
   let server: http.Server;
   if (process.env.NODE_HTTPS === "true") {
@@ -28,9 +31,17 @@ async function startServer() {
 
   const apolloServer = await createApolloServer(server);
 
+  app.use(express.json({ limit: "50mb" }), corsHandler, requestLogger);
+  app.use((err, _req, res, _next) => {
+    logger.error("Unhandled Express Error:", {
+      message: err.message,
+      stack: err.stack,
+    });
+    res.status(500).json({ error: "Internal Server Error" });
+  });
+  
   app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
-
   server.listen(port, () => {
     logger.info(`🚀 Server ready at port ${ port }`);
   });
