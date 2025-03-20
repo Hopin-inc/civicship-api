@@ -50,6 +50,33 @@ input PlaceUpdateInput {
     opportunityIds: [ID!]
 }
 
+input NestedPlacesBulkUpdateInput {
+    connectOrCreate: [NestedPlaceConnectOrCreateInput!]
+    disconnect: [ID!]
+}
+
+input NestedPlacesBulkConnectOrCreateInput {
+    data: [NestedPlaceConnectOrCreateInput!]
+}
+
+input NestedPlaceConnectOrCreateInput {
+    where: ID
+    create: NestedPlaceCreateInput
+}
+
+input NestedPlaceCreateInput {
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    communityId: ID
+}
+
 # ------------------------------
 # Place Mutation Success Type Definitions
 # ------------------------------
