@@ -53,22 +53,18 @@ export default class OpportunityConverter {
   ): Prisma.OpportunityCreateInput {
     const { place, image, communityId, ...prop } = input;
 
-    let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
-
-    if (place) {
-      finalPlace = place.where
-        ? { connect: { id: place.where } }
-        : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
-    }
+    const finalPlace = place.where
+      ? { connect: { id: place.where } }
+      : (() => {
+          const { cityCode, communityId, ...restCreate } = place.create!;
+          return {
+            create: {
+              ...restCreate,
+              city: { connect: { code: cityCode } },
+              community: { connect: { id: communityId } },
+            },
+          };
+        })();
 
     return {
       ...prop,
@@ -76,7 +72,7 @@ export default class OpportunityConverter {
       image: image?.base64,
       community: { connect: { id: communityId } },
       createdByUser: { connect: { id: currentUserId } },
-      ...(finalPlace ? { place: finalPlace } : {}),
+      place: finalPlace,
     };
   }
 
