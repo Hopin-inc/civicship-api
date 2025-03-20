@@ -447,6 +447,7 @@ export type GqlMutation = {
   participationDenyMyInvitation?: Maybe<GqlParticipationSetStatusPayload>;
   participationDenyPerformance?: Maybe<GqlParticipationSetStatusPayload>;
   participationInvite?: Maybe<GqlParticipationInvitePayload>;
+  participationRecord?: Maybe<GqlParticipationRecordPayload>;
   placeCreate?: Maybe<GqlPlaceCreatePayload>;
   placeDelete?: Maybe<GqlPlaceDeletePayload>;
   placeUpdate?: Maybe<GqlPlaceUpdatePayload>;
@@ -656,6 +657,12 @@ export type GqlMutationParticipationInviteArgs = {
 };
 
 
+export type GqlMutationParticipationRecordArgs = {
+  input: GqlParticipationRecordInput;
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
 export type GqlMutationPlaceCreateArgs = {
   input: GqlPlaceCreateInput;
   permission: GqlCheckCommunityPermissionInput;
@@ -811,6 +818,7 @@ export type GqlOpportunity = {
   requireApproval: Scalars['Boolean']['output'];
   requiredUtilities?: Maybe<Array<GqlUtility>>;
   slots?: Maybe<GqlOpportunitySlotsConnection>;
+  source: GqlOpportunitySource;
   startsAt?: Maybe<Scalars['Datetime']['output']>;
   title: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -1095,6 +1103,12 @@ export type GqlOpportunitySortInput = {
   startsAt?: InputMaybe<GqlSortDirection>;
 };
 
+export const GqlOpportunitySource = {
+  External: 'EXTERNAL',
+  Internal: 'INTERNAL'
+} as const;
+
+export type GqlOpportunitySource = typeof GqlOpportunitySource[keyof typeof GqlOpportunitySource];
 export type GqlOpportunityUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   capacity?: InputMaybe<Scalars['Int']['input']>;
@@ -1219,6 +1233,18 @@ export type GqlParticipationInvitePayload = GqlParticipationInviteSuccess;
 
 export type GqlParticipationInviteSuccess = {
   __typename?: 'ParticipationInviteSuccess';
+  participation: GqlParticipation;
+};
+
+export type GqlParticipationRecordInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<GqlImageInput>>;
+};
+
+export type GqlParticipationRecordPayload = GqlParticipationRecordSuccess;
+
+export type GqlParticipationRecordSuccess = {
+  __typename?: 'ParticipationRecordSuccess';
   participation: GqlParticipation;
 };
 
@@ -2343,6 +2369,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   ParticipationApplyPayload: ( Omit<GqlParticipationApplySuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationInvitePayload: ( Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: _RefType['Participation'] } );
+  ParticipationRecordPayload: ( Omit<GqlParticipationRecordSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationSetStatusPayload: ( Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   PlaceCreatePayload: ( Omit<GqlPlaceCreateSuccess, 'place'> & { place: _RefType['Place'] } );
   PlaceDeletePayload: ( GqlPlaceDeleteSuccess );
@@ -2478,6 +2505,7 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunitySlotsBulkUpdateSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<GqlResolversTypes['OpportunitySlot']> }>;
   OpportunitySlotsConnection: ResolverTypeWrapper<Omit<GqlOpportunitySlotsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['OpportunitySlotEdge']>>> }>;
   OpportunitySortInput: GqlOpportunitySortInput;
+  OpportunitySource: GqlOpportunitySource;
   OpportunityUpdateContentInput: GqlOpportunityUpdateContentInput;
   OpportunityUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityUpdateContentPayload']>;
   OpportunityUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
@@ -2494,6 +2522,9 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationInviteInput: GqlParticipationInviteInput;
   ParticipationInvitePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationInvitePayload']>;
   ParticipationInviteSuccess: ResolverTypeWrapper<Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
+  ParticipationRecordInput: GqlParticipationRecordInput;
+  ParticipationRecordPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationRecordPayload']>;
+  ParticipationRecordSuccess: ResolverTypeWrapper<Omit<GqlParticipationRecordSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationSetStatusInput: GqlParticipationSetStatusInput;
   ParticipationSetStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationSetStatusPayload']>;
   ParticipationSetStatusSuccess: ResolverTypeWrapper<Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
@@ -2717,6 +2748,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationInviteInput: GqlParticipationInviteInput;
   ParticipationInvitePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationInvitePayload'];
   ParticipationInviteSuccess: Omit<GqlParticipationInviteSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
+  ParticipationRecordInput: GqlParticipationRecordInput;
+  ParticipationRecordPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationRecordPayload'];
+  ParticipationRecordSuccess: Omit<GqlParticipationRecordSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationSetStatusInput: GqlParticipationSetStatusInput;
   ParticipationSetStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationSetStatusPayload'];
   ParticipationSetStatusSuccess: Omit<GqlParticipationSetStatusSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
@@ -3082,6 +3116,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   participationDenyMyInvitation?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyMyInvitationArgs, 'id' | 'input' | 'permission'>>;
   participationDenyPerformance?: Resolver<Maybe<GqlResolversTypes['ParticipationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDenyPerformanceArgs, 'id' | 'input' | 'permission'>>;
   participationInvite?: Resolver<Maybe<GqlResolversTypes['ParticipationInvitePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationInviteArgs, 'input' | 'permission'>>;
+  participationRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationRecordArgs, 'input' | 'permission'>>;
   placeCreate?: Resolver<Maybe<GqlResolversTypes['PlaceCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceCreateArgs, 'input' | 'permission'>>;
   placeDelete?: Resolver<Maybe<GqlResolversTypes['PlaceDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceDeleteArgs, 'id' | 'permission'>>;
   placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input' | 'permission'>>;
@@ -3130,6 +3165,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
   slots?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsConnection']>, ParentType, ContextType, Partial<GqlOpportunitySlotsArgs>>;
+  source?: Resolver<GqlResolversTypes['OpportunitySource'], ParentType, ContextType>;
   startsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -3336,6 +3372,15 @@ export type GqlParticipationInvitePayloadResolvers<ContextType = any, ParentType
 }>;
 
 export type GqlParticipationInviteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationInviteSuccess'] = GqlResolversParentTypes['ParticipationInviteSuccess']> = ResolversObject<{
+  participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlParticipationRecordPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationRecordPayload'] = GqlResolversParentTypes['ParticipationRecordPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'ParticipationRecordSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlParticipationRecordSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationRecordSuccess'] = GqlResolversParentTypes['ParticipationRecordSuccess']> = ResolversObject<{
   participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3837,6 +3882,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ParticipationEdge?: GqlParticipationEdgeResolvers<ContextType>;
   ParticipationInvitePayload?: GqlParticipationInvitePayloadResolvers<ContextType>;
   ParticipationInviteSuccess?: GqlParticipationInviteSuccessResolvers<ContextType>;
+  ParticipationRecordPayload?: GqlParticipationRecordPayloadResolvers<ContextType>;
+  ParticipationRecordSuccess?: GqlParticipationRecordSuccessResolvers<ContextType>;
   ParticipationSetStatusPayload?: GqlParticipationSetStatusPayloadResolvers<ContextType>;
   ParticipationSetStatusSuccess?: GqlParticipationSetStatusSuccessResolvers<ContextType>;
   ParticipationStatusHistoriesConnection?: GqlParticipationStatusHistoriesConnectionResolvers<ContextType>;

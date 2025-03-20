@@ -9,6 +9,7 @@ model Opportunity {
   startsAt    DateTime? @map("starts_at")
   endsAt      DateTime? @map("ends_at")
 
+  source        OpportunitySource
   category      OpportunityCategory
   hostingStatus OpportunityHostingStatus @default(SCHEDULED)
   publishStatus PublishStatus            @default(PUBLIC) @map("publish_status")
@@ -28,8 +29,8 @@ model Opportunity {
 
   articles Article[] @relation("t_opportunities_on_articles")
 
-  communityId String    @map("community_id")
-  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   createdBy     String @map("created_by")
   createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
@@ -40,10 +41,16 @@ model Opportunity {
   @@map("t_opportunities")
 }
 
+enum OpportunitySource {
+  INTERNAL
+  EXTERNAL
+}
+
 enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
+  UNKNOWN
 }
 
 enum OpportunityHostingStatus {

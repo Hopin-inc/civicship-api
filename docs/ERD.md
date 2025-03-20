@@ -52,10 +52,18 @@ MEMBER MEMBER
     
 
 
+        OpportunitySource {
+            INTERNAL INTERNAL
+EXTERNAL EXTERNAL
+        }
+    
+
+
         OpportunityCategory {
             QUEST QUEST
 EVENT EVENT
 ACTIVITY ACTIVITY
+UNKNOWN UNKNOWN
         }
     
 
@@ -222,6 +230,7 @@ USER USER
     Json files 
     DateTime starts_at "❓"
     DateTime ends_at "❓"
+    OpportunitySource source 
     OpportunityCategory category 
     OpportunityHostingStatus hostingStatus 
     PublishStatus publish_status 
@@ -230,7 +239,7 @@ USER USER
     Int points_to_earn "❓"
     Int fee_required "❓"
     String place_id "❓"
-    String community_id 
+    String community_id "❓"
     String created_by 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -432,6 +441,7 @@ USER USER
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
     "t_wallets" o{--}o "t_tickets" : "tickets"
+    "t_opportunities" o|--|| "OpportunitySource" : "enum:source"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o|--|| "OpportunityHostingStatus" : "enum:hostingStatus"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
@@ -441,7 +451,7 @@ USER USER
     "t_opportunities" o{--}o "t_opportunity_invitations" : "invitations"
     "t_opportunities" o{--}o "t_participations" : "participations"
     "t_opportunities" o{--}o "t_articles" : "articles"
-    "t_opportunities" o|--|| "t_communities" : "community"
+    "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"

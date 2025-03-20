@@ -26,6 +26,7 @@ import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
 import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
+import type { OpportunitySource } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { OpportunityHostingStatus } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
@@ -448,6 +449,7 @@ type OpportunityFactoryDefineInput = {
     files?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
     startsAt?: Date | null;
     endsAt?: Date | null;
+    source?: OpportunitySource;
     category?: OpportunityCategory;
     hostingStatus?: OpportunityHostingStatus;
     publishStatus?: PublishStatus;
@@ -463,7 +465,7 @@ type OpportunityFactoryDefineInput = {
     invitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutOpportunityInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
-    community: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
+    community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
 };
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;

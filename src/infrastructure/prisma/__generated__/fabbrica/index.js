@@ -1086,6 +1086,7 @@ function autoGenerateOpportunityScalarsOrEnums({ seq }) {
     return {
         title: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "title", isId: false, isUnique: false, seq }),
         description: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "description", isId: false, isUnique: false, seq }),
+        source: "INTERNAL",
         category: "QUEST"
     };
 }

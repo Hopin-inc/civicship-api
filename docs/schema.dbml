@@ -115,6 +115,7 @@ Table t_opportunities {
   files Json [not null, default: '[]', note: '[ArrayOfString]']
   startsAt DateTime
   endsAt DateTime
+  source OpportunitySource [not null]
   category OpportunityCategory [not null]
   hostingStatus OpportunityHostingStatus [not null, default: 'SCHEDULED']
   publishStatus PublishStatus [not null, default: 'PUBLIC']
@@ -129,8 +130,8 @@ Table t_opportunities {
   invitations t_opportunity_invitations [not null]
   participations t_participations [not null]
   articles t_articles [not null]
-  communityId String [not null]
-  community t_communities [not null]
+  communityId String
+  community t_communities
   createdBy String [not null]
   createdByUser t_users [not null]
   createdAt DateTime [default: `now()`, not null]
@@ -389,10 +390,16 @@ Enum WalletType {
   MEMBER
 }
 
+Enum OpportunitySource {
+  INTERNAL
+  EXTERNAL
+}
+
 Enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
+  UNKNOWN
 }
 
 Enum OpportunityHostingStatus {
