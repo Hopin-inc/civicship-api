@@ -119,7 +119,10 @@ export default class OpportunityService {
 }
 
 function validateCreateOpportunityPlaceInput(input: GqlOpportunityCreateInput): void {
-  if ((input.place.where && input.place.create) || (!input.place.where && !input.place.create)) {
+  if (
+    (input.place?.where && input.place?.create) ||
+    (!input.place?.where && !input.place?.create)
+  ) {
     throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
       JSON.stringify(input.place),
     ]);
