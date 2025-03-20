@@ -227,8 +227,8 @@ Table t_places {
   mapLocation Json
   cityCode String [not null]
   city m_cities [not null]
-  communityId String [not null]
-  community t_communities [not null]
+  communityId String
+  community t_communities
   opportunities t_opportunities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime

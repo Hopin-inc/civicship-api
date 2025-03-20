@@ -856,7 +856,7 @@ type PlaceFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
-    community: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
+    community?: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
 };
 type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;

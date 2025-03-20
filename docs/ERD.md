@@ -323,7 +323,7 @@ USER USER
     String google_place_id "❓"
     Json map_location "❓"
     String city_code 
-    String communityId 
+    String communityId "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -487,7 +487,7 @@ USER USER
     "t_participation_status_histories" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
     "t_places" o|--|| "m_cities" : "city"
-    "t_places" o|--|| "t_communities" : "community"
+    "t_places" o|--|o "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_tickets" o|--|| "TicketStatus" : "enum:status"
     "t_tickets" o|--|| "TicketStatusReason" : "enum:reason"
