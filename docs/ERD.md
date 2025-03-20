@@ -281,12 +281,22 @@ USER USER
     ParticipationStatus status 
     ParticipationEventType eventType 
     ParticipationEventTrigger eventTrigger 
-    Json images "❓"
+    String description "❓"
     String user_id "❓"
     String community_id "❓"
     String opportunity_id "❓"
     String opportunity_slot_id "❓"
     DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_participation_images" {
+    String id "🗝️"
+    String url 
+    String caption "❓"
+    String participationId 
+    DateTime createdAt 
     DateTime updated_at "❓"
     }
   
@@ -463,12 +473,14 @@ USER USER
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
     "t_participations" o|--|| "ParticipationEventType" : "enum:eventType"
     "t_participations" o|--|| "ParticipationEventTrigger" : "enum:eventTrigger"
+    "t_participations" o{--}o "t_participation_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
     "t_participations" o|--|o "t_communities" : "community"
     "t_participations" o|--|o "t_opportunities" : "opportunity"
     "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
+    "t_participation_images" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
     "t_participation_status_histories" o|--|| "ParticipationEventType" : "enum:eventType"
     "t_participation_status_histories" o|--|| "ParticipationEventTrigger" : "enum:eventTrigger"

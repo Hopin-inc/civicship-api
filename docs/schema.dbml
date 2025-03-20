@@ -177,7 +177,8 @@ Table t_participations {
   status ParticipationStatus [not null]
   eventType ParticipationEventType [not null]
   eventTrigger ParticipationEventTrigger [not null]
-  images Json [note: '[ArrayOfImageInfo]']
+  images t_participation_images [not null]
+  description String
   userId String
   user t_users
   communityId String
@@ -188,6 +189,16 @@ Table t_participations {
   opportunitySlot t_opportunity_slots
   statusHistories t_participation_status_histories [not null]
   transactions t_transactions [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_participation_images {
+  id String [pk]
+  url String [not null]
+  caption String
+  participationId String [not null]
+  participation t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -501,6 +512,8 @@ Ref: t_participations.communityId > t_communities.id [delete: Set Null]
 Ref: t_participations.opportunityId > t_opportunities.id [delete: Set Null]
 
 Ref: t_participations.opportunitySlotId > t_opportunity_slots.id [delete: Set Null]
+
+Ref: t_participation_images.participationId > t_participations.id [delete: Cascade]
 
 Ref: t_participation_status_histories.participationId > t_participations.id [delete: Cascade]
 

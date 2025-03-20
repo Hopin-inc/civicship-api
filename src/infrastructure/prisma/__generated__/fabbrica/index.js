@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -209,6 +209,10 @@ const modelFieldDefinitions = [{
     }, {
         name: "Participation",
         fields: [{
+                name: "images",
+                type: "ParticipationImage",
+                relationName: "ParticipationToParticipationImage"
+            }, {
                 name: "user",
                 type: "User",
                 relationName: "ParticipationToUser"
@@ -232,6 +236,13 @@ const modelFieldDefinitions = [{
                 name: "transactions",
                 type: "Transaction",
                 relationName: "ParticipationToTransaction"
+            }]
+    }, {
+        name: "ParticipationImage",
+        fields: [{
+                name: "participation",
+                type: "Participation",
+                relationName: "ParticipationToParticipationImage"
             }]
     }, {
         name: "ParticipationStatusHistory",
@@ -1584,6 +1595,99 @@ exports.defineParticipationFactory = ((options) => {
     return defineParticipationFactoryInternal(options ?? {}, {});
 });
 exports.defineParticipationFactory.withTransientFields = defaultTransientFieldValues => options => defineParticipationFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isParticipationImageparticipationFactory(x) {
+    return x?._factoryFor === "Participation";
+}
+function autoGenerateParticipationImageScalarsOrEnums({ seq }) {
+    return {
+        url: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "ParticipationImage", fieldName: "url", isId: false, isUnique: false, seq })
+    };
+}
+function defineParticipationImageFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("ParticipationImage", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateParticipationImageScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                participation: isParticipationImageparticipationFactory(defaultData.participation) ? {
+                    create: await defaultData.participation.build()
+                } : defaultData.participation
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().participationImage.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ParticipationImage",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link ParticipationImage} model.
+ *
+ * @param options
+ * @returns factory {@link ParticipationImageFactoryInterface}
+ */
+exports.defineParticipationImageFactory = ((options) => {
+    return defineParticipationImageFactoryInternal(options, {});
+});
+exports.defineParticipationImageFactory.withTransientFields = defaultTransientFieldValues => options => defineParticipationImageFactoryInternal(options, defaultTransientFieldValues);
 function isParticipationStatusHistoryparticipationFactory(x) {
     return x?._factoryFor === "Participation";
 }

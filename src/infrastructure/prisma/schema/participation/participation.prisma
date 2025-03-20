@@ -4,8 +4,8 @@ model Participation {
   eventType    ParticipationEventType
   eventTrigger ParticipationEventTrigger
 
-  /// [ArrayOfImageInfo]
-  images Json?
+  images      ParticipationImage[]
+  description String?
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
