@@ -15,7 +15,7 @@ import { IContext } from "@/types/server";
 import ReservationService from "@/application/reservation/service";
 import ReservationPresenter from "@/application/reservation/presenter";
 import { ParticipationStatusReason, ParticipationStatus, ReservationStatus } from "@prisma/client";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/utils";
 import OpportunitySlotService from "@/application/opportunitySlot/service";
 import MembershipService from "@/application/membership/service";
@@ -55,17 +55,7 @@ export default class ReservationUseCase {
     );
 
     const { opportunity, capacity, startsAt, endsAt } = slot;
-
-    await ReservationService.checkConflictBeforeReservation(
-      ctx,
-      currentUserId,
-      startsAt,
-      endsAt,
-    ).then((conflicts) => {
-      if (conflicts.length > 0) {
-        throw new ValidationError("You already have a conflicting reservation.");
-      }
-    });
+    await ReservationService.checkConflictBeforeReservation(ctx, currentUserId, startsAt, endsAt);
 
     if (!opportunity) {
       throw new NotFoundError("Opportunity with OpportunitySlot", {
@@ -78,12 +68,11 @@ export default class ReservationUseCase {
       throw new NotFoundError("Community with Opportunity", { communityId });
     }
 
-    await validateReservationCapacity(
+    const currentCount = await ParticipationService.countActiveParticipantsBySlotId(
       ctx,
       input.opportunitySlotId,
-      capacity,
-      input.participantCount,
     );
+    ReservationService.validateCapacity(capacity, input.participantCount, currentCount);
 
     const { reservationStatus, participationStatus, participationStatusReason } =
       resolveReservationStatuses(requireApproval);
@@ -92,12 +81,9 @@ export default class ReservationUseCase {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
+      // TODO ticketが必要だけど、不要なケースもあるみたいなのある？
       if (requiredUtilities.length > 0) {
-        if (!input.ticketId) {
-          throw new ValidationError("This opportunity requires a ticket.", [JSON.stringify(input)]);
-        }
-
-        await TicketService.reserveOrUseTicket(ctx, participationStatus, input.ticketId, tx);
+        await TicketService.reserveOrUseTicket(ctx, participationStatus, tx, input.ticketId);
       }
 
       return ReservationService.createReservation(
@@ -123,7 +109,7 @@ export default class ReservationUseCase {
     const reservation = await this.issuer.public(ctx, async (tx) => {
       const res = await ReservationService.findReservationOrThrow(ctx, id);
 
-      const { availableParticipationId } = validateReservationJoinable(res, currentUserId);
+      const { availableParticipationId } = ReservationService.validateJoinable(res, currentUserId);
 
       await ParticipationService.setStatus(
         ctx,
@@ -151,7 +137,7 @@ export default class ReservationUseCase {
       ParticipationStatus.NOT_PARTICIPATING,
       ParticipationStatusReason.RESERVATION_CANCELED,
     );
-    validateReservationCancellable(reservation.opportunitySlot.startsAt);
+    ReservationService.validateCancellable(reservation.opportunitySlot.startsAt);
 
     return ReservationPresenter.setStatus(reservation);
   }
@@ -229,57 +215,6 @@ export default class ReservationUseCase {
 
       return reservation;
     });
-  }
-}
-
-async function validateReservationCapacity(
-  ctx: IContext,
-  opportunitySlotId: string,
-  capacity: number | null,
-  participantCount: number,
-) {
-  if (!capacity) return;
-
-  const currentCount = await ParticipationService.countActiveParticipantsBySlotId(
-    ctx,
-    opportunitySlotId,
-  );
-  const remainingCapacity = capacity - currentCount;
-
-  if (participantCount > remainingCapacity) {
-    throw new ValidationError("Capacity exceeded for this opportunity slot.", [
-      `remainingCapacity: ${remainingCapacity}`,
-      `requested: ${participantCount}`,
-    ]);
-  }
-}
-
-function validateReservationJoinable(
-  reservation: PrismaReservation,
-  currentUserId: string,
-): { availableParticipationId: string } {
-  const isAlreadyJoined = reservation.participations.some((p) => p.userId === currentUserId);
-  if (isAlreadyJoined) {
-    throw new ValidationError("You have already joined this reservation.");
-  }
-
-  const target = reservation.participations.find((p) => p.userId === null);
-  if (!target) {
-    throw new ValidationError("No available participation slots.");
-  }
-
-  return { availableParticipationId: target.id };
-}
-
-function validateReservationCancellable(slotStartAt: Date) {
-  const now = new Date();
-  const cancelLimit = new Date(slotStartAt);
-  cancelLimit.setHours(cancelLimit.getHours() - 24);
-
-  if (now > cancelLimit) {
-    throw new ValidationError(
-      "Reservation can no longer be canceled within 24 hours of the event.",
-    );
   }
 }
 
