@@ -10,8 +10,8 @@ import { createUtilityLoader } from "@/application/utility/controller/dataloader
 import { createPlaceLoader } from "@/application/place/controller/dataloader";
 import { createOpportunitySlotLoader } from "@/application/opportunitySlot/controller/dataloader";
 import { createParticipationStatusHistoryLoader } from "@/application/participation/statusHistory/controller/dataloader";
-import { createOpportunityInvitationLoader } from "@/application/opportunityInvitation/controller/dataloader";
-import { createOpportunityInvitationHistoryLoader } from "@/application/opportunityInvitation/invitationHistory/controller/dataloader";
+import { createOpportunityInvitationLoader } from "@/application/invitation/controller/dataloader";
+import { createOpportunityInvitationHistoryLoader } from "@/application/invitation/invitationHistory/controller/dataloader";
 import { createArticleLoader } from "@/application/article/controller/dataloader";
 import { createTicketLoader } from "@/application/ticket/controller/dataloader";
 import { createTicketStatusHistoryLoader } from "@/application/ticket/statusHistory/controller/dataloader";

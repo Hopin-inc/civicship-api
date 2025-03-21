@@ -7,7 +7,7 @@ import { participationMutationPermissions } from "@/application/participation/co
 import { utilityMutationPermissions } from "@/application/utility/controller/permission";
 import { transactionMutationPermissions } from "@/application/transaction/controller/permission";
 import { opportunitySlotMutationPermissions } from "@/application/opportunitySlot/controller/permission";
-import { opportunityInvitationMutationPermissions } from "@/application/opportunityInvitation/controller/permission";
+import { opportunityInvitationMutationPermissions } from "@/application/invitation/controller/permission";
 import { placeMutationPermissions } from "@/application/place/controller/permission";
 import { ticketMutationPermissions } from "@/application/ticket/controller/permission";
 
