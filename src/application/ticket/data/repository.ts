@@ -41,6 +41,16 @@ export default class TicketRepository {
     });
   }
 
+  static async createMany(
+    ctx: IContext,
+    data: Prisma.TicketCreateManyInput[],
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.ticket.createMany({
+      data,
+    });
+  }
+
   static async delete(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.ticket.delete({

@@ -1,16 +1,12 @@
-import {
-  GqlTicket,
-  GqlTicketFilterInput,
-  GqlTicketsConnection,
-  GqlTicketSortInput,
-} from "@/types/graphql";
+import { GqlTicketFilterInput, GqlTicketsConnection, GqlTicketSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
 import { ParticipationStatus, Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import TicketPresenter from "@/application/ticket/presenter";
+import { PrismaTicket } from "@/application/ticket/data/type";
 
 export default class TicketService {
   static async fetchTickets(
@@ -31,7 +27,6 @@ export default class TicketService {
     const where = TicketConverter.filter(filter ?? {});
     const orderBy = TicketConverter.sort(sort ?? {});
 
-    // 1件多く取得して、hasNextPage を判定
     const res = await TicketRepository.query(ctx, where, orderBy, take + 1, cursor);
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map((record) => TicketPresenter.get(record));
@@ -42,7 +37,7 @@ export default class TicketService {
     return TicketRepository.find(ctx, id);
   }
 
-  static async findTicketOrThrow(ctx: IContext, id: string): Promise<GqlTicket> {
+  static async findTicketOrThrow(ctx: IContext, id: string): Promise<PrismaTicket> {
     const ticket = await TicketRepository.find(ctx, id);
     if (!ticket) {
       throw new NotFoundError("Ticket", { id });
@@ -50,105 +45,131 @@ export default class TicketService {
     return ticket;
   }
 
-  static async purchaseTicket(
+  // TODO prismaのcreateManyを使うように変更する
+  static async purchaseAndReserveTickets(
     ctx: IContext,
     walletId: string,
     utilityId: string,
     transactionId: string,
+    count: number,
     tx: Prisma.TransactionClient,
-  ) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    const data: Prisma.TicketCreateInput = TicketConverter.purchase(
-      currentUserId,
+  ): Promise<void> {
+    const tickets = await this.purchaseManyTickets(
+      ctx,
       walletId,
       utilityId,
       transactionId,
+      count,
+      tx,
     );
-    return TicketRepository.create(ctx, data, tx);
+    await this.reserveManyTickets(ctx, tickets, tx);
   }
 
-  static async reserveOrUseTicket(
+  static async cancelAndRefundTickets(
     ctx: IContext,
+    tickets: PrismaTicket[],
+    currentUserId: string,
+    transactionId: string,
     participationStatus: ParticipationStatus,
-    ticketId: string,
     tx: Prisma.TransactionClient,
-  ) {
-    switch (participationStatus) {
-      case ParticipationStatus.PENDING:
-        await this.reserveTicket(ctx, ticketId, tx);
-        break;
-      case ParticipationStatus.PARTICIPATING:
-        await this.useTicket(ctx, ticketId, tx);
-        break;
-      default:
-        break;
-    }
-  }
-
-  static async cancelReservedTicketIfNeeded(
-    ctx: IContext,
-    ticketId: string,
-    tx: Prisma.TransactionClient,
-    participationStatus: ParticipationStatus,
   ): Promise<void> {
-    const ticket = await this.findTicketOrThrow(ctx, ticketId);
-    if (
-      participationStatus === ParticipationStatus.PENDING &&
-      ticket.status === TicketStatus.DISABLED &&
-      ticket.reason === TicketStatusReason.RESERVED
-    ) {
-      await this.cancelReservedTicket(ctx, ticketId, tx);
-    }
+    await this.cancelReservedTicketsIfAvailable(
+      ctx,
+      tickets,
+      currentUserId,
+      participationStatus,
+      tx,
+    );
+    await this.refundTickets(ctx, tickets, currentUserId, transactionId, tx);
   }
 
-  static async useTicketIfAvailable(
+  static async purchaseManyTickets(
     ctx: IContext,
-    ticketId: string,
+    walletId: string,
+    utilityId: string,
+    transactionId: string,
+    count: number,
     tx: Prisma.TransactionClient,
-    participationStatus: ParticipationStatus,
-  ): Promise<void> {
-    const ticket = await TicketService.findTicketOrThrow(ctx, ticketId);
-
-    if (
-      participationStatus === ParticipationStatus.PENDING &&
-      ticket.status === TicketStatus.AVAILABLE
-    ) {
-      await TicketService.useTicket(ctx, ticketId, tx);
-    }
-  }
-
-  static async reserveTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+  ): Promise<PrismaTicket[]> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const data: Prisma.TicketUpdateInput = TicketConverter.reserve(currentUserId);
-    return TicketRepository.update(ctx, id, data, tx);
+    const data: Prisma.TicketCreateInput[] = Array.from({ length: count }).map(() =>
+      TicketConverter.purchase(currentUserId, walletId, utilityId, transactionId),
+    );
+
+    return Promise.all(data.map((input) => TicketRepository.create(ctx, input, tx)));
   }
 
-  static async cancelReservedTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    const data: Prisma.TicketUpdateInput = TicketConverter.cancelReserved(currentUserId);
-    return TicketRepository.update(ctx, id, data, tx);
-  }
-
-  static async useTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    const data: Prisma.TicketUpdateInput = TicketConverter.use(currentUserId);
-    return TicketRepository.update(ctx, id, data, tx);
-  }
-
-  static async refundTicket(
+  static async reserveManyTickets(
     ctx: IContext,
-    id: string,
+    tickets: PrismaTicket[],
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const currentUserId = getCurrentUserId(ctx);
+
+    await Promise.all(
+      tickets.map((ticket) =>
+        TicketRepository.update(ctx, ticket.id, TicketConverter.reserve(currentUserId), tx),
+      ),
+    );
+  }
+
+  private static async cancelReservedTicketsIfAvailable(
+    ctx: IContext,
+    tickets: PrismaTicket[],
+    currentUserId: string,
+    participationStatus: ParticipationStatus,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    if (participationStatus !== ParticipationStatus.PENDING) return;
+
+    const cancellableTickets = tickets.filter(
+      (ticket) =>
+        ticket.status === TicketStatus.DISABLED && ticket.reason === TicketStatusReason.RESERVED,
+    );
+
+    const data = TicketConverter.cancelReserved(currentUserId);
+
+    await Promise.all(
+      cancellableTickets.map((ticket) => TicketRepository.update(ctx, ticket.id, data, tx)),
+    );
+  }
+
+  private static async refundTickets(
+    ctx: IContext,
+    tickets: PrismaTicket[],
+    currentUserId: string,
     transactionId: string,
     tx: Prisma.TransactionClient,
-  ) {
-    const currentUserId = getCurrentUserId(ctx);
+  ): Promise<void> {
+    await Promise.all(
+      tickets.map((ticket) =>
+        TicketRepository.update(
+          ctx,
+          ticket.id,
+          TicketConverter.refund(currentUserId, transactionId),
+          tx,
+        ),
+      ),
+    );
+  }
+
+  static async useTicket(ctx: IContext, id: string, userId: string, tx?: Prisma.TransactionClient) {
     await this.findTicketOrThrow(ctx, id);
 
-    const data: Prisma.TicketUpdateInput = TicketConverter.refund(currentUserId, transactionId);
+    const data: Prisma.TicketUpdateInput = TicketConverter.use(userId);
     return TicketRepository.update(ctx, id, data, tx);
+  }
+
+  static validateTicketForReservation(ticket: PrismaTicket, requiredUtilityIds: string[]) {
+    const { utilityId, status } = ticket;
+
+    if (!requiredUtilityIds.includes(utilityId)) {
+      throw new ValidationError("Ticket is not valid for the required utilities.");
+    }
+
+    if (status === TicketStatus.DISABLED) {
+      throw new ValidationError("This ticket has already been used.");
+    }
   }
 }

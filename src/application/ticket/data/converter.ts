@@ -55,6 +55,21 @@ export default class TicketConverter {
     };
   }
 
+  static reserveInline(base: Prisma.TicketCreateInput, userId: string): Prisma.TicketCreateInput {
+    return {
+      ...base,
+      status: TicketStatus.DISABLED,
+      reason: TicketStatusReason.RESERVED,
+      ticketStatusHistories: {
+        create: {
+          status: TicketStatus.DISABLED,
+          reason: TicketStatusReason.RESERVED,
+          createdByUser: { connect: { id: userId } },
+        },
+      },
+    };
+  }
+
   static cancelReserved(currentUserId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.AVAILABLE,
