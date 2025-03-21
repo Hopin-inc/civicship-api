@@ -1,0 +1,16 @@
+model EvaluationHistory {
+  id String @id @default(cuid())
+
+  evaluationId String
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  status EvaluationStatus
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("t_evaluation_histories")
+}

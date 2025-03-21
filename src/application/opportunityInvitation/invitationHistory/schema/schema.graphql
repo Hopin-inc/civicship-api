@@ -5,7 +5,7 @@ type OpportunityInvitationHistory {
     id: ID!
 
     invitation: OpportunityInvitation
-    invitedUser: User
+    participation: Participation
 
     createdAt: Datetime!
     updatedAt: Datetime

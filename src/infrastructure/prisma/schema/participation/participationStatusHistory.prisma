@@ -17,14 +17,14 @@ model ParticipationStatusHistory {
 }
 
 enum ParticipationEventType {
-  APPLICATION
-  PROXY_APPLY
-  EVALUATION
+  SELF_LOG
+  RESERVATION
   OPPORTUNITY
 }
 
 enum ParticipationEventTrigger {
-  ISSUED
+  SELF_REPORTED
+  PENDING
   ACCEPTED
   DECLINED
   CANCELED

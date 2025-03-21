@@ -30,7 +30,7 @@ type OpportunityInvitationHistoryEdge implements Edge {
 # ------------------------------
 input OpportunityInvitationHistoryFilterInput {
     invitationId: ID
-    invitedUserId: ID
+    userId: ID
 }
 
 input OpportunityInvitationHistorySortInput {

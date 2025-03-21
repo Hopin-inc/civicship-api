@@ -8,8 +8,10 @@ model Reservation {
 
   participations Participation[]
 
-  createdByUserId String? @map("created_by_user_id")
-  createdBy       User?   @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  histories ReservationHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

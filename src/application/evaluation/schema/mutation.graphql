@@ -1,0 +1,35 @@
+# ------------------------------
+# Evaluation Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    evaluationPass(
+        input: EvaluationSetStatusInput!
+        permission: CheckCommunityPermissionInput!
+    ): EvaluationSetStatusPayload
+
+    evaluationFail(
+        input: EvaluationSetStatusInput!
+        permission: CheckCommunityPermissionInput!
+    ): EvaluationSetStatusPayload
+}
+
+# ------------------------------
+# Evaluation Mutation Input Definitions
+# ------------------------------
+input EvaluationSetStatusInput {
+    participationId: ID!
+    comment: String
+}
+
+# ------------------------------
+# Evaluation Mutation Success Type Definitions
+# ------------------------------
+type EvaluationSetStatusSuccess {
+    evaluation: Evaluation!
+}
+
+# ------------------------------
+# Evaluation Mutation Union (Payload) Definitions
+# ------------------------------
+union EvaluationSetStatusPayload =
+    EvaluationSetStatusSuccess

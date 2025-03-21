@@ -4,14 +4,17 @@
 type Participation {
     id: ID!
     status: ParticipationStatus!
-    eventType:    ParticipationEventType!
-    eventTrigger: ParticipationEventTrigger!
-    images: JSON
+    source: Source!
 
     user: User
     community: Community
-    opportunity: Opportunity
     opportunitySlot: OpportunitySlot
+    reservation: Reservation
+    opportunityInvitationHistory: OpportunityInvitationHistory
+
+    evaluation: Evaluation
+    description: String
+    images: JSON
 
     statusHistories(
         filter: ParticipationStatusHistoryFilterInput
@@ -39,19 +42,4 @@ enum ParticipationStatus {
     PARTICIPATING
     PARTICIPATED
     NOT_PARTICIPATING
-}
-
-enum ParticipationEventType {
-    SELF_LOG
-    INVITATION
-    APPLICATION
-    EVALUATION
-    OPPORTUNITY
-}
-
-enum ParticipationEventTrigger {
-    ISSUED
-    ACCEPTED
-    DECLINED
-    CANCELED
 }

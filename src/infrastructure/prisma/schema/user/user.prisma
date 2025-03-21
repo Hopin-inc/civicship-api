@@ -15,17 +15,21 @@ model User {
   onboardings Onboarding[]
   identities  Identity[]
 
-  memberships       Membership[]
-  membershipHistory MembershipHistory[]
-  wallets           Wallet[]
+  memberships           Membership[]
+  membershipChangedByMe MembershipHistory[]
+  wallets               Wallet[]
 
-  opportunitiesCreatedByMe       Opportunity[]
-  opportunityInvitations         OpportunityInvitation[]
-  opportunityInvitationHistories OpportunityInvitationHistory[]
+  opportunities          Opportunity[]
+  opportunityInvitations OpportunityInvitation[]
+
+  reservations                 Reservation[]
+  reservationStatusChangedByMe ReservationHistory[]
 
   participations                 Participation[]
-  reservationsCreatedByMe        Reservation[]
   participationStatusChangedByMe ParticipationStatusHistory[]
+
+  evaluations           Evaluation[]
+  evaluationCreatedByMe EvaluationHistory[]
 
   articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
   articlesAboutMe     Article[] @relation("t_related_users_on_articles")

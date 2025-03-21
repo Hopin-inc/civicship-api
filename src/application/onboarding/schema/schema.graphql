@@ -1,0 +1,27 @@
+# ------------------------------
+# Onboarding Object Type Definitions
+# ------------------------------
+type Onboarding {
+    id: ID!
+    todo: Todo!
+    status: OnboardingStatus!
+    user: User!
+    completedAt: Datetime
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Onboarding Enum Definitions
+# ------------------------------
+enum Todo {
+    PROFILE
+    PERSONAL_LOG
+    FIRST_ACTIVITY
+    FIRST_QUEST
+}
+
+enum OnboardingStatus {
+    WIP
+    DONE
+}

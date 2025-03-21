@@ -35,6 +35,8 @@ input ParticipationFilterInput {
     userId: ID
     opportunityId: ID
     opportunitySlotId: ID
+    reservationId: ID
+    opportunityInvitationId: ID
 }
 
 input ParticipationSortInput {

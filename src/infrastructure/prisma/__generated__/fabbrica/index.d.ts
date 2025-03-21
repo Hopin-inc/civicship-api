@@ -1,5 +1,7 @@
 import type { Article } from "@prisma/client";
 import type { Community } from "@prisma/client";
+import type { Evaluation } from "@prisma/client";
+import type { EvaluationHistory } from "@prisma/client";
 import type { OpportunityInvitation } from "@prisma/client";
 import type { OpportunityInvitationHistory } from "@prisma/client";
 import type { City } from "@prisma/client";
@@ -15,6 +17,7 @@ import type { ParticipationImage } from "@prisma/client";
 import type { ParticipationStatusHistory } from "@prisma/client";
 import type { Place } from "@prisma/client";
 import type { Reservation } from "@prisma/client";
+import type { ReservationHistory } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
@@ -25,6 +28,7 @@ import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
+import type { EvaluationStatus } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
 import type { Role } from "@prisma/client";
@@ -168,6 +172,116 @@ interface CommunityFactoryBuilder {
  * @returns factory {@link CommunityFactoryInterface}
  */
 export declare const defineCommunityFactory: CommunityFactoryBuilder;
+type EvaluationparticipationFactory = {
+    _factoryFor: "Participation";
+    build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutEvaluationInput["create"]>;
+};
+type EvaluationevaluatorFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationsInput["create"]>;
+};
+type EvaluationFactoryDefineInput = {
+    id?: string;
+    status?: EvaluationStatus;
+    comment?: string | null;
+    credentialUrl?: string | null;
+    issuedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    participation: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput;
+    evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsInput;
+    histories?: Prisma.EvaluationHistoryCreateNestedManyWithoutEvaluationInput;
+};
+type EvaluationTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationFactoryDefineInput, never>>;
+type EvaluationFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<EvaluationFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Evaluation, Prisma.EvaluationCreateInput, TTransients>;
+type EvaluationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<EvaluationFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: EvaluationFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Evaluation, Prisma.EvaluationCreateInput, TTransients>;
+type EvaluationTraitKeys<TOptions extends EvaluationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface EvaluationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Evaluation";
+    build(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput>;
+    buildList(list: readonly Partial<Prisma.EvaluationCreateInput & TTransients>[]): PromiseLike<Prisma.EvaluationCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput[]>;
+    pickForConnect(inputData: Evaluation): Pick<Evaluation, "id">;
+    create(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Evaluation>;
+    createList(list: readonly Partial<Prisma.EvaluationCreateInput & TTransients>[]): PromiseLike<Evaluation[]>;
+    createList(count: number, item?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Evaluation[]>;
+    createForConnect(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Pick<Evaluation, "id">>;
+}
+export interface EvaluationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EvaluationFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): EvaluationFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface EvaluationFactoryBuilder {
+    <TOptions extends EvaluationFactoryDefineOptions>(options: TOptions): EvaluationFactoryInterface<{}, EvaluationTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends EvaluationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EvaluationFactoryDefineOptions<TTransients>>(options: TOptions) => EvaluationFactoryInterface<TTransients, EvaluationTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link Evaluation} model.
+ *
+ * @param options
+ * @returns factory {@link EvaluationFactoryInterface}
+ */
+export declare const defineEvaluationFactory: EvaluationFactoryBuilder;
+type EvaluationHistoryevaluationFactory = {
+    _factoryFor: "Evaluation";
+    build: () => PromiseLike<Prisma.EvaluationCreateNestedOneWithoutHistoriesInput["create"]>;
+};
+type EvaluationHistorycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput["create"]>;
+};
+type EvaluationHistoryFactoryDefineInput = {
+    id?: string;
+    status?: EvaluationStatus;
+    comment?: string | null;
+    createdAt?: Date;
+    evaluation: EvaluationHistoryevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutHistoriesInput;
+    createdByUser?: EvaluationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput;
+};
+type EvaluationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationHistoryFactoryDefineInput, never>>;
+type EvaluationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<EvaluationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<EvaluationHistory, Prisma.EvaluationHistoryCreateInput, TTransients>;
+type EvaluationHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<EvaluationHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: EvaluationHistoryFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<EvaluationHistory, Prisma.EvaluationHistoryCreateInput, TTransients>;
+type EvaluationHistoryTraitKeys<TOptions extends EvaluationHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "EvaluationHistory";
+    build(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.EvaluationHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.EvaluationHistoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput[]>;
+    pickForConnect(inputData: EvaluationHistory): Pick<EvaluationHistory, "id">;
+    create(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<EvaluationHistory>;
+    createList(list: readonly Partial<Prisma.EvaluationHistoryCreateInput & TTransients>[]): PromiseLike<EvaluationHistory[]>;
+    createList(count: number, item?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<EvaluationHistory[]>;
+    createForConnect(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Pick<EvaluationHistory, "id">>;
+}
+export interface EvaluationHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface EvaluationHistoryFactoryBuilder {
+    <TOptions extends EvaluationHistoryFactoryDefineOptions>(options: TOptions): EvaluationHistoryFactoryInterface<{}, EvaluationHistoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends EvaluationHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EvaluationHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => EvaluationHistoryFactoryInterface<TTransients, EvaluationHistoryTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link EvaluationHistory} model.
+ *
+ * @param options
+ * @returns factory {@link EvaluationHistoryFactoryInterface}
+ */
+export declare const defineEvaluationHistoryFactory: EvaluationHistoryFactoryBuilder;
 type OpportunityInvitationopportunityFactory = {
     _factoryFor: "Opportunity";
     build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutInvitationsInput["create"]>;
@@ -227,21 +341,11 @@ type OpportunityInvitationHistoryinvitationFactory = {
     _factoryFor: "OpportunityInvitation";
     build: () => PromiseLike<Prisma.OpportunityInvitationCreateNestedOneWithoutHistoriesInput["create"]>;
 };
-type OpportunityInvitationHistoryinvitedUserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunityInvitationHistoriesInput["create"]>;
-};
-type OpportunityInvitationHistoryparticipationFactory = {
-    _factoryFor: "Participation";
-    build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutOpportunityInvitationHistoryInput["create"]>;
-};
 type OpportunityInvitationHistoryFactoryDefineInput = {
     id?: string;
     createdAt?: Date;
-    updatedAt?: Date | null;
     invitation: OpportunityInvitationHistoryinvitationFactory | Prisma.OpportunityInvitationCreateNestedOneWithoutHistoriesInput;
-    invitedUser: OpportunityInvitationHistoryinvitedUserFactory | Prisma.UserCreateNestedOneWithoutOpportunityInvitationHistoriesInput;
-    participation?: OpportunityInvitationHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutOpportunityInvitationHistoryInput;
+    Participation?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInvitationHistoryInput;
 };
 type OpportunityInvitationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityInvitationHistoryFactoryDefineInput, never>>;
 type OpportunityInvitationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -431,7 +535,7 @@ type MembershipHistorymembershipFactory = {
 };
 type MembershipHistorycreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutMembershipHistoryInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutMembershipChangedByMeInput["create"]>;
 };
 type MembershipHistoryFactoryDefineInput = {
     id?: string;
@@ -441,7 +545,7 @@ type MembershipHistoryFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     membership: MembershipHistorymembershipFactory | Prisma.MembershipCreateNestedOneWithoutHistoriesInput;
-    createdByUser?: MembershipHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutMembershipHistoryInput;
+    createdByUser?: MembershipHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutMembershipChangedByMeInput;
 };
 type MembershipHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof MembershipHistoryFactoryDefineInput, never>>;
 type MembershipHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -606,7 +710,7 @@ type OpportunitycommunityFactory = {
 };
 type OpportunitycreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesInput["create"]>;
 };
 type OpportunityFactoryDefineInput = {
     id?: string;
@@ -629,7 +733,7 @@ type OpportunityFactoryDefineInput = {
     invitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
-    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
+    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesInput;
 };
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
 type OpportunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -728,7 +832,7 @@ type ParticipationopportunityInvitationHistoryFactory = {
     _factoryFor: "OpportunityInvitationHistory";
     build: () => PromiseLike<Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationInput["create"]>;
 };
-type ParticipationOpportunitySlotFactory = {
+type ParticipationopportunitySlotFactory = {
     _factoryFor: "OpportunitySlot";
     build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput["create"]>;
 };
@@ -740,6 +844,10 @@ type ParticipationcommunityFactory = {
     _factoryFor: "Community";
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutParticipationsInput["create"]>;
 };
+type ParticipationevaluationFactory = {
+    _factoryFor: "Evaluation";
+    build: () => PromiseLike<Prisma.EvaluationCreateNestedOneWithoutParticipationInput["create"]>;
+};
 type ParticipationFactoryDefineInput = {
     id?: string;
     status?: ParticipationStatus;
@@ -749,9 +857,10 @@ type ParticipationFactoryDefineInput = {
     updatedAt?: Date | null;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
     opportunityInvitationHistory?: ParticipationopportunityInvitationHistoryFactory | Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationInput;
-    OpportunitySlot?: ParticipationOpportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
+    opportunitySlot?: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
+    evaluation?: ParticipationevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutParticipationInput;
     images?: Prisma.ParticipationImageCreateNestedManyWithoutParticipationInput;
     statusHistories?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutParticipationInput;
     transactions?: Prisma.TransactionCreateNestedManyWithoutParticipationInput;
@@ -961,9 +1070,9 @@ type ReservationopportunitySlotFactory = {
     _factoryFor: "OpportunitySlot";
     build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput["create"]>;
 };
-type ReservationcreatedByFactory = {
+type ReservationcreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationsCreatedByMeInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationsInput["create"]>;
 };
 type ReservationFactoryDefineInput = {
     id?: string;
@@ -972,7 +1081,8 @@ type ReservationFactoryDefineInput = {
     updatedAt?: Date | null;
     opportunitySlot: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutReservationInput;
-    createdBy?: ReservationcreatedByFactory | Prisma.UserCreateNestedOneWithoutReservationsCreatedByMeInput;
+    createdByUser?: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsInput;
+    histories?: Prisma.ReservationHistoryCreateNestedManyWithoutReservationInput;
 };
 type ReservationTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationFactoryDefineInput, never>>;
 type ReservationFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -1011,6 +1121,59 @@ interface ReservationFactoryBuilder {
  * @returns factory {@link ReservationFactoryInterface}
  */
 export declare const defineReservationFactory: ReservationFactoryBuilder;
+type ReservationHistoryreservationFactory = {
+    _factoryFor: "Reservation";
+    build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutHistoriesInput["create"]>;
+};
+type ReservationHistorycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput["create"]>;
+};
+type ReservationHistoryFactoryDefineInput = {
+    id?: string;
+    status?: ReservationStatus;
+    reason?: string | null;
+    createdAt?: Date;
+    reservation: ReservationHistoryreservationFactory | Prisma.ReservationCreateNestedOneWithoutHistoriesInput;
+    createdByUser?: ReservationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput;
+};
+type ReservationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationHistoryFactoryDefineInput, never>>;
+type ReservationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReservationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ReservationHistory, Prisma.ReservationHistoryCreateInput, TTransients>;
+type ReservationHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ReservationHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ReservationHistoryFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ReservationHistory, Prisma.ReservationHistoryCreateInput, TTransients>;
+type ReservationHistoryTraitKeys<TOptions extends ReservationHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface ReservationHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ReservationHistory";
+    build(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReservationHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.ReservationHistoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput[]>;
+    pickForConnect(inputData: ReservationHistory): Pick<ReservationHistory, "id">;
+    create(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<ReservationHistory>;
+    createList(list: readonly Partial<Prisma.ReservationHistoryCreateInput & TTransients>[]): PromiseLike<ReservationHistory[]>;
+    createList(count: number, item?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<ReservationHistory[]>;
+    createForConnect(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Pick<ReservationHistory, "id">>;
+}
+export interface ReservationHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReservationHistoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReservationHistoryFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface ReservationHistoryFactoryBuilder {
+    <TOptions extends ReservationHistoryFactoryDefineOptions>(options: TOptions): ReservationHistoryFactoryInterface<{}, ReservationHistoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReservationHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReservationHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => ReservationHistoryFactoryInterface<TTransients, ReservationHistoryTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link ReservationHistory} model.
+ *
+ * @param options
+ * @returns factory {@link ReservationHistoryFactoryInterface}
+ */
+export declare const defineReservationHistoryFactory: ReservationHistoryFactoryBuilder;
 type TicketwalletFactory = {
     _factoryFor: "Wallet";
     build: () => PromiseLike<Prisma.WalletCreateNestedOneWithoutTicketsInput["create"]>;
@@ -1256,14 +1419,16 @@ type UserFactoryDefineInput = {
     onboardings?: Prisma.OnboardingCreateNestedManyWithoutUserInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
-    membershipHistory?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
+    membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
-    opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
     opportunityInvitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutCreatedByUserInput;
-    opportunityInvitationHistories?: Prisma.OpportunityInvitationHistoryCreateNestedManyWithoutInvitedUserInput;
+    reservations?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
+    reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
-    reservationsCreatedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByInput;
     participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
+    evaluations?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
+    evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
     ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;

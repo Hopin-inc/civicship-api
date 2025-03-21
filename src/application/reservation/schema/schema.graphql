@@ -1,0 +1,37 @@
+# ------------------------------
+# Reservation Object Type Definitions
+# ------------------------------
+type Reservation {
+    id: ID!
+    status: ReservationStatus!
+
+    opportunitySlot: OpportunitySlot!
+    createdByUser: User
+
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    histories(
+        filter: ReservationHistoryFilterInput
+        sort: ReservationHistorySortInput
+        cursor: String
+        first: Int
+    ): ReservationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Reservation Enum Definitions
+# ------------------------------
+enum ReservationStatus {
+    PENDING
+    ACCEPTED
+    REJECTED
+    CANCELED
+}

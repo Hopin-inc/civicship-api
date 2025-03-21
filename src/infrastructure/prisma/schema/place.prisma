@@ -12,7 +12,7 @@ model Place {
   city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
 
   communityId String?
-  community   Community? @relation(fields: [communityId], references: [id])
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 
   opportunities Opportunity[]
 

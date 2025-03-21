@@ -1,0 +1,13 @@
+# ------------------------------
+# ReservationHistory Object Type Definitions
+# ------------------------------
+type ReservationHistory {
+    id: ID!
+    status: ReservationStatus!
+
+    reservation: Reservation!
+    reason: String
+    createdByUser: User
+
+    createdAt: Datetime!
+}

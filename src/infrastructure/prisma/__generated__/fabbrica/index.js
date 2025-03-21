@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineReservationFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineOnboardingFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineReservationHistoryFactory = exports.defineReservationFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineOnboardingFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineOpportunityInvitationHistoryFactory = exports.defineOpportunityInvitationFactory = exports.defineEvaluationHistoryFactory = exports.defineEvaluationFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -60,6 +60,32 @@ const modelFieldDefinitions = [{
                 relationName: "ArticleToCommunity"
             }]
     }, {
+        name: "Evaluation",
+        fields: [{
+                name: "participation",
+                type: "Participation",
+                relationName: "EvaluationToParticipation"
+            }, {
+                name: "evaluator",
+                type: "User",
+                relationName: "EvaluationToUser"
+            }, {
+                name: "histories",
+                type: "EvaluationHistory",
+                relationName: "EvaluationToEvaluationHistory"
+            }]
+    }, {
+        name: "EvaluationHistory",
+        fields: [{
+                name: "evaluation",
+                type: "Evaluation",
+                relationName: "EvaluationToEvaluationHistory"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "EvaluationHistoryToUser"
+            }]
+    }, {
         name: "OpportunityInvitation",
         fields: [{
                 name: "opportunity",
@@ -81,11 +107,7 @@ const modelFieldDefinitions = [{
                 type: "OpportunityInvitation",
                 relationName: "OpportunityInvitationToOpportunityInvitationHistory"
             }, {
-                name: "invitedUser",
-                type: "User",
-                relationName: "OpportunityInvitationHistoryToUser"
-            }, {
-                name: "participation",
+                name: "Participation",
                 type: "Participation",
                 relationName: "OpportunityInvitationHistoryToParticipation"
             }]
@@ -228,7 +250,7 @@ const modelFieldDefinitions = [{
                 type: "OpportunityInvitationHistory",
                 relationName: "OpportunityInvitationHistoryToParticipation"
             }, {
-                name: "OpportunitySlot",
+                name: "opportunitySlot",
                 type: "OpportunitySlot",
                 relationName: "OpportunitySlotToParticipation"
             }, {
@@ -239,6 +261,10 @@ const modelFieldDefinitions = [{
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToParticipation"
+            }, {
+                name: "evaluation",
+                type: "Evaluation",
+                relationName: "EvaluationToParticipation"
             }, {
                 name: "images",
                 type: "ParticipationImage",
@@ -296,9 +322,24 @@ const modelFieldDefinitions = [{
                 type: "Participation",
                 relationName: "ParticipationToReservation"
             }, {
-                name: "createdBy",
+                name: "createdByUser",
                 type: "User",
                 relationName: "ReservationToUser"
+            }, {
+                name: "histories",
+                type: "ReservationHistory",
+                relationName: "ReservationToReservationHistory"
+            }]
+    }, {
+        name: "ReservationHistory",
+        fields: [{
+                name: "reservation",
+                type: "Reservation",
+                relationName: "ReservationToReservationHistory"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "ReservationHistoryToUser"
             }]
     }, {
         name: "Ticket",
@@ -371,7 +412,7 @@ const modelFieldDefinitions = [{
                 type: "Membership",
                 relationName: "MembershipToUser"
             }, {
-                name: "membershipHistory",
+                name: "membershipChangedByMe",
                 type: "MembershipHistory",
                 relationName: "MembershipHistoryToUser"
             }, {
@@ -379,7 +420,7 @@ const modelFieldDefinitions = [{
                 type: "Wallet",
                 relationName: "UserToWallet"
             }, {
-                name: "opportunitiesCreatedByMe",
+                name: "opportunities",
                 type: "Opportunity",
                 relationName: "OpportunityToUser"
             }, {
@@ -387,21 +428,29 @@ const modelFieldDefinitions = [{
                 type: "OpportunityInvitation",
                 relationName: "OpportunityInvitationToUser"
             }, {
-                name: "opportunityInvitationHistories",
-                type: "OpportunityInvitationHistory",
-                relationName: "OpportunityInvitationHistoryToUser"
+                name: "reservations",
+                type: "Reservation",
+                relationName: "ReservationToUser"
+            }, {
+                name: "reservationStatusChangedByMe",
+                type: "ReservationHistory",
+                relationName: "ReservationHistoryToUser"
             }, {
                 name: "participations",
                 type: "Participation",
                 relationName: "ParticipationToUser"
             }, {
-                name: "reservationsCreatedByMe",
-                type: "Reservation",
-                relationName: "ReservationToUser"
-            }, {
                 name: "participationStatusChangedByMe",
                 type: "ParticipationStatusHistory",
                 relationName: "ParticipationStatusHistoryToUser"
+            }, {
+                name: "evaluations",
+                type: "Evaluation",
+                relationName: "EvaluationToUser"
+            }, {
+                name: "evaluationCreatedByMe",
+                type: "EvaluationHistory",
+                relationName: "EvaluationHistoryToUser"
             }, {
                 name: "articlesWrittenByMe",
                 type: "Article",
@@ -629,6 +678,202 @@ exports.defineCommunityFactory = ((options) => {
     return defineCommunityFactoryInternal(options ?? {}, {});
 });
 exports.defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
+function isEvaluationparticipationFactory(x) {
+    return x?._factoryFor === "Participation";
+}
+function isEvaluationevaluatorFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateEvaluationScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineEvaluationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("Evaluation", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateEvaluationScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                participation: isEvaluationparticipationFactory(defaultData.participation) ? {
+                    create: await defaultData.participation.build()
+                } : defaultData.participation,
+                evaluator: isEvaluationevaluatorFactory(defaultData.evaluator) ? {
+                    create: await defaultData.evaluator.build()
+                } : defaultData.evaluator
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().evaluation.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Evaluation",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link Evaluation} model.
+ *
+ * @param options
+ * @returns factory {@link EvaluationFactoryInterface}
+ */
+exports.defineEvaluationFactory = ((options) => {
+    return defineEvaluationFactoryInternal(options, {});
+});
+exports.defineEvaluationFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationFactoryInternal(options, defaultTransientFieldValues);
+function isEvaluationHistoryevaluationFactory(x) {
+    return x?._factoryFor === "Evaluation";
+}
+function isEvaluationHistorycreatedByUserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateEvaluationHistoryScalarsOrEnums({ seq }) {
+    return {
+        status: "PENDING"
+    };
+}
+function defineEvaluationHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("EvaluationHistory", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateEvaluationHistoryScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                evaluation: isEvaluationHistoryevaluationFactory(defaultData.evaluation) ? {
+                    create: await defaultData.evaluation.build()
+                } : defaultData.evaluation,
+                createdByUser: isEvaluationHistorycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().evaluationHistory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "EvaluationHistory",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link EvaluationHistory} model.
+ *
+ * @param options
+ * @returns factory {@link EvaluationHistoryFactoryInterface}
+ */
+exports.defineEvaluationHistoryFactory = ((options) => {
+    return defineEvaluationHistoryFactoryInternal(options, {});
+});
+exports.defineEvaluationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationHistoryFactoryInternal(options, defaultTransientFieldValues);
 function isOpportunityInvitationopportunityFactory(x) {
     return x?._factoryFor === "Opportunity";
 }
@@ -731,12 +976,6 @@ exports.defineOpportunityInvitationFactory.withTransientFields = defaultTransien
 function isOpportunityInvitationHistoryinvitationFactory(x) {
     return x?._factoryFor === "OpportunityInvitation";
 }
-function isOpportunityInvitationHistoryinvitedUserFactory(x) {
-    return x?._factoryFor === "User";
-}
-function isOpportunityInvitationHistoryparticipationFactory(x) {
-    return x?._factoryFor === "Participation";
-}
 function autoGenerateOpportunityInvitationHistoryScalarsOrEnums({ seq }) {
     return {};
 }
@@ -775,13 +1014,7 @@ function defineOpportunityInvitationHistoryFactoryInternal({ defaultData: defaul
             const defaultAssociations = {
                 invitation: isOpportunityInvitationHistoryinvitationFactory(defaultData.invitation) ? {
                     create: await defaultData.invitation.build()
-                } : defaultData.invitation,
-                invitedUser: isOpportunityInvitationHistoryinvitedUserFactory(defaultData.invitedUser) ? {
-                    create: await defaultData.invitedUser.build()
-                } : defaultData.invitedUser,
-                participation: isOpportunityInvitationHistoryparticipationFactory(defaultData.participation) ? {
-                    create: await defaultData.participation.build()
-                } : defaultData.participation
+                } : defaultData.invitation
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1622,7 +1855,7 @@ function isParticipationuserFactory(x) {
 function isParticipationopportunityInvitationHistoryFactory(x) {
     return x?._factoryFor === "OpportunityInvitationHistory";
 }
-function isParticipationOpportunitySlotFactory(x) {
+function isParticipationopportunitySlotFactory(x) {
     return x?._factoryFor === "OpportunitySlot";
 }
 function isParticipationreservationFactory(x) {
@@ -1630,6 +1863,9 @@ function isParticipationreservationFactory(x) {
 }
 function isParticipationcommunityFactory(x) {
     return x?._factoryFor === "Community";
+}
+function isParticipationevaluationFactory(x) {
+    return x?._factoryFor === "Evaluation";
 }
 function autoGenerateParticipationScalarsOrEnums({ seq }) {
     return {};
@@ -1673,15 +1909,18 @@ function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, 
                 opportunityInvitationHistory: isParticipationopportunityInvitationHistoryFactory(defaultData.opportunityInvitationHistory) ? {
                     create: await defaultData.opportunityInvitationHistory.build()
                 } : defaultData.opportunityInvitationHistory,
-                OpportunitySlot: isParticipationOpportunitySlotFactory(defaultData.OpportunitySlot) ? {
-                    create: await defaultData.OpportunitySlot.build()
-                } : defaultData.OpportunitySlot,
+                opportunitySlot: isParticipationopportunitySlotFactory(defaultData.opportunitySlot) ? {
+                    create: await defaultData.opportunitySlot.build()
+                } : defaultData.opportunitySlot,
                 reservation: isParticipationreservationFactory(defaultData.reservation) ? {
                     create: await defaultData.reservation.build()
                 } : defaultData.reservation,
                 community: isParticipationcommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community
+                } : defaultData.community,
+                evaluation: isParticipationevaluationFactory(defaultData.evaluation) ? {
+                    create: await defaultData.evaluation.build()
+                } : defaultData.evaluation
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1833,8 +2072,8 @@ function isParticipationStatusHistorycreatedByUserFactory(x) {
 function autoGenerateParticipationStatusHistoryScalarsOrEnums({ seq }) {
     return {
         status: "PENDING",
-        eventType: "APPLICATION",
-        eventTrigger: "ISSUED"
+        eventType: "SELF_LOG",
+        eventTrigger: "SELF_REPORTED"
     };
 }
 function defineParticipationStatusHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -2031,7 +2270,7 @@ exports.definePlaceFactory.withTransientFields = defaultTransientFieldValues => 
 function isReservationopportunitySlotFactory(x) {
     return x?._factoryFor === "OpportunitySlot";
 }
-function isReservationcreatedByFactory(x) {
+function isReservationcreatedByUserFactory(x) {
     return x?._factoryFor === "User";
 }
 function autoGenerateReservationScalarsOrEnums({ seq }) {
@@ -2073,9 +2312,9 @@ function defineReservationFactoryInternal({ defaultData: defaultDataResolver, on
                 opportunitySlot: isReservationopportunitySlotFactory(defaultData.opportunitySlot) ? {
                     create: await defaultData.opportunitySlot.build()
                 } : defaultData.opportunitySlot,
-                createdBy: isReservationcreatedByFactory(defaultData.createdBy) ? {
-                    create: await defaultData.createdBy.build()
-                } : defaultData.createdBy
+                createdByUser: isReservationcreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -2125,6 +2364,105 @@ exports.defineReservationFactory = ((options) => {
     return defineReservationFactoryInternal(options, {});
 });
 exports.defineReservationFactory.withTransientFields = defaultTransientFieldValues => options => defineReservationFactoryInternal(options, defaultTransientFieldValues);
+function isReservationHistoryreservationFactory(x) {
+    return x?._factoryFor === "Reservation";
+}
+function isReservationHistorycreatedByUserFactory(x) {
+    return x?._factoryFor === "User";
+}
+function autoGenerateReservationHistoryScalarsOrEnums({ seq }) {
+    return {
+        status: "PENDING"
+    };
+}
+function defineReservationHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("ReservationHistory", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReservationHistoryScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                reservation: isReservationHistoryreservationFactory(defaultData.reservation) ? {
+                    create: await defaultData.reservation.build()
+                } : defaultData.reservation,
+                createdByUser: isReservationHistorycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            id: inputData.id
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().reservationHistory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ReservationHistory",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link ReservationHistory} model.
+ *
+ * @param options
+ * @returns factory {@link ReservationHistoryFactoryInterface}
+ */
+exports.defineReservationHistoryFactory = ((options) => {
+    return defineReservationHistoryFactoryInternal(options, {});
+});
+exports.defineReservationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineReservationHistoryFactoryInternal(options, defaultTransientFieldValues);
 function isTicketwalletFactory(x) {
     return x?._factoryFor === "Wallet";
 }

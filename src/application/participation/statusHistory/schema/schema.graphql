@@ -13,3 +13,17 @@ type ParticipationStatusHistory {
     createdAt: Datetime!
     updatedAt: Datetime
 }
+
+enum ParticipationEventType {
+    SELF_LOG
+    RESERVATION
+    OPPORTUNITY
+}
+
+enum ParticipationEventTrigger {
+    SELF_REPORTED
+    PENDING
+    ACCEPTED
+    DECLINED
+    CANCELED
+}

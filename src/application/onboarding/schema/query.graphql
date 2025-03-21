@@ -1,0 +1,44 @@
+# ------------------------------
+# Onboarding Query Definitions
+# ------------------------------
+
+extend type Query {
+    onboardings(
+        filter: OnboardingFilterInput
+        sort: OnboardingSortInput
+        cursor: String
+        first: Int
+    ): OnboardingsConnection! @complexity(value: 10, multipliers: ["first"])
+
+    onboarding(id: ID!): Onboarding
+}
+
+# ------------------------------
+# Onboarding Connection Type Definitions
+# ------------------------------
+
+type OnboardingsConnection {
+    edges: [OnboardingEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OnboardingEdge implements Edge {
+    cursor: String!
+    node: Onboarding
+}
+
+# ------------------------------
+# Onboarding Query Input Definitions
+# ------------------------------
+
+input OnboardingFilterInput {
+    userId: ID
+    todo: Todo
+    status: OnboardingStatus
+}
+
+input OnboardingSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}

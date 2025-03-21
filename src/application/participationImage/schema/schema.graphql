@@ -1,0 +1,13 @@
+# ------------------------------
+# ParticipationImage Object Type Definitions
+# ------------------------------
+type ParticipationImage {
+    id: ID!
+    participation: Participation!
+
+    url: String!
+    caption: String
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

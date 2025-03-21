@@ -1,0 +1,32 @@
+# ------------------------------
+# Participation Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    participationImageBulkUpdate(
+        input: ParticipationImageBulkUpdateInput!
+        permission: CheckIsSelfPermissionInput!
+    ): ParticipationImageBulkUpdatePayload
+}
+
+# ------------------------------
+# Participation Mutation Input Definitions
+# ------------------------------
+input ParticipationImageBulkUpdateInput {
+    participationId: ID!
+
+    create: [ImageInput!]
+    delete: [ID!]
+}
+
+# ------------------------------
+# Participation Mutation Success Type Definitions
+# ------------------------------
+type ParticipationImageBulkUpdateSuccess {
+    participation: Participation!
+}
+
+# ------------------------------
+# Participation Mutation Union (Payload) Definitions
+# ------------------------------
+union ParticipationImageBulkUpdatePayload =
+    ParticipationImageBulkUpdateSuccess

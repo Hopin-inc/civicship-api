@@ -20,21 +20,12 @@ type Opportunity {
     feeRequired: Int
 
     place: Place
-    startsAt: Datetime
-    endsAt: Datetime
 
     community: Community
     createdByUser: User
 
     requiredUtilities: [Utility!]
     articles: [Article!]
-
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
 
     slots(
         filter: OpportunitySlotFilterInput

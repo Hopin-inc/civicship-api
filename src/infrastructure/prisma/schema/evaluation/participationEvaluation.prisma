@@ -1,0 +1,28 @@
+model Evaluation {
+  id String @id @default(cuid())
+
+  participationId String        @unique @map("participation_id")
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  evaluatorId String @map("evaluator_id")
+  evaluator   User   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
+
+  status  EvaluationStatus @default(PENDING)
+  comment String?
+
+  credentialUrl String?
+  issuedAt      DateTime? @map("issued_at")
+
+  histories EvaluationHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_evaluations")
+}
+
+enum EvaluationStatus {
+  PENDING
+  PASSED
+  FAILED
+}

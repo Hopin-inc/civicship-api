@@ -1,0 +1,33 @@
+# ------------------------------
+# Evaluation Object Type Definitions
+# ------------------------------
+type Evaluation {
+    id: ID!
+    status: EvaluationStatus!
+    comment: String
+
+    participation: Participation!
+    evaluator: User!
+
+    credentialUrl: String
+    issuedAt: Datetime
+
+    histories(
+        filter: EvaluationHistoryFilterInput
+        sort: EvaluationHistorySortInput
+        cursor: String
+        first: Int
+    ): EvaluationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Evaluation Enum Definitions
+# ------------------------------
+enum EvaluationStatus {
+    PENDING
+    PASSED
+    FAILED
+}

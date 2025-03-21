@@ -2,101 +2,40 @@
 # Participation Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    # invite
-    participationInvite(
-        input: ParticipationInviteInput!
-        permission: CheckCommunityPermissionInput!
-    ): ParticipationInvitePayload
-    participationCancelInvitation(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckCommunityPermissionInput!
-    ): ParticipationSetStatusPayload
-    participationAcceptMyInvitation(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckIsSelfPermissionInput!
-    ): ParticipationSetStatusPayload
-    participationDenyMyInvitation(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckIsSelfPermissionInput!
-    ): ParticipationSetStatusPayload
+    participationLogPersonalRecord(
+        input: ParticipationLogPersonalRecordInput!
+    ): ParticipationLogPersonalRecordPayload
 
-    # apply
-    participationApply(input: ParticipationApplyInput!): ParticipationApplyPayload
-    participationCancelMyApplication(
+    participationDeletePersonalRecord(
         id: ID!
-        input: ParticipationSetStatusInput!
         permission: CheckIsSelfPermissionInput!
-    ): ParticipationSetStatusPayload
-    participationAcceptApplication(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckOpportunityPermissionInput!
-    ): ParticipationSetStatusPayload
-    participationDenyApplication(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckOpportunityPermissionInput!
-    ): ParticipationSetStatusPayload
-
-    # performance
-    participationApprovePerformance(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckOpportunityPermissionInput!
-    ): ParticipationSetStatusPayload
-    participationDenyPerformance(
-        id: ID!
-        input: ParticipationSetStatusInput!
-        permission: CheckOpportunityPermissionInput!
-    ): ParticipationSetStatusPayload
+    ): ParticipationDeletePayload
 }
 
 # ------------------------------
 # Participation Mutation Input Definitions
 # ------------------------------
-
-input ParticipationApplyInput {
-    opportunityId: ID!
-    ticketId: ID
-}
-
-input ParticipationInviteInput {
-    communityId: ID!
-    opportunityId: ID!
-    invitedUserId: ID!
-}
-
-input ParticipationSetStatusInput {
-    communityId: ID!
-    ticketId: ID
+input ParticipationLogPersonalRecordInput {
+    description: String
+    images: [ImageInput!]
 }
 
 # ------------------------------
 # Participation Mutation Success Type Definitions
 # ------------------------------
-type ParticipationApplySuccess {
+type ParticipationLogPersonalRecordSuccess {
     participation: Participation!
 }
 
-type ParticipationInviteSuccess {
-    participation: Participation!
-}
-
-type ParticipationSetStatusSuccess {
-    participation: Participation!
+type ParticipationDeleteSuccess {
+    participationId: ID!
 }
 
 # ------------------------------
 # Participation Mutation Union (Payload) Definitions
 # ------------------------------
-union ParticipationApplyPayload =
-    ParticipationApplySuccess
+union ParticipationLogPersonalRecordPayload =
+    ParticipationLogPersonalRecordSuccess
 
-union ParticipationInvitePayload =
-    ParticipationInviteSuccess
-
-union ParticipationSetStatusPayload =
-    ParticipationSetStatusSuccess
+union ParticipationDeletePayload =
+    ParticipationDeleteSuccess
