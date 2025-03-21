@@ -67,7 +67,7 @@ export default class TransactionConverter {
 
   static giveOnboardingPoint(params: GiveOnboardingPointParams): Prisma.TransactionCreateInput {
     return {
-      reason: TransactionReason.ONBORDING,
+      reason: TransactionReason.ONBOARDING,
       fromWallet: { connect: { id: params.fromWalletId } },
       fromPointChange: params.fromPointChange,
       toWallet: { connect: { id: params.toWalletId } },
