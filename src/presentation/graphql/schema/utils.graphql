@@ -104,6 +104,11 @@ enum PublishStatus {
     PRIVATE
 }
 
+enum Source {
+    INTERNAL
+    EXTERNAL
+}
+
 enum ValueType {
     INT
     FLOAT

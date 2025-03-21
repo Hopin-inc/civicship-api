@@ -3,24 +3,16 @@ import {
   GqlOpportunitiesConnection,
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
-  GqlOpportunityLogMyRecordInput,
   GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
 import OpportunityRepository from "@/application/opportunity/data/repository";
-import {
-  OpportunityCategory,
-  OpportunityHostingStatus,
-  OpportunitySource,
-  Prisma,
-  PublishStatus,
-} from "@prisma/client";
+import { OpportunityHostingStatus, Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import OpportunityConverter from "@/application/opportunity/data/converter";
-import { maxOnboardingLogs } from "@/consts/utils";
 
 export default class OpportunityService {
   static async fetchOpportunities(
@@ -50,16 +42,6 @@ export default class OpportunityService {
     return OpportunityPresenter.query(data, hasNextPage);
   }
 
-  static async hasRemainingOnboardingSlots(ctx: IContext, currentUserId: string) {
-    const personalLogCount = await OpportunityRepository.count(ctx, {
-      createdByUser: { id: currentUserId },
-      source: OpportunitySource.EXTERNAL,
-      category: OpportunityCategory.UNKNOWN,
-    });
-
-    return personalLogCount < maxOnboardingLogs;
-  }
-
   static async findOpportunity(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
     const where = OpportunityConverter.findAccessible(id, filter ?? {});
 
@@ -77,22 +59,6 @@ export default class OpportunityService {
       throw new NotFoundError("Opportunity", { opportunityId });
     }
     return opportunity;
-  }
-
-  static async logOpportunity(
-    ctx: IContext,
-    input: GqlOpportunityLogMyRecordInput,
-    currentUserId: string,
-  ) {
-    const userName = ctx.currentUser?.name;
-
-    validatePlaceInput(input.place);
-    const data: Prisma.OpportunityCreateInput = OpportunityConverter.log(
-      input,
-      currentUserId,
-      userName,
-    );
-    return await OpportunityRepository.create(ctx, data);
   }
 
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {

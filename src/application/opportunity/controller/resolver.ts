@@ -1,7 +1,6 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
-  GqlMutationOpportunityLogMyRecordArgs,
   GqlMutationOpportunitySetHostingStatusArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
@@ -30,11 +29,6 @@ const opportunityResolver = {
     },
   },
   Mutation: {
-    opportunityLogMyRecord: async (
-      _: unknown,
-      args: GqlMutationOpportunityLogMyRecordArgs,
-      ctx: IContext,
-    ) => OpportunityUseCase.userLogMyOpportunityRecord(args, ctx),
     opportunityCreate: async (_: unknown, args: GqlMutationOpportunityCreateArgs, ctx: IContext) =>
       OpportunityUseCase.managerCreateOpportunity(args, ctx),
     opportunityDelete: async (_: unknown, args: GqlMutationOpportunityDeleteArgs, ctx: IContext) =>
@@ -61,7 +55,13 @@ const opportunityResolver = {
       args: GqlOpportunityParticipationsArgs,
       ctx: IContext,
     ) => {
-      return ParticipationUseCase.visitorBrowseParticipationsByOpportunity(parent, args, ctx);
+      return ParticipationUseCase.visitorBrowseParticipations(
+        {
+          ...args,
+          filter: { opportunityId: parent.id },
+        },
+        ctx,
+      );
     },
 
     slots: async (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {

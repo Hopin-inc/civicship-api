@@ -3,7 +3,6 @@ import {
   GqlOpportunity,
   GqlOpportunityCreateSuccess,
   GqlOpportunityDeleteSuccess,
-  GqlOpportunityLogMyRecordSuccess,
   GqlOpportunitySetHostingStatusSuccess,
   GqlOpportunitySetPublishStatusSuccess,
   GqlOpportunityUpdateContentSuccess,
@@ -42,13 +41,6 @@ export default class OpportunityPresenter {
       place: place ? PlacePresenter.get(place) : null,
       createdByUser,
       requiredUtilities: requiredUtilities.map(UtilityPresenter.get),
-    };
-  }
-
-  static log(r: PrismaOpportunity): GqlOpportunityLogMyRecordSuccess {
-    return {
-      __typename: "OpportunityLogMyRecordSuccess",
-      opportunity: this.get(r),
     };
   }
 

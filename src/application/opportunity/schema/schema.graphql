@@ -10,7 +10,6 @@ type Opportunity {
     image: String
     files: JSON
 
-    source: OpportunitySource!
     category: OpportunityCategory!
     hostingStatus: OpportunityHostingStatus!
     publishStatus: PublishStatus!
@@ -58,16 +57,10 @@ type Opportunity {
 # ------------------------------
 # Opportunity Enum Definitions
 # ------------------------------
-enum OpportunitySource {
-    INTERNAL
-    EXTERNAL
-}
-
 enum OpportunityCategory {
     QUEST
     EVENT
     ACTIVITY
-    UNKNOWN
 }
 
 enum OpportunityHostingStatus {

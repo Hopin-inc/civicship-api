@@ -1,7 +1,6 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
-  GqlMutationOpportunityLogMyRecordArgs,
   GqlMutationOpportunitySetHostingStatusArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
@@ -10,7 +9,6 @@ import {
   GqlOpportunityCreatePayload,
   GqlOpportunityDeletePayload,
   GqlOpportunityFilterInput,
-  GqlOpportunityLogMyRecordPayload,
   GqlOpportunitySetHostingStatusPayload,
   GqlOpportunitySetPublishStatusPayload,
   GqlOpportunityUpdateContentPayload,
@@ -21,7 +19,7 @@ import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import { OpportunityHostingStatus, PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/opportunity/service";
-import { getCurrentUserId, getMembershipRolesByCtx } from "@/application/utils";
+import { getMembershipRolesByCtx } from "@/application/utils";
 import ParticipationService from "@/application/participation/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
@@ -80,26 +78,6 @@ export default class OpportunityUseCase {
     return record ? OpportunityPresenter.get(record) : null;
   }
 
-  static async userLogMyOpportunityRecord(
-    { input }: GqlMutationOpportunityLogMyRecordArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunityLogMyRecordPayload> {
-    const currentUserId = getCurrentUserId(ctx);
-    const res = await OpportunityService.logOpportunity(ctx, input, currentUserId);
-
-    const isRemainingOnboarding = await OpportunityService.hasRemainingOnboardingSlots(
-      ctx,
-      currentUserId,
-    );
-
-    if (isRemainingOnboarding) {
-      // TODO オンボーディングにおけるポイントはどこに帰属するものか
-      // await TransactionService.giveOnboardingPoint(ctx, currentUserId);
-    }
-
-    return OpportunityPresenter.log(res);
-  }
-
   static async managerCreateOpportunity(
     { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
@@ -144,7 +122,9 @@ export default class OpportunityUseCase {
       );
 
       if (input.hostingStatus === OpportunityHostingStatus.CANCELLED) {
-        const participationIds = res.participations.map((participation) => participation.id);
+        const participationIds = res.slots
+          .flatMap((slot) => slot.participations ?? [])
+          .map((participation) => participation.id);
         await Promise.all([
           ParticipationService.bulkCancelParticipationsByOpportunity(ctx, participationIds, tx),
           ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunity(

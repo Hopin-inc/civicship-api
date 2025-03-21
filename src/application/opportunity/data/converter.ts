@@ -1,18 +1,10 @@
 import {
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
-  GqlOpportunityLogMyRecordInput,
   GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
-import {
-  OpportunityCategory,
-  OpportunitySource,
-  ParticipationEventTrigger,
-  ParticipationEventType,
-  ParticipationStatus,
-  Prisma,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export default class OpportunityConverter {
   static filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
@@ -38,10 +30,7 @@ export default class OpportunityConverter {
   }
 
   static sort(sort?: GqlOpportunitySortInput): Prisma.OpportunityOrderByWithRelationInput[] {
-    return [
-      { startsAt: sort?.startsAt ?? Prisma.SortOrder.desc },
-      { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
-    ];
+    return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
   static findAccessible(
@@ -52,56 +41,6 @@ export default class OpportunityConverter {
     return {
       id,
       ...(validatedFilter.AND ? { AND: validatedFilter.AND } : {}),
-    };
-  }
-
-  static log(
-    input: GqlOpportunityLogMyRecordInput,
-    currentUserId: string,
-    userName?: string,
-  ): Prisma.OpportunityCreateInput {
-    const { place, images, description } = input;
-    let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
-
-    if (place) {
-      finalPlace = place.where
-        ? { connect: { id: place.where } }
-        : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
-    }
-
-    const imagesToCreate = (images ?? []).map((image) => ({
-      url: image.base64,
-      caption: image.caption,
-    }));
-
-    return {
-      title: `${userName}さんの記録`,
-      description: `${userName}さんがご自身で記録したものです`,
-      source: OpportunitySource.EXTERNAL,
-      category: OpportunityCategory.UNKNOWN,
-      participations: {
-        create: {
-          description: description,
-          user: { connect: { id: currentUserId } },
-          status: ParticipationStatus.PARTICIPATED,
-          eventType: ParticipationEventType.SELF_LOG,
-          eventTrigger: ParticipationEventTrigger.ISSUED,
-          images: {
-            create: imagesToCreate,
-          },
-        },
-      },
-      createdByUser: { connect: { id: currentUserId } },
-      ...(finalPlace ? { place: finalPlace } : {}),
     };
   }
 
@@ -130,7 +69,6 @@ export default class OpportunityConverter {
 
     return {
       ...prop,
-      source: OpportunitySource.INTERNAL,
       image: image?.base64,
       community: { connect: { id: communityId } },
       createdByUser: { connect: { id: currentUserId } },

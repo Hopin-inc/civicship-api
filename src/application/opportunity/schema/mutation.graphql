@@ -2,11 +2,6 @@
 # Opportunity Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    opportunityLogMyRecord(
-        input: OpportunityLogMyRecordInput!
-        permission:CheckIsSelfPermissionInput!
-    ): OpportunityLogMyRecordPayload
-
     opportunityCreate(
         input: OpportunityCreateInput!
         permission:CheckCommunityPermissionInput!
@@ -37,12 +32,6 @@ extend type Mutation {
 # ------------------------------
 # Opportunity Mutation Input Definitions
 # ------------------------------
-input OpportunityLogMyRecordInput {
-    description: String
-    place: NestedPlaceConnectOrCreateInput
-    images: [ImageInput!]
-}
-
 input OpportunityCreateInput {
     title: String!
     description: String!
@@ -98,10 +87,6 @@ input OpportunitySetHostingStatusInput {
 # ------------------------------
 # Opportunity Mutation Success Type Definitions
 # ------------------------------
-type OpportunityLogMyRecordSuccess {
-    opportunity: Opportunity!
-}
-
 type OpportunityCreateSuccess {
     opportunity: Opportunity!
 }
@@ -125,9 +110,6 @@ type OpportunitySetHostingStatusSuccess {
 # ------------------------------
 # Opportunity Mutation Union (Payload) Definitions
 # ------------------------------
-union OpportunityLogMyRecordPayload =
-    OpportunityLogMyRecordSuccess
-
 union OpportunityCreatePayload =
     OpportunityCreateSuccess
 
