@@ -1,14 +1,4 @@
 import {
-  GqlMutationParticipationAcceptApplicationArgs,
-  GqlMutationParticipationAcceptMyInvitationArgs,
-  GqlMutationParticipationApplyArgs,
-  GqlMutationParticipationApprovePerformanceArgs,
-  GqlMutationParticipationCancelInvitationArgs,
-  GqlMutationParticipationCancelMyApplicationArgs,
-  GqlMutationParticipationDenyApplicationArgs,
-  GqlMutationParticipationDenyMyInvitationArgs,
-  GqlMutationParticipationDenyPerformanceArgs,
-  GqlMutationParticipationInviteArgs,
   GqlParticipation,
   GqlParticipationStatusHistoriesArgs,
   GqlQueryParticipationArgs,
@@ -30,67 +20,7 @@ const participationResolver = {
       return await ctx.loaders.participation.load(args.id);
     },
   },
-  Mutation: {
-    participationInvite: async (
-      _: unknown,
-      args: GqlMutationParticipationInviteArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.memberInviteUserToOpportunity(args, ctx),
-
-    participationCancelInvitation: async (
-      _: unknown,
-      args: GqlMutationParticipationCancelInvitationArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.memberCancelInvitation(args, ctx),
-
-    participationAcceptMyInvitation: async (
-      _: unknown,
-      args: GqlMutationParticipationAcceptMyInvitationArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.userAcceptMyInvitation(args, ctx),
-
-    participationDenyMyInvitation: async (
-      _: unknown,
-      args: GqlMutationParticipationDenyMyInvitationArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.userDenyMyInvitation(args, ctx),
-
-    participationApply: async (
-      _: unknown,
-      args: GqlMutationParticipationApplyArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.userApplyForOpportunity(args, ctx),
-
-    participationCancelMyApplication: async (
-      _: unknown,
-      args: GqlMutationParticipationCancelMyApplicationArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.userCancelMyApplication(args, ctx),
-
-    participationAcceptApplication: async (
-      _: unknown,
-      args: GqlMutationParticipationAcceptApplicationArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.managerAcceptApplication(args, ctx),
-
-    participationDenyApplication: async (
-      _: unknown,
-      args: GqlMutationParticipationDenyApplicationArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.managerDenyApplication(args, ctx),
-
-    participationApprovePerformance: async (
-      _: unknown,
-      args: GqlMutationParticipationApprovePerformanceArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.managerApprovePerformance(args, ctx),
-
-    participationDenyPerformance: async (
-      _: unknown,
-      args: GqlMutationParticipationDenyPerformanceArgs,
-      ctx: IContext,
-    ) => ParticipationUseCase.managerDenyPerformance(args, ctx),
-  },
+  Mutation: {},
 
   Participation: {
     statusHistories: async (
