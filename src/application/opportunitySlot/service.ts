@@ -11,6 +11,7 @@ import OpportunitySlotRepository from "@/application/opportunitySlot/data/reposi
 import OpportunitySlotConverter from "@/application/opportunitySlot/data/converter";
 import { clampFirst } from "@/application/utils";
 import OpportunitySlotPresenter from "@/application/opportunitySlot/presenter";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class OpportunitySlotService {
   static async fetchOpportunitySlots(
@@ -42,6 +43,16 @@ export default class OpportunitySlotService {
 
   static async findOpportunitySlot(ctx: IContext, id: string) {
     return OpportunitySlotRepository.find(ctx, id);
+  }
+
+  static async findOpportunitySlotOrThrow(ctx: IContext, id: string) {
+    const record = await OpportunitySlotRepository.find(ctx, id);
+
+    if (!record) {
+      throw new NotFoundError("OpportunitySlot not found", { id });
+    }
+
+    return record;
   }
 
   static async fetchAllSlotByOpportunityId(

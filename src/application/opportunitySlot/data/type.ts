@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 export const opportunitySlotInclude = Prisma.validator<Prisma.OpportunitySlotInclude>()({
-  opportunity: true,
+  opportunity: { include: { requiredUtilities: true } },
 });
 
 export type PrismaOpportunitySlot = Prisma.OpportunitySlotGetPayload<{
