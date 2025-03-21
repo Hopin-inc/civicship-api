@@ -36,7 +36,16 @@ input ReservationCreateInput {
     participantCount: Int!
     otherParticipantUserIds: [ID!]
 
-    ticketId: ID
+    payment: ReservationPayment!
+}
+
+# ------------------------------
+# Reservation Mutation Enum Definitions
+# ------------------------------
+
+enum ReservationPayment {
+    FEE
+    POINT
 }
 
 # ------------------------------

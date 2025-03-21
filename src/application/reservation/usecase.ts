@@ -10,6 +10,7 @@ import {
   GqlReservationsConnection,
   GqlReservationCreatePayload,
   GqlReservationSetStatusPayload,
+  GqlReservationPayment,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ReservationService from "@/application/reservation/service";
@@ -21,10 +22,12 @@ import OpportunitySlotService from "@/application/opportunitySlot/service";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import TicketService from "@/application/ticket/service";
 import ParticipationService from "@/application/participation/service";
 import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 import { PrismaReservation } from "@/application/reservation/data/type";
+import OpportunityService from "@/application/opportunity/service";
+import TicketService from "@/application/ticket/service";
+import TransactionService from "@/application/transaction/service";
 
 export default class ReservationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -81,9 +84,32 @@ export default class ReservationUseCase {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
-      // TODO ticketが必要だけど、不要なケースもあるみたいなのある？
-      if (requiredUtilities.length > 0) {
-        await TicketService.reserveOrUseTicket(ctx, participationStatus, tx, input.ticketId);
+      if (requiredUtilities.length > 0 && input.payment === GqlReservationPayment.Point) {
+        const utility = OpportunityService.getSingleRequiredUtility(requiredUtilities);
+        const totalTransferPoints = utility.pointsRequired * input.participantCount;
+
+        const { fromWalletId, toWalletId } = await WalletService.validateWalletsForPurchaseTicket(
+          ctx,
+          tx,
+          communityId,
+          currentUserId,
+          totalTransferPoints,
+        );
+
+        const transaction = await TransactionService.purchaseTicket(ctx, tx, {
+          fromWalletId,
+          toWalletId,
+          transferPoints: totalTransferPoints,
+        });
+
+        await TicketService.purchaseAndReserveTickets(
+          ctx,
+          fromWalletId,
+          utility.id,
+          transaction.id,
+          input.participantCount,
+          tx,
+        );
       }
 
       return ReservationService.createReservation(
@@ -126,6 +152,7 @@ export default class ReservationUseCase {
     return ReservationPresenter.setStatus(reservation);
   }
 
+  //TODO チケットの払い戻しに伴うトランザクションとかも踏まえた実装
   static async userCancelMyReservation(
     { id }: GqlMutationReservationCancelArgs,
     ctx: IContext,
