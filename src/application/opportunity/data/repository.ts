@@ -28,6 +28,14 @@ export default class OpportunityRepository {
     });
   }
 
+  static async count(ctx: IContext, where: Prisma.OpportunityWhereInput) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.opportunity.count({
+        where,
+      });
+    });
+  }
+
   static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
     if (tx) {
       return tx.opportunity.findUnique({

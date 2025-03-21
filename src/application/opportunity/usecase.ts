@@ -21,7 +21,7 @@ import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import { OpportunityHostingStatus, PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/opportunity/service";
-import { getMembershipRolesByCtx } from "@/application/utils";
+import { getCurrentUserId, getMembershipRolesByCtx } from "@/application/utils";
 import ParticipationService from "@/application/participation/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
@@ -84,7 +84,19 @@ export default class OpportunityUseCase {
     { input }: GqlMutationOpportunityLogMyRecordArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityLogMyRecordPayload> {
-    const res = await OpportunityService.logOpportunity(ctx, input);
+    const currentUserId = getCurrentUserId(ctx);
+    const res = await OpportunityService.logOpportunity(ctx, input, currentUserId);
+
+    const isRemainingOnboarding = await OpportunityService.hasRemainingOnboardingSlots(
+      ctx,
+      currentUserId,
+    );
+
+    if (isRemainingOnboarding) {
+      // TODO オンボーディングにおけるポイントはどこに帰属するものか
+      // await TransactionService.giveOnboardingPoint(ctx, currentUserId);
+    }
+
     return OpportunityPresenter.log(res);
   }
 
