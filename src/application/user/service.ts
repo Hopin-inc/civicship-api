@@ -3,6 +3,7 @@ import UserRepository from "@/application/user/data/repository";
 import { IContext } from "@/types/server";
 import UserConverter from "@/application/user/data/converter";
 import { Prisma } from "@prisma/client";
+import { PrismaUser } from "@/application/user/data/type";
 
 export default class UserService {
   static async fetchUsers(
@@ -27,6 +28,18 @@ export default class UserService {
 
   static async findUser(ctx: IContext, id: string) {
     return await UserRepository.find(ctx, id);
+  }
+
+  static async hasProfileCompleted(user: PrismaUser) {
+    const hasSocialLinks = Boolean(
+      user.urlWebsite ||
+        user.urlX ||
+        user.urlFacebook ||
+        user.urlInstagram ||
+        user.urlYoutube ||
+        user.urlTiktok,
+    );
+    return Boolean(user.image && user.bio && hasSocialLinks);
   }
 
   static async updateProfile(ctx: IContext, { input }: GqlMutationUserUpdateMyProfileArgs) {

@@ -3,6 +3,7 @@ import { GqlCurrentUserPayload, GqlMutationUserSignUpArgs } from "@/types/graphq
 import IdentityConverter from "@/application/user/identity/data/converter";
 import IdentityService from "@/application/user/identity/service";
 import IdentityPresenter from "@/application/user/identity/presenter";
+import UserService from "@/application/user/service";
 
 export default class IdentityUseCase {
   static async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -17,6 +18,12 @@ export default class IdentityUseCase {
   ): Promise<GqlCurrentUserPayload> {
     const data = IdentityConverter.create(args);
     const user = await IdentityService.createUserAndIdentity(data, context.uid, context.platform);
+
+    const isProfileComplete = await UserService.hasProfileCompleted(user);
+    if (isProfileComplete) {
+      // TODO オンボーディングポイントを付与する
+    }
+
     return IdentityPresenter.create(user);
   }
 

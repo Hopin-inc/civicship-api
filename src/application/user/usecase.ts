@@ -39,7 +39,13 @@ export default class UserUseCase {
     ctx: IContext,
     args: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
-    const res = await UserService.updateProfile(ctx, args);
-    return UserPresenter.updateProfile(res);
+    const user = await UserService.updateProfile(ctx, args);
+
+    const isProfileComplete = await UserService.hasProfileCompleted(user);
+    if (isProfileComplete) {
+      // TODO オンボーディングポイントを付与する
+    }
+
+    return UserPresenter.updateProfile(user);
   }
 }
