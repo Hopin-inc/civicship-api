@@ -65,6 +65,16 @@ export default class TransactionConverter {
     };
   }
 
+  static giveOnboardingPoint(params: GiveOnboardingPointParams): Prisma.TransactionCreateInput {
+    return {
+      reason: TransactionReason.ONBORDING,
+      fromWallet: { connect: { id: params.fromWalletId } },
+      fromPointChange: params.fromPointChange,
+      toWallet: { connect: { id: params.toWalletId } },
+      toPointChange: params.toPointChange,
+    };
+  }
+
   static giveRewardPoint(params: GiveRewardPointParams): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_REWARD,
@@ -96,6 +106,13 @@ export default class TransactionConverter {
     };
   }
 }
+
+export type GiveOnboardingPointParams = {
+  fromWalletId: string;
+  toWalletId: string;
+  fromPointChange: number;
+  toPointChange: number;
+};
 
 export type GiveRewardPointParams = {
   fromWalletId: string;

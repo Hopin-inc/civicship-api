@@ -11,6 +11,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TransactionConverter, {
+  GiveOnboardingPointParams,
   PurchaseTicketParams,
   RefundTicketParams,
 } from "@/application/transaction/data/converter";
@@ -83,6 +84,14 @@ export default class TransactionService {
     const transaction = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
     return transaction;
+  }
+
+  static async giveOnboardingPoint(ctx: IContext, params: GiveOnboardingPointParams) {
+    const data = TransactionConverter.giveOnboardingPoint(params);
+
+    const res = await TransactionRepository.create(ctx, data);
+    await TransactionRepository.refreshCurrentPoints(ctx);
+    return res;
   }
 
   static async giveRewardPoint(
