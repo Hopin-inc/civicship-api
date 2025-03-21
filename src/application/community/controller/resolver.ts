@@ -90,7 +90,13 @@ const communityResolver = {
       args: GqlCommunityParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      return ParticipationUseCase.visitorBrowseParticipationsByCommunity(parent, args, ctx);
+      return ParticipationUseCase.visitorBrowseParticipations(
+        {
+          filter: { communityId: parent.id },
+          ...args,
+        },
+        ctx,
+      );
     },
 
     wallets: async (

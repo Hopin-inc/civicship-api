@@ -38,7 +38,13 @@ const opportunitySlotResolver = {
       args: GqlOpportunitySlotParticipationsArgs,
       ctx: IContext,
     ) => {
-      return ParticipationUseCase.visitorBrowseParticipationsByOpportunitySlot(parent, args, ctx);
+      return ParticipationUseCase.visitorBrowseParticipations(
+        {
+          filter: { opportunitySlotId: parent.id },
+          ...args,
+        },
+        ctx,
+      );
     },
   },
 };

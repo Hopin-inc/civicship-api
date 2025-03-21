@@ -83,7 +83,13 @@ const userResolver = {
       args: GqlUserParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      return ParticipationUseCase.visitorBrowseParticipationsByUser(parent, args, ctx);
+      return ParticipationUseCase.visitorBrowseParticipations(
+        {
+          filter: { userId: parent.id },
+          ...args,
+        },
+        ctx,
+      );
     },
 
     participationStatusChangedByMe: async (

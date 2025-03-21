@@ -1,29 +1,16 @@
 import {
-  GqlCommunity,
-  GqlCommunityParticipationsArgs,
   GqlMutationParticipationAcceptApplicationArgs,
-  GqlMutationParticipationAcceptMyInvitationArgs,
   GqlMutationParticipationApplyArgs,
   GqlMutationParticipationApprovePerformanceArgs,
-  GqlMutationParticipationCancelInvitationArgs,
   GqlMutationParticipationCancelMyApplicationArgs,
   GqlMutationParticipationDenyApplicationArgs,
-  GqlMutationParticipationDenyMyInvitationArgs,
   GqlMutationParticipationDenyPerformanceArgs,
-  GqlMutationParticipationInviteArgs,
-  GqlOpportunity,
-  GqlOpportunityParticipationsArgs,
-  GqlOpportunitySlot,
-  GqlOpportunitySlotParticipationsArgs,
   GqlParticipation,
   GqlParticipationApplyPayload,
-  GqlParticipationInvitePayload,
   GqlParticipationsConnection,
   GqlParticipationSetStatusPayload,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
-  GqlUser,
-  GqlUserParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationService from "@/application/participation/service";
@@ -54,53 +41,6 @@ export default class ParticipationUseCase {
     return ParticipationService.fetchParticipations(ctx, args);
   }
 
-  static async visitorBrowseParticipationsByCommunity(
-    { id }: GqlCommunity,
-    { first, cursor }: GqlCommunityParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationService.fetchParticipations(ctx, {
-      cursor,
-      filter: { communityId: id },
-      first,
-    });
-  }
-
-  static async visitorBrowseParticipationsByUser(
-    { id }: GqlUser,
-    { first, cursor }: GqlUserParticipationsArgs,
-    ctx: IContext,
-  ) {
-    return ParticipationService.fetchParticipations(ctx, {
-      cursor,
-      filter: { userId: id },
-      first,
-    });
-  }
-
-  static async visitorBrowseParticipationsByOpportunity(
-    { id }: GqlOpportunity,
-    args: GqlOpportunityParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationService.fetchParticipations(ctx, {
-      ...args,
-      filter: { opportunityId: id },
-    });
-  }
-
-  static async visitorBrowseParticipationsByOpportunitySlot(
-    { id }: GqlOpportunitySlot,
-    { first, cursor }: GqlOpportunitySlotParticipationsArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationsConnection> {
-    return ParticipationService.fetchParticipations(ctx, {
-      cursor,
-      filter: { opportunitySlotId: id },
-      first,
-    });
-  }
-
   static async visitorViewParticipation(
     { id }: GqlQueryParticipationArgs,
     ctx: IContext,
@@ -110,68 +50,6 @@ export default class ParticipationUseCase {
       return null;
     }
     return ParticipationPresenter.get(res);
-  }
-
-  static async memberInviteUserToOpportunity(
-    { input }: GqlMutationParticipationInviteArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationInvitePayload> {
-    const res = await ParticipationService.inviteParticipation(ctx, input);
-    return ParticipationPresenter.invite(res);
-  }
-
-  static async memberCancelInvitation(
-    { id }: GqlMutationParticipationCancelInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.setStatus(
-      ctx,
-      id,
-      ParticipationStatus.NOT_PARTICIPATING,
-      ParticipationEventType.INVITATION,
-      ParticipationEventTrigger.CANCELED,
-    );
-    return ParticipationPresenter.setStatus(res);
-  }
-
-  static async userAcceptMyInvitation(
-    { id, input }: GqlMutationParticipationAcceptMyInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationSetStatusPayload> {
-    const currentUserId = getCurrentUserId(ctx);
-    const { communityId } = input;
-
-    await ParticipationService.findParticipationOrThrow(ctx, id);
-
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const res = await ParticipationService.setStatus(
-        ctx,
-        id,
-        ParticipationStatus.PARTICIPATING,
-        ParticipationEventType.INVITATION,
-        ParticipationEventTrigger.ACCEPTED,
-        tx,
-      );
-
-      await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
-      await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
-
-      return ParticipationPresenter.setStatus(res);
-    });
-  }
-
-  static async userDenyMyInvitation(
-    { id }: GqlMutationParticipationDenyMyInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationSetStatusPayload> {
-    const res = await ParticipationService.setStatus(
-      ctx,
-      id,
-      ParticipationStatus.NOT_PARTICIPATING,
-      ParticipationEventType.INVITATION,
-      ParticipationEventTrigger.DECLINED,
-    );
-    return ParticipationPresenter.setStatus(res);
   }
 
   static async userApplyForOpportunity(
@@ -200,7 +78,7 @@ export default class ParticipationUseCase {
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
       if (isFirstApply) {
-        //TODO 初申し込みでのオンボーディングポイントを付与する
+        //TODO 初申し込みでのオンボーディングポイントを付与する ユーザー登録時にオンボーディングタスク生成
       }
 
       if (requiredUtilities.length > 0 && input.ticketId) {
