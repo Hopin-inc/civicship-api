@@ -17,15 +17,15 @@ export default class OpportunitySlotConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static create(
+  static createMany(
     opportunityId: string,
-    input: GqlOpportunitySlotCreateInput,
-  ): Prisma.OpportunitySlotCreateInput {
-    return {
-      opportunity: { connect: { id: opportunityId } },
+    inputs: GqlOpportunitySlotCreateInput[],
+  ): Prisma.OpportunitySlotCreateManyInput[] {
+    return inputs.map((input) => ({
+      opportunityId,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
-    };
+    }));
   }
 
   static update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
