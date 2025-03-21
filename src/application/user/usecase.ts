@@ -10,6 +10,8 @@ import UserService from "@/application/user/service";
 import UserPresenter from "@/application/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/utils";
+import OnboardingService from "@/application/onboarding/service";
+import { Todo } from "@prisma/client";
 
 export default class UserUseCase {
   static async visitorBrowseCommunityMembers(
@@ -42,7 +44,8 @@ export default class UserUseCase {
     const user = await UserService.updateProfile(ctx, args);
 
     const isProfileComplete = await UserService.hasProfileCompleted(user);
-    if (isProfileComplete) {
+    const isWIP = await OnboardingService.hasWipOnboardingTodo(ctx, user.id, Todo.PROFILE);
+    if (isProfileComplete && isWIP) {
       // TODO オンボーディングポイントを付与する
     }
 
