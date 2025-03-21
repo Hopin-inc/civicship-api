@@ -1942,7 +1942,7 @@ export type GqlReservationCreateInput = {
   opportunitySlotId: Scalars['ID']['input'];
   otherParticipantUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   participantCount: Scalars['Int']['input'];
-  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  payment: GqlReservationPayment;
 };
 
 export type GqlReservationCreatePayload = GqlReservationCreateSuccess;
@@ -1997,6 +1997,12 @@ export type GqlReservationHistorySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
 
+export const GqlReservationPayment = {
+  Fee: 'FEE',
+  Point: 'POINT'
+} as const;
+
+export type GqlReservationPayment = typeof GqlReservationPayment[keyof typeof GqlReservationPayment];
 export type GqlReservationSetStatusPayload = GqlReservationSetStatusSuccess;
 
 export type GqlReservationSetStatusSuccess = {
@@ -2975,6 +2981,7 @@ export type GqlResolversTypes = ResolversObject<{
   ReservationHistoryEdge: ResolverTypeWrapper<Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ReservationHistory']> }>;
   ReservationHistoryFilterInput: GqlReservationHistoryFilterInput;
   ReservationHistorySortInput: GqlReservationHistorySortInput;
+  ReservationPayment: GqlReservationPayment;
   ReservationSetStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ReservationSetStatusPayload']>;
   ReservationSetStatusSuccess: ResolverTypeWrapper<Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: GqlResolversTypes['Reservation'] }>;
   ReservationSortInput: GqlReservationSortInput;
