@@ -6,16 +6,14 @@ import {
   GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunity,
   GqlOpportunityInvitationsArgs,
-  GqlOpportunityParticipationsArgs,
   GqlOpportunitySlotsArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityUseCase from "@/application/opportunity/usecase";
-import ParticipationUseCase from "@/application/participation/usecase";
 import OpportunitySlotUseCase from "@/application/opportunitySlot/usecase";
-import OpportunityInvitationUseCase from "@/application/opportunityInvitation/usecase";
+import OpportunityInvitationUseCase from "@/application/invitation/usecase";
 
 const opportunityResolver = {
   Query: {
@@ -50,12 +48,8 @@ const opportunityResolver = {
     ) => OpportunityUseCase.managerSetOpportunityHostingStatus(args, ctx),
   },
   Opportunity: {
-    participations: async (
-      parent: GqlOpportunity,
-      args: GqlOpportunityParticipationsArgs,
-      ctx: IContext,
-    ) => {
-      return ParticipationUseCase.visitorBrowseParticipations(
+    slots: async (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
+      return OpportunitySlotUseCase.visitorBrowseOpportunitySlots(
         {
           ...args,
           filter: { opportunityId: parent.id },
@@ -63,11 +57,6 @@ const opportunityResolver = {
         ctx,
       );
     },
-
-    slots: async (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
-      return OpportunitySlotUseCase.visitorBrowseOpportunitySlotsByOpportunity(parent, args, ctx);
-    },
-
     invitations: async (
       parent: GqlOpportunity,
       args: GqlOpportunityInvitationsArgs,
