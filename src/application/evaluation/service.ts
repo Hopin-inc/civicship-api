@@ -1,4 +1,5 @@
 import {
+  GqlEvaluationCreateInput,
   GqlEvaluationFilterInput,
   GqlEvaluationsConnection,
   GqlEvaluationSortInput,
@@ -7,7 +8,7 @@ import EvaluationRepository from "@/application/evaluation/data/repository";
 import EvaluationPresenter from "@/application/evaluation/presenter";
 import EvaluationConverter from "@/application/evaluation/data/converter";
 import { IContext } from "@/types/server";
-import { EvaluationStatus } from "@prisma/client";
+import { EvaluationStatus, Prisma } from "@prisma/client";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import { ValidationError } from "@/errors/graphql";
 
@@ -50,9 +51,9 @@ export default class EvaluationService {
 
   static async createEvaluation(
     ctx: IContext,
-    participationId: string,
+    input: GqlEvaluationCreateInput,
     status: EvaluationStatus,
-    comment?: string,
+    tx?: Prisma.TransactionClient,
   ) {
     const isValidFinalStatus =
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
@@ -62,8 +63,13 @@ export default class EvaluationService {
     }
 
     const currentUserId = getCurrentUserId(ctx);
-    const data = EvaluationConverter.create(participationId, currentUserId, status, comment);
+    const data = EvaluationConverter.create(
+      input.participationId,
+      currentUserId,
+      status,
+      input.comment,
+    );
 
-    return EvaluationRepository.create(ctx, data);
+    return EvaluationRepository.create(ctx, data, tx);
   }
 }

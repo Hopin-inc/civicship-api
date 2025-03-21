@@ -11,8 +11,14 @@ import { EvaluationStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/evaluation/service";
 import EvaluationPresenter from "@/application/evaluation/presenter";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { ValidationError } from "@/errors/graphql";
+import WalletService from "@/application/membership/wallet/service";
+import TransactionService from "@/application/transaction/service";
 
 export default class EvaluationUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseEvaluations(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryEvaluationsArgs,
@@ -32,25 +38,59 @@ export default class EvaluationUseCase {
     { input }: GqlMutationEvaluationPassArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
-    const res = await EvaluationService.createEvaluation(
-      ctx,
-      input.participationId,
-      EvaluationStatus.PASSED,
-      input.comment,
-    );
-    return EvaluationPresenter.create(res);
+    const evaluation = await this.issuer.public(ctx, async (tx) => {
+      const evaluation = await EvaluationService.createEvaluation(
+        ctx,
+        input,
+        EvaluationStatus.PASSED,
+        tx,
+      );
+
+      const participation = evaluation.participation;
+      if (!participation || !participation.opportunitySlot?.opportunity) {
+        throw new ValidationError("Participation or Opportunity not found for evaluation", [
+          input.participationId,
+        ]);
+      }
+
+      const opportunity = participation.opportunitySlot?.opportunity;
+
+      if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
+        if (!participation.communityId) {
+          throw new ValidationError("Community ID not found for participation", [
+            input.participationId,
+          ]);
+        }
+
+        const { fromWalletId, toWalletId } = await WalletService.validateWalletsForGiveReward(
+          ctx,
+          tx,
+          participation.communityId,
+          participation.id,
+          opportunity.pointsToEarn,
+        );
+
+        await TransactionService.giveRewardPoint(
+          ctx,
+          tx,
+          participation.id,
+          opportunity.pointsToEarn,
+          fromWalletId,
+          toWalletId,
+        );
+      }
+
+      return evaluation;
+    });
+
+    return EvaluationPresenter.create(evaluation);
   }
 
   static async managerFailEvaluation(
     { input }: GqlMutationEvaluationFailArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
-    const res = await EvaluationService.createEvaluation(
-      ctx,
-      input.participationId,
-      EvaluationStatus.FAILED,
-      input.comment,
-    );
+    const res = await EvaluationService.createEvaluation(ctx, input, EvaluationStatus.FAILED);
     return EvaluationPresenter.create(res);
   }
 }

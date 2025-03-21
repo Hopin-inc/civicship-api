@@ -34,12 +34,23 @@ export default class EvaluationRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.EvaluationCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
+  static async create(
+    ctx: IContext,
+    data: Prisma.EvaluationCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
       return tx.evaluation.create({
         data,
         include: evaluationInclude,
       });
-    });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.evaluation.create({
+          data,
+          include: evaluationInclude,
+        });
+      });
+    }
   }
 }
