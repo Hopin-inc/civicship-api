@@ -77,6 +77,21 @@ export default class WalletService {
     return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
   }
 
+  static async validateWalletsForPurchaseTicket(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    communityId: string,
+    userId: string,
+    transferPoints: number,
+  ) {
+    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
+    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+
+    await WalletUtils.validateTransfer(transferPoints, memberWallet, communityWallet);
+
+    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
+  }
+
   static async validateWalletsForGrantOrDonation(
     ctx: IContext,
     tx: Prisma.TransactionClient,
