@@ -1868,7 +1868,9 @@ function isParticipationevaluationFactory(x) {
     return x?._factoryFor === "Evaluation";
 }
 function autoGenerateParticipationScalarsOrEnums({ seq }) {
-    return {};
+    return {
+        reason: "PERSONAL_RECORD"
+    };
 }
 function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
     const getFactoryWithTraits = (traitKeys = []) => {
@@ -2072,8 +2074,7 @@ function isParticipationStatusHistorycreatedByUserFactory(x) {
 function autoGenerateParticipationStatusHistoryScalarsOrEnums({ seq }) {
     return {
         status: "PENDING",
-        eventType: "SELF_LOG",
-        eventTrigger: "SELF_REPORTED"
+        reason: "PERSONAL_RECORD"
     };
 }
 function defineParticipationStatusHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -2372,7 +2373,7 @@ function isReservationHistorycreatedByUserFactory(x) {
 }
 function autoGenerateReservationHistoryScalarsOrEnums({ seq }) {
     return {
-        status: "PENDING"
+        status: "APPLIED"
     };
 }
 function defineReservationHistoryFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {

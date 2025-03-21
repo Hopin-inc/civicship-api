@@ -5,7 +5,6 @@ model ReservationHistory {
   reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
   status ReservationStatus
-  reason String?
 
   createdBy     String? @map("created_by")
   createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)

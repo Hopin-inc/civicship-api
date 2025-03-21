@@ -17,6 +17,7 @@ import { createTicketLoader } from "@/application/ticket/controller/dataloader";
 import { createTicketStatusHistoryLoader } from "@/application/ticket/statusHistory/controller/dataloader";
 import { createEvaluationLoader } from "@/application/evaluation/controller/dataloader";
 import { createEvaluationHistoryLoader } from "@/application/evaluation/evaluationHistory/controller/dataloader";
+import { createReservationLoader } from "@/application/reservation/controller/dataloader";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -31,6 +32,8 @@ export function createLoaders(issuer: PrismaClientIssuer) {
 
     opportunityInvitation: createOpportunityInvitationLoader(issuer),
     opportunityInvitationHistory: createOpportunityInvitationHistoryLoader(issuer),
+
+    reservation: createReservationLoader(issuer),
 
     participation: createParticipationLoader(issuer),
     participationStatusHistory: createParticipationStatusHistoryLoader(issuer),

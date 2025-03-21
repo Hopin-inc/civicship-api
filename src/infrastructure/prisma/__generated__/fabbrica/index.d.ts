@@ -37,10 +37,9 @@ import type { Todo } from "@prisma/client";
 import type { OnboardingStatus } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { OpportunityHostingStatus } from "@prisma/client";
-import type { ParticipationStatus } from "@prisma/client";
 import type { Source } from "@prisma/client";
-import type { ParticipationEventType } from "@prisma/client";
-import type { ParticipationEventTrigger } from "@prisma/client";
+import type { ParticipationStatus } from "@prisma/client";
+import type { ParticipationStatusReason } from "@prisma/client";
 import type { ReservationStatus } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
@@ -850,8 +849,9 @@ type ParticipationevaluationFactory = {
 };
 type ParticipationFactoryDefineInput = {
     id?: string;
-    status?: ParticipationStatus;
     source?: Source;
+    status?: ParticipationStatus;
+    reason?: ParticipationStatusReason;
     description?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -962,8 +962,7 @@ type ParticipationStatusHistorycreatedByUserFactory = {
 type ParticipationStatusHistoryFactoryDefineInput = {
     id?: string;
     status?: ParticipationStatus;
-    eventType?: ParticipationEventType;
-    eventTrigger?: ParticipationEventTrigger;
+    reason?: ParticipationStatusReason;
     createdAt?: Date;
     updatedAt?: Date | null;
     participation: ParticipationStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutStatusHistoriesInput;
@@ -1132,7 +1131,6 @@ type ReservationHistorycreatedByUserFactory = {
 type ReservationHistoryFactoryDefineInput = {
     id?: string;
     status?: ReservationStatus;
-    reason?: string | null;
     createdAt?: Date;
     reservation: ReservationHistoryreservationFactory | Prisma.ReservationCreateNestedOneWithoutHistoriesInput;
     createdByUser?: ReservationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput;

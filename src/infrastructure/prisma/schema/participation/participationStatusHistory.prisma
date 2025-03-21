@@ -1,8 +1,7 @@
 model ParticipationStatusHistory {
-  id           String                    @id @default(cuid())
-  status       ParticipationStatus
-  eventType    ParticipationEventType
-  eventTrigger ParticipationEventTrigger
+  id     String                    @id @default(cuid())
+  status ParticipationStatus
+  reason ParticipationStatusReason
 
   participationId String        @map("participation_id")
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
@@ -14,18 +13,4 @@ model ParticipationStatusHistory {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_participation_status_histories")
-}
-
-enum ParticipationEventType {
-  SELF_LOG
-  RESERVATION
-  OPPORTUNITY
-}
-
-enum ParticipationEventTrigger {
-  SELF_REPORTED
-  PENDING
-  ACCEPTED
-  DECLINED
-  CANCELED
 }

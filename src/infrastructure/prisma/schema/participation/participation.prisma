@@ -16,8 +16,9 @@ model Participation {
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 
-  status ParticipationStatus @default(PENDING)
-  source Source              @default(INTERNAL)
+  source Source                    @default(INTERNAL)
+  status ParticipationStatus       @default(PENDING)
+  reason ParticipationStatusReason
 
   evaluation Evaluation?
 
@@ -38,4 +39,18 @@ enum ParticipationStatus {
   PARTICIPATING
   PARTICIPATED
   NOT_PARTICIPATING
+}
+
+enum ParticipationStatusReason {
+  PERSONAL_RECORD
+
+  RESERVATION_JOINED
+
+  RESERVATION_APPLIED
+  RESERVATION_CANCELED
+
+  RESERVATION_ACCEPTED
+  RESERVATION_REJECTED
+
+  OPPORTUNITY_CANCELED
 }

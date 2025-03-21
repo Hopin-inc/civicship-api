@@ -30,7 +30,7 @@ type Reservation {
 # Reservation Enum Definitions
 # ------------------------------
 enum ReservationStatus {
-    PENDING
+    APPLIED
     ACCEPTED
     REJECTED
     CANCELED

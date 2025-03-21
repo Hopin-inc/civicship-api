@@ -35,6 +35,8 @@ input ReservationCreateInput {
     opportunitySlotId: ID!
     participantCount: Int!
     otherParticipantUserIds: [ID!]
+
+    ticketId: ID
 }
 
 # ------------------------------

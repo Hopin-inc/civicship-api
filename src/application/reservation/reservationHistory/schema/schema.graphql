@@ -6,7 +6,6 @@ type ReservationHistory {
     status: ReservationStatus!
 
     reservation: Reservation!
-    reason: String
     createdByUser: User
 
     createdAt: Datetime!

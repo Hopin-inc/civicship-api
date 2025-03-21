@@ -108,26 +108,20 @@ NOT_PARTICIPATING NOT_PARTICIPATING
     
 
 
-        ParticipationEventType {
-            SELF_LOG SELF_LOG
-RESERVATION RESERVATION
-OPPORTUNITY OPPORTUNITY
-        }
-    
-
-
-        ParticipationEventTrigger {
-            SELF_REPORTED SELF_REPORTED
-PENDING PENDING
-ACCEPTED ACCEPTED
-DECLINED DECLINED
-CANCELED CANCELED
+        ParticipationStatusReason {
+            PERSONAL_RECORD PERSONAL_RECORD
+RESERVATION_JOINED RESERVATION_JOINED
+RESERVATION_APPLIED RESERVATION_APPLIED
+RESERVATION_CANCELED RESERVATION_CANCELED
+RESERVATION_ACCEPTED RESERVATION_ACCEPTED
+RESERVATION_REJECTED RESERVATION_REJECTED
+OPPORTUNITY_CANCELED OPPORTUNITY_CANCELED
         }
     
 
 
         ReservationStatus {
-            PENDING PENDING
+            APPLIED APPLIED
 ACCEPTED ACCEPTED
 REJECTED REJECTED
 CANCELED CANCELED
@@ -345,8 +339,9 @@ USER USER
     String opportunity_slot_id "❓"
     String application_id "❓"
     String community_id "❓"
-    ParticipationStatus status 
     Source source 
+    ParticipationStatus status 
+    ParticipationStatusReason reason 
     String description "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -366,8 +361,7 @@ USER USER
   "t_participation_status_histories" {
     String id "🗝️"
     ParticipationStatus status 
-    ParticipationEventType eventType 
-    ParticipationEventTrigger eventTrigger 
+    ParticipationStatusReason reason 
     String participation_id 
     String created_by "❓"
     DateTime created_at 
@@ -405,7 +399,6 @@ USER USER
     String id "🗝️"
     String reservation_id 
     ReservationStatus status 
-    String reason "❓"
     String created_by "❓"
     DateTime createdAt 
     }
@@ -566,16 +559,16 @@ USER USER
     "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o|--|o "t_communities" : "community"
-    "t_participations" o|--|| "ParticipationStatus" : "enum:status"
     "t_participations" o|--|| "Source" : "enum:source"
+    "t_participations" o|--|| "ParticipationStatus" : "enum:status"
+    "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
     "t_participations" o{--}o "t_evaluations" : "evaluation"
     "t_participations" o{--}o "t_participation_images" : "images"
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
     "t_participation_images" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
-    "t_participation_status_histories" o|--|| "ParticipationEventType" : "enum:eventType"
-    "t_participation_status_histories" o|--|| "ParticipationEventTrigger" : "enum:eventTrigger"
+    "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"
     "t_participation_status_histories" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
     "t_places" o|--|| "m_cities" : "city"

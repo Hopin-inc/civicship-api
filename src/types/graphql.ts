@@ -1272,6 +1272,7 @@ export type GqlParticipation = {
   images?: Maybe<Scalars['JSON']['output']>;
   opportunityInvitationHistory?: Maybe<GqlOpportunityInvitationHistory>;
   opportunitySlot?: Maybe<GqlOpportunitySlot>;
+  reason: GqlParticipationStatusReason;
   reservation?: Maybe<GqlReservation>;
   source: GqlSource;
   status: GqlParticipationStatus;
@@ -1310,22 +1311,6 @@ export type GqlParticipationEdge = GqlEdge & {
   node?: Maybe<GqlParticipation>;
 };
 
-export const GqlParticipationEventTrigger = {
-  Accepted: 'ACCEPTED',
-  Canceled: 'CANCELED',
-  Declined: 'DECLINED',
-  Pending: 'PENDING',
-  SelfReported: 'SELF_REPORTED'
-} as const;
-
-export type GqlParticipationEventTrigger = typeof GqlParticipationEventTrigger[keyof typeof GqlParticipationEventTrigger];
-export const GqlParticipationEventType = {
-  Opportunity: 'OPPORTUNITY',
-  Reservation: 'RESERVATION',
-  SelfLog: 'SELF_LOG'
-} as const;
-
-export type GqlParticipationEventType = typeof GqlParticipationEventType[keyof typeof GqlParticipationEventType];
 export type GqlParticipationFilterInput = {
   communityId?: InputMaybe<Scalars['ID']['input']>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
@@ -1416,10 +1401,9 @@ export type GqlParticipationStatusHistory = {
   __typename?: 'ParticipationStatusHistory';
   createdAt: Scalars['Datetime']['output'];
   createdByUser?: Maybe<GqlUser>;
-  eventTrigger: GqlParticipationEventTrigger;
-  eventType: GqlParticipationEventType;
   id: Scalars['ID']['output'];
   participation: GqlParticipation;
+  reason: GqlParticipationStatusReason;
   status: GqlParticipationStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
@@ -1440,6 +1424,17 @@ export type GqlParticipationStatusHistorySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
 
+export const GqlParticipationStatusReason = {
+  OpportunityCanceled: 'OPPORTUNITY_CANCELED',
+  PersonalRecord: 'PERSONAL_RECORD',
+  ReservationAccepted: 'RESERVATION_ACCEPTED',
+  ReservationApplied: 'RESERVATION_APPLIED',
+  ReservationCanceled: 'RESERVATION_CANCELED',
+  ReservationJoined: 'RESERVATION_JOINED',
+  ReservationRejected: 'RESERVATION_REJECTED'
+} as const;
+
+export type GqlParticipationStatusReason = typeof GqlParticipationStatusReason[keyof typeof GqlParticipationStatusReason];
 export type GqlParticipationsConnection = {
   __typename?: 'ParticipationsConnection';
   edges: Array<GqlParticipationEdge>;
@@ -1947,6 +1942,7 @@ export type GqlReservationCreateInput = {
   opportunitySlotId: Scalars['ID']['input'];
   otherParticipantUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   participantCount: Scalars['Int']['input'];
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export type GqlReservationCreatePayload = GqlReservationCreateSuccess;
@@ -1981,7 +1977,6 @@ export type GqlReservationHistory = {
   createdAt: Scalars['Datetime']['output'];
   createdByUser?: Maybe<GqlUser>;
   id: Scalars['ID']['output'];
-  reason?: Maybe<Scalars['String']['output']>;
   reservation: GqlReservation;
   status: GqlReservationStatus;
 };
@@ -2016,8 +2011,8 @@ export type GqlReservationSortInput = {
 
 export const GqlReservationStatus = {
   Accepted: 'ACCEPTED',
+  Applied: 'APPLIED',
   Canceled: 'CANCELED',
-  Pending: 'PENDING',
   Rejected: 'REJECTED'
 } as const;
 
@@ -2933,8 +2928,6 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationDeletePayload']>;
   ParticipationDeleteSuccess: ResolverTypeWrapper<GqlParticipationDeleteSuccess>;
   ParticipationEdge: ResolverTypeWrapper<Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Participation']> }>;
-  ParticipationEventTrigger: GqlParticipationEventTrigger;
-  ParticipationEventType: GqlParticipationEventType;
   ParticipationFilterInput: GqlParticipationFilterInput;
   ParticipationImage: ResolverTypeWrapper<Omit<GqlParticipationImage, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationImageBulkUpdateInput: GqlParticipationImageBulkUpdateInput;
@@ -2954,6 +2947,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusHistoryEdge: ResolverTypeWrapper<Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ParticipationStatusHistory']> }>;
   ParticipationStatusHistoryFilterInput: GqlParticipationStatusHistoryFilterInput;
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
+  ParticipationStatusReason: GqlParticipationStatusReason;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
@@ -3895,6 +3889,7 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
   images?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   opportunityInvitationHistory?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitationHistory']>, ParentType, ContextType>;
   opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
+  reason?: Resolver<GqlResolversTypes['ParticipationStatusReason'], ParentType, ContextType>;
   reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType>;
   source?: Resolver<GqlResolversTypes['Source'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ParticipationStatus'], ParentType, ContextType>;
@@ -3971,10 +3966,9 @@ export type GqlParticipationStatusHistoriesConnectionResolvers<ContextType = any
 export type GqlParticipationStatusHistoryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationStatusHistory'] = GqlResolversParentTypes['ParticipationStatusHistory']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
-  eventTrigger?: Resolver<GqlResolversTypes['ParticipationEventTrigger'], ParentType, ContextType>;
-  eventType?: Resolver<GqlResolversTypes['ParticipationEventType'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
+  reason?: Resolver<GqlResolversTypes['ParticipationStatusReason'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ParticipationStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4141,7 +4135,6 @@ export type GqlReservationHistoryResolvers<ContextType = any, ParentType extends
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  reason?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   reservation?: Resolver<GqlResolversTypes['Reservation'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ReservationStatus'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

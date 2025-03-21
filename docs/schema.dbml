@@ -216,8 +216,9 @@ Table t_participations {
   reservation t_reservations
   communityId String
   community t_communities
-  status ParticipationStatus [not null, default: 'PENDING']
   source Source [not null, default: 'INTERNAL']
+  status ParticipationStatus [not null, default: 'PENDING']
+  reason ParticipationStatusReason [not null]
   evaluation t_evaluations
   description String
   images t_participation_images [not null]
@@ -240,8 +241,7 @@ Table t_participation_images {
 Table t_participation_status_histories {
   id String [pk]
   status ParticipationStatus [not null]
-  eventType ParticipationEventType [not null]
-  eventTrigger ParticipationEventTrigger [not null]
+  reason ParticipationStatusReason [not null]
   participationId String [not null]
   participation t_participations [not null]
   createdBy String
@@ -272,7 +272,7 @@ Table t_reservations {
   id String [pk]
   opportunitySlotId String [not null]
   opportunitySlot t_opportunity_slots [not null]
-  status ReservationStatus [not null, default: 'PENDING']
+  status ReservationStatus [not null, default: 'APPLIED']
   participations t_participations [not null]
   createdBy String
   createdByUser t_users
@@ -286,7 +286,6 @@ Table t_reservation_histories {
   reservationId String [not null]
   reservation t_reservations [not null]
   status ReservationStatus [not null]
-  reason String
   createdBy String
   createdByUser t_users
   createdAt DateTime [default: `now()`, not null]
@@ -505,22 +504,18 @@ Enum ParticipationStatus {
   NOT_PARTICIPATING
 }
 
-Enum ParticipationEventType {
-  SELF_LOG
-  RESERVATION
-  OPPORTUNITY
-}
-
-Enum ParticipationEventTrigger {
-  SELF_REPORTED
-  PENDING
-  ACCEPTED
-  DECLINED
-  CANCELED
+Enum ParticipationStatusReason {
+  PERSONAL_RECORD
+  RESERVATION_JOINED
+  RESERVATION_APPLIED
+  RESERVATION_CANCELED
+  RESERVATION_ACCEPTED
+  RESERVATION_REJECTED
+  OPPORTUNITY_CANCELED
 }
 
 Enum ReservationStatus {
-  PENDING
+  APPLIED
   ACCEPTED
   REJECTED
   CANCELED
