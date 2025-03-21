@@ -4,11 +4,11 @@ import {
   GqlOpportunityInvitationCreateInput,
   GqlQueryOpportunityInvitationsArgs,
 } from "@/types/graphql";
-import OpportunityInvitationConverter from "@/application/opportunityInvitation/data/converter";
-import OpportunityInvitationRepository from "@/application/opportunityInvitation/data/repository";
+import OpportunityInvitationConverter from "@/application/invitation/data/converter";
+import OpportunityInvitationRepository from "@/application/invitation/data/repository";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import { NotFoundError } from "@/errors/graphql";
-import OpportunityInvitationPresenter from "@/application/opportunityInvitation/presenter";
+import OpportunityInvitationPresenter from "@/application/invitation/presenter";
 
 export default class OpportunityInvitationService {
   static async fetchOpportunityInvitations(

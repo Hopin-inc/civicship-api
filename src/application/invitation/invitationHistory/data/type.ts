@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { opportunityInvitationInclude } from "@/application/opportunityInvitation/data/type";
+import { opportunityInvitationInclude } from "@/application/invitation/data/type";
 import { userInclude } from "@/application/user/data/type";
 
 export const invitationHistoryInclude =

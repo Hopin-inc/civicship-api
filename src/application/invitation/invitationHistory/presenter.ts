@@ -2,8 +2,8 @@ import {
   GqlOpportunityInvitationHistory,
   GqlOpportunityInvitationHistoriesConnection,
 } from "@/types/graphql";
-import { PrismaInvitationHistory } from "@/application/opportunityInvitation/invitationHistory/data/type";
-import OpportunityInvitationPresenter from "@/application/opportunityInvitation/presenter";
+import { PrismaInvitationHistory } from "@/application/invitation/invitationHistory/data/type";
+import OpportunityInvitationPresenter from "@/application/invitation/presenter";
 
 export default class OpportunityInvitationHistoryPresenter {
   static query(

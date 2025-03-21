@@ -4,7 +4,7 @@ import {
   GqlOpportunityInvitationCreateSuccess,
   GqlOpportunityInvitationDisableSuccess,
 } from "@/types/graphql";
-import { PrismaOpportunityInvitation } from "@/application/opportunityInvitation/data/type";
+import { PrismaOpportunityInvitation } from "@/application/invitation/data/type";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 
 export default class OpportunityInvitationPresenter {

@@ -3,7 +3,7 @@ import {
   GqlQueryOpportunityInvitationHistoryArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityInvitationHistoryUseCase from "@/application/opportunityInvitation/invitationHistory/usecase";
+import OpportunityInvitationHistoryUseCase from "@/application/invitation/invitationHistory/usecase";
 
 const invitationHistoryResolver = {
   Query: {

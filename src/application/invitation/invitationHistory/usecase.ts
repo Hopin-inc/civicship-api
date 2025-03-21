@@ -7,9 +7,9 @@ import {
   GqlOpportunityInvitationHistoriesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityInvitationHistoryService from "@/application/opportunityInvitation/invitationHistory/service";
-import OpportunityInvitationHistoryPresenter from "@/application/opportunityInvitation/invitationHistory/presenter";
-import OpportunityInvitationHistoryUtils from "@/application/opportunityInvitation/invitationHistory/utils";
+import OpportunityInvitationHistoryService from "@/application/invitation/invitationHistory/service";
+import OpportunityInvitationHistoryPresenter from "@/application/invitation/invitationHistory/presenter";
+import OpportunityInvitationHistoryUtils from "@/application/invitation/invitationHistory/utils";
 
 export default class OpportunityInvitationHistoryUseCase {
   static async visitorBrowseOpportunityInvitationHistories(

@@ -9,8 +9,8 @@ import {
   GqlOpportunityInvitationDisablePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import OpportunityInvitationService from "@/application/opportunityInvitation/service";
-import OpportunityInvitationPresenter from "@/application/opportunityInvitation/presenter";
+import OpportunityInvitationService from "@/application/invitation/service";
+import OpportunityInvitationPresenter from "@/application/invitation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class OpportunityInvitationUseCase {

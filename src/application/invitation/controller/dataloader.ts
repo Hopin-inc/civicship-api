@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlOpportunityInvitation } from "@/types/graphql";
-import OpportunityInvitationOutputFormat from "@/application/opportunityInvitation/presenter";
-import { opportunityInvitationInclude } from "@/application/opportunityInvitation/data/type";
+import OpportunityInvitationOutputFormat from "@/application/invitation/presenter";
+import { opportunityInvitationInclude } from "@/application/invitation/data/type";
 
 async function batchOpportunityInvitationsById(
   issuer: PrismaClientIssuer,

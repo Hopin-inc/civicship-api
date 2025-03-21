@@ -1,7 +1,7 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { invitationHistoryInclude } from "@/application/opportunityInvitation/invitationHistory/data/type";
+import { invitationHistoryInclude } from "@/application/invitation/invitationHistory/data/type";
 
 export default class OpportunityInvitationHistoryRepository {
   private static issuer = new PrismaClientIssuer();
