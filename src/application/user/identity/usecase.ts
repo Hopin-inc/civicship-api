@@ -7,6 +7,9 @@ import UserService from "@/application/user/service";
 import OnboardingService from "@/application/onboarding/service";
 import { Todo } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import MembershipService from "@/application/membership/service";
+import WalletService from "@/application/membership/wallet/service";
+import { initialCommunityId } from "@/consts/utils";
 
 export default class IdentityUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -25,6 +28,8 @@ export default class IdentityUseCase {
     const user = await IdentityService.createUserAndIdentity(data, ctx.uid, ctx.platform);
 
     const res = await this.issuer.public(ctx, async (tx) => {
+      await MembershipService.joinIfNeeded(ctx, user.id, initialCommunityId, tx);
+      await WalletService.createMemberWalletIfNeeded(ctx, user.id, initialCommunityId, tx);
       await OnboardingService.createOnboardingTodos(ctx, user.id, tx);
 
       const isProfileComplete = await UserService.hasProfileCompleted(user);
