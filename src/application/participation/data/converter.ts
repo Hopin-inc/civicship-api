@@ -1,15 +1,5 @@
-import {
-  GqlParticipationFilterInput,
-  GqlParticipationSortInput,
-  GqlParticipationApplyInput,
-  GqlParticipationInviteInput,
-} from "@/types/graphql";
-import {
-  ParticipationEventTrigger,
-  ParticipationEventType,
-  ParticipationStatus,
-  Prisma,
-} from "@prisma/client";
+import { GqlParticipationFilterInput, GqlParticipationSortInput } from "@/types/graphql";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 
 export default class ParticipationConverter {
   static filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
@@ -18,7 +8,6 @@ export default class ParticipationConverter {
         filter?.status ? { status: filter?.status } : {},
         filter?.communityId ? { communityId: filter?.communityId } : {},
         filter?.userId ? { userId: filter?.userId } : {},
-        filter?.opportunityId ? { opportunityId: filter?.opportunityId } : {},
         filter?.opportunitySlotId ? { opportunitySlotId: filter?.opportunitySlotId } : {},
       ],
     };
@@ -31,48 +20,11 @@ export default class ParticipationConverter {
     ];
   }
 
-  static invite(
-    { opportunityId, invitedUserId, communityId }: GqlParticipationInviteInput,
-    currentUserId: string,
-  ): Prisma.ParticipationCreateInput {
+  static countActiveBySlotId(slotId: string): Prisma.ParticipationWhereInput {
     return {
-      status: ParticipationStatus.PENDING,
-      eventType: ParticipationEventType.INVITATION,
-      eventTrigger: ParticipationEventTrigger.ISSUED,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: invitedUserId } },
-      opportunity: { connect: { id: opportunityId } },
-      statusHistories: {
-        create: {
-          status: ParticipationStatus.PENDING,
-          eventType: ParticipationEventType.INVITATION,
-          eventTrigger: ParticipationEventTrigger.ISSUED,
-          createdByUser: { connect: { id: currentUserId } },
-        },
-      },
-    };
-  }
-
-  static apply(
-    { opportunityId }: GqlParticipationApplyInput,
-    currentUserId: string,
-    communityId: string,
-    status: ParticipationStatus,
-  ): Prisma.ParticipationCreateInput {
-    return {
-      status,
-      eventType: ParticipationEventType.APPLICATION,
-      eventTrigger: ParticipationEventTrigger.ISSUED,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: currentUserId } },
-      opportunity: { connect: { id: opportunityId } },
-      statusHistories: {
-        create: {
-          status,
-          eventType: ParticipationEventType.APPLICATION,
-          eventTrigger: ParticipationEventTrigger.ISSUED,
-          createdByUser: { connect: { id: currentUserId } },
-        },
+      opportunitySlotId: slotId,
+      status: {
+        notIn: [ParticipationStatus.NOT_PARTICIPATING],
       },
     };
   }
@@ -80,18 +32,15 @@ export default class ParticipationConverter {
   static setStatus(
     currentUserId: string,
     status: ParticipationStatus,
-    eventType: ParticipationEventType,
-    eventTrigger: ParticipationEventTrigger,
+    reason: ParticipationStatusReason,
   ): Prisma.ParticipationUpdateInput {
     return {
       status,
-      eventType,
-      eventTrigger,
+      reason,
       statusHistories: {
         create: {
           status,
-          eventType,
-          eventTrigger,
+          reason,
           createdByUser: { connect: { id: currentUserId } },
         },
       },

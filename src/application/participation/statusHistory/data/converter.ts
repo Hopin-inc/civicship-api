@@ -2,12 +2,7 @@ import {
   GqlParticipationStatusHistoryFilterInput,
   GqlParticipationStatusHistorySortInput,
 } from "@/types/graphql";
-import {
-  ParticipationEventTrigger,
-  ParticipationEventType,
-  ParticipationStatus,
-  Prisma,
-} from "@prisma/client";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 
 export default class ParticipationStatusHistoryConverter {
   static filter(
@@ -28,15 +23,16 @@ export default class ParticipationStatusHistoryConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static bulkCreateStatusHistoriesForCancelledOpportunity(
+  static createMany(
     participationIds: string[],
     currentUserId: string,
+    status: ParticipationStatus,
+    reason: ParticipationStatusReason,
   ): Prisma.ParticipationStatusHistoryCreateManyInput[] {
     return participationIds.map((participationId) => ({
       participationId,
-      status: ParticipationStatus.NOT_PARTICIPATING,
-      eventType: ParticipationEventType.OPPORTUNITY,
-      eventTrigger: ParticipationEventTrigger.CANCELED,
+      status,
+      reason,
       createdByUserId: currentUserId,
     }));
   }

@@ -4,6 +4,7 @@
 type Participation {
     id: ID!
     status: ParticipationStatus!
+    reason: ParticipationStatusReason!
     source: Source!
 
     user: User
@@ -42,4 +43,18 @@ enum ParticipationStatus {
     PARTICIPATING
     PARTICIPATED
     NOT_PARTICIPATING
+}
+
+enum ParticipationStatusReason {
+    PERSONAL_RECORD
+
+    RESERVATION_JOINED
+
+    RESERVATION_APPLIED
+    RESERVATION_CANCELED
+
+    RESERVATION_ACCEPTED
+    RESERVATION_REJECTED
+
+    OPPORTUNITY_CANCELED
 }

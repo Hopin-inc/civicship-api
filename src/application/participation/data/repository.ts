@@ -25,6 +25,15 @@ export default class ParticipationRepository {
     });
   }
 
+  static async queryByReservationId(ctx: IContext, id: string) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.participation.findMany({
+        where: { reservationId: id },
+        include: participationInclude,
+      });
+    });
+  }
+
   static async count(
     ctx: IContext,
     where: Prisma.ParticipationWhereInput,
@@ -91,7 +100,7 @@ export default class ParticipationRepository {
     }
   }
 
-  static async bulkCancelParticipationsByOpportunity(
+  static async bulkSetParticipationStatus(
     ctx: IContext,
     ids: string[],
     data: Prisma.ParticipationUpdateInput,

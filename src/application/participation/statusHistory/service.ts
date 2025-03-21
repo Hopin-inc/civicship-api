@@ -9,7 +9,7 @@ import ParticipationStatusHistoryRepository from "@/application/participation/st
 import ParticipationStatusHistoryConverter from "@/application/participation/statusHistory/data/converter";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import ParticipationStatusHistoryPresenter from "@/application/participation/statusHistory/presenter";
-import { Prisma } from "@prisma/client";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 
 export default class ParticipationStatusHistoryService {
   static async fetchParticipationStatusHistories(
@@ -51,12 +51,30 @@ export default class ParticipationStatusHistoryService {
     tx: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
+    const data = ParticipationStatusHistoryConverter.createMany(
+      participationIds,
+      currentUserId,
+      ParticipationStatus.NOT_PARTICIPATING,
+      ParticipationStatusReason.OPPORTUNITY_CANCELED,
+    );
 
-    const data =
-      ParticipationStatusHistoryConverter.bulkCreateStatusHistoriesForCancelledOpportunity(
-        participationIds,
-        currentUserId,
-      );
+    return await ParticipationStatusHistoryRepository.createMany(ctx, data, tx);
+  }
+
+  static async bulkCreateStatusHistoriesForReservationStatusChanged(
+    ctx: IContext,
+    participationIds: string[],
+    status: ParticipationStatus,
+    reason: ParticipationStatusReason,
+    tx: Prisma.TransactionClient,
+  ) {
+    const currentUserId = getCurrentUserId(ctx);
+    const data = ParticipationStatusHistoryConverter.createMany(
+      participationIds,
+      currentUserId,
+      status,
+      reason,
+    );
 
     return await ParticipationStatusHistoryRepository.createMany(ctx, data, tx);
   }

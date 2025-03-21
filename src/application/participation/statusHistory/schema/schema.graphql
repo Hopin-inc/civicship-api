@@ -4,26 +4,11 @@
 type ParticipationStatusHistory {
     id: ID!
     status: ParticipationStatus!
-    eventType:    ParticipationEventType!
-    eventTrigger: ParticipationEventTrigger!
+    reason: ParticipationStatusReason!
 
     participation: Participation!
     createdByUser: User
 
     createdAt: Datetime!
     updatedAt: Datetime
-}
-
-enum ParticipationEventType {
-    SELF_LOG
-    RESERVATION
-    OPPORTUNITY
-}
-
-enum ParticipationEventTrigger {
-    SELF_REPORTED
-    PENDING
-    ACCEPTED
-    DECLINED
-    CANCELED
 }

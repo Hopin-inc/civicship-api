@@ -1,26 +1,14 @@
 import {
   GqlParticipation,
-  GqlParticipationApplyInput,
   GqlParticipationFilterInput,
-  GqlParticipationInviteInput,
   GqlParticipationsConnection,
   GqlParticipationSortInput,
 } from "@/types/graphql";
-import {
-  OpportunityCategory,
-  ParticipationEventTrigger,
-  ParticipationEventType,
-  ParticipationStatus,
-  Prisma,
-} from "@prisma/client";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import ParticipationConverter from "@/application/participation/data/converter";
 import ParticipationRepository from "@/application/participation/data/repository";
 import { IContext } from "@/types/server";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
-import { PrismaParticipation } from "@/application/participation/data/type";
-import OpportunityRepository from "@/application/opportunity/data/repository";
-import { NotFoundError } from "@/errors/graphql";
-import { PrismaOpportunity } from "@/application/opportunity/data/type";
 import ParticipationPresenter from "@/application/participation/presenter";
 
 export default class ParticipationService {
@@ -53,17 +41,17 @@ export default class ParticipationService {
     return ParticipationPresenter.query(data, hasNextPage);
   }
 
-  static async findParticipation(ctx: IContext, id: string) {
-    return await ParticipationRepository.find(ctx, id);
+  static async fetchParticipationsByReservationId(ctx: IContext, id: string) {
+    return await ParticipationRepository.queryByReservationId(ctx, id);
   }
 
-  static async hasNoParticipationYet(ctx: IContext, userId: string, category: OpportunityCategory) {
-    const participationCount = await ParticipationRepository.count(ctx, {
-      userId,
-      opportunity: { category },
-    });
+  static async countActiveParticipantsBySlotId(ctx: IContext, slotId: string) {
+    const where = ParticipationConverter.countActiveBySlotId(slotId);
+    return await ParticipationRepository.count(ctx, where);
+  }
 
-    return participationCount === 0;
+  static async findParticipation(ctx: IContext, id: string) {
+    return await ParticipationRepository.find(ctx, id);
   }
 
   static async findParticipationOrThrow(ctx: IContext, id: string) {
@@ -74,48 +62,32 @@ export default class ParticipationService {
     return participation;
   }
 
-  static async applyParticipation(
-    ctx: IContext,
-    input: GqlParticipationApplyInput,
-    currentUserId: string,
-    communityId: string,
-    participationStatus: ParticipationStatus,
-  ) {
-    const data: Prisma.ParticipationCreateInput = ParticipationConverter.apply(
-      input,
-      currentUserId,
-      communityId,
-      participationStatus,
-    );
-    return await ParticipationRepository.create(ctx, data);
-  }
-
-  static async inviteParticipation(ctx: IContext, input: GqlParticipationInviteInput) {
-    const currentUserId = getCurrentUserId(ctx);
-    const data: Prisma.ParticipationCreateInput = ParticipationConverter.invite(
-      input,
-      currentUserId,
-    );
-
-    return await ParticipationRepository.create(ctx, data);
-  }
-
   static async setStatus(
     ctx: IContext,
     id: string,
     status: ParticipationStatus,
-    eventType: ParticipationEventType,
-    eventTrigger: ParticipationEventTrigger,
+    reason: ParticipationStatusReason,
+    currentUserId?: string,
     tx?: Prisma.TransactionClient,
   ) {
-    const currentUserId = getCurrentUserId(ctx);
+    const userId = currentUserId ?? getCurrentUserId(ctx);
+
     const data: Prisma.ParticipationUpdateInput = ParticipationConverter.setStatus(
-      currentUserId,
+      userId,
       status,
-      eventType,
-      eventTrigger,
+      reason,
     );
     return ParticipationRepository.setStatus(ctx, id, data, tx);
+  }
+
+  static async bulkSetStatusByReservation(
+    ctx: IContext,
+    ids: string[],
+    status: ParticipationStatus,
+    reason: ParticipationStatusReason,
+    tx: Prisma.TransactionClient,
+  ) {
+    return ParticipationRepository.bulkSetParticipationStatus(ctx, ids, { status, reason }, tx);
   }
 
   static async bulkCancelParticipationsByOpportunity(
@@ -123,42 +95,14 @@ export default class ParticipationService {
     ids: string[],
     tx: Prisma.TransactionClient,
   ) {
-    return ParticipationRepository.bulkCancelParticipationsByOpportunity(
+    return ParticipationRepository.bulkSetParticipationStatus(
       ctx,
       ids,
       {
         status: ParticipationStatus.NOT_PARTICIPATING,
-        eventType: ParticipationEventType.OPPORTUNITY,
-        eventTrigger: ParticipationEventTrigger.CANCELED,
+        reason: ParticipationStatusReason.OPPORTUNITY_CANCELED,
       },
       tx,
     );
-  }
-
-  static async validateParticipationHasOpportunity(
-    ctx: IContext,
-    participation: PrismaParticipation,
-  ): Promise<PrismaOpportunity> {
-    if (!participation.opportunityId) {
-      throw new NotFoundError("Opportunity", { id: participation.opportunityId });
-    }
-
-    const opportunity = await OpportunityRepository.find(ctx, participation.opportunityId);
-    if (!opportunity) {
-      throw new NotFoundError("Opportunity", { id: participation.opportunityId });
-    }
-
-    return opportunity;
-  }
-
-  static async validateParticipationHasUserId(
-    ctx: IContext,
-    participation: PrismaParticipation,
-  ): Promise<string> {
-    if (!participation.userId) {
-      throw new NotFoundError("Participated user", { userId: participation.userId });
-    }
-
-    return participation.userId;
   }
 }
