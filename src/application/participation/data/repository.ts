@@ -25,6 +25,24 @@ export default class ParticipationRepository {
     });
   }
 
+  static async count(
+    ctx: IContext,
+    where: Prisma.ParticipationWhereInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return tx.participation.count({
+        where,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.participation.count({
+          where,
+        });
+      });
+    }
+  }
+
   static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
     if (tx) {
       return tx.participation.findUnique({

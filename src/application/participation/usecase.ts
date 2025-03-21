@@ -42,6 +42,7 @@ import TransactionService from "@/application/transaction/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import OpportunityService from "@/application/opportunity/service";
 import TicketService from "@/application/ticket/service";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class ParticipationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -185,9 +186,22 @@ export default class ParticipationUseCase {
       ? ParticipationStatus.PENDING
       : ParticipationStatus.PARTICIPATING;
 
+    const isFirstApply = await ParticipationService.hasNoParticipationYet(
+      ctx,
+      currentUserId,
+      opportunity.category,
+    );
+
     const participation = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      if (!communityId) {
+        throw new NotFoundError("Community with Opportunity", { communityId });
+      }
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
+
+      if (isFirstApply) {
+        //TODO 初申し込みでのオンボーディングポイントを付与する
+      }
 
       if (requiredUtilities.length > 0 && input.ticketId) {
         await TicketService.reserveOrUseTicket(ctx, participationStatus, input.ticketId, tx);

@@ -7,6 +7,7 @@ import {
   GqlParticipationSortInput,
 } from "@/types/graphql";
 import {
+  OpportunityCategory,
   ParticipationEventTrigger,
   ParticipationEventType,
   ParticipationStatus,
@@ -54,6 +55,15 @@ export default class ParticipationService {
 
   static async findParticipation(ctx: IContext, id: string) {
     return await ParticipationRepository.find(ctx, id);
+  }
+
+  static async hasNoParticipationYet(ctx: IContext, userId: string, category: OpportunityCategory) {
+    const participationCount = await ParticipationRepository.count(ctx, {
+      userId,
+      opportunity: { category },
+    });
+
+    return participationCount === 0;
   }
 
   static async findParticipationOrThrow(ctx: IContext, id: string) {
