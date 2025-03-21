@@ -13,6 +13,7 @@ import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import OpportunityConverter from "@/application/opportunity/data/converter";
+import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
 
 export default class OpportunityService {
   static async fetchOpportunities(
@@ -116,6 +117,16 @@ export default class OpportunityService {
         [JSON.stringify(filter?.publishStatus)],
       );
     }
+  }
+
+  static getSingleRequiredUtility(
+    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
+  ) {
+    if (requiredUtilities.length !== 1) {
+      throw new ValidationError("Exactly one required utility is allowed at this time.");
+    }
+
+    return requiredUtilities[0];
   }
 }
 
