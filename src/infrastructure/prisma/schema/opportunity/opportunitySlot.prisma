@@ -1,11 +1,14 @@
 model OpportunitySlot {
-  id       String   @id @default(cuid())
+  id String @id @default(cuid())
+
+  capacity Int?
   startsAt DateTime @map("starts_at")
   endsAt   DateTime @map("ends_at")
 
-  opportunityId String?      @map("opportunity_id")
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  opportunityId String      @map("opportunity_id")
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
+  reservations   Reservation[]
   participations Participation[]
 
   createdAt DateTime  @default(now()) @map("created_at")

@@ -12,7 +12,8 @@ model User {
   urlYoutube   String? @map("url_youtube")
   urlTiktok    String? @map("url_tiktok")
 
-  identities Identity[]
+  onboardings Onboarding[]
+  identities  Identity[]
 
   memberships       Membership[]
   membershipHistory MembershipHistory[]
@@ -23,6 +24,7 @@ model User {
   opportunityInvitationHistories OpportunityInvitationHistory[]
 
   participations                 Participation[]
+  reservationsCreatedByMe        Reservation[]
   participationStatusChangedByMe ParticipationStatusHistory[]
 
   articlesWrittenByMe Article[] @relation("t_author_users_on_articles")

@@ -1,23 +1,26 @@
 model Participation {
-  id           String                    @id @default(cuid())
-  status       ParticipationStatus
-  eventType    ParticipationEventType
-  eventTrigger ParticipationEventTrigger
-
-  images      ParticipationImage[]
-  description String?
+  id String @id @default(cuid())
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  opportunityInvitationHistoryId String?                       @unique @map("opportunity_invitation_history_id")
+  opportunityInvitationHistory   OpportunityInvitationHistory? @relation(fields: [opportunityInvitationHistoryId], references: [id])
+
+  opportunitySlotId String?          @map("opportunity_slot_id")
+  OpportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id])
+
+  reservationId String?      @map("application_id")
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 
-  opportunityId String?      @map("opportunity_id")
-  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  status ParticipationStatus @default(PENDING)
+  source Source              @default(INTERNAL)
 
-  opportunitySlotId String?          @map("opportunity_slot_id")
-  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id], onDelete: SetNull)
+  description String?
+  images      ParticipationImage[]
 
   statusHistories ParticipationStatusHistory[]
   transactions    Transaction[]
@@ -33,19 +36,4 @@ enum ParticipationStatus {
   PARTICIPATING
   PARTICIPATED
   NOT_PARTICIPATING
-}
-
-enum ParticipationEventType {
-  SELF_LOG
-  INVITATION
-  APPLICATION
-  EVALUATION
-  OPPORTUNITY
-}
-
-enum ParticipationEventTrigger {
-  ISSUED
-  ACCEPTED
-  DECLINED
-  CANCELED
 }

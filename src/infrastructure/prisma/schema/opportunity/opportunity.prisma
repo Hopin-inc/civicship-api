@@ -1,21 +1,17 @@
 model Opportunity {
-  id          String    @id @default(cuid())
+  id          String  @id @default(cuid())
   title       String
   description String
   body        String?
   image       String?
   /// [ArrayOfString]
-  files       Json      @default("[]")
-  startsAt    DateTime? @map("starts_at")
-  endsAt      DateTime? @map("ends_at")
+  files       Json    @default("[]")
 
-  source        OpportunitySource
   category      OpportunityCategory
   hostingStatus OpportunityHostingStatus @default(SCHEDULED)
   publishStatus PublishStatus            @default(PUBLIC) @map("publish_status")
 
   requireApproval   Boolean   @default(false) @map("require_approval")
-  capacity          Int?
   pointsToEarn      Int?      @map("points_to_earn")
   feeRequired       Int?      @map("fee_required")
   requiredUtilities Utility[]
@@ -23,9 +19,8 @@ model Opportunity {
   placeId String? @map("place_id")
   place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
-  slots          OpportunitySlot[]
-  invitations    OpportunityInvitation[]
-  participations Participation[]
+  slots       OpportunitySlot[]
+  invitations OpportunityInvitation[]
 
   articles Article[] @relation("t_opportunities_on_articles")
 
@@ -41,16 +36,10 @@ model Opportunity {
   @@map("t_opportunities")
 }
 
-enum OpportunitySource {
-  INTERNAL
-  EXTERNAL
-}
-
 enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
-  UNKNOWN
 }
 
 enum OpportunityHostingStatus {

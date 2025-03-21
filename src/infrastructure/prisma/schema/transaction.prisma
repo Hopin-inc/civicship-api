@@ -23,7 +23,7 @@ model Transaction {
 enum TransactionReason {
   POINT_ISSUED
   POINT_REWARD
-  ONBORDING
+  ONBOARDING
   DONATION
   GRANT
   TICKET_PURCHASED

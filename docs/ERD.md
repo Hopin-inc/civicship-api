@@ -16,6 +16,13 @@ PRIVATE PRIVATE
     
 
 
+        Source {
+            INTERNAL INTERNAL
+EXTERNAL EXTERNAL
+        }
+    
+
+
         Role {
             OWNER OWNER
 MANAGER MANAGER
@@ -52,9 +59,18 @@ MEMBER MEMBER
     
 
 
-        OpportunitySource {
-            INTERNAL INTERNAL
-EXTERNAL EXTERNAL
+        Todo {
+            PROFILE PROFILE
+PERSONAL_LOG PERSONAL_LOG
+FIRST_ACTIVITY FIRST_ACTIVITY
+FIRST_QUEST FIRST_QUEST
+        }
+    
+
+
+        OnboardingStatus {
+            WIP WIP
+DONE DONE
         }
     
 
@@ -63,7 +79,6 @@ EXTERNAL EXTERNAL
             QUEST QUEST
 EVENT EVENT
 ACTIVITY ACTIVITY
-UNKNOWN UNKNOWN
         }
     
 
@@ -86,9 +101,8 @@ NOT_PARTICIPATING NOT_PARTICIPATING
 
 
         ParticipationEventType {
-            SELF_LOG SELF_LOG
-INVITATION INVITATION
-APPLICATION APPLICATION
+            APPLICATION APPLICATION
+PROXY_APPLY PROXY_APPLY
 EVALUATION EVALUATION
 OPPORTUNITY OPPORTUNITY
         }
@@ -99,6 +113,15 @@ OPPORTUNITY OPPORTUNITY
             ISSUED ISSUED
 ACCEPTED ACCEPTED
 DECLINED DECLINED
+CANCELED CANCELED
+        }
+    
+
+
+        ReservationStatus {
+            PENDING PENDING
+ACCEPTED ACCEPTED
+REJECTED REJECTED
 CANCELED CANCELED
         }
     
@@ -125,7 +148,7 @@ EXPIRED EXPIRED
         TransactionReason {
             POINT_ISSUED POINT_ISSUED
 POINT_REWARD POINT_REWARD
-ONBORDING ONBORDING
+ONBOARDING ONBOARDING
 DONATION DONATION
 GRANT GRANT
 TICKET_PURCHASED TICKET_PURCHASED
@@ -169,6 +192,26 @@ USER USER
     String bio "❓"
     DateTime established_at "❓"
     String website "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_opportunity_invitations" {
+    String is_valid "🗝️"
+    String code 
+    Boolean is_valid 
+    String opportunity_id 
+    String created_by 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_opportunity_invitation_histories" {
+    String id "🗝️"
+    String invitation_id 
+    String invited_user_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -223,6 +266,17 @@ USER USER
     }
   
 
+  "t_onboardings" {
+    String id "🗝️"
+    Todo todo 
+    OnboardingStatus status 
+    String user_id 
+    DateTime completed_at "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_opportunities" {
     String id "🗝️"
     String title 
@@ -230,14 +284,10 @@ USER USER
     String body "❓"
     String image "❓"
     Json files 
-    DateTime starts_at "❓"
-    DateTime ends_at "❓"
-    OpportunitySource source 
     OpportunityCategory category 
     OpportunityHostingStatus hostingStatus 
     PublishStatus publish_status 
     Boolean require_approval 
-    Int capacity "❓"
     Int points_to_earn "❓"
     Int fee_required "❓"
     String place_id "❓"
@@ -248,31 +298,12 @@ USER USER
     }
   
 
-  "t_opportunity_invitations" {
-    String is_valid "🗝️"
-    String code 
-    Boolean is_valid 
-    String opportunity_id 
-    String created_by 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_opportunity_invitation_histories" {
-    String id "🗝️"
-    String invitation_id 
-    String invited_user_id 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
   "t_opportunity_slots" {
     String id "🗝️"
+    Int capacity "❓"
     DateTime starts_at 
     DateTime ends_at 
-    String opportunity_id "❓"
+    String opportunity_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -280,14 +311,14 @@ USER USER
 
   "t_participations" {
     String id "🗝️"
-    ParticipationStatus status 
-    ParticipationEventType eventType 
-    ParticipationEventTrigger eventTrigger 
-    String description "❓"
     String user_id "❓"
-    String community_id "❓"
-    String opportunity_id "❓"
+    String opportunity_invitation_history_id "❓"
     String opportunity_slot_id "❓"
+    String application_id "❓"
+    String community_id "❓"
+    ParticipationStatus status 
+    Source source 
+    String description "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -326,6 +357,16 @@ USER USER
     Json map_location "❓"
     String city_code 
     String communityId "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_reservations" {
+    String id "🗝️"
+    String opportunity_slot_id 
+    ReservationStatus status 
+    String created_by_user_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -431,6 +472,12 @@ USER USER
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
+    "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
+    "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"
+    "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
+    "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
+    "t_opportunity_invitation_histories" o|--|| "t_users" : "invitedUser"
+    "t_opportunity_invitation_histories" o{--}o "t_participations" : "participation"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "m_states" o{--}o "m_cities" : "cities"
@@ -453,7 +500,9 @@ USER USER
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
     "t_wallets" o{--}o "t_tickets" : "tickets"
-    "t_opportunities" o|--|| "OpportunitySource" : "enum:source"
+    "t_onboardings" o|--|| "Todo" : "enum:todo"
+    "t_onboardings" o|--|| "OnboardingStatus" : "enum:status"
+    "t_onboardings" o|--|| "t_users" : "user"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o|--|| "OpportunityHostingStatus" : "enum:hostingStatus"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
@@ -461,25 +510,20 @@ USER USER
     "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "t_opportunity_invitations" : "invitations"
-    "t_opportunities" o{--}o "t_participations" : "participations"
     "t_opportunities" o{--}o "t_articles" : "articles"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
-    "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
-    "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"
-    "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
-    "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
-    "t_opportunity_invitation_histories" o|--|| "t_users" : "invitedUser"
-    "t_opportunity_slots" o|--|o "t_opportunities" : "opportunity"
+    "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
+    "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
-    "t_participations" o|--|| "ParticipationStatus" : "enum:status"
-    "t_participations" o|--|| "ParticipationEventType" : "enum:eventType"
-    "t_participations" o|--|| "ParticipationEventTrigger" : "enum:eventTrigger"
-    "t_participations" o{--}o "t_participation_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
+    "t_participations" o|--|o "t_opportunity_invitation_histories" : "opportunityInvitationHistory"
+    "t_participations" o|--|o "t_opportunity_slots" : "OpportunitySlot"
+    "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o|--|o "t_communities" : "community"
-    "t_participations" o|--|o "t_opportunities" : "opportunity"
-    "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
+    "t_participations" o|--|| "ParticipationStatus" : "enum:status"
+    "t_participations" o|--|| "Source" : "enum:source"
+    "t_participations" o{--}o "t_participation_images" : "images"
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
     "t_participation_images" o|--|| "t_participations" : "participation"
@@ -491,6 +535,10 @@ USER USER
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o|--|o "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"
+    "t_reservations" o|--|| "t_opportunity_slots" : "opportunitySlot"
+    "t_reservations" o|--|| "ReservationStatus" : "enum:status"
+    "t_reservations" o{--}o "t_participations" : "participations"
+    "t_reservations" o|--|o "t_users" : "createdBy"
     "t_tickets" o|--|| "TicketStatus" : "enum:status"
     "t_tickets" o|--|| "TicketStatusReason" : "enum:reason"
     "t_tickets" o|--|| "t_wallets" : "wallet"
@@ -509,6 +557,7 @@ USER USER
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
+    "t_users" o{--}o "t_onboardings" : "onboardings"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipHistory"
@@ -517,6 +566,7 @@ USER USER
     "t_users" o{--}o "t_opportunity_invitations" : "opportunityInvitations"
     "t_users" o{--}o "t_opportunity_invitation_histories" : "opportunityInvitationHistories"
     "t_users" o{--}o "t_participations" : "participations"
+    "t_users" o{--}o "t_reservations" : "reservationsCreatedByMe"
     "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"

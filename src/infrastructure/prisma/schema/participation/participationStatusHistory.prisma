@@ -15,3 +15,17 @@ model ParticipationStatusHistory {
 
   @@map("t_participation_status_histories")
 }
+
+enum ParticipationEventType {
+  APPLICATION
+  PROXY_APPLY
+  EVALUATION
+  OPPORTUNITY
+}
+
+enum ParticipationEventTrigger {
+  ISSUED
+  ACCEPTED
+  DECLINED
+  CANCELED
+}

@@ -43,3 +43,8 @@ enum PublishStatus {
   COMMUNITY_INTERNAL
   PRIVATE
 }
+
+enum Source {
+  INTERNAL
+  EXTERNAL
+}

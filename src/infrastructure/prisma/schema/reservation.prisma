@@ -1,0 +1,25 @@
+model Reservation {
+  id String @id @default(cuid())
+
+  opportunitySlotId String          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot @relation(fields: [opportunitySlotId], references: [id], onDelete: Cascade)
+
+  status ReservationStatus @default(PENDING)
+
+  participations Participation[]
+
+  createdByUserId String? @map("created_by_user_id")
+  createdBy       User?   @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_reservations")
+}
+
+enum ReservationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
