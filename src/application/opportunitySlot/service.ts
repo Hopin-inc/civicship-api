@@ -2,21 +2,42 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import {
   GqlOpportunitySlotCreateInput,
+  GqlOpportunitySlotFilterInput,
+  GqlOpportunitySlotsConnection,
+  GqlOpportunitySlotSortInput,
   GqlOpportunitySlotUpdateInput,
-  GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
 import OpportunitySlotRepository from "@/application/opportunitySlot/data/repository";
 import OpportunitySlotConverter from "@/application/opportunitySlot/data/converter";
+import { clampFirst } from "@/application/utils";
+import OpportunitySlotPresenter from "@/application/opportunitySlot/presenter";
 
 export default class OpportunitySlotService {
   static async fetchOpportunitySlots(
     ctx: IContext,
-    { filter, sort, cursor }: GqlQueryOpportunitySlotsArgs,
-    take: number,
-  ) {
+    {
+      cursor,
+      filter,
+      sort,
+      first,
+    }: {
+      cursor?: string;
+      filter?: GqlOpportunitySlotFilterInput;
+      sort?: GqlOpportunitySlotSortInput;
+      first?: number;
+    },
+  ): Promise<GqlOpportunitySlotsConnection> {
+    const take = clampFirst(first);
+
     const where = OpportunitySlotConverter.filter(filter ?? {});
     const orderBy = OpportunitySlotConverter.sort(sort ?? {});
-    return OpportunitySlotRepository.query(ctx, where, orderBy, take, cursor);
+
+    const res = await OpportunitySlotRepository.query(ctx, where, orderBy, take, cursor);
+
+    const hasNextPage = res.length > take;
+    const data = res.slice(0, take).map((record) => OpportunitySlotPresenter.get(record));
+
+    return OpportunitySlotPresenter.query(data, hasNextPage);
   }
 
   static async findOpportunitySlot(ctx: IContext, id: string) {
@@ -39,7 +60,7 @@ export default class OpportunitySlotService {
   ) {
     if (inputs.length === 0) return;
 
-    const data = inputs.map((input) => OpportunitySlotConverter.create(opportunityId, input));
+    const data = OpportunitySlotConverter.createMany(opportunityId, inputs);
     await OpportunitySlotRepository.createMany(ctx, data, tx);
   }
 

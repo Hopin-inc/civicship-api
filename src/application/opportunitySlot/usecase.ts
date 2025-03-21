@@ -5,14 +5,11 @@ import {
   GqlOpportunitySlotsConnection,
   GqlMutationOpportunitySlotsBulkUpdateArgs,
   GqlOpportunitySlotsBulkUpdatePayload,
-  GqlOpportunity,
-  GqlOpportunitySlotsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/opportunitySlot/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import OpportunitySlotUtils from "@/application/opportunitySlot/utilis";
 
 export default class OpportunitySlotUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -21,18 +18,7 @@ export default class OpportunitySlotUseCase {
     args: GqlQueryOpportunitySlotsArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsConnection> {
-    return OpportunitySlotUtils.fetchOpportunitySlotsCommon(ctx, args);
-  }
-
-  static async visitorBrowseOpportunitySlotsByOpportunity(
-    { id }: GqlOpportunity,
-    args: GqlOpportunitySlotsArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySlotsConnection> {
-    return OpportunitySlotUtils.fetchOpportunitySlotsCommon(ctx, {
-      ...args,
-      filter: { opportunityId: id },
-    });
+    return OpportunitySlotService.fetchOpportunitySlots(ctx, args);
   }
 
   static async visitorViewOpportunitySlot(
