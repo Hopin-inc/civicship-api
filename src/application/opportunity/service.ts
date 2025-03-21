@@ -65,7 +65,6 @@ export default class OpportunityService {
   static async logOpportunity(ctx: IContext, input: GqlOpportunityLogMyRecordInput) {
     const currentUserId = getCurrentUserId(ctx);
     const userName = ctx.currentUser?.name;
-    if (!userName) return;
 
     validatePlaceInput(input.place);
     const data: Prisma.OpportunityCreateInput = OpportunityConverter.log(

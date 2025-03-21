@@ -58,7 +58,7 @@ export default class OpportunityConverter {
   static log(
     input: GqlOpportunityLogMyRecordInput,
     currentUserId: string,
-    userName: string,
+    userName?: string,
   ): Prisma.OpportunityCreateInput {
     const { place, images, description } = input;
     let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
