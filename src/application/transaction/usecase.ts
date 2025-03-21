@@ -3,8 +3,6 @@ import {
   GqlQueryTransactionArgs,
   GqlTransactionsConnection,
   GqlTransaction,
-  GqlWallet,
-  GqlWalletTransactionsArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlTransactionIssueCommunityPointPayload,
   GqlTransactionGrantCommunityPointInput,
@@ -15,7 +13,6 @@ import {
 import { IContext } from "@/types/server";
 import TransactionService from "@/application/transaction/service";
 import TransactionPresenter from "@/application/transaction/presenter";
-import TransactionUtils from "@/application/transaction/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
@@ -29,21 +26,9 @@ export default class TransactionUseCase {
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
     ctx: IContext,
   ): Promise<GqlTransactionsConnection> {
-    return TransactionUtils.fetchTransactionsCommon(ctx, {
+    return TransactionService.fetchTransactions(ctx, {
       filter,
       sort,
-      cursor,
-      first,
-    });
-  }
-
-  static async visitorBrowseTransactionsByWallet(
-    { id }: GqlWallet,
-    { first, cursor }: GqlWalletTransactionsArgs,
-    ctx: IContext,
-  ): Promise<GqlTransactionsConnection> {
-    return TransactionUtils.fetchTransactionsCommon(ctx, {
-      filter: { fromWalletId: id, toWalletId: id },
       cursor,
       first,
     });

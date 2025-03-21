@@ -27,7 +27,12 @@ const walletResolver = {
       args: GqlWalletTransactionsArgs,
       ctx: IContext,
     ): Promise<GqlTransactionsConnection> => {
-      return TransactionUseCase.visitorBrowseTransactionsByWallet(parent, args, ctx);
+      return TransactionUseCase.visitorBrowseTransactions(
+        {
+          filter: { fromWalletId: parent.id, toWalletId: parent.id, ...args },
+        },
+        ctx,
+      );
     },
   },
 };
