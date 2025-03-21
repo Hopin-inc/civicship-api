@@ -8,6 +8,14 @@ INTERVIEW INTERVIEW
     
 
 
+        EvaluationStatus {
+            PENDING PENDING
+PASSED PASSED
+FAILED FAILED
+        }
+    
+
+
         PublishStatus {
             PUBLIC PUBLIC
 COMMUNITY_INTERNAL COMMUNITY_INTERNAL
@@ -101,16 +109,16 @@ NOT_PARTICIPATING NOT_PARTICIPATING
 
 
         ParticipationEventType {
-            APPLICATION APPLICATION
-PROXY_APPLY PROXY_APPLY
-EVALUATION EVALUATION
+            SELF_LOG SELF_LOG
+RESERVATION RESERVATION
 OPPORTUNITY OPPORTUNITY
         }
     
 
 
         ParticipationEventTrigger {
-            ISSUED ISSUED
+            SELF_REPORTED SELF_REPORTED
+PENDING PENDING
 ACCEPTED ACCEPTED
 DECLINED DECLINED
 CANCELED CANCELED
@@ -197,6 +205,29 @@ USER USER
     }
   
 
+  "t_evaluations" {
+    String id "🗝️"
+    String participation_id 
+    String evaluator_id 
+    EvaluationStatus status 
+    String comment "❓"
+    String credentialUrl "❓"
+    DateTime issued_at "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_evaluation_histories" {
+    String id "🗝️"
+    String evaluationId 
+    EvaluationStatus status 
+    String created_by "❓"
+    String comment "❓"
+    DateTime created_at 
+    }
+  
+
   "t_opportunity_invitations" {
     String is_valid "🗝️"
     String code 
@@ -211,9 +242,7 @@ USER USER
   "t_opportunity_invitation_histories" {
     String id "🗝️"
     String invitation_id 
-    String invited_user_id 
     DateTime created_at 
-    DateTime updated_at "❓"
     }
   
 
@@ -366,9 +395,19 @@ USER USER
     String id "🗝️"
     String opportunity_slot_id 
     ReservationStatus status 
-    String created_by_user_id "❓"
+    String created_by "❓"
     DateTime created_at 
     DateTime updated_at "❓"
+    }
+  
+
+  "t_reservation_histories" {
+    String id "🗝️"
+    String reservation_id 
+    ReservationStatus status 
+    String reason "❓"
+    String created_by "❓"
+    DateTime createdAt 
     }
   
 
@@ -472,12 +511,18 @@ USER USER
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
+    "t_evaluations" o|--|| "t_participations" : "participation"
+    "t_evaluations" o|--|| "t_users" : "evaluator"
+    "t_evaluations" o|--|| "EvaluationStatus" : "enum:status"
+    "t_evaluations" o{--}o "t_evaluation_histories" : "histories"
+    "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
+    "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
+    "t_evaluation_histories" o|--|o "t_users" : "createdByUser"
     "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"
     "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
     "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
-    "t_opportunity_invitation_histories" o|--|| "t_users" : "invitedUser"
-    "t_opportunity_invitation_histories" o{--}o "t_participations" : "participation"
+    "t_opportunity_invitation_histories" o{--}o "t_participations" : "Participation"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "m_states" o{--}o "m_cities" : "cities"
@@ -518,11 +563,12 @@ USER USER
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_participations" o|--|o "t_users" : "user"
     "t_participations" o|--|o "t_opportunity_invitation_histories" : "opportunityInvitationHistory"
-    "t_participations" o|--|o "t_opportunity_slots" : "OpportunitySlot"
+    "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o|--|o "t_communities" : "community"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
     "t_participations" o|--|| "Source" : "enum:source"
+    "t_participations" o{--}o "t_evaluations" : "evaluation"
     "t_participations" o{--}o "t_participation_images" : "images"
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
@@ -538,7 +584,11 @@ USER USER
     "t_reservations" o|--|| "t_opportunity_slots" : "opportunitySlot"
     "t_reservations" o|--|| "ReservationStatus" : "enum:status"
     "t_reservations" o{--}o "t_participations" : "participations"
-    "t_reservations" o|--|o "t_users" : "createdBy"
+    "t_reservations" o|--|o "t_users" : "createdByUser"
+    "t_reservations" o{--}o "t_reservation_histories" : "histories"
+    "t_reservation_histories" o|--|| "t_reservations" : "reservation"
+    "t_reservation_histories" o|--|| "ReservationStatus" : "enum:status"
+    "t_reservation_histories" o|--|o "t_users" : "createdByUser"
     "t_tickets" o|--|| "TicketStatus" : "enum:status"
     "t_tickets" o|--|| "TicketStatusReason" : "enum:reason"
     "t_tickets" o|--|| "t_wallets" : "wallet"
@@ -560,14 +610,16 @@ USER USER
     "t_users" o{--}o "t_onboardings" : "onboardings"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"
-    "t_users" o{--}o "t_membership_histories" : "membershipHistory"
+    "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
-    "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
+    "t_users" o{--}o "t_opportunities" : "opportunities"
     "t_users" o{--}o "t_opportunity_invitations" : "opportunityInvitations"
-    "t_users" o{--}o "t_opportunity_invitation_histories" : "opportunityInvitationHistories"
+    "t_users" o{--}o "t_reservations" : "reservations"
+    "t_users" o{--}o "t_reservation_histories" : "reservationStatusChangedByMe"
     "t_users" o{--}o "t_participations" : "participations"
-    "t_users" o{--}o "t_reservations" : "reservationsCreatedByMe"
     "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
+    "t_users" o{--}o "t_evaluations" : "evaluations"
+    "t_users" o{--}o "t_evaluation_histories" : "evaluationCreatedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"

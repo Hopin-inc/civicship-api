@@ -39,6 +39,32 @@ Table t_communities {
   updatedAt DateTime
 }
 
+Table t_evaluations {
+  id String [pk]
+  participationId String [unique, not null]
+  participation t_participations [not null]
+  evaluatorId String [not null]
+  evaluator t_users [not null]
+  status EvaluationStatus [not null, default: 'PENDING']
+  comment String
+  credentialUrl String
+  issuedAt DateTime
+  histories t_evaluation_histories [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_evaluation_histories {
+  id String [pk]
+  evaluationId String [not null]
+  evaluation t_evaluations [not null]
+  status EvaluationStatus [not null]
+  createdBy String
+  createdByUser t_users
+  comment String
+  createdAt DateTime [default: `now()`, not null]
+}
+
 Table t_opportunity_invitations {
   id String [pk]
   code String [not null]
@@ -56,11 +82,8 @@ Table t_opportunity_invitation_histories {
   id String [pk]
   invitationId String [not null]
   invitation t_opportunity_invitations [not null]
-  invitedUserId String [not null]
-  invitedUser t_users [not null]
-  participation t_participations
+  Participation t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
 }
 
 Table m_cities {
@@ -185,16 +208,17 @@ Table t_participations {
   id String [pk]
   userId String
   user t_users
-  opportunityInvitationHistoryId String [unique]
+  opportunityInvitationHistoryId String
   opportunityInvitationHistory t_opportunity_invitation_histories
   opportunitySlotId String
-  OpportunitySlot t_opportunity_slots
+  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   communityId String
   community t_communities
   status ParticipationStatus [not null, default: 'PENDING']
   source Source [not null, default: 'INTERNAL']
+  evaluation t_evaluations
   description String
   images t_participation_images [not null]
   statusHistories t_participation_status_histories [not null]
@@ -250,10 +274,22 @@ Table t_reservations {
   opportunitySlot t_opportunity_slots [not null]
   status ReservationStatus [not null, default: 'PENDING']
   participations t_participations [not null]
-  createdByUserId String
-  createdBy t_users
+  createdBy String
+  createdByUser t_users
+  histories t_reservation_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_reservation_histories {
+  id String [pk]
+  reservationId String [not null]
+  reservation t_reservations [not null]
+  status ReservationStatus [not null]
+  reason String
+  createdBy String
+  createdByUser t_users
+  createdAt DateTime [default: `now()`, not null]
 }
 
 Table t_tickets {
@@ -324,14 +360,16 @@ Table t_users {
   onboardings t_onboardings [not null]
   identities t_identities [not null]
   memberships t_memberships [not null]
-  membershipHistory t_membership_histories [not null]
+  membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
-  opportunitiesCreatedByMe t_opportunities [not null]
+  opportunities t_opportunities [not null]
   opportunityInvitations t_opportunity_invitations [not null]
-  opportunityInvitationHistories t_opportunity_invitation_histories [not null]
+  reservations t_reservations [not null]
+  reservationStatusChangedByMe t_reservation_histories [not null]
   participations t_participations [not null]
-  reservationsCreatedByMe t_reservations [not null]
   participationStatusChangedByMe t_participation_status_histories [not null]
+  evaluations t_evaluations [not null]
+  evaluationCreatedByMe t_evaluation_histories [not null]
   articlesWrittenByMe t_articles [not null]
   articlesAboutMe t_articles [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
@@ -389,6 +427,12 @@ Table OpportunityToUtility {
 Enum ArticleCategory {
   ACTIVITY_REPORT
   INTERVIEW
+}
+
+Enum EvaluationStatus {
+  PENDING
+  PASSED
+  FAILED
 }
 
 Enum PublishStatus {
@@ -462,14 +506,14 @@ Enum ParticipationStatus {
 }
 
 Enum ParticipationEventType {
-  APPLICATION
-  PROXY_APPLY
-  EVALUATION
+  SELF_LOG
+  RESERVATION
   OPPORTUNITY
 }
 
 Enum ParticipationEventTrigger {
-  ISSUED
+  SELF_REPORTED
+  PENDING
   ACCEPTED
   DECLINED
   CANCELED
@@ -518,13 +562,19 @@ Enum SysRole {
 
 Ref: t_articles.communityId > t_communities.id [delete: Cascade]
 
+Ref: t_evaluations.participationId - t_participations.id [delete: Cascade]
+
+Ref: t_evaluations.evaluatorId > t_users.id [delete: Set Null]
+
+Ref: t_evaluation_histories.evaluationId > t_evaluations.id [delete: Cascade]
+
+Ref: t_evaluation_histories.createdBy > t_users.id [delete: Set Null]
+
 Ref: t_opportunity_invitations.opportunityId > t_opportunities.id [delete: Set Null]
 
 Ref: t_opportunity_invitations.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_opportunity_invitation_histories.invitationId > t_opportunity_invitations.id [delete: Cascade]
-
-Ref: t_opportunity_invitation_histories.invitedUserId > t_users.id [delete: Cascade]
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
@@ -552,9 +602,9 @@ Ref: t_opportunity_slots.opportunityId > t_opportunities.id [delete: Cascade]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
 
-Ref: t_participations.opportunityInvitationHistoryId - t_opportunity_invitation_histories.id
+Ref: t_participations.opportunityInvitationHistoryId > t_opportunity_invitation_histories.id [delete: Set Null]
 
-Ref: t_participations.opportunitySlotId > t_opportunity_slots.id
+Ref: t_participations.opportunitySlotId > t_opportunity_slots.id [delete: Set Null]
 
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
@@ -568,11 +618,15 @@ Ref: t_participation_status_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
-Ref: t_places.communityId > t_communities.id
+Ref: t_places.communityId > t_communities.id [delete: Set Null]
 
 Ref: t_reservations.opportunitySlotId > t_opportunity_slots.id [delete: Cascade]
 
-Ref: t_reservations.createdByUserId > t_users.id [delete: Set Null]
+Ref: t_reservations.createdBy > t_users.id [delete: Set Null]
+
+Ref: t_reservation_histories.reservationId > t_reservations.id [delete: Cascade]
+
+Ref: t_reservation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_tickets.walletId > t_wallets.id [delete: Restrict]
 

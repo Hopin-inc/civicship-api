@@ -3,20 +3,20 @@
 # ------------------------------
 extend type Mutation {
     evaluationPass(
-        input: EvaluationSetStatusInput!
+        input: EvaluationCreateInput!
         permission: CheckCommunityPermissionInput!
-    ): EvaluationSetStatusPayload
+    ): EvaluationCreatePayload
 
     evaluationFail(
-        input: EvaluationSetStatusInput!
+        input: EvaluationCreateInput!
         permission: CheckCommunityPermissionInput!
-    ): EvaluationSetStatusPayload
+    ): EvaluationCreatePayload
 }
 
 # ------------------------------
 # Evaluation Mutation Input Definitions
 # ------------------------------
-input EvaluationSetStatusInput {
+input EvaluationCreateInput {
     participationId: ID!
     comment: String
 }
@@ -24,12 +24,12 @@ input EvaluationSetStatusInput {
 # ------------------------------
 # Evaluation Mutation Success Type Definitions
 # ------------------------------
-type EvaluationSetStatusSuccess {
+type EvaluationCreateSuccess {
     evaluation: Evaluation!
 }
 
 # ------------------------------
 # Evaluation Mutation Union (Payload) Definitions
 # ------------------------------
-union EvaluationSetStatusPayload =
-    EvaluationSetStatusSuccess
+union EvaluationCreatePayload =
+    EvaluationCreateSuccess
