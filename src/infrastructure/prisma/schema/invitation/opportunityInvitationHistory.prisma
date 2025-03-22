@@ -4,7 +4,7 @@ model OpportunityInvitationHistory {
   invitationId String                @map("invitation_id")
   invitation   OpportunityInvitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
-  Participation Participation[]
+  participations Participation[]
 
   createdAt DateTime @default(now()) @map("created_at")
 

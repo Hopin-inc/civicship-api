@@ -19,17 +19,17 @@ model User {
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
 
-  opportunities          Opportunity[]
-  opportunityInvitations OpportunityInvitation[]
+  opportunitiesCreatedByMe          Opportunity[]
+  opportunityInvitationsCreatedByMe OpportunityInvitation[]
 
-  reservations                 Reservation[]
+  reservationsAppliedByMe      Reservation[]
   reservationStatusChangedByMe ReservationHistory[]
 
   participations                 Participation[]
   participationStatusChangedByMe ParticipationStatusHistory[]
 
-  evaluations           Evaluation[]
-  evaluationCreatedByMe EvaluationHistory[]
+  evaluationsEvaluatedByMe Evaluation[]
+  evaluationCreatedByMe    EvaluationHistory[]
 
   articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
   articlesAboutMe     Article[] @relation("t_related_users_on_articles")
