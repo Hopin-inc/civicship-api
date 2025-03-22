@@ -107,7 +107,7 @@ const modelFieldDefinitions = [{
                 type: "OpportunityInvitation",
                 relationName: "OpportunityInvitationToOpportunityInvitationHistory"
             }, {
-                name: "Participation",
+                name: "participations",
                 type: "Participation",
                 relationName: "OpportunityInvitationHistoryToParticipation"
             }]
@@ -428,15 +428,15 @@ const modelFieldDefinitions = [{
                 type: "Wallet",
                 relationName: "UserToWallet"
             }, {
-                name: "opportunities",
+                name: "opportunitiesCreatedByMe",
                 type: "Opportunity",
                 relationName: "OpportunityToUser"
             }, {
-                name: "opportunityInvitations",
+                name: "opportunityInvitationsCreatedByMe",
                 type: "OpportunityInvitation",
                 relationName: "OpportunityInvitationToUser"
             }, {
-                name: "reservations",
+                name: "reservationsAppliedByMe",
                 type: "Reservation",
                 relationName: "ReservationToUser"
             }, {
@@ -452,7 +452,7 @@ const modelFieldDefinitions = [{
                 type: "ParticipationStatusHistory",
                 relationName: "ParticipationStatusHistoryToUser"
             }, {
-                name: "evaluations",
+                name: "evaluationsEvaluatedByMe",
                 type: "Evaluation",
                 relationName: "EvaluationToUser"
             }, {

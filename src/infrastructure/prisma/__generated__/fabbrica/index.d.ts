@@ -177,7 +177,7 @@ type EvaluationparticipationFactory = {
 };
 type EvaluationevaluatorFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationsInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput["create"]>;
 };
 type EvaluationFactoryDefineInput = {
     id?: string;
@@ -188,7 +188,7 @@ type EvaluationFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     participation: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput;
-    evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsInput;
+    evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput;
     histories?: Prisma.EvaluationHistoryCreateNestedManyWithoutEvaluationInput;
 };
 type EvaluationTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationFactoryDefineInput, never>>;
@@ -287,7 +287,7 @@ type OpportunityInvitationopportunityFactory = {
 };
 type OpportunityInvitationcreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunityInvitationsInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunityInvitationsCreatedByMeInput["create"]>;
 };
 type OpportunityInvitationFactoryDefineInput = {
     id?: string;
@@ -296,7 +296,7 @@ type OpportunityInvitationFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     opportunity: OpportunityInvitationopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutInvitationsInput;
-    createdByUser: OpportunityInvitationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunityInvitationsInput;
+    createdByUser: OpportunityInvitationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunityInvitationsCreatedByMeInput;
     histories?: Prisma.OpportunityInvitationHistoryCreateNestedManyWithoutInvitationInput;
 };
 type OpportunityInvitationTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityInvitationFactoryDefineInput, never>>;
@@ -344,7 +344,7 @@ type OpportunityInvitationHistoryFactoryDefineInput = {
     id?: string;
     createdAt?: Date;
     invitation: OpportunityInvitationHistoryinvitationFactory | Prisma.OpportunityInvitationCreateNestedOneWithoutHistoriesInput;
-    Participation?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInvitationHistoryInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInvitationHistoryInput;
 };
 type OpportunityInvitationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityInvitationHistoryFactoryDefineInput, never>>;
 type OpportunityInvitationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -709,7 +709,7 @@ type OpportunitycommunityFactory = {
 };
 type OpportunitycreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
 };
 type OpportunityFactoryDefineInput = {
     id?: string;
@@ -732,7 +732,7 @@ type OpportunityFactoryDefineInput = {
     invitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
-    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesInput;
+    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
 };
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
 type OpportunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -829,7 +829,7 @@ type ParticipationuserFactory = {
 };
 type ParticipationopportunityInvitationHistoryFactory = {
     _factoryFor: "OpportunityInvitationHistory";
-    build: () => PromiseLike<Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationInput["create"]>;
+    build: () => PromiseLike<Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationsInput["create"]>;
 };
 type ParticipationopportunitySlotFactory = {
     _factoryFor: "OpportunitySlot";
@@ -856,7 +856,7 @@ type ParticipationFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
-    opportunityInvitationHistory?: ParticipationopportunityInvitationHistoryFactory | Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationInput;
+    opportunityInvitationHistory?: ParticipationopportunityInvitationHistoryFactory | Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationsInput;
     opportunitySlot?: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
@@ -1072,7 +1072,7 @@ type ReservationopportunitySlotFactory = {
 };
 type ReservationcreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationsInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput["create"]>;
 };
 type ReservationFactoryDefineInput = {
     id?: string;
@@ -1081,7 +1081,7 @@ type ReservationFactoryDefineInput = {
     updatedAt?: Date | null;
     opportunitySlot: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutReservationInput;
-    createdByUser?: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsInput;
+    createdByUser?: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput;
     histories?: Prisma.ReservationHistoryCreateNestedManyWithoutReservationInput;
 };
 type ReservationTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationFactoryDefineInput, never>>;
@@ -1425,13 +1425,13 @@ type UserFactoryDefineInput = {
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
-    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
-    opportunityInvitations?: Prisma.OpportunityInvitationCreateNestedManyWithoutCreatedByUserInput;
-    reservations?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
+    opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
+    opportunityInvitationsCreatedByMe?: Prisma.OpportunityInvitationCreateNestedManyWithoutCreatedByUserInput;
+    reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
     reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
     participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
-    evaluations?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
+    evaluationsEvaluatedByMe?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
     evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
