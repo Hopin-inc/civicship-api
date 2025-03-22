@@ -11,7 +11,15 @@ export default class OpportunityInvitationHistoryConverter {
     return {
       AND: [
         filter?.invitationId ? { invitationId: filter.invitationId } : {},
-        filter?.invitedUserId ? { invitedUserId: filter.invitedUserId } : {},
+        filter?.userId
+          ? {
+              participations: {
+                some: {
+                  userId: filter.userId,
+                },
+              },
+            }
+          : {},
       ],
     };
   }

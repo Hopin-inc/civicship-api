@@ -4,7 +4,6 @@ import {
   GqlMutationReservationCreateArgs,
   GqlMutationReservationAcceptArgs,
   GqlMutationReservationRejectArgs,
-  GqlMutationReservationCancelArgs,
   GqlMutationReservationJoinArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
@@ -33,9 +32,9 @@ const reservationResolver = {
     reservationReject: (_: unknown, args: GqlMutationReservationRejectArgs, ctx: IContext) => {
       return ReservationUseCase.managerRejectReservation(args, ctx);
     },
-    reservationCancel: (_: unknown, args: GqlMutationReservationCancelArgs, ctx: IContext) => {
-      return ReservationUseCase.userCancelMyReservation(args, ctx);
-    },
+    // reservationCancel: (_: unknown, args: GqlMutationReservationCancelArgs, ctx: IContext) => {
+    //   return ReservationUseCase.userCancelMyReservation(args, ctx);
+    // },
     reservationJoin: (_: unknown, args: GqlMutationReservationJoinArgs, ctx: IContext) => {
       return ReservationUseCase.userJoinReservation(args, ctx);
     },

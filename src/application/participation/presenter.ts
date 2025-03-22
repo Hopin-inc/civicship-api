@@ -24,12 +24,13 @@ export default class ParticipationPresenter {
   }
 
   static get(r: PrismaParticipation): GqlParticipation {
-    const { user, community } = r;
+    const { user, evaluation, community } = r;
 
     return {
       ...r,
       user,
       community,
+      evaluation,
     };
   }
 

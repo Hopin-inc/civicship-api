@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlArticle } from "@/types/graphql";
 import { articleInclude } from "@/application/article/data/type";
-import ArticleOutputFormat from "@/application/article/presenter";
+import ArticlePresenter from "@/application/article/presenter";
 
 async function batchArticlesById(
   issuer: PrismaClientIssuer,
@@ -14,7 +14,7 @@ async function batchArticlesById(
       include: articleInclude,
     }),
   );
-  const map = new Map(records.map((record) => [record.id, ArticleOutputFormat.get(record)]));
+  const map = new Map(records.map((record) => [record.id, ArticlePresenter.get(record)]));
   return articleIds.map((id) => map.get(id) ?? null);
 }
 

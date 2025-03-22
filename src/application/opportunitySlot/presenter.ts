@@ -27,7 +27,7 @@ export default class OpportunitySlotPresenter {
 
     return {
       ...prop,
-      opportunity,
+      opportunity: opportunity ? opportunity : null,
     };
   }
 

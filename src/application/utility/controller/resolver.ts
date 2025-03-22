@@ -42,10 +42,13 @@ const utilityResolver = {
       args: GqlUtilityRequiredForOpportunitiesArgs,
       ctx: IContext,
     ) => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(ctx, {
-        ...args,
-        filter: { requiredUtilityIds: [parent.id] },
-      });
+      return OpportunityUseCase.anyoneBrowseOpportunities(
+        {
+          ...args,
+          filter: { requiredUtilityIds: [parent.id] },
+        },
+        ctx,
+      );
     },
   },
 };

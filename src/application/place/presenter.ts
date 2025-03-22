@@ -30,7 +30,7 @@ export default class PlacePresenter {
 
     return {
       ...prop,
-      community,
+      community: community ? community : null,
       city: MasterPresenter.getCity(city),
       latitude: latitude.toString(),
       longitude: longitude.toString(),

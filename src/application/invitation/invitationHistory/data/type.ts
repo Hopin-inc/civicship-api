@@ -1,11 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { opportunityInvitationInclude } from "@/application/invitation/data/type";
-import { userInclude } from "@/application/user/data/type";
+import { participationInclude } from "@/application/participation/data/type";
 
 export const invitationHistoryInclude =
   Prisma.validator<Prisma.OpportunityInvitationHistoryInclude>()({
     invitation: { include: opportunityInvitationInclude },
-    invitedUser: { include: userInclude },
+    participations: { include: participationInclude },
   });
 
 export type PrismaInvitationHistory = Prisma.OpportunityInvitationHistoryGetPayload<{

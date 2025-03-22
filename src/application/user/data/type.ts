@@ -12,7 +12,7 @@ export const userAuthSelect = Prisma.validator<Prisma.UserSelect>()({
       id: true,
     },
   },
-  opportunityInvitations: {
+  opportunityInvitationsCreatedByMe: {
     select: {
       createdBy: true,
     },

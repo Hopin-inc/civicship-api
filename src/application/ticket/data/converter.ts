@@ -24,7 +24,7 @@ export default class TicketConverter {
     walletId: string,
     utilityId: string,
     transactionId: string,
-    participationId: string,
+    participationId?: string,
   ): Prisma.TicketCreateInput {
     return {
       status: TicketStatus.AVAILABLE,

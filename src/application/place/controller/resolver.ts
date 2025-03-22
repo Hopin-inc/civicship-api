@@ -56,10 +56,13 @@ const placeResolver = {
       args: GqlPlaceOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(ctx, {
-        ...args,
-        filter: { ...args.filter, placeIds: [parent.id] },
-      });
+      return OpportunityUseCase.anyoneBrowseOpportunities(
+        {
+          ...args,
+          filter: { ...args.filter, placeIds: [parent.id] },
+        },
+        ctx,
+      );
     },
   },
 };

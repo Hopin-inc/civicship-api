@@ -4,8 +4,6 @@ import {
   GqlEvaluationsConnection,
 } from "@/types/graphql";
 import { PrismaEvaluation } from "@/application/evaluation/data/type";
-import ParticipationPresenter from "@/application/participation/presenter";
-import UserPresenter from "@/application/user/presenter";
 
 export default class EvaluationPresenter {
   static query(records: GqlEvaluation[], hasNextPage: boolean): GqlEvaluationsConnection {
@@ -29,8 +27,8 @@ export default class EvaluationPresenter {
 
     return {
       ...rest,
-      evaluator: UserPresenter.get(evaluator),
-      participation: ParticipationPresenter.get(participation),
+      evaluator,
+      participation,
     };
   }
 

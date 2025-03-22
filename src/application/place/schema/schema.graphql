@@ -12,7 +12,7 @@ type Place {
     mapLocation: JSON
 
     city: City!
-    community: Community!
+    community: Community
 
     opportunities(
         filter: OpportunityFilterInput

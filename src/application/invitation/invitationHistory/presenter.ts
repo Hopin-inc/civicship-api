@@ -26,11 +26,11 @@ export default class OpportunityInvitationHistoryPresenter {
   }
 
   static get(r: PrismaInvitationHistory): GqlOpportunityInvitationHistory {
-    const { invitedUser, invitation, ...prop } = r;
+    const { participations, invitation, ...prop } = r;
 
     return {
       ...prop,
-      invitedUser,
+      participations,
       invitation: OpportunityInvitationPresenter.get(invitation),
     };
   }

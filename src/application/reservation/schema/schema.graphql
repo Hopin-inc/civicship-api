@@ -7,13 +7,7 @@ type Reservation {
 
     opportunitySlot: OpportunitySlot!
     createdByUser: User
-
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+    participations: [Participation!]
 
     histories(
         filter: ReservationHistoryFilterInput

@@ -125,10 +125,37 @@ export default class TicketService {
     );
   }
 
-  static async useTicket(ctx: IContext, id: string, userId: string, tx?: Prisma.TransactionClient) {
+  static async purchaseTicket(
+    ctx: IContext,
+    walletId: string,
+    utilityId: string,
+    transactionId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTicket> {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const data = TicketConverter.purchase(currentUserId, walletId, utilityId, transactionId);
+    return TicketRepository.create(ctx, data, tx);
+  }
+
+  static async refundTicket(
+    ctx: IContext,
+    id: string,
+    transactionId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTicket> {
+    const currentUserId = getCurrentUserId(ctx);
     await this.findTicketOrThrow(ctx, id);
 
-    const data: Prisma.TicketUpdateInput = TicketConverter.use(userId);
+    const data = TicketConverter.refund(currentUserId, transactionId);
+    return TicketRepository.update(ctx, id, data, tx);
+  }
+
+  static async useTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+    const currentUserId = getCurrentUserId(ctx);
+    await this.findTicketOrThrow(ctx, id);
+
+    const data: Prisma.TicketUpdateInput = TicketConverter.use(currentUserId);
     return TicketRepository.update(ctx, id, data, tx);
   }
 
