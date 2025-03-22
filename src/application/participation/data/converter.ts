@@ -1,4 +1,8 @@
-import { GqlParticipationFilterInput, GqlParticipationSortInput } from "@/types/graphql";
+import {
+  GqlParticipationCreatePersonalRecordInput,
+  GqlParticipationFilterInput,
+  GqlParticipationSortInput,
+} from "@/types/graphql";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 
 export default class ParticipationConverter {
@@ -25,6 +29,33 @@ export default class ParticipationConverter {
       opportunitySlotId: slotId,
       status: {
         notIn: [ParticipationStatus.NOT_PARTICIPATING],
+      },
+    };
+  }
+
+  static countPersonalRecords(userId: string): Prisma.ParticipationWhereInput {
+    return {
+      userId,
+      status: ParticipationStatus.PARTICIPATED,
+      reason: ParticipationStatusReason.PERSONAL_RECORD,
+    };
+  }
+
+  static create(
+    input: GqlParticipationCreatePersonalRecordInput,
+    currentUserId: string,
+  ): Prisma.ParticipationCreateInput {
+    return {
+      status: ParticipationStatus.PARTICIPATED,
+      reason: ParticipationStatusReason.PERSONAL_RECORD,
+      description: input.description ?? null,
+      user: { connect: { id: currentUserId } },
+      statusHistories: {
+        create: {
+          status: ParticipationStatus.PARTICIPATED,
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          createdByUser: { connect: { id: currentUserId } },
+        },
       },
     };
   }

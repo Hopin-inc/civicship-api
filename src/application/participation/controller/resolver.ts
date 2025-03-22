@@ -1,5 +1,9 @@
 import {
+  GqlMutationParticipationCreatePersonalRecordArgs,
+  GqlMutationParticipationDeletePersonalRecordArgs,
   GqlParticipation,
+  GqlParticipationCreatePersonalRecordPayload,
+  GqlParticipationDeletePayload,
   GqlParticipationStatusHistoriesArgs,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
@@ -20,8 +24,23 @@ const participationResolver = {
       return await ctx.loaders.participation.load(args.id);
     },
   },
-  Mutation: {},
+  Mutation: {
+    participationCreatePersonalRecord: async (
+      _: unknown,
+      args: GqlMutationParticipationCreatePersonalRecordArgs,
+      ctx: IContext,
+    ): Promise<GqlParticipationCreatePersonalRecordPayload> => {
+      return ParticipationUseCase.userCreatePersonalParticipationRecord(args, ctx);
+    },
 
+    participationDeletePersonalRecord: async (
+      _: unknown,
+      args: GqlMutationParticipationDeletePersonalRecordArgs,
+      ctx: IContext,
+    ): Promise<GqlParticipationDeletePayload> => {
+      return ParticipationUseCase.userDeletePersonalParticipationRecord(args, ctx);
+    },
+  },
   Participation: {
     statusHistories: async (
       parent: GqlParticipation,

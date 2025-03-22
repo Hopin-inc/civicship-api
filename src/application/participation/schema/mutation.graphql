@@ -2,9 +2,9 @@
 # Participation Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    participationLogPersonalRecord(
-        input: ParticipationLogPersonalRecordInput!
-    ): ParticipationLogPersonalRecordPayload
+    participationCreatePersonalRecord(
+        input: ParticipationCreatePersonalRecordInput!
+    ): ParticipationCreatePersonalRecordPayload
 
     participationDeletePersonalRecord(
         id: ID!
@@ -15,7 +15,7 @@ extend type Mutation {
 # ------------------------------
 # Participation Mutation Input Definitions
 # ------------------------------
-input ParticipationLogPersonalRecordInput {
+input ParticipationCreatePersonalRecordInput {
     description: String
     images: [ImageInput!]
 }
@@ -23,7 +23,7 @@ input ParticipationLogPersonalRecordInput {
 # ------------------------------
 # Participation Mutation Success Type Definitions
 # ------------------------------
-type ParticipationLogPersonalRecordSuccess {
+type ParticipationCreatePersonalRecordSuccess {
     participation: Participation!
 }
 
@@ -34,8 +34,8 @@ type ParticipationDeleteSuccess {
 # ------------------------------
 # Participation Mutation Union (Payload) Definitions
 # ------------------------------
-union ParticipationLogPersonalRecordPayload =
-    ParticipationLogPersonalRecordSuccess
+union ParticipationCreatePersonalRecordPayload =
+    ParticipationCreatePersonalRecordSuccess
 
 union ParticipationDeletePayload =
     ParticipationDeleteSuccess
