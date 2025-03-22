@@ -1,4 +1,4 @@
-import { GqlTicketFilterInput, GqlTicketsConnection, GqlTicketSortInput } from "@/types/graphql";
+import { GqlQueryTicketsArgs, GqlTicketsConnection } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
@@ -11,17 +11,7 @@ import { PrismaTicket } from "@/application/ticket/data/type";
 export default class TicketService {
   static async fetchTickets(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlTicketFilterInput;
-      sort?: GqlTicketSortInput;
-      first?: number;
-    },
+    { first, sort, filter, cursor }: GqlQueryTicketsArgs,
   ): Promise<GqlTicketsConnection> {
     const take = clampFirst(first);
     const where = TicketConverter.filter(filter ?? {});
@@ -43,26 +33,6 @@ export default class TicketService {
       throw new NotFoundError("Ticket", { id });
     }
     return ticket;
-  }
-
-  // TODO prismaのcreateManyを使うように変更する
-  static async purchaseAndReserveTickets(
-    ctx: IContext,
-    walletId: string,
-    utilityId: string,
-    transactionId: string,
-    count: number,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    const tickets = await this.purchaseManyTickets(
-      ctx,
-      walletId,
-      utilityId,
-      transactionId,
-      count,
-      tx,
-    );
-    await this.reserveManyTickets(ctx, tickets, tx);
   }
 
   static async cancelAndRefundTickets(
@@ -88,16 +58,16 @@ export default class TicketService {
     walletId: string,
     utilityId: string,
     transactionId: string,
-    count: number,
+    participationIds: string[],
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTicket[]> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const data: Prisma.TicketCreateInput[] = Array.from({ length: count }).map(() =>
-      TicketConverter.purchase(currentUserId, walletId, utilityId, transactionId),
+    const data: Prisma.TicketCreateInput[] = participationIds.map((participationId) =>
+      TicketConverter.purchase(currentUserId, walletId, utilityId, transactionId, participationId),
     );
 
-    return Promise.all(data.map((input) => TicketRepository.create(ctx, input, tx)));
+    return Promise.all(data.map((d) => TicketRepository.create(ctx, d, tx)));
   }
 
   static async reserveManyTickets(
@@ -107,11 +77,12 @@ export default class TicketService {
   ): Promise<void> {
     const currentUserId = getCurrentUserId(ctx);
 
-    await Promise.all(
-      tickets.map((ticket) =>
-        TicketRepository.update(ctx, ticket.id, TicketConverter.reserve(currentUserId), tx),
-      ),
-    );
+    const inputs = tickets.map((ticket) => ({
+      id: ticket.id,
+      data: TicketConverter.reserve(currentUserId),
+    }));
+
+    await Promise.all(inputs.map(({ id, data }) => TicketRepository.update(ctx, id, data, tx)));
   }
 
   private static async cancelReservedTicketsIfAvailable(

@@ -859,6 +859,7 @@ type ParticipationFactoryDefineInput = {
     opportunityInvitationHistory?: ParticipationopportunityInvitationHistoryFactory | Prisma.OpportunityInvitationHistoryCreateNestedOneWithoutParticipationInput;
     opportunitySlot?: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
+    ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
     evaluation?: ParticipationevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutParticipationInput;
     images?: Prisma.ParticipationImageCreateNestedManyWithoutParticipationInput;
@@ -1231,6 +1232,10 @@ type TicketStatusHistoryticketFactory = {
     _factoryFor: "Ticket";
     build: () => PromiseLike<Prisma.TicketCreateNestedOneWithoutTicketStatusHistoriesInput["create"]>;
 };
+type TicketStatusHistoryparticipationFactory = {
+    _factoryFor: "Participation";
+    build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutTicketStatusHistoriesInput["create"]>;
+};
 type TicketStatusHistorycreatedByUserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutTicketStatusChangedByMeInput["create"]>;
@@ -1246,6 +1251,7 @@ type TicketStatusHistoryFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     ticket: TicketStatusHistoryticketFactory | Prisma.TicketCreateNestedOneWithoutTicketStatusHistoriesInput;
+    participation?: TicketStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTicketStatusHistoriesInput;
     createdByUser?: TicketStatusHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTicketStatusChangedByMeInput;
     transaction?: TicketStatusHistorytransactionFactory | Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput;
 };

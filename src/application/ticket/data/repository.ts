@@ -25,6 +25,15 @@ export default class TicketRepository {
     });
   }
 
+  static async queryByIds(ctx: IContext, ids: string[]) {
+    return this.issuer.public(ctx, (tx) => {
+      return tx.ticket.findMany({
+        where: { id: { in: ids } },
+        include: ticketInclude,
+      });
+    });
+  }
+
   static async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.ticket.findUnique({

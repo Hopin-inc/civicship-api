@@ -258,6 +258,10 @@ const modelFieldDefinitions = [{
                 type: "Reservation",
                 relationName: "ParticipationToReservation"
             }, {
+                name: "ticketStatusHistories",
+                type: "TicketStatusHistory",
+                relationName: "ParticipationToTicketStatusHistory"
+            }, {
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToParticipation"
@@ -362,6 +366,10 @@ const modelFieldDefinitions = [{
                 name: "ticket",
                 type: "Ticket",
                 relationName: "TicketToTicketStatusHistory"
+            }, {
+                name: "participation",
+                type: "Participation",
+                relationName: "ParticipationToTicketStatusHistory"
             }, {
                 name: "createdByUser",
                 type: "User",
@@ -2564,6 +2572,9 @@ exports.defineTicketFactory.withTransientFields = defaultTransientFieldValues =>
 function isTicketStatusHistoryticketFactory(x) {
     return x?._factoryFor === "Ticket";
 }
+function isTicketStatusHistoryparticipationFactory(x) {
+    return x?._factoryFor === "Participation";
+}
 function isTicketStatusHistorycreatedByUserFactory(x) {
     return x?._factoryFor === "User";
 }
@@ -2609,6 +2620,9 @@ function defineTicketStatusHistoryFactoryInternal({ defaultData: defaultDataReso
                 ticket: isTicketStatusHistoryticketFactory(defaultData.ticket) ? {
                     create: await defaultData.ticket.build()
                 } : defaultData.ticket,
+                participation: isTicketStatusHistoryparticipationFactory(defaultData.participation) ? {
+                    create: await defaultData.participation.build()
+                } : defaultData.participation,
                 createdByUser: isTicketStatusHistorycreatedByUserFactory(defaultData.createdByUser) ? {
                     create: await defaultData.createdByUser.build()
                 } : defaultData.createdByUser,

@@ -29,9 +29,12 @@ type Transaction {
 enum TransactionReason {
     POINT_ISSUED
     POINT_REWARD
+
     ONBOARDING
+
     DONATION
     GRANT
+
     TICKET_PURCHASED
     TICKET_REFUNDED
 }

@@ -13,6 +13,8 @@ model Participation {
   reservationId String?      @map("application_id")
   reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
+  ticketStatusHistories TicketStatusHistory[]
+
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 

@@ -13,6 +13,7 @@ extend type Mutation {
 
     reservationCancel(
         id: ID!
+        input: ReservationCancelInput!
         permission: CheckIsSelfPermissionInput!
     ): ReservationSetStatusPayload
 
@@ -34,16 +35,21 @@ extend type Mutation {
 input ReservationCreateInput {
     opportunitySlotId: ID!
     participantCount: Int!
-    otherParticipantUserIds: [ID!]
+    userIdsIfExists: [ID!]
 
-    payment: ReservationPayment!
+    paymentMethod: ReservationPaymentMethod!
+}
+
+input ReservationCancelInput {
+    paymentMethod: ReservationPaymentMethod!
+    ticketIdsIfExists: [ID!]
 }
 
 # ------------------------------
 # Reservation Mutation Enum Definitions
 # ------------------------------
 
-enum ReservationPayment {
+enum ReservationPaymentMethod {
     FEE
     POINT
 }

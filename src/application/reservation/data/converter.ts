@@ -68,12 +68,12 @@ export default class ReservationConverter {
     opportunitySlotId: string,
     currentUserId: string,
     participantCount: number,
-    otherUserIds: string[],
+    userIdsIfExists: string[],
     reservationStatus: ReservationStatus,
     participationStatus: ParticipationStatus,
     participationStatusReason: ParticipationStatusReason,
   ): Prisma.ReservationCreateInput {
-    const userIds = [currentUserId, ...otherUserIds];
+    const userIds = [currentUserId, ...userIdsIfExists];
 
     const participations = createParticipations(
       currentUserId,

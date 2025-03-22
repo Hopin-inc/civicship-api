@@ -538,9 +538,9 @@ export type GqlMutation = {
   opportunitySetPublishStatus?: Maybe<GqlOpportunitySetPublishStatusPayload>;
   opportunitySlotsBulkUpdate?: Maybe<GqlOpportunitySlotsBulkUpdatePayload>;
   opportunityUpdateContent?: Maybe<GqlOpportunityUpdateContentPayload>;
+  participationCreatePersonalRecord?: Maybe<GqlParticipationCreatePersonalRecordPayload>;
   participationDeletePersonalRecord?: Maybe<GqlParticipationDeletePayload>;
   participationImageBulkUpdate?: Maybe<GqlParticipationImageBulkUpdatePayload>;
-  participationLogPersonalRecord?: Maybe<GqlParticipationLogPersonalRecordPayload>;
   placeCreate?: Maybe<GqlPlaceCreatePayload>;
   placeDelete?: Maybe<GqlPlaceDeletePayload>;
   placeUpdate?: Maybe<GqlPlaceUpdatePayload>;
@@ -700,6 +700,11 @@ export type GqlMutationOpportunityUpdateContentArgs = {
 };
 
 
+export type GqlMutationParticipationCreatePersonalRecordArgs = {
+  input: GqlParticipationCreatePersonalRecordInput;
+};
+
+
 export type GqlMutationParticipationDeletePersonalRecordArgs = {
   id: Scalars['ID']['input'];
   permission: GqlCheckIsSelfPermissionInput;
@@ -709,11 +714,6 @@ export type GqlMutationParticipationDeletePersonalRecordArgs = {
 export type GqlMutationParticipationImageBulkUpdateArgs = {
   input: GqlParticipationImageBulkUpdateInput;
   permission: GqlCheckIsSelfPermissionInput;
-};
-
-
-export type GqlMutationParticipationLogPersonalRecordArgs = {
-  input: GqlParticipationLogPersonalRecordInput;
 };
 
 
@@ -744,6 +744,7 @@ export type GqlMutationReservationAcceptArgs = {
 
 export type GqlMutationReservationCancelArgs = {
   id: Scalars['ID']['input'];
+  input: GqlReservationCancelInput;
   permission: GqlCheckIsSelfPermissionInput;
 };
 
@@ -880,36 +881,12 @@ export type GqlOnboarding = {
   user: GqlUser;
 };
 
-export type GqlOnboardingEdge = GqlEdge & {
-  __typename?: 'OnboardingEdge';
-  cursor: Scalars['String']['output'];
-  node?: Maybe<GqlOnboarding>;
-};
-
-export type GqlOnboardingFilterInput = {
-  status?: InputMaybe<GqlOnboardingStatus>;
-  todo?: InputMaybe<GqlTodo>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GqlOnboardingSortInput = {
-  createdAt?: InputMaybe<GqlSortDirection>;
-  updatedAt?: InputMaybe<GqlSortDirection>;
-};
-
 export const GqlOnboardingStatus = {
   Done: 'DONE',
   Wip: 'WIP'
 } as const;
 
 export type GqlOnboardingStatus = typeof GqlOnboardingStatus[keyof typeof GqlOnboardingStatus];
-export type GqlOnboardingsConnection = {
-  __typename?: 'OnboardingsConnection';
-  edges: Array<GqlOnboardingEdge>;
-  pageInfo: GqlPageInfo;
-  totalCount: Scalars['Int']['output'];
-};
-
 export type GqlOpportunitiesConnection = {
   __typename?: 'OpportunitiesConnection';
   edges: Array<GqlOpportunityEdge>;
@@ -1298,6 +1275,18 @@ export type GqlParticipationTransactionsArgs = {
   sort?: InputMaybe<GqlTransactionSortInput>;
 };
 
+export type GqlParticipationCreatePersonalRecordInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  images?: InputMaybe<Array<GqlImageInput>>;
+};
+
+export type GqlParticipationCreatePersonalRecordPayload = GqlParticipationCreatePersonalRecordSuccess;
+
+export type GqlParticipationCreatePersonalRecordSuccess = {
+  __typename?: 'ParticipationCreatePersonalRecordSuccess';
+  participation: GqlParticipation;
+};
+
 export type GqlParticipationDeletePayload = GqlParticipationDeleteSuccess;
 
 export type GqlParticipationDeleteSuccess = {
@@ -1363,18 +1352,6 @@ export type GqlParticipationImagesConnection = {
   edges: Array<GqlParticipationImageEdge>;
   pageInfo: GqlPageInfo;
   totalCount: Scalars['Int']['output'];
-};
-
-export type GqlParticipationLogPersonalRecordInput = {
-  description?: InputMaybe<Scalars['String']['input']>;
-  images?: InputMaybe<Array<GqlImageInput>>;
-};
-
-export type GqlParticipationLogPersonalRecordPayload = GqlParticipationLogPersonalRecordSuccess;
-
-export type GqlParticipationLogPersonalRecordSuccess = {
-  __typename?: 'ParticipationLogPersonalRecordSuccess';
-  participation: GqlParticipation;
 };
 
 export type GqlParticipationSortInput = {
@@ -1560,8 +1537,6 @@ export type GqlQuery = {
   membershipHistories: GqlMembershipHistoriesConnection;
   membershipHistory?: Maybe<GqlMembershipHistory>;
   memberships: GqlMembershipsConnection;
-  onboarding?: Maybe<GqlOnboarding>;
-  onboardings: GqlOnboardingsConnection;
   opportunities: GqlOpportunitiesConnection;
   opportunity?: Maybe<GqlOpportunity>;
   opportunityInvitation?: Maybe<GqlOpportunityInvitation>;
@@ -1680,19 +1655,6 @@ export type GqlQueryMembershipsArgs = {
   filter?: InputMaybe<GqlMembershipFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
   sort?: InputMaybe<GqlMembershipSortInput>;
-};
-
-
-export type GqlQueryOnboardingArgs = {
-  id: Scalars['ID']['input'];
-};
-
-
-export type GqlQueryOnboardingsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOnboardingFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOnboardingSortInput>;
 };
 
 
@@ -1938,11 +1900,16 @@ export type GqlReservationParticipationsArgs = {
   sort?: InputMaybe<GqlParticipationSortInput>;
 };
 
+export type GqlReservationCancelInput = {
+  paymentMethod: GqlReservationPaymentMethod;
+  ticketIdsIfExists?: InputMaybe<Array<Scalars['ID']['input']>>;
+};
+
 export type GqlReservationCreateInput = {
   opportunitySlotId: Scalars['ID']['input'];
-  otherParticipantUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   participantCount: Scalars['Int']['input'];
-  payment: GqlReservationPayment;
+  paymentMethod: GqlReservationPaymentMethod;
+  userIdsIfExists?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type GqlReservationCreatePayload = GqlReservationCreateSuccess;
@@ -1997,12 +1964,12 @@ export type GqlReservationHistorySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
 
-export const GqlReservationPayment = {
+export const GqlReservationPaymentMethod = {
   Fee: 'FEE',
   Point: 'POINT'
 } as const;
 
-export type GqlReservationPayment = typeof GqlReservationPayment[keyof typeof GqlReservationPayment];
+export type GqlReservationPaymentMethod = typeof GqlReservationPaymentMethod[keyof typeof GqlReservationPaymentMethod];
 export type GqlReservationSetStatusPayload = GqlReservationSetStatusSuccess;
 
 export type GqlReservationSetStatusSuccess = {
@@ -2195,7 +2162,7 @@ export type GqlTicketsConnection = {
 export const GqlTodo = {
   FirstActivity: 'FIRST_ACTIVITY',
   FirstQuest: 'FIRST_QUEST',
-  PersonalLog: 'PERSONAL_LOG',
+  PersonalRecord: 'PERSONAL_RECORD',
   Profile: 'PROFILE'
 } as const;
 
@@ -2766,9 +2733,9 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   OpportunitySetPublishStatusPayload: ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunitySlotsBulkUpdatePayload: ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
   OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
+  ParticipationCreatePersonalRecordPayload: ( Omit<GqlParticipationCreatePersonalRecordSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationDeletePayload: ( GqlParticipationDeleteSuccess );
   ParticipationImageBulkUpdatePayload: ( Omit<GqlParticipationImageBulkUpdateSuccess, 'participation'> & { participation: _RefType['Participation'] } );
-  ParticipationLogPersonalRecordPayload: ( Omit<GqlParticipationLogPersonalRecordSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   PlaceCreatePayload: ( Omit<GqlPlaceCreateSuccess, 'place'> & { place: _RefType['Place'] } );
   PlaceDeletePayload: ( GqlPlaceDeleteSuccess );
   PlaceUpdatePayload: ( Omit<GqlPlaceUpdateSuccess, 'place'> & { place: _RefType['Place'] } );
@@ -2789,7 +2756,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<_RefType['MembershipHistory']> } ) | ( Omit<GqlOnboardingEdge, 'node'> & { node?: Maybe<_RefType['Onboarding']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunityInvitationEdge, 'node'> & { node?: Maybe<_RefType['OpportunityInvitation']> } ) | ( Omit<GqlOpportunityInvitationHistoryEdge, 'node'> & { node?: Maybe<_RefType['OpportunityInvitationHistory']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationImageEdge, 'node'> & { node?: Maybe<_RefType['ParticipationImage']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<_RefType['MembershipHistory']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunityInvitationEdge, 'node'> & { node?: Maybe<_RefType['OpportunityInvitation']> } ) | ( Omit<GqlOpportunityInvitationHistoryEdge, 'node'> & { node?: Maybe<_RefType['OpportunityInvitationHistory']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationImageEdge, 'node'> & { node?: Maybe<_RefType['ParticipationImage']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -2877,11 +2844,7 @@ export type GqlResolversTypes = ResolversObject<{
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
   Onboarding: ResolverTypeWrapper<Omit<GqlOnboarding, 'user'> & { user: GqlResolversTypes['User'] }>;
-  OnboardingEdge: ResolverTypeWrapper<Omit<GqlOnboardingEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Onboarding']> }>;
-  OnboardingFilterInput: GqlOnboardingFilterInput;
-  OnboardingSortInput: GqlOnboardingSortInput;
   OnboardingStatus: GqlOnboardingStatus;
-  OnboardingsConnection: ResolverTypeWrapper<Omit<GqlOnboardingsConnection, 'edges'> & { edges: Array<GqlResolversTypes['OnboardingEdge']> }>;
   OpportunitiesConnection: ResolverTypeWrapper<Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['OpportunityEdge']> }>;
   Opportunity: ResolverTypeWrapper<Opportunity>;
   OpportunityCategory: GqlOpportunityCategory;
@@ -2931,6 +2894,9 @@ export type GqlResolversTypes = ResolversObject<{
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
   Paging: ResolverTypeWrapper<GqlPaging>;
   Participation: ResolverTypeWrapper<Participation>;
+  ParticipationCreatePersonalRecordInput: GqlParticipationCreatePersonalRecordInput;
+  ParticipationCreatePersonalRecordPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationCreatePersonalRecordPayload']>;
+  ParticipationCreatePersonalRecordSuccess: ResolverTypeWrapper<Omit<GqlParticipationCreatePersonalRecordSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationDeletePayload']>;
   ParticipationDeleteSuccess: ResolverTypeWrapper<GqlParticipationDeleteSuccess>;
   ParticipationEdge: ResolverTypeWrapper<Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Participation']> }>;
@@ -2943,9 +2909,6 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationImageFilterInput: GqlParticipationImageFilterInput;
   ParticipationImageSortInput: GqlParticipationImageSortInput;
   ParticipationImagesConnection: ResolverTypeWrapper<Omit<GqlParticipationImagesConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationImageEdge']> }>;
-  ParticipationLogPersonalRecordInput: GqlParticipationLogPersonalRecordInput;
-  ParticipationLogPersonalRecordPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ParticipationLogPersonalRecordPayload']>;
-  ParticipationLogPersonalRecordSuccess: ResolverTypeWrapper<Omit<GqlParticipationLogPersonalRecordSuccess, 'participation'> & { participation: GqlResolversTypes['Participation'] }>;
   ParticipationSortInput: GqlParticipationSortInput;
   ParticipationStatus: GqlParticipationStatus;
   ParticipationStatusHistoriesConnection: ResolverTypeWrapper<Omit<GqlParticipationStatusHistoriesConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationStatusHistoryEdge']> }>;
@@ -2971,6 +2934,7 @@ export type GqlResolversTypes = ResolversObject<{
   PublishStatus: GqlPublishStatus;
   Query: ResolverTypeWrapper<{}>;
   Reservation: ResolverTypeWrapper<Omit<GqlReservation, 'createdByUser' | 'histories' | 'opportunitySlot' | 'participations'> & { createdByUser?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<GqlResolversTypes['ReservationHistoriesConnection']>, opportunitySlot: GqlResolversTypes['OpportunitySlot'], participations?: Maybe<GqlResolversTypes['ParticipationsConnection']> }>;
+  ReservationCancelInput: GqlReservationCancelInput;
   ReservationCreateInput: GqlReservationCreateInput;
   ReservationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ReservationCreatePayload']>;
   ReservationCreateSuccess: ResolverTypeWrapper<Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: GqlResolversTypes['Reservation'] }>;
@@ -2981,7 +2945,7 @@ export type GqlResolversTypes = ResolversObject<{
   ReservationHistoryEdge: ResolverTypeWrapper<Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['ReservationHistory']> }>;
   ReservationHistoryFilterInput: GqlReservationHistoryFilterInput;
   ReservationHistorySortInput: GqlReservationHistorySortInput;
-  ReservationPayment: GqlReservationPayment;
+  ReservationPaymentMethod: GqlReservationPaymentMethod;
   ReservationSetStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ReservationSetStatusPayload']>;
   ReservationSetStatusSuccess: ResolverTypeWrapper<Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: GqlResolversTypes['Reservation'] }>;
   ReservationSortInput: GqlReservationSortInput;
@@ -3145,10 +3109,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
   Onboarding: Omit<GqlOnboarding, 'user'> & { user: GqlResolversParentTypes['User'] };
-  OnboardingEdge: Omit<GqlOnboardingEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Onboarding']> };
-  OnboardingFilterInput: GqlOnboardingFilterInput;
-  OnboardingSortInput: GqlOnboardingSortInput;
-  OnboardingsConnection: Omit<GqlOnboardingsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OnboardingEdge']> };
   OpportunitiesConnection: Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OpportunityEdge']> };
   Opportunity: Opportunity;
   OpportunityCreateInput: GqlOpportunityCreateInput;
@@ -3196,6 +3156,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   PageInfo: GqlPageInfo;
   Paging: GqlPaging;
   Participation: Participation;
+  ParticipationCreatePersonalRecordInput: GqlParticipationCreatePersonalRecordInput;
+  ParticipationCreatePersonalRecordPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationCreatePersonalRecordPayload'];
+  ParticipationCreatePersonalRecordSuccess: Omit<GqlParticipationCreatePersonalRecordSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationDeletePayload'];
   ParticipationDeleteSuccess: GqlParticipationDeleteSuccess;
   ParticipationEdge: Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Participation']> };
@@ -3208,9 +3171,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   ParticipationImageFilterInput: GqlParticipationImageFilterInput;
   ParticipationImageSortInput: GqlParticipationImageSortInput;
   ParticipationImagesConnection: Omit<GqlParticipationImagesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ParticipationImageEdge']> };
-  ParticipationLogPersonalRecordInput: GqlParticipationLogPersonalRecordInput;
-  ParticipationLogPersonalRecordPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ParticipationLogPersonalRecordPayload'];
-  ParticipationLogPersonalRecordSuccess: Omit<GqlParticipationLogPersonalRecordSuccess, 'participation'> & { participation: GqlResolversParentTypes['Participation'] };
   ParticipationSortInput: GqlParticipationSortInput;
   ParticipationStatusHistoriesConnection: Omit<GqlParticipationStatusHistoriesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ParticipationStatusHistoryEdge']> };
   ParticipationStatusHistory: ParticipationStatusHistory;
@@ -3233,6 +3193,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   PlacesConnection: Omit<GqlPlacesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['PlaceEdge']>>> };
   Query: {};
   Reservation: Omit<GqlReservation, 'createdByUser' | 'histories' | 'opportunitySlot' | 'participations'> & { createdByUser?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<GqlResolversParentTypes['ReservationHistoriesConnection']>, opportunitySlot: GqlResolversParentTypes['OpportunitySlot'], participations?: Maybe<GqlResolversParentTypes['ParticipationsConnection']> };
+  ReservationCancelInput: GqlReservationCancelInput;
   ReservationCreateInput: GqlReservationCreateInput;
   ReservationCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ReservationCreatePayload'];
   ReservationCreateSuccess: Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: GqlResolversParentTypes['Reservation'] };
@@ -3452,7 +3413,7 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
 }
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'MembershipHistoryEdge' | 'OnboardingEdge' | 'OpportunityEdge' | 'OpportunityInvitationEdge' | 'OpportunityInvitationHistoryEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationImageEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'MembershipHistoryEdge' | 'OpportunityEdge' | 'OpportunityInvitationEdge' | 'OpportunityInvitationHistoryEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationImageEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -3639,14 +3600,14 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
+  participationCreatePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationCreatePersonalRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCreatePersonalRecordArgs, 'input'>>;
   participationDeletePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDeletePersonalRecordArgs, 'id' | 'permission'>>;
   participationImageBulkUpdate?: Resolver<Maybe<GqlResolversTypes['ParticipationImageBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationImageBulkUpdateArgs, 'input' | 'permission'>>;
-  participationLogPersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationLogPersonalRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationLogPersonalRecordArgs, 'input'>>;
   placeCreate?: Resolver<Maybe<GqlResolversTypes['PlaceCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceCreateArgs, 'input' | 'permission'>>;
   placeDelete?: Resolver<Maybe<GqlResolversTypes['PlaceDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceDeleteArgs, 'id' | 'permission'>>;
   placeUpdate?: Resolver<Maybe<GqlResolversTypes['PlaceUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationPlaceUpdateArgs, 'id' | 'input' | 'permission'>>;
   reservationAccept?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationAcceptArgs, 'id' | 'permission'>>;
-  reservationCancel?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCancelArgs, 'id' | 'permission'>>;
+  reservationCancel?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCancelArgs, 'id' | 'input' | 'permission'>>;
   reservationCreate?: Resolver<Maybe<GqlResolversTypes['ReservationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCreateArgs, 'input'>>;
   reservationJoin?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationJoinArgs, 'id'>>;
   reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'permission'>>;
@@ -3673,19 +3634,6 @@ export type GqlOnboardingResolvers<ContextType = any, ParentType extends GqlReso
   todo?: Resolver<GqlResolversTypes['Todo'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOnboardingEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OnboardingEdge'] = GqlResolversParentTypes['OnboardingEdge']> = ResolversObject<{
-  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  node?: Resolver<Maybe<GqlResolversTypes['Onboarding']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlOnboardingsConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OnboardingsConnection'] = GqlResolversParentTypes['OnboardingsConnection']> = ResolversObject<{
-  edges?: Resolver<Array<GqlResolversTypes['OnboardingEdge']>, ParentType, ContextType>;
-  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
-  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3907,6 +3855,15 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlParticipationCreatePersonalRecordPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationCreatePersonalRecordPayload'] = GqlResolversParentTypes['ParticipationCreatePersonalRecordPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'ParticipationCreatePersonalRecordSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlParticipationCreatePersonalRecordSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationCreatePersonalRecordSuccess'] = GqlResolversParentTypes['ParticipationCreatePersonalRecordSuccess']> = ResolversObject<{
+  participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlParticipationDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationDeletePayload'] = GqlResolversParentTypes['ParticipationDeletePayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'ParticipationDeleteSuccess', ParentType, ContextType>;
 }>;
@@ -3951,15 +3908,6 @@ export type GqlParticipationImagesConnectionResolvers<ContextType = any, ParentT
   edges?: Resolver<Array<GqlResolversTypes['ParticipationImageEdge']>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlParticipationLogPersonalRecordPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationLogPersonalRecordPayload'] = GqlResolversParentTypes['ParticipationLogPersonalRecordPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ParticipationLogPersonalRecordSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlParticipationLogPersonalRecordSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ParticipationLogPersonalRecordSuccess'] = GqlResolversParentTypes['ParticipationLogPersonalRecordSuccess']> = ResolversObject<{
-  participation?: Resolver<GqlResolversTypes['Participation'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4067,8 +4015,6 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   membershipHistories?: Resolver<GqlResolversTypes['MembershipHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryMembershipHistoriesArgs>>;
   membershipHistory?: Resolver<Maybe<GqlResolversTypes['MembershipHistory']>, ParentType, ContextType, RequireFields<GqlQueryMembershipHistoryArgs, 'id'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
-  onboarding?: Resolver<Maybe<GqlResolversTypes['Onboarding']>, ParentType, ContextType, RequireFields<GqlQueryOnboardingArgs, 'id'>>;
-  onboardings?: Resolver<GqlResolversTypes['OnboardingsConnection'], ParentType, ContextType, Partial<GqlQueryOnboardingsArgs>>;
   opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id' | 'permission'>>;
   opportunityInvitation?: Resolver<Maybe<GqlResolversTypes['OpportunityInvitation']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityInvitationArgs, 'id'>>;
@@ -4506,8 +4452,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   MembershipsConnection?: GqlMembershipsConnectionResolvers<ContextType>;
   Mutation?: GqlMutationResolvers<ContextType>;
   Onboarding?: GqlOnboardingResolvers<ContextType>;
-  OnboardingEdge?: GqlOnboardingEdgeResolvers<ContextType>;
-  OnboardingsConnection?: GqlOnboardingsConnectionResolvers<ContextType>;
   OpportunitiesConnection?: GqlOpportunitiesConnectionResolvers<ContextType>;
   Opportunity?: GqlOpportunityResolvers<ContextType>;
   OpportunityCreatePayload?: GqlOpportunityCreatePayloadResolvers<ContextType>;
@@ -4539,6 +4483,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   PageInfo?: GqlPageInfoResolvers<ContextType>;
   Paging?: GqlPagingResolvers<ContextType>;
   Participation?: GqlParticipationResolvers<ContextType>;
+  ParticipationCreatePersonalRecordPayload?: GqlParticipationCreatePersonalRecordPayloadResolvers<ContextType>;
+  ParticipationCreatePersonalRecordSuccess?: GqlParticipationCreatePersonalRecordSuccessResolvers<ContextType>;
   ParticipationDeletePayload?: GqlParticipationDeletePayloadResolvers<ContextType>;
   ParticipationDeleteSuccess?: GqlParticipationDeleteSuccessResolvers<ContextType>;
   ParticipationEdge?: GqlParticipationEdgeResolvers<ContextType>;
@@ -4547,8 +4493,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ParticipationImageBulkUpdateSuccess?: GqlParticipationImageBulkUpdateSuccessResolvers<ContextType>;
   ParticipationImageEdge?: GqlParticipationImageEdgeResolvers<ContextType>;
   ParticipationImagesConnection?: GqlParticipationImagesConnectionResolvers<ContextType>;
-  ParticipationLogPersonalRecordPayload?: GqlParticipationLogPersonalRecordPayloadResolvers<ContextType>;
-  ParticipationLogPersonalRecordSuccess?: GqlParticipationLogPersonalRecordSuccessResolvers<ContextType>;
   ParticipationStatusHistoriesConnection?: GqlParticipationStatusHistoriesConnectionResolvers<ContextType>;
   ParticipationStatusHistory?: GqlParticipationStatusHistoryResolvers<ContextType>;
   ParticipationStatusHistoryEdge?: GqlParticipationStatusHistoryEdgeResolvers<ContextType>;

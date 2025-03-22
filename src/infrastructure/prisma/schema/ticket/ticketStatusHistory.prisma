@@ -6,6 +6,9 @@ model TicketStatusHistory {
   ticketId String @map("ticket_id")
   ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
 
+  participationId String?        @map("participation_id")
+  participation   Participation? @relation(fields: [participationId], references: [id])
+
   createdBy     String? @map("created_by")
   createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
