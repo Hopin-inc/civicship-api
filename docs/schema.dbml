@@ -214,6 +214,7 @@ Table t_participations {
   opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
+  ticketStatusHistories t_ticket_status_histories [not null]
   communityId String
   community t_communities
   source Source [not null, default: 'INTERNAL']
@@ -310,6 +311,8 @@ Table t_ticket_status_histories {
   reason TicketStatusReason [not null, default: 'PURCHASED']
   ticketId String [not null]
   ticket t_tickets [not null]
+  participationId String
+  participation t_participations
   createdBy String
   createdByUser t_users
   transactionId String [unique]
@@ -475,7 +478,7 @@ Enum WalletType {
 
 Enum Todo {
   PROFILE
-  PERSONAL_LOG
+  PERSONAL_RECORD
   FIRST_ACTIVITY
   FIRST_QUEST
 }
@@ -628,6 +631,8 @@ Ref: t_tickets.walletId > t_wallets.id [delete: Restrict]
 Ref: t_tickets.utilityId > t_utilities.id [delete: Restrict]
 
 Ref: t_ticket_status_histories.ticketId > t_tickets.id [delete: Restrict]
+
+Ref: t_ticket_status_histories.participationId > t_participations.id
 
 Ref: t_ticket_status_histories.createdBy > t_users.id [delete: Set Null]
 

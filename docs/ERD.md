@@ -69,7 +69,7 @@ MEMBER MEMBER
 
         Todo {
             PROFILE PROFILE
-PERSONAL_LOG PERSONAL_LOG
+PERSONAL_RECORD PERSONAL_RECORD
 FIRST_ACTIVITY FIRST_ACTIVITY
 FIRST_QUEST FIRST_QUEST
         }
@@ -420,6 +420,7 @@ USER USER
     TicketStatus status 
     TicketStatusReason reason 
     String ticket_id 
+    String participation_id "❓"
     String created_by "❓"
     String transaction_id "❓"
     DateTime created_at 
@@ -558,6 +559,7 @@ USER USER
     "t_participations" o|--|o "t_opportunity_invitation_histories" : "opportunityInvitationHistory"
     "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
+    "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
     "t_participations" o|--|| "Source" : "enum:source"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
@@ -590,6 +592,7 @@ USER USER
     "t_ticket_status_histories" o|--|| "TicketStatus" : "enum:status"
     "t_ticket_status_histories" o|--|| "TicketStatusReason" : "enum:reason"
     "t_ticket_status_histories" o|--|| "t_tickets" : "ticket"
+    "t_ticket_status_histories" o|--|o "t_participations" : "participation"
     "t_ticket_status_histories" o|--|o "t_users" : "createdByUser"
     "t_ticket_status_histories" o|--|o "t_transactions" : "transaction"
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
