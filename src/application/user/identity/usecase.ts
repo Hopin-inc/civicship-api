@@ -5,12 +5,12 @@ import IdentityService from "@/application/user/identity/service";
 import IdentityPresenter from "@/application/user/identity/presenter";
 import UserService from "@/application/user/service";
 import OnboardingService from "@/application/onboarding/service";
-import { Todo, TransactionReason } from "@prisma/client";
+import { Todo } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/membership/wallet/service";
 import { initialCommunityId, OnboardingTodoPoints } from "@/consts/utils";
-import TransactionService from "@/application/transaction/service";
+import { runOnboardingReward } from "@/application/utils";
 
 export default class IdentityUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -36,35 +36,7 @@ export default class IdentityUseCase {
       const isProfileComplete = await UserService.hasProfileCompleted(user);
 
       if (isProfileComplete) {
-        const onboarding = await OnboardingService.findOnboardingTodoOrThrow(
-          ctx,
-          user.id,
-          Todo.PROFILE,
-          tx,
-        );
-
-        const reward = OnboardingTodoPoints.PROFILE;
-        const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
-          ctx,
-          tx,
-          initialCommunityId,
-          user.id,
-          reward,
-          TransactionReason.ONBOARDING,
-        );
-
-        await TransactionService.giveOnboardingPoint(
-          ctx,
-          {
-            fromWalletId,
-            fromPointChange: -reward,
-            toWalletId,
-            toPointChange: reward,
-          },
-          tx,
-        );
-
-        await OnboardingService.setDone(ctx, onboarding.id, tx);
+        await runOnboardingReward(ctx, user.id, Todo.PROFILE, OnboardingTodoPoints.PROFILE, tx);
       }
 
       return user;

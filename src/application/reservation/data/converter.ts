@@ -1,5 +1,6 @@
 import { GqlReservationFilterInput, GqlReservationSortInput } from "@/types/graphql";
 import {
+  OpportunityCategory,
   ParticipationStatus,
   ParticipationStatusReason,
   Prisma,
@@ -23,6 +24,20 @@ export default class ReservationConverter {
     if (filter.createdByUserId) conditions.push({ createdBy: filter.createdByUserId });
 
     return conditions.length ? { AND: conditions } : {};
+  }
+
+  static countByUserAndOpportunityCategory(
+    userId: string,
+    category: OpportunityCategory,
+  ): Prisma.ReservationWhereInput {
+    return {
+      createdBy: userId,
+      opportunitySlot: {
+        opportunity: {
+          category,
+        },
+      },
+    };
   }
 
   static sort(sort?: GqlReservationSortInput): Prisma.ReservationOrderByWithRelationInput[] {

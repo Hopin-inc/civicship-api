@@ -8,6 +8,7 @@ import ReservationRepository from "@/application/reservation/data/repository";
 import ReservationConverter from "@/application/reservation/data/converter";
 import ReservationPresenter from "@/application/reservation/presenter";
 import {
+  OpportunityCategory,
   ParticipationStatus,
   ParticipationStatusReason,
   Prisma,
@@ -16,6 +17,7 @@ import {
 import { getCurrentUserId, clampFirst } from "@/application/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PrismaReservation } from "@/application/reservation/data/type";
+import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
 
 export default class ReservationService {
   static async fetchReservations(
@@ -39,6 +41,16 @@ export default class ReservationService {
     const hasNextPage = results.length > take;
     const sliced = results.slice(0, take).map(ReservationPresenter.get);
     return ReservationPresenter.query(sliced, hasNextPage);
+  }
+
+  static async countUserReservationsByCategory(
+    ctx: IContext,
+    userId: string,
+    category: OpportunityCategory,
+    tx: Prisma.TransactionClient,
+  ): Promise<number> {
+    const where = ReservationConverter.countByUserAndOpportunityCategory(userId, category);
+    return ReservationRepository.count(ctx, where, tx);
   }
 
   static async findReservation(ctx: IContext, id: string) {
@@ -113,6 +125,33 @@ export default class ReservationService {
         "Reservation can no longer be canceled within 24 hours of the event.",
       );
     }
+  }
+
+  static validateReservationOpportunityOfDb(
+    opportunity: PrismaOpportunitySlot["opportunity"] | null,
+    opportunitySlotId: string,
+  ): {
+    communityId: string;
+    requireApproval: boolean;
+    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"];
+    opportunityCategory: OpportunityCategory;
+  } {
+    if (!opportunity) {
+      throw new NotFoundError("Opportunity with OpportunitySlot", { opportunitySlotId });
+    }
+
+    if (!opportunity.communityId) {
+      throw new NotFoundError("Community with Opportunity");
+    }
+
+    const { communityId, requireApproval, requiredUtilities, category } = opportunity;
+
+    return {
+      communityId,
+      requireApproval,
+      requiredUtilities,
+      opportunityCategory: category,
+    };
   }
 
   static async createReservation(
