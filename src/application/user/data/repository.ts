@@ -35,13 +35,16 @@ export default class UserRepository {
     });
   }
 
-  static async updateProfile(ctx: IContext, id: string, data: Prisma.UserUpdateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.user.update({
-        where: { id },
-        data,
-        include: userInclude,
-      });
+  static async updateProfile(
+    ctx: IContext,
+    id: string,
+    data: Prisma.UserUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.user.update({
+      where: { id },
+      data,
+      include: userInclude,
     });
   }
 

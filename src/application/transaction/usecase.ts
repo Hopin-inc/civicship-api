@@ -14,7 +14,7 @@ import { IContext } from "@/types/server";
 import TransactionService from "@/application/transaction/service";
 import TransactionPresenter from "@/application/transaction/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
 import WalletService from "@/application/membership/wallet/service";
 import { getCurrentUserId } from "@/application/utils";
@@ -62,12 +62,13 @@ export default class TransactionUseCase {
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
-      const { toWalletId } = await WalletService.validateWalletsForGrantOrDonation(
+      const { toWalletId } = await WalletService.validateCommunityMemberTransfer(
         ctx,
         tx,
         communityId,
         toUserId,
         toPointChange,
+        TransactionReason.GRANT,
       );
 
       const transaction = await TransactionService.grantCommunityPoint(ctx, input, toWalletId, tx);
@@ -80,16 +81,17 @@ export default class TransactionUseCase {
     ctx: IContext,
     input: GqlTransactionDonateSelfPointInput,
   ): Promise<GqlTransactionDonateSelfPointPayload> {
-    const { communityId, toUserId, toPointChange } = input;
+    const { communityId, fromWalletId, toUserId, toPointChange } = input;
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
-      const { toWalletId } = await WalletService.validateWalletsForGrantOrDonation(
+      const { toWalletId } = await WalletService.validateMemberToMemberDonation(
         ctx,
         tx,
-        communityId,
+        fromWalletId,
         toUserId,
+        communityId,
         toPointChange,
       );
 

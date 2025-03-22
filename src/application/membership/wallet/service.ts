@@ -1,10 +1,10 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 import WalletConverter from "@/application/membership/wallet/data/converter";
 import WalletRepository from "@/application/membership/wallet/data/repository";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs, GqlWallet } from "@/types/graphql";
 import WalletUtils from "@/application/membership/wallet/utils";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import WalletPresenter from "@/application/membership/wallet/presenter";
 
 export default class WalletService {
@@ -62,49 +62,70 @@ export default class WalletService {
     return WalletPresenter.get(wallet);
   }
 
-  static async validateWalletsForGiveReward(
+  static async validateCommunityMemberTransfer(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     communityId: string,
     userId: string,
     transferPoints: number,
+    reason: TransactionReason,
   ) {
-    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
-    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
+    const direction = getTransferDirection(reason);
+    const createIfNeeded = reason === TransactionReason.GRANT;
 
-    await WalletUtils.validateTransfer(transferPoints, communityWallet, memberWallet);
+    const { from, to } = await this.getWalletPairByDirection(
+      ctx,
+      tx,
+      direction,
+      communityId,
+      userId,
+      createIfNeeded,
+    );
 
-    return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
+    await WalletUtils.validateTransfer(transferPoints, from, to);
+    return { fromWalletId: from.id, toWalletId: to.id };
   }
 
-  static async validateWalletsForPurchaseTicket(
+  private static async getWalletPairByDirection(
     ctx: IContext,
     tx: Prisma.TransactionClient,
+    direction: TransferDirection,
     communityId: string,
     userId: string,
-    transferPoints: number,
+    createIfNeeded: boolean,
   ) {
-    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
     const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
+    const memberWallet = createIfNeeded
+      ? await this.createMemberWalletIfNeeded(ctx, userId, communityId, tx)
+      : await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
 
-    await WalletUtils.validateTransfer(transferPoints, memberWallet, communityWallet);
-
-    return { fromWalletId: memberWallet.id, toWalletId: communityWallet.id };
+    switch (direction) {
+      case TransferDirection.COMMUNITY_TO_MEMBER:
+        return { from: communityWallet, to: memberWallet };
+      case TransferDirection.MEMBER_TO_COMMUNITY:
+        return { from: memberWallet, to: communityWallet };
+      case TransferDirection.MEMBER_TO_MEMBER:
+        throw new ValidationError("Use validateMemberToMemberDonation() for DONATION");
+    }
   }
 
-  static async validateWalletsForGrantOrDonation(
+  static async validateMemberToMemberDonation(
     ctx: IContext,
     tx: Prisma.TransactionClient,
+    fromWalletId: string,
+    toUserId: string,
     communityId: string,
-    userId: string,
     transferPoints: number,
   ) {
-    const communityWallet = await this.findCommunityWalletOrThrow(ctx, communityId);
-    const memberWallet = await this.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
+    const fromWallet = await this.checkIfMemberWalletExists(ctx, fromWalletId);
+    const toWallet = await this.createMemberWalletIfNeeded(ctx, toUserId, communityId, tx);
 
-    await WalletUtils.validateTransfer(transferPoints, communityWallet, memberWallet);
+    await WalletUtils.validateTransfer(transferPoints, fromWallet, toWallet);
 
-    return { fromWalletId: communityWallet.id, toWalletId: memberWallet.id };
+    return {
+      fromWalletId: fromWallet.id,
+      toWalletId: toWallet.id,
+    };
   }
 
   static async createCommunityWallet(
@@ -149,5 +170,27 @@ export default class WalletService {
   ) {
     const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
     return WalletRepository.delete(ctx, memberWallet.id);
+  }
+}
+
+enum TransferDirection {
+  COMMUNITY_TO_MEMBER = "community-to-member",
+  MEMBER_TO_COMMUNITY = "member-to-community",
+  MEMBER_TO_MEMBER = "member-to-member",
+}
+
+function getTransferDirection(reason: TransactionReason): TransferDirection {
+  switch (reason) {
+    case TransactionReason.POINT_REWARD:
+    case TransactionReason.ONBOARDING:
+    case TransactionReason.GRANT:
+    case TransactionReason.TICKET_REFUNDED:
+      return TransferDirection.COMMUNITY_TO_MEMBER;
+    case TransactionReason.TICKET_PURCHASED:
+      return TransferDirection.MEMBER_TO_COMMUNITY;
+    case TransactionReason.DONATION:
+      return TransferDirection.MEMBER_TO_MEMBER;
+    default:
+      throw new ValidationError(`Unsupported TransactionReason`, [reason]);
   }
 }

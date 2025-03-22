@@ -42,8 +42,12 @@ export default class UserService {
     return Boolean(user.image && user.bio && hasSocialLinks);
   }
 
-  static async updateProfile(ctx: IContext, { input }: GqlMutationUserUpdateMyProfileArgs) {
+  static async updateProfile(
+    ctx: IContext,
+    { input }: GqlMutationUserUpdateMyProfileArgs,
+    tx: Prisma.TransactionClient,
+  ) {
     const data: Prisma.UserUpdateInput = UserConverter.update(input);
-    return UserRepository.updateProfile(ctx, ctx.uid, data);
+    return UserRepository.updateProfile(ctx, ctx.uid, data, tx);
   }
 }

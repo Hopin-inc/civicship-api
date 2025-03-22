@@ -39,7 +39,7 @@ export default class WalletUtils {
   }
 
   static async validateTransfer(
-    requiredPoints: number,
+    transferPoints: number,
     fromWallet: GqlWallet | null,
     toWallet: GqlWallet | null,
   ) {
@@ -52,8 +52,8 @@ export default class WalletUtils {
     }
     const { currentPoint } = fromWallet.currentPointView || {};
 
-    if (!currentPoint || currentPoint < requiredPoints) {
-      throw new InsufficientBalanceError(currentPoint ?? 0, requiredPoints);
+    if (!currentPoint || currentPoint < transferPoints) {
+      throw new InsufficientBalanceError(currentPoint ?? 0, transferPoints);
     }
   }
 }

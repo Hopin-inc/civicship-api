@@ -9,11 +9,17 @@ import {
 import UserService from "@/application/user/service";
 import UserPresenter from "@/application/user/presenter";
 import { IContext } from "@/types/server";
-import { clampFirst } from "@/application/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
 import OnboardingService from "@/application/onboarding/service";
-import { Todo } from "@prisma/client";
+import { Todo, TransactionReason } from "@prisma/client";
+import WalletService from "@/application/membership/wallet/service";
+import { initialCommunityId, OnboardingTodoPoints } from "@/consts/utils";
+import TransactionService from "@/application/transaction/service";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class UserUseCase {
+  private static issuer = new PrismaClientIssuer();
+
   static async visitorBrowseCommunityMembers(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUsersArgs,
@@ -41,13 +47,45 @@ export default class UserUseCase {
     ctx: IContext,
     args: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
-    const user = await UserService.updateProfile(ctx, args);
+    const currentUserId = getCurrentUserId(ctx);
 
-    const isProfileComplete = await UserService.hasProfileCompleted(user);
-    const isWIP = await OnboardingService.hasWipOnboardingTodo(ctx, user.id, Todo.PROFILE);
-    if (isProfileComplete && isWIP) {
-      // TODO オンボーディングポイントを付与する
-    }
+    const user = await this.issuer.public(ctx, async (tx) => {
+      const user = await UserService.updateProfile(ctx, args, tx);
+
+      const isProfileComplete = await UserService.hasProfileCompleted(user);
+      if (isProfileComplete) {
+        const onboarding = await OnboardingService.findOnboardingTodoOrThrow(
+          ctx,
+          user.id,
+          Todo.PROFILE,
+          tx,
+        );
+
+        const reward = OnboardingTodoPoints.PROFILE;
+        const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+          ctx,
+          tx,
+          initialCommunityId,
+          currentUserId,
+          reward,
+          TransactionReason.ONBOARDING,
+        );
+        await TransactionService.giveOnboardingPoint(
+          ctx,
+          {
+            fromWalletId,
+            fromPointChange: -reward,
+            toWalletId,
+            toPointChange: reward,
+          },
+          tx,
+        );
+
+        await OnboardingService.setDone(ctx, onboarding.id, tx);
+      }
+
+      return user;
+    });
 
     return UserPresenter.updateProfile(user);
   }

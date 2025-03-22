@@ -86,11 +86,15 @@ export default class TransactionService {
     return transaction;
   }
 
-  static async giveOnboardingPoint(ctx: IContext, params: GiveOnboardingPointParams) {
+  static async giveOnboardingPoint(
+    ctx: IContext,
+    params: GiveOnboardingPointParams,
+    tx: Prisma.TransactionClient,
+  ) {
     const data = TransactionConverter.giveOnboardingPoint(params);
 
-    const res = await TransactionRepository.create(ctx, data);
-    await TransactionRepository.refreshCurrentPoints(ctx);
+    const res = await TransactionRepository.create(ctx, data, tx);
+    await TransactionRepository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
