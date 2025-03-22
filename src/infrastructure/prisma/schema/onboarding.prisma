@@ -17,7 +17,7 @@ model Onboarding {
 
 enum Todo {
   PROFILE
-  PERSONAL_LOG
+  PERSONAL_RECORD
   FIRST_ACTIVITY
   FIRST_QUEST
 }
