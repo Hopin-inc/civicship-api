@@ -7,7 +7,7 @@ import {
   GqlQueryEvaluationArgs,
   GqlQueryEvaluationsArgs,
 } from "@/types/graphql";
-import { EvaluationStatus } from "@prisma/client";
+import { EvaluationStatus, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/evaluation/service";
 import EvaluationPresenter from "@/application/evaluation/presenter";
@@ -62,12 +62,13 @@ export default class EvaluationUseCase {
           ]);
         }
 
-        const { fromWalletId, toWalletId } = await WalletService.validateWalletsForGiveReward(
+        const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
           ctx,
           tx,
           participation.communityId,
           participation.id,
           opportunity.pointsToEarn,
+          TransactionReason.POINT_REWARD,
         );
 
         await TransactionService.giveRewardPoint(

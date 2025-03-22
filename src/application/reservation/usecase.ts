@@ -15,7 +15,12 @@ import {
 import { IContext } from "@/types/server";
 import ReservationService from "@/application/reservation/service";
 import ReservationPresenter from "@/application/reservation/presenter";
-import { ParticipationStatusReason, ParticipationStatus, ReservationStatus } from "@prisma/client";
+import {
+  ParticipationStatusReason,
+  ParticipationStatus,
+  ReservationStatus,
+  TransactionReason,
+} from "@prisma/client";
 import { NotFoundError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/utils";
 import OpportunitySlotService from "@/application/opportunitySlot/service";
@@ -88,12 +93,13 @@ export default class ReservationUseCase {
         const utility = OpportunityService.getSingleRequiredUtility(requiredUtilities);
         const totalTransferPoints = utility.pointsRequired * input.participantCount;
 
-        const { fromWalletId, toWalletId } = await WalletService.validateWalletsForPurchaseTicket(
+        const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
           ctx,
           tx,
           communityId,
           currentUserId,
           totalTransferPoints,
+          TransactionReason.TICKET_REFUNDED,
         );
 
         const transaction = await TransactionService.purchaseTicket(ctx, tx, {
