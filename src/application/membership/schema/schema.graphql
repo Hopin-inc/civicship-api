@@ -9,6 +9,8 @@ type Membership {
     reason: MembershipStatusReason!
     role: Role!
 
+    histories: [MembershipHistory!]
+
     createdAt: Datetime!
     updatedAt: Datetime
 }
