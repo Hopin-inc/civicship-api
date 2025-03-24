@@ -16,17 +16,6 @@ type Reservation {
     updatedAt: Datetime
 }
 
-type ReservationHistory {
-    id: ID!
-    status: ReservationStatus!
-
-    reservation: Reservation!
-    createdByUser: User
-
-    createdAt: Datetime!
-}
-
-
 # ------------------------------
 # Reservation Enum Definitions
 # ------------------------------
