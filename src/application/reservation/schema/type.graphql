@@ -6,19 +6,26 @@ type Reservation {
     status: ReservationStatus!
 
     opportunitySlot: OpportunitySlot!
-    createdByUser: User
     participations: [Participation!]
 
-    histories(
-        filter: ReservationHistoryFilterInput
-        sort: ReservationHistorySortInput
-        cursor: String
-        first: Int
-    ): ReservationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    createdByUser: User
+
+    histories: [ReservationHistory!]
 
     createdAt: Datetime!
     updatedAt: Datetime
 }
+
+type ReservationHistory {
+    id: ID!
+    status: ReservationStatus!
+
+    reservation: Reservation!
+    createdByUser: User
+
+    createdAt: Datetime!
+}
+
 
 # ------------------------------
 # Reservation Enum Definitions

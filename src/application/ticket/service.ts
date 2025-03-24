@@ -2,7 +2,7 @@ import { GqlQueryTicketsArgs, GqlTicketsConnection } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/ticket/data/repository";
 import TicketConverter from "@/application/ticket/data/converter";
-import { ParticipationStatus, Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
+import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/utils";
 import TicketPresenter from "@/application/ticket/presenter";
@@ -23,6 +23,10 @@ export default class TicketService {
     return TicketPresenter.query(data, hasNextPage);
   }
 
+  static async fetchTicketsByIds(ctx: IContext, ids: string[]) {
+    return await TicketRepository.queryByIds(ctx, ids);
+  }
+
   static async findTicket(ctx: IContext, id: string) {
     return TicketRepository.find(ctx, id);
   }
@@ -33,24 +37,6 @@ export default class TicketService {
       throw new NotFoundError("Ticket", { id });
     }
     return ticket;
-  }
-
-  static async cancelAndRefundTickets(
-    ctx: IContext,
-    tickets: PrismaTicket[],
-    currentUserId: string,
-    transactionId: string,
-    participationStatus: ParticipationStatus,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    await this.cancelReservedTicketsIfAvailable(
-      ctx,
-      tickets,
-      currentUserId,
-      participationStatus,
-      tx,
-    );
-    await this.refundTickets(ctx, tickets, currentUserId, transactionId, tx);
   }
 
   static async purchaseManyTickets(
@@ -85,15 +71,12 @@ export default class TicketService {
     await Promise.all(inputs.map(({ id, data }) => TicketRepository.update(ctx, id, data, tx)));
   }
 
-  private static async cancelReservedTicketsIfAvailable(
+  static async cancelReservedTicketsIfAvailable(
     ctx: IContext,
     tickets: PrismaTicket[],
     currentUserId: string,
-    participationStatus: ParticipationStatus,
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    if (participationStatus !== ParticipationStatus.PENDING) return;
-
     const cancellableTickets = tickets.filter(
       (ticket) =>
         ticket.status === TicketStatus.DISABLED && ticket.reason === TicketStatusReason.RESERVED,
@@ -106,7 +89,7 @@ export default class TicketService {
     );
   }
 
-  private static async refundTickets(
+  static async refundTickets(
     ctx: IContext,
     tickets: PrismaTicket[],
     currentUserId: string,

@@ -1,38 +1,17 @@
-import {
-  GqlReservationFilterInput,
-  GqlReservationSortInput,
-  GqlReservationsConnection,
-} from "@/types/graphql";
+import { GqlReservationsConnection, GqlQueryReservationsArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ReservationRepository from "@/application/reservation/data/repository";
 import ReservationConverter from "@/application/reservation/data/converter";
 import ReservationPresenter from "@/application/reservation/presenter";
-import {
-  OpportunityCategory,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Prisma,
-  ReservationStatus,
-} from "@prisma/client";
+import { OpportunityCategory, Prisma, ReservationStatus } from "@prisma/client";
 import { getCurrentUserId, clampFirst } from "@/application/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { PrismaReservation } from "@/application/reservation/data/type";
-import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
+import { reservationStatuses } from "@/application/reservation/helper";
 
 export default class ReservationService {
   static async fetchReservations(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlReservationFilterInput;
-      sort?: GqlReservationSortInput;
-      first?: number;
-    },
+    { cursor, filter, sort, first }: GqlQueryReservationsArgs,
   ): Promise<GqlReservationsConnection> {
     const take = clampFirst(first);
     const where = ReservationConverter.filter(filter);
@@ -81,87 +60,12 @@ export default class ReservationService {
     }
   }
 
-  static validateCapacity(
-    capacity: number | null,
-    participantCount: number,
-    currentParticipantCount: number,
-  ) {
-    if (!capacity) return;
-
-    const remainingCapacity = capacity - currentParticipantCount;
-
-    if (participantCount > remainingCapacity) {
-      throw new ValidationError("Capacity exceeded for this opportunity slot.", [
-        `remainingCapacity: ${remainingCapacity}`,
-        `requested: ${participantCount}`,
-      ]);
-    }
-  }
-
-  static validateJoinable(
-    reservation: PrismaReservation,
-    userId: string,
-  ): { availableParticipationId: string } {
-    const isAlreadyJoined = reservation.participations.some((p) => p.userId === userId);
-    if (isAlreadyJoined) {
-      throw new ValidationError("You have already joined this reservation.");
-    }
-
-    const target = reservation.participations.find((p) => p.userId === null);
-    if (!target) {
-      throw new ValidationError("No available participation slots.");
-    }
-
-    return { availableParticipationId: target.id };
-  }
-
-  static validateCancellable(slotStartAt: Date) {
-    const now = new Date();
-    const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setHours(cancelLimit.getHours() - 24);
-
-    if (now > cancelLimit) {
-      throw new ValidationError(
-        "Reservation can no longer be canceled within 24 hours of the event.",
-      );
-    }
-  }
-
-  static validateReservationOpportunityOfDb(
-    opportunity: PrismaOpportunitySlot["opportunity"] | null,
-    opportunitySlotId: string,
-  ): {
-    communityId: string;
-    requireApproval: boolean;
-    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"];
-    opportunityCategory: OpportunityCategory;
-  } {
-    if (!opportunity) {
-      throw new NotFoundError("Opportunity with OpportunitySlot", { opportunitySlotId });
-    }
-
-    if (!opportunity.communityId) {
-      throw new NotFoundError("Community with Opportunity");
-    }
-
-    const { communityId, requireApproval, requiredUtilities, category } = opportunity;
-
-    return {
-      communityId,
-      requireApproval,
-      requiredUtilities,
-      opportunityCategory: category,
-    };
-  }
-
   static async createReservation(
     ctx: IContext,
     opportunitySlotId: string,
     participantCount: number,
     userIdsIfExists: string[] = [],
-    reservationStatus: ReservationStatus,
-    participationStatus: ParticipationStatus,
-    participationStatusReason: ParticipationStatusReason,
+    reservationStatuses: reservationStatuses,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data = ReservationConverter.create(
@@ -169,9 +73,7 @@ export default class ReservationService {
       currentUserId,
       participantCount,
       userIdsIfExists,
-      reservationStatus,
-      participationStatus,
-      participationStatusReason,
+      reservationStatuses,
     );
     return ReservationRepository.create(ctx, data);
   }

@@ -11,6 +11,8 @@ import {
   GqlReservationSetStatusPayload,
   GqlReservationCreateInput,
   GqlReservationPaymentMethod,
+  GqlMutationReservationCancelArgs,
+  GqlReservationCancelInput,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ReservationService from "@/application/reservation/service";
@@ -23,20 +25,27 @@ import {
   Prisma,
   OpportunityCategory,
   Todo,
+  TicketStatus,
+  TicketStatusReason,
 } from "@prisma/client";
 import { getCurrentUserId, runOnboardingReward } from "@/application/utils";
 import OpportunitySlotService from "@/application/opportunitySlot/service";
 import WalletService from "@/application/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationService from "@/application/participation/service";
-import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
-import { PrismaReservation } from "@/application/reservation/data/type";
 import OpportunityService from "@/application/opportunity/service";
 import TicketService from "@/application/ticket/service";
 import TransactionService from "@/application/transaction/service";
 import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
 import MembershipService from "@/application/membership/service";
 import { OnboardingTodoPoints } from "@/consts/utils";
+import { groupBy } from "graphql/jsutils/groupBy";
+import { PrismaTicket } from "@/application/ticket/data/type";
+import ReservationValidator from "@/application/reservation/validator";
+import { reservationStatuses } from "@/application/reservation/helper";
+import { PrismaParticipation } from "@/application/participation/data/type";
+import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
+import { NotFoundError } from "@/errors/graphql";
 
 export default class ReservationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -65,30 +74,33 @@ export default class ReservationUseCase {
       ctx,
       input.opportunitySlotId,
     );
-    const opportunity = ReservationService.validateReservationOpportunityOfDb(
-      slot.opportunity,
-      input.opportunitySlotId,
-    );
+    const { opportunity } = slot;
 
-    await validateBeforeReservation(ctx, currentUserId, slot, input);
+    await ReservationService.checkConflictBeforeReservation(
+      ctx,
+      currentUserId,
+      slot.startsAt,
+      slot.endsAt,
+    );
+    const currentCount = await ParticipationService.countActiveParticipantsBySlotId(ctx, slot.id);
+    ReservationValidator.validateCapacity(slot.capacity, input.participantCount, currentCount);
+
     const statuses = resolveReservationStatuses(opportunity.requireApproval);
 
-    const { communityId, requiredUtilities, opportunityCategory } = opportunity;
-    const { reservationStatus, participationStatus, participationStatusReason } = statuses;
+    const { communityId, requiredUtilities, category } = opportunity;
+    if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
     const reservation = await this.issuer.public(ctx, async (tx) => {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
-      await rewardOnboardingPointsIfFirstReservation(ctx, currentUserId, opportunityCategory, tx);
+      await rewardOnboardingPointsIfFirstReservation(ctx, currentUserId, category, tx);
       const reservation = await ReservationService.createReservation(
         ctx,
         input.opportunitySlotId,
         input.participantCount,
         input.userIdsIfExists,
-        reservationStatus,
-        participationStatus,
-        participationStatusReason,
+        statuses,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
@@ -108,14 +120,37 @@ export default class ReservationUseCase {
     return ReservationPresenter.create(reservation);
   }
 
-  // TODO create
-  // static async userCancelMyReservation(
-  //   { id, input }: GqlMutationReservationCancelArgs,
-  //   ctx: IContext,
-  // ): Promise<GqlReservationSetStatusPayload> {
-  //   const reservation = await ReservationService.findReservationOrThrow(ctx, id);
-  //   ReservationService.validateCancellable(reservation.opportunitySlot.startsAt);
-  // }
+  static async userCancelMyReservation(
+    { id, input }: GqlMutationReservationCancelArgs,
+    ctx: IContext,
+  ): Promise<GqlReservationSetStatusPayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const reservation = await ReservationService.findReservationOrThrow(ctx, id);
+    ReservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
+
+    return this.issuer.public(ctx, async (tx) => {
+      await ReservationService.setStatus(
+        ctx,
+        reservation.id,
+        currentUserId,
+        ReservationStatus.CANCELED,
+        tx,
+      );
+
+      await updateManyParticipationByReservationStatusChanged(
+        ctx,
+        reservation.participations,
+        ParticipationStatus.NOT_PARTICIPATING,
+        ParticipationStatusReason.RESERVATION_CANCELED,
+        tx,
+      );
+
+      await handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
+
+      return ReservationPresenter.setStatus(reservation);
+    });
+  }
 
   static async userJoinReservation(
     { id }: GqlMutationReservationJoinArgs,
@@ -126,7 +161,10 @@ export default class ReservationUseCase {
     const reservation = await this.issuer.public(ctx, async (tx) => {
       const res = await ReservationService.findReservationOrThrow(ctx, id);
 
-      const { availableParticipationId } = ReservationService.validateJoinable(res, currentUserId);
+      const { availableParticipationId } = ReservationValidator.validateJoinable(
+        res,
+        currentUserId,
+      );
 
       await ParticipationService.setStatus(
         ctx,
@@ -147,14 +185,26 @@ export default class ReservationUseCase {
     { id }: GqlMutationReservationAcceptArgs,
     ctx: IContext,
   ): Promise<GqlReservationSetStatusPayload> {
-    const reservation = await handleReservationStatusChange(
-      ctx,
-      this.issuer,
-      id,
-      ReservationStatus.ACCEPTED,
-      ParticipationStatus.PARTICIPATING,
-      ParticipationStatusReason.RESERVATION_ACCEPTED,
-    );
+    const currentUserId = getCurrentUserId(ctx);
+
+    const reservation = await this.issuer.public(ctx, async (tx) => {
+      const reservation = await ReservationService.setStatus(
+        ctx,
+        id,
+        currentUserId,
+        ReservationStatus.ACCEPTED,
+        tx,
+      );
+      await updateManyParticipationByReservationStatusChanged(
+        ctx,
+        reservation.participations,
+        ParticipationStatus.PARTICIPATING,
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
+        tx,
+      );
+
+      return reservation;
+    });
 
     return ReservationPresenter.setStatus(reservation);
   }
@@ -163,14 +213,26 @@ export default class ReservationUseCase {
     { id }: GqlMutationReservationRejectArgs,
     ctx: IContext,
   ): Promise<GqlReservationSetStatusPayload> {
-    const reservation = await handleReservationStatusChange(
-      ctx,
-      this.issuer,
-      id,
-      ReservationStatus.REJECTED,
-      ParticipationStatus.NOT_PARTICIPATING,
-      ParticipationStatusReason.RESERVATION_REJECTED,
-    );
+    const currentUserId = getCurrentUserId(ctx);
+
+    const reservation = await this.issuer.public(ctx, async (tx) => {
+      const reservation = await ReservationService.setStatus(
+        ctx,
+        id,
+        currentUserId,
+        ReservationStatus.REJECTED,
+        tx,
+      );
+      await updateManyParticipationByReservationStatusChanged(
+        ctx,
+        reservation.participations,
+        ParticipationStatus.NOT_PARTICIPATING,
+        ParticipationStatusReason.RESERVATION_REJECTED,
+        tx,
+      );
+
+      return reservation;
+    });
 
     return ReservationPresenter.setStatus(reservation);
   }
@@ -179,7 +241,7 @@ export default class ReservationUseCase {
 //  ------------------------------
 //  function for reservation usecase
 //  ------------------------------
-function resolveReservationStatuses(requireApproval: boolean) {
+function resolveReservationStatuses(requireApproval: boolean): reservationStatuses {
   return {
     reservationStatus: requireApproval ? ReservationStatus.APPLIED : ReservationStatus.ACCEPTED,
     participationStatus: requireApproval
@@ -189,23 +251,6 @@ function resolveReservationStatuses(requireApproval: boolean) {
       ? ParticipationStatusReason.RESERVATION_APPLIED
       : ParticipationStatusReason.RESERVATION_ACCEPTED,
   };
-}
-
-async function validateBeforeReservation(
-  ctx: IContext,
-  userId: string,
-  slot: PrismaOpportunitySlot,
-  input: GqlReservationCreateInput,
-) {
-  const { startsAt, endsAt, capacity } = slot;
-  await ReservationService.checkConflictBeforeReservation(ctx, userId, startsAt, endsAt);
-
-  const currentCount = await ParticipationService.countActiveParticipantsBySlotId(
-    ctx,
-    input.opportunitySlotId,
-  );
-
-  ReservationService.validateCapacity(capacity, input.participantCount, currentCount);
 }
 
 async function rewardOnboardingPointsIfFirstReservation(
@@ -263,48 +308,81 @@ async function handleReserveTicketAfterPurchaseIfNeeded(
   await TicketService.reserveManyTickets(ctx, tickets, tx);
 }
 
-async function handleReservationStatusChange(
+async function handleRefundTicketAfterCancelIfNeeded(
   ctx: IContext,
-  issuer: PrismaClientIssuer,
-  reservationId: string,
-  reservationStatus: ReservationStatus,
-  participationStatus: ParticipationStatus,
-  participationReason: ParticipationStatusReason,
-): Promise<PrismaReservation> {
-  const currentUserId = getCurrentUserId(ctx);
+  currentUserId: string,
+  input: GqlReservationCancelInput,
+  tx: Prisma.TransactionClient,
+): Promise<void> {
+  if (input.paymentMethod !== GqlReservationPaymentMethod.Point) return;
+  if (!input.ticketIdsIfExists?.length) return;
 
-  return issuer.public(ctx, async (tx) => {
-    const reservation = await ReservationService.setStatus(
-      ctx,
-      reservationId,
-      currentUserId,
-      reservationStatus,
-      tx,
+  const tickets = await TicketService.fetchTicketsByIds(ctx, input.ticketIdsIfExists);
+  if (tickets.length === 0) return;
+
+  const grouped = groupBy(tickets, (t) => t.utilityId);
+
+  for (const utilityId in grouped) {
+    const ticketsForUtility = grouped[utilityId].filter(
+      (t) => t.status === TicketStatus.DISABLED && t.reason === TicketStatusReason.RESERVED,
     );
+    if (ticketsForUtility.length === 0) continue;
 
-    const participations = await ParticipationService.fetchParticipationsByReservationId(
-      ctx,
-      reservationId,
-    );
-    const participationIds = participations.map((p) => p.id);
+    await refundUtilityTickets(ctx, currentUserId, ticketsForUtility, tx);
+  }
+}
 
-    await Promise.all([
-      ParticipationService.bulkSetStatusByReservation(
-        ctx,
-        participationIds,
-        participationStatus,
-        participationReason,
-        tx,
-      ),
-      ParticipationStatusHistoryService.bulkCreateStatusHistoriesForReservationStatusChanged(
-        ctx,
-        participationIds,
-        participationStatus,
-        participationReason,
-        tx,
-      ),
-    ]);
+async function refundUtilityTickets(
+  ctx: IContext,
+  currentUserId: string,
+  tickets: PrismaTicket[],
+  tx: Prisma.TransactionClient,
+): Promise<void> {
+  const sample = tickets[0];
+  const totalPoints = sample.utility.pointsRequired * tickets.length;
 
-    return reservation;
+  const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+    ctx,
+    tx,
+    sample.utility.communityId,
+    currentUserId,
+    totalPoints,
+    TransactionReason.TICKET_REFUNDED,
+  );
+
+  const transaction = await TransactionService.refundTicket(ctx, tx, {
+    fromWalletId,
+    toWalletId,
+    transferPoints: totalPoints,
   });
+
+  await TicketService.cancelReservedTicketsIfAvailable(ctx, tickets, currentUserId, tx);
+  await TicketService.refundTickets(ctx, tickets, currentUserId, transaction.id, tx);
+}
+
+async function updateManyParticipationByReservationStatusChanged(
+  ctx: IContext,
+  participations: PrismaParticipation[],
+  participationStatus: ParticipationStatus,
+  participationStatusReason: ParticipationStatusReason,
+  tx: Prisma.TransactionClient,
+) {
+  const participationIds = participations.map((p) => p.id);
+
+  await Promise.all([
+    ParticipationService.bulkSetStatusByReservation(
+      ctx,
+      participationIds,
+      participationStatus,
+      participationStatusReason,
+      tx,
+    ),
+    ParticipationStatusHistoryService.bulkCreateStatusHistoriesForReservationStatusChanged(
+      ctx,
+      participationIds,
+      participationStatus,
+      participationStatusReason,
+      tx,
+    ),
+  ]);
 }
