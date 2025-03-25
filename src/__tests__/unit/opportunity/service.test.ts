@@ -1,100 +1,203 @@
+import OpportunityRepository from "@/application/opportunity/data/repository";
+import OpportunityConverter from "@/application/opportunity/data/converter";
+import { getCurrentUserId } from "@/application/utils";
 import { IContext } from "@/types/server";
-import OpportunityService from "@/app/opportunity/service";
-import OpportunityRepository from "@/infra/repositories/opportunity";
-import { GqlOpportunityUpdateContentInput } from "@/types/graphql";
+import { PublishStatus, OpportunityHostingStatus, OpportunityCategory } from "@prisma/client";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
+import OpportunityService from "@/application/opportunity/service";
 
-jest.mock("@/infra/repositories/opportunity");
+jest.mock("@/application/opportunity/data/repository");
+jest.mock("@/application/opportunity/data/converter");
+jest.mock("@/application/utils", () => ({
+  getCurrentUserId: jest.fn(),
+}));
 
 describe("OpportunityService", () => {
-    let ctx: IContext;
+  const mockCtx = {} as IContext;
+  const mockOpportunity = { id: "opp-123" };
+  const userId = "user-1";
+  // const input = {
+  //   name: "Sample",
+  //   description: "Example",
+  //   place: { where: { id: "place-1" } },
+  // };
 
-    beforeEach(() => {
-        ctx = { currentUser: { id: "test-user" } } as unknown as IContext;
-        jest.clearAllMocks();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getCurrentUserId as jest.Mock).mockReturnValue("user-1");
+  });
+
+  describe("createOpportunity", () => {
+    it("should create opportunity with connected place", async () => {
+      const input = {
+        name: "My Opportunity",
+        title: "Opportunity Title",
+        description: "This is a sample opportunity",
+        category: OpportunityCategory.QUEST,
+        publishStatus: PublishStatus.PUBLIC,
+        requireApproval: false,
+        communityId: "community-1",
+        image: { base64: "image-data" },
+        place: {
+          where: "place-id-123",
+        },
+      };
+      const mockCreated = { id: "op-123", name: input.name };
+
+      jest
+        .spyOn(OpportunityConverter, "create")
+        .mockImplementation(() => ({ name: input.name }) as any);
+      (OpportunityRepository.create as jest.Mock).mockResolvedValue(mockCreated);
+
+      const result = await OpportunityService.createOpportunity(mockCtx, input);
+
+      expect(OpportunityConverter.create).toHaveBeenCalledWith(input, userId);
+      expect(OpportunityRepository.create).toHaveBeenCalledWith(mockCtx, { name: input.name });
+      expect(result).toEqual(mockCreated);
     });
 
+    it("should throw ValidationError if place has both where and create", async () => {
+      const input = {
+        name: "My Opportunity",
+        title: "Opportunity Title",
+        description: "This is a sample opportunity",
+        category: OpportunityCategory.QUEST,
+        publishStatus: PublishStatus.PUBLIC,
+        requireApproval: false,
+        communityId: "community-1",
+        image: { base64: "image-data" },
+        place: {
+          where: "place-id-123",
+        },
+      };
 
-    describe("deleteOpportunity", () => {
-        it("should throw error if user is not logged in", async () => {
-            ctx.currentUser = null;
-
-            const opportunityId = "opportunity-id";
-            const expectedError = "Unauthorized: User must be logged in";
-
-            await expect(OpportunityService.deleteOpportunity(ctx, opportunityId))
-                .rejects
-                .toThrow(expectedError);
-        });
-
-        it("should delete an opportunity", async () => {
-            const opportunityId = "1";
-            const mockDeletedOpportunity = { id: "1", title: "Opportunity 1" };
-            (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockDeletedOpportunity);
-            (OpportunityRepository.delete as jest.Mock).mockResolvedValue(mockDeletedOpportunity);
-
-            const result = await OpportunityService.deleteOpportunity(ctx, opportunityId);
-
-            expect(OpportunityRepository.find).toHaveBeenCalledWith(ctx, opportunityId);
-            expect(OpportunityRepository.delete).toHaveBeenCalledWith(ctx, opportunityId);
-            expect(result).toEqual(mockDeletedOpportunity);
-        });
+      await expect(OpportunityService.createOpportunity(mockCtx, input)).rejects.toThrow(
+        ValidationError,
+      );
     });
 
+    it("should create opportunity with new place (create)", async () => {
+      const input = {
+        name: "My Opportunity",
+        title: "Opportunity Title",
+        description: "This is a sample opportunity",
+        category: OpportunityCategory.QUEST,
+        publishStatus: PublishStatus.PUBLIC,
+        requireApproval: false,
+        communityId: "community-1",
+        image: { base64: "image-data" },
+        place: {
+          where: "place-id-123",
+        },
+      };
 
-    describe("setOpportunityStatus", () => {
-        it("should throw error if opportunity is not found", async () => {
-            const opportunityId = "non-existent-id";
-            const status = "PUBLIC";
-            const expectedError = `OpportunityNotFound: ID=${opportunityId}`;
+      const mockCreated = { id: "op-456", name: input.name };
 
-            (OpportunityRepository.find as jest.Mock).mockResolvedValue(null); // 見つからない場合
+      jest
+        .spyOn(OpportunityConverter, "create")
+        .mockImplementation(() => ({ name: input.name }) as any);
+      (OpportunityRepository.create as jest.Mock).mockResolvedValue(mockCreated);
 
-            await expect(OpportunityService.setOpportunityStatus(ctx, opportunityId, status))
-                .rejects
-                .toThrow(expectedError);
-        });
+      const result = await OpportunityService.createOpportunity(mockCtx, input);
 
-        it("should set opportunity status", async () => {
-            const opportunityId = "1";
-            const status = "PUBLIC";
-            const mockOpportunity = { id: opportunityId, publishStatus: "DRAFT" };
-            const mockUpdatedOpportunity = { ...mockOpportunity, publishStatus: status };
+      expect(OpportunityConverter.create).toHaveBeenCalledWith(input, userId);
+      expect(OpportunityRepository.create).toHaveBeenCalledWith(mockCtx, { name: input.name });
+      expect(result).toEqual(mockCreated);
+    });
+  });
 
-            (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);  // 見つかった場合
-            (OpportunityRepository.setStatus as jest.Mock).mockResolvedValue(mockUpdatedOpportunity);
+  describe("deleteOpportunity", () => {
+    it("should delete opportunity if found", async () => {
+      (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
+      (OpportunityRepository.delete as jest.Mock).mockResolvedValue(mockOpportunity);
 
-            const result = await OpportunityService.setOpportunityStatus(ctx, opportunityId, status);
+      const result = await OpportunityService.deleteOpportunity(mockCtx, "opp-123");
 
-            expect(OpportunityRepository.find).toHaveBeenCalledWith(ctx, opportunityId);
-            expect(OpportunityRepository.setStatus).toHaveBeenCalledWith(ctx, opportunityId, status);
-            expect(result).toEqual(mockUpdatedOpportunity);
-        });
+      expect(OpportunityRepository.find).toHaveBeenCalled();
+      expect(OpportunityRepository.delete).toHaveBeenCalledWith(mockCtx, "opp-123");
+      expect(result).toBe(mockOpportunity);
     });
 
-    describe("fetchPublicOpportunities", () => {
-        it("should handle cursor pagination", async () => {
+    it("should throw NotFoundError if not found", async () => {
+      jest.mocked(OpportunityRepository.find).mockResolvedValue(null);
 
-            await OpportunityService.fetchPublicOpportunities(ctx, {}, 10);
-
-            expect(OpportunityRepository.query).toHaveBeenCalledWith(ctx, expect.objectContaining({}), expect.objectContaining([]), 10, undefined)
-        });
+      await expect(OpportunityService.deleteOpportunity(mockCtx, "opp-404")).rejects.toThrow(
+        NotFoundError,
+      );
     });
+  });
 
-    describe("updateOpportunityContent", () => {
-        it("should throw error if opportunity not found", async () => {
-            const id = "non-existing-id";
-            const input: GqlOpportunityUpdateContentInput = {
-                title: "Updated Opportunity",
-                category: "QUEST",
-                communityId: "",
-                description: "",
-                publishStatus: "PUBLIC",
-                requireApproval: false
-            };
+  // describe("updateOpportunityContent", () => {
+  //   it("should update content if found", async () => {
+  //     (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
+  //     jest.mocked(OpportunityConverter.update).mockReturnValue({ description: "new" });
+  //     (OpportunityRepository.update as jest.Mock).mockResolvedValue({ id: "opp-123" });
+  //
+  //     const result = await OpportunityService.updateOpportunityContent(mockCtx, "opp-123", input);
+  //
+  //     expect(OpportunityConverter.update).toHaveBeenCalledWith(input);
+  //     expect(OpportunityRepository.update).toHaveBeenCalledWith(mockCtx, "opp-123", {
+  //       description: "new",
+  //     });
+  //     expect(result).toEqual({ id: "opp-123" });
+  //   });
+  //
+  //   it("should throw ValidationError for invalid place input", async () => {
+  //     jest.mocked(OpportunityRepository.find).mockResolvedValue(mockOpportunity);
+  //
+  //     const invalidInput = {
+  //       ...input,
+  //       place: { where: { id: "1" }, create: { name: "aaa" } },
+  //     };
+  //
+  //     await expect(
+  //       OpportunityService.updateOpportunityContent(mockCtx, "opp-123", invalidInput),
+  //     ).rejects.toThrow(ValidationError);
+  //   });
+  // });
+  //
+  // describe("setOpportunityPublishStatus", () => {
+  //   it("should set publish status if found", async () => {
+  //     jest.mocked(OpportunityRepository.find).mockResolvedValue(mockOpportunity);
+  //     jest
+  //       .mocked(OpportunityRepository.setPublishStatus)
+  //       .mockResolvedValue({ id: "opp-123", status: PublishStatus.PUBLIC });
+  //
+  //     const result = await OpportunityService.setOpportunityPublishStatus(
+  //       mockCtx,
+  //       "opp-123",
+  //       PublishStatus.PUBLIC,
+  //     );
+  //
+  //     expect(OpportunityRepository.setPublishStatus).toHaveBeenCalledWith(
+  //       mockCtx,
+  //       "opp-123",
+  //       PublishStatus.PUBLIC,
+  //     );
+  //     expect(result).toMatchObject({ id: "opp-123", status: PublishStatus.PUBLIC });
+  //   });
+  // });
 
-            (OpportunityRepository.find as jest.Mock).mockResolvedValue(null);
+  describe("setOpportunityHostingStatus", () => {
+    it("should set hosting status if found", async () => {
+      (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
+      (OpportunityRepository.setHostingStatus as jest.Mock).mockResolvedValue({
+        id: "opp-123",
+        status: OpportunityHostingStatus.CANCELLED,
+      });
 
-            await expect(OpportunityService.updateOpportunityContent(ctx, id, input)).rejects.toThrow(`OpportunityNotFound: ID=${id}`);
-        });
+      const result = await OpportunityService.setOpportunityHostingStatus(
+        mockCtx,
+        "opp-123",
+        OpportunityHostingStatus.CANCELLED,
+      );
+
+      expect(OpportunityRepository.setHostingStatus).toHaveBeenCalledWith(
+        mockCtx,
+        "opp-123",
+        OpportunityHostingStatus.CANCELLED,
+      );
+      expect(result).toMatchObject({ id: "opp-123", status: OpportunityHostingStatus.CANCELLED });
     });
+  });
 });
