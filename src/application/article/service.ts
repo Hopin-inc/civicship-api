@@ -1,4 +1,8 @@
-import { GqlArticleFilterInput, GqlArticlesConnection, GqlArticleSortInput } from "@/types/graphql";
+import {
+  GqlArticleFilterInput,
+  GqlArticlesConnection,
+  GqlQueryArticlesArgs,
+} from "@/types/graphql";
 import ArticleConverter from "@/application/article/data/converter";
 import ArticleRepository from "@/application/article/data/repository";
 import { IContext } from "@/types/server";
@@ -10,17 +14,7 @@ import { ValidationError } from "@/errors/graphql";
 export default class ArticleService {
   static async fetchArticles(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlArticleFilterInput;
-      sort?: GqlArticleSortInput;
-      first?: number;
-    },
+    { filter, sort, first, cursor }: GqlQueryArticlesArgs,
   ): Promise<GqlArticlesConnection> {
     const take = clampFirst(first);
 
