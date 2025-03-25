@@ -1,269 +1,266 @@
-import WalletService from "@/app/membership/wallet/service";
-import WalletRepository from "@/infra/repositories/membership/wallet";
-import WalletUtils from "@/app/membership/wallet/utils";
 import { Prisma, WalletType } from "@prisma/client";
+import WalletService from "@/application/membership/wallet/service";
+import WalletRepository from "@/application/membership/wallet/data/repository";
+import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
+import WalletConverter from "@/application/membership/wallet/data/converter";
 
-jest.mock("@/infra/repositories/membership/wallet");
-jest.mock("@/app/membership/wallet/utils");
+jest.mock("@/application/membership/wallet/data/repository");
+jest.mock("@/application/membership/wallet/data/converter");
 
 describe("WalletService", () => {
-    let ctx: IContext;
+  const mockCtx = {} as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
+  const walletId = "wallet-123";
+  const communityId = "community-456";
+  const userId = "user-789";
+
+  const baseWallet = {
+    id: walletId,
+    communityId,
+    userId,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: null,
+  };
+
+  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: WalletType.MEMBER };
+  const communityWallet = {
+    ...baseWallet,
+    id: "community-wallet-111",
+    type: WalletType.COMMUNITY,
+    userId: null,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("fetchWallets", () => {
+    it("should return all wallets", async () => {
+      // [1] モックデータ
+      const wallets = [memberWallet, communityWallet];
+
+      // [2] Repository.query をモック
+      (WalletRepository.query as jest.Mock).mockResolvedValue(wallets);
+
+      // [3] 実行
+      const filter = {};
+      const sort = {};
+      const take = 10;
+      const cursor = undefined;
+
+      const result = await WalletService.fetchWallets(mockCtx, { filter, sort, cursor }, take);
+
+      const where = WalletConverter.filter({});
+      const orderBy = WalletConverter.sort({});
+
+      // [4] 検証
+      expect(WalletRepository.query).toHaveBeenCalledWith(mockCtx, where, orderBy, take, cursor);
+      expect(result).toEqual(wallets);
+    });
+  });
+
+  describe("findWallet", () => {
+    it("should return the wallet if found", async () => {
+      (WalletRepository.find as jest.Mock).mockResolvedValue(baseWallet);
+
+      const result = await WalletService.findWallet(mockCtx, walletId);
+
+      expect(WalletRepository.find).toHaveBeenCalledWith(mockCtx, walletId);
+      expect(result).toEqual(baseWallet);
+    });
+
+    it("should return null if not found", async () => {
+      (WalletRepository.find as jest.Mock).mockResolvedValue(null);
+
+      const result = await WalletService.findWallet(mockCtx, walletId);
+
+      expect(WalletRepository.find).toHaveBeenCalledWith(mockCtx, walletId);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("findMemberWalletOrThrow", () => {
+    it("should return the member wallet if found", async () => {
+      // [2] Repository / Presenter のモック
+      (WalletRepository.findFirstExistingMemberWallet as jest.Mock).mockResolvedValue(memberWallet);
+
+      // [3] 実行
+      const result = await WalletService.findMemberWalletOrThrow(
+        mockCtx,
+        userId,
+        communityId,
+        mockTx,
+      );
+
+      // [4] 検証
+      expect(WalletRepository.findFirstExistingMemberWallet).toHaveBeenCalledWith(
+        mockCtx,
+        communityId,
+        userId,
+        mockTx,
+      );
+      expect(result).toEqual(memberWallet);
+    });
+
+    it("should throw NotFoundError if wallet does not exist", async () => {
+      // [1] Repository が null を返すようモック
+      (WalletRepository.findFirstExistingMemberWallet as jest.Mock).mockResolvedValue(null);
+
+      // [2] 実行・検証
+      await expect(
+        WalletService.findMemberWalletOrThrow(mockCtx, userId, communityId, mockTx),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("findCommunityWalletOrThrow", () => {
+    it("should return the community wallet if found", async () => {
+      (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(communityWallet);
+
+      // [3] 実行
+      const result = await WalletService.findCommunityWalletOrThrow(mockCtx, communityId);
+
+      // [4] 検証
+      expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(mockCtx, communityId);
+      expect(result).toEqual(communityWallet);
+    });
+
+    it("should throw NotFoundError if no community wallet is found", async () => {
+      // [1] Repository が null を返す
+      (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(null);
+
+      // [2] 検証
+      await expect(WalletService.findCommunityWalletOrThrow(mockCtx, communityId)).rejects.toThrow(
+        NotFoundError,
+      );
+    });
+  });
+
+  describe("checkIfMemberWalletExists", () => {
+    it("should return the wallet if found", async () => {
+      // [2] Repository / Presenter のモック設定
+      (WalletRepository.find as jest.Mock).mockResolvedValue(memberWallet);
+
+      // [3] 実行
+      const result = await WalletService.checkIfMemberWalletExists(mockCtx, walletId);
+
+      // [4] 検証
+      expect(WalletRepository.find).toHaveBeenCalledWith(mockCtx, walletId);
+      expect(result).toEqual(memberWallet);
+    });
+
+    it("should throw NotFoundError if wallet does not exist", async () => {
+      // [1] Repository が null を返す
+      (WalletRepository.find as jest.Mock).mockResolvedValue(null);
+
+      // [2] 検証
+      await expect(WalletService.checkIfMemberWalletExists(mockCtx, walletId)).rejects.toThrow(
+        NotFoundError,
+      );
+    });
+
+    const mockCreateInput = {
+      community: { connect: { id: communityId } },
+      type: WalletType.COMMUNITY,
+    };
+
+    it("should create a community wallet", async () => {
+      jest.mocked(WalletConverter.createCommunityWallet).mockReturnValue(mockCreateInput);
+      (WalletRepository.create as jest.Mock).mockResolvedValue(communityWallet);
+
+      const result = await WalletService.createCommunityWallet(mockCtx, communityId, mockTx);
+
+      expect(WalletConverter.createCommunityWallet).toHaveBeenCalledWith({ communityId });
+      expect(WalletRepository.create).toHaveBeenCalledWith(mockCtx, mockCreateInput, mockTx);
+      expect(result).toEqual(communityWallet);
+    });
+  });
+
+  describe("createMemberWalletIfNeeded", () => {
+    const mockCreateInput = {
+      user: { connect: { id: userId } },
+      community: { connect: { id: communityId } },
+      type: WalletType.MEMBER,
+    };
 
     beforeEach(() => {
-        ctx = { user: { id: "test-user" } } as unknown as IContext;
-        jest.clearAllMocks();
+      jest.clearAllMocks();
     });
 
-    describe("fetchWallets", () => {
-        it("should fetch wallets with the correct parameters", async () => {
-            const mockWallets = [{ id: "1", type: WalletType.MEMBER, communityId: "community-1" }];
-            (WalletRepository.query as jest.Mock).mockResolvedValue(mockWallets);
+    it("should return existing member wallet if already exists", async () => {
+      (WalletRepository.findFirstExistingMemberWallet as jest.Mock).mockResolvedValue(memberWallet);
 
-            const result = await WalletService.fetchWallets(ctx, { filter: {}, sort: {}, cursor: "" }, 10);
+      const result = await WalletService.createMemberWalletIfNeeded(
+        mockCtx,
+        userId,
+        communityId,
+        mockTx,
+      );
 
-            expect(WalletRepository.query).toHaveBeenCalledWith(
-                ctx,
-                expect.any(Object),
-                expect.any(Array),
-                10,
-                ""
-            );
-            expect(result).toEqual(mockWallets);
-        });
+      expect(WalletRepository.findFirstExistingMemberWallet).toHaveBeenCalledWith(
+        mockCtx,
+        communityId,
+        userId,
+        mockTx,
+      );
+      expect(WalletRepository.create).not.toHaveBeenCalled();
+      expect(result).toStrictEqual(memberWallet);
     });
 
-    describe("findWallet", () => {
-        it("should find a wallet by id", async () => {
-            const mockWallet = { id: "1", type: WalletType.MEMBER };
-            (WalletRepository.find as jest.Mock).mockResolvedValue(mockWallet);
+    it("should create and return member wallet if not exists", async () => {
+      (WalletRepository.findFirstExistingMemberWallet as jest.Mock).mockResolvedValue(null);
+      (WalletConverter.createMemberWallet as jest.Mock).mockReturnValue(mockCreateInput);
+      (WalletRepository.create as jest.Mock).mockResolvedValue(baseWallet);
 
-            const result = await WalletService.findWallet(ctx, "1");
+      const result = await WalletService.createMemberWalletIfNeeded(
+        mockCtx,
+        userId,
+        communityId,
+        mockTx,
+      );
 
-            expect(WalletRepository.find).toHaveBeenCalledWith(ctx, "1");
-            expect(result).toEqual(mockWallet);
-        });
+      expect(WalletRepository.findFirstExistingMemberWallet).toHaveBeenCalledWith(
+        mockCtx,
+        communityId,
+        userId,
+        mockTx,
+      );
+      expect(WalletConverter.createMemberWallet).toHaveBeenCalledWith({ userId, communityId });
+      expect(WalletRepository.create).toHaveBeenCalledWith(mockCtx, mockCreateInput, mockTx);
+      expect(result).toStrictEqual(baseWallet);
+    });
+  });
+
+  describe("deleteMemberWallet", () => {
+    it("should delete the member wallet if exists", async () => {
+      jest.spyOn(WalletService, "findMemberWalletOrThrow").mockResolvedValue(memberWallet as any);
+      (WalletRepository.delete as jest.Mock).mockResolvedValue(memberWallet);
+
+      const result = await WalletService.deleteMemberWallet(mockCtx, userId, communityId, mockTx);
+
+      expect(WalletService.findMemberWalletOrThrow).toHaveBeenCalledWith(
+        mockCtx,
+        communityId,
+        userId,
+        mockTx,
+      );
+      expect(WalletRepository.delete).toHaveBeenCalledWith(mockCtx, memberWallet.id);
+      expect(result).toEqual(memberWallet);
     });
 
-    describe("findCommunityWalletOrThrow", () => {
-        it("should return a wallet for the community", async () => {
-            const mockWallet = { id: "community-wallet", type: WalletType.COMMUNITY, communityId: "community-1" };
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockWallet);
+    it("should throw NotFoundError if wallet does not exist", async () => {
+      jest
+        .spyOn(WalletService, "findMemberWalletOrThrow")
+        .mockRejectedValue(new NotFoundError("wallet not found"));
 
-            const result = await WalletService.findCommunityWalletOrThrow(ctx, "community-1");
-
-            expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(ctx, "community-1");
-            expect(result).toEqual(mockWallet);
-        });
-
-        it("should throw an error if no community wallet is found", async () => {
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(null);
-
-            await expect(WalletService.findCommunityWalletOrThrow(ctx, "community-1")).rejects.toThrow(
-                "Wallet information is missing for points transfer"
-            );
-        });
+      await expect(
+        WalletService.deleteMemberWallet(mockCtx, userId, communityId, mockTx),
+      ).rejects.toThrow(NotFoundError);
     });
+  });
 
-    describe("findWalletsForRedeemedUtility", () => {
-        it("should return wallet ids for points transfer", async () => {
-            const mockMemberWallet = { id: "member-wallet", type: WalletType.MEMBER };
-            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            const requiredPoints = 100;
-
-            (WalletRepository.find as jest.Mock).mockResolvedValueOnce(mockMemberWallet);
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValueOnce(mockCommunityWallet);
-            (WalletUtils.validateTransfer as jest.Mock).mockResolvedValue(true);
-
-            const result = await WalletService.findWalletsForRedeemedUtility(
-                ctx,
-                "member-wallet-id",
-                "community-id",
-                requiredPoints
-            );
-
-            expect(WalletRepository.find).toHaveBeenCalledWith(ctx, "member-wallet-id");
-            expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(ctx, "community-id");
-            expect(WalletUtils.validateTransfer).toHaveBeenCalledWith(requiredPoints, mockMemberWallet, mockCommunityWallet);
-            expect(result).toEqual({ fromWalletId: mockMemberWallet.id, toWalletId: mockCommunityWallet.id });
-        });
-
-        it("should throw an error if member wallet is missing", async () => {
-            (WalletRepository.find as jest.Mock).mockResolvedValueOnce(null);
-
-            await expect(
-                WalletService.findWalletsForRedeemedUtility(ctx, "invalid-member-wallet", "community-id", 100)
-            ).rejects.toThrow("MemberWallet information is missing for points transfer");
-        });
-
-        it("should throw an error if community wallet is missing", async () => {
-            const mockMemberWallet = { id: "member-wallet", type: WalletType.MEMBER };
-            (WalletRepository.find as jest.Mock).mockResolvedValueOnce(mockMemberWallet);
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValueOnce(null);
-
-            await expect(
-                WalletService.findWalletsForRedeemedUtility(ctx, "member-wallet-id", "invalid-community-id", 100)
-            ).rejects.toThrow("No community wallet found for communityId: invalid-community-id");
-        });
-    });
-
-    describe("createCommunityWallet", () => {
-        it("should create a community wallet", async () => {
-            const mockWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            const tx = {} as Prisma.TransactionClient;
-            (WalletRepository.create as jest.Mock).mockResolvedValue(mockWallet);
-            const communityId = "community-id"
-
-            const result = await WalletService.createCommunityWallet(ctx, communityId, tx);
-
-            expect(WalletRepository.create).toHaveBeenCalledWith(
-                ctx,
-                expect.objectContaining({ community: { connect: { id: communityId } } }),
-                tx
-            );
-            expect(result).toEqual(mockWallet);
-        });
-    });
-
-    describe("createMemberWalletIfNeeded", () => {
-        it("should create a member wallet if none exists", async () => {
-            const mockWallet = { id: "member-wallet", type: WalletType.MEMBER };
-            const tx = {} as Prisma.TransactionClient;
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(null);
-            (WalletRepository.create as jest.Mock).mockResolvedValue(mockWallet);
-
-            const result = await WalletService.createMemberWalletIfNeeded(ctx, "user-id", "community-id", tx);
-
-            expect(WalletRepository.checkIfExistingMemberWallet).toHaveBeenCalledWith(
-                ctx, "community-id", "user-id", tx
-            );
-            expect(WalletRepository.create).toHaveBeenCalledWith(
-                ctx, expect.any(Object), tx
-            );
-            expect(result).toEqual(mockWallet);
-        });
-
-        it("should return existing wallet if it exists", async () => {
-            const mockWallet = { id: "member-wallet", type: WalletType.MEMBER };
-            const tx = {} as Prisma.TransactionClient;
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockWallet);
-
-            const result = await WalletService.createMemberWalletIfNeeded(ctx, "user-id", "community-id", tx);
-
-            expect(WalletRepository.checkIfExistingMemberWallet).toHaveBeenCalledWith(
-                ctx, "community-id", "user-id", tx
-            );
-            expect(WalletRepository.create).not.toHaveBeenCalled();
-            expect(result).toEqual(mockWallet);
-        });
-    });
-
-    describe("deleteMemberWallet", () => {
-        it("should delete an existing member wallet", async () => {
-            const mockWallet = { id: "member-wallet", type: WalletType.MEMBER };
-            const tx = {} as Prisma.TransactionClient;
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockWallet);
-            (WalletRepository.delete as jest.Mock).mockResolvedValue(mockWallet);
-
-            const result = await WalletService.deleteMemberWallet(ctx, "user-id", "community-id", tx);
-
-            expect(WalletRepository.checkIfExistingMemberWallet).toHaveBeenCalledWith(
-                ctx, "community-id", "user-id", tx
-            );
-            expect(WalletRepository.delete).toHaveBeenCalledWith(ctx, mockWallet.id);
-            expect(result).toEqual(mockWallet);
-        });
-
-        it("should throw an error if wallet is not found", async () => {
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(null);
-
-            await expect(
-                WalletService.deleteMemberWallet(ctx, "user-id", "community-id", {} as Prisma.TransactionClient)
-            ).rejects.toThrow("WalletNotFound: userId=user-id, communityId=community-id");
-        });
-    });
-    describe("findWalletsForGiveReward", () => {
-        it("should return wallet ids for points transfer", async () => {
-            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
-            const transferPoints = 100;
-
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
-            (WalletUtils.validateTransfer as jest.Mock).mockResolvedValue(true);
-            const tx = {} as Prisma.TransactionClient;
-
-            const result = await WalletService.findWalletsForGiveReward(
-                ctx,
-                {} as Prisma.TransactionClient,
-                "community-1",
-                "participant-1",
-                transferPoints
-            );
-
-            expect(WalletRepository.findCommunityWallet).toHaveBeenCalledWith(ctx, "community-1", tx);
-            expect(WalletRepository.checkIfExistingMemberWallet).toHaveBeenCalledWith(ctx, "community-1", "participant-1", {} as Prisma.TransactionClient);
-            expect(WalletUtils.validateTransfer).toHaveBeenCalledWith(transferPoints, mockCommunityWallet, mockParticipantWallet);
-            expect(result).toEqual({ fromWalletId: mockCommunityWallet.id, toWalletId: mockParticipantWallet.id });
-        });
-
-        it("should throw an error if no community wallet is found", async () => {
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(null);
-
-            await expect(
-                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", 100)
-            ).rejects.toThrow("No community wallet found for communityId: community-1");
-        });
-
-        it("should throw an error if no participant wallet is found", async () => {
-            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(null);
-
-            await expect(
-                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", 100)
-            ).rejects.toThrow("No participant wallet found for userId: participant-1");
-        });
-
-        it("should throw an error if transfer points validation fails", async () => {
-            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
-            const transferPoints = 100;
-
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
-            (WalletUtils.validateTransfer as jest.Mock).mockRejectedValue(new Error("Invalid transfer"));
-
-            await expect(
-                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", transferPoints)
-            ).rejects.toThrow("Invalid transfer");
-        });
-
-        it("should throw an error for negative transfer points", async () => {
-            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
-            const transferPoints = -100;
-
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
-
-            await expect(
-                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", transferPoints)
-            ).rejects.toThrow("Invalid transfer");
-        });
-
-        it("should throw an error if transfer points are zero", async () => {
-            const mockCommunityWallet = { id: "community-wallet", type: WalletType.COMMUNITY };
-            const mockParticipantWallet = { id: "participant-wallet", type: WalletType.MEMBER };
-            const transferPoints = 0;
-
-            (WalletRepository.findCommunityWallet as jest.Mock).mockResolvedValue(mockCommunityWallet);
-            (WalletRepository.checkIfExistingMemberWallet as jest.Mock).mockResolvedValue(mockParticipantWallet);
-
-            await expect(
-                WalletService.findWalletsForGiveReward(ctx, {} as Prisma.TransactionClient, "community-1", "participant-1", transferPoints)
-            ).rejects.toThrow("Invalid transfer");
-        });
-    });
-
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 });
