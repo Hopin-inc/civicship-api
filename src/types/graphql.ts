@@ -239,12 +239,10 @@ export type GqlCommunityWalletsArgs = {
 
 export type GqlCommunityCreateInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
-  cityCode: Scalars['String']['input'];
   establishedAt?: InputMaybe<Scalars['Datetime']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   pointName: Scalars['String']['input'];
-  stateCode: Scalars['String']['input'];
   website?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1876,6 +1874,7 @@ export type GqlUserSortInput = {
 
 export type GqlUserUpdateProfileInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
   slug: Scalars['String']['input'];
@@ -1885,7 +1884,6 @@ export type GqlUserUpdateProfileInput = {
   urlWebsite?: InputMaybe<Scalars['String']['input']>;
   urlX?: InputMaybe<Scalars['String']['input']>;
   urlYoutube?: InputMaybe<Scalars['String']['input']>;
-  userId: Scalars['String']['input'];
 };
 
 export type GqlUserUpdateProfilePayload = GqlUserUpdateProfileSuccess;

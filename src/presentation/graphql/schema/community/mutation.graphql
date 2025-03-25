@@ -7,9 +7,6 @@ input CommunityCreateInput {
     bio: String
     establishedAt: Datetime
     website: String
-
-    stateCode: String!
-    cityCode: String!
 }
 
 input CommunityUpdateProfileInput {

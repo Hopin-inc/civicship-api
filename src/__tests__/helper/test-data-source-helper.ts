@@ -1,4 +1,13 @@
 import { prismaClient } from "@/infra/prisma/client";
+import { communityInclude } from "@/infra/prisma/types/community";
+import { walletInclude } from "@/infra/prisma/types/membership/wallet";
+import { opportunityInclude } from "@/infra/prisma/types/opportunity";
+import { participationInclude } from "@/infra/prisma/types/opportunity/participation";
+import { placeInclude } from "@/infra/prisma/types/place";
+import { transactionInclude } from "@/infra/prisma/types/transaction";
+import { utilityInclude } from "@/infra/prisma/types/utility";
+import { Prisma, WalletType } from "@prisma/client";
+import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
@@ -8,77 +17,137 @@ export default class TestDataSourceHelper {
   }
 
   static async deleteAll() {
-    return this.db.user.deleteMany();
+    await this.db.utilityHistory.deleteMany();
+    await this.db.transaction.deleteMany();
+    await this.db.opportunityInvitationHistory.deleteMany();
+    await this.db.participationStatusHistory.deleteMany();
+    await this.db.wallet.deleteMany();
+    await this.db.utility.deleteMany();
+    await this.db.membership.deleteMany();
+    await this.db.participation.deleteMany();
+    await this.db.opportunitySlot.deleteMany();
+    await this.db.opportunityInvitation.deleteMany();
+    await this.db.opportunity.deleteMany();
+    await this.db.article.deleteMany();
+    await this.db.community.deleteMany();
+    await this.db.user.deleteMany();
+    await this.db.place.deleteMany();
+    await this.db.city.deleteMany();
+    await this.db.state.deleteMany();
   }
+
 
   static async disconnect() {
-    return this.db.$disconnect();
+    return await this.db.$disconnect();
   }
 
-  // TODO: 実際テストで使うメソッドを整える
+  static async create(data: Prisma.UserCreateInput) {
+    return await this.db.user.create({
+      data,
+      include: {
+        identities: true,
+      },
+    });
+  }
 
-  // static async query(
-  //   where: Prisma.UserWhereInput,
-  //   orderBy: Prisma.UserOrderByWithRelationInput,
-  //   take: number,
-  //   cursor?: string,
-  // ) {
-  //   return this.db.user.findMany({
-  //     where,
-  //     orderBy,
-  //     include: userGetInclude,
-  //     take: take + 1,
-  //     skip: cursor ? 1 : 0,
-  //     cursor: cursor ? { id: cursor } : undefined,
-  //   });
-  // }
+  static async createCommunity(
+    data: Prisma.CommunityCreateInput
+  ) {
+    return await this.db.community.create({
+      data,
+      include: communityInclude,
+    });
+  }
 
-  // static async checkExists(id: string) {
-  //   return this.db.user.findUnique({
-  //     where: { id },
-  //   });
-  // }
+  static async createWallet(
+    data: Prisma.WalletCreateInput,
+  ) {
+    return await this.db.wallet.create({
+      data,
+      include: walletInclude,
+    });
+  };
 
-  // static async find(id: string) {
-  //   return this.db.user.findUnique({
-  //     where: { id },
-  //     include: userGetInclude,
-  //   });
-  // }
+  static async findCommunityWallet(
+    communityId: string,
+  ) {
+    return await this.db.wallet.findFirst({
+      where: { communityId, type: WalletType.COMMUNITY },
+      include: walletInclude,
+    });
+  }
 
-  // static async findForUpdateContent(id: string) {
-  //   return this.db.user.findUnique({
-  //     where: { id },
-  //     include: userUpdateContentInclude,
-  //   });
-  // }
+  static async findMemberWallet(
+    userId: string,
+  ) {
+    return await this.db.wallet.findFirst({
+      where: { userId, type: WalletType.MEMBER },
+      include: walletInclude,
+    });
+  }
 
-  // static async updateContent(id: string, data: Prisma.UserUpdateInput) {
-  //   return this.db.user.update({
-  //     where: { id },
-  //     data,
-  //     include: userUpdateContentInclude,
-  //   });
-  // }
+  static async findAllTransactions() {
+    return await this.db.transaction.findMany();
+  };
 
-  // static async switchPrivacy(id: string, isPublic: boolean) {
-  //   return this.db.user.update({
-  //     where: { id },
-  //     data: { isPublic: isPublic },
-  //   });
-  // }
 
-  // static async create(data: Prisma.UserCreateInput) {
-  //   return this.db.user.create({
-  //     data,
-  //     include: userCreateInclude,
-  //   });
-  // }
+  static async createTransaction(
+    data: Prisma.TransactionCreateInput,
+  ) {
+    return await this.db.transaction.create({
+      data,
+      include: transactionInclude,
+    });
+  };
 
-  // static async updateRelation(id: string, data: Prisma.UserUpdateInput) {
-  //   return this.db.user.update({
-  //     where: { id },
-  //     data: data,
-  //   });
-  // }
+
+  static async refreshCurrentPoints() {
+    return await this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+  }
+
+  static async createUtility(data: Prisma.UtilityCreateInput) {
+    return this.db.utility.create({
+      data,
+      include: utilityInclude,
+    });
+  }
+
+  static async createOpportunity(data: Prisma.OpportunityCreateInput) {
+    return await this.db.opportunity.create({
+      data,
+      include: opportunityInclude,
+    });
+  }
+
+  static async createParticipation(data: Prisma.ParticipationCreateInput) {
+    return await this.db.participation.create({
+      data,
+      include: participationInclude,
+    });
+  }
+
+
+  static async createPlace(data: Prisma.PlaceCreateInput) {
+    return await this.db.place.create({
+      data,
+      include: placeInclude,
+    });
+  }
+
+  static async findParticipationById(id: string) {
+    return await this.db.participation.findUnique({
+      where: { id },
+      include: participationInclude,
+    });
+  }
+
+  static async findAllParticipation() {
+    return this.db.participation.findMany({
+    });
+  }
+
+  static async findAllCommunity() {
+    return this.db.community.findMany({
+    });
+  }
 }
