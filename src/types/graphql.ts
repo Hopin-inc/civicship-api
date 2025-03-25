@@ -2444,6 +2444,7 @@ export type GqlUserSortInput = {
 
 export type GqlUserUpdateProfileInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['String']['input'];
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
   slug: Scalars['String']['input'];

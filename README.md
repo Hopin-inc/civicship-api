@@ -46,3 +46,17 @@ pnpm db:deploy
 # Generate type definitions
 pnpm gql:generate
 ```
+
+## Execute Tests
+
+```shell
+# Start containers
+pnpm container:up
+
+# Execute Jest
+pnpm test
+
+# Execute Jest and generate coverage report
+pnpm test:coverage
+
+```

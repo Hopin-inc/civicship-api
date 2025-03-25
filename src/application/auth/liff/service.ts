@@ -1,0 +1,114 @@
+import axios from 'axios';
+import { auth } from '@/infra/libs/firebase';
+import { SignInProvider } from '@/consts/utils';
+
+export interface LINEProfile {
+  userId: string;
+  displayName: string;
+  pictureUrl?: string;
+  statusMessage?: string;
+  email?: string;
+  language?: string;
+}
+
+export interface LINETokenVerifyResponse {
+  client_id: string;
+  expires_in: number;
+}
+
+export class LIFFService {
+  /**
+   * Verify LINE access token
+   * @param accessToken Access token from LINE LIFF
+   * @returns void - throws error if token is invalid
+   */
+  static async verifyAccessToken(accessToken: string): Promise<void> {
+    try {
+      const channelId = process.env.LINE_LIFF_CHANNEL_ID;
+
+      if (!channelId) {
+        console.error('LINE_CHANNEL_ID is not defined in environment variables');
+        throw new Error('LINE configuration missing');
+      }
+
+      const response = await axios.get(
+        `https://api.line.me/oauth2/v2.1/verify?access_token=${accessToken}`
+      );
+
+      const data = response.data as LINETokenVerifyResponse;
+
+      if (data.client_id !== channelId) {
+        throw new Error(
+          `Line client_id does not match: liffID: ${channelId} client_id: ${data.client_id}`
+        );
+      }
+
+      if (data.expires_in < 0) {
+        throw new Error(`Line access token is expired: ${data.expires_in}`);
+      }
+
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorData = error.response?.data;
+        throw new Error(
+          `[LINE Token Verification] ${errorData?.error}: ${errorData?.error_description || error.message}`
+        );
+      }
+      throw new Error(`[LINE Token Verification] ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Get LINE user profile using access token
+   * @param accessToken Access token from LINE LIFF
+   * @returns LINE profile data
+   */
+  static async getProfile(accessToken: string): Promise<LINEProfile> {
+    try {
+      // LINEプロファイル取得エンドポイントを呼び出し
+      const response = await axios.get('https://api.line.me/v2/profile', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return response.data as LINEProfile;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorData = error.response?.data;
+        throw new Error(
+          `[LINE Profile Fetch] ${errorData?.error}: ${errorData?.error_description || error.message}`
+        );
+      }
+      throw new Error(`[LINE Profile Fetch] ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Create Firebase custom token based on LINE profile
+   * @param profile LINE user profile
+   * @returns Firebase custom token
+   */
+  static async createFirebaseCustomToken(profile: LINEProfile): Promise<string> {
+    try {
+      // Create custom claims with LINE user info
+      const customClaims = {
+        line: {
+          userId: profile.userId,
+          displayName: profile.displayName,
+          pictureUrl: profile.pictureUrl,
+          statusMessage: profile.statusMessage,
+          language: profile.language,
+        },
+        provider: SignInProvider["oidc.line"],
+      };
+
+      // Create Firebase custom token
+      const customToken = await auth.createCustomToken(profile.userId, customClaims);
+      return customToken;
+    } catch (error) {
+      console.error('Error creating Firebase custom token:', error);
+      throw new Error('Failed to create authentication token');
+    }
+  }
+}
