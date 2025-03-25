@@ -46,6 +46,7 @@ import { reservationStatuses } from "@/application/reservation/helper";
 import { PrismaParticipation } from "@/application/participation/data/type";
 import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
 import { NotFoundError } from "@/errors/graphql";
+import WalletValidator from "@/application/membership/wallet/validator";
 
 export default class ReservationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -281,7 +282,7 @@ async function handleReserveTicketAfterPurchaseIfNeeded(
   const utility = OpportunityService.getSingleRequiredUtility(requiredUtilities);
   const totalTransferPoints = utility.pointsRequired * input.participantCount;
 
-  const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
     ctx,
     tx,
     communityId,
@@ -341,7 +342,7 @@ async function refundUtilityTickets(
   const sample = tickets[0];
   const totalPoints = sample.utility.pointsRequired * tickets.length;
 
-  const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
     ctx,
     tx,
     sample.utility.communityId,

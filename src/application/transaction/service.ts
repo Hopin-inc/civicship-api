@@ -1,12 +1,9 @@
 import TransactionRepository from "@/application/transaction/data/repository";
 import {
-  GqlTransaction,
+  GqlQueryTransactionsArgs,
   GqlTransactionDonateSelfPointInput,
-  GqlTransactionFilterInput,
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionIssueCommunityPointInput,
-  GqlTransactionsConnection,
-  GqlTransactionSortInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
@@ -15,37 +12,17 @@ import TransactionConverter, {
   PurchaseTicketParams,
   RefundTicketParams,
 } from "@/application/transaction/data/converter";
-import { clampFirst } from "@/application/utils";
-import TransactionPresenter from "@/application/transaction/presenter";
 
 export default class TransactionService {
   static async fetchTransactions(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlTransactionFilterInput;
-      sort?: GqlTransactionSortInput;
-      first?: number;
-    },
-  ): Promise<GqlTransactionsConnection> {
-    const take = clampFirst(first);
-
+    { cursor, filter, sort }: GqlQueryTransactionsArgs,
+    take: number,
+  ) {
     const where = TransactionConverter.filter(filter ?? {});
     const orderBy = TransactionConverter.sort(sort ?? {});
 
-    const res = await TransactionRepository.query(ctx, where, orderBy, take + 1, cursor);
-    const hasNextPage = res.length > take;
-
-    const data: GqlTransaction[] = res.slice(0, take).map((record) => {
-      return TransactionPresenter.get(record);
-    });
-
-    return TransactionPresenter.query(data, hasNextPage);
+    return await TransactionRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findTransaction(ctx: IContext, id: string) {

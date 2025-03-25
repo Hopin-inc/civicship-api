@@ -10,10 +10,10 @@ import ParticipationImageService from "@/application/participation/image/service
 import ParticipationService from "@/application/participation/service";
 import ParticipationImagePresenter from "@/application/participation/image/presenter";
 import { EvaluationStatus, ParticipationStatus, TransactionReason, Prisma } from "@prisma/client";
-import WalletService from "@/application/membership/wallet/service";
 import TransactionService from "@/application/transaction/service";
 import { getCurrentUserId } from "@/application/utils";
 import { PrismaParticipation } from "@/application/participation/data/type";
+import WalletValidator from "@/application/membership/wallet/validator";
 
 export default class ParticipationImageUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -124,7 +124,7 @@ async function transferRewardPointsToUser(
   userId: string,
   transferPoints: number,
 ) {
-  const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
     ctx,
     tx,
     communityId,

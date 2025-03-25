@@ -61,7 +61,13 @@ const userResolver = {
       args: GqlUserWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
-      return WalletUseCase.visitorBrowseWalletsByUser(parent, args, ctx);
+      return WalletUseCase.visitorBrowseWallets(
+        {
+          ...args,
+          filter: { ...args.filter, userId: parent.id },
+        },
+        ctx,
+      );
     },
 
     opportunitiesCreatedByMe: async (

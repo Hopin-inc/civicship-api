@@ -16,8 +16,8 @@ import TransactionPresenter from "@/application/transaction/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma, TransactionReason } from "@prisma/client";
 import MembershipService from "@/application/membership/service";
-import WalletService from "@/application/membership/wallet/service";
-import { getCurrentUserId } from "@/application/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
+import WalletValidator from "@/application/membership/wallet/validator";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -26,12 +26,23 @@ export default class TransactionUseCase {
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
     ctx: IContext,
   ): Promise<GqlTransactionsConnection> {
-    return TransactionService.fetchTransactions(ctx, {
-      filter,
-      sort,
-      cursor,
-      first,
+    const take = clampFirst(first);
+
+    const records = await TransactionService.fetchTransactions(
+      ctx,
+      {
+        filter,
+        sort,
+        cursor,
+      },
+      take,
+    );
+
+    const hasNextPage = records.length > take;
+    const data: GqlTransaction[] = records.slice(0, take).map((record) => {
+      return TransactionPresenter.get(record);
     });
+    return TransactionPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewTransaction(
@@ -62,7 +73,7 @@ export default class TransactionUseCase {
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
-      const { toWalletId } = await WalletService.validateCommunityMemberTransfer(
+      const { toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
         ctx,
         tx,
         communityId,
@@ -86,7 +97,7 @@ export default class TransactionUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
-      const { toWalletId } = await WalletService.validateMemberToMemberDonation(
+      const { toWalletId } = await WalletValidator.validateMemberToMemberDonation(
         ctx,
         tx,
         fromWalletId,

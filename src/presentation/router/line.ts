@@ -1,13 +1,11 @@
 import express from "express";
 import { lineClient, lineMiddleware } from "@/infrastructure/libs/line";
-import { lineClient, lineMiddleware } from "@/infra/libs/line";
-import { LIFFAuthUseCase, LIFFLoginRequest } from "@/app/auth/liff/usercase";
+import { LIFFAuthUseCase, LIFFLoginRequest } from "@/application/auth/liff/usercase";
 
 const router = express();
 
 router.post("/callback", lineMiddleware, (req, res) => {
-  Promise
-    .all(req.body.events.map(handleEvent))
+  Promise.all(req.body.events.map(handleEvent))
     .then((result) => res.json(result))
     .catch((err) => {
       console.error(err);
@@ -19,7 +17,7 @@ router.post("/liff-login", async (req, res) => {
   try {
     const { accessToken } = req.body;
     if (!accessToken) {
-      return res.status(400).json({ error: 'ID token is required' });
+      return res.status(400).json({ error: "ID token is required" });
     }
 
     const loginRequest: LIFFLoginRequest = { accessToken };
@@ -27,11 +25,11 @@ router.post("/liff-login", async (req, res) => {
 
     return res.status(200).json({
       customToken: result.customToken,
-      profile: result.profile
+      profile: result.profile,
     });
   } catch (error) {
-    console.error('LIFF login error:', error);
-    return res.status(401).json({ error: 'Authentication failed' });
+    console.error("LIFF login error:", error);
+    return res.status(401).json({ error: "Authentication failed" });
   }
 });
 
@@ -44,10 +42,12 @@ const handleEvent = (event) => {
   // use reply API
   return lineClient.replyMessage({
     replyToken: event.replyToken,
-    messages: [{
-      type: "textV2",
-      text: event.message.text,
-    }],
+    messages: [
+      {
+        type: "textV2",
+        text: event.message.text,
+      },
+    ],
   });
 };
 

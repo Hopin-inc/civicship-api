@@ -14,10 +14,10 @@ import { IContext } from "@/types/server";
 import TicketService from "@/application/ticket/service";
 import TicketPresenter from "@/application/ticket/presenter";
 import WalletService from "@/application/membership/wallet/service";
-import WalletUtils from "@/application/membership/wallet/utils";
 import TransactionService from "@/application/transaction/service";
 import { Prisma } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import WalletValidator from "@/application/membership/wallet/validator";
 
 export default class TicketUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -48,7 +48,7 @@ export default class TicketUseCase {
     const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await WalletUtils.validateTransfer(input.pointsRequired, memberWallet, communityWallet);
+      await WalletValidator.validateTransfer(input.pointsRequired, memberWallet, communityWallet);
 
       const transaction = await TransactionService.purchaseTicket(ctx, tx, {
         fromWalletId: memberWallet.id,
@@ -83,7 +83,7 @@ export default class TicketUseCase {
     const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
 
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await WalletUtils.validateTransfer(input.pointsRequired, communityWallet, memberWallet);
+      await WalletValidator.validateTransfer(input.pointsRequired, communityWallet, memberWallet);
 
       const transaction = await TransactionService.refundTicket(ctx, tx, {
         fromWalletId: memberWallet.id,
