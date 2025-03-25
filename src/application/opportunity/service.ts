@@ -1,46 +1,28 @@
 import {
   GqlNestedPlaceConnectOrCreateInput,
-  GqlOpportunitiesConnection,
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
-  GqlOpportunitySortInput,
   GqlOpportunityUpdateContentInput,
+  GqlQueryOpportunitiesArgs,
 } from "@/types/graphql";
 import OpportunityRepository from "@/application/opportunity/data/repository";
 import { OpportunityHostingStatus, Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { clampFirst, getCurrentUserId } from "@/application/utils";
-import OpportunityPresenter from "@/application/opportunity/presenter";
+import { getCurrentUserId } from "@/application/utils";
 import OpportunityConverter from "@/application/opportunity/data/converter";
 import { PrismaOpportunitySlot } from "@/application/opportunitySlot/data/type";
 
 export default class OpportunityService {
   static async fetchOpportunities(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlOpportunityFilterInput;
-      sort?: GqlOpportunitySortInput;
-      first?: number;
-    },
-  ): Promise<GqlOpportunitiesConnection> {
-    const take = clampFirst(first);
-
+    { cursor, filter, sort }: GqlQueryOpportunitiesArgs,
+    take: number,
+  ) {
     const where = OpportunityConverter.filter(filter ?? {});
     const orderBy = OpportunityConverter.sort(sort ?? {});
 
-    const res = await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
-
-    const hasNextPage = res.length > take;
-    const data = res.slice(0, take).map((record) => OpportunityPresenter.get(record));
-
-    return OpportunityPresenter.query(data, hasNextPage);
+    return await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findOpportunity(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {

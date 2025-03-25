@@ -19,7 +19,7 @@ import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/opportunity/presenter";
 import { OpportunityHostingStatus, PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/opportunity/service";
-import { getMembershipRolesByCtx } from "@/application/utils";
+import { clampFirst, getMembershipRolesByCtx } from "@/application/utils";
 import ParticipationService from "@/application/participation/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationStatusHistoryService from "@/application/participation/statusHistory/service";
@@ -31,6 +31,8 @@ export default class OpportunityUseCase {
     { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
+    const take = clampFirst(first);
+
     const currentUserId = ctx.currentUser?.id;
     const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
 
@@ -51,12 +53,20 @@ export default class OpportunityUseCase {
       filter,
     );
 
-    return OpportunityService.fetchOpportunities(ctx, {
-      cursor,
-      sort,
-      filter: validatedFilter,
-      first,
-    });
+    const records = await OpportunityService.fetchOpportunities(
+      ctx,
+      {
+        cursor,
+        sort,
+        filter: validatedFilter,
+      },
+      take,
+    );
+
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
+
+    return OpportunityPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewOpportunity(
