@@ -21,7 +21,7 @@ import {
 import { IContext } from "@/types/server";
 import MembershipPresenter from "@/application/membership/presenter";
 import MembershipService from "@/application/membership/service";
-import { getCurrentUserId } from "@/application/utils";
+import { clampFirst, getCurrentUserId } from "@/application/utils";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 import WalletService from "@/application/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -33,12 +33,21 @@ export default class MembershipUseCase {
     { filter, sort, cursor, first }: GqlQueryMembershipsArgs,
     ctx: IContext,
   ): Promise<GqlMembershipsConnection> {
-    return MembershipService.fetchMemberships(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
+    const take = clampFirst(first);
+
+    const records = await MembershipService.fetchMemberships(
+      ctx,
+      {
+        cursor,
+        sort,
+        filter,
+      },
+      take,
+    );
+
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map(MembershipPresenter.get);
+    return MembershipPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewMembership(

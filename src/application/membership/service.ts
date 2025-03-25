@@ -1,46 +1,27 @@
 import {
-  GqlMembershipCursorInput,
-  GqlMembershipFilterInput,
   GqlMembershipInviteInput,
-  GqlMembershipsConnection,
   GqlMembershipSetInvitationStatusInput,
   GqlMembershipSetRoleInput,
-  GqlMembershipSortInput,
+  GqlQueryMembershipsArgs,
 } from "@/types/graphql";
 import MembershipConverter from "@/application/membership/data/converter";
 import MembershipRepository from "@/application/membership/data/repository";
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
-import { clampFirst, getCurrentUserId } from "@/application/utils";
+import { getCurrentUserId } from "@/application/utils";
 import { NotFoundError } from "@/errors/graphql";
-import MembershipPresenter from "@/application/membership/presenter";
+import { PrismaMembership } from "@/application/membership/data/type";
 
 export default class MembershipService {
   static async fetchMemberships(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: GqlMembershipCursorInput;
-      filter?: GqlMembershipFilterInput;
-      sort?: GqlMembershipSortInput;
-      first?: number;
-    },
-  ): Promise<GqlMembershipsConnection> {
-    const take = clampFirst(first);
-
+    { cursor, filter, sort }: GqlQueryMembershipsArgs,
+    take: number,
+  ): Promise<PrismaMembership[]> {
     const where = MembershipConverter.filter(filter ?? {});
     const orderBy = MembershipConverter.sort(sort ?? {});
 
-    const res = await MembershipRepository.query(ctx, where, orderBy, take + 1, cursor);
-
-    const hasNextPage = res.length > take;
-    const data = res.slice(0, take).map((record) => MembershipPresenter.get(record));
-
-    return MembershipPresenter.query(data, hasNextPage);
+    return await MembershipRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findMembership(ctx: IContext, userId: string, communityId: string) {

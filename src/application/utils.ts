@@ -2,9 +2,9 @@ import { IContext } from "@/types/server";
 import { Prisma, Role, Todo, TransactionReason } from "@prisma/client";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
 import OnboardingService from "@/application/onboarding/service";
-import WalletService from "@/application/membership/wallet/service";
 import { initialCommunityId } from "@/consts/utils";
 import TransactionService from "@/application/transaction/service";
+import WalletValidator from "@/application/membership/wallet/validator";
 
 export function getCurrentUserId(ctx: IContext): string {
   const currentUserId = ctx.currentUser?.id;
@@ -33,7 +33,7 @@ export async function runOnboardingReward(
 ): Promise<void> {
   const onboarding = await OnboardingService.findOnboardingTodoOrThrow(ctx, userId, todo, tx);
 
-  const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
     ctx,
     tx,
     initialCommunityId,

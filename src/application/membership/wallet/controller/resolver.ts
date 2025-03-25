@@ -12,7 +12,7 @@ import TransactionUseCase from "@/application/transaction/usecase";
 const walletResolver = {
   Query: {
     wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
-      WalletUseCase.userBrowseWallets(args, ctx),
+      WalletUseCase.visitorBrowseWallets(args, ctx),
     wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
       if (!ctx.loaders?.wallet) {
         return WalletUseCase.userViewWallet(args, ctx);

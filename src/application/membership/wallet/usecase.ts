@@ -3,51 +3,34 @@ import {
   GqlQueryWalletArgs,
   GqlWallet,
   GqlWalletsConnection,
-  GqlCommunity,
-  GqlCommunityWalletsArgs,
-  GqlUser,
-  GqlUserWalletsArgs,
 } from "@/types/graphql";
 import WalletService from "@/application/membership/wallet/service";
 import WalletPresenter from "@/application/membership/wallet/presenter";
 import { IContext } from "@/types/server";
-import WalletUtils from "@/application/membership/wallet/utils";
+import { clampFirst } from "@/application/utils";
 
 export default class WalletUseCase {
-  static async userBrowseWallets(
+  static async visitorBrowseWallets(
     { filter, sort, cursor, first }: GqlQueryWalletsArgs,
     ctx: IContext,
   ): Promise<GqlWalletsConnection> {
-    return WalletUtils.fetchWalletsCommon(ctx, {
-      cursor,
-      filter,
-      sort,
-      first,
-    });
-  }
+    const take = clampFirst(first);
 
-  static async visitorBrowseWalletsByCommunity(
-    { id }: GqlCommunity,
-    { first, cursor }: GqlCommunityWalletsArgs,
-    ctx: IContext,
-  ): Promise<GqlWalletsConnection> {
-    return WalletUtils.fetchWalletsCommon(ctx, {
-      cursor,
-      filter: { communityId: id },
-      first,
-    });
-  }
+    const records = await WalletService.fetchWallets(
+      ctx,
+      {
+        cursor,
+        filter,
+        sort,
+      },
+      take,
+    );
 
-  static async visitorBrowseWalletsByUser(
-    { id }: GqlUser,
-    { first, cursor }: GqlUserWalletsArgs,
-    ctx: IContext,
-  ) {
-    return WalletUtils.fetchWalletsCommon(ctx, {
-      cursor,
-      filter: { userId: id },
-      first,
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map((record) => {
+      return WalletPresenter.get(record);
     });
+    return WalletPresenter.query(data, hasNextPage);
   }
 
   static async userViewWallet(

@@ -104,7 +104,13 @@ const communityResolver = {
       args: GqlCommunityWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
-      return WalletUseCase.visitorBrowseWalletsByCommunity(parent, args, ctx);
+      return WalletUseCase.visitorBrowseWallets(
+        {
+          ...args,
+          filter: { ...args.filter, communityId: parent.id },
+        },
+        ctx,
+      );
     },
 
     utilities: async (

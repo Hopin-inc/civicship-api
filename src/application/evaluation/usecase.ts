@@ -13,8 +13,8 @@ import EvaluationService from "@/application/evaluation/service";
 import EvaluationPresenter from "@/application/evaluation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { ValidationError } from "@/errors/graphql";
-import WalletService from "@/application/membership/wallet/service";
 import TransactionService from "@/application/transaction/service";
+import WalletValidator from "@/application/membership/wallet/validator";
 
 export default class EvaluationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -62,7 +62,7 @@ export default class EvaluationUseCase {
           ]);
         }
 
-        const { fromWalletId, toWalletId } = await WalletService.validateCommunityMemberTransfer(
+        const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
           ctx,
           tx,
           participation.communityId,
