@@ -388,8 +388,8 @@ Table t_utilities {
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   communityId String [not null]
   community t_communities [not null]
-  tickets t_tickets [not null]
   requiredForOpportunities t_opportunities [not null]
+  tickets t_tickets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }

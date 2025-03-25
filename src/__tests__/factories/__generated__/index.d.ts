@@ -1488,8 +1488,8 @@ type UtilityFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
-    tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
     requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
+    tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
 };
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
 type UtilityFactoryTrait<TTransients extends Record<string, unknown>> = {

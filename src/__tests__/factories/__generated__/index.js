@@ -479,13 +479,13 @@ const modelFieldDefinitions = [{
                 type: "Community",
                 relationName: "CommunityToUtility"
             }, {
-                name: "tickets",
-                type: "Ticket",
-                relationName: "TicketToUtility"
-            }, {
                 name: "requiredForOpportunities",
                 type: "Opportunity",
                 relationName: "OpportunityToUtility"
+            }, {
+                name: "tickets",
+                type: "Ticket",
+                relationName: "TicketToUtility"
             }]
     }, {
         name: "CurrentPointView",

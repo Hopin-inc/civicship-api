@@ -621,8 +621,8 @@ USER USER
     "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
     "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_utilities" o|--|| "t_communities" : "community"
-    "t_utilities" o{--}o "t_tickets" : "tickets"
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
+    "t_utilities" o{--}o "t_tickets" : "tickets"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
 ```
