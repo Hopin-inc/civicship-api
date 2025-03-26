@@ -1,0 +1,40 @@
+# ------------------------------
+# Transaction Object Type Definitions
+# ------------------------------
+type Transaction {
+    id: ID!
+    reason: TransactionReason!
+
+    fromWallet: Wallet
+    fromPointChange: Int
+    toWallet: Wallet
+    toPointChange: Int
+
+    participation: Participation
+
+    ticketStatusHistories(
+        filter: TicketStatusHistoryFilterInput
+        sort: TicketStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): TicketStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Transaction Enum Definitions
+# ------------------------------
+enum TransactionReason {
+    POINT_ISSUED
+    POINT_REWARD
+
+    ONBOARDING
+
+    DONATION
+    GRANT
+
+    TICKET_PURCHASED
+    TICKET_REFUNDED
+}

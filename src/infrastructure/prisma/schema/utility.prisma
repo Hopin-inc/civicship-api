@@ -1,0 +1,20 @@
+model Utility {
+  id             String  @id @default(cuid())
+  name           String
+  description    String?
+  image          String?
+  pointsRequired Int     @map("points_required")
+
+  publishStatus PublishStatus @default(PUBLIC) @map("publish_status")
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  requiredForOpportunities Opportunity[]
+  tickets                  Ticket[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_utilities")
+}

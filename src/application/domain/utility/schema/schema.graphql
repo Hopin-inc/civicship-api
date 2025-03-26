@@ -1,0 +1,29 @@
+# ------------------------------
+# Utility Object Type Definitions
+# ------------------------------
+type Utility {
+    id: ID!
+    name: String!
+    description: String
+    image: String
+    pointsRequired: Int!
+    publishStatus: PublishStatus!
+
+    community: Community!
+
+    tickets(
+        filter: TicketFilterInput
+        sort: TicketSortInput
+        cursor: String
+        first: Int
+    ): TicketsConnection @complexity(value: 5, multipliers: ["first"])
+    requiredForOpportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

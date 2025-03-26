@@ -1,0 +1,37 @@
+# ------------------------------
+# User Account Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    userSignUp(input: UserSignUpInput!): CurrentUserPayload
+    userDeleteMe(
+        input: UserDeleteInput!
+        permission: CheckIsSelfPermissionInput!
+    ): UserDeletePayload
+}
+
+# ------------------------------
+# User Account Input Definitions
+# ------------------------------
+input UserSignUpInput {
+    name: String!
+    slug: String
+    image: ImageInput
+
+    currentPrefecture: CurrentPrefecture
+}
+
+input UserDeleteInput {
+    """Used for permission checking."""
+    userId: ID!
+}
+
+# ------------------------------
+# User Account Type Definitions
+# ------------------------------
+type CurrentUserPayload {
+    user: User
+}
+
+type UserDeletePayload {
+    userId: ID!
+}

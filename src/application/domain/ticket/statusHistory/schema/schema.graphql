@@ -1,0 +1,15 @@
+# ------------------------------
+# TicketStatusHistory Object Type Definitions
+# ------------------------------
+type TicketStatusHistory {
+    id: ID!
+    status: TicketStatus!
+    reason: TicketStatusReason!
+
+    ticket: Ticket!
+    createdByUser: User
+    transaction: Transaction
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

@@ -1,0 +1,28 @@
+model Article {
+  id            String          @id @default(cuid())
+  title         String
+  introduction  String
+  category      ArticleCategory
+  publishStatus PublishStatus   @default(PUBLIC) @map("publish_status")
+  body          String
+  /// [ImageInfo]
+  thumbnail     Json?
+  publishedAt   DateTime        @map("published_at")
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  authors       User[]        @relation("t_author_users_on_articles")
+  relatedUsers  User[]        @relation("t_related_users_on_articles")
+  opportunities Opportunity[] @relation("t_opportunities_on_articles")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_articles")
+}
+
+enum ArticleCategory {
+  ACTIVITY_REPORT
+  INTERVIEW
+}

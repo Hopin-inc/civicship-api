@@ -1,0 +1,81 @@
+# ------------------------------
+# Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    utilityCreate(
+        input: UtilityCreateInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityCreatePayload
+    utilityDelete(
+        id: ID!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityDeletePayload
+    utilityUpdateInfo(
+        id: ID!
+        input: UtilityUpdateInfoInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityUpdateInfoPayload
+
+    utilitySetPublishStatus(
+        id: ID!
+        input: UtilitySetPublishStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilitySetPublishStatusPayload
+}
+
+# ------------------------------
+# Input Definitions
+# ------------------------------
+input UtilityCreateInput {
+    name: String!
+    description: String
+    image: ImageInput
+    pointsRequired: Int!
+
+    communityId: ID!
+}
+
+input UtilityUpdateInfoInput {
+    name: String!
+    description: String
+    image: ImageInput
+    pointsRequired: Int!
+}
+
+input UtilitySetPublishStatusInput {
+    publishStatus: PublishStatus!
+}
+
+# ------------------------------
+# Success Type Definitions
+# ------------------------------
+type UtilityCreateSuccess {
+    utility: Utility!
+}
+
+type UtilityDeleteSuccess {
+    utilityId: String!
+}
+
+type UtilityUpdateInfoSuccess {
+    utility: Utility!
+}
+
+type UtilitySetPublishStatusSuccess {
+    utility: Utility!
+}
+
+# ------------------------------
+# Union (Payload) Definitions
+# ------------------------------
+union UtilityCreatePayload =
+    UtilityCreateSuccess
+
+union UtilityDeletePayload =
+    UtilityDeleteSuccess
+
+union UtilityUpdateInfoPayload =
+    UtilityUpdateInfoSuccess
+
+union UtilitySetPublishStatusPayload =
+    UtilitySetPublishStatusSuccess

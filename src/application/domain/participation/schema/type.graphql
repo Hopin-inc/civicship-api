@@ -1,0 +1,60 @@
+# ------------------------------
+# Participation Object Type Definitions
+# ------------------------------
+type Participation {
+    id: ID!
+    status: ParticipationStatus!
+    reason: ParticipationStatusReason!
+    source: Source!
+
+    user: User
+    community: Community
+    opportunitySlot: OpportunitySlot
+    reservation: Reservation
+    opportunityInvitationHistory: OpportunityInvitationHistory
+
+    evaluation: Evaluation
+    description: String
+    images: JSON
+
+    statusHistories(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Participation Enum Definitions
+# ------------------------------
+enum ParticipationStatus {
+    PENDING
+    PARTICIPATING
+    PARTICIPATED
+    NOT_PARTICIPATING
+}
+
+enum ParticipationStatusReason {
+    PERSONAL_RECORD
+
+    RESERVATION_JOINED
+
+    RESERVATION_APPLIED
+    RESERVATION_CANCELED
+
+    RESERVATION_ACCEPTED
+    RESERVATION_REJECTED
+
+    OPPORTUNITY_CANCELED
+}

@@ -1,0 +1,14 @@
+model ParticipationImage {
+  id String @id @default(cuid())
+
+  url     String
+  caption String?
+
+  participationId String
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_participation_images")
+}

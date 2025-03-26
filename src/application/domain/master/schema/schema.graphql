@@ -1,0 +1,11 @@
+type State {
+    code: ID!
+    countryCode: ID!
+    name: String!
+}
+
+type City {
+    code: ID!
+    name: String!
+    state: State!
+}

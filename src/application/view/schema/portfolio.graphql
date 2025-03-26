@@ -1,0 +1,70 @@
+# ------------------------------
+# Portfolio Object Type Definitions
+# ------------------------------
+type Portfolio {
+    id: ID!
+
+    title: String!
+    source: PortfolioSource!
+    category: String!
+
+    date: Datetime!
+    place: Place
+
+    thumbnailUrl: String
+    participants: [User!]!
+}
+
+enum PortfolioSource {
+    OPPORTUNITY
+    ARTICLE
+}
+
+# ------------------------------
+# Portfolio Query Definitions
+# ------------------------------
+
+extend type Query {
+    portfolios(
+        filter: PortfolioFilterInput
+        sort: PortfolioSortInput
+        cursor: String
+        first: Int
+    ): PortfoliosConnection! @complexity(value: 10, multipliers: ["first"])
+}
+
+# ------------------------------
+# Portfolio Connection Type Definitions
+# ------------------------------
+
+type PortfoliosConnection {
+    edges: [PortfolioEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type PortfolioEdge implements Edge {
+    cursor: String!
+    node: Portfolio
+}
+
+# ------------------------------
+# Portfolio Query Input Definitions
+# ------------------------------
+
+input PortfolioFilterInput {
+    userIds: [ID!]
+
+    source: PortfolioSource
+    categories: [String!]
+
+    dateFrom: Datetime
+    dateTo: Datetime
+
+    cityCodes: [ID!]
+    stateCodes: [ID!]
+}
+
+input PortfolioSortInput {
+    date: SortDirection
+}

@@ -1,0 +1,55 @@
+# ------------------------------
+# Participation Query Definitions
+# ------------------------------
+extend type Query {
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection! @complexity(value: 10, multipliers: ["first"])
+    participation(id: ID!): Participation
+}
+
+# ------------------------------
+# Participation Connection Type Definitions
+# ------------------------------
+type ParticipationsConnection {
+    edges: [ParticipationEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ParticipationEdge implements Edge {
+    cursor: String!
+    node: Participation
+}
+
+# ------------------------------
+# Participation Query Input Definitions
+# ------------------------------
+input ParticipationFilterInput {
+    categories: [String!]
+    status: ParticipationStatus
+
+    communityId: ID
+    opportunityId: ID
+    userIds: [ID!]
+
+    opportunityInvitationId: ID
+    opportunitySlotId: ID
+    reservationId: ID
+
+    dateFrom: Datetime
+    dateTo: Datetime
+
+    cityCodes: [ID!]
+    stateCodes: [ID!]
+}
+
+
+input ParticipationSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+    startsAt: SortDirection
+}

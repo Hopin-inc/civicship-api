@@ -1,0 +1,50 @@
+# ------------------------------
+# Opportunity Query Definitions
+# ------------------------------
+extend type Query {
+    opportunities(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunity(id: ID!, permission: CheckCommunityPermissionInput!): Opportunity
+}
+
+# ------------------------------
+# Opportunity Connection Type Definitions
+# ------------------------------
+type OpportunitiesConnection {
+    edges: [OpportunityEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OpportunityEdge implements Edge {
+    cursor: String!
+    node: Opportunity
+}
+
+# ------------------------------
+# Opportunity Query Input Definitions
+# ------------------------------
+input OpportunityFilterInput {
+    category: OpportunityCategory
+    hostingStatus: [OpportunityHostingStatus!]
+    publishStatus: [PublishStatus!]
+
+    communityIds: [ID!]
+    createdByUserIds: [ID!]
+    placeIds: [ID!]
+    cityCodes: [ID!]
+    articleIds: [ID!]
+    requiredUtilityIds: [ID!]
+
+    and: [OpportunityFilterInput!]
+    or: [OpportunityFilterInput!]
+    not: OpportunityFilterInput
+}
+
+input OpportunitySortInput {
+    createdAt: SortDirection
+}

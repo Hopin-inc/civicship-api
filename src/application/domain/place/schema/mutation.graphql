@@ -1,0 +1,105 @@
+# ------------------------------
+# Place Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    placeCreate(
+        input: PlaceCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): PlaceCreatePayload
+    placeDelete(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): PlaceDeletePayload
+    placeUpdate(
+        id: ID!
+        input: PlaceUpdateInput!
+        permission: CheckCommunityPermissionInput!
+    ): PlaceUpdatePayload
+}
+
+# ------------------------------
+# Place Mutation Input Definitions
+# ------------------------------
+
+input PlaceCreateInput {
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    communityId: ID!
+    opportunityIds: [ID!]
+}
+
+input PlaceUpdateInput {
+    id: ID!
+
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    opportunityIds: [ID!]
+}
+
+input NestedPlacesBulkUpdateInput {
+    connectOrCreate: [NestedPlaceConnectOrCreateInput!]
+    disconnect: [ID!]
+}
+
+input NestedPlacesBulkConnectOrCreateInput {
+    data: [NestedPlaceConnectOrCreateInput!]
+}
+
+input NestedPlaceConnectOrCreateInput {
+    where: ID
+    create: NestedPlaceCreateInput
+}
+
+input NestedPlaceCreateInput {
+    name: String!
+    address: String!
+    latitude: Decimal!
+    longitude: Decimal!
+    cityCode: ID!
+    isManual: Boolean!
+    googlePlaceId: String
+    mapLocation: JSON
+
+    communityId: ID
+}
+
+# ------------------------------
+# Place Mutation Success Type Definitions
+# ------------------------------
+type PlaceCreateSuccess {
+    place: Place!
+}
+
+type PlaceUpdateSuccess {
+    place: Place!
+}
+
+type PlaceDeleteSuccess {
+    id: ID!
+}
+
+# ------------------------------
+# Place Mutation Union (Payload) Definitions
+# ------------------------------
+union PlaceCreatePayload =
+    PlaceCreateSuccess
+
+union PlaceUpdatePayload =
+    PlaceUpdateSuccess
+
+union PlaceDeletePayload =
+    PlaceDeleteSuccess

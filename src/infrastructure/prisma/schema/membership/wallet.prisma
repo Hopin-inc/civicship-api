@@ -1,0 +1,44 @@
+model Wallet {
+  id   String     @id @default(cuid())
+  type WalletType @default(MEMBER)
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  currentPointView     CurrentPointView?
+  accumulatedPointView AccumulatedPointView?
+
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime?     @updatedAt @map("updated_at")
+  fromTransactions Transaction[] @relation("from_wallet")
+  toTransactions   Transaction[] @relation("to_wallet")
+  tickets          Ticket[]
+
+  @@map("t_wallets")
+}
+
+view CurrentPointView {
+  walletId     String @id @map("wallet_id")
+  currentPoint Int    @map("current_point")
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("mv_current_points")
+}
+
+view AccumulatedPointView {
+  walletId         String @id @map("wallet_id")
+  accumulatedPoint Int    @map("accumulated_point")
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("mv_accumulated_points")
+}
+
+enum WalletType {
+  COMMUNITY
+  MEMBER
+}

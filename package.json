@@ -10,20 +10,18 @@
     "dev:https": "dotenvx run -f .env --env='NODE_HTTPS=true' -- tsx watch src/index.ts",
     "build": "tsc && tsc-alias tsconfig.json",
     "lint": "eslint --fix src/ && prettier --write src/",
-    "test": "jest --coverage --runInBand",
-    "test:unit": "jest --coverage src/__tests__/unit",
-    "test:integration": "jest --coverage --runInBand src/__tests__/integration",
-    "db:pull": "prisma db pull --schema src/infra/prisma/schema.prisma",
-    "db:seed-master": "tsx src/infra/prisma/seeds/index.ts --master",
-    "db:seed-domain": "tsx src/infra/prisma/seeds/index.ts --domain",
-    "db:generate": "prisma-case-format --file src/infra/prisma/schema.prisma && prisma format --schema src/infra/prisma/schema.prisma && prisma generate --sql --schema src/infra/prisma/schema.prisma",
-    "db:migrate": "prisma migrate dev --schema src/infra/prisma/schema.prisma --create-only",
-    "db:deploy": "prisma migrate deploy --schema src/infra/prisma/schema.prisma",
-    "db:mark-rolled-back": "prisma migrate resolve --schema src/infra/prisma/schema.prisma --rolled-back",
-    "db:studio": "prisma studio --schema src/infra/prisma/schema.prisma",
+    "test": "jest",
+    "db:pull": "prisma db pull --schema src/infrastructure/prisma/schema/main.prisma",
+    "db:seed-master": "tsx src/infrastructure/prisma/seeds/index.ts --master",
+    "db:seed-domain": "tsx src/infrastructure/prisma/seeds/index.ts --domain",
+    "db:generate": "prisma-case-format --file src/infrastructure/prisma/schema/main.prisma && prisma format --schema src/infrastructure/prisma/schema && prisma generate --sql --schema src/infrastructure/prisma/schema",
+    "db:migrate": "prisma migrate dev --schema src/infrastructure/prisma/schema --create-only",
+    "db:deploy": "prisma migrate deploy --schema src/infrastructure/prisma/schema",
+    "db:mark-rolled-back": "prisma migrate resolve --schema src/infrastructure/prisma/schema --rolled-back",
+    "db:studio": "prisma studio --schema src/infrastructure/prisma/schema",
     "gql:generate": "graphql-codegen --config codegen.yaml",
     "doc": "typedoc",
-    "container:up": "ls src/infra/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
+    "container:up": "ls src/infrastructure/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
     "container:down": "docker-compose down --rmi all --volumes --remove-orphans"
   },
   "keywords": [],
@@ -84,6 +82,7 @@
     "@graphql-tools/merge": "^9.0.22",
     "@graphql-tools/schema": "^10.0.21",
     "@line/bot-sdk": "^9.7.1",
+    "axios": "^1.8.4",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dataloader": "^2.2.3",
@@ -101,15 +100,5 @@
     "sanitize-html": "^2.14.0",
     "tsconfig-paths": "^4.2.0",
     "winston": "^3.17.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "esbuild",
-      "prisma",
-      "puppeteer",
-      "vue-demi"
-    ]
   }
 }

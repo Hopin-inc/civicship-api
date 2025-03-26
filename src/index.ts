@@ -2,7 +2,7 @@ import http from "http";
 import { createServer } from "https";
 import fs from "fs";
 import { createApolloServer } from "@/presentation/graphql/server";
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
 import { batchProcess } from "@/batch";
@@ -43,7 +43,7 @@ async function startServer() {
   app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
   server.listen(port, () => {
-    logger.info(`🚀 Server ready at port ${ port }`);
+    logger.info(`🚀 Server ready at port ${port}`);
   });
 }
 

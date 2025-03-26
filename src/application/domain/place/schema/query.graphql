@@ -1,0 +1,38 @@
+# ------------------------------
+# Place Query Definitions
+# ------------------------------
+extend type Query {
+    places(
+        filter: PlaceFilterInput
+        sort: PlaceSortInput
+        cursor: String
+        first: Int
+    ): PlacesConnection! @complexity(value: 10, multipliers: ["first"])
+    place(id: ID!): Place
+}
+
+# ------------------------------
+# Place Connection Type Definitions
+# ------------------------------
+type PlacesConnection {
+    edges: [PlaceEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type PlaceEdge implements Edge {
+    cursor: String!
+    node: Place
+}
+
+# ------------------------------
+# Place Query Input Definitions
+# ------------------------------
+input PlaceFilterInput {
+    keyword: String
+    cityCode: ID
+}
+
+input PlaceSortInput {
+    createdAt: SortDirection
+}

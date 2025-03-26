@@ -1,0 +1,48 @@
+# ------------------------------
+# Wallet Object Type Definitions
+# ------------------------------
+type Wallet {
+    id: ID!
+    type: WalletType!
+
+    community: Community!
+    user: User
+
+    currentPointView: CurrentPointView
+    accumulatedPointView: AccumulatedPointView
+
+    tickets(
+        filter: TicketFilterInput
+        sort: TicketSortInput
+        cursor: String
+        first: Int
+    ): TicketsConnection @complexity(value: 5, multipliers: ["first"])
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+type CurrentPointView {
+    walletId: String!
+    currentPoint: Int!
+}
+
+type AccumulatedPointView {
+    walletId: String!
+    accumulatedPoint: Int!
+}
+
+# ------------------------------
+# Wallet Object Enum Definitions
+# ------------------------------
+enum WalletType {
+    COMMUNITY
+    MEMBER
+}

@@ -1,0 +1,126 @@
+# ------------------------------
+# Opportunity Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    opportunityCreate(
+        input: OpportunityCreateInput!
+        permission:CheckCommunityPermissionInput!
+    ): OpportunityCreatePayload
+    opportunityDelete(
+        id: ID!
+        permission:CheckCommunityPermissionInput!
+    ): OpportunityDeletePayload
+    opportunityUpdateContent(
+        id: ID!,
+        input: OpportunityUpdateContentInput!
+        permission:CheckCommunityPermissionInput!
+    ): OpportunityUpdateContentPayload
+
+    opportunitySetHostingStatus(
+        id: ID!
+        input: OpportunitySetHostingStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): OpportunitySetHostingStatusPayload
+
+    opportunitySetPublishStatus(
+        id: ID!
+        input: OpportunitySetPublishStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): OpportunitySetPublishStatusPayload
+}
+
+# ------------------------------
+# Opportunity Mutation Input Definitions
+# ------------------------------
+input OpportunityCreateInput {
+    title: String!
+    description: String!
+    body: String
+    image: ImageInput
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    requiredUtilityIds: [ID!]
+    capacity: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    place: NestedPlaceConnectOrCreateInput
+    startsAt: Datetime
+    endsAt: Datetime
+
+    communityId: ID!
+}
+
+input OpportunityUpdateContentInput {
+    title: String!
+    description: String!
+    body: String
+    image: ImageInput
+    files: JSON
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+
+    requiredUtilityIds: [ID!]
+    capacity: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    place: NestedPlaceConnectOrCreateInput
+    startsAt: Datetime
+    endsAt: Datetime
+}
+
+input OpportunitySetPublishStatusInput {
+    publishStatus: PublishStatus!
+}
+
+input OpportunitySetHostingStatusInput {
+    hostingStatus: OpportunityHostingStatus!
+}
+
+# ------------------------------
+# Opportunity Mutation Success Type Definitions
+# ------------------------------
+type OpportunityCreateSuccess {
+    opportunity: Opportunity!
+}
+
+type OpportunityDeleteSuccess {
+    opportunityId: ID!
+}
+
+type OpportunityUpdateContentSuccess {
+    opportunity: Opportunity!
+}
+
+type OpportunitySetPublishStatusSuccess {
+    opportunity: Opportunity!
+}
+
+type OpportunitySetHostingStatusSuccess {
+    opportunity: Opportunity!
+}
+
+# ------------------------------
+# Opportunity Mutation Union (Payload) Definitions
+# ------------------------------
+union OpportunityCreatePayload =
+    OpportunityCreateSuccess
+
+union OpportunityDeletePayload =
+    OpportunityDeleteSuccess
+
+union OpportunityUpdateContentPayload =
+    OpportunityUpdateContentSuccess
+
+union OpportunitySetPublishStatusPayload =
+    OpportunitySetPublishStatusSuccess
+
+union OpportunitySetHostingStatusPayload =
+    OpportunitySetHostingStatusSuccess

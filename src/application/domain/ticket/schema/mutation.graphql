@@ -1,0 +1,61 @@
+# ------------------------------
+# Ticket Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    ticketPurchase(
+        input: TicketPurchaseInput!
+        permission: CheckCommunityPermissionInput!
+    ): TicketPurchasePayload
+    ticketUse(
+        id: ID!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketUsePayload
+    ticketRefund(
+        id: ID!
+        input: TicketRefundInput!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketRefundPayload
+}
+
+# ------------------------------
+# Ticket Mutation Input Definitions
+# ------------------------------
+input TicketPurchaseInput {
+    walletId: ID!
+    utilityId: ID!
+    communityId: ID!
+    pointsRequired: Int!
+}
+
+input TicketRefundInput {
+    walletId: ID!
+    communityId: ID!
+    pointsRequired: Int!
+}
+
+# ------------------------------
+# Ticket Mutation Success Type Definitions
+# ------------------------------
+type TicketPurchaseSuccess {
+    ticket: Ticket!
+}
+
+type TicketUseSuccess {
+    ticket: Ticket!
+}
+
+type TicketRefundSuccess {
+    ticket: Ticket!
+}
+
+# ------------------------------
+# Ticket Mutation Union (Payload) Definitions
+# ------------------------------
+union TicketPurchasePayload =
+    TicketPurchaseSuccess
+
+union TicketUsePayload =
+    TicketUseSuccess
+
+union TicketRefundPayload =
+    TicketRefundSuccess

@@ -1,8 +1,0 @@
-extend type Query {
-    currentUser: CurrentUserPayload
-}
-
-extend type Mutation {
-    userSignUp(input: UserSignUpInput!): CurrentUserPayload
-    userDeleteMe(input: UserDeleteInput!): UserDeletePayload
-}

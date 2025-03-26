@@ -1,0 +1,45 @@
+# ------------------------------
+# Membership Object Type Definitions
+# ------------------------------
+type Membership {
+    user: User!
+    community: Community!
+
+    status: MembershipStatus!
+    reason: MembershipStatusReason!
+    role: Role!
+
+    histories: [MembershipHistory!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Membership Enum Definitions
+# ------------------------------
+enum Role {
+    OWNER
+    MANAGER
+    MEMBER
+}
+
+enum MembershipStatus {
+    PENDING
+    JOINED
+    LEFT
+}
+
+enum MembershipStatusReason {
+    CREATED_COMMUNITY
+
+    INVITED
+    CANCELED_INVITATION
+    ACCEPTED_INVITATION
+    DECLINED_INVITATION
+
+    WITHDRAWN
+    REMOVED
+
+    ASSIGNED
+}

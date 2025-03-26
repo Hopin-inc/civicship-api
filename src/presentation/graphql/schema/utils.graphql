@@ -1,29 +1,28 @@
+# ------------------------------------------------
+# Schema Entry Points
+# ------------------------------------------------
 schema {
     query: Query
     mutation: Mutation
 }
 
-directive @complexity(
-    value: Int!
-    multipliers: [String!]
-) on FIELD_DEFINITION
-
-directive @requireRole(
-    role: Role!
-) on FIELD_DEFINITION
-
-scalar Datetime
-scalar JSON
-scalar Decimal
-
+# ------------------------------------------------
+# Root Query Type
+# ------------------------------------------------
 type Query {
     echo: String!
 }
 
+# ------------------------------------------------
+# Root Mutation Type
+# ------------------------------------------------
 type Mutation {
     mutationEcho: String!
 }
 
+# ------------------------------------------------
+# Pagination Types
+# ------------------------------------------------
 type PageInfo {
     hasNextPage: Boolean!
     hasPreviousPage: Boolean!
@@ -36,12 +35,83 @@ type Paging {
     skip: Int!
 }
 
+# ------------------------------------------------
+# Pagination Interface
+# ------------------------------------------------
 interface Edge {
     cursor: String!
 }
 
+# ------------------------------------------------
+# Query Extensions
+# ------------------------------------------------
+extend type Query {
+    cities(name: String): [City!]!
+    states(name: String): [State!]!
+}
+
+# ------------------------------------------------
+# Directives
+# ------------------------------------------------
+directive @complexity(
+    value: Int!
+    multipliers: [String!]
+) on FIELD_DEFINITION
+
+directive @requireRole(
+    role: Role!
+) on FIELD_DEFINITION
+
+# ------------------------------------------------
+# Scalars
+# ------------------------------------------------
+scalar Datetime
+scalar JSON
+scalar Decimal
+
+# ------------------------------------------------
+# Input Types
+# ------------------------------------------------
+input CheckCommunityPermissionInput {
+    communityId: ID!
+}
+
+input CheckOpportunityPermissionInput {
+    opportunityId: ID!
+    communityId: ID!
+}
+
+input CheckIsSelfPermissionInput {
+    userId: ID!
+}
+
 input ImageInput {
     base64: String!
+    caption: String
+}
+
+# ------------------------------------------------
+# Enums
+# ------------------------------------------------
+enum IdentityPlatform {
+    LINE
+    FACEBOOK
+}
+
+enum PublishStatus {
+    PUBLIC
+    COMMUNITY_INTERNAL
+    PRIVATE
+}
+
+enum Source {
+    INTERNAL
+    EXTERNAL
+}
+
+enum ValueType {
+    INT
+    FLOAT
 }
 
 enum SortDirection {

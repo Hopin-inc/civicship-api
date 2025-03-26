@@ -1,0 +1,58 @@
+model Participation {
+  id String @id @default(cuid())
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  opportunityInvitationHistoryId String?                       @map("opportunity_invitation_history_id")
+  opportunityInvitationHistory   OpportunityInvitationHistory? @relation(fields: [opportunityInvitationHistoryId], references: [id], onDelete: SetNull)
+
+  opportunitySlotId String?          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id], onDelete: SetNull)
+
+  reservationId String?      @map("application_id")
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  ticketStatusHistories TicketStatusHistory[]
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+
+  source Source                    @default(INTERNAL)
+  status ParticipationStatus       @default(PENDING)
+  reason ParticipationStatusReason
+
+  evaluation Evaluation?
+
+  description String?
+  images      ParticipationImage[]
+
+  statusHistories ParticipationStatusHistory[]
+  transactions    Transaction[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_participations")
+}
+
+enum ParticipationStatus {
+  PENDING
+  PARTICIPATING
+  PARTICIPATED
+  NOT_PARTICIPATING
+}
+
+enum ParticipationStatusReason {
+  PERSONAL_RECORD
+
+  RESERVATION_JOINED
+
+  RESERVATION_APPLIED
+  RESERVATION_CANCELED
+
+  RESERVATION_ACCEPTED
+  RESERVATION_REJECTED
+
+  OPPORTUNITY_CANCELED
+}

@@ -1,0 +1,12 @@
+# ------------------------------
+# OpportunityInvitationHistory Object Type Definitions
+# ------------------------------
+type OpportunityInvitationHistory {
+    id: ID!
+
+    invitation: OpportunityInvitation
+    participations: [Participation!]
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+}

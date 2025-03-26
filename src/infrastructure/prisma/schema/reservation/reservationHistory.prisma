@@ -1,0 +1,15 @@
+model ReservationHistory {
+  id String @id @default(cuid())
+
+  reservationId String      @map("reservation_id")
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  status ReservationStatus
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@map("t_reservation_histories")
+}

@@ -3,11 +3,19 @@ import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import { makeExecutableSchema, mergeSchemas, addResolversToSchema } from "@graphql-tools/schema";
 import { DateTimeTypeDefinition } from "graphql-scalars";
 import { applyMiddleware } from "graphql-middleware";
-import permissions from "@/presentation/graphql/permissions";
-import errorMiddleware from "@/presentation/middleware/error"; // 例: errorMiddleware がある場合
-import resolvers from "@/presentation/graphql/resolvers";
+import errorMiddleware from "@/presentation/middleware/error";
+import resolvers from "@/presentation/graphql/resolver";
+import { fileURLToPath } from "url";
+import path from "path";
 
-const definedSchema = loadSchemaSync("./**/*.graphql", {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const schemaPaths = [
+  path.join(__dirname, "../../../application/**/*.graphql"),
+  path.join(__dirname, "../../../presentation/**/*.graphql"),
+];
+const definedSchema = loadSchemaSync(schemaPaths, {
   loaders: [new GraphQLFileLoader()],
 });
 
@@ -25,5 +33,6 @@ schema = addResolversToSchema({
   resolvers,
 });
 
-schema = applyMiddleware(schema, permissions, errorMiddleware);
+// TODO add permissions
+schema = applyMiddleware(schema, errorMiddleware);
 export default schema;

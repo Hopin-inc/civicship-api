@@ -1,0 +1,69 @@
+# ------------------------------
+# Transaction Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    transactionIssueCommunityPoint(
+        input: TransactionIssueCommunityPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionIssueCommunityPointPayload
+
+    transactionGrantCommunityPoint(
+        input: TransactionGrantCommunityPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionGrantCommunityPointPayload
+    transactionDonateSelfPoint(
+        input: TransactionDonateSelfPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionDonateSelfPointPayload
+}
+
+# ------------------------------
+# Transaction Mutation Input Definitions
+# ------------------------------
+input TransactionIssueCommunityPointInput {
+    toWalletId: ID!
+    toPointChange: Int!
+}
+
+input TransactionGrantCommunityPointInput {
+    fromWalletId: ID!
+    fromPointChange: Int!
+    toUserId: ID!
+    toPointChange: Int!
+    communityId: ID!
+}
+
+input TransactionDonateSelfPointInput {
+    fromWalletId: ID!
+    fromPointChange: Int!
+    toUserId: ID!
+    toPointChange: Int!
+    communityId: ID!
+}
+
+# ------------------------------
+# Transaction Mutation Success Type Definitions
+# ------------------------------
+type TransactionIssueCommunityPointSuccess {
+    transaction: Transaction!
+}
+
+type TransactionGrantCommunityPointSuccess {
+    transaction: Transaction!
+}
+
+type TransactionDonateSelfPointSuccess {
+    transaction: Transaction!
+}
+
+# ------------------------------
+# Transaction Mutation Union (Payload) Definitions
+# ------------------------------
+union TransactionIssueCommunityPointPayload =
+    TransactionIssueCommunityPointSuccess
+
+union TransactionGrantCommunityPointPayload =
+    TransactionGrantCommunityPointSuccess
+
+union TransactionDonateSelfPointPayload =
+    TransactionDonateSelfPointSuccess

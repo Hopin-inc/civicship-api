@@ -1,0 +1,77 @@
+# ------------------------------
+# Reservation Mutation Definitions
+# ------------------------------
+
+extend type Mutation {
+    reservationCreate(
+        input: ReservationCreateInput!
+    ): ReservationCreatePayload
+
+    reservationJoin(
+        id: ID!
+    ): ReservationSetStatusPayload
+
+    reservationCancel(
+        id: ID!
+        input: ReservationCancelInput!
+        permission: CheckIsSelfPermissionInput!
+    ): ReservationSetStatusPayload
+
+    reservationAccept(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): ReservationSetStatusPayload
+
+    reservationReject(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): ReservationSetStatusPayload
+}
+
+# ------------------------------
+# Reservation Mutation Input Definitions
+# ------------------------------
+
+input ReservationCreateInput {
+    opportunitySlotId: ID!
+    participantCount: Int!
+    userIdsIfExists: [ID!]
+
+    paymentMethod: ReservationPaymentMethod!
+}
+
+input ReservationCancelInput {
+    paymentMethod: ReservationPaymentMethod!
+    ticketIdsIfExists: [ID!]
+}
+
+# ------------------------------
+# Reservation Mutation Enum Definitions
+# ------------------------------
+
+enum ReservationPaymentMethod {
+    FEE
+    POINT
+}
+
+# ------------------------------
+# Reservation Mutation Success Type Definitions
+# ------------------------------
+
+type ReservationCreateSuccess {
+    reservation: Reservation!
+}
+
+type ReservationSetStatusSuccess {
+    reservation: Reservation!
+}
+
+# ------------------------------
+# Reservation Mutation Union (Payload) Definitions
+# ------------------------------
+
+union ReservationCreatePayload =
+    ReservationCreateSuccess
+
+union ReservationSetStatusPayload =
+    ReservationSetStatusSuccess

@@ -1,0 +1,10 @@
+model State {
+  code        String
+  name        String
+  countryCode String @map("country_code") @db.Char(2)
+
+  cities City[]
+
+  @@id([code, countryCode])
+  @@map("m_states")
+}

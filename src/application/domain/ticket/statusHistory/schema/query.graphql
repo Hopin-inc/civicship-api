@@ -1,0 +1,40 @@
+# ------------------------------
+# TicketStatusHistory Query Definitions
+# ------------------------------
+extend type Query {
+    ticketStatusHistories(
+        filter: TicketStatusHistoryFilterInput
+        sort: TicketStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): TicketStatusHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    ticketStatusHistory(id: ID!): TicketStatusHistory
+}
+
+# ------------------------------
+# TicketStatusHistory Connection Type Definitions
+# ------------------------------
+type TicketStatusHistoriesConnection {
+    edges: [TicketStatusHistoryEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TicketStatusHistoryEdge implements Edge {
+    cursor: String!
+    node: TicketStatusHistory
+}
+
+# ------------------------------
+# TicketStatusHistory Query Input Definitions
+# ------------------------------
+input TicketStatusHistoryFilterInput {
+    ticketId: ID
+    status: TicketStatus
+    reason: TicketStatusReason
+    createdById: ID
+}
+
+input TicketStatusHistorySortInput {
+    createdAt: SortDirection
+}

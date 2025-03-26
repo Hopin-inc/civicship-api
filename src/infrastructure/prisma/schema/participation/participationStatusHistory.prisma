@@ -1,0 +1,16 @@
+model ParticipationStatusHistory {
+  id     String                    @id @default(cuid())
+  status ParticipationStatus
+  reason ParticipationStatusReason
+
+  participationId String        @map("participation_id")
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_participation_status_histories")
+}

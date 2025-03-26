@@ -1,0 +1,59 @@
+model User {
+  id           String  @id @default(cuid())
+  name         String
+  slug         String
+  image        String?
+  bio          String?
+  sysRole      SysRole @default(USER) @map("sys_role")
+  urlWebsite   String? @map("url_website")
+  urlX         String? @map("url_x")
+  urlFacebook  String? @map("url_facebook")
+  urlInstagram String? @map("url_instagram")
+  urlYoutube   String? @map("url_youtube")
+  urlTiktok    String? @map("url_tiktok")
+
+  currentPrefecture CurrentPrefecture
+
+  onboardings Onboarding[]
+  identities  Identity[]
+
+  memberships           Membership[]
+  membershipChangedByMe MembershipHistory[]
+  wallets               Wallet[]
+
+  opportunitiesCreatedByMe          Opportunity[]
+  opportunityInvitationsCreatedByMe OpportunityInvitation[]
+
+  reservationsAppliedByMe      Reservation[]
+  reservationStatusChangedByMe ReservationHistory[]
+
+  participations                 Participation[]
+  participationStatusChangedByMe ParticipationStatusHistory[]
+
+  evaluationsEvaluatedByMe Evaluation[]
+  evaluationCreatedByMe    EvaluationHistory[]
+
+  articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
+  articlesAboutMe     Article[] @relation("t_related_users_on_articles")
+
+  ticketStatusChangedByMe TicketStatusHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_users")
+}
+
+enum SysRole {
+  SYS_ADMIN
+  USER
+}
+
+enum CurrentPrefecture {
+  KAGAWA
+  TOKUSHIMA
+  KOCHI
+  EHIME
+  OUTSIDE_SHIKOKU
+  UNKNOWN
+}

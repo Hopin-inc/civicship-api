@@ -1,0 +1,38 @@
+# ------------------------------
+# MembershipHistory Query Definitions
+# ------------------------------
+extend type Query {
+    membershipHistories(
+        filter: MembershipHistoryFilterInput
+        sort: MembershipHistorySortInput
+        cursor: String
+        first: Int
+    ):MembershipHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    membershipHistory(id: ID!): MembershipHistory
+}
+
+# ------------------------------
+# MembershipHistory Connection Type Definitions
+# ------------------------------
+type MembershipHistoriesConnection {
+    edges: [MembershipHistoryEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type MembershipHistoryEdge implements Edge {
+    cursor: String!
+    node: MembershipHistory
+}
+
+# ------------------------------
+# MembershipHistory Query Input Definitions
+# ------------------------------
+input MembershipHistoryFilterInput {
+    membershipId: ID
+    createdById: ID
+}
+
+input MembershipHistorySortInput {
+    createdAt: SortDirection
+}

@@ -1,146 +1,181 @@
-import CommunityService from "@/app/community/service";
-import CommunityRepository from "@/infra/repositories/community";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
-jest.mock("@/infra/repositories/community");
-jest.mock("@/infra/repositories/transaction");
+import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import CommunityRepository from "@/application/domain/community/data/repository";
+import CommunityService from "@/application/domain/community/service";
+import { NotFoundError } from "@/errors/graphql";
+import CommunityConverter from "@/application/domain/community/data/converter";
+
+jest.mock("@/application/domain/community/data/repository");
+jest.mock("@/application/domain/community/data/converter");
 
 describe("CommunityService", () => {
-    let ctx: IContext;
-    let mockTransactionClient: Prisma.TransactionClient;
+  const mockCtx = {} as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
 
-    beforeEach(() => {
-        mockTransactionClient = {} as Prisma.TransactionClient;
-        ctx = { currentUser: { id: "test-user" } } as unknown as IContext;
-        jest.clearAllMocks();
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("createCommunityAndJoinAsOwner", () => {
+    it("should create a community successfully", async () => {
+      const input = {
+        bio: undefined,
+        cityCode: "CITY_1",
+        establishedAt: undefined,
+        image: undefined,
+        name: "community-1",
+        pointName: "point-1",
+        stateCode: "STATE_1",
+        website: undefined,
+      };
+
+      const convertedInput = {
+        ...input,
+        memberships: {
+          create: [
+            {
+              userId: "test-user",
+              status: MembershipStatus.JOINED,
+              reason: MembershipStatusReason.CREATED_COMMUNITY,
+              role: Role.OWNER,
+            },
+          ],
+        },
+      };
+
+      const mockCommunity = { id: "community-1", ...convertedInput };
+      const mockCtx = {
+        currentUser: {
+          id: "test-user",
+        },
+      } as any;
+
+      // [1] Converter をモック
+      jest.mocked(CommunityConverter.create).mockReturnValue(convertedInput);
+
+      // [2] Repository をモック
+      (CommunityRepository.create as jest.Mock).mockResolvedValue(mockCommunity);
+
+      // [3] 実行
+      const result = await CommunityService.createCommunityAndJoinAsOwner(mockCtx, input, mockTx);
+
+      // [4] 検証
+      expect(CommunityConverter.create).toHaveBeenCalledWith(input, "test-user");
+      expect(CommunityRepository.create).toHaveBeenCalledWith(mockCtx, convertedInput, mockTx);
+      expect(result).toEqual(mockCommunity);
+    });
+  });
+
+  describe("updateCommunityProfile", () => {
+    it("should throw error if community is not found", async () => {
+      const updateInput = {
+        name: "Updated Community",
+        pointName: "Updated Points",
+        communityId: "community-1",
+        places: {
+          connect: [],
+          create: [
+            {
+              name: "Test Place",
+              address: "123 Example St",
+              isManual: true,
+              latitude: "34.685",
+              longitude: "135.805",
+              city: { connect: { code: "city-1" } },
+            },
+          ],
+          disconnect: undefined,
+        },
+      };
+
+      const communityId = "community-1";
+      (CommunityRepository.find as jest.Mock).mockResolvedValue(null);
+
+      await expect(
+        CommunityService.updateCommunityProfile(mockCtx, communityId, updateInput),
+      ).rejects.toThrow(NotFoundError);
     });
 
-    describe("getCommunityById", () => {
-        it("should return community by id", async () => {
-            const mockCommunity = {
-                id: "community-1",
-                name: "Test Community",
-                pointName: "Test Points",
-            };
-            (CommunityRepository.find as jest.Mock).mockResolvedValue(mockCommunity);
+    it("should update an existing community", async () => {
+      const updateInput = {
+        name: "Updated Community",
+        pointName: "Updated Points",
+        communityId: "community-1",
+        places: {
+          connect: [],
+          create: [
+            {
+              name: "Test Place",
+              address: "123 Example St",
+              isManual: true,
+              latitude: "34.685",
+              longitude: "135.805",
+              city: { connect: { code: "city-1" } },
+            },
+          ],
+          disconnect: undefined,
+        },
+      };
 
-            const result = await CommunityService.findCommunity(ctx, "community-1");
-            expect(CommunityRepository.find).toHaveBeenCalledWith(ctx, "community-1");
-            expect(result).toEqual(mockCommunity);
-        });
+      const communityId = "community-1";
+      const convertedInput = {
+        name: updateInput.name,
+        pointName: updateInput.pointName,
+        places: updateInput.places,
+      };
+
+      const mockCommunity = { id: communityId, ...convertedInput };
+
+      // [1] Converter をモック化
+      jest.mocked(CommunityConverter.update).mockReturnValue(convertedInput);
+
+      // [2] Repository をモック化
+      (CommunityRepository.find as jest.Mock).mockResolvedValue(mockCommunity);
+      (CommunityRepository.update as jest.Mock).mockResolvedValue(mockCommunity);
+
+      // [3] 実行
+      const result = await CommunityService.updateCommunityProfile(
+        mockCtx,
+        communityId,
+        updateInput,
+      );
+
+      // [4] 検証
+      expect(CommunityConverter.update).toHaveBeenCalledWith(updateInput);
+      expect(CommunityRepository.find).toHaveBeenCalledWith(mockCtx, communityId);
+      expect(CommunityRepository.update).toHaveBeenCalledWith(
+        mockCtx,
+        communityId,
+        expect.objectContaining(convertedInput),
+      );
+      expect(result).toEqual(mockCommunity);
+    });
+  });
+  describe("deleteCommunity", () => {
+    it("should throw error if community is not found", async () => {
+      const communityId = "community-1";
+
+      (CommunityRepository.find as jest.Mock).mockResolvedValue(null);
+
+      await expect(CommunityService.deleteCommunity(mockCtx, communityId)).rejects.toThrow(
+        NotFoundError,
+      );
     });
 
-    describe("createCommunity", () => {
-        it("should throw error if user is not logged in", async () => {
-            ctx.currentUser = null;
+    it("should delete a community", async () => {
+      const communityId = "community-1";
 
-            const input = {
-                bio: undefined,
-                cityCode: "CITY_1",
-                establishedAt: undefined,
-                image: undefined,
-                name: "community-1",
-                pointName: "point-1",
-                stateCode: "STATE_1",
-                website: undefined
-            };
+      const mockCommunity = { id: communityId, name: "Test Community", pointName: "Test Points" };
+      (CommunityRepository.find as jest.Mock).mockResolvedValue(mockCommunity);
+      (CommunityRepository.delete as jest.Mock).mockResolvedValue(mockCommunity);
 
-            const expectedError = "Unauthorized: User must be logged in";
-            await expect(CommunityService.createCommunityAndJoinAsOwner(ctx, input, mockTransactionClient))
-                .rejects
-                .toThrow(expectedError);
-        });
+      await CommunityService.deleteCommunity(mockCtx, communityId);
 
-        it("should create a community successfully", async () => {
-            const input = {
-                bio: undefined,
-                cityCode: "CITY_1",
-                establishedAt: undefined,
-                image: undefined,
-                name: "community-1",
-                pointName: "point-1",
-                stateCode: "STATE_1",
-                website: undefined,
-                memberships: {
-                    create: [{
-                        role: "OWNER",
-                        status: "JOINED",
-                        userId: "test-user",
-                    }]
-                }
-            };
-
-            const mockCommunity = { id: "community-1", ...input };
-            (CommunityRepository.create as jest.Mock).mockResolvedValue(mockCommunity);
-
-            const result = await CommunityService.createCommunityAndJoinAsOwner(ctx, input, mockTransactionClient);
-
-            expect(CommunityRepository.create).toHaveBeenCalledTimes(1)
-            expect(result).toEqual(mockCommunity);
-        });
+      expect(CommunityRepository.delete).toHaveBeenCalledWith(mockCtx, communityId);
     });
+  });
 
-    describe("updateCommunityProfile", () => {
-        it("should throw error if community is not found", async () => {
-            const updateInput = {
-                name: "Updated Community",
-                pointName: "Updated Points",
-                communityId: "community-1"
-            };
-
-            const communityId = "community-1";
-
-            (CommunityRepository.find as jest.Mock).mockResolvedValue(null);
-
-            const expectedError = `CommunityNotFound: ID=${communityId}`;
-            await expect(CommunityService.updateCommunityProfile(ctx, communityId, updateInput))
-                .rejects
-                .toThrow(expectedError);
-        });
-
-        it("should update an existing community", async () => {
-            const updateInput = {
-                name: "Updated Community",
-                pointName: "Updated Points",
-                communityId: "community-1"
-            };
-
-            const communityId = "community-1";
-            const mockCommunity = { id: communityId, ...updateInput };
-
-            (CommunityRepository.find as jest.Mock).mockResolvedValue(mockCommunity);
-            (CommunityRepository.update as jest.Mock).mockResolvedValue(mockCommunity);
-
-            const result = await CommunityService.updateCommunityProfile(ctx, communityId, updateInput);
-
-            expect(CommunityRepository.find).toHaveBeenCalledWith(ctx, communityId);
-            expect(CommunityRepository.update).toHaveBeenCalledWith(ctx, communityId, expect.objectContaining(updateInput));
-            expect(result).toEqual(mockCommunity);
-        });
-    });
-
-    describe("deleteCommunity", () => {
-        it("should throw error if community is not found", async () => {
-            const communityId = "community-1";
-
-            (CommunityRepository.find as jest.Mock).mockResolvedValue(null);
-
-            const expectedError = `CommunityNotFound: ID=${communityId}`;
-            await expect(CommunityService.deleteCommunity(ctx, communityId))
-                .rejects
-                .toThrow(expectedError);
-        });
-
-        it("should delete a community", async () => {
-            const communityId = "community-1";
-
-            const mockCommunity = { id: communityId, name: "Test Community", pointName: "Test Points" };
-            (CommunityRepository.find as jest.Mock).mockResolvedValue(mockCommunity);
-            (CommunityRepository.delete as jest.Mock).mockResolvedValue(mockCommunity);
-
-            await CommunityService.deleteCommunity(ctx, communityId);
-
-            expect(CommunityRepository.delete).toHaveBeenCalledWith(ctx, communityId);
-        });
-    });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 });

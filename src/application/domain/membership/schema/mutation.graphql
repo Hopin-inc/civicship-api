@@ -1,0 +1,119 @@
+# ------------------------------
+# Membership Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    # invite
+    membershipInvite(
+        input: MembershipInviteInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipInvitePayload
+    membershipCancelInvitation(
+        input: MembershipSetInvitationStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetInvitationStatusPayload
+
+    membershipAcceptMyInvitation(
+        input: MembershipSetInvitationStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): MembershipSetInvitationStatusPayload
+    membershipDenyMyInvitation(
+        input: MembershipSetInvitationStatusInput!
+        permission: CheckIsSelfPermissionInput!
+    ): MembershipSetInvitationStatusPayload
+
+    # join
+    membershipWithdraw(
+        input: MembershipWithdrawInput!
+        permission: CheckIsSelfPermissionInput!
+    ): MembershipWithdrawPayload
+
+    # role
+    membershipAssignOwner(
+        input: MembershipSetRoleInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetRolePayload
+    membershipAssignManager(
+        input: MembershipSetRoleInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetRolePayload
+    membershipAssignMember(
+        input: MembershipSetRoleInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipSetRolePayload
+    membershipRemove(
+        input: MembershipRemoveInput!
+        permission:CheckCommunityPermissionInput!
+    ): MembershipRemovePayload
+}
+
+# ------------------------------
+# Membership Mutation Input Definitions
+# ------------------------------
+input MembershipInviteInput {
+    userId: ID!
+    communityId: ID!
+    role: Role
+}
+
+input MembershipSetInvitationStatusInput {
+    userId: ID!
+    communityId: ID!
+}
+
+input MembershipWithdrawInput {
+    userId: ID!
+    communityId: ID!
+}
+
+input MembershipSetRoleInput {
+    userId: ID!
+    communityId: ID!
+}
+
+input MembershipRemoveInput {
+    userId: ID!
+    communityId: ID!
+}
+
+# ------------------------------
+# Membership Mutation Success Type Definitions
+# ------------------------------
+type MembershipInviteSuccess {
+    membership: Membership!
+}
+
+type MembershipSetRoleSuccess {
+    membership: Membership!
+}
+
+type MembershipRemoveSuccess {
+    userId: ID!
+    communityId: ID!
+}
+
+type MembershipWithdrawSuccess {
+    userId: ID!
+    communityId: ID!
+}
+
+type MembershipSetInvitationStatusSuccess {
+    membership: Membership!
+}
+
+# ------------------------------
+# Membership Mutation Union (Payload) Definitions
+# ------------------------------
+union MembershipInvitePayload =
+    MembershipInviteSuccess
+
+union MembershipSetRolePayload =
+    MembershipSetRoleSuccess
+
+union MembershipRemovePayload =
+    MembershipRemoveSuccess
+
+union MembershipWithdrawPayload =
+    MembershipWithdrawSuccess
+
+union MembershipSetInvitationStatusPayload =
+    MembershipSetInvitationStatusSuccess

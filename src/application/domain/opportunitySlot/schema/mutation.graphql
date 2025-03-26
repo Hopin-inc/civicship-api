@@ -1,0 +1,44 @@
+# ------------------------------
+# Opportunity Slot Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    opportunitySlotsBulkUpdate(
+        input: OpportunitySlotsBulkUpdateInput!
+        permission: CheckOpportunityPermissionInput!
+    ): OpportunitySlotsBulkUpdatePayload
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Input Definitions
+# ------------------------------
+input OpportunitySlotsBulkUpdateInput {
+    opportunityId: ID!
+
+    create: [OpportunitySlotCreateInput!]
+    update: [OpportunitySlotUpdateInput!]
+    delete: [ID!]
+}
+
+input OpportunitySlotCreateInput {
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+input OpportunitySlotUpdateInput {
+    id: ID!
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Success Type Definitions
+# ------------------------------
+type OpportunitySlotsBulkUpdateSuccess {
+    slots: [OpportunitySlot!]!
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Union (Payload) Definitions
+# ------------------------------
+union OpportunitySlotsBulkUpdatePayload =
+    OpportunitySlotsBulkUpdateSuccess

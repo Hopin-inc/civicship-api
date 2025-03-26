@@ -1,0 +1,39 @@
+# ------------------------------
+# Transaction Query Definitions
+# ------------------------------
+extend type Query {
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+        cursor: String
+        first: Int
+    ): TransactionsConnection! @complexity(value: 10, multipliers: ["first"])
+    transaction(id: ID!): Transaction
+}
+
+# ------------------------------
+# Transaction Connection Type Definitions
+# ------------------------------
+type TransactionsConnection {
+    edges: [TransactionEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TransactionEdge implements Edge {
+    cursor: String!
+    node: Transaction
+}
+
+# ------------------------------
+# Transaction Query Input Definitions
+# ------------------------------
+input TransactionFilterInput {
+    reason: TransactionReason
+    fromWalletId: ID
+    toWalletId: ID
+}
+
+input TransactionSortInput {
+    createdAt: SortDirection
+}

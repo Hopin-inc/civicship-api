@@ -1,7 +1,9 @@
 overwrite: true
 generates:
   ./src/types/graphql.ts:
-    schema: ./src/presentation/graphql/schema/**/*.graphql
+    schema:
+      - "./src/application/**/*.graphql"
+      - "./src/presentation/**/*.graphql"
     plugins:
       - typescript
       - typescript-resolvers
@@ -20,6 +22,7 @@ generates:
         User: "@prisma/client/index.d#User"
         Community: "@prisma/client/index.d#Community"
         Membership: "@prisma/client/index.d#Membership"
+        MembershipHistory: "@prisma/client/index.d#MembershipHistory"
         Wallet: "@prisma/client/index.d#Wallet"
         CurrentPointView: "@prisma/client/index.d#CurrentPointView"
         AccumulatedPointView: "@prisma/client/index.d#AccumulatedPointView"
@@ -32,6 +35,8 @@ generates:
         ParticipationStatusHistory: "@prisma/client/index.d#ParticipationStatusHistory"
         Article: "@prisma/client/index.d#Article"
         Utility: "@prisma/client/index.d#Utility"
+        Ticket: "@prisma/client/index.d#Ticket"
+        TicketStatusHistory: "@prisma/client/index.d#TicketStatusHistory"
         Transaction: "@prisma/client/index.d#Transaction"
         City: "@prisma/client/index.d#City"
         State: "@prisma/client/index.d#State"

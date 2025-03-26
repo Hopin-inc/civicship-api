@@ -1,0 +1,45 @@
+model Membership {
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  status MembershipStatus
+  reason MembershipStatusReason
+  role   Role                   @default(MEMBER)
+
+  histories MembershipHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, communityId])
+  @@map("t_memberships")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  MEMBER
+}
+
+enum MembershipStatus {
+  PENDING
+  JOINED
+  LEFT
+}
+
+enum MembershipStatusReason {
+  CREATED_COMMUNITY
+
+  INVITED
+  CANCELED_INVITATION
+  ACCEPTED_INVITATION
+  DECLINED_INVITATION
+
+  WITHDRAWN
+  REMOVED
+
+  ASSIGNED
+}

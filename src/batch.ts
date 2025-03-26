@@ -1,4 +1,4 @@
-import logger from "@/infra/logging";
+import logger from "@/infrastructure/logging";
 
 export async function batchProcess() {
   switch (process.env.BATCH_PROCESS_NAME) {

@@ -1,0 +1,19 @@
+model MembershipHistory {
+  id String @id @default(cuid())
+
+  role   Role                   @default(MEMBER)
+  status MembershipStatus
+  reason MembershipStatusReason
+
+  userId      String
+  communityId String
+  membership  Membership @relation(fields: [userId, communityId], references: [userId, communityId], onDelete: Cascade)
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_membership_histories")
+}

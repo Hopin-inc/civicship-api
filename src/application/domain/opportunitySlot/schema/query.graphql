@@ -1,0 +1,39 @@
+# ------------------------------
+# Opportunity Slot Query Definitions
+# ------------------------------
+extend type Query {
+    opportunitySlots(
+        filter: OpportunitySlotFilterInput
+        sort: OpportunitySlotSortInput
+        cursor: String
+        first: Int
+    ): OpportunitySlotsConnection! @complexity(value: 10, multipliers: ["first"])
+    opportunitySlot(id: ID!): OpportunitySlot
+}
+
+# ------------------------------
+# Opportunity Slot Connection Type Definitions
+# ------------------------------
+type OpportunitySlotsConnection {
+    edges: [OpportunitySlotEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type OpportunitySlotEdge implements Edge {
+    cursor: String!
+    node: OpportunitySlot
+}
+
+# ------------------------------
+# Opportunity Slot Query Input Definitions
+# ------------------------------
+input OpportunitySlotFilterInput {
+    opportunityId: ID
+}
+
+input OpportunitySlotSortInput {
+    startsAt: SortDirection
+    endsAt: SortDirection
+    createdAt: SortDirection
+}

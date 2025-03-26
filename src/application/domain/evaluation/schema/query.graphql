@@ -1,0 +1,41 @@
+# ------------------------------
+# Evaluation Query Definitions
+# ------------------------------
+extend type Query {
+    evaluations(
+        filter: EvaluationFilterInput
+        sort: EvaluationSortInput
+        cursor: String
+        first: Int
+    ): EvaluationsConnection! @complexity(value: 10, multipliers: ["first"])
+
+    evaluation(id: ID!): Evaluation
+}
+
+# ------------------------------
+# Evaluation Connection Type Definitions
+# ------------------------------
+type EvaluationsConnection {
+    edges: [EvaluationEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type EvaluationEdge implements Edge {
+    cursor: String!
+    node: Evaluation
+}
+
+# ------------------------------
+# Evaluation Query Input Definitions
+# ------------------------------
+input EvaluationFilterInput {
+    status: EvaluationStatus
+    evaluatorId: ID
+    participationId: ID
+}
+
+input EvaluationSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}
