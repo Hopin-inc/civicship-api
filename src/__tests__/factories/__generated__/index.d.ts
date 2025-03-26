@@ -46,6 +46,7 @@ import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
+import type { CurrentPrefecture } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import type { Resolver } from "@quramy/prisma-fabbrica/lib/internal";
 export { resetSequence, registerScalarFieldValueGenerator, resetScalarFieldValueGenerator } from "@quramy/prisma-fabbrica/lib/internal";
@@ -1418,6 +1419,7 @@ type UserFactoryDefineInput = {
     urlInstagram?: string | null;
     urlYoutube?: string | null;
     urlTiktok?: string | null;
+    currentPrefecture?: CurrentPrefecture;
     createdAt?: Date;
     updatedAt?: Date | null;
     onboardings?: Prisma.OnboardingCreateNestedManyWithoutUserInput;

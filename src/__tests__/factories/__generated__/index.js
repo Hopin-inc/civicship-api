@@ -2888,7 +2888,8 @@ exports.defineIdentityFactory.withTransientFields = defaultTransientFieldValues 
 function autoGenerateUserScalarsOrEnums({ seq }) {
     return {
         name: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "User", fieldName: "name", isId: false, isUnique: false, seq }),
-        slug: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "User", fieldName: "slug", isId: false, isUnique: false, seq })
+        slug: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "User", fieldName: "slug", isId: false, isUnique: false, seq }),
+        currentPrefecture: "KAGAWA"
     };
 }
 function defineUserFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {

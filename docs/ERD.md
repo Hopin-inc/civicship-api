@@ -171,6 +171,17 @@ FACEBOOK FACEBOOK
 USER USER
         }
     
+
+
+        CurrentPrefecture {
+            KAGAWA KAGAWA
+TOKUSHIMA TOKUSHIMA
+KOCHI KOCHI
+EHIME EHIME
+OUTSIDE_SHIKOKU OUTSIDE_SHIKOKU
+UNKNOWN UNKNOWN
+        }
+    
   "t_articles" {
     String id "🗝️"
     String title 
@@ -463,6 +474,7 @@ USER USER
     String url_instagram "❓"
     String url_youtube "❓"
     String url_tiktok "❓"
+    CurrentPrefecture currentPrefecture 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -603,6 +615,7 @@ USER USER
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
+    "t_users" o|--|| "CurrentPrefecture" : "enum:currentPrefecture"
     "t_users" o{--}o "t_onboardings" : "onboardings"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"

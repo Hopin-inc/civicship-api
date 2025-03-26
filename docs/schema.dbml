@@ -359,6 +359,7 @@ Table t_users {
   urlInstagram String
   urlYoutube String
   urlTiktok String
+  currentPrefecture CurrentPrefecture [not null]
   onboardings t_onboardings [not null]
   identities t_identities [not null]
   memberships t_memberships [not null]
@@ -556,6 +557,15 @@ Enum IdentityPlatform {
 Enum SysRole {
   SYS_ADMIN
   USER
+}
+
+Enum CurrentPrefecture {
+  KAGAWA
+  TOKUSHIMA
+  KOCHI
+  EHIME
+  OUTSIDE_SHIKOKU
+  UNKNOWN
 }
 
 Ref: t_articles.communityId > t_communities.id [delete: Cascade]

@@ -15,6 +15,8 @@ type User {
     urlYoutube: String
     urlTiktok: String
 
+    currentPrefecture: CurrentPrefecture
+
     createdAt: Datetime!
     updatedAt: Datetime
 
@@ -139,4 +141,13 @@ type User {
 enum SysRole {
     SYS_ADMIN
     USER
+}
+
+enum CurrentPrefecture {
+    KAGAWA
+    TOKUSHIMA
+    KOCHI
+    EHIME
+    OUTSIDE_SHIKOKU
+    UNKNOWN
 }

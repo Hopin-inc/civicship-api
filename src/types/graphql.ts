@@ -244,6 +244,16 @@ export type GqlCurrentPointView = {
   walletId: Scalars['String']['output'];
 };
 
+export const GqlCurrentPrefecture = {
+  Ehime: 'EHIME',
+  Kagawa: 'KAGAWA',
+  Kochi: 'KOCHI',
+  OutsideShikoku: 'OUTSIDE_SHIKOKU',
+  Tokushima: 'TOKUSHIMA',
+  Unknown: 'UNKNOWN'
+} as const;
+
+export type GqlCurrentPrefecture = typeof GqlCurrentPrefecture[keyof typeof GqlCurrentPrefecture];
 export type GqlCurrentUserPayload = {
   __typename?: 'CurrentUserPayload';
   user?: Maybe<GqlUser>;
@@ -2321,6 +2331,7 @@ export type GqlUser = {
   articlesWrittenByMe?: Maybe<GqlArticlesConnection>;
   bio?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Datetime']['output'];
+  currentPrefecture?: Maybe<GqlCurrentPrefecture>;
   evaluationCreatedByMe?: Maybe<GqlEvaluationHistoriesConnection>;
   evaluations?: Maybe<GqlEvaluationsConnection>;
   id: Scalars['ID']['output'];
@@ -2846,6 +2857,7 @@ export type GqlResolversTypes = ResolversObject<{
   CommunityUpdateProfilePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityUpdateProfilePayload']>;
   CommunityUpdateProfileSuccess: ResolverTypeWrapper<Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversTypes['Community'] }>;
   CurrentPointView: ResolverTypeWrapper<CurrentPointView>;
+  CurrentPrefecture: GqlCurrentPrefecture;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
@@ -4355,6 +4367,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   articlesWrittenByMe?: Resolver<Maybe<GqlResolversTypes['ArticlesConnection']>, ParentType, ContextType, Partial<GqlUserArticlesWrittenByMeArgs>>;
   bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  currentPrefecture?: Resolver<Maybe<GqlResolversTypes['CurrentPrefecture']>, ParentType, ContextType>;
   evaluationCreatedByMe?: Resolver<Maybe<GqlResolversTypes['EvaluationHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserEvaluationCreatedByMeArgs>>;
   evaluations?: Resolver<Maybe<GqlResolversTypes['EvaluationsConnection']>, ParentType, ContextType, Partial<GqlUserEvaluationsArgs>>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;

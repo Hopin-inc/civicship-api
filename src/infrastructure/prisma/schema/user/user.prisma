@@ -12,6 +12,8 @@ model User {
   urlYoutube   String? @map("url_youtube")
   urlTiktok    String? @map("url_tiktok")
 
+  currentPrefecture CurrentPrefecture
+
   onboardings Onboarding[]
   identities  Identity[]
 
@@ -45,4 +47,13 @@ model User {
 enum SysRole {
   SYS_ADMIN
   USER
+}
+
+enum CurrentPrefecture {
+  KAGAWA
+  TOKUSHIMA
+  KOCHI
+  EHIME
+  OUTSIDE_SHIKOKU
+  UNKNOWN
 }
