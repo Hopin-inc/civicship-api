@@ -2,43 +2,23 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import {
   GqlOpportunitySlotCreateInput,
-  GqlOpportunitySlotFilterInput,
-  GqlOpportunitySlotsConnection,
-  GqlOpportunitySlotSortInput,
   GqlOpportunitySlotUpdateInput,
+  GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
 import OpportunitySlotRepository from "@/application/domain/opportunitySlot/data/repository";
 import OpportunitySlotConverter from "@/application/domain/opportunitySlot/data/converter";
-import { clampFirst } from "@/application/domain/utils";
-import OpportunitySlotPresenter from "@/application/domain/opportunitySlot/presenter";
 import { NotFoundError } from "@/errors/graphql";
 
 export default class OpportunitySlotService {
   static async fetchOpportunitySlots(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlOpportunitySlotFilterInput;
-      sort?: GqlOpportunitySlotSortInput;
-      first?: number;
-    },
-  ): Promise<GqlOpportunitySlotsConnection> {
-    const take = clampFirst(first);
-
+    { cursor, filter, sort }: GqlQueryOpportunitySlotsArgs,
+    take: number,
+  ) {
     const where = OpportunitySlotConverter.filter(filter ?? {});
     const orderBy = OpportunitySlotConverter.sort(sort ?? {});
 
-    const res = await OpportunitySlotRepository.query(ctx, where, orderBy, take, cursor);
-
-    const hasNextPage = res.length > take;
-    const data = res.slice(0, take).map((record) => OpportunitySlotPresenter.get(record));
-
-    return OpportunitySlotPresenter.query(data, hasNextPage);
+    return await OpportunitySlotRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findOpportunitySlot(ctx: IContext, id: string) {

@@ -10,15 +10,26 @@ import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/domain/opportunitySlot/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { clampFirst } from "@/application/domain/utils";
 
 export default class OpportunitySlotUseCase {
   private static issuer = new PrismaClientIssuer();
 
   static async visitorBrowseOpportunitySlots(
-    args: GqlQueryOpportunitySlotsArgs,
+    { cursor, filter, sort, first }: GqlQueryOpportunitySlotsArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsConnection> {
-    return OpportunitySlotService.fetchOpportunitySlots(ctx, args);
+    const take = clampFirst(first);
+    const records = await OpportunitySlotService.fetchOpportunitySlots(
+      ctx,
+      { cursor, filter, sort },
+      take,
+    );
+
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map((record) => OpportunitySlotPresenter.get(record));
+
+    return OpportunitySlotPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewOpportunitySlot(
