@@ -12,15 +12,30 @@ import { IContext } from "@/types/server";
 import OpportunityInvitationService from "@/application/domain/invitation/service";
 import OpportunityInvitationPresenter from "@/application/domain/invitation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { clampFirst } from "@/application/domain/utils";
 
 export default class OpportunityInvitationUseCase {
   private static issuer = new PrismaClientIssuer();
 
   static async visitorBrowseOpportunityInvitations(
-    args: GqlQueryOpportunityInvitationsArgs,
+    { filter, sort, cursor, first }: GqlQueryOpportunityInvitationsArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityInvitationsConnection> {
-    return OpportunityInvitationService.fetchOpportunityInvitations(ctx, args);
+    const take = clampFirst(first);
+
+    const records = await OpportunityInvitationService.fetchOpportunityInvitations(
+      ctx,
+      {
+        filter,
+        sort,
+        cursor,
+      },
+      take,
+    );
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map((record) => OpportunityInvitationPresenter.get(record));
+
+    return OpportunityInvitationPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewOpportunityInvitation(

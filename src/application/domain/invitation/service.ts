@@ -6,26 +6,19 @@ import {
 } from "@/types/graphql";
 import OpportunityInvitationConverter from "@/application/domain/invitation/data/converter";
 import OpportunityInvitationRepository from "@/application/domain/invitation/data/repository";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
-import OpportunityInvitationPresenter from "@/application/domain/invitation/presenter";
 
 export default class OpportunityInvitationService {
   static async fetchOpportunityInvitations(
     ctx: IContext,
-    { filter, sort, cursor, first }: GqlQueryOpportunityInvitationsArgs,
+    { filter, sort, cursor }: GqlQueryOpportunityInvitationsArgs,
+    take: number,
   ) {
-    const take = clampFirst(first);
-
     const where = OpportunityInvitationConverter.filter(filter ?? {});
     const orderBy = OpportunityInvitationConverter.sort(sort ?? {});
 
-    const rows = await OpportunityInvitationRepository.query(ctx, where, orderBy, take + 1, cursor);
-
-    const hasNextPage = rows.length > take;
-    const data = rows.slice(0, take).map((record) => OpportunityInvitationPresenter.get(record));
-
-    return OpportunityInvitationPresenter.query(data, hasNextPage);
+    return await OpportunityInvitationRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findOpportunityInvitation(ctx: IContext, id: string) {
