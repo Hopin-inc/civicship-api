@@ -1,0 +1,142 @@
+# ------------------------------
+# User Object Type Definitions
+# ------------------------------
+type User {
+    id: ID!
+    name: String!
+    slug: String!
+    image: String
+    bio: String
+    sysRole: SysRole!
+    urlWebsite: String
+    urlX: String
+    urlFacebook: String
+    urlInstagram: String
+    urlYoutube: String
+    urlTiktok: String
+
+    createdAt: Datetime!
+    updatedAt: Datetime
+
+    onboardings: [Onboarding!]
+
+    portfolios(
+        filter: PortfolioFilterInput
+        sort: PortfolioSortInput
+        cursor: String
+        first: Int
+    ): PortfoliosConnection @complexity(value: 5, multipliers: ["first"])
+
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: MembershipCursorInput
+        first: Int
+    ): MembershipsConnection @complexity(value: 5, multipliers: ["first"])
+
+    membershipChangedByMe(
+        filter: MembershipHistoryFilterInput
+        sort: MembershipHistorySortInput
+        cursor: String
+        first: Int
+    ): MembershipHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    wallets(
+        filter: WalletFilterInput
+        sort: WalletSortInput
+        cursor: String
+        first: Int
+    ): WalletsConnection @complexity(value: 5, multipliers: ["first"])
+
+    opportunitiesCreatedByMe(
+        filter: OpportunityFilterInput
+        sort: OpportunitySortInput
+        cursor: String
+        first: Int
+    ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
+
+    opportunityInvitations(
+        filter: OpportunityInvitationFilterInput
+        sort: OpportunityInvitationSortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    opportunityInvitationHistories(
+        filter: OpportunityInvitationHistoryFilterInput
+        sort: OpportunityInvitationHistorySortInput
+        cursor: String
+        first: Int
+    ): OpportunityInvitationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    reservations(
+        filter: ReservationFilterInput
+        sort: ReservationSortInput
+        cursor: String
+        first: Int
+    ): ReservationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    reservationStatusChangedByMe(
+        filter: ReservationHistoryFilterInput
+        sort: ReservationHistorySortInput
+        cursor: String
+        first: Int
+    ): ReservationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    participations(
+        filter: ParticipationFilterInput
+        sort: ParticipationSortInput
+        cursor: String
+        first: Int
+    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    participationStatusChangedByMe(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    evaluations(
+        filter: EvaluationFilterInput
+        sort: EvaluationSortInput
+        cursor: String
+        first: Int
+    ): EvaluationsConnection @complexity(value: 5, multipliers: ["first"])
+
+    evaluationCreatedByMe(
+        filter: EvaluationHistoryFilterInput
+        sort: EvaluationHistorySortInput
+        cursor: String
+        first: Int
+    ): EvaluationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+
+    articlesWrittenByMe(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 5, multipliers: ["first"])
+
+    articlesAboutMe(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection @complexity(value: 5, multipliers: ["first"])
+
+    ticketStatusChangedByMe(
+        filter: TicketStatusHistoryFilterInput
+        sort: TicketStatusHistorySortInput
+        cursor: String
+        first: Int
+    ): TicketStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+}
+
+# ------------------------------
+# User Enum Definitions
+# ------------------------------
+enum SysRole {
+    SYS_ADMIN
+    USER
+}
