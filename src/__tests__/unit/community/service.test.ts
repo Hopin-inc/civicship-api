@@ -1,12 +1,12 @@
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
-import CommunityRepository from "@/application/community/data/repository";
-import CommunityService from "@/application/community/service";
+import CommunityRepository from "@/application/domain/community/data/repository";
+import CommunityService from "@/application/domain/community/service";
 import { NotFoundError } from "@/errors/graphql";
-import CommunityConverter from "@/application/community/data/converter";
+import CommunityConverter from "@/application/domain/community/data/converter";
 
-jest.mock("@/application/community/data/repository");
-jest.mock("@/application/community/data/converter");
+jest.mock("@/application/domain/community/data/repository");
+jest.mock("@/application/domain/community/data/converter");
 
 describe("CommunityService", () => {
   const mockCtx = {} as IContext;

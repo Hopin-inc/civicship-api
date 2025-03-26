@@ -4,10 +4,10 @@ import {
   GqlOpportunityInvitationCreateInput,
   GqlQueryOpportunityInvitationsArgs,
 } from "@/types/graphql";
-import OpportunityInvitationConverter from "@/application/invitation/data/converter";
-import OpportunityInvitationRepository from "@/application/invitation/data/repository";
-import OpportunityInvitationService from "@/application/invitation/service";
-import { getCurrentUserId } from "@/application/utils";
+import OpportunityInvitationConverter from "@/application/domain/invitation/data/converter";
+import OpportunityInvitationRepository from "@/application/domain/invitation/data/repository";
+import OpportunityInvitationService from "@/application/domain/invitation/service";
+import { getCurrentUserId } from "@/application/domain/utils";
 
 jest.mock("@/infra/repositories/opportunity/invitation");
 jest.mock("@/presentation/graphql/dto/opportunity/invitation/input");

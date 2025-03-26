@@ -1,7 +1,7 @@
 import { IdentityPlatform } from "@prisma/client";
 import { GqlUser } from "@/types/graphql";
 import { Loaders } from "@/presentation/graphql/dataloader";
-import { PrismaUserPermission } from "@/application/user/data/type";
+import { PrismaUserPermission } from "@/application/domain/user/data/type";
 
 export type LoggedInUserInfo = {
   uid: string;

@@ -1,14 +1,14 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
-import { opportunityInclude } from "@/application/opportunity/data/type";
-import { communityInclude } from "@/application/community/data/type";
-import { walletInclude } from "@/application/membership/wallet/data/type";
-import { transactionInclude } from "@/application/transaction/data/type";
-import { utilityInclude } from "@/application/utility/data/type";
-import { participationInclude } from "@/application/participation/data/type";
-import { placeInclude } from "@/application/place/data/type";
-import { membershipInclude } from "@/application/membership/data/type";
+import { opportunityInclude } from "@/application/domain/opportunity/data/type";
+import { communityInclude } from "@/application/domain/community/data/type";
+import { walletInclude } from "@/application/domain/membership/wallet/data/type";
+import { transactionInclude } from "@/application/domain/transaction/data/type";
+import { utilityInclude } from "@/application/domain/utility/data/type";
+import { participationInclude } from "@/application/domain/participation/data/type";
+import { placeInclude } from "@/application/domain/place/data/type";
+import { membershipInclude } from "@/application/domain/membership/data/type";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;

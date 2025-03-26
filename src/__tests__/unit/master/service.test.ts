@@ -1,5 +1,5 @@
-import MasterService from "@/application/master/service";
-import MasterRepository from "@/application/master/data/repository";
+import MasterService from "@/application/domain/master/service";
+import MasterRepository from "@/application/domain/master/data/repository";
 
 jest.mock("@/infra/repositories/master");
 

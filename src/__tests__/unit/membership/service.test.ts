@@ -1,14 +1,14 @@
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
-import MembershipRepository from "@/application/membership/data/repository";
-import MembershipService from "@/application/membership/service";
-import MembershipConverter from "@/application/membership/data/converter";
-import { getCurrentUserId } from "@/application/utils";
+import MembershipRepository from "@/application/domain/membership/data/repository";
+import MembershipService from "@/application/domain/membership/service";
+import MembershipConverter from "@/application/domain/membership/data/converter";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 
-jest.mock("@/application/membership/data/repository");
-jest.mock("@/application/membership/data/converter");
-jest.mock("@/application/utils", () => ({
+jest.mock("@/application/domain/membership/data/repository");
+jest.mock("@/application/domain/membership/data/converter");
+jest.mock("@/application/domain/utils", () => ({
   getCurrentUserId: jest.fn(),
 }));
 

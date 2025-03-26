@@ -1,14 +1,14 @@
-import OpportunityRepository from "@/application/opportunity/data/repository";
-import OpportunityConverter from "@/application/opportunity/data/converter";
-import { getCurrentUserId } from "@/application/utils";
+import OpportunityRepository from "@/application/domain/opportunity/data/repository";
+import OpportunityConverter from "@/application/domain/opportunity/data/converter";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { IContext } from "@/types/server";
 import { PublishStatus, OpportunityHostingStatus, OpportunityCategory } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import OpportunityService from "@/application/opportunity/service";
+import OpportunityService from "@/application/domain/opportunity/service";
 
-jest.mock("@/application/opportunity/data/repository");
-jest.mock("@/application/opportunity/data/converter");
-jest.mock("@/application/utils", () => ({
+jest.mock("@/application/domain/opportunity/data/repository");
+jest.mock("@/application/domain/opportunity/data/converter");
+jest.mock("@/application/domain/utils", () => ({
   getCurrentUserId: jest.fn(),
 }));
 

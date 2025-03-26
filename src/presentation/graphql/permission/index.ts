@@ -1,15 +1,15 @@
 import { shield, allow } from "graphql-shield";
-import { userMutationPermissions } from "@/application/user/controller/permission";
-import { communityMutationPermissions } from "@/application/community/controller/permission";
-import { membershipMutationPermissions } from "@/application/membership/controller/permission";
-import { opportunityMutationPermissions } from "@/application/opportunity/controller/permission";
-import { participationMutationPermissions } from "@/application/participation/controller/permission";
-import { utilityMutationPermissions } from "@/application/utility/controller/permission";
-import { transactionMutationPermissions } from "@/application/transaction/controller/permission";
-import { opportunitySlotMutationPermissions } from "@/application/opportunitySlot/controller/permission";
-import { opportunityInvitationMutationPermissions } from "@/application/invitation/controller/permission";
-import { placeMutationPermissions } from "@/application/place/controller/permission";
-import { ticketMutationPermissions } from "@/application/ticket/controller/permission";
+import { userMutationPermissions } from "@/application/domain/user/controller/permission";
+import { communityMutationPermissions } from "@/application/domain/community/controller/permission";
+import { membershipMutationPermissions } from "@/application/domain/membership/controller/permission";
+import { opportunityMutationPermissions } from "@/application/domain/opportunity/controller/permission";
+import { participationMutationPermissions } from "@/application/domain/participation/controller/permission";
+import { utilityMutationPermissions } from "@/application/domain/utility/controller/permission";
+import { transactionMutationPermissions } from "@/application/domain/transaction/controller/permission";
+import { opportunitySlotMutationPermissions } from "@/application/domain/opportunitySlot/controller/permission";
+import { opportunityInvitationMutationPermissions } from "@/application/domain/invitation/controller/permission";
+import { placeMutationPermissions } from "@/application/domain/place/controller/permission";
+import { ticketMutationPermissions } from "@/application/domain/ticket/controller/permission";
 
 const permissions = shield(
   {

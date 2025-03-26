@@ -1,11 +1,11 @@
 import { IContext } from "@/types/server";
 import { Prisma, TransactionReason } from "@prisma/client";
-import TransactionConverter from "@/application/transaction/data/converter";
-import TransactionRepository from "@/application/transaction/data/repository";
-import TransactionService from "@/application/transaction/service";
+import TransactionConverter from "@/application/domain/transaction/data/converter";
+import TransactionRepository from "@/application/domain/transaction/data/repository";
+import TransactionService from "@/application/domain/transaction/service";
 
-jest.mock("@/application/transaction/data/repository");
-jest.mock("@/application/transaction/data/converter");
+jest.mock("@/application/domain/transaction/data/repository");
+jest.mock("@/application/domain/transaction/data/converter");
 
 describe("TransactionService", () => {
   const mockCtx = {} as IContext;

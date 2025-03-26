@@ -1,11 +1,11 @@
 import { Prisma, TransactionReason, WalletType } from "@prisma/client";
-import WalletService from "@/application/membership/wallet/service";
+import WalletService from "@/application/domain/membership/wallet/service";
 import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import WalletValidator from "@/application/membership/wallet/validator";
+import WalletValidator from "@/application/domain/membership/wallet/validator";
 
-jest.mock("@/application/membership/wallet/data/repository");
-jest.mock("@/application/membership/wallet/data/converter");
+jest.mock("@/application/domain/membership/wallet/data/repository");
+jest.mock("@/application/domain/membership/wallet/data/converter");
 
 describe("WalletValidator", () => {
   const mockCtx = {} as IContext;

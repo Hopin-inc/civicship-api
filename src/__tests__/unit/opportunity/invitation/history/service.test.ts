@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { GqlQueryOpportunityInvitationHistoriesArgs } from "@/types/graphql";
-import OpportunityInvitationHistoryConverter from "@/application/invitation/invitationHistory/data/converter";
-import OpportunityInvitationHistoryRepository from "@/application/invitation/invitationHistory/data/repository";
-import OpportunityInvitationHistoryService from "@/application/invitation/invitationHistory/service";
+import OpportunityInvitationHistoryConverter from "@/application/domain/invitation/invitationHistory/data/converter";
+import OpportunityInvitationHistoryRepository from "@/application/domain/invitation/invitationHistory/data/repository";
+import OpportunityInvitationHistoryService from "@/application/domain/invitation/invitationHistory/service";
 
 jest.mock("@/infra/repositories/opportunity/invitation/history");
 jest.mock("@/presentation/graphql/dto/opportunity/invitation/history/input");
