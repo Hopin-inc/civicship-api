@@ -2511,6 +2511,7 @@ export type GqlUserFilterInput = {
 };
 
 export type GqlUserSignUpInput = {
+  currentPrefecture?: InputMaybe<GqlCurrentPrefecture>;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
   slug?: InputMaybe<Scalars['String']['input']>;
@@ -2522,6 +2523,7 @@ export type GqlUserSortInput = {
 
 export type GqlUserUpdateProfileInput = {
   bio?: InputMaybe<Scalars['String']['input']>;
+  currentPrefecture?: InputMaybe<GqlCurrentPrefecture>;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
   slug: Scalars['String']['input'];

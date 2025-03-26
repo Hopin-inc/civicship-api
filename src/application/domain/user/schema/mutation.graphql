@@ -22,6 +22,8 @@ input UserUpdateProfileInput {
     urlInstagram: String
     urlYoutube: String
     urlTiktok: String
+
+    currentPrefecture: CurrentPrefecture
 }
 
 # ------------------------------
