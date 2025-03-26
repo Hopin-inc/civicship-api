@@ -1,8 +1,9 @@
 import { Prisma, TransactionReason, WalletType } from "@prisma/client";
 import WalletService from "@/application/domain/membership/wallet/service";
-import { InsufficientBalanceError, NotFoundError, ValidationError } from "@/errors/graphql";
+import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
+import { PrismaWallet } from "@/application/domain/membership/wallet/data/type";
 
 jest.mock("@/application/domain/membership/wallet/data/repository");
 jest.mock("@/application/domain/membership/wallet/data/converter");
@@ -124,84 +125,52 @@ describe("WalletValidator", () => {
 
   describe("validateMemberToMemberDonation", () => {
     const fromWalletId = "wallet-from";
-    const toUserId = "user-to";
+    const toWalletId = "wallet-to";
+    const transferPoints = 100;
 
     const fromWallet = {
       ...memberWallet,
       id: fromWalletId,
-    };
-    const toWallet = { ...memberWallet, id: "wallet-to" };
+      currentPointView: { currentPoint: 200 },
+    } as PrismaWallet;
+
+    const toWallet = {
+      ...memberWallet,
+      id: toWalletId,
+      currentPointView: { currentPoint: 0 },
+    } as PrismaWallet;
 
     beforeEach(() => {
       jest.clearAllMocks();
     });
 
     it("should return wallet ids if validation passes", async () => {
-      // [1] モック設定
-      jest.spyOn(WalletService, "checkIfMemberWalletExists").mockResolvedValue(fromWallet as any);
-      jest.spyOn(WalletService, "createMemberWalletIfNeeded").mockResolvedValue(toWallet as any);
-      // [2] 実行
+      // validateTransfer を spy に差し替える
+      const validateTransferMock = jest
+        .spyOn(WalletValidator as any, "validateTransfer")
+        .mockResolvedValue(undefined);
+
       const result = await WalletValidator.validateMemberToMemberDonation(
-        mockCtx,
-        mockTx,
-        fromWalletId,
-        toUserId,
-        communityId,
+        fromWallet,
+        toWallet,
         transferPoints,
       );
 
-      // [3] 検証
-      expect(WalletService.checkIfMemberWalletExists).toHaveBeenCalledWith(mockCtx, fromWalletId);
-      expect(WalletService.createMemberWalletIfNeeded).toHaveBeenCalledWith(
-        mockCtx,
-        toUserId,
-        communityId,
-        mockTx,
-      );
+      expect(validateTransferMock).toHaveBeenCalledWith(transferPoints, fromWallet, toWallet);
+
       expect(result).toEqual({
         fromWalletId,
-        toWalletId: toWallet.id,
+        toWalletId,
       });
     });
 
-    it("should throw NotFoundError if fromWallet does not exist", async () => {
-      jest
-        .spyOn(WalletService, "checkIfMemberWalletExists")
-        .mockRejectedValue(new NotFoundError("wallet not found"));
-
-      await expect(
-        WalletValidator.validateMemberToMemberDonation(
-          mockCtx,
-          mockTx,
-          fromWalletId,
-          toUserId,
-          communityId,
-          transferPoints,
-        ),
-      ).rejects.toThrow(NotFoundError);
-    });
-
     it("should throw error if validateTransfer fails", async () => {
-      const fromWallet = {
-        ...memberWallet,
-        id: fromWalletId,
-        currentPointView: { currentPoint: 1 },
-      };
-
-      jest.spyOn(WalletService, "checkIfMemberWalletExists").mockResolvedValue(fromWallet as any);
       jest
-        .spyOn(WalletService, "createMemberWalletIfNeeded")
-        .mockResolvedValue(memberWallet as any);
+        .spyOn(WalletValidator as any, "validateTransfer")
+        .mockRejectedValue(new InsufficientBalanceError(100, 200));
 
       await expect(
-        WalletValidator.validateMemberToMemberDonation(
-          mockCtx,
-          mockTx,
-          fromWalletId,
-          toUserId,
-          communityId,
-          transferPoints,
-        ),
+        WalletValidator.validateMemberToMemberDonation(fromWallet, toWallet, transferPoints),
       ).rejects.toThrow(InsufficientBalanceError);
     });
   });
