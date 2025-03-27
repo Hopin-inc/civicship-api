@@ -3,7 +3,7 @@ import { IContext } from "@/types/server";
 import TicketRepository from "@/application/domain/ticket/data/repository";
 import TicketConverter from "@/application/domain/ticket/data/converter";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import TicketPresenter from "@/application/domain/ticket/presenter";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
@@ -140,17 +140,5 @@ export default class TicketService {
 
     const data: Prisma.TicketUpdateInput = TicketConverter.use(currentUserId);
     return TicketRepository.update(ctx, id, data, tx);
-  }
-
-  static validateTicketForReservation(ticket: PrismaTicket, requiredUtilityIds: string[]) {
-    const { utilityId, status } = ticket;
-
-    if (!requiredUtilityIds.includes(utilityId)) {
-      throw new ValidationError("Ticket is not valid for the required utilities.");
-    }
-
-    if (status === TicketStatus.DISABLED) {
-      throw new ValidationError("This ticket has already been used.");
-    }
   }
 }
