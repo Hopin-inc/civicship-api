@@ -1,52 +1,26 @@
-import {
-  GqlEvaluationCreateInput,
-  GqlEvaluationFilterInput,
-  GqlEvaluationsConnection,
-  GqlEvaluationSortInput,
-} from "@/types/graphql";
+import { GqlEvaluationCreateInput, GqlQueryEvaluationsArgs } from "@/types/graphql";
 import EvaluationRepository from "@/application/domain/evaluation/data/repository";
-import EvaluationPresenter from "@/application/domain/evaluation/presenter";
 import EvaluationConverter from "@/application/domain/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { ValidationError } from "@/errors/graphql";
+import { PrismaEvaluation } from "@/application/domain/evaluation/data/type";
 
 export default class EvaluationService {
   static async fetchEvaluations(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlEvaluationFilterInput;
-      sort?: GqlEvaluationSortInput;
-      first?: number;
-    },
-  ): Promise<GqlEvaluationsConnection> {
-    const take = clampFirst(first);
+    { cursor, filter, sort }: GqlQueryEvaluationsArgs,
+    take: number,
+  ) {
     const where = EvaluationConverter.filter(filter ?? {});
     const orderBy = EvaluationConverter.sort(sort ?? {});
 
-    const res = await EvaluationRepository.query(ctx, where, orderBy, take, cursor);
-    const hasNextPage = res.length > take;
-    const data = res.slice(0, take).map(EvaluationPresenter.get);
-    return EvaluationPresenter.query(data, hasNextPage);
+    return await EvaluationRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findEvaluation(ctx: IContext, id: string) {
     return await EvaluationRepository.find(ctx, id);
-  }
-
-  static async findEvaluationOrThrow(ctx: IContext, id: string) {
-    const record = await this.findEvaluation(ctx, id);
-    if (!record) {
-      throw new ValidationError("Evaluation not found", [id]);
-    }
-    return record;
   }
 
   static async createEvaluation(
@@ -71,5 +45,23 @@ export default class EvaluationService {
     );
 
     return EvaluationRepository.create(ctx, data, tx);
+  }
+
+  static validateParticipationHasOpportunity(evaluation: PrismaEvaluation) {
+    const participation = evaluation.participation;
+    const opportunity = participation?.opportunitySlot?.opportunity;
+
+    if (!participation || !opportunity) {
+      throw new ValidationError("Participation or Opportunity not found for evaluation", [
+        evaluation.id,
+      ]);
+    }
+
+    const communityId = participation?.communityId;
+    if (!communityId) {
+      throw new ValidationError("Community ID not found for participation", [evaluation.id]);
+    }
+
+    return { participation, opportunity, communityId };
   }
 }

@@ -12,9 +12,9 @@ import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/evaluation/service";
 import EvaluationPresenter from "@/application/domain/evaluation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { ValidationError } from "@/errors/graphql";
 import TransactionService from "@/application/domain/transaction/service";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
+import { clampFirst } from "@/application/domain/utils";
 
 export default class EvaluationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -23,7 +23,12 @@ export default class EvaluationUseCase {
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryEvaluationsArgs,
   ): Promise<GqlEvaluationsConnection> {
-    return EvaluationService.fetchEvaluations(ctx, { cursor, filter, sort, first });
+    const take = clampFirst(first);
+    const records = await EvaluationService.fetchEvaluations(ctx, { cursor, filter, sort }, take);
+
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map(EvaluationPresenter.get);
+    return EvaluationPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewEvaluation(
@@ -46,26 +51,14 @@ export default class EvaluationUseCase {
         tx,
       );
 
-      const participation = evaluation.participation;
-      if (!participation || !participation.opportunitySlot?.opportunity) {
-        throw new ValidationError("Participation or Opportunity not found for evaluation", [
-          input.participationId,
-        ]);
-      }
-
-      const opportunity = participation.opportunitySlot?.opportunity;
+      const { participation, opportunity, communityId } =
+        EvaluationService.validateParticipationHasOpportunity(evaluation);
 
       if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
-        if (!participation.communityId) {
-          throw new ValidationError("Community ID not found for participation", [
-            input.participationId,
-          ]);
-        }
-
         const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
           ctx,
           tx,
-          participation.communityId,
+          communityId,
           participation.id,
           opportunity.pointsToEarn,
           TransactionReason.POINT_REWARD,
