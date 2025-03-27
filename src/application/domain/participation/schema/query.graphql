@@ -36,7 +36,6 @@ input ParticipationFilterInput {
     opportunityId: ID
     userIds: [ID!]
 
-    opportunityInvitationId: ID
     opportunitySlotId: ID
     reservationId: ID
 

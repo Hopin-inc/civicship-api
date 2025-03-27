@@ -12,16 +12,18 @@ export default class ParticipationRepository {
     orderBy: Prisma.ParticipationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-    include: T = participationInclude as T,
+    include?: T,
   ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]> {
+    const finalInclude = (include ?? participationInclude) as unknown as T;
+
     return this.issuer.public(ctx, (tx) =>
       tx.participation.findMany({
         where,
         orderBy,
-        include,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
+        include: finalInclude,
       }),
     );
   }

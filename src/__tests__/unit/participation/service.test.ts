@@ -1,107 +1,176 @@
-// import ParticipationService from "@/app/opportunity/participation/service";
-// import ParticipationRepository from "@/infra/repositories/opportunity/participation";
-// import { IContext } from "@/types/server";
-// import ParticipationUtils from "@/app/opportunity/participation/utils";
-// import ParticipationStatusHistoryService from "@/app/opportunity/participation/statusHistory/service";
-// import { ParticipationStatus } from "@prisma/client";
-//
-// jest.mock("@/infra/repositories/opportunity/participation");
-// jest.mock("@/infra/repositories/opportunity");
-// jest.mock("@/app/opportunity/participation/statusHistory/service");
-// jest.mock("@/app/opportunity/participation/utils");
-//
-// describe("ParticipationService", () => {
-//     let ctx: IContext;
-//     const userId = "test-user"
-//
-//     beforeEach(() => {
-//         ctx = { user: { id: "test-user" }, currentUser: { id: "test-user" } } as unknown as IContext;
-//         jest.clearAllMocks();
-//     });
-//
-//     describe("fetchParticipations", () => {
-//         it("should return all participations", async () => {
-//             const mockParticipations = [{ id: "1", userId: "test-user", status: "APPLIED" }];
-//             (ParticipationRepository.query as jest.Mock).mockResolvedValue(mockParticipations);
-//
-//             const result = await ParticipationService.fetchParticipations(ctx, {}, 10);
-//             expect(ParticipationRepository.query).toHaveBeenCalledWith(
-//                 ctx,
-//                 expect.objectContaining({}),
-//                 expect.any(Array),
-//                 10,
-//                 undefined
-//             );
-//             expect(result).toEqual(mockParticipations);
-//         });
-//     });
-//
-//     describe("findParticipation", () => {
-//         it("should return participation by id", async () => {
-//             const mockParticipation = { id: "1", userId: "test-user", status: "APPLIED" };
-//             (ParticipationRepository.find as jest.Mock).mockResolvedValue(mockParticipation);
-//
-//             const result = await ParticipationService.findParticipation(ctx, "1");
-//             expect(ParticipationRepository.find).toHaveBeenCalledWith(ctx, "1");
-//             expect(result).toEqual(mockParticipation);
-//         });
-//     });
-//
-//     describe("inviteParticipation", () => {
-//         it("should successfully invite participation", async () => {
-//             const mockParticipation = { id: "1", userId: userId, status: ParticipationStatus.INVITED };
-//             const input = { communityId: "community-1", invitedUserId: userId, opportunityId: "opportunity-1" };
-//
-//             (ParticipationRepository.create as jest.Mock).mockResolvedValue(mockParticipation);
-//             (ParticipationStatusHistoryService.recordParticipationHistory as jest.Mock).mockResolvedValue({});
-//
-//             const result = await ParticipationService.inviteParticipation(ctx, input);
-//             expect(result).toEqual(mockParticipation);
-//             expect(ParticipationRepository.create).toHaveBeenCalledWith(
-//                 ctx,
-//                 expect.objectContaining({ status: ParticipationStatus.INVITED }),
-//                 expect.anything()
-//             );
-//         });
-//     });
-//
-//     describe("cancelInvitation", () => {
-//         it("should successfully cancel invitation", async () => {
-//             (ParticipationUtils.setParticipationStatus as jest.Mock).mockResolvedValue(true);
-//             const result = await ParticipationService.cancelInvitation(ctx, "1");
-//             expect(result).toBe(true);
-//         });
-//     });
-//
-//     describe("denyInvitation", () => {
-//         it("should successfully deny invitation", async () => {
-//             (ParticipationUtils.setParticipationStatus as jest.Mock).mockResolvedValue(true);
-//             const result = await ParticipationService.denyInvitation(ctx, "1");
-//             expect(result).toBe(true);
-//         });
-//     });
-//
-//     describe("cancelApplication", () => {
-//         it("should successfully cancel application", async () => {
-//             (ParticipationUtils.setParticipationStatus as jest.Mock).mockResolvedValue(true);
-//             const result = await ParticipationService.cancelApplication(ctx, "1");
-//             expect(result).toBe(true);
-//         });
-//     });
-//
-//     describe("denyApplication", () => {
-//         it("should successfully deny application", async () => {
-//             (ParticipationUtils.setParticipationStatus as jest.Mock).mockResolvedValue(true);
-//             const result = await ParticipationService.denyApplication(ctx, "1");
-//             expect(result).toBe(true);
-//         });
-//     });
-//
-//     describe("denyPerformance", () => {
-//         it("should successfully deny performance", async () => {
-//             (ParticipationUtils.setParticipationStatus as jest.Mock).mockResolvedValue(true);
-//             const result = await ParticipationService.denyPerformance(ctx, "1");
-//             expect(result).toBe(true);
-//         });
-//     });
-// });
+import { IContext } from "@/types/server";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import { GqlParticipationCreatePersonalRecordInput } from "@/types/graphql";
+import ParticipationConverter from "@/application/domain/participation/data/converter";
+import ParticipationRepository from "@/application/domain/participation/data/repository";
+import ParticipationService from "@/application/domain/participation/service";
+import { getCurrentUserId } from "@/application/domain/utils";
+import { PrismaParticipation } from "@/application/domain/participation/data/type";
+import { ValidationError } from "@/errors/graphql";
+
+jest.mock("@/application/domain/participation/data/converter");
+jest.mock("@/application/domain/participation/data/repository");
+jest.mock("@/application/domain/utils");
+
+describe("ParticipationService", () => {
+  let ctx: IContext;
+  const tx = {} as Prisma.TransactionClient;
+  const currentUserId = "user-123";
+
+  beforeEach(() => {
+    ctx = { currentUser: { id: currentUserId } } as IContext;
+    jest.clearAllMocks();
+  });
+
+  describe("createParticipation", () => {
+    const input: GqlParticipationCreatePersonalRecordInput = {
+      description: "test record",
+    };
+
+    const prismaInput: Prisma.ParticipationCreateInput = {
+      status: ParticipationStatus.PARTICIPATED,
+      reason: ParticipationStatusReason.PERSONAL_RECORD,
+      description: input.description,
+      user: { connect: { id: currentUserId } },
+      statusHistories: {
+        create: {
+          status: ParticipationStatus.PARTICIPATED,
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          createdByUser: { connect: { id: currentUserId } },
+        },
+      },
+    };
+
+    it("should create a personal participation", async () => {
+      const mockResult = { id: "1" };
+      (ParticipationConverter.create as jest.Mock).mockReturnValue(prismaInput);
+      (ParticipationRepository.create as jest.Mock).mockResolvedValue(mockResult);
+
+      const result = await ParticipationService.createParticipation(ctx, input, currentUserId, tx);
+
+      expect(ParticipationConverter.create).toHaveBeenCalledWith(input, currentUserId);
+      expect(ParticipationRepository.create).toHaveBeenCalledWith(ctx, prismaInput, tx);
+      expect(result).toBe(mockResult);
+    });
+  });
+
+  describe("setStatus", () => {
+    const id = "participation-1";
+    const status = ParticipationStatus.NOT_PARTICIPATING;
+    const reason = ParticipationStatusReason.RESERVATION_CANCELED;
+
+    const prismaInput: Prisma.ParticipationUpdateInput = {
+      status,
+      reason,
+      statusHistories: {
+        create: {
+          status,
+          reason,
+          createdByUser: { connect: { id: currentUserId } },
+        },
+      },
+    };
+
+    it("should call setStatus with currentUserId", async () => {
+      (ParticipationConverter.setStatus as jest.Mock).mockReturnValue(prismaInput);
+      (ParticipationRepository.setStatus as jest.Mock).mockResolvedValue("updated");
+
+      const result = await ParticipationService.setStatus(
+        ctx,
+        id,
+        status,
+        reason,
+        currentUserId,
+        tx,
+      );
+
+      expect(ParticipationConverter.setStatus).toHaveBeenCalledWith(currentUserId, status, reason);
+      expect(ParticipationRepository.setStatus).toHaveBeenCalledWith(ctx, id, prismaInput, tx);
+      expect(result).toBe("updated");
+    });
+
+    it("should fallback to getCurrentUserId if not provided", async () => {
+      (getCurrentUserId as jest.Mock).mockReturnValue(currentUserId);
+      (ParticipationConverter.setStatus as jest.Mock).mockReturnValue(prismaInput);
+      (ParticipationRepository.setStatus as jest.Mock).mockResolvedValue("updated");
+
+      const result = await ParticipationService.setStatus(ctx, id, status, reason, undefined, tx);
+
+      expect(getCurrentUserId).toHaveBeenCalledWith(ctx);
+      expect(result).toBe("updated");
+    });
+  });
+
+  describe("bulkSetStatusByReservation", () => {
+    const ids = ["p1", "p2"];
+    const status = ParticipationStatus.PARTICIPATING;
+    const reason = ParticipationStatusReason.RESERVATION_ACCEPTED;
+
+    it("should call repository with correct args", async () => {
+      const mockResult = { count: 2 };
+      (ParticipationRepository.bulkSetParticipationStatus as jest.Mock).mockResolvedValue(
+        mockResult,
+      );
+
+      const result = await ParticipationService.bulkSetStatusByReservation(
+        ctx,
+        ids,
+        status,
+        reason,
+        tx,
+      );
+
+      expect(ParticipationRepository.bulkSetParticipationStatus).toHaveBeenCalledWith(
+        ctx,
+        ids,
+        { status, reason },
+        tx,
+      );
+      expect(result).toBe(mockResult);
+    });
+  });
+
+  describe("bulkCancelParticipationsByOpportunity", () => {
+    const ids = ["p3", "p4"];
+
+    it("should cancel participations with fixed status/reason", async () => {
+      const mockResult = { count: 2 };
+      (ParticipationRepository.bulkSetParticipationStatus as jest.Mock).mockResolvedValue(
+        mockResult,
+      );
+
+      const result = await ParticipationService.bulkCancelParticipationsByOpportunity(ctx, ids, tx);
+
+      expect(ParticipationRepository.bulkSetParticipationStatus).toHaveBeenCalledWith(
+        ctx,
+        ids,
+        {
+          status: ParticipationStatus.NOT_PARTICIPATING,
+          reason: ParticipationStatusReason.OPPORTUNITY_CANCELED,
+        },
+        tx,
+      );
+      expect(result).toBe(mockResult);
+    });
+  });
+
+  describe("validateDeletable", () => {
+    it("should throw ValidationError if reason is not PERSONAL_RECORD", () => {
+      const invalid: PrismaParticipation = {
+        id: "1",
+        reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+      } as any;
+
+      expect(() => ParticipationService.validateDeletable(invalid)).toThrow(ValidationError);
+    });
+
+    it("should pass if reason is PERSONAL_RECORD", () => {
+      const valid: PrismaParticipation = {
+        id: "2",
+        reason: ParticipationStatusReason.PERSONAL_RECORD,
+      } as any;
+
+      expect(() => ParticipationService.validateDeletable(valid)).not.toThrow();
+    });
+  });
+});

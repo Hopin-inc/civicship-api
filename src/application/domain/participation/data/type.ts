@@ -9,7 +9,6 @@ export const participationInclude = Prisma.validator<Prisma.ParticipationInclude
   opportunitySlot: { include: { opportunity: true } },
   images: true,
   evaluation: { include: evaluationInclude },
-  opportunityInvitationHistory: { include: { invitation: true } },
 });
 
 export type PrismaParticipation = Prisma.ParticipationGetPayload<{

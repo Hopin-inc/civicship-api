@@ -1206,7 +1206,6 @@ export type GqlParticipationFilterInput = {
   dateFrom?: InputMaybe<Scalars['Datetime']['input']>;
   dateTo?: InputMaybe<Scalars['Datetime']['input']>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
-  opportunityInvitationId?: InputMaybe<Scalars['ID']['input']>;
   opportunitySlotId?: InputMaybe<Scalars['ID']['input']>;
   reservationId?: InputMaybe<Scalars['ID']['input']>;
   stateCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
