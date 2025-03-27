@@ -28,8 +28,6 @@ generates:
         AccumulatedPointView: "@prisma/client/index.d#AccumulatedPointView"
         Opportunity: "@prisma/client/index.d#Opportunity"
         OpportunitySlot: "@prisma/client/index.d#OpportunitySlot"
-        OpportunityInvitation: "@prisma/client/index.d#OpportunityInvitation"
-        OpportunityInvitationHistory: "@prisma/client/index.d#OpportunityInvitationHistory"
         Place: "@prisma/client/index.d#Place"
         Participation: "@prisma/client/index.d#Participation"
         ParticipationStatusHistory: "@prisma/client/index.d#ParticipationStatusHistory"
