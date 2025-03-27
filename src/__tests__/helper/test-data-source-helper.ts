@@ -21,14 +21,12 @@ export default class TestDataSourceHelper {
     await this.db.ticket.deleteMany();
     await this.db.ticketStatusHistory.deleteMany();
     await this.db.transaction.deleteMany();
-    await this.db.opportunityInvitationHistory.deleteMany();
     await this.db.participationStatusHistory.deleteMany();
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
     await this.db.membership.deleteMany();
     await this.db.participation.deleteMany();
     await this.db.opportunitySlot.deleteMany();
-    await this.db.opportunityInvitation.deleteMany();
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
     await this.db.community.deleteMany();
@@ -146,17 +144,5 @@ export default class TestDataSourceHelper {
 
   static async findAllMembership() {
     return this.db.membership.findMany({});
-  }
-
-  static async findMembershipById(userId: string, communityId: string) {
-    return await this.db.membership.findUniqueOrThrow({
-      where: {
-        userId_communityId: {
-          userId,
-          communityId,
-        },
-      },
-      include: membershipInclude,
-    });
   }
 }
