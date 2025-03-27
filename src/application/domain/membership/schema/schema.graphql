@@ -9,7 +9,12 @@ type Membership {
     reason: MembershipStatusReason!
     role: Role!
 
-    histories: [MembershipHistory!]
+    membershipHistories(
+        filter: MembershipHistoryFilterInput
+        sort: MembershipHistorySortInput
+        cursor: String
+        first: Int
+    ):MembershipHistoriesConnection @complexity(value: 5, multipliers: ["first"])
 
     createdAt: Datetime!
     updatedAt: Datetime
