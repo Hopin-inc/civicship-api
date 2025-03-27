@@ -15,13 +15,15 @@ import UtilityService from "@/application/domain/utility/service";
 import UtilityPresenter from "@/application/domain/utility/presenter";
 import { IContext } from "@/types/server";
 import { PublishStatus } from "@prisma/client";
-import { getMembershipRolesByCtx } from "@/application/domain/utils";
+import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 
 export default class UtilityUseCase {
   static async anyoneBrowseUtilities(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUtilitiesArgs,
   ): Promise<GqlUtilitiesConnection> {
+    const take = clampFirst(first);
+
     const currentUserId = ctx.currentUser?.id;
     const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
 
@@ -42,12 +44,20 @@ export default class UtilityUseCase {
       filter,
     );
 
-    return UtilityService.fetchUtilities(ctx, {
-      cursor,
-      filter: validatedFilter,
-      sort,
-      first,
-    });
+    const records = await UtilityService.fetchUtilities(
+      ctx,
+      {
+        cursor,
+        filter: validatedFilter,
+        sort,
+      },
+      take,
+    );
+
+    const hasNextPage = records.length > take;
+
+    const data = records.slice(0, take).map((record) => UtilityPresenter.get(record));
+    return UtilityPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewUtility(

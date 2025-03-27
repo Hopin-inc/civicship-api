@@ -3,42 +3,24 @@ import {
   GqlUtilityCreateInput,
   GqlUtility,
   GqlUtilityFilterInput,
-  GqlUtilitiesConnection,
-  GqlUtilitySortInput,
+  GqlQueryUtilitiesArgs,
 } from "@/types/graphql";
 import UtilityRepository from "@/application/domain/utility/data/repository";
 import { IContext } from "@/types/server";
 import UtilityConverter from "@/application/domain/utility/data/converter";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { clampFirst } from "@/application/domain/utils";
-import UtilityPresenter from "@/application/domain/utility/presenter";
 
 export default class UtilityService {
   static async fetchUtilities(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlUtilityFilterInput;
-      sort?: GqlUtilitySortInput;
-      first?: number;
-    },
-  ): Promise<GqlUtilitiesConnection> {
-    const take = clampFirst(first);
-
+    { cursor, filter, sort }: GqlQueryUtilitiesArgs,
+    take: number,
+  ) {
     const where = UtilityConverter.filter(filter ?? {});
     const orderBy = UtilityConverter.sort(sort ?? {});
 
-    const res = await UtilityRepository.query(ctx, where, orderBy, take + 1, cursor);
-    const hasNextPage = res.length > take;
-
-    const data = res.slice(0, take).map((record) => UtilityPresenter.get(record));
-    return UtilityPresenter.query(data, hasNextPage);
+    return await UtilityRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findUtility(ctx: IContext, id: string, filter: GqlUtilityFilterInput) {
