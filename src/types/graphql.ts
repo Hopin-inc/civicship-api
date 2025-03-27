@@ -376,12 +376,20 @@ export type GqlMembership = {
   __typename?: 'Membership';
   community: GqlCommunity;
   createdAt: Scalars['Datetime']['output'];
-  histories?: Maybe<Array<GqlMembershipHistory>>;
+  membershipHistories?: Maybe<GqlMembershipHistoriesConnection>;
   reason: GqlMembershipStatusReason;
   role: GqlRole;
   status: GqlMembershipStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user: GqlUser;
+};
+
+
+export type GqlMembershipMembershipHistoriesArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlMembershipHistoryFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlMembershipHistorySortInput>;
 };
 
 export type GqlMembershipCursorInput = {
@@ -3369,7 +3377,7 @@ export interface GqlJsonScalarConfig extends GraphQLScalarTypeConfig<GqlResolver
 export type GqlMembershipResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Membership'] = GqlResolversParentTypes['Membership']> = ResolversObject<{
   community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  histories?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHistory']>>, ParentType, ContextType>;
+  membershipHistories?: Resolver<Maybe<GqlResolversTypes['MembershipHistoriesConnection']>, ParentType, ContextType, Partial<GqlMembershipMembershipHistoriesArgs>>;
   reason?: Resolver<GqlResolversTypes['MembershipStatusReason'], ParentType, ContextType>;
   role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['MembershipStatus'], ParentType, ContextType>;
