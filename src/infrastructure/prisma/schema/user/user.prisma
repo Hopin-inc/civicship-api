@@ -21,8 +21,7 @@ model User {
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
 
-  opportunitiesCreatedByMe          Opportunity[]
-  opportunityInvitationsCreatedByMe OpportunityInvitation[]
+  opportunitiesCreatedByMe Opportunity[]
 
   reservationsAppliedByMe      Reservation[]
   reservationStatusChangedByMe ReservationHistory[]

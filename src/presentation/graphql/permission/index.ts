@@ -4,7 +4,6 @@ import { communityMutationPermissions } from "@/application/domain/community/con
 import { membershipMutationPermissions } from "@/application/domain/membership/controller/permission";
 import { opportunityMutationPermissions } from "@/application/domain/opportunity/controller/permission";
 import { opportunitySlotMutationPermissions } from "@/application/domain/opportunitySlot/controller/permission";
-import { opportunityInvitationMutationPermissions } from "@/application/domain/invitation/controller/permission";
 import { participationMutationPermissions } from "@/application/domain/participation/controller/permission";
 import { utilityMutationPermissions } from "@/application/domain/utility/controller/permission";
 import { ticketMutationPermissions } from "@/application/domain/ticket/controller/permission";
@@ -20,7 +19,6 @@ export const permissionRules = {
 
     ...opportunityMutationPermissions,
     ...opportunitySlotMutationPermissions,
-    ...opportunityInvitationMutationPermissions,
     ...participationMutationPermissions,
 
     ...utilityMutationPermissions,

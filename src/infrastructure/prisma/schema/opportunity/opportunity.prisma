@@ -19,8 +19,7 @@ model Opportunity {
   placeId String? @map("place_id")
   place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
-  slots       OpportunitySlot[]
-  invitations OpportunityInvitation[]
+  slots OpportunitySlot[]
 
   articles Article[] @relation("t_opportunities_on_articles")
 

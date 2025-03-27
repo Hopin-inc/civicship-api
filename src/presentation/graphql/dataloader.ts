@@ -10,8 +10,6 @@ import { createUtilityLoader } from "@/application/domain/utility/controller/dat
 import { createPlaceLoader } from "@/application/domain/place/controller/dataloader";
 import { createOpportunitySlotLoader } from "@/application/domain/opportunitySlot/controller/dataloader";
 import { createParticipationStatusHistoryLoader } from "@/application/domain/participation/statusHistory/controller/dataloader";
-import { createOpportunityInvitationLoader } from "@/application/domain/invitation/controller/dataloader";
-import { createOpportunityInvitationHistoryLoader } from "@/application/domain/invitation/invitationHistory/controller/dataloader";
 import { createArticleLoader } from "@/application/domain/article/controller/dataloader";
 import { createTicketLoader } from "@/application/domain/ticket/controller/dataloader";
 import { createTicketStatusHistoryLoader } from "@/application/domain/ticket/statusHistory/controller/dataloader";
@@ -29,9 +27,6 @@ export function createLoaders(issuer: PrismaClientIssuer) {
 
     opportunity: createOpportunityLoader(issuer),
     opportunitySlot: createOpportunitySlotLoader(issuer),
-
-    opportunityInvitation: createOpportunityInvitationLoader(issuer),
-    opportunityInvitationHistory: createOpportunityInvitationHistoryLoader(issuer),
 
     reservation: createReservationLoader(issuer),
 

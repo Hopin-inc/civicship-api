@@ -34,13 +34,6 @@ type Opportunity {
         first: Int
     ): OpportunitySlotsConnection @complexity(value: 5, multipliers: ["first"])
 
-    invitations(
-        filter: OpportunityInvitationFilterInput
-        sort: OpportunityInvitationSortInput
-        cursor: String
-        first: Int
-    ): OpportunityInvitationsConnection @complexity(value: 5, multipliers: ["first"])
-
     createdAt: Datetime!
     updatedAt: Datetime
 }

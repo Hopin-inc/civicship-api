@@ -11,7 +11,6 @@ type Participation {
     community: Community
     opportunitySlot: OpportunitySlot
     reservation: Reservation
-    opportunityInvitationHistory: OpportunityInvitationHistory
 
     evaluation: Evaluation
     description: String

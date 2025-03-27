@@ -57,20 +57,6 @@ type User {
         first: Int
     ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
 
-    opportunityInvitations(
-        filter: OpportunityInvitationFilterInput
-        sort: OpportunityInvitationSortInput
-        cursor: String
-        first: Int
-    ): OpportunityInvitationsConnection @complexity(value: 5, multipliers: ["first"])
-
-    opportunityInvitationHistories(
-        filter: OpportunityInvitationHistoryFilterInput
-        sort: OpportunityInvitationHistorySortInput
-        cursor: String
-        first: Int
-    ): OpportunityInvitationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
-
     reservations(
         filter: ReservationFilterInput
         sort: ReservationSortInput

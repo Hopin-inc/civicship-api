@@ -65,27 +65,6 @@ Table t_evaluation_histories {
   createdAt DateTime [default: `now()`, not null]
 }
 
-Table t_opportunity_invitations {
-  id String [pk]
-  code String [not null]
-  isValid Boolean [not null, default: true]
-  opportunityId String [not null]
-  opportunity t_opportunities [not null]
-  createdBy String [not null]
-  createdByUser t_users [not null]
-  histories t_opportunity_invitation_histories [not null]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table t_opportunity_invitation_histories {
-  id String [pk]
-  invitationId String [not null]
-  invitation t_opportunity_invitations [not null]
-  participations t_participations [not null]
-  createdAt DateTime [default: `now()`, not null]
-}
-
 Table m_cities {
   code String [pk]
   name String [not null]
@@ -181,7 +160,6 @@ Table t_opportunities {
   placeId String
   place t_places
   slots t_opportunity_slots [not null]
-  invitations t_opportunity_invitations [not null]
   articles t_articles [not null]
   communityId String
   community t_communities
@@ -208,8 +186,6 @@ Table t_participations {
   id String [pk]
   userId String
   user t_users
-  opportunityInvitationHistoryId String
-  opportunityInvitationHistory t_opportunity_invitation_histories
   opportunitySlotId String
   opportunitySlot t_opportunity_slots
   reservationId String
@@ -366,7 +342,6 @@ Table t_users {
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
-  opportunityInvitationsCreatedByMe t_opportunity_invitations [not null]
   reservationsAppliedByMe t_reservations [not null]
   reservationStatusChangedByMe t_reservation_histories [not null]
   participations t_participations [not null]
@@ -578,12 +553,6 @@ Ref: t_evaluation_histories.evaluationId > t_evaluations.id [delete: Cascade]
 
 Ref: t_evaluation_histories.createdBy > t_users.id [delete: Set Null]
 
-Ref: t_opportunity_invitations.opportunityId > t_opportunities.id [delete: Set Null]
-
-Ref: t_opportunity_invitations.createdBy > t_users.id [delete: Set Null]
-
-Ref: t_opportunity_invitation_histories.invitationId > t_opportunity_invitations.id [delete: Cascade]
-
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
@@ -609,8 +578,6 @@ Ref: t_opportunities.createdBy > t_users.id [delete: Set Null]
 Ref: t_opportunity_slots.opportunityId > t_opportunities.id [delete: Cascade]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
-
-Ref: t_participations.opportunityInvitationHistoryId > t_opportunity_invitation_histories.id [delete: Set Null]
 
 Ref: t_participations.opportunitySlotId > t_opportunity_slots.id [delete: Set Null]
 

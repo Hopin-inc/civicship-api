@@ -4,9 +4,6 @@ model Participation {
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  opportunityInvitationHistoryId String?                       @map("opportunity_invitation_history_id")
-  opportunityInvitationHistory   OpportunityInvitationHistory? @relation(fields: [opportunityInvitationHistoryId], references: [id], onDelete: SetNull)
-
   opportunitySlotId String?          @map("opportunity_slot_id")
   opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id], onDelete: SetNull)
 
