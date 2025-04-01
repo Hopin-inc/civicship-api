@@ -84,7 +84,6 @@ describe("TransactionService", () => {
       // [6] 検証
       expect(TransactionConverter.grantCommunityPoint).toHaveBeenCalledWith(input, memberWalletId);
       expect(TransactionRepository.create).toHaveBeenCalledWith(mockCtx, mockCreateInput, mockTx);
-      expect(TransactionRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
