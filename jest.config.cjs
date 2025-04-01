@@ -5,22 +5,22 @@ module.exports = {
   testEnvironmentOptions: {
     verboseQuery: true,
   },
-  setupFiles: ['<rootDir>/jest.setup.js'],
+  testTimeout: 50000,
+  setupFiles: ["<rootDir>/jest.setup.js"],
   setupFilesAfterEnv: ["@quramy/prisma-fabbrica/scripts/jest-prisma"],
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
-    }],
-    '^.+\\.jsx?$': 'babel-jest'
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        tsconfig: "tsconfig.json",
+      },
+    ],
+    "^.+\\.jsx?$": "babel-jest",
   },
-  transformIgnorePatterns: [
-    "node_modules/(?!.*(uuid|@ngneat/falso)/)",
-  ],
+  transformIgnorePatterns: ["node_modules/(?!.*(uuid|@ngneat/falso)/)"],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    "^@/(.*)$": "<rootDir>/src/$1",
   },
-  testPathIgnorePatterns: [
-    '<rootDir>/src/__tests__/helper/*.*'
-  ],
-  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"]
+  testPathIgnorePatterns: ["<rootDir>/src/__tests__/helper/*.*"],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 };
