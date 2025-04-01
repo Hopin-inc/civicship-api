@@ -4,6 +4,7 @@ import {
   GqlOpportunitySlot,
   GqlOpportunitySlotParticipationsArgs,
   GqlMutationOpportunitySlotsBulkUpdateArgs,
+  GqlMutationOpportunitySlotSetHostingStatusArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunitySlotUseCase from "@/application/domain/opportunitySlot/usecase";
@@ -23,6 +24,13 @@ const opportunitySlotResolver = {
   },
 
   Mutation: {
+    opportunitySlotSetHostingStatus: async (
+      _: unknown,
+      args: GqlMutationOpportunitySlotSetHostingStatusArgs,
+      ctx: IContext,
+    ) => {
+      return OpportunitySlotUseCase.managerSetOpportunitySlotHostingStatus(args, ctx);
+    },
     opportunitySlotsBulkUpdate: async (
       _: unknown,
       args: GqlMutationOpportunitySlotsBulkUpdateArgs,

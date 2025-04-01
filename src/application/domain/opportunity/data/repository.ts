@@ -1,9 +1,6 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { OpportunityHostingStatus, Prisma, PublishStatus } from "@prisma/client";
-import {
-  opportunityInclude,
-  opportunitySetHostingStatusInclude,
-} from "@/application/domain/opportunity/data/type";
+import { Prisma, PublishStatus } from "@prisma/client";
+import { opportunityInclude } from "@/application/domain/opportunity/data/type";
 import { IContext } from "@/types/server";
 
 export default class OpportunityRepository {
@@ -100,28 +97,5 @@ export default class OpportunityRepository {
         include: opportunityInclude,
       });
     });
-  }
-
-  static async setHostingStatus(
-    ctx: IContext,
-    id: string,
-    hostingStatus: OpportunityHostingStatus,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.opportunity.update({
-        where: { id },
-        data: { hostingStatus },
-        include: opportunitySetHostingStatusInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.opportunity.update({
-          where: { id },
-          data: { hostingStatus },
-          include: opportunitySetHostingStatusInclude,
-        });
-      });
-    }
   }
 }

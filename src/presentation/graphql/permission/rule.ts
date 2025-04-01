@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { or, rule } from "graphql-shield";
 import { Role } from "@prisma/client";
-import sanitize from "sanitize-html";
 import { AuthenticationError, AuthorizationError, ValidationError } from "@/errors/graphql";
+import sanitize from "sanitize-html";
 
 // Check if the current user is an admin.
 // First, ensure the user is logged in; if not, throw an AuthenticationError.

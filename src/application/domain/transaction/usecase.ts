@@ -18,6 +18,8 @@ import { Prisma, TransactionReason } from "@prisma/client";
 import MembershipService from "@/application/domain/membership/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
+import WalletService from "@/application/domain/membership/wallet/service";
+import TransactionRepository from "@/application/domain/transaction/data/repository";
 
 export default class TransactionUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -71,7 +73,7 @@ export default class TransactionUseCase {
     const { communityId, toUserId, toPointChange } = input;
     const currentUserId = getCurrentUserId(ctx);
 
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    const transaction = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
       const { toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
         ctx,
@@ -86,6 +88,8 @@ export default class TransactionUseCase {
 
       return TransactionPresenter.grantCommunityPoint(transaction);
     });
+    await TransactionRepository.refreshCurrentPoints(ctx);
+    return transaction;
   }
 
   static async userDonateSelfPointToAnother(
@@ -97,12 +101,14 @@ export default class TransactionUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
+      const [fromWallet, toWallet] = await Promise.all([
+        WalletService.checkIfMemberWalletExists(ctx, fromWalletId),
+        WalletService.createMemberWalletIfNeeded(ctx, toUserId, communityId, tx),
+      ]);
+
       const { toWalletId } = await WalletValidator.validateMemberToMemberDonation(
-        ctx,
-        tx,
-        fromWalletId,
-        toUserId,
-        communityId,
+        fromWallet,
+        toWallet,
         toPointChange,
       );
 

@@ -90,7 +90,7 @@ export default class ParticipationService {
     return ParticipationRepository.bulkSetParticipationStatus(ctx, ids, { status, reason }, tx);
   }
 
-  static async bulkCancelParticipationsByOpportunity(
+  static async bulkCancelParticipationsByOpportunitySlot(
     ctx: IContext,
     ids: string[],
     tx: Prisma.TransactionClient,

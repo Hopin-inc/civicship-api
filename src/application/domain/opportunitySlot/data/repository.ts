@@ -1,7 +1,10 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { Prisma } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { opportunitySlotInclude } from "@/application/domain/opportunitySlot/data/type";
+import {
+  opportunitySlotInclude,
+  opportunitySlotWithParticipationInclude,
+} from "@/application/domain/opportunitySlot/data/type";
 
 export default class OpportunitySlotRepository {
   private static issuer = new PrismaClientIssuer();
@@ -59,11 +62,44 @@ export default class OpportunitySlotRepository {
     data: Prisma.OpportunitySlotUpdateInput,
     tx: Prisma.TransactionClient,
   ) {
-    return tx.opportunitySlot.update({
-      where: { id },
-      data,
-      include: opportunitySlotInclude,
-    });
+    if (tx) {
+      return tx.opportunitySlot.update({
+        where: { id },
+        data,
+        include: opportunitySlotInclude,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.opportunitySlot.update({
+          where: { id },
+          data,
+          include: opportunitySlotInclude,
+        });
+      });
+    }
+  }
+
+  static async setHostingStatus(
+    ctx: IContext,
+    id: string,
+    hostingStatus: OpportunitySlotHostingStatus,
+    tx: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return tx.opportunitySlot.update({
+        where: { id },
+        data: { hostingStatus },
+        include: opportunitySlotWithParticipationInclude,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.opportunitySlot.update({
+          where: { id },
+          data: { hostingStatus },
+          include: opportunitySlotWithParticipationInclude,
+        });
+      });
+    }
   }
 
   static async deleteMany(ctx: IContext, ids: string[], tx: Prisma.TransactionClient) {

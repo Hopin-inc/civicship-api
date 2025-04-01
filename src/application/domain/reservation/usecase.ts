@@ -23,12 +23,10 @@ import {
   ReservationStatus,
   TransactionReason,
   Prisma,
-  OpportunityCategory,
-  Todo,
   TicketStatus,
   TicketStatusReason,
 } from "@prisma/client";
-import { getCurrentUserId, runOnboardingReward } from "@/application/domain/utils";
+import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunitySlotService from "@/application/domain/opportunitySlot/service";
 import WalletService from "@/application/domain/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -38,7 +36,6 @@ import TicketService from "@/application/domain/ticket/service";
 import TransactionService from "@/application/domain/transaction/service";
 import { PrismaOpportunitySlot } from "@/application/domain/opportunitySlot/data/type";
 import MembershipService from "@/application/domain/membership/service";
-import { OnboardingTodoPoints } from "@/consts/utils";
 import { groupBy } from "graphql/jsutils/groupBy";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
 import ReservationValidator from "@/application/domain/reservation/validator";
@@ -88,14 +85,14 @@ export default class ReservationUseCase {
 
     const statuses = resolveReservationStatuses(opportunity.requireApproval);
 
-    const { communityId, requiredUtilities, category } = opportunity;
+    const { communityId, requiredUtilities } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
     const reservation = await this.issuer.public(ctx, async (tx) => {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
-      await rewardOnboardingPointsIfFirstReservation(ctx, currentUserId, category, tx);
+      // await rewardOnboardingPointsIfFirstReservation(ctx, currentUserId, category, tx);
       const reservation = await ReservationService.createReservation(
         ctx,
         input.opportunitySlotId,
@@ -252,19 +249,6 @@ function resolveReservationStatuses(requireApproval: boolean): reservationStatus
       ? ParticipationStatusReason.RESERVATION_APPLIED
       : ParticipationStatusReason.RESERVATION_ACCEPTED,
   };
-}
-
-async function rewardOnboardingPointsIfFirstReservation(
-  ctx: IContext,
-  userId: string,
-  category: OpportunityCategory,
-  tx: Prisma.TransactionClient,
-) {
-  const count = await ReservationService.countUserReservationsByCategory(ctx, userId, category, tx);
-  if (count > 0) return;
-
-  const todo = category === OpportunityCategory.ACTIVITY ? Todo.FIRST_ACTIVITY : Todo.FIRST_QUEST;
-  await runOnboardingReward(ctx, userId, todo, OnboardingTodoPoints[todo], tx);
 }
 
 async function handleReserveTicketAfterPurchaseIfNeeded(

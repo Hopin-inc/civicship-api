@@ -12,6 +12,22 @@ export const opportunitySlotInclude = Prisma.validator<Prisma.OpportunitySlotInc
   },
 });
 
+export const opportunitySlotWithParticipationInclude =
+  Prisma.validator<Prisma.OpportunitySlotInclude>()({
+    opportunity: {
+      include: {
+        requiredUtilities: {
+          include: { community: true },
+        },
+      },
+    },
+    participations: true,
+  });
+
 export type PrismaOpportunitySlot = Prisma.OpportunitySlotGetPayload<{
   include: typeof opportunitySlotInclude;
+}>;
+
+export type PrismaOpportunitySlotWithParticipation = Prisma.OpportunitySlotGetPayload<{
+  include: typeof opportunitySlotWithParticipationInclude;
 }>;

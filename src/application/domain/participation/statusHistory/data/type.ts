@@ -6,7 +6,6 @@ export const participationStatusHistoryInclude =
     participation: true,
   });
 
-export type ParticipationStatusHistoryPayloadWithArgs =
-  Prisma.ParticipationStatusHistoryGetPayload<{
-    include: typeof participationStatusHistoryInclude;
-  }>;
+export type PrismaParticipationStatusHistory = Prisma.ParticipationStatusHistoryGetPayload<{
+  include: typeof participationStatusHistoryInclude;
+}>;

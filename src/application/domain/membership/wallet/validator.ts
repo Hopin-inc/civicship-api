@@ -3,6 +3,7 @@ import { Prisma, TransactionReason } from "@prisma/client";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { GqlWallet } from "@/types/graphql";
 import WalletService from "@/application/domain/membership/wallet/service";
+import { PrismaWallet } from "@/application/domain/membership/wallet/data/type";
 
 export default class WalletValidator {
   static async validateCommunityMemberTransfer(
@@ -53,16 +54,10 @@ export default class WalletValidator {
   }
 
   static async validateMemberToMemberDonation(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    fromWalletId: string,
-    toUserId: string,
-    communityId: string,
+    fromWallet: PrismaWallet,
+    toWallet: PrismaWallet,
     transferPoints: number,
   ) {
-    const fromWallet = await WalletService.checkIfMemberWalletExists(ctx, fromWalletId);
-    const toWallet = await WalletService.createMemberWalletIfNeeded(ctx, toUserId, communityId, tx);
-
     await this.validateTransfer(transferPoints, fromWallet, toWallet);
 
     return {

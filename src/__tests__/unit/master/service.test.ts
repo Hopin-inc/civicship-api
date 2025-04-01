@@ -1,7 +1,8 @@
 import MasterService from "@/application/domain/master/service";
 import MasterRepository from "@/application/domain/master/data/repository";
+import { NotFoundError } from "@/errors/graphql";
 
-jest.mock("@/infra/repositories/master");
+jest.mock("@/application/domain/master/data/repository");
 
 describe("MasterService", () => {
   describe("checkIfCityExists", () => {
@@ -18,9 +19,7 @@ describe("MasterService", () => {
     it("should throw an error if the city does not exist", async () => {
       (MasterRepository.checkCityExists as jest.Mock).mockResolvedValue(null);
 
-      await expect(MasterService.checkIfCityExists("456")).rejects.toThrow(
-        "City with ID 456 not found",
-      );
+      await expect(MasterService.checkIfCityExists("456")).rejects.toThrow(NotFoundError);
 
       expect(MasterRepository.checkCityExists).toHaveBeenCalledWith("456");
     });

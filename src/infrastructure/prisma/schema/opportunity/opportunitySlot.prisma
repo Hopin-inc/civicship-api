@@ -1,7 +1,9 @@
 model OpportunitySlot {
   id String @id @default(cuid())
 
-  capacity Int?
+  hostingStatus OpportunitySlotHostingStatus @default(SCHEDULED)
+  capacity      Int?
+
   startsAt DateTime @map("starts_at")
   endsAt   DateTime @map("ends_at")
 
@@ -15,4 +17,10 @@ model OpportunitySlot {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_opportunity_slots")
+}
+
+enum OpportunitySlotHostingStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
 }

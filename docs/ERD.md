@@ -91,7 +91,7 @@ ACTIVITY ACTIVITY
     
 
 
-        OpportunityHostingStatus {
+        OpportunitySlotHostingStatus {
             SCHEDULED SCHEDULED
 CANCELLED CANCELLED
 COMPLETED COMPLETED
@@ -233,24 +233,6 @@ UNKNOWN UNKNOWN
     }
   
 
-  "t_opportunity_invitations" {
-    String is_valid "🗝️"
-    String code 
-    Boolean is_valid 
-    String opportunity_id 
-    String created_by 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_opportunity_invitation_histories" {
-    String id "🗝️"
-    String invitation_id 
-    DateTime created_at 
-    }
-  
-
   "m_cities" {
     String code "🗝️"
     String name 
@@ -318,9 +300,8 @@ UNKNOWN UNKNOWN
     String body "❓"
     String image "❓"
     Json files 
-    OpportunityCategory category 
-    OpportunityHostingStatus hostingStatus 
     PublishStatus publish_status 
+    OpportunityCategory category 
     Boolean require_approval 
     Int points_to_earn "❓"
     Int fee_required "❓"
@@ -334,6 +315,7 @@ UNKNOWN UNKNOWN
 
   "t_opportunity_slots" {
     String id "🗝️"
+    OpportunitySlotHostingStatus hostingStatus 
     Int capacity "❓"
     DateTime starts_at 
     DateTime ends_at 
@@ -346,7 +328,6 @@ UNKNOWN UNKNOWN
   "t_participations" {
     String id "🗝️"
     String user_id "❓"
-    String opportunity_invitation_history_id "❓"
     String opportunity_slot_id "❓"
     String application_id "❓"
     String community_id "❓"
@@ -524,11 +505,6 @@ UNKNOWN UNKNOWN
     "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
     "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluation_histories" o|--|o "t_users" : "createdByUser"
-    "t_opportunity_invitations" o|--|| "t_opportunities" : "opportunity"
-    "t_opportunity_invitations" o|--|| "t_users" : "createdByUser"
-    "t_opportunity_invitations" o{--}o "t_opportunity_invitation_histories" : "histories"
-    "t_opportunity_invitation_histories" o|--|| "t_opportunity_invitations" : "invitation"
-    "t_opportunity_invitation_histories" o{--}o "t_participations" : "participations"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "m_states" o{--}o "m_cities" : "cities"
@@ -554,21 +530,19 @@ UNKNOWN UNKNOWN
     "t_onboardings" o|--|| "Todo" : "enum:todo"
     "t_onboardings" o|--|| "OnboardingStatus" : "enum:status"
     "t_onboardings" o|--|| "t_users" : "user"
-    "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
-    "t_opportunities" o|--|| "OpportunityHostingStatus" : "enum:hostingStatus"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
-    "t_opportunities" o{--}o "t_opportunity_invitations" : "invitations"
     "t_opportunities" o{--}o "t_articles" : "articles"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
+    "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hostingStatus"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_participations" o|--|o "t_users" : "user"
-    "t_participations" o|--|o "t_opportunity_invitation_histories" : "opportunityInvitationHistory"
     "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
@@ -622,7 +596,6 @@ UNKNOWN UNKNOWN
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
     "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
-    "t_users" o{--}o "t_opportunity_invitations" : "opportunityInvitationsCreatedByMe"
     "t_users" o{--}o "t_reservations" : "reservationsAppliedByMe"
     "t_users" o{--}o "t_reservation_histories" : "reservationStatusChangedByMe"
     "t_users" o{--}o "t_participations" : "participations"

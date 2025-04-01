@@ -45,9 +45,7 @@ export default class TransactionService {
   ) {
     const data = TransactionConverter.grantCommunityPoint(input, memberWalletId);
 
-    const transaction = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
-    return transaction;
+    return await TransactionRepository.create(ctx, data, tx);
   }
 
   static async donateSelfPoint(

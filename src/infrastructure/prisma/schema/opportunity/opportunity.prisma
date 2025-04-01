@@ -7,9 +7,8 @@ model Opportunity {
   /// [ArrayOfString]
   files       Json    @default("[]")
 
+  publishStatus PublishStatus       @default(PUBLIC) @map("publish_status")
   category      OpportunityCategory
-  hostingStatus OpportunityHostingStatus @default(SCHEDULED)
-  publishStatus PublishStatus            @default(PUBLIC) @map("publish_status")
 
   requireApproval   Boolean   @default(false) @map("require_approval")
   pointsToEarn      Int?      @map("points_to_earn")
@@ -19,8 +18,7 @@ model Opportunity {
   placeId String? @map("place_id")
   place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
-  slots       OpportunitySlot[]
-  invitations OpportunityInvitation[]
+  slots OpportunitySlot[]
 
   articles Article[] @relation("t_opportunities_on_articles")
 
@@ -40,10 +38,4 @@ enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
-}
-
-enum OpportunityHostingStatus {
-  SCHEDULED
-  CANCELLED
-  COMPLETED
 }

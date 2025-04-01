@@ -48,15 +48,12 @@ export default class ParticipationConverter {
               },
             }
           : {},
-        // 他の既存項目も残す
+
         filter?.status ? { status: filter.status } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.opportunityId ? { opportunitySlot: { opportunityId: filter.opportunityId } } : {},
         filter?.opportunitySlotId ? { opportunitySlotId: filter.opportunitySlotId } : {},
         filter?.reservationId ? { reservationId: filter.reservationId } : {},
-        filter?.opportunityInvitationId
-          ? { opportunityInvitationHistory: { invitationId: filter.opportunityInvitationId } }
-          : {},
       ],
     };
   }

@@ -12,11 +12,6 @@ export const userAuthSelect = Prisma.validator<Prisma.UserSelect>()({
       id: true,
     },
   },
-  opportunityInvitationsCreatedByMe: {
-    select: {
-      createdBy: true,
-    },
-  },
   articlesAboutMe: {
     select: {
       id: true,
