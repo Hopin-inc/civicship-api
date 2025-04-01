@@ -1,4 +1,5 @@
 import {
+  GqlArticlesConnection,
   GqlMembershipsConnection,
   GqlMutationUserUpdateMyProfileArgs,
   GqlOpportunitiesConnection,
@@ -8,6 +9,7 @@ import {
   GqlQueryUserArgs,
   GqlQueryUsersArgs,
   GqlUser,
+  GqlUserArticlesAboutMeArgs,
   GqlUserMembershipsArgs,
   GqlUserOpportunitiesCreatedByMeArgs,
   GqlUserParticipationsArgs,
@@ -24,6 +26,7 @@ import OpportunityUseCase from "@/application/domain/opportunity/usecase";
 import ParticipationUseCase from "@/application/domain/participation/usecase";
 import ParticipationStatusHistoryUseCase from "@/application/domain/participation/statusHistory/usecase";
 import ViewUseCase from "@/application/view/usecase";
+import ArticleUseCase from "@/application/domain/article/usecase";
 
 const userResolver = {
   Query: {
@@ -60,6 +63,20 @@ const userResolver = {
         },
         ctx,
       );
+    },
+
+    articlesAboutMe: async (
+      parent: GqlUser,
+      args: GqlUserArticlesAboutMeArgs,
+      ctx: IContext,
+    ): Promise<GqlArticlesConnection> => {
+      return ArticleUseCase.anyoneBrowseArticles(ctx, {
+        ...args,
+        filter: {
+          ...args.filter,
+          authors: [parent.id],
+        },
+      });
     },
 
     memberships: async (
