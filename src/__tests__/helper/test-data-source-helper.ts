@@ -6,26 +6,34 @@ import { communityInclude } from "@/application/domain/community/data/type";
 import { walletInclude } from "@/application/domain/membership/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
 import { utilityInclude } from "@/application/domain/utility/data/type";
-import { participationInclude } from "@/application/domain/participation/data/type";
 import { placeInclude } from "@/application/domain/place/data/type";
 import { membershipInclude } from "@/application/domain/membership/data/type";
+import { reservationInclude } from "@/application/domain/reservation/data/type";
+import { participationInclude } from "@/application/domain/participation/data/type";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
 
   static async findAll() {
-    return this.db.user.findMany();
+    return await this.db.user.findMany();
   }
 
   static async deleteAll() {
+    await this.db.participationStatusHistory.deleteMany();
+    await this.db.participation.deleteMany();
+
+    await this.db.reservation.deleteMany();
+
     await this.db.ticket.deleteMany();
     await this.db.ticketStatusHistory.deleteMany();
     await this.db.transaction.deleteMany();
+
     await this.db.participationStatusHistory.deleteMany();
+    await this.db.participation.deleteMany();
+
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
     await this.db.membership.deleteMany();
-    await this.db.participation.deleteMany();
     await this.db.opportunitySlot.deleteMany();
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
@@ -40,7 +48,8 @@ export default class TestDataSourceHelper {
     return await this.db.$disconnect();
   }
 
-  static async create(data: Prisma.UserCreateInput) {
+  // ======== User =========
+  static async createUser(data: Prisma.UserCreateInput) {
     return await this.db.user.create({
       data,
       include: {
@@ -49,6 +58,7 @@ export default class TestDataSourceHelper {
     });
   }
 
+  // ======== Community =========
   static async createCommunity(data: Prisma.CommunityCreateInput) {
     return await this.db.community.create({
       data,
@@ -56,8 +66,13 @@ export default class TestDataSourceHelper {
     });
   }
 
+  static async findAllCommunity() {
+    return await this.db.community.findMany({});
+  }
+
+  // ======== Membership & Wallet =========
   static async createMembership(data: Prisma.MembershipCreateInput) {
-    return this.db.membership.create({
+    return await this.db.membership.create({
       data,
       include: membershipInclude,
     });
@@ -77,13 +92,55 @@ export default class TestDataSourceHelper {
     });
   }
 
-  static async findMemberWallet(userId: string) {
+  // 引数にcommunityIdを追加するかは実装次第
+  static async findMemberWallet(userId: string, communityId?: string) {
     return await this.db.wallet.findFirst({
-      where: { userId, type: WalletType.MEMBER },
+      where: {
+        userId,
+        type: WalletType.MEMBER,
+        ...(communityId ? { communityId } : {}),
+      },
       include: walletInclude,
     });
   }
 
+  // ======== Opportunity & OpportunitySlot =========
+  static async createOpportunity(data: Prisma.OpportunityCreateInput) {
+    return await this.db.opportunity.create({
+      data,
+      include: opportunityInclude,
+    });
+  }
+
+  static async createOpportunitySlot(data: Prisma.OpportunitySlotCreateInput) {
+    return await this.db.opportunitySlot.create({
+      data,
+      // slotの include が必要ならここで設定
+    });
+  }
+
+  // ======== Reservation (新ドメイン) ========
+  static async createReservation(data: Prisma.ReservationCreateInput) {
+    return await this.db.reservation.create({
+      data,
+      include: reservationInclude,
+    });
+  }
+
+  static async findReservationById(id: string) {
+    return await this.db.reservation.findUnique({
+      where: { id },
+      include: reservationInclude,
+    });
+  }
+
+  static async findAllReservations() {
+    return await this.db.reservation.findMany({
+      include: reservationInclude,
+    });
+  }
+
+  // ======== Transaction =========
   static async findAllTransactions() {
     return await this.db.transaction.findMany();
   }
@@ -95,35 +152,32 @@ export default class TestDataSourceHelper {
     });
   }
 
-  static async refreshCurrentPoints() {
-    return await this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
-  }
-
+  // ======== Utility =========
   static async createUtility(data: Prisma.UtilityCreateInput) {
-    return this.db.utility.create({
+    return await this.db.utility.create({
       data,
       include: utilityInclude,
     });
   }
 
-  static async createOpportunity(data: Prisma.OpportunityCreateInput) {
-    return await this.db.opportunity.create({
-      data,
-      include: opportunityInclude,
-    });
-  }
-
-  static async createParticipation(data: Prisma.ParticipationCreateInput) {
-    return await this.db.participation.create({
-      data,
-      include: participationInclude,
-    });
-  }
-
+  // ======== Place =========
   static async createPlace(data: Prisma.PlaceCreateInput) {
     return await this.db.place.create({
       data,
       include: placeInclude,
+    });
+  }
+
+  // ======== MaterializedView Refresh (ポイント集計など) =========
+  static async refreshCurrentPoints() {
+    return await this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+  }
+
+  // ========== Participation関連 (不要になれば削除) =========
+  static async createParticipation(data: Prisma.ParticipationCreateInput) {
+    return await this.db.participation.create({
+      data,
+      include: participationInclude,
     });
   }
 
@@ -135,14 +189,6 @@ export default class TestDataSourceHelper {
   }
 
   static async findAllParticipation() {
-    return this.db.participation.findMany({});
-  }
-
-  static async findAllCommunity() {
-    return this.db.community.findMany({});
-  }
-
-  static async findAllMembership() {
-    return this.db.membership.findMany({});
+    return await this.db.participation.findMany({});
   }
 }
