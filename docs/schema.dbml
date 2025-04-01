@@ -150,9 +150,8 @@ Table t_opportunities {
   body String
   image String
   files Json [not null, default: '[]', note: '[ArrayOfString]']
-  category OpportunityCategory [not null]
-  hostingStatus OpportunityHostingStatus [not null, default: 'SCHEDULED']
   publishStatus PublishStatus [not null, default: 'PUBLIC']
+  category OpportunityCategory [not null]
   requireApproval Boolean [not null, default: false]
   pointsToEarn Int
   feeRequired Int
@@ -171,6 +170,7 @@ Table t_opportunities {
 
 Table t_opportunity_slots {
   id String [pk]
+  hostingStatus OpportunitySlotHostingStatus [not null, default: 'SCHEDULED']
   capacity Int
   startsAt DateTime [not null]
   endsAt DateTime [not null]
@@ -470,7 +470,7 @@ Enum OpportunityCategory {
   ACTIVITY
 }
 
-Enum OpportunityHostingStatus {
+Enum OpportunitySlotHostingStatus {
   SCHEDULED
   CANCELLED
   COMPLETED

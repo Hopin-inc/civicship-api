@@ -91,7 +91,7 @@ ACTIVITY ACTIVITY
     
 
 
-        OpportunityHostingStatus {
+        OpportunitySlotHostingStatus {
             SCHEDULED SCHEDULED
 CANCELLED CANCELLED
 COMPLETED COMPLETED
@@ -300,9 +300,8 @@ UNKNOWN UNKNOWN
     String body "❓"
     String image "❓"
     Json files 
-    OpportunityCategory category 
-    OpportunityHostingStatus hostingStatus 
     PublishStatus publish_status 
+    OpportunityCategory category 
     Boolean require_approval 
     Int points_to_earn "❓"
     Int fee_required "❓"
@@ -316,6 +315,7 @@ UNKNOWN UNKNOWN
 
   "t_opportunity_slots" {
     String id "🗝️"
+    OpportunitySlotHostingStatus hostingStatus 
     Int capacity "❓"
     DateTime starts_at 
     DateTime ends_at 
@@ -530,15 +530,15 @@ UNKNOWN UNKNOWN
     "t_onboardings" o|--|| "Todo" : "enum:todo"
     "t_onboardings" o|--|| "OnboardingStatus" : "enum:status"
     "t_onboardings" o|--|| "t_users" : "user"
-    "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
-    "t_opportunities" o|--|| "OpportunityHostingStatus" : "enum:hostingStatus"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "t_articles" : "articles"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
+    "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hostingStatus"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
     "t_opportunity_slots" o{--}o "t_participations" : "participations"
