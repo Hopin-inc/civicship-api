@@ -29,7 +29,7 @@ describe("Community Integration Tests", () => {
         image: undefined,
         currentPrefecture: CurrentPrefecture.KAGAWA,
       };
-      const userInserted = await TestDataSourceHelper.create(createUserInput);
+      const userInserted = await TestDataSourceHelper.createUser(createUserInput);
       const userId = userInserted.id;
 
       const ctx = { currentUser: { id: userId } } as unknown as IContext;

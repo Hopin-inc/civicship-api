@@ -35,10 +35,10 @@ describe("Transaction Integration Tests", () => {
       image: undefined,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     };
-    const fromUserInserted = await TestDataSourceHelper.create(createUserInput);
+    const fromUserInserted = await TestDataSourceHelper.createUser(createUserInput);
     const fromUserId = fromUserInserted.id;
 
-    const toUserInserted = await TestDataSourceHelper.create(createUserInput);
+    const toUserInserted = await TestDataSourceHelper.createUser(createUserInput);
     const toUserId = toUserInserted.id;
 
     const ctx = {
@@ -129,7 +129,7 @@ describe("Transaction Integration Tests", () => {
       image: undefined,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     };
-    const userInserted = await TestDataSourceHelper.create(createUserInput);
+    const userInserted = await TestDataSourceHelper.createUser(createUserInput);
     const userId = userInserted.id;
 
     const ctx = {
