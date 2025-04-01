@@ -5,7 +5,7 @@ import { DateTimeTypeDefinition } from "graphql-scalars";
 import { applyMiddleware } from "graphql-middleware";
 import errorMiddleware from "@/presentation/middleware/error";
 import resolvers from "@/presentation/graphql/resolver";
-import permissions from "@/presentation/graphql/permission";
+// import permissions from "@/presentation/graphql/permission";
 import { fileURLToPath } from "url";
 import path from "path";
 
@@ -31,6 +31,6 @@ schema = addResolversToSchema({
   resolvers,
 });
 
-schema = applyMiddleware(schema, permissions, errorMiddleware);
+schema = applyMiddleware(schema, errorMiddleware);
 
 export default schema;
