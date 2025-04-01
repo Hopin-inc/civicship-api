@@ -45,7 +45,7 @@ export default class ParticipationStatusHistoryService {
     return await ParticipationStatusHistoryRepository.find(ctx, id);
   }
 
-  static async bulkCreateStatusHistoriesForCancelledOpportunity(
+  static async bulkCreateStatusHistoriesForCancelledOpportunitySlot(
     ctx: IContext,
     participationIds: string[],
     tx: Prisma.TransactionClient,

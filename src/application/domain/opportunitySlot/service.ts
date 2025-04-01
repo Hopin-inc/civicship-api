@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import {
   GqlOpportunitySlotCreateInput,
   GqlOpportunitySlotUpdateInput,
@@ -41,6 +41,16 @@ export default class OpportunitySlotService {
     tx: Prisma.TransactionClient,
   ) {
     return OpportunitySlotRepository.findByOpportunityId(ctx, opportunityId, tx);
+  }
+
+  static async setOpportunitySlotHostingStatus(
+    ctx: IContext,
+    slotId: string,
+    hostingStatus: OpportunitySlotHostingStatus,
+    tx: Prisma.TransactionClient,
+  ) {
+    await this.findOpportunitySlotOrThrow(ctx, slotId);
+    return await OpportunitySlotRepository.setHostingStatus(ctx, slotId, hostingStatus, tx);
   }
 
   static async bulkCreateOpportunitySlots(

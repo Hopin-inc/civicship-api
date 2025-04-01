@@ -4,7 +4,9 @@
 type OpportunitySlot {
     id: ID!
 
+    hostingStatus: OpportunitySlotHostingStatus!
     capacity: Int
+
     startsAt: Datetime!
     endsAt: Datetime!
 
@@ -25,4 +27,10 @@ type OpportunitySlot {
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+enum OpportunitySlotHostingStatus {
+    SCHEDULED
+    CANCELLED
+    COMPLETED
 }

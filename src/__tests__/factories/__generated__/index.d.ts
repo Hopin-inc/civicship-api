@@ -34,7 +34,7 @@ import type { WalletType } from "@prisma/client";
 import type { Todo } from "@prisma/client";
 import type { OnboardingStatus } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
-import type { OpportunityHostingStatus } from "@prisma/client";
+import type { OpportunitySlotHostingStatus } from "@prisma/client";
 import type { Source } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
 import type { ParticipationStatusReason } from "@prisma/client";
@@ -615,9 +615,8 @@ type OpportunityFactoryDefineInput = {
     body?: string | null;
     image?: string | null;
     files?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    category?: OpportunityCategory;
-    hostingStatus?: OpportunityHostingStatus;
     publishStatus?: PublishStatus;
+    category?: OpportunityCategory;
     requireApproval?: boolean;
     pointsToEarn?: number | null;
     feeRequired?: number | null;
@@ -673,6 +672,7 @@ type OpportunitySlotopportunityFactory = {
 };
 type OpportunitySlotFactoryDefineInput = {
     id?: string;
+    hostingStatus?: OpportunitySlotHostingStatus;
     capacity?: number | null;
     startsAt?: Date;
     endsAt?: Date;

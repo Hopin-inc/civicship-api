@@ -1,7 +1,6 @@
 import {
   GqlMutationOpportunityCreateArgs,
   GqlMutationOpportunityDeleteArgs,
-  GqlMutationOpportunitySetHostingStatusArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
   GqlOpportunitiesConnection,
@@ -9,7 +8,6 @@ import {
   GqlOpportunityCreatePayload,
   GqlOpportunityDeletePayload,
   GqlOpportunityFilterInput,
-  GqlOpportunitySetHostingStatusPayload,
   GqlOpportunitySetPublishStatusPayload,
   GqlOpportunityUpdateContentPayload,
   GqlQueryOpportunitiesArgs,
@@ -17,16 +15,11 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/domain/opportunity/presenter";
-import { OpportunityHostingStatus, PublishStatus } from "@prisma/client";
+import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
-import ParticipationService from "@/application/domain/participation/service";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import ParticipationStatusHistoryService from "@/application/domain/participation/statusHistory/service";
 
 export default class OpportunityUseCase {
-  private static issuer = new PrismaClientIssuer();
-
   static async anyoneBrowseOpportunities(
     { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
@@ -118,34 +111,6 @@ export default class OpportunityUseCase {
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
     const res = await OpportunityService.setOpportunityPublishStatus(ctx, id, input.publishStatus);
     return OpportunityPresenter.setPublishStatus(res);
-  }
-
-  static async managerSetOpportunityHostingStatus(
-    { id, input }: GqlMutationOpportunitySetHostingStatusArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySetHostingStatusPayload> {
-    return await this.issuer.public(ctx, async (tx) => {
-      const res = await OpportunityService.setOpportunityHostingStatus(
-        ctx,
-        id,
-        input.hostingStatus,
-      );
-
-      if (input.hostingStatus === OpportunityHostingStatus.CANCELLED) {
-        const participationIds = res.slots
-          .flatMap((slot) => slot.participations ?? [])
-          .map((participation) => participation.id);
-        await Promise.all([
-          ParticipationService.bulkCancelParticipationsByOpportunity(ctx, participationIds, tx),
-          ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunity(
-            ctx,
-            participationIds,
-            tx,
-          ),
-        ]);
-      }
-      return OpportunityPresenter.setHostingStatus(res);
-    });
   }
 }
 

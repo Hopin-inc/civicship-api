@@ -28,6 +28,14 @@ export default class OpportunitySlotConverter {
     }));
   }
 
+  static setStatus(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
+    const { startsAt, endsAt } = input;
+    return {
+      startsAt: startsAt,
+      endsAt: endsAt,
+    };
+  }
+
   static update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
     const { startsAt, endsAt } = input;
     return {

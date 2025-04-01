@@ -2,8 +2,12 @@ import {
   GqlOpportunitySlot,
   GqlOpportunitySlotsBulkUpdateSuccess,
   GqlOpportunitySlotsConnection,
+  GqlOpportunitySlotSetHostingStatusSuccess,
 } from "@/types/graphql";
-import { PrismaOpportunitySlot } from "@/application/domain/opportunitySlot/data/type";
+import {
+  PrismaOpportunitySlot,
+  PrismaOpportunitySlotWithParticipation,
+} from "@/application/domain/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
   static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
@@ -28,6 +32,15 @@ export default class OpportunitySlotPresenter {
     return {
       ...prop,
       opportunity: opportunity ? opportunity : null,
+    };
+  }
+
+  static setHostingStatus(
+    r: PrismaOpportunitySlotWithParticipation,
+  ): GqlOpportunitySlotSetHostingStatusSuccess {
+    return {
+      __typename: "OpportunitySlotSetHostingStatusSuccess",
+      slot: this.get(r),
     };
   }
 

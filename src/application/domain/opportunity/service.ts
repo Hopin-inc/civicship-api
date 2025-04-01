@@ -6,7 +6,7 @@ import {
   GqlQueryOpportunitiesArgs,
 } from "@/types/graphql";
 import OpportunityRepository from "@/application/domain/opportunity/data/repository";
-import { OpportunityHostingStatus, Prisma, PublishStatus } from "@prisma/client";
+import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
@@ -74,16 +74,6 @@ export default class OpportunityService {
     await this.findOpportunityOrThrow(ctx, id);
 
     return await OpportunityRepository.setPublishStatus(ctx, id, status);
-  }
-
-  static async setOpportunityHostingStatus(
-    ctx: IContext,
-    id: string,
-    status: OpportunityHostingStatus,
-  ) {
-    await this.findOpportunityOrThrow(ctx, id);
-
-    return await OpportunityRepository.setHostingStatus(ctx, id, status);
   }
 
   static async validatePublishStatus(

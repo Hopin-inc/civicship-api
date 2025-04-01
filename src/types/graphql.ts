@@ -556,8 +556,8 @@ export type GqlMutation = {
   mutationEcho: Scalars['String']['output'];
   opportunityCreate?: Maybe<GqlOpportunityCreatePayload>;
   opportunityDelete?: Maybe<GqlOpportunityDeletePayload>;
-  opportunitySetHostingStatus?: Maybe<GqlOpportunitySetHostingStatusPayload>;
   opportunitySetPublishStatus?: Maybe<GqlOpportunitySetPublishStatusPayload>;
+  opportunitySlotSetHostingStatus?: Maybe<GqlOpportunitySlotSetHostingStatusPayload>;
   opportunitySlotsBulkUpdate?: Maybe<GqlOpportunitySlotsBulkUpdatePayload>;
   opportunityUpdateContent?: Maybe<GqlOpportunityUpdateContentPayload>;
   participationCreatePersonalRecord?: Maybe<GqlParticipationCreatePersonalRecordPayload>;
@@ -683,17 +683,17 @@ export type GqlMutationOpportunityDeleteArgs = {
 };
 
 
-export type GqlMutationOpportunitySetHostingStatusArgs = {
-  id: Scalars['ID']['input'];
-  input: GqlOpportunitySetHostingStatusInput;
-  permission: GqlCheckCommunityPermissionInput;
-};
-
-
 export type GqlMutationOpportunitySetPublishStatusArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunitySetPublishStatusInput;
   permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationOpportunitySlotSetHostingStatusArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlOpportunitySlotSetHostingStatusInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -916,7 +916,6 @@ export type GqlOpportunity = {
   description: Scalars['String']['output'];
   feeRequired?: Maybe<Scalars['Int']['output']>;
   files?: Maybe<Scalars['JSON']['output']>;
-  hostingStatus: GqlOpportunityHostingStatus;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
   place?: Maybe<GqlPlace>;
@@ -990,30 +989,12 @@ export type GqlOpportunityFilterInput = {
   cityCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  hostingStatus?: InputMaybe<Array<GqlOpportunityHostingStatus>>;
+  hostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   not?: InputMaybe<GqlOpportunityFilterInput>;
   or?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-};
-
-export const GqlOpportunityHostingStatus = {
-  Cancelled: 'CANCELLED',
-  Completed: 'COMPLETED',
-  Scheduled: 'SCHEDULED'
-} as const;
-
-export type GqlOpportunityHostingStatus = typeof GqlOpportunityHostingStatus[keyof typeof GqlOpportunityHostingStatus];
-export type GqlOpportunitySetHostingStatusInput = {
-  hostingStatus: GqlOpportunityHostingStatus;
-};
-
-export type GqlOpportunitySetHostingStatusPayload = GqlOpportunitySetHostingStatusSuccess;
-
-export type GqlOpportunitySetHostingStatusSuccess = {
-  __typename?: 'OpportunitySetHostingStatusSuccess';
-  opportunity: GqlOpportunity;
 };
 
 export type GqlOpportunitySetPublishStatusInput = {
@@ -1032,6 +1013,7 @@ export type GqlOpportunitySlot = {
   capacity?: Maybe<Scalars['Int']['output']>;
   createdAt: Scalars['Datetime']['output'];
   endsAt: Scalars['Datetime']['output'];
+  hostingStatus: GqlOpportunitySlotHostingStatus;
   id: Scalars['ID']['output'];
   opportunity?: Maybe<GqlOpportunity>;
   participations?: Maybe<GqlParticipationsConnection>;
@@ -1069,6 +1051,24 @@ export type GqlOpportunitySlotEdge = GqlEdge & {
 
 export type GqlOpportunitySlotFilterInput = {
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export const GqlOpportunitySlotHostingStatus = {
+  Cancelled: 'CANCELLED',
+  Completed: 'COMPLETED',
+  Scheduled: 'SCHEDULED'
+} as const;
+
+export type GqlOpportunitySlotHostingStatus = typeof GqlOpportunitySlotHostingStatus[keyof typeof GqlOpportunitySlotHostingStatus];
+export type GqlOpportunitySlotSetHostingStatusInput = {
+  status: GqlOpportunitySlotHostingStatus;
+};
+
+export type GqlOpportunitySlotSetHostingStatusPayload = GqlOpportunitySlotSetHostingStatusSuccess;
+
+export type GqlOpportunitySlotSetHostingStatusSuccess = {
+  __typename?: 'OpportunitySlotSetHostingStatusSuccess';
+  slot: GqlOpportunitySlot;
 };
 
 export type GqlOpportunitySlotSortInput = {
@@ -2641,8 +2641,8 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   MembershipWithdrawPayload: ( GqlMembershipWithdrawSuccess );
   OpportunityCreatePayload: ( Omit<GqlOpportunityCreateSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunityDeletePayload: ( GqlOpportunityDeleteSuccess );
-  OpportunitySetHostingStatusPayload: ( Omit<GqlOpportunitySetHostingStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   OpportunitySetPublishStatusPayload: ( Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
+  OpportunitySlotSetHostingStatusPayload: ( Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: _RefType['OpportunitySlot'] } );
   OpportunitySlotsBulkUpdatePayload: ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
   OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
   ParticipationCreatePersonalRecordPayload: ( Omit<GqlParticipationCreatePersonalRecordSuccess, 'participation'> & { participation: _RefType['Participation'] } );
@@ -2768,10 +2768,6 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityDeleteSuccess: ResolverTypeWrapper<GqlOpportunityDeleteSuccess>;
   OpportunityEdge: ResolverTypeWrapper<Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Opportunity']> }>;
   OpportunityFilterInput: GqlOpportunityFilterInput;
-  OpportunityHostingStatus: GqlOpportunityHostingStatus;
-  OpportunitySetHostingStatusInput: GqlOpportunitySetHostingStatusInput;
-  OpportunitySetHostingStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySetHostingStatusPayload']>;
-  OpportunitySetHostingStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetHostingStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySetPublishStatusPayload']>;
   OpportunitySetPublishStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
@@ -2779,6 +2775,10 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunitySlotCreateInput: GqlOpportunitySlotCreateInput;
   OpportunitySlotEdge: ResolverTypeWrapper<Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<GqlResolversTypes['OpportunitySlot']> }>;
   OpportunitySlotFilterInput: GqlOpportunitySlotFilterInput;
+  OpportunitySlotHostingStatus: GqlOpportunitySlotHostingStatus;
+  OpportunitySlotSetHostingStatusInput: GqlOpportunitySlotSetHostingStatusInput;
+  OpportunitySlotSetHostingStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySlotSetHostingStatusPayload']>;
+  OpportunitySlotSetHostingStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: GqlResolversTypes['OpportunitySlot'] }>;
   OpportunitySlotSortInput: GqlOpportunitySlotSortInput;
   OpportunitySlotUpdateInput: GqlOpportunitySlotUpdateInput;
   OpportunitySlotsBulkUpdateInput: GqlOpportunitySlotsBulkUpdateInput;
@@ -3022,9 +3022,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityDeleteSuccess: GqlOpportunityDeleteSuccess;
   OpportunityEdge: Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Opportunity']> };
   OpportunityFilterInput: GqlOpportunityFilterInput;
-  OpportunitySetHostingStatusInput: GqlOpportunitySetHostingStatusInput;
-  OpportunitySetHostingStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySetHostingStatusPayload'];
-  OpportunitySetHostingStatusSuccess: Omit<GqlOpportunitySetHostingStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   OpportunitySetPublishStatusInput: GqlOpportunitySetPublishStatusInput;
   OpportunitySetPublishStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySetPublishStatusPayload'];
   OpportunitySetPublishStatusSuccess: Omit<GqlOpportunitySetPublishStatusSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
@@ -3032,6 +3029,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunitySlotCreateInput: GqlOpportunitySlotCreateInput;
   OpportunitySlotEdge: Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['OpportunitySlot']> };
   OpportunitySlotFilterInput: GqlOpportunitySlotFilterInput;
+  OpportunitySlotSetHostingStatusInput: GqlOpportunitySlotSetHostingStatusInput;
+  OpportunitySlotSetHostingStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySlotSetHostingStatusPayload'];
+  OpportunitySlotSetHostingStatusSuccess: Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: GqlResolversParentTypes['OpportunitySlot'] };
   OpportunitySlotSortInput: GqlOpportunitySlotSortInput;
   OpportunitySlotUpdateInput: GqlOpportunitySlotUpdateInput;
   OpportunitySlotsBulkUpdateInput: GqlOpportunitySlotsBulkUpdateInput;
@@ -3489,8 +3489,8 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   mutationEcho?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   opportunityCreate?: Resolver<Maybe<GqlResolversTypes['OpportunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityCreateArgs, 'input' | 'permission'>>;
   opportunityDelete?: Resolver<Maybe<GqlResolversTypes['OpportunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityDeleteArgs, 'id' | 'permission'>>;
-  opportunitySetHostingStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetHostingStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetHostingStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
+  opportunitySlotSetHostingStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotSetHostingStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotSetHostingStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
   participationCreatePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationCreatePersonalRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCreatePersonalRecordArgs, 'input'>>;
@@ -3548,7 +3548,6 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   description?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   feeRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   files?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
-  hostingStatus?: Resolver<GqlResolversTypes['OpportunityHostingStatus'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
@@ -3586,15 +3585,6 @@ export type GqlOpportunityEdgeResolvers<ContextType = any, ParentType extends Gq
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlOpportunitySetHostingStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetHostingStatusPayload'] = GqlResolversParentTypes['OpportunitySetHostingStatusPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'OpportunitySetHostingStatusSuccess', ParentType, ContextType>;
-}>;
-
-export type GqlOpportunitySetHostingStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetHostingStatusSuccess'] = GqlResolversParentTypes['OpportunitySetHostingStatusSuccess']> = ResolversObject<{
-  opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlOpportunitySetPublishStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySetPublishStatusPayload'] = GqlResolversParentTypes['OpportunitySetPublishStatusPayload']> = ResolversObject<{
   __resolveType: TypeResolveFn<'OpportunitySetPublishStatusSuccess', ParentType, ContextType>;
 }>;
@@ -3608,6 +3598,7 @@ export type GqlOpportunitySlotResolvers<ContextType = any, ParentType extends Gq
   capacity?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   endsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  hostingStatus?: Resolver<GqlResolversTypes['OpportunitySlotHostingStatus'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlOpportunitySlotParticipationsArgs>>;
@@ -3620,6 +3611,15 @@ export type GqlOpportunitySlotResolvers<ContextType = any, ParentType extends Gq
 export type GqlOpportunitySlotEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySlotEdge'] = GqlResolversParentTypes['OpportunitySlotEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOpportunitySlotSetHostingStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySlotSetHostingStatusPayload'] = GqlResolversParentTypes['OpportunitySlotSetHostingStatusPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'OpportunitySlotSetHostingStatusSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOpportunitySlotSetHostingStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitySlotSetHostingStatusSuccess'] = GqlResolversParentTypes['OpportunitySlotSetHostingStatusSuccess']> = ResolversObject<{
+  slot?: Resolver<GqlResolversTypes['OpportunitySlot'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4307,12 +4307,12 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   OpportunityDeletePayload?: GqlOpportunityDeletePayloadResolvers<ContextType>;
   OpportunityDeleteSuccess?: GqlOpportunityDeleteSuccessResolvers<ContextType>;
   OpportunityEdge?: GqlOpportunityEdgeResolvers<ContextType>;
-  OpportunitySetHostingStatusPayload?: GqlOpportunitySetHostingStatusPayloadResolvers<ContextType>;
-  OpportunitySetHostingStatusSuccess?: GqlOpportunitySetHostingStatusSuccessResolvers<ContextType>;
   OpportunitySetPublishStatusPayload?: GqlOpportunitySetPublishStatusPayloadResolvers<ContextType>;
   OpportunitySetPublishStatusSuccess?: GqlOpportunitySetPublishStatusSuccessResolvers<ContextType>;
   OpportunitySlot?: GqlOpportunitySlotResolvers<ContextType>;
   OpportunitySlotEdge?: GqlOpportunitySlotEdgeResolvers<ContextType>;
+  OpportunitySlotSetHostingStatusPayload?: GqlOpportunitySlotSetHostingStatusPayloadResolvers<ContextType>;
+  OpportunitySlotSetHostingStatusSuccess?: GqlOpportunitySlotSetHostingStatusSuccessResolvers<ContextType>;
   OpportunitySlotsBulkUpdatePayload?: GqlOpportunitySlotsBulkUpdatePayloadResolvers<ContextType>;
   OpportunitySlotsBulkUpdateSuccess?: GqlOpportunitySlotsBulkUpdateSuccessResolvers<ContextType>;
   OpportunitySlotsConnection?: GqlOpportunitySlotsConnectionResolvers<ContextType>;

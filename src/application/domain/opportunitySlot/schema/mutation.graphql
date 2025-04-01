@@ -2,6 +2,11 @@
 # Opportunity Slot Mutation Definitions
 # ------------------------------
 extend type Mutation {
+    opportunitySlotSetHostingStatus(
+        id: ID!
+        input: OpportunitySlotSetHostingStatusInput!
+        permission: CheckOpportunityPermissionInput!
+    ): OpportunitySlotSetHostingStatusPayload
     opportunitySlotsBulkUpdate(
         input: OpportunitySlotsBulkUpdateInput!
         permission: CheckOpportunityPermissionInput!
@@ -11,6 +16,10 @@ extend type Mutation {
 # ------------------------------
 # Opportunity Slot Mutation Input Definitions
 # ------------------------------
+input OpportunitySlotSetHostingStatusInput{
+    status: OpportunitySlotHostingStatus!
+}
+
 input OpportunitySlotsBulkUpdateInput {
     opportunityId: ID!
 
@@ -37,8 +46,15 @@ type OpportunitySlotsBulkUpdateSuccess {
     slots: [OpportunitySlot!]!
 }
 
+type OpportunitySlotSetHostingStatusSuccess{
+    slot: OpportunitySlot!
+}
+
 # ------------------------------
 # Opportunity Slot Mutation Union (Payload) Definitions
 # ------------------------------
 union OpportunitySlotsBulkUpdatePayload =
     OpportunitySlotsBulkUpdateSuccess
+
+union OpportunitySlotSetHostingStatusPayload =
+    OpportunitySlotSetHostingStatusSuccess
