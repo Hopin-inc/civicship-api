@@ -15,7 +15,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/domain/opportunity/presenter";
-import { PublishStatus } from "@prisma/client";
+import { PublishStatus, TicketStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 
@@ -77,7 +77,7 @@ export default class OpportunityUseCase {
       currentUserId,
     );
 
-    const record = await OpportunityService.findOpportunity(ctx, id, validatedFilter);
+    const record = await OpportunityService.findOpportunityAccessible(ctx, id, validatedFilter);
     return record ? OpportunityPresenter.get(record) : null;
   }
 
@@ -111,6 +111,32 @@ export default class OpportunityUseCase {
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
     const res = await OpportunityService.setOpportunityPublishStatus(ctx, id, input.publishStatus);
     return OpportunityPresenter.setPublishStatus(res);
+  }
+
+  static async checkUserHasValidTicketForOpportunity(
+    ctx: IContext,
+    opportunityId: string,
+  ): Promise<boolean> {
+    if (!ctx.currentUser) return false;
+
+    const opportunity = await ctx.loaders.opportunity.load(opportunityId);
+    if (!opportunity) return false;
+
+    const requiredUtilityIds = opportunity.requiredUtilities?.map((u) => u.id) ?? [];
+    if (requiredUtilityIds.length === 0) return false;
+
+    const userTickets =
+      ctx.hasPermissions?.participations?.flatMap(
+        (participation) =>
+          participation.ticketStatusHistories
+            ?.map((h) => h.ticket)
+            .filter(
+              (ticket) => ticket.status === TicketStatus.AVAILABLE && ticket.utilityId != null,
+            ) ?? [],
+      ) ?? [];
+
+    const utilityIdSet = new Set(userTickets.map((t) => t.utilityId));
+    return requiredUtilityIds.some((id) => utilityIdSet.has(id));
   }
 }
 
