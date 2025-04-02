@@ -9,11 +9,7 @@ import ParticipationImageRepository from "@/application/domain/participation/ima
 import ParticipationImageService from "@/application/domain/participation/image/service";
 import ParticipationService from "@/application/domain/participation/service";
 import ParticipationImagePresenter from "@/application/domain/participation/image/presenter";
-import { EvaluationStatus, ParticipationStatus, TransactionReason, Prisma } from "@prisma/client";
-import TransactionService from "@/application/domain/transaction/service";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { PrismaParticipation } from "@/application/domain/participation/data/type";
-import WalletValidator from "@/application/domain/membership/wallet/validator";
+import { Prisma } from "@prisma/client";
 
 export default class ParticipationImageUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -22,53 +18,11 @@ export default class ParticipationImageUseCase {
     { input }: GqlMutationParticipationImageBulkUpdateArgs,
     ctx: IContext,
   ): Promise<GqlParticipationImageBulkUpdatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
+    await ParticipationService.findParticipationOrThrow(ctx, input.participationId);
 
     const updatedParticipation = await this.issuer.public(ctx, async (tx) => {
-      const participationBeforeUpdate = await ParticipationService.findParticipationOrThrow(
-        ctx,
-        input.participationId,
-      );
-
       await applyParticipationImageMutations(ctx, input, tx);
-      const participationAfterUpdate = await ParticipationService.findParticipationOrThrow(
-        ctx,
-        input.participationId,
-      );
-
-      if (shouldRewardForImageSubmission(participationBeforeUpdate, participationAfterUpdate)) {
-        const {
-          id: participationId,
-          communityId,
-          opportunitySlot,
-          opportunityInvitationHistory,
-        } = participationAfterUpdate;
-
-        const pointsToEarn = opportunitySlot?.opportunity?.pointsToEarn ?? 0;
-        const inviterId = opportunityInvitationHistory?.invitation?.createdBy;
-
-        await transferRewardPointsToUser(
-          ctx,
-          tx,
-          participationId,
-          communityId!,
-          currentUserId,
-          pointsToEarn,
-        );
-
-        if (inviterId) {
-          await transferRewardPointsToUser(
-            ctx,
-            tx,
-            participationId,
-            communityId!,
-            inviterId,
-            pointsToEarn,
-          );
-        }
-      }
-
-      return participationAfterUpdate;
+      return await ParticipationService.findParticipationOrThrow(ctx, input.participationId);
     });
 
     return ParticipationImagePresenter.updateImages(updatedParticipation);
@@ -91,54 +45,4 @@ async function applyParticipationImageMutations(
       tx,
     );
   }
-}
-
-function shouldRewardForImageSubmission(
-  before: PrismaParticipation,
-  after: PrismaParticipation,
-): boolean {
-  return isFirstTimeImageSubmission(before, after) && isEligibleForPointReward(after);
-}
-
-function isFirstTimeImageSubmission(
-  before: PrismaParticipation,
-  after: PrismaParticipation,
-): boolean {
-  return before.images.length === 0 && after.images.length > 0;
-}
-
-function isEligibleForPointReward(after: PrismaParticipation): boolean {
-  return (
-    after.status === ParticipationStatus.PARTICIPATED &&
-    after.evaluation?.status === EvaluationStatus.PASSED &&
-    (after.opportunitySlot?.opportunity?.pointsToEarn ?? 0) > 0 &&
-    !!after.communityId
-  );
-}
-
-async function transferRewardPointsToUser(
-  ctx: IContext,
-  tx: Prisma.TransactionClient,
-  participationId: string,
-  communityId: string,
-  userId: string,
-  transferPoints: number,
-) {
-  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
-    ctx,
-    tx,
-    communityId,
-    userId,
-    transferPoints,
-    TransactionReason.POINT_REWARD,
-  );
-
-  await TransactionService.giveRewardPoint(
-    ctx,
-    tx,
-    participationId,
-    transferPoints,
-    fromWalletId,
-    toWalletId,
-  );
 }
