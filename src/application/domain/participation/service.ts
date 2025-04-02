@@ -9,7 +9,6 @@ import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PrismaParticipation } from "@/application/domain/participation/data/type";
-import OpportunitySlotRepository from "@/application/domain/opportunitySlot/data/repository";
 
 export default class ParticipationService {
   static async fetchParticipations<T extends Prisma.ParticipationInclude>(
@@ -73,7 +72,6 @@ export default class ParticipationService {
       status,
       reason,
     );
-    await OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx);
     return ParticipationRepository.setStatus(ctx, id, data, tx);
   }
 
@@ -84,7 +82,6 @@ export default class ParticipationService {
     reason: ParticipationStatusReason,
     tx: Prisma.TransactionClient,
   ) {
-    await OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx);
     return ParticipationRepository.bulkSetParticipationStatus(ctx, ids, { status, reason }, tx);
   }
 
@@ -93,7 +90,6 @@ export default class ParticipationService {
     ids: string[],
     tx: Prisma.TransactionClient,
   ) {
-    await OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx);
     return ParticipationRepository.bulkSetParticipationStatus(
       ctx,
       ids,

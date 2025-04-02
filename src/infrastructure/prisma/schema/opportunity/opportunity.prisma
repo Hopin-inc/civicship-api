@@ -15,7 +15,8 @@ model Opportunity {
   feeRequired       Int?      @map("fee_required")
   requiredUtilities Utility[]
 
-  slots OpportunitySlot[]
+  slots                      OpportunitySlot[]
+  earliestReservableSlotView EarliestReservableSlotView?
 
   articles Article[] @relation("t_opportunities_on_articles")
 
@@ -38,4 +39,13 @@ enum OpportunityCategory {
   QUEST
   EVENT
   ACTIVITY
+}
+
+view EarliestReservableSlotView {
+  opportunityId        String    @id @map("opportunity_id")
+  earliestReservableAt DateTime? @map("earliest_reservable_date")
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id])
+
+  @@map("mv_earliest_reservable_slot")
 }

@@ -8,7 +8,6 @@ import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
 import { reservationStatuses } from "@/application/domain/reservation/helper";
 import { PrismaReservation } from "@/application/domain/reservation/data/type";
-import OpportunitySlotRepository from "@/application/domain/opportunitySlot/data/repository";
 
 export default class ReservationService {
   static async fetchReservations(
@@ -63,7 +62,6 @@ export default class ReservationService {
       userIdsIfExists,
       reservationStatuses,
     );
-    await OpportunitySlotRepository.refreshRemainingCapacity(ctx);
     return ReservationRepository.create(ctx, data);
   }
 
@@ -76,7 +74,6 @@ export default class ReservationService {
   ) {
     const data = ReservationConverter.setStatus(currentUserId, status);
 
-    await OpportunitySlotRepository.refreshRemainingCapacity(ctx);
     return ReservationRepository.setStatus(ctx, id, data, tx);
   }
 }

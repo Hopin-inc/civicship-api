@@ -37,6 +37,17 @@ export default class OpportunityConverter {
   }
 
   static sort(sort?: GqlOpportunitySortInput): Prisma.OpportunityOrderByWithRelationInput[] {
+    if (sort?.earliestSlotStartsAt) {
+      return [
+        {
+          earliestReservableSlotView: {
+            earliestReservableAt: sort.earliestSlotStartsAt,
+          },
+        },
+        { createdAt: Prisma.SortOrder.desc },
+      ];
+    }
+
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 

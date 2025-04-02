@@ -23,6 +23,7 @@ import type { User } from "@prisma/client";
 import type { Utility } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
+import type { EarliestReservableSlotView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
@@ -544,6 +545,10 @@ interface WalletFactoryBuilder {
  * @returns factory {@link WalletFactoryInterface}
  */
 export declare const defineWalletFactory: WalletFactoryBuilder;
+type OpportunityearliestReservableSlotViewFactory = {
+    _factoryFor: "EarliestReservableSlotView";
+    build: () => PromiseLike<Prisma.EarliestReservableSlotViewCreateNestedOneWithoutOpportunityInput["create"]>;
+};
 type OpportunitycreatedByUserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
@@ -572,6 +577,7 @@ type OpportunityFactoryDefineInput = {
     updatedAt?: Date | null;
     requiredUtilities?: Prisma.UtilityCreateNestedManyWithoutRequiredForOpportunitiesInput;
     slots?: Prisma.OpportunitySlotCreateNestedManyWithoutOpportunityInput;
+    earliestReservableSlotView?: OpportunityearliestReservableSlotViewFactory | Prisma.EarliestReservableSlotViewCreateNestedOneWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
     createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
@@ -1455,6 +1461,51 @@ interface AccumulatedPointViewFactoryBuilder {
  * @returns factory {@link AccumulatedPointViewFactoryInterface}
  */
 export declare const defineAccumulatedPointViewFactory: AccumulatedPointViewFactoryBuilder;
+type EarliestReservableSlotViewopportunityFactory = {
+    _factoryFor: "Opportunity";
+    build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutEarliestReservableSlotViewInput["create"]>;
+};
+type EarliestReservableSlotViewFactoryDefineInput = {
+    earliestReservableAt?: Date | null;
+    opportunity: EarliestReservableSlotViewopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutEarliestReservableSlotViewInput;
+};
+type EarliestReservableSlotViewTransientFields = Record<string, unknown> & Partial<Record<keyof EarliestReservableSlotViewFactoryDefineInput, never>>;
+type EarliestReservableSlotViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<EarliestReservableSlotViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<EarliestReservableSlotView, Prisma.EarliestReservableSlotViewCreateInput, TTransients>;
+type EarliestReservableSlotViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<EarliestReservableSlotViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: EarliestReservableSlotViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<EarliestReservableSlotView, Prisma.EarliestReservableSlotViewCreateInput, TTransients>;
+type EarliestReservableSlotViewTraitKeys<TOptions extends EarliestReservableSlotViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface EarliestReservableSlotViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "EarliestReservableSlotView";
+    build(inputData?: Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>): PromiseLike<Prisma.EarliestReservableSlotViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>): PromiseLike<Prisma.EarliestReservableSlotViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>[]): PromiseLike<Prisma.EarliestReservableSlotViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>): PromiseLike<Prisma.EarliestReservableSlotViewCreateInput[]>;
+    pickForConnect(inputData: EarliestReservableSlotView): Pick<EarliestReservableSlotView, "opportunityId">;
+    create(inputData?: Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>): PromiseLike<EarliestReservableSlotView>;
+    createList(list: readonly Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>[]): PromiseLike<EarliestReservableSlotView[]>;
+    createList(count: number, item?: Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>): PromiseLike<EarliestReservableSlotView[]>;
+    createForConnect(inputData?: Partial<Prisma.EarliestReservableSlotViewCreateInput & TTransients>): PromiseLike<Pick<EarliestReservableSlotView, "opportunityId">>;
+}
+export interface EarliestReservableSlotViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EarliestReservableSlotViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): EarliestReservableSlotViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface EarliestReservableSlotViewFactoryBuilder {
+    <TOptions extends EarliestReservableSlotViewFactoryDefineOptions>(options: TOptions): EarliestReservableSlotViewFactoryInterface<{}, EarliestReservableSlotViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends EarliestReservableSlotViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EarliestReservableSlotViewFactoryDefineOptions<TTransients>>(options: TOptions) => EarliestReservableSlotViewFactoryInterface<TTransients, EarliestReservableSlotViewTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link EarliestReservableSlotView} model.
+ *
+ * @param options
+ * @returns factory {@link EarliestReservableSlotViewFactoryInterface}
+ */
+export declare const defineEarliestReservableSlotViewFactory: EarliestReservableSlotViewFactoryBuilder;
 type RemainingCapacityViewslotFactory = {
     _factoryFor: "OpportunitySlot";
     build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutRemainingCapacityViewInput["create"]>;

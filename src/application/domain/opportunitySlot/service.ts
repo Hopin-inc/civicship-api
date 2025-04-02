@@ -50,7 +50,10 @@ export default class OpportunitySlotService {
     tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunitySlotOrThrow(ctx, slotId);
-    return await OpportunitySlotRepository.setHostingStatus(ctx, slotId, hostingStatus, tx);
+    const slot = await OpportunitySlotRepository.setHostingStatus(ctx, slotId, hostingStatus, tx);
+
+    await this.refreshSlotViews(ctx, tx);
+    return slot;
   }
 
   static async bulkCreateOpportunitySlots(
@@ -62,7 +65,10 @@ export default class OpportunitySlotService {
     if (inputs.length === 0) return;
 
     const data = OpportunitySlotConverter.createMany(opportunityId, inputs);
-    await OpportunitySlotRepository.createMany(ctx, data, tx);
+    const slots = OpportunitySlotRepository.createMany(ctx, data, tx);
+
+    await this.refreshSlotViews(ctx, tx);
+    return slots;
   }
 
   static async bulkUpdateOpportunitySlots(
@@ -77,6 +83,8 @@ export default class OpportunitySlotService {
         OpportunitySlotRepository.update(ctx, input.id, OpportunitySlotConverter.update(input), tx),
       ),
     );
+
+    await this.refreshSlotViews(ctx, tx);
   }
 
   static async bulkDeleteOpportunitySlots(
@@ -87,5 +95,13 @@ export default class OpportunitySlotService {
     if (ids.length === 0) return;
 
     await OpportunitySlotRepository.deleteMany(ctx, ids, tx);
+    await this.refreshSlotViews(ctx, tx);
+  }
+
+  static async refreshSlotViews(ctx: IContext, tx: Prisma.TransactionClient) {
+    return Promise.all([
+      OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx),
+      OpportunitySlotRepository.refreshEarliestReservableSlot(ctx, tx),
+    ]);
   }
 }

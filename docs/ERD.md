@@ -267,7 +267,7 @@ UNKNOWN UNKNOWN
   
 
   "t_opportunities" {
-    String id "🗝️"
+    String opportunity_id "🗝️"
     PublishStatus publish_status 
     Boolean require_approval 
     String title 
@@ -458,6 +458,12 @@ UNKNOWN UNKNOWN
     }
   
 
+  "mv_earliest_reservable_slot" {
+    String opportunityId "🗝️"
+    DateTime earliestReservableAt "❓"
+    }
+  
+
   "mv_slot_remaining_capacity" {
     String slotId "🗝️"
     Int remainingCapacity "❓"
@@ -509,6 +515,7 @@ UNKNOWN UNKNOWN
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
+    "t_opportunities" o{--}o "mv_earliest_reservable_slot" : "earliestReservableSlotView"
     "t_opportunities" o{--}o "t_articles" : "articles"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunities" o|--|o "t_communities" : "community"
@@ -584,5 +591,6 @@ UNKNOWN UNKNOWN
     "t_utilities" o{--}o "t_tickets" : "tickets"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
+    "mv_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
     "mv_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
 ```

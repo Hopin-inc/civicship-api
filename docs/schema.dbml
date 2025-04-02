@@ -146,6 +146,7 @@ Table t_opportunities {
   feeRequired Int
   requiredUtilities t_utilities [not null]
   slots t_opportunity_slots [not null]
+  earliestReservableSlotView mv_earliest_reservable_slot
   articles t_articles [not null]
   createdBy String [not null]
   createdByUser t_users [not null]
@@ -366,6 +367,12 @@ Table mv_accumulated_points {
   walletId String [pk]
   accumulatedPoint Int [not null]
   wallet t_wallets [not null]
+}
+
+Table mv_earliest_reservable_slot {
+  opportunityId String [pk]
+  earliestReservableAt DateTime
+  opportunity t_opportunities [not null]
 }
 
 Table mv_slot_remaining_capacity {
@@ -604,5 +611,7 @@ Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 Ref: mv_current_points.walletId - t_wallets.id
 
 Ref: mv_accumulated_points.walletId - t_wallets.id
+
+Ref: mv_earliest_reservable_slot.opportunityId - t_opportunities.id
 
 Ref: mv_slot_remaining_capacity.slotId - t_opportunity_slots.id
