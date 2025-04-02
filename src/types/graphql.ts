@@ -880,23 +880,6 @@ export type GqlNestedPlacesBulkUpdateInput = {
   disconnect?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
-export type GqlOnboarding = {
-  __typename?: 'Onboarding';
-  completedAt?: Maybe<Scalars['Datetime']['output']>;
-  createdAt: Scalars['Datetime']['output'];
-  id: Scalars['ID']['output'];
-  status: GqlOnboardingStatus;
-  todo: GqlTodo;
-  updatedAt?: Maybe<Scalars['Datetime']['output']>;
-  user: GqlUser;
-};
-
-export const GqlOnboardingStatus = {
-  Done: 'DONE',
-  Wip: 'WIP'
-} as const;
-
-export type GqlOnboardingStatus = typeof GqlOnboardingStatus[keyof typeof GqlOnboardingStatus];
 export type GqlOpportunitiesConnection = {
   __typename?: 'OpportunitiesConnection';
   edges: Array<GqlOpportunityEdge>;
@@ -2079,14 +2062,6 @@ export type GqlTicketsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-export const GqlTodo = {
-  FirstActivity: 'FIRST_ACTIVITY',
-  FirstQuest: 'FIRST_QUEST',
-  PersonalRecord: 'PERSONAL_RECORD',
-  Profile: 'PROFILE'
-} as const;
-
-export type GqlTodo = typeof GqlTodo[keyof typeof GqlTodo];
 export type GqlTransaction = {
   __typename?: 'Transaction';
   createdAt: Scalars['Datetime']['output'];
@@ -2199,7 +2174,6 @@ export type GqlUser = {
   membershipChangedByMe?: Maybe<GqlMembershipHistoriesConnection>;
   memberships?: Maybe<GqlMembershipsConnection>;
   name: Scalars['String']['output'];
-  onboardings?: Maybe<Array<GqlOnboarding>>;
   opportunitiesCreatedByMe?: Maybe<GqlOpportunitiesConnection>;
   participationStatusChangedByMe?: Maybe<GqlParticipationStatusHistoriesConnection>;
   participations?: Maybe<GqlParticipationsConnection>;
@@ -2353,7 +2327,7 @@ export type GqlUserFilterInput = {
 };
 
 export type GqlUserSignUpInput = {
-  currentPrefecture?: InputMaybe<GqlCurrentPrefecture>;
+  currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
   slug?: InputMaybe<Scalars['String']['input']>;
@@ -2756,8 +2730,6 @@ export type GqlResolversTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  Onboarding: ResolverTypeWrapper<Omit<GqlOnboarding, 'user'> & { user: GqlResolversTypes['User'] }>;
-  OnboardingStatus: GqlOnboardingStatus;
   OpportunitiesConnection: ResolverTypeWrapper<Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['OpportunityEdge']> }>;
   Opportunity: ResolverTypeWrapper<Opportunity>;
   OpportunityCategory: GqlOpportunityCategory;
@@ -2881,7 +2853,6 @@ export type GqlResolversTypes = ResolversObject<{
   TicketUsePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TicketUsePayload']>;
   TicketUseSuccess: ResolverTypeWrapper<Omit<GqlTicketUseSuccess, 'ticket'> & { ticket: GqlResolversTypes['Ticket'] }>;
   TicketsConnection: ResolverTypeWrapper<Omit<GqlTicketsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TicketEdge']>>> }>;
-  Todo: GqlTodo;
   Transaction: ResolverTypeWrapper<Transaction>;
   TransactionDonateSelfPointInput: GqlTransactionDonateSelfPointInput;
   TransactionDonateSelfPointPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TransactionDonateSelfPointPayload']>;
@@ -3012,7 +2983,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   NestedPlaceCreateInput: GqlNestedPlaceCreateInput;
   NestedPlacesBulkConnectOrCreateInput: GqlNestedPlacesBulkConnectOrCreateInput;
   NestedPlacesBulkUpdateInput: GqlNestedPlacesBulkUpdateInput;
-  Onboarding: Omit<GqlOnboarding, 'user'> & { user: GqlResolversParentTypes['User'] };
   OpportunitiesConnection: Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OpportunityEdge']> };
   Opportunity: Opportunity;
   OpportunityCreateInput: GqlOpportunityCreateInput;
@@ -3517,17 +3487,6 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   utilityDelete?: Resolver<Maybe<GqlResolversTypes['UtilityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityDeleteArgs, 'id' | 'permission'>>;
   utilitySetPublishStatus?: Resolver<Maybe<GqlResolversTypes['UtilitySetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilitySetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
   utilityUpdateInfo?: Resolver<Maybe<GqlResolversTypes['UtilityUpdateInfoPayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityUpdateInfoArgs, 'id' | 'input' | 'permission'>>;
-}>;
-
-export type GqlOnboardingResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Onboarding'] = GqlResolversParentTypes['Onboarding']> = ResolversObject<{
-  completedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
-  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  status?: Resolver<GqlResolversTypes['OnboardingStatus'], ParentType, ContextType>;
-  todo?: Resolver<GqlResolversTypes['Todo'], ParentType, ContextType>;
-  updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlOpportunitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunitiesConnection'] = GqlResolversParentTypes['OpportunitiesConnection']> = ResolversObject<{
@@ -4114,7 +4073,6 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   membershipChangedByMe?: Resolver<Maybe<GqlResolversTypes['MembershipHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserMembershipChangedByMeArgs>>;
   memberships?: Resolver<Maybe<GqlResolversTypes['MembershipsConnection']>, ParentType, ContextType, Partial<GqlUserMembershipsArgs>>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  onboardings?: Resolver<Maybe<Array<GqlResolversTypes['Onboarding']>>, ParentType, ContextType>;
   opportunitiesCreatedByMe?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUserOpportunitiesCreatedByMeArgs>>;
   participationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserParticipationStatusChangedByMeArgs>>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlUserParticipationsArgs>>;
@@ -4299,7 +4257,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   MembershipWithdrawSuccess?: GqlMembershipWithdrawSuccessResolvers<ContextType>;
   MembershipsConnection?: GqlMembershipsConnectionResolvers<ContextType>;
   Mutation?: GqlMutationResolvers<ContextType>;
-  Onboarding?: GqlOnboardingResolvers<ContextType>;
   OpportunitiesConnection?: GqlOpportunitiesConnectionResolvers<ContextType>;
   Opportunity?: GqlOpportunityResolvers<ContextType>;
   OpportunityCreatePayload?: GqlOpportunityCreatePayloadResolvers<ContextType>;

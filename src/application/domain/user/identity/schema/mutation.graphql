@@ -17,7 +17,7 @@ input UserSignUpInput {
     slug: String
     image: ImageInput
 
-    currentPrefecture: CurrentPrefecture
+    currentPrefecture: CurrentPrefecture!
 }
 
 input UserDeleteInput {
