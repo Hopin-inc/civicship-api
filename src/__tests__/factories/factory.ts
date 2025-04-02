@@ -1,4 +1,4 @@
-import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
+import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import { randAnimal, randFirstName, randLastName } from "@ngneat/falso";
 import {
   defineCommunityFactory,
@@ -10,6 +10,7 @@ export const UserFactory = defineUserFactory({
   defaultData: () => ({
     name: `${randFirstName()} ${randLastName()}`,
     slug: `user-${Math.random().toString(36).substring(2, 8)}`,
+    currentPrefecture: CurrentPrefecture.KAGAWA,
   }),
 });
 
