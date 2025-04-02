@@ -154,6 +154,19 @@ export default class OpportunityConverter {
       }
     }
 
+    if (filter.slotRemainingCapacity != null) {
+      slotConditions.push({
+        remainingCapacityView: {
+          is: {
+            OR: [
+              { remainingCapacity: null }, // if capacity is null
+              { remainingCapacity: { gte: filter.slotRemainingCapacity } },
+            ],
+          },
+        },
+      });
+    }
+
     return slotConditions.length ? [{ slots: { some: { AND: slotConditions } } }] : [];
   }
 }

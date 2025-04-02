@@ -9,6 +9,7 @@ import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PrismaParticipation } from "@/application/domain/participation/data/type";
+import OpportunitySlotRepository from "@/application/domain/opportunitySlot/data/repository";
 
 export default class ParticipationService {
   static async fetchParticipations<T extends Prisma.ParticipationInclude>(
@@ -25,11 +26,6 @@ export default class ParticipationService {
   static async countActiveParticipantsBySlotId(ctx: IContext, slotId: string) {
     const where = ParticipationConverter.countActiveBySlotId(slotId);
     return await ParticipationRepository.count(ctx, where);
-  }
-
-  static async countPersonalRecords(ctx: IContext, userId: string, tx?: Prisma.TransactionClient) {
-    const where = ParticipationConverter.countPersonalRecords(userId);
-    return ParticipationRepository.count(ctx, where, tx);
   }
 
   static async findParticipation(ctx: IContext, id: string) {
@@ -77,6 +73,7 @@ export default class ParticipationService {
       status,
       reason,
     );
+    await OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx);
     return ParticipationRepository.setStatus(ctx, id, data, tx);
   }
 
@@ -87,6 +84,7 @@ export default class ParticipationService {
     reason: ParticipationStatusReason,
     tx: Prisma.TransactionClient,
   ) {
+    await OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx);
     return ParticipationRepository.bulkSetParticipationStatus(ctx, ids, { status, reason }, tx);
   }
 
@@ -95,6 +93,7 @@ export default class ParticipationService {
     ids: string[],
     tx: Prisma.TransactionClient,
   ) {
+    await OpportunitySlotRepository.refreshRemainingCapacity(ctx, tx);
     return ParticipationRepository.bulkSetParticipationStatus(
       ctx,
       ids,

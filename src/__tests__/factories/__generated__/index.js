@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineReservationHistoryFactory = exports.defineReservationFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineEvaluationHistoryFactory = exports.defineEvaluationFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineRemainingCapacityViewFactory = exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineReservationHistoryFactory = exports.defineReservationFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineEvaluationHistoryFactory = exports.defineEvaluationFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -167,10 +167,6 @@ const modelFieldDefinitions = [{
                 type: "Utility",
                 relationName: "OpportunityToUtility"
             }, {
-                name: "place",
-                type: "Place",
-                relationName: "OpportunityToPlace"
-            }, {
                 name: "slots",
                 type: "OpportunitySlot",
                 relationName: "OpportunityToOpportunitySlot"
@@ -179,17 +175,25 @@ const modelFieldDefinitions = [{
                 type: "Article",
                 relationName: "t_opportunities_on_articles"
             }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "OpportunityToUser"
+            }, {
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToOpportunity"
             }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "OpportunityToUser"
+                name: "place",
+                type: "Place",
+                relationName: "OpportunityToPlace"
             }]
     }, {
         name: "OpportunitySlot",
         fields: [{
+                name: "remainingCapacityView",
+                type: "RemainingCapacityView",
+                relationName: "OpportunitySlotToRemainingCapacityView"
+            }, {
                 name: "opportunity",
                 type: "Opportunity",
                 relationName: "OpportunityToOpportunitySlot"
@@ -443,6 +447,13 @@ const modelFieldDefinitions = [{
                 name: "wallet",
                 type: "Wallet",
                 relationName: "AccumulatedPointViewToWallet"
+            }]
+    }, {
+        name: "RemainingCapacityView",
+        fields: [{
+                name: "slot",
+                type: "OpportunitySlot",
+                relationName: "OpportunitySlotToRemainingCapacityView"
             }]
     }];
 function isArticlecommunityFactory(x) {
@@ -1318,20 +1329,20 @@ exports.defineWalletFactory = ((options) => {
     return defineWalletFactoryInternal(options, {});
 });
 exports.defineWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineWalletFactoryInternal(options, defaultTransientFieldValues);
-function isOpportunityplaceFactory(x) {
-    return x?._factoryFor === "Place";
+function isOpportunitycreatedByUserFactory(x) {
+    return x?._factoryFor === "User";
 }
 function isOpportunitycommunityFactory(x) {
     return x?._factoryFor === "Community";
 }
-function isOpportunitycreatedByUserFactory(x) {
-    return x?._factoryFor === "User";
+function isOpportunityplaceFactory(x) {
+    return x?._factoryFor === "Place";
 }
 function autoGenerateOpportunityScalarsOrEnums({ seq }) {
     return {
         title: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "title", isId: false, isUnique: false, seq }),
-        description: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "description", isId: false, isUnique: false, seq }),
-        category: "QUEST"
+        category: "QUEST",
+        description: (0, internal_1.getScalarFieldValueGenerator)().String({ modelName: "Opportunity", fieldName: "description", isId: false, isUnique: false, seq })
     };
 }
 function defineOpportunityFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
@@ -1367,15 +1378,15 @@ function defineOpportunityFactoryInternal({ defaultData: defaultDataResolver, on
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                place: isOpportunityplaceFactory(defaultData.place) ? {
-                    create: await defaultData.place.build()
-                } : defaultData.place,
+                createdByUser: isOpportunitycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser,
                 community: isOpportunitycommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
                 } : defaultData.community,
-                createdByUser: isOpportunitycreatedByUserFactory(defaultData.createdByUser) ? {
-                    create: await defaultData.createdByUser.build()
-                } : defaultData.createdByUser
+                place: isOpportunityplaceFactory(defaultData.place) ? {
+                    create: await defaultData.place.build()
+                } : defaultData.place
             };
             const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1425,6 +1436,9 @@ exports.defineOpportunityFactory = ((options) => {
     return defineOpportunityFactoryInternal(options, {});
 });
 exports.defineOpportunityFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityFactoryInternal(options, defaultTransientFieldValues);
+function isOpportunitySlotremainingCapacityViewFactory(x) {
+    return x?._factoryFor === "RemainingCapacityView";
+}
 function isOpportunitySlotopportunityFactory(x) {
     return x?._factoryFor === "Opportunity";
 }
@@ -1467,6 +1481,9 @@ function defineOpportunitySlotFactoryInternal({ defaultData: defaultDataResolver
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                remainingCapacityView: isOpportunitySlotremainingCapacityViewFactory(defaultData.remainingCapacityView) ? {
+                    create: await defaultData.remainingCapacityView.build()
+                } : defaultData.remainingCapacityView,
                 opportunity: isOpportunitySlotopportunityFactory(defaultData.opportunity) ? {
                     create: await defaultData.opportunity.build()
                 } : defaultData.opportunity
@@ -2903,3 +2920,94 @@ exports.defineAccumulatedPointViewFactory = ((options) => {
     return defineAccumulatedPointViewFactoryInternal(options, {});
 });
 exports.defineAccumulatedPointViewFactory.withTransientFields = defaultTransientFieldValues => options => defineAccumulatedPointViewFactoryInternal(options, defaultTransientFieldValues);
+function isRemainingCapacityViewslotFactory(x) {
+    return x?._factoryFor === "OpportunitySlot";
+}
+function autoGenerateRemainingCapacityViewScalarsOrEnums({ seq }) {
+    return {};
+}
+function defineRemainingCapacityViewFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
+    const getFactoryWithTraits = (traitKeys = []) => {
+        const seqKey = {};
+        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
+        const screen = (0, internal_1.createScreener)("RemainingCapacityView", modelFieldDefinitions);
+        const handleAfterBuild = (0, internal_1.createCallbackChain)([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = (0, internal_1.createCallbackChain)([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateRemainingCapacityViewScalarsOrEnums({ seq });
+            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
+            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                slot: isRemainingCapacityViewslotFactory(defaultData.slot) ? {
+                    create: await defaultData.slot.build()
+                } : defaultData.slot
+            };
+            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
+        const pickForConnect = (inputData) => ({
+            slotId: inputData.slotId
+        });
+        const create = async (inputData = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient().remainingCapacityView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
+        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "RemainingCapacityView",
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name, ...names) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+/**
+ * Define factory for {@link RemainingCapacityView} model.
+ *
+ * @param options
+ * @returns factory {@link RemainingCapacityViewFactoryInterface}
+ */
+exports.defineRemainingCapacityViewFactory = ((options) => {
+    return defineRemainingCapacityViewFactoryInternal(options, {});
+});
+exports.defineRemainingCapacityViewFactory.withTransientFields = defaultTransientFieldValues => options => defineRemainingCapacityViewFactoryInternal(options, defaultTransientFieldValues);

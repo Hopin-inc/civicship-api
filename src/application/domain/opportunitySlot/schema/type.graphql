@@ -6,6 +6,7 @@ type OpportunitySlot {
 
     hostingStatus: OpportunitySlotHostingStatus!
     capacity: Int
+    remainingCapacityView: RemainingCapacityView
 
     startsAt: Datetime!
     endsAt: Datetime!
@@ -27,6 +28,11 @@ type OpportunitySlot {
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+type RemainingCapacityView {
+    opportunitySlotId: String!
+    remainingCapacity: Int
 }
 
 enum OpportunitySlotHostingStatus {

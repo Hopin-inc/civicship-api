@@ -23,6 +23,7 @@ import type { User } from "@prisma/client";
 import type { Utility } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
+import type { RemainingCapacityView } from "@prisma/client";
 import type { ArticleCategory } from "@prisma/client";
 import type { PublishStatus } from "@prisma/client";
 import type { EvaluationStatus } from "@prisma/client";
@@ -543,38 +544,38 @@ interface WalletFactoryBuilder {
  * @returns factory {@link WalletFactoryInterface}
  */
 export declare const defineWalletFactory: WalletFactoryBuilder;
-type OpportunityplaceFactory = {
-    _factoryFor: "Place";
-    build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput["create"]>;
+type OpportunitycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
 };
 type OpportunitycommunityFactory = {
     _factoryFor: "Community";
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput["create"]>;
 };
-type OpportunitycreatedByUserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
+type OpportunityplaceFactory = {
+    _factoryFor: "Place";
+    build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput["create"]>;
 };
 type OpportunityFactoryDefineInput = {
     id?: string;
+    publishStatus?: PublishStatus;
+    requireApproval?: boolean;
     title?: string;
+    category?: OpportunityCategory;
     description?: string;
     body?: string | null;
     image?: string | null;
     files?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
-    publishStatus?: PublishStatus;
-    category?: OpportunityCategory;
-    requireApproval?: boolean;
     pointsToEarn?: number | null;
     feeRequired?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     requiredUtilities?: Prisma.UtilityCreateNestedManyWithoutRequiredForOpportunitiesInput;
-    place?: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput;
     slots?: Prisma.OpportunitySlotCreateNestedManyWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
-    community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
+    community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
+    place?: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput;
 };
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
 type OpportunityFactoryTrait<TTransients extends Record<string, unknown>> = {
@@ -613,6 +614,10 @@ interface OpportunityFactoryBuilder {
  * @returns factory {@link OpportunityFactoryInterface}
  */
 export declare const defineOpportunityFactory: OpportunityFactoryBuilder;
+type OpportunitySlotremainingCapacityViewFactory = {
+    _factoryFor: "RemainingCapacityView";
+    build: () => PromiseLike<Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput["create"]>;
+};
 type OpportunitySlotopportunityFactory = {
     _factoryFor: "Opportunity";
     build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutSlotsInput["create"]>;
@@ -625,6 +630,7 @@ type OpportunitySlotFactoryDefineInput = {
     endsAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
+    remainingCapacityView?: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput;
     opportunity: OpportunitySlotopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutSlotsInput;
     reservations?: Prisma.ReservationCreateNestedManyWithoutOpportunitySlotInput;
 };
@@ -1449,3 +1455,48 @@ interface AccumulatedPointViewFactoryBuilder {
  * @returns factory {@link AccumulatedPointViewFactoryInterface}
  */
 export declare const defineAccumulatedPointViewFactory: AccumulatedPointViewFactoryBuilder;
+type RemainingCapacityViewslotFactory = {
+    _factoryFor: "OpportunitySlot";
+    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutRemainingCapacityViewInput["create"]>;
+};
+type RemainingCapacityViewFactoryDefineInput = {
+    remainingCapacity?: number | null;
+    slot: RemainingCapacityViewslotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutRemainingCapacityViewInput;
+};
+type RemainingCapacityViewTransientFields = Record<string, unknown> & Partial<Record<keyof RemainingCapacityViewFactoryDefineInput, never>>;
+type RemainingCapacityViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<RemainingCapacityViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<RemainingCapacityView, Prisma.RemainingCapacityViewCreateInput, TTransients>;
+type RemainingCapacityViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<RemainingCapacityViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: RemainingCapacityViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<RemainingCapacityView, Prisma.RemainingCapacityViewCreateInput, TTransients>;
+type RemainingCapacityViewTraitKeys<TOptions extends RemainingCapacityViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+export interface RemainingCapacityViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "RemainingCapacityView";
+    build(inputData?: Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>): PromiseLike<Prisma.RemainingCapacityViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>): PromiseLike<Prisma.RemainingCapacityViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>[]): PromiseLike<Prisma.RemainingCapacityViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>): PromiseLike<Prisma.RemainingCapacityViewCreateInput[]>;
+    pickForConnect(inputData: RemainingCapacityView): Pick<RemainingCapacityView, "slotId">;
+    create(inputData?: Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>): PromiseLike<RemainingCapacityView>;
+    createList(list: readonly Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>[]): PromiseLike<RemainingCapacityView[]>;
+    createList(count: number, item?: Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>): PromiseLike<RemainingCapacityView[]>;
+    createForConnect(inputData?: Partial<Prisma.RemainingCapacityViewCreateInput & TTransients>): PromiseLike<Pick<RemainingCapacityView, "slotId">>;
+}
+export interface RemainingCapacityViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends RemainingCapacityViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): RemainingCapacityViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+interface RemainingCapacityViewFactoryBuilder {
+    <TOptions extends RemainingCapacityViewFactoryDefineOptions>(options: TOptions): RemainingCapacityViewFactoryInterface<{}, RemainingCapacityViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends RemainingCapacityViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends RemainingCapacityViewFactoryDefineOptions<TTransients>>(options: TOptions) => RemainingCapacityViewFactoryInterface<TTransients, RemainingCapacityViewTraitKeys<TOptions>>;
+}
+/**
+ * Define factory for {@link RemainingCapacityView} model.
+ *
+ * @param options
+ * @returns factory {@link RemainingCapacityViewFactoryInterface}
+ */
+export declare const defineRemainingCapacityViewFactory: RemainingCapacityViewFactoryBuilder;
