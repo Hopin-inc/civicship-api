@@ -1,32 +1,32 @@
 model Opportunity {
-  id          String  @id @default(cuid())
+  id String @id @default(cuid())
+
+  publishStatus   PublishStatus @default(PUBLIC) @map("publish_status")
+  requireApproval Boolean       @default(false) @map("require_approval")
+
   title       String
+  category    OpportunityCategory
   description String
   body        String?
   image       String?
-  /// [ArrayOfString]
-  files       Json    @default("[]")
+  files       Json                @default("[]") /// [ArrayOfString]
 
-  publishStatus PublishStatus       @default(PUBLIC) @map("publish_status")
-  category      OpportunityCategory
-
-  requireApproval   Boolean   @default(false) @map("require_approval")
   pointsToEarn      Int?      @map("points_to_earn")
   feeRequired       Int?      @map("fee_required")
   requiredUtilities Utility[]
-
-  placeId String? @map("place_id")
-  place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
   slots OpportunitySlot[]
 
   articles Article[] @relation("t_opportunities_on_articles")
 
+  createdBy     String @map("created_by")
+  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  createdBy     String @map("created_by")
-  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  placeId String? @map("place_id")
+  place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
