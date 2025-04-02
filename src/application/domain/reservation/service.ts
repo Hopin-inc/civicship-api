@@ -3,10 +3,11 @@ import { IContext } from "@/types/server";
 import ReservationRepository from "@/application/domain/reservation/data/repository";
 import ReservationConverter from "@/application/domain/reservation/data/converter";
 import ReservationPresenter from "@/application/domain/reservation/presenter";
-import { OpportunityCategory, Prisma, ReservationStatus } from "@prisma/client";
+import { Prisma, ReservationStatus } from "@prisma/client";
 import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import { reservationStatuses } from "@/application/domain/reservation/helper";
+import { PrismaReservation } from "@/application/domain/reservation/data/type";
 
 export default class ReservationService {
   static async fetchReservations(
@@ -22,14 +23,14 @@ export default class ReservationService {
     return ReservationPresenter.query(sliced, hasNextPage);
   }
 
-  static async countUserReservationsByCategory(
+  static async fetchConflictingReservations(
     ctx: IContext,
     userId: string,
-    category: OpportunityCategory,
-    tx: Prisma.TransactionClient,
-  ): Promise<number> {
-    const where = ReservationConverter.countByUserAndOpportunityCategory(userId, category);
-    return ReservationRepository.count(ctx, where, tx);
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<PrismaReservation[]> {
+    const where = ReservationConverter.checkConflict(userId, startsAt, endsAt);
+    return ReservationRepository.checkConflict(ctx, where);
   }
 
   static async findReservation(ctx: IContext, id: string) {
@@ -44,20 +45,6 @@ export default class ReservationService {
     }
 
     return reservation;
-  }
-
-  static async checkConflictBeforeReservation(
-    ctx: IContext,
-    currentUserId: string,
-    slotStartsAt: Date,
-    slotEndsAt: Date,
-  ) {
-    const where = ReservationConverter.checkConflict(currentUserId, slotStartsAt, slotEndsAt);
-    const conflicts = await ReservationRepository.checkConflict(ctx, where);
-
-    if (conflicts.length > 0) {
-      throw new ValidationError("You already have a conflicting reservation.");
-    }
   }
 
   static async createReservation(
