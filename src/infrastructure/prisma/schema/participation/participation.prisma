@@ -4,9 +4,6 @@ model Participation {
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  opportunitySlotId String?          @map("opportunity_slot_id")
-  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id], onDelete: SetNull)
-
   reservationId String?      @map("application_id")
   reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 

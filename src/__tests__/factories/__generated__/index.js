@@ -197,10 +197,6 @@ const modelFieldDefinitions = [{
                 name: "reservations",
                 type: "Reservation",
                 relationName: "OpportunitySlotToReservation"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "OpportunitySlotToParticipation"
             }]
     }, {
         name: "Participation",
@@ -208,10 +204,6 @@ const modelFieldDefinitions = [{
                 name: "user",
                 type: "User",
                 relationName: "ParticipationToUser"
-            }, {
-                name: "opportunitySlot",
-                type: "OpportunitySlot",
-                relationName: "OpportunitySlotToParticipation"
             }, {
                 name: "reservation",
                 type: "Reservation",
@@ -1530,9 +1522,6 @@ exports.defineOpportunitySlotFactory.withTransientFields = defaultTransientField
 function isParticipationuserFactory(x) {
     return x?._factoryFor === "User";
 }
-function isParticipationopportunitySlotFactory(x) {
-    return x?._factoryFor === "OpportunitySlot";
-}
 function isParticipationreservationFactory(x) {
     return x?._factoryFor === "Reservation";
 }
@@ -1583,9 +1572,6 @@ function defineParticipationFactoryInternal({ defaultData: defaultDataResolver, 
                 user: isParticipationuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user,
-                opportunitySlot: isParticipationopportunitySlotFactory(defaultData.opportunitySlot) ? {
-                    create: await defaultData.opportunitySlot.build()
-                } : defaultData.opportunitySlot,
                 reservation: isParticipationreservationFactory(defaultData.reservation) ? {
                     create: await defaultData.reservation.build()
                 } : defaultData.reservation,

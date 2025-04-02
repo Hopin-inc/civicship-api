@@ -3,9 +3,11 @@ import { PrismaParticipationForPortfolio } from "@/application/domain/participat
 export default class ViewService {}
 
 export type ValidParticipationForPortfolio = PrismaParticipationForPortfolio & {
-  opportunitySlot: NonNullable<PrismaParticipationForPortfolio["opportunitySlot"]> & {
+  opportunitySlot: NonNullable<
+    NonNullable<PrismaParticipationForPortfolio["reservation"]>["opportunitySlot"]
+  > & {
     opportunity: NonNullable<
-      NonNullable<PrismaParticipationForPortfolio["opportunitySlot"]>["opportunity"]
+      NonNullable<PrismaParticipationForPortfolio["reservation"]>["opportunitySlot"]["opportunity"]
     >;
   };
 };

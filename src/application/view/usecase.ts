@@ -57,5 +57,5 @@ export default class ViewUseCase {
 function hasSlotAndOpportunity(
   p: PrismaParticipationForPortfolio,
 ): p is ValidParticipationForPortfolio {
-  return !!p.opportunitySlot && !!p.opportunitySlot.opportunity;
+  return !!p.reservation?.opportunitySlot && !!p.reservation?.opportunitySlot.opportunity;
 }

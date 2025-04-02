@@ -10,8 +10,7 @@ model OpportunitySlot {
   opportunityId String      @map("opportunity_id")
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
-  reservations   Reservation[]
-  participations Participation[]
+  reservations Reservation[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

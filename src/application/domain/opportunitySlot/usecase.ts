@@ -59,7 +59,8 @@ export default class OpportunitySlotUseCase {
       );
 
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
-        const participationIds = res.participations?.map((p) => p.id) ?? [];
+        const participationIds =
+          res.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
         await Promise.all([
           ParticipationService.bulkCancelParticipationsByOpportunitySlot(ctx, participationIds, tx),
           ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunitySlot(

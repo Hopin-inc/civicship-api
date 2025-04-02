@@ -17,54 +17,86 @@ export default class ParticipationConverter {
         filter?.userIds ? { userId: { in: filter.userIds } } : {},
         filter?.categories && filter.categories.length
           ? {
-              opportunitySlot: {
-                opportunity: {
-                  category: { in: filter.categories.filter(isOpportunityCategory) },
+              reservation: {
+                opportunitySlot: {
+                  opportunity: {
+                    category: { in: filter.categories.filter(isOpportunityCategory) },
+                  },
                 },
               },
             }
           : {},
         filter?.dateFrom || filter?.dateTo
           ? {
-              opportunitySlot: {
-                startsAt: {
-                  ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
-                  ...(filter.dateTo ? { lte: filter.dateTo } : {}),
+              reservation: {
+                opportunitySlot: {
+                  startsAt: {
+                    ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
+                    ...(filter.dateTo ? { lte: filter.dateTo } : {}),
+                  },
                 },
               },
             }
           : {},
         filter?.cityCodes
           ? {
-              opportunitySlot: {
-                opportunity: { place: { city: { code: { in: filter.cityCodes } } } },
+              reservation: {
+                opportunitySlot: {
+                  opportunity: {
+                    place: {
+                      city: {
+                        code: { in: filter.cityCodes },
+                      },
+                    },
+                  },
+                },
               },
             }
           : {},
         filter?.stateCodes
           ? {
-              opportunitySlot: {
-                opportunity: { place: { city: { state: { code: { in: filter.stateCodes } } } } },
+              reservation: {
+                opportunitySlot: {
+                  opportunity: {
+                    place: {
+                      city: {
+                        state: {
+                          code: { in: filter.stateCodes },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             }
           : {},
-
         filter?.status ? { status: filter.status } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
-        filter?.opportunityId ? { opportunitySlot: { opportunityId: filter.opportunityId } } : {},
-        filter?.opportunitySlotId ? { opportunitySlotId: filter.opportunitySlotId } : {},
+        filter?.opportunityId
+          ? { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } }
+          : {},
+        filter?.opportunitySlotId
+          ? { reservation: { opportunitySlotId: filter.opportunitySlotId } }
+          : {},
         filter?.reservationId ? { reservationId: filter.reservationId } : {},
       ],
     };
   }
 
   static sort(sort?: GqlParticipationSortInput): Prisma.ParticipationOrderByWithRelationInput[] {
-    return [{ opportunitySlot: { startsAt: sort?.startsAt ?? "desc" } }, { createdAt: "desc" }];
+    return [
+      { reservation: { opportunitySlot: { startsAt: sort?.startsAt ?? "desc" } } },
+      { createdAt: "desc" },
+    ];
   }
 
   static countActiveBySlotId(slotId: string): Prisma.ParticipationWhereInput {
     return {
-      opportunitySlotId: slotId,
+      reservation: {
+        opportunitySlot: {
+          id: slotId,
+        },
+      },
       status: {
         notIn: [ParticipationStatus.NOT_PARTICIPATING],
       },

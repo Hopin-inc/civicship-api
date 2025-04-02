@@ -21,7 +21,11 @@ export const opportunitySlotWithParticipationInclude =
         },
       },
     },
-    participations: true,
+    reservations: {
+      include: {
+        participations: true,
+      },
+    },
   });
 
 export type PrismaOpportunitySlot = Prisma.OpportunitySlotGetPayload<{

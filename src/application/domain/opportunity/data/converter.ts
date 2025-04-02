@@ -139,8 +139,20 @@ export default class OpportunityConverter {
 
     if (filter.slotHostingStatus?.length)
       slotConditions.push({ hostingStatus: { in: filter.slotHostingStatus } });
-    if (filter.slotStartsAt) slotConditions.push({ startsAt: { gte: filter.slotStartsAt } });
-    if (filter.slotEndsAt) slotConditions.push({ endsAt: { lte: filter.slotEndsAt } });
+
+    if (filter.slotStartsAt && filter.slotEndsAt) {
+      slotConditions.push({
+        startsAt: { lte: filter.slotEndsAt },
+        endsAt: { gte: filter.slotStartsAt },
+      });
+    } else {
+      if (filter.slotStartsAt) {
+        slotConditions.push({ startsAt: { gte: filter.slotStartsAt } });
+      }
+      if (filter.slotEndsAt) {
+        slotConditions.push({ endsAt: { lte: filter.slotEndsAt } });
+      }
+    }
 
     return slotConditions.length ? [{ slots: { some: { AND: slotConditions } } }] : [];
   }

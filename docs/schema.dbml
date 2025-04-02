@@ -166,7 +166,6 @@ Table t_opportunity_slots {
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
-  participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -175,8 +174,6 @@ Table t_participations {
   id String [pk]
   userId String
   user t_users
-  opportunitySlotId String
-  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   ticketStatusHistories t_ticket_status_histories [not null]
@@ -552,8 +549,6 @@ Ref: t_opportunities.createdBy > t_users.id [delete: Set Null]
 Ref: t_opportunity_slots.opportunityId > t_opportunities.id [delete: Cascade]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
-
-Ref: t_participations.opportunitySlotId > t_opportunity_slots.id [delete: Set Null]
 
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 

@@ -301,7 +301,6 @@ UNKNOWN UNKNOWN
   "t_participations" {
     String id "🗝️"
     String user_id "❓"
-    String opportunity_slot_id "❓"
     String application_id "❓"
     String community_id "❓"
     Source source 
@@ -511,9 +510,7 @@ UNKNOWN UNKNOWN
     "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hostingStatus"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
-    "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_participations" o|--|o "t_users" : "user"
-    "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
