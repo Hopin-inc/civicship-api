@@ -30,7 +30,6 @@ type OpportunityEdge implements Edge {
 # ------------------------------
 input OpportunityFilterInput {
     category: OpportunityCategory
-    hostingStatus: [OpportunitySlotHostingStatus!]
     publishStatus: [PublishStatus!]
 
     communityIds: [ID!]
@@ -40,6 +39,12 @@ input OpportunityFilterInput {
     articleIds: [ID!]
     requiredUtilityIds: [ID!]
 
+    # slot
+    slotHostingStatus: [OpportunitySlotHostingStatus!]
+    slotStartsAt: Datetime
+    slotEndsAt: Datetime
+    slotRemainingCapacity: Int
+
     and: [OpportunityFilterInput!]
     or: [OpportunityFilterInput!]
     not: OpportunityFilterInput
@@ -47,4 +52,5 @@ input OpportunityFilterInput {
 
 input OpportunitySortInput {
     createdAt: SortDirection
+    earliestSlotStartsAt: SortDirection
 }

@@ -1,5 +1,9 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
+import {
+  refreshMaterializedViewRemainingCapacity,
+  refreshMaterializedViewEarliestReservableSlot,
+} from "@prisma/client/sql";
 import { IContext } from "@/types/server";
 import {
   opportunitySlotInclude,
@@ -105,6 +109,24 @@ export default class OpportunitySlotRepository {
   static async deleteMany(ctx: IContext, ids: string[], tx: Prisma.TransactionClient) {
     return tx.opportunitySlot.deleteMany({
       where: { id: { in: ids } },
+    });
+  }
+
+  static async refreshRemainingCapacity(ctx: IContext, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.$queryRawTyped(refreshMaterializedViewRemainingCapacity());
+    }
+    return this.issuer.public(ctx, async (dbTx) => {
+      return dbTx.$queryRawTyped(refreshMaterializedViewRemainingCapacity());
+    });
+  }
+
+  static async refreshEarliestReservableSlot(ctx: IContext, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.$queryRawTyped(refreshMaterializedViewEarliestReservableSlot());
+    }
+    return this.issuer.public(ctx, async (dbTx) => {
+      return dbTx.$queryRawTyped(refreshMaterializedViewEarliestReservableSlot());
     });
   }
 }

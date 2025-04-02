@@ -118,6 +118,9 @@ export default class ReservationUseCase {
         participationIds,
       );
 
+      // refresh view
+      await OpportunitySlotService.refreshSlotViews(ctx, tx);
+
       return reservation;
     });
 
@@ -152,6 +155,9 @@ export default class ReservationUseCase {
 
       await handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
 
+      // refresh view
+      await OpportunitySlotService.refreshSlotViews(ctx, tx);
+
       return ReservationPresenter.setStatus(reservation);
     });
   }
@@ -178,6 +184,9 @@ export default class ReservationUseCase {
         currentUserId,
         tx,
       );
+
+      // refresh view
+      await OpportunitySlotService.refreshSlotViews(ctx, tx);
 
       return res;
     });
@@ -207,6 +216,9 @@ export default class ReservationUseCase {
         tx,
       );
 
+      // refresh view
+      await OpportunitySlotService.refreshSlotViews(ctx, tx);
+
       return reservation;
     });
 
@@ -227,6 +239,7 @@ export default class ReservationUseCase {
         ReservationStatus.REJECTED,
         tx,
       );
+
       await updateManyParticipationByReservationStatusChanged(
         ctx,
         reservation.participations,
@@ -234,6 +247,9 @@ export default class ReservationUseCase {
         ParticipationStatusReason.RESERVATION_REJECTED,
         tx,
       );
+
+      // refresh view
+      await OpportunitySlotService.refreshSlotViews(ctx, tx);
 
       return reservation;
     });

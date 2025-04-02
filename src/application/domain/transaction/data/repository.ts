@@ -35,15 +35,6 @@ export default class TransactionRepository {
     });
   }
 
-  static async checkExisting(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.transaction.findUnique({
-        where: { id },
-        include: transactionInclude,
-      });
-    });
-  }
-
   static async refreshCurrentPoints(ctx: IContext, tx?: Prisma.TransactionClient) {
     if (tx) {
       return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());

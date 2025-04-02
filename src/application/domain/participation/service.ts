@@ -27,11 +27,6 @@ export default class ParticipationService {
     return await ParticipationRepository.count(ctx, where);
   }
 
-  static async countPersonalRecords(ctx: IContext, userId: string, tx?: Prisma.TransactionClient) {
-    const where = ParticipationConverter.countPersonalRecords(userId);
-    return ParticipationRepository.count(ctx, where, tx);
-  }
-
   static async findParticipation(ctx: IContext, id: string) {
     return await ParticipationRepository.find(ctx, id);
   }

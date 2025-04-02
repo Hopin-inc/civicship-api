@@ -134,25 +134,26 @@ Table t_wallets {
 
 Table t_opportunities {
   id String [pk]
+  publishStatus PublishStatus [not null, default: 'PUBLIC']
+  requireApproval Boolean [not null, default: false]
   title String [not null]
+  category OpportunityCategory [not null]
   description String [not null]
   body String
   image String
   files Json [not null, default: '[]', note: '[ArrayOfString]']
-  publishStatus PublishStatus [not null, default: 'PUBLIC']
-  category OpportunityCategory [not null]
-  requireApproval Boolean [not null, default: false]
   pointsToEarn Int
   feeRequired Int
   requiredUtilities t_utilities [not null]
-  placeId String
-  place t_places
   slots t_opportunity_slots [not null]
+  earliestReservableSlotView mv_earliest_reservable_slot
   articles t_articles [not null]
-  communityId String
-  community t_communities
   createdBy String [not null]
   createdByUser t_users [not null]
+  communityId String
+  community t_communities
+  placeId String
+  place t_places
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -161,12 +162,12 @@ Table t_opportunity_slots {
   id String [pk]
   hostingStatus OpportunitySlotHostingStatus [not null, default: 'SCHEDULED']
   capacity Int
+  remainingCapacityView mv_slot_remaining_capacity
   startsAt DateTime [not null]
   endsAt DateTime [not null]
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
-  participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -175,8 +176,6 @@ Table t_participations {
   id String [pk]
   userId String
   user t_users
-  opportunitySlotId String
-  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   ticketStatusHistories t_ticket_status_histories [not null]
@@ -370,6 +369,18 @@ Table mv_accumulated_points {
   wallet t_wallets [not null]
 }
 
+Table mv_earliest_reservable_slot {
+  opportunityId String [pk]
+  earliestReservableAt DateTime
+  opportunity t_opportunities [not null]
+}
+
+Table mv_slot_remaining_capacity {
+  slotId String [pk]
+  remainingCapacity Int
+  slot t_opportunity_slots [not null]
+}
+
 Table t_author_users_on_articles {
   authorsId String [ref: > t_users.id]
   articleswrittenbymeId String [ref: > t_articles.id]
@@ -543,17 +554,15 @@ Ref: t_wallets.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_wallets.userId > t_users.id [delete: Set Null]
 
-Ref: t_opportunities.placeId > t_places.id [delete: Restrict]
+Ref: t_opportunities.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_opportunities.communityId > t_communities.id [delete: Cascade]
 
-Ref: t_opportunities.createdBy > t_users.id [delete: Set Null]
+Ref: t_opportunities.placeId > t_places.id [delete: Restrict]
 
 Ref: t_opportunity_slots.opportunityId > t_opportunities.id [delete: Cascade]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
-
-Ref: t_participations.opportunitySlotId > t_opportunity_slots.id [delete: Set Null]
 
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
@@ -602,3 +611,7 @@ Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 Ref: mv_current_points.walletId - t_wallets.id
 
 Ref: mv_accumulated_points.walletId - t_wallets.id
+
+Ref: mv_earliest_reservable_slot.opportunityId - t_opportunities.id
+
+Ref: mv_slot_remaining_capacity.slotId - t_opportunity_slots.id

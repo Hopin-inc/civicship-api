@@ -32,9 +32,15 @@ type Opportunity {
         cursor: String
         first: Int
     ): OpportunitySlotsConnection @complexity(value: 5, multipliers: ["first"])
+    earliestReservableSlotView: EarliestReservableSlotView
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+type EarliestReservableSlotView{
+    opportunityId: ID!
+    earliestReservableAt: Datetime
 }
 
 # ------------------------------

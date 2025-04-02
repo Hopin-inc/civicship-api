@@ -1,8 +1,9 @@
 model OpportunitySlot {
   id String @id @default(cuid())
 
-  hostingStatus OpportunitySlotHostingStatus @default(SCHEDULED)
-  capacity      Int?
+  hostingStatus         OpportunitySlotHostingStatus @default(SCHEDULED)
+  capacity              Int?
+  remainingCapacityView RemainingCapacityView?
 
   startsAt DateTime @map("starts_at")
   endsAt   DateTime @map("ends_at")
@@ -10,8 +11,7 @@ model OpportunitySlot {
   opportunityId String      @map("opportunity_id")
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
-  reservations   Reservation[]
-  participations Participation[]
+  reservations Reservation[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -23,4 +23,13 @@ enum OpportunitySlotHostingStatus {
   SCHEDULED
   CANCELLED
   COMPLETED
+}
+
+view RemainingCapacityView {
+  slotId            String @id @map("slot_id")
+  remainingCapacity Int?   @map("remaining_capacity")
+
+  slot OpportunitySlot @relation(fields: [slotId], references: [id])
+
+  @@map("mv_slot_remaining_capacity")
 }

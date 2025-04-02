@@ -22,8 +22,8 @@ export default class ViewPresenter {
   }
 
   static getFromParticipation(p: ValidParticipationForPortfolio): GqlPortfolio {
-    const { opportunitySlot, images } = p;
-    const { opportunity, participations, startsAt } = opportunitySlot;
+    const { opportunitySlot, reservation, images } = p;
+    const { opportunity, startsAt } = opportunitySlot;
     const place = opportunity.place;
 
     return {
@@ -34,8 +34,8 @@ export default class ViewPresenter {
       date: startsAt,
       place: place ? PlacePresenter.get(place) : null,
       thumbnailUrl: images?.[0]?.url ?? opportunity.image,
-      participants: participations
-        ? participations
+      participants: reservation?.participations
+        ? reservation.participations
             .map((p) => p.user)
             .filter((user): user is NonNullable<typeof user> => user !== null)
             .map((user) => UserPresenter.get(user))

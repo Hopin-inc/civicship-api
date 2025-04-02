@@ -49,7 +49,7 @@ export default class EvaluationService {
 
   static validateParticipationHasOpportunity(evaluation: PrismaEvaluation) {
     const participation = evaluation.participation;
-    const opportunity = participation?.opportunitySlot?.opportunity;
+    const opportunity = participation?.reservation?.opportunitySlot?.opportunity;
 
     if (!participation || !opportunity) {
       throw new ValidationError("Participation or Opportunity not found for evaluation", [

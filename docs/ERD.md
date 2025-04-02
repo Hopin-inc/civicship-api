@@ -267,27 +267,27 @@ UNKNOWN UNKNOWN
   
 
   "t_opportunities" {
-    String id "🗝️"
+    String opportunity_id "🗝️"
+    PublishStatus publish_status 
+    Boolean require_approval 
     String title 
+    OpportunityCategory category 
     String description 
     String body "❓"
     String image "❓"
     Json files 
-    PublishStatus publish_status 
-    OpportunityCategory category 
-    Boolean require_approval 
     Int points_to_earn "❓"
     Int fee_required "❓"
-    String place_id "❓"
-    String community_id "❓"
     String created_by 
+    String community_id "❓"
+    String place_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
   
 
   "t_opportunity_slots" {
-    String id "🗝️"
+    String slot_id "🗝️"
     OpportunitySlotHostingStatus hostingStatus 
     Int capacity "❓"
     DateTime starts_at 
@@ -301,7 +301,6 @@ UNKNOWN UNKNOWN
   "t_participations" {
     String id "🗝️"
     String user_id "❓"
-    String opportunity_slot_id "❓"
     String application_id "❓"
     String community_id "❓"
     Source source 
@@ -458,6 +457,18 @@ UNKNOWN UNKNOWN
     Int accumulatedPoint 
     }
   
+
+  "mv_earliest_reservable_slot" {
+    String opportunityId "🗝️"
+    DateTime earliestReservableAt "❓"
+    }
+  
+
+  "mv_slot_remaining_capacity" {
+    String slotId "🗝️"
+    Int remainingCapacity "❓"
+    }
+  
     "t_articles" o|--|| "ArticleCategory" : "enum:category"
     "t_articles" o|--|| "PublishStatus" : "enum:publish_status"
     "t_articles" o|--|| "t_communities" : "community"
@@ -503,17 +514,17 @@ UNKNOWN UNKNOWN
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
-    "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
+    "t_opportunities" o{--}o "mv_earliest_reservable_slot" : "earliestReservableSlotView"
     "t_opportunities" o{--}o "t_articles" : "articles"
-    "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
+    "t_opportunities" o|--|o "t_communities" : "community"
+    "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hostingStatus"
+    "t_opportunity_slots" o{--}o "mv_slot_remaining_capacity" : "remainingCapacityView"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
-    "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_participations" o|--|o "t_users" : "user"
-    "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
@@ -580,4 +591,6 @@ UNKNOWN UNKNOWN
     "t_utilities" o{--}o "t_tickets" : "tickets"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
+    "mv_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
+    "mv_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
 ```
