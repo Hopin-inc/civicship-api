@@ -16,6 +16,8 @@ type Participation {
     description: String
     images: JSON
 
+    ticketStatusHistories: [TicketStatusHistory!]
+
     statusHistories(
         filter: ParticipationStatusHistoryFilterInput
         sort: ParticipationStatusHistorySortInput

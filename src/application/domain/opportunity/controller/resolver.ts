@@ -40,6 +40,9 @@ const opportunityResolver = {
     ) => OpportunityUseCase.managerSetOpportunityPublishStatus(args, ctx),
   },
   Opportunity: {
+    isReservableWithTicket: async (parent: GqlOpportunity, _, ctx: IContext) => {
+      return OpportunityUseCase.checkUserHasValidTicketForOpportunity(ctx, parent.id);
+    },
     slots: async (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
       return OpportunitySlotUseCase.visitorBrowseOpportunitySlots(
         {

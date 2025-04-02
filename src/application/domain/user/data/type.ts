@@ -7,6 +7,21 @@ export const userAuthSelect = Prisma.validator<Prisma.UserSelect>()({
       communityId: true,
     },
   },
+  participations: {
+    select: {
+      ticketStatusHistories: {
+        select: {
+          ticket: {
+            select: {
+              status: true,
+              reason: true,
+              utilityId: true,
+            },
+          },
+        },
+      },
+    },
+  },
   opportunitiesCreatedByMe: {
     select: {
       id: true,
