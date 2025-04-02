@@ -972,12 +972,14 @@ export type GqlOpportunityFilterInput = {
   cityCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  hostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   not?: InputMaybe<GqlOpportunityFilterInput>;
   or?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  slotEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  slotHostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
+  slotStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
 export type GqlOpportunitySetPublishStatusInput = {
