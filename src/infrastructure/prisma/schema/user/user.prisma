@@ -14,8 +14,7 @@ model User {
 
   currentPrefecture CurrentPrefecture
 
-  onboardings Onboarding[]
-  identities  Identity[]
+  identities Identity[]
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]

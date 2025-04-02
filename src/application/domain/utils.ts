@@ -1,10 +1,6 @@
 import { IContext } from "@/types/server";
-import { Prisma, Role, Todo, TransactionReason } from "@prisma/client";
+import { Role } from "@prisma/client";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
-import OnboardingService from "@/application/domain/onboarding/service";
-import { initialCommunityId } from "@/consts/utils";
-import TransactionService from "@/application/domain/transaction/service";
-import WalletValidator from "@/application/domain/membership/wallet/validator";
 
 export function getCurrentUserId(ctx: IContext): string {
   const currentUserId = ctx.currentUser?.id;
@@ -21,41 +17,6 @@ export function clampFirst(first: number | null | undefined): number {
   }
 
   return first ?? 10;
-}
-
-export async function runOnboardingReward(
-  ctx: IContext,
-  userId: string,
-  todo: Todo,
-  rewardPoint: number,
-  tx: Prisma.TransactionClient,
-  shouldSetDone: boolean = true,
-): Promise<void> {
-  const onboarding = await OnboardingService.findOnboardingTodoOrThrow(ctx, userId, todo, tx);
-
-  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
-    ctx,
-    tx,
-    initialCommunityId,
-    userId,
-    rewardPoint,
-    TransactionReason.ONBOARDING,
-  );
-
-  await TransactionService.giveOnboardingPoint(
-    ctx,
-    {
-      fromWalletId,
-      fromPointChange: -rewardPoint,
-      toWalletId,
-      toPointChange: rewardPoint,
-    },
-    tx,
-  );
-
-  if (shouldSetDone) {
-    await OnboardingService.setDone(ctx, onboarding.id, tx);
-  }
 }
 
 export function getMembershipRolesByCtx(

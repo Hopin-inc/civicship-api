@@ -11,11 +11,9 @@ import {
 import { IContext } from "@/types/server";
 import ParticipationService from "@/application/domain/participation/service";
 import ParticipationPresenter from "@/application/domain/participation/presenter";
-import { clampFirst, getCurrentUserId, runOnboardingReward } from "@/application/domain/utils";
+import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationImageService from "@/application/domain/participation/image/service";
-import { maxOnboardingRecords, OnboardingTodoPoints } from "@/consts/utils";
-import { Todo } from "@prisma/client";
 import { participationInclude } from "@/application/domain/participation/data/type";
 
 export default class ParticipationUseCase {
@@ -71,31 +69,6 @@ export default class ParticipationUseCase {
         participation.id,
         tx,
       );
-
-      const personalLogCount = await ParticipationService.countPersonalRecords(
-        ctx,
-        currentUserId,
-        tx,
-      );
-      if (personalLogCount < maxOnboardingRecords) {
-        await runOnboardingReward(
-          ctx,
-          currentUserId,
-          Todo.PERSONAL_RECORD,
-          OnboardingTodoPoints.PERSONAL_RECORD,
-          tx,
-          false,
-        );
-      } else if (personalLogCount === maxOnboardingRecords) {
-        await runOnboardingReward(
-          ctx,
-          currentUserId,
-          Todo.PERSONAL_RECORD,
-          OnboardingTodoPoints.PERSONAL_RECORD,
-          tx,
-          true,
-        );
-      }
 
       return participation;
     });

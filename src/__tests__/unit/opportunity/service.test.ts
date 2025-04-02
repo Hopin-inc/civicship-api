@@ -2,7 +2,7 @@ import OpportunityRepository from "@/application/domain/opportunity/data/reposit
 import OpportunityConverter from "@/application/domain/opportunity/data/converter";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { IContext } from "@/types/server";
-import { PublishStatus, OpportunityHostingStatus, OpportunityCategory } from "@prisma/client";
+import { PublishStatus, OpportunityCategory } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import OpportunityService from "@/application/domain/opportunity/service";
 import { GqlOpportunityUpdateContentInput } from "@/types/graphql";
@@ -208,29 +208,6 @@ describe("OpportunityService", () => {
         PublishStatus.PUBLIC,
       );
       expect(result).toMatchObject({ id: "opp-123", status: PublishStatus.PUBLIC });
-    });
-  });
-
-  describe("setOpportunityHostingStatus", () => {
-    it("should set hosting status if found", async () => {
-      (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
-      (OpportunityRepository.setHostingStatus as jest.Mock).mockResolvedValue({
-        id: "opp-123",
-        status: OpportunityHostingStatus.CANCELLED,
-      });
-
-      const result = await OpportunityService.setOpportunityHostingStatus(
-        mockCtx,
-        "opp-123",
-        OpportunityHostingStatus.CANCELLED,
-      );
-
-      expect(OpportunityRepository.setHostingStatus).toHaveBeenCalledWith(
-        mockCtx,
-        "opp-123",
-        OpportunityHostingStatus.CANCELLED,
-      );
-      expect(result).toMatchObject({ id: "opp-123", status: OpportunityHostingStatus.CANCELLED });
     });
   });
 });

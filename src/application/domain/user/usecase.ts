@@ -9,9 +9,7 @@ import {
 import UserService from "@/application/domain/user/service";
 import UserPresenter from "@/application/domain/user/presenter";
 import { IContext } from "@/types/server";
-import { clampFirst, runOnboardingReward } from "@/application/domain/utils";
-import { Todo } from "@prisma/client";
-import { OnboardingTodoPoints } from "@/consts/utils";
+import { clampFirst } from "@/application/domain/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class UserUseCase {
@@ -45,14 +43,7 @@ export default class UserUseCase {
     args: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
     const user = await this.issuer.public(ctx, async (tx) => {
-      const user = await UserService.updateProfile(ctx, args, tx);
-
-      const isProfileComplete = await UserService.hasProfileCompleted(user);
-      if (isProfileComplete) {
-        await runOnboardingReward(ctx, user.id, Todo.PROFILE, OnboardingTodoPoints.PROFILE, tx);
-      }
-
-      return user;
+      return await UserService.updateProfile(ctx, args, tx);
     });
 
     return UserPresenter.updateProfile(user);
