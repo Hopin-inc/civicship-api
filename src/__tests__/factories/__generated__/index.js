@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineReservationHistoryFactory = exports.defineReservationFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineOnboardingFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineEvaluationHistoryFactory = exports.defineEvaluationFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
+exports.defineAccumulatedPointViewFactory = exports.defineCurrentPointViewFactory = exports.defineUtilityFactory = exports.defineUserFactory = exports.defineIdentityFactory = exports.defineTransactionFactory = exports.defineTicketStatusHistoryFactory = exports.defineTicketFactory = exports.defineReservationHistoryFactory = exports.defineReservationFactory = exports.definePlaceFactory = exports.defineParticipationStatusHistoryFactory = exports.defineParticipationImageFactory = exports.defineParticipationFactory = exports.defineOpportunitySlotFactory = exports.defineOpportunityFactory = exports.defineWalletFactory = exports.defineMembershipHistoryFactory = exports.defineMembershipFactory = exports.defineStateFactory = exports.defineCityFactory = exports.defineEvaluationHistoryFactory = exports.defineEvaluationFactory = exports.defineCommunityFactory = exports.defineArticleFactory = exports.initialize = exports.resetScalarFieldValueGenerator = exports.registerScalarFieldValueGenerator = exports.resetSequence = void 0;
 const internal_1 = require("@quramy/prisma-fabbrica/lib/internal");
 var internal_2 = require("@quramy/prisma-fabbrica/lib/internal");
 Object.defineProperty(exports, "resetSequence", { enumerable: true, get: function () { return internal_2.resetSequence; } });
@@ -159,13 +159,6 @@ const modelFieldDefinitions = [{
                 name: "tickets",
                 type: "Ticket",
                 relationName: "TicketToWallet"
-            }]
-    }, {
-        name: "Onboarding",
-        fields: [{
-                name: "user",
-                type: "User",
-                relationName: "OnboardingToUser"
             }]
     }, {
         name: "Opportunity",
@@ -374,10 +367,6 @@ const modelFieldDefinitions = [{
     }, {
         name: "User",
         fields: [{
-                name: "onboardings",
-                type: "Onboarding",
-                relationName: "OnboardingToUser"
-            }, {
                 name: "identities",
                 type: "Identity",
                 relationName: "IdentityToUser"
@@ -1337,97 +1326,6 @@ exports.defineWalletFactory = ((options) => {
     return defineWalletFactoryInternal(options, {});
 });
 exports.defineWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineWalletFactoryInternal(options, defaultTransientFieldValues);
-function isOnboardinguserFactory(x) {
-    return x?._factoryFor === "User";
-}
-function autoGenerateOnboardingScalarsOrEnums({ seq }) {
-    return {};
-}
-function defineOnboardingFactoryInternal({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }, defaultTransientFieldValues) {
-    const getFactoryWithTraits = (traitKeys = []) => {
-        const seqKey = {};
-        const getSeq = () => (0, internal_1.getSequenceCounter)(seqKey);
-        const screen = (0, internal_1.createScreener)("Onboarding", modelFieldDefinitions);
-        const handleAfterBuild = (0, internal_1.createCallbackChain)([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = (0, internal_1.createCallbackChain)([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = (0, internal_1.createCallbackChain)([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateOnboardingScalarsOrEnums({ seq });
-            const resolveValue = (0, internal_1.normalizeResolver)(defaultDataResolver);
-            const [transientFields, filteredInputData] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = (0, internal_1.normalizeResolver)(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                user: isOnboardinguserFactory(defaultData.user) ? {
-                    create: await defaultData.user.build()
-                } : defaultData.user
-            };
-            const data = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => build(data)));
-        const pickForConnect = (inputData) => ({
-            id: inputData.id
-        });
-        const create = async (inputData = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = (0, internal_1.destructure)(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient().onboarding.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args) => Promise.all((0, internal_1.normalizeList)(...args).map(data => create(data)));
-        const createForConnect = (inputData = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Onboarding",
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name, ...names) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-/**
- * Define factory for {@link Onboarding} model.
- *
- * @param options
- * @returns factory {@link OnboardingFactoryInterface}
- */
-exports.defineOnboardingFactory = ((options) => {
-    return defineOnboardingFactoryInternal(options, {});
-});
-exports.defineOnboardingFactory.withTransientFields = defaultTransientFieldValues => options => defineOnboardingFactoryInternal(options, defaultTransientFieldValues);
 function isOpportunityplaceFactory(x) {
     return x?._factoryFor === "Place";
 }

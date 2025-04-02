@@ -67,22 +67,6 @@ MEMBER MEMBER
     
 
 
-        Todo {
-            PROFILE PROFILE
-PERSONAL_RECORD PERSONAL_RECORD
-FIRST_ACTIVITY FIRST_ACTIVITY
-FIRST_QUEST FIRST_QUEST
-        }
-    
-
-
-        OnboardingStatus {
-            WIP WIP
-DONE DONE
-        }
-    
-
-
         OpportunityCategory {
             QUEST QUEST
 EVENT EVENT
@@ -277,17 +261,6 @@ UNKNOWN UNKNOWN
     WalletType type 
     String community_id 
     String user_id "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_onboardings" {
-    String id "🗝️"
-    Todo todo 
-    OnboardingStatus status 
-    String user_id 
-    DateTime completed_at "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -527,9 +500,6 @@ UNKNOWN UNKNOWN
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
     "t_wallets" o{--}o "t_tickets" : "tickets"
-    "t_onboardings" o|--|| "Todo" : "enum:todo"
-    "t_onboardings" o|--|| "OnboardingStatus" : "enum:status"
-    "t_onboardings" o|--|| "t_users" : "user"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
@@ -590,7 +560,6 @@ UNKNOWN UNKNOWN
     "t_identities" o|--|| "t_users" : "user"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:currentPrefecture"
-    "t_users" o{--}o "t_onboardings" : "onboardings"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"

@@ -7,7 +7,6 @@ import type { State } from "@prisma/client";
 import type { Membership } from "@prisma/client";
 import type { MembershipHistory } from "@prisma/client";
 import type { Wallet } from "@prisma/client";
-import type { Onboarding } from "@prisma/client";
 import type { Opportunity } from "@prisma/client";
 import type { OpportunitySlot } from "@prisma/client";
 import type { Participation } from "@prisma/client";
@@ -31,8 +30,6 @@ import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
 import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
-import type { Todo } from "@prisma/client";
-import type { OnboardingStatus } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { OpportunitySlotHostingStatus } from "@prisma/client";
 import type { Source } from "@prisma/client";
@@ -546,56 +543,6 @@ interface WalletFactoryBuilder {
  * @returns factory {@link WalletFactoryInterface}
  */
 export declare const defineWalletFactory: WalletFactoryBuilder;
-type OnboardinguserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOnboardingsInput["create"]>;
-};
-type OnboardingFactoryDefineInput = {
-    id?: string;
-    todo?: Todo;
-    status?: OnboardingStatus;
-    completedAt?: Date | null;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    user: OnboardinguserFactory | Prisma.UserCreateNestedOneWithoutOnboardingsInput;
-};
-type OnboardingTransientFields = Record<string, unknown> & Partial<Record<keyof OnboardingFactoryDefineInput, never>>;
-type OnboardingFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<OnboardingFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Onboarding, Prisma.OnboardingCreateInput, TTransients>;
-type OnboardingFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<OnboardingFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: OnboardingFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Onboarding, Prisma.OnboardingCreateInput, TTransients>;
-type OnboardingTraitKeys<TOptions extends OnboardingFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-export interface OnboardingFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Onboarding";
-    build(inputData?: Partial<Prisma.OnboardingCreateInput & TTransients>): PromiseLike<Prisma.OnboardingCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.OnboardingCreateInput & TTransients>): PromiseLike<Prisma.OnboardingCreateInput>;
-    buildList(list: readonly Partial<Prisma.OnboardingCreateInput & TTransients>[]): PromiseLike<Prisma.OnboardingCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.OnboardingCreateInput & TTransients>): PromiseLike<Prisma.OnboardingCreateInput[]>;
-    pickForConnect(inputData: Onboarding): Pick<Onboarding, "id">;
-    create(inputData?: Partial<Prisma.OnboardingCreateInput & TTransients>): PromiseLike<Onboarding>;
-    createList(list: readonly Partial<Prisma.OnboardingCreateInput & TTransients>[]): PromiseLike<Onboarding[]>;
-    createList(count: number, item?: Partial<Prisma.OnboardingCreateInput & TTransients>): PromiseLike<Onboarding[]>;
-    createForConnect(inputData?: Partial<Prisma.OnboardingCreateInput & TTransients>): PromiseLike<Pick<Onboarding, "id">>;
-}
-export interface OnboardingFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends OnboardingFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): OnboardingFactoryInterfaceWithoutTraits<TTransients>;
-}
-interface OnboardingFactoryBuilder {
-    <TOptions extends OnboardingFactoryDefineOptions>(options: TOptions): OnboardingFactoryInterface<{}, OnboardingTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends OnboardingTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends OnboardingFactoryDefineOptions<TTransients>>(options: TOptions) => OnboardingFactoryInterface<TTransients, OnboardingTraitKeys<TOptions>>;
-}
-/**
- * Define factory for {@link Onboarding} model.
- *
- * @param options
- * @returns factory {@link OnboardingFactoryInterface}
- */
-export declare const defineOnboardingFactory: OnboardingFactoryBuilder;
 type OpportunityplaceFactory = {
     _factoryFor: "Place";
     build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput["create"]>;
@@ -1312,7 +1259,6 @@ type UserFactoryDefineInput = {
     currentPrefecture?: CurrentPrefecture;
     createdAt?: Date;
     updatedAt?: Date | null;
-    onboardings?: Prisma.OnboardingCreateNestedManyWithoutUserInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;

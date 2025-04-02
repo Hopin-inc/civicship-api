@@ -139,7 +139,11 @@ describe("ParticipationService", () => {
         mockResult,
       );
 
-      const result = await ParticipationService.bulkCancelParticipationsByOpportunity(ctx, ids, tx);
+      const result = await ParticipationService.bulkCancelParticipationsByOpportunitySlot(
+        ctx,
+        ids,
+        tx,
+      );
 
       expect(ParticipationRepository.bulkSetParticipationStatus).toHaveBeenCalledWith(
         ctx,

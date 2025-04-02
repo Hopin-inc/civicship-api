@@ -30,7 +30,7 @@ describe("User Integration Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     };
 
-    const inserted = await TestDataSourceHelper.create(createUserInput);
+    const inserted = await TestDataSourceHelper.createUser(createUserInput);
 
     //////////////////////////////////////////////////
     // constract request

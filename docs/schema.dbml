@@ -132,17 +132,6 @@ Table t_wallets {
   tickets t_tickets [not null]
 }
 
-Table t_onboardings {
-  id String [pk]
-  todo Todo [not null, default: 'PROFILE']
-  status OnboardingStatus [not null, default: 'WIP']
-  userId String [not null]
-  user t_users [not null]
-  completedAt DateTime
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
 Table t_opportunities {
   id String [pk]
   title String [not null]
@@ -336,7 +325,6 @@ Table t_users {
   urlYoutube String
   urlTiktok String
   currentPrefecture CurrentPrefecture [not null]
-  onboardings t_onboardings [not null]
   identities t_identities [not null]
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
@@ -452,18 +440,6 @@ Enum WalletType {
   MEMBER
 }
 
-Enum Todo {
-  PROFILE
-  PERSONAL_RECORD
-  FIRST_ACTIVITY
-  FIRST_QUEST
-}
-
-Enum OnboardingStatus {
-  WIP
-  DONE
-}
-
 Enum OpportunityCategory {
   QUEST
   EVENT
@@ -566,8 +542,6 @@ Ref: t_membership_histories.createdBy > t_users.id [delete: Set Null]
 Ref: t_wallets.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_wallets.userId > t_users.id [delete: Set Null]
-
-Ref: t_onboardings.userId > t_users.id [delete: Cascade]
 
 Ref: t_opportunities.placeId > t_places.id [delete: Restrict]
 
