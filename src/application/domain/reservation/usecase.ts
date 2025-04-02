@@ -74,16 +74,22 @@ export default class ReservationUseCase {
     );
     const { opportunity } = slot;
 
-    await ReservationService.checkConflictBeforeReservation(
+    // 重複予約チェック + 定員チェック
+    const reservationExists = await ReservationService.fetchConflictingReservations(
       ctx,
       currentUserId,
       slot.startsAt,
       slot.endsAt,
     );
     const currentCount = await ParticipationService.countActiveParticipantsBySlotId(ctx, slot.id);
-    ReservationValidator.validateCapacity(slot.capacity, input.participantCount, currentCount);
 
-    const statuses = resolveReservationStatuses(opportunity.requireApproval);
+    // 予約可能性のバリデーション（開催前・キャンセル済み・満員など）
+    ReservationValidator.validateReservable(
+      slot,
+      input.participantCount,
+      currentCount,
+      reservationExists,
+    );
 
     const { communityId, requiredUtilities } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
@@ -92,7 +98,7 @@ export default class ReservationUseCase {
       await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
-      // await rewardOnboardingPointsIfFirstReservation(ctx, currentUserId, category, tx);
+      const statuses = resolveReservationStatuses(opportunity.requireApproval);
       const reservation = await ReservationService.createReservation(
         ctx,
         input.opportunitySlotId,
