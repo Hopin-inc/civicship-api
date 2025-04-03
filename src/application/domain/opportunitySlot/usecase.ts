@@ -16,6 +16,8 @@ import { clampFirst } from "@/application/domain/utils";
 import { OpportunitySlotHostingStatus } from "@prisma/client";
 import ParticipationService from "@/application/domain/participation/service";
 import ParticipationStatusHistoryService from "@/application/domain/participation/statusHistory/service";
+import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/opportunitySlot/data/type";
+import NotificationService from "@/application/domain/notification/service";
 
 export default class OpportunitySlotUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -50,8 +52,10 @@ export default class OpportunitySlotUseCase {
     { id, input }: GqlMutationOpportunitySlotSetHostingStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotSetHostingStatusPayload> {
-    return this.issuer.public(ctx, async (tx) => {
-      const res = await OpportunitySlotService.setOpportunitySlotHostingStatus(
+    let cancelledSlot: PrismaOpportunitySlotWithParticipation | null = null;
+
+    const res = await this.issuer.public(ctx, async (tx) => {
+      const slot = await OpportunitySlotService.setOpportunitySlotHostingStatus(
         ctx,
         id,
         input.status,
@@ -60,7 +64,8 @@ export default class OpportunitySlotUseCase {
 
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
         const participationIds =
-          res.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
+          slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
+
         await Promise.all([
           ParticipationService.bulkCancelParticipationsByOpportunitySlot(ctx, participationIds, tx),
           ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunitySlot(
@@ -69,10 +74,18 @@ export default class OpportunitySlotUseCase {
             tx,
           ),
         ]);
+
+        cancelledSlot = slot;
       }
 
-      return OpportunitySlotPresenter.setHostingStatus(res);
+      return slot;
     });
+
+    if (cancelledSlot) {
+      await NotificationService.pushCancelOpportunitySlotMessage(ctx, cancelledSlot);
+    }
+
+    return OpportunitySlotPresenter.setHostingStatus(res);
   }
 
   static async managerBulkUpdateOpportunitySlots(

@@ -23,7 +23,15 @@ export const opportunitySlotWithParticipationInclude =
     },
     reservations: {
       include: {
-        participations: true,
+        participations: {
+          include: {
+            user: {
+              include: {
+                identities: true,
+              },
+            },
+          },
+        },
       },
     },
   });
