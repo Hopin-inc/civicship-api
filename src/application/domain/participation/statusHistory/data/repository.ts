@@ -48,10 +48,18 @@ export default class ParticipationStatusHistoryRepository {
   static async createMany(
     ctx: IContext,
     data: Prisma.ParticipationStatusHistoryCreateManyInput[],
-    tx: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient,
   ) {
-    return tx.participationStatusHistory.createMany({
-      data,
-    });
+    if (tx) {
+      return tx.participationStatusHistory.createMany({
+        data,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) =>
+        dbTx.participationStatusHistory.createMany({
+          data,
+        }),
+      );
+    }
   }
 }
