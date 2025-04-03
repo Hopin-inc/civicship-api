@@ -66,7 +66,7 @@ export default class ParticipationStatusHistoryService {
     participationIds: string[],
     status: ParticipationStatus,
     reason: ParticipationStatusReason,
-    tx: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data = ParticipationStatusHistoryConverter.createMany(
