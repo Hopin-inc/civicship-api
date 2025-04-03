@@ -1,7 +1,7 @@
 model OpportunitySlot {
   id String @id @default(cuid())
 
-  hostingStatus         OpportunitySlotHostingStatus @default(SCHEDULED)
+  hostingStatus         OpportunitySlotHostingStatus @default(SCHEDULED) @map("hosting_status")
   capacity              Int?
   remainingCapacityView RemainingCapacityView?
 
