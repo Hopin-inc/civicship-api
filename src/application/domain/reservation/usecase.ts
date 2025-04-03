@@ -74,12 +74,11 @@ export default class ReservationUseCase {
     );
     const { opportunity } = slot;
 
-    // 重複予約チェック + 定員チェック
+    // 重複チェック
     const reservationExists = await ReservationService.fetchConflictingReservations(
       ctx,
       currentUserId,
-      slot.startsAt,
-      slot.endsAt,
+      slot.id,
     );
 
     // 予約可能性のバリデーション（開催前・キャンセル済み・満員など）
@@ -121,7 +120,6 @@ export default class ReservationUseCase {
     });
 
     await NotificationService.pushReservationAppliedMessage(ctx, reservation);
-
     return ReservationPresenter.create(reservation);
   }
 

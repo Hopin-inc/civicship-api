@@ -26,10 +26,9 @@ export default class ReservationService {
   static async fetchConflictingReservations(
     ctx: IContext,
     userId: string,
-    startsAt: Date,
-    endsAt: Date,
+    slotId: string,
   ): Promise<PrismaReservation[]> {
-    const where = ReservationConverter.checkConflict(userId, startsAt, endsAt);
+    const where = ReservationConverter.checkConflict(userId, slotId);
     return ReservationRepository.checkConflict(ctx, where);
   }
 
