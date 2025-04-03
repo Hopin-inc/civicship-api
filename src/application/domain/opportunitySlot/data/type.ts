@@ -24,6 +24,7 @@ export const opportunitySlotWithParticipationInclude =
         createdByUser: { include: userInclude },
       },
     },
+    remainingCapacityView: true,
     reservations: {
       include: {
         participations: {

@@ -9,8 +9,14 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
         include: {
           createdByUser: { include: userInclude },
           place: true,
+          requiredUtilities: {
+            include: {
+              community: true,
+            },
+          },
         },
       },
+      remainingCapacityView: true,
     },
   },
   createdByUser: { include: userInclude },
