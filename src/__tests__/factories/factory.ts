@@ -1,6 +1,7 @@
 import {
   CurrentPrefecture,
   EvaluationStatus,
+  IdentityPlatform,
   MembershipStatus,
   MembershipStatusReason,
   OpportunityCategory,
@@ -21,6 +22,7 @@ import {
   defineCommunityFactory,
   defineEvaluationFactory,
   defineEvaluationHistoryFactory,
+  defineIdentityFactory,
   defineMembershipFactory,
   defineOpportunityFactory,
   defineOpportunitySlotFactory,
@@ -53,6 +55,13 @@ export const UserFactory = defineUserFactory({
   }),
 });
 
+export const IdentityFactory = defineIdentityFactory({
+  defaultData: () => ({
+    platform: randomEnum(IdentityPlatform),
+    user: UserFactory,
+  }),
+});
+
 export const CommunityFactory = defineCommunityFactory({
   defaultData: () => ({
     name: randAnimal(),
@@ -71,16 +80,17 @@ export const MembershipFactory = defineMembershipFactory.withTransientFields<{
     user: UserFactory,
     community: CommunityFactory,
     status: transientStatus ?? randomEnum(MembershipStatus),
+    reason: transientReason ?? randomEnum(MembershipStatusReason),
     role: transientRole ?? randomEnum(Role),
-    histories: {
-      create: [
-        {
-          status: transientStatus ?? randomEnum(MembershipStatus),
-          reason: transientReason ?? randomEnum(MembershipStatusReason),
-          createdByUser: UserFactory,
-        },
-      ],
-    },
+    // histories: {
+    //   create: [
+    //     {
+    //       status: transientStatus ?? randomEnum(MembershipStatus),
+    //       reason: transientReason ?? randomEnum(MembershipStatusReason),
+    //       createdByUser: UserFactory,
+    //     },
+    //   ],
+    // },
   }),
 });
 

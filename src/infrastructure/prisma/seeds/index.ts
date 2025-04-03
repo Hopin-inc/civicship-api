@@ -10,10 +10,7 @@ async function main() {
 
   if (args.includes("--master")) {
     console.log("Starting to seed cities and states...");
-    await seedMaster(
-      path.join(__dirname, "./master/city.csv"),
-      path.join(__dirname, "./master/state.csv"),
-    );
+    await seedMaster(path.join(__dirname, "./city.csv"), path.join(__dirname, "./state.csv"));
     console.log("Cities and states have been seeded!");
   }
 
