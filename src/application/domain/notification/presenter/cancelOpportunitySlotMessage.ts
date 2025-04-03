@@ -9,24 +9,22 @@ interface CancelOpportunitySlotParams {
   redirectUrl: string;
 }
 
-export default class CancelOpportunitySlotMessage {
-  public static create(params: CancelOpportunitySlotParams): FlexMessage {
-    const bubble: FlexBubble = {
-      type: "bubble",
-      header: buildHeader(),
-      body: buildBody(params),
-      footer: buildFooter(params.redirectUrl),
-      styles: {
-        footer: { separator: true },
-      },
-    };
+export function buildCancelOpportunitySlotMessage(
+  params: CancelOpportunitySlotParams,
+): FlexMessage {
+  const bubble: FlexBubble = {
+    type: "bubble",
+    header: buildHeader(),
+    body: buildBody(params),
+    footer: buildFooter(params.redirectUrl),
+    styles: { footer: { separator: true } },
+  };
 
-    return {
-      type: "flex",
-      altText: `${params.title} の開催中止のお知らせ`,
-      contents: bubble,
-    };
-  }
+  return {
+    type: "flex",
+    altText: `${params.title} の開催中止のお知らせ`,
+    contents: bubble,
+  };
 }
 
 function buildHeader(): FlexBox {
@@ -49,7 +47,8 @@ function buildBody(params: CancelOpportunitySlotParams): FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    paddingAll: "20px",
+    paddingStart: "20px",
+    paddingEnd: "20px",
     contents: [
       {
         type: "text",
@@ -64,6 +63,7 @@ function buildBody(params: CancelOpportunitySlotParams): FlexBox {
         layout: "horizontal",
         spacing: "md",
         margin: "xl",
+        alignItems: "center",
         contents: [
           { type: "text", text: "日付", size: "xs", color: "#555555", flex: 0 },
           { type: "text", text: params.date, size: "md", color: "#111111" },
@@ -73,6 +73,7 @@ function buildBody(params: CancelOpportunitySlotParams): FlexBox {
         type: "box",
         layout: "horizontal",
         spacing: "md",
+        alignItems: "center",
         contents: [
           { type: "text", text: "時間", size: "xs", color: "#555555", flex: 0 },
           { type: "text", text: params.time, size: "md", color: "#111111" },

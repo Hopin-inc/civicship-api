@@ -1,38 +1,135 @@
 import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/opportunitySlot/data/type";
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
-import CancelOpportunitySlotMessage from "@/application/domain/opportunitySlot/line/cancelOpportunitySlotMessage";
+import "dayjs/locale/ja";
 import { lineClient } from "@/infrastructure/libs/line";
+import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/cancelOpportunitySlotMessage";
+import { PrismaReservation } from "@/application/domain/reservation/data/type";
+import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/reservation/reservationAcceptedMessage";
+import { IdentityPlatform } from "@prisma/client";
+import {
+  DEFAULT_EVENT_IMAGE_URL,
+  DEFAULT_HOST_IMAGE_URL,
+  LOCAL_UID,
+  REDIRECT_URL,
+} from "@/application/domain/notification/const";
+import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/reservation/reservationAppliedMessage";
 
 dayjs.locale("ja");
+const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
 export default class NotificationService {
   static async pushCancelOpportunitySlotMessage(
     ctx: IContext,
     slot: PrismaOpportunitySlotWithParticipation,
   ) {
-    // const lineUids =
-    //   slot.reservations?.flatMap(
-    //     (r) =>
-    //       r.participations?.flatMap(
-    //         (p) => p.user?.identities?.filter((i) => i.platform === "LINE").map((i) => i.uid) ?? [],
-    //       ) ?? [],
-    //   ) ?? [];
+    const lineIds =
+      process.env.ENV === "LOCAL"
+        ? [LOCAL_UID]
+        : extractLineIdsFromParticipations(
+            slot.reservations?.flatMap((r) => r.participations ?? []) ?? [],
+          );
 
-    const lineUids = ["Uf4a68d8e6d68927a496120aa16842027"];
+    const { date, time } = formatDateTime(slot.startsAt, slot.endsAt);
+    const host = slot.opportunity.createdByUser;
 
-    const date = dayjs(slot.startsAt).format("YYYY年M月D日（dd）");
-    const time = `${dayjs(slot.startsAt).format("HH:mm")}-${dayjs(slot.endsAt).format("HH:mm")}`;
-
-    const message = CancelOpportunitySlotMessage.create({
+    const message = buildCancelOpportunitySlotMessage({
       title: slot.opportunity.title,
-      date: date,
-      time: time,
-      hostName: ctx.currentUser?.name ?? "ホスト名未定",
-      hostImageUrl: ctx.currentUser?.image ?? "https://your-fallback-image.com/default.png",
-      redirectUrl: "https://your-reservation-url.com",
+      date,
+      time,
+      hostName: host.name,
+      hostImageUrl: host.image ?? DEFAULT_HOST_IMAGE_URL,
+      redirectUrl: REDIRECT_URL,
     });
 
-    await Promise.all(lineUids.map((to) => lineClient.pushMessage({ to, messages: [message] })));
+    await Promise.all(lineIds.map((to) => lineClient.pushMessage({ to, messages: [message] })));
   }
+
+  static async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
+    const lineIds =
+      process.env.ENV === "LOCAL"
+        ? [LOCAL_UID]
+        : extractLineIdsFromParticipations(reservation.participations);
+
+    const { date, time } = formatDateTime(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.endsAt,
+    );
+    const { opportunitySlot, participations } = reservation;
+    const applicant = ctx.currentUser;
+
+    const message = buildReservationAppliedMessage({
+      title: opportunitySlot.opportunity.title,
+      date,
+      time,
+      participantCount: `${participations.length}名`,
+      applicantName: applicant?.name ?? "申込者",
+      redirectUrl: REDIRECT_URL,
+    });
+
+    await Promise.all(lineIds.map((to) => lineClient.pushMessage({ to, messages: [message] })));
+  }
+
+  static async pushReservationAcceptedMessage(
+    ctx: IContext,
+    reservation: PrismaReservation,
+  ): Promise<void> {
+    const lineIds =
+      process.env.ENV === "LOCAL"
+        ? [LOCAL_UID]
+        : extractLineIdsFromParticipations(reservation.participations);
+
+    const { date, time } = formatDateTime(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.endsAt,
+    );
+    const {
+      title,
+      image: eventImage,
+      place,
+      feeRequired,
+      createdByUser,
+    } = reservation.opportunitySlot.opportunity;
+    const { name: hostName = "ホスト名未定", image: hostImage } = createdByUser ?? {};
+
+    const message = buildReservationAcceptedMessage({
+      title,
+      eventImageUrl: eventImage ?? DEFAULT_EVENT_IMAGE_URL,
+      date,
+      time,
+      place: place?.name ?? "場所未定",
+      participantCount: `${reservation.participations.length}人`,
+      price: calculateTotalPrice(feeRequired, reservation.participations.length),
+      hostName,
+      hostImageUrl: hostImage ?? DEFAULT_HOST_IMAGE_URL,
+      redirectUrl: REDIRECT_URL,
+    });
+
+    await Promise.all(
+      lineIds.map((uid) => lineClient.pushMessage({ to: uid, messages: [message] })),
+    );
+  }
+}
+
+function formatDateTime(start: Date, end: Date): { date: string; time: string } {
+  const dow = weekdays[dayjs(start).day()];
+  const date = `${dayjs(start).format("YYYY年M月D日")}（${dow}）`;
+  const time = `${dayjs(start).format("HH:mm")}-${dayjs(end).format("HH:mm")}`;
+  return { date, time };
+}
+
+function extractLineIdsFromParticipations(participations: any[]): string[] {
+  return (
+    participations?.flatMap(
+      (p) =>
+        p.user?.identities
+          ?.filter((i: any) => i.platform === IdentityPlatform.LINE)
+          .map((i: any) => i.uid) ?? [],
+    ) ?? []
+  );
+}
+
+function calculateTotalPrice(feeRequired: number | null | undefined, count: number): string {
+  const fee = feeRequired ?? 0;
+  return `${fee * count}円`;
 }
