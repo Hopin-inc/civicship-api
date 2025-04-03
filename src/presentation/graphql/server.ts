@@ -2,15 +2,21 @@ import { ApolloServer } from "@apollo/server";
 import rateLimitPlugin from "@/presentation/graphql/plugin";
 import logger from "@/infrastructure/logging";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
+import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import http from "http";
 import schema from "@/presentation/graphql/schema";
+import { rules } from "@/presentation/graphql/rule";
 
 const isProduction = process.env.NODE_ENV === "production";
 
 export async function createApolloServer(httpServer: http.Server) {
   const server = new ApolloServer({
     schema,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), rateLimitPlugin],
+    plugins: [
+      ApolloServerPluginDrainHttpServer({ httpServer }),
+      rateLimitPlugin,
+      authZApolloPlugin({ rules }),
+    ],
     formatError: (err) => {
       const { message, locations, path } = err;
       const code = err.extensions?.code ?? "INTERNAL_SERVER_ERROR";

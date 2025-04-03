@@ -7,43 +7,57 @@ extend type Mutation {
         input: MembershipInviteInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipInvitePayload
+    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+
     membershipCancelInvitation(
         input: MembershipSetInvitationStatusInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipSetInvitationStatusPayload
+    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
 
     membershipAcceptMyInvitation(
         input: MembershipSetInvitationStatusInput!
         permission: CheckIsSelfPermissionInput!
     ): MembershipSetInvitationStatusPayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
+
     membershipDenyMyInvitation(
         input: MembershipSetInvitationStatusInput!
         permission: CheckIsSelfPermissionInput!
     ): MembershipSetInvitationStatusPayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 
     # join
     membershipWithdraw(
         input: MembershipWithdrawInput!
         permission: CheckIsSelfPermissionInput!
     ): MembershipWithdrawPayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 
     # role
     membershipAssignOwner(
         input: MembershipSetRoleInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipSetRolePayload
+    @authz(rules: [IsCommunityOwner, VerifySanitizeInput])
+
     membershipAssignManager(
         input: MembershipSetRoleInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipSetRolePayload
+    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+
     membershipAssignMember(
         input: MembershipSetRoleInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipSetRolePayload
+    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+
     membershipRemove(
         input: MembershipRemoveInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipRemovePayload
+    @authz(rules: [IsCommunityOwner, VerifySanitizeInput])
 }
 
 # ------------------------------

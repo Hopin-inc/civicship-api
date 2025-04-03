@@ -7,10 +7,23 @@ extend type Mutation {
         input: OpportunitySlotSetHostingStatusInput!
         permission: CheckOpportunityPermissionInput!
     ): OpportunitySlotSetHostingStatusPayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
+
     opportunitySlotsBulkUpdate(
         input: OpportunitySlotsBulkUpdateInput!
         permission: CheckOpportunityPermissionInput!
     ): OpportunitySlotsBulkUpdatePayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
 }
 
 # ------------------------------

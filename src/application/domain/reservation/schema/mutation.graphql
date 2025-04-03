@@ -6,26 +6,41 @@ extend type Mutation {
     reservationCreate(
         input: ReservationCreateInput!
     ): ReservationCreatePayload
+    @authz(rules: [IsUser, VerifySanitizeInput])
 
     reservationJoin(
         id: ID!
     ): ReservationSetStatusPayload
+    @authz(rules: [IsUser, VerifySanitizeInput])
 
     reservationCancel(
         id: ID!
         input: ReservationCancelInput!
         permission: CheckIsSelfPermissionInput!
     ): ReservationSetStatusPayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 
     reservationAccept(
         id: ID!
-        permission: CheckCommunityPermissionInput!
+        permission: CheckOpportunityPermissionInput!
     ): ReservationSetStatusPayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
 
     reservationReject(
         id: ID!
-        permission: CheckCommunityPermissionInput!
+        permission: CheckOpportunityPermissionInput!
     ): ReservationSetStatusPayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
 }
 
 # ------------------------------

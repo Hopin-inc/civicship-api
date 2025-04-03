@@ -6,6 +6,7 @@ extend type Mutation {
         input: UserUpdateProfileInput!
         permission: CheckIsSelfPermissionInput!
     ): UserUpdateProfilePayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 }
 
 # ------------------------------
