@@ -11,6 +11,7 @@ const IsUser = preExecRule({
   if (!context.currentUser) {
     throw new AuthenticationError("User must be logged in");
   }
+  return true;
 });
 
 // 🔐 システム管理者か
@@ -24,6 +25,7 @@ const IsAdmin = preExecRule({
   if (user.sysRole !== "SYS_ADMIN") {
     throw new AuthorizationError("User must be admin");
   }
+  return true;
 });
 
 // 🔐 自分自身の操作か
@@ -38,6 +40,7 @@ const IsSelf = preExecRule({
   if (user.id !== permission?.userId) {
     throw new AuthorizationError("User is not self");
   }
+  return true;
 });
 
 // 🔐 コミュニティのオーナーか
@@ -64,6 +67,7 @@ const IsCommunityOwner = preExecRule({
   if (membership.role !== Role.OWNER) {
     throw new AuthorizationError("User must be community owner");
   }
+  return true;
 });
 
 // 🔐 コミュニティマネージャー（OWNER または MANAGER）
@@ -89,6 +93,7 @@ const IsCommunityManager = preExecRule({
   if (!(membership.role === Role.OWNER || membership.role === Role.MANAGER)) {
     throw new AuthorizationError("User must be community manager");
   }
+  return true;
 });
 
 // 🔐 コミュニティメンバー（OWNER / MANAGER / MEMBER）
@@ -114,6 +119,7 @@ const IsCommunityMember = preExecRule({
   if (![Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership.role)) {
     throw new AuthorizationError("User must be a community member");
   }
+  return true;
 });
 
 // 🔐 Opportunity 作成者
@@ -135,6 +141,7 @@ const IsOpportunityOwner = preExecRule({
   if (!found) {
     throw new AuthorizationError("User is not the opportunity owner");
   }
+  return true;
 });
 
 // 🔐 入力サニタイズ検証
@@ -142,6 +149,7 @@ const VerifySanitizeInput = preExecRule({
   error: "Invalid input: disallowed HTML tags detected",
 })((_context: IContext, args: any) => {
   recursiveSanitize(args.input);
+  return true;
 });
 
 // 🔄 再帰的なサニタイズ処理
