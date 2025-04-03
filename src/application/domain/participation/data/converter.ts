@@ -90,27 +90,6 @@ export default class ParticipationConverter {
     ];
   }
 
-  static countActiveBySlotId(slotId: string): Prisma.ParticipationWhereInput {
-    return {
-      reservation: {
-        opportunitySlot: {
-          id: slotId,
-        },
-      },
-      status: {
-        notIn: [ParticipationStatus.NOT_PARTICIPATING],
-      },
-    };
-  }
-
-  static countPersonalRecords(userId: string): Prisma.ParticipationWhereInput {
-    return {
-      userId,
-      status: ParticipationStatus.PARTICIPATED,
-      reason: ParticipationStatusReason.PERSONAL_RECORD,
-    };
-  }
-
   static create(
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
