@@ -6,7 +6,7 @@ import ReservationPresenter from "@/application/domain/reservation/presenter";
 import { Prisma, ReservationStatus } from "@prisma/client";
 import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
-import { reservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/helper";
 import { PrismaReservation } from "@/application/domain/reservation/data/type";
 
 export default class ReservationService {
@@ -52,7 +52,8 @@ export default class ReservationService {
     opportunitySlotId: string,
     participantCount: number,
     userIdsIfExists: string[] = [],
-    reservationStatuses: reservationStatuses,
+    reservationStatuses: ReservationStatuses,
+    tx: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data = ReservationConverter.create(
@@ -62,7 +63,7 @@ export default class ReservationService {
       userIdsIfExists,
       reservationStatuses,
     );
-    return ReservationRepository.create(ctx, data);
+    return ReservationRepository.create(ctx, data, tx);
   }
 
   static async setStatus(

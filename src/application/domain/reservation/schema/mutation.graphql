@@ -34,10 +34,11 @@ extend type Mutation {
 
 input ReservationCreateInput {
     opportunitySlotId: ID!
-    participantCount: Int!
-    userIdsIfExists: [ID!]
+    totalParticipantCount: Int!
+    otherUserIds: [ID!]
 
     paymentMethod: ReservationPaymentMethod!
+    ticketIdsIfNeed: [ID!]
 }
 
 input ReservationCancelInput {
@@ -51,7 +52,7 @@ input ReservationCancelInput {
 
 enum ReservationPaymentMethod {
     FEE
-    POINT
+    TICKET
 }
 
 # ------------------------------

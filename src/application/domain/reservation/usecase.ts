@@ -9,7 +9,6 @@ import {
   GqlReservationsConnection,
   GqlReservationCreatePayload,
   GqlReservationSetStatusPayload,
-  GqlReservationCreateInput,
   GqlReservationPaymentMethod,
   GqlMutationReservationCancelArgs,
   GqlReservationCancelInput,
@@ -31,7 +30,6 @@ import OpportunitySlotService from "@/application/domain/opportunitySlot/service
 import WalletService from "@/application/domain/membership/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationService from "@/application/domain/participation/service";
-import OpportunityService from "@/application/domain/opportunity/service";
 import TicketService from "@/application/domain/ticket/service";
 import TransactionService from "@/application/domain/transaction/service";
 import { PrismaOpportunitySlot } from "@/application/domain/opportunitySlot/data/type";
@@ -39,11 +37,13 @@ import MembershipService from "@/application/domain/membership/service";
 import { groupBy } from "graphql/jsutils/groupBy";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
 import ReservationValidator from "@/application/domain/reservation/validator";
-import { reservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/helper";
 import { PrismaParticipation } from "@/application/domain/participation/data/type";
 import ParticipationStatusHistoryService from "@/application/domain/participation/statusHistory/service";
 import { NotFoundError } from "@/errors/graphql";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
+import { PrismaReservation } from "@/application/domain/reservation/data/type";
+import NotificationService from "@/application/domain/notification/service";
 
 export default class ReservationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -81,13 +81,12 @@ export default class ReservationUseCase {
       slot.startsAt,
       slot.endsAt,
     );
-    const currentCount = await ParticipationService.countActiveParticipantsBySlotId(ctx, slot.id);
 
     // 予約可能性のバリデーション（開催前・キャンセル済み・満員など）
     ReservationValidator.validateReservable(
       slot,
-      input.participantCount,
-      currentCount,
+      input.totalParticipantCount,
+      slot.remainingCapacityView?.remainingCapacity ?? undefined,
       reservationExists,
     );
 
@@ -102,27 +101,26 @@ export default class ReservationUseCase {
       const reservation = await ReservationService.createReservation(
         ctx,
         input.opportunitySlotId,
-        input.participantCount,
-        input.userIdsIfExists,
+        input.totalParticipantCount,
+        input.otherUserIds,
         statuses,
+        tx,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
-      await handleReserveTicketAfterPurchaseIfNeeded(
+      await this.handleReserveTicketsIfNeeded(
         ctx,
         tx,
-        input,
-        communityId,
-        currentUserId,
+        input.paymentMethod,
         requiredUtilities,
         participationIds,
+        input.ticketIdsIfNeed,
       );
-
-      // refresh view
-      await OpportunitySlotService.refreshSlotViews(ctx, tx);
 
       return reservation;
     });
+
+    await NotificationService.pushReservationAppliedMessage(ctx, reservation);
 
     return ReservationPresenter.create(reservation);
   }
@@ -155,9 +153,6 @@ export default class ReservationUseCase {
 
       await handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
 
-      // refresh view
-      await OpportunitySlotService.refreshSlotViews(ctx, tx);
-
       return ReservationPresenter.setStatus(reservation);
     });
   }
@@ -185,9 +180,6 @@ export default class ReservationUseCase {
         tx,
       );
 
-      // refresh view
-      await OpportunitySlotService.refreshSlotViews(ctx, tx);
-
       return res;
     });
 
@@ -200,27 +192,32 @@ export default class ReservationUseCase {
   ): Promise<GqlReservationSetStatusPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
+    let acceptedReservation: PrismaReservation | null = null;
+
     const reservation = await this.issuer.public(ctx, async (tx) => {
-      const reservation = await ReservationService.setStatus(
+      const res = await ReservationService.setStatus(
         ctx,
         id,
         currentUserId,
         ReservationStatus.ACCEPTED,
         tx,
       );
+
       await updateManyParticipationByReservationStatusChanged(
         ctx,
-        reservation.participations,
+        res.participations,
         ParticipationStatus.PARTICIPATING,
         ParticipationStatusReason.RESERVATION_ACCEPTED,
         tx,
       );
 
-      // refresh view
-      await OpportunitySlotService.refreshSlotViews(ctx, tx);
-
-      return reservation;
+      acceptedReservation = res;
+      return res;
     });
+
+    if (acceptedReservation) {
+      await NotificationService.pushReservationAcceptedMessage(ctx, acceptedReservation);
+    }
 
     return ReservationPresenter.setStatus(reservation);
   }
@@ -248,20 +245,31 @@ export default class ReservationUseCase {
         tx,
       );
 
-      // refresh view
-      await OpportunitySlotService.refreshSlotViews(ctx, tx);
-
       return reservation;
     });
 
     return ReservationPresenter.setStatus(reservation);
+  }
+
+  private static async handleReserveTicketsIfNeeded(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    paymentMethod: GqlReservationPaymentMethod,
+    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
+    participationIds: string[],
+    ticketIds?: string[],
+  ): Promise<void> {
+    if (requiredUtilities.length === 0) return;
+    if (paymentMethod !== GqlReservationPaymentMethod.Ticket) return;
+
+    await TicketService.reserveManyTickets(ctx, participationIds, ticketIds, tx);
   }
 }
 
 //  ------------------------------
 //  function for reservation usecase
 //  ------------------------------
-function resolveReservationStatuses(requireApproval: boolean): reservationStatuses {
+function resolveReservationStatuses(requireApproval: boolean): ReservationStatuses {
   return {
     reservationStatus: requireApproval ? ReservationStatus.APPLIED : ReservationStatus.ACCEPTED,
     participationStatus: requireApproval
@@ -273,55 +281,13 @@ function resolveReservationStatuses(requireApproval: boolean): reservationStatus
   };
 }
 
-async function handleReserveTicketAfterPurchaseIfNeeded(
-  ctx: IContext,
-  tx: Prisma.TransactionClient,
-  input: GqlReservationCreateInput,
-  communityId: string,
-  userId: string,
-  requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
-  participationIds: string[],
-): Promise<void> {
-  if (requiredUtilities.length === 0) return;
-  if (input.paymentMethod !== GqlReservationPaymentMethod.Point) return;
-
-  const utility = OpportunityService.getSingleRequiredUtility(requiredUtilities);
-  const totalTransferPoints = utility.pointsRequired * input.participantCount;
-
-  const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
-    ctx,
-    tx,
-    communityId,
-    userId,
-    totalTransferPoints,
-    TransactionReason.TICKET_PURCHASED,
-  );
-
-  const transaction = await TransactionService.purchaseTicket(ctx, tx, {
-    fromWalletId,
-    toWalletId,
-    transferPoints: totalTransferPoints,
-  });
-
-  const tickets = await TicketService.purchaseManyTickets(
-    ctx,
-    fromWalletId,
-    utility.id,
-    transaction.id,
-    participationIds,
-    tx,
-  );
-
-  await TicketService.reserveManyTickets(ctx, tickets, tx);
-}
-
 async function handleRefundTicketAfterCancelIfNeeded(
   ctx: IContext,
   currentUserId: string,
   input: GqlReservationCancelInput,
   tx: Prisma.TransactionClient,
 ): Promise<void> {
-  if (input.paymentMethod !== GqlReservationPaymentMethod.Point) return;
+  if (input.paymentMethod !== GqlReservationPaymentMethod.Ticket) return;
   if (!input.ticketIdsIfExists?.length) return;
 
   const tickets = await TicketService.fetchTicketsByIds(ctx, input.ticketIdsIfExists);
