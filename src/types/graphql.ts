@@ -1830,9 +1830,10 @@ export type GqlReservationCancelInput = {
 
 export type GqlReservationCreateInput = {
   opportunitySlotId: Scalars['ID']['input'];
-  participantCount: Scalars['Int']['input'];
+  otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   paymentMethod: GqlReservationPaymentMethod;
-  userIdsIfExists?: InputMaybe<Array<Scalars['ID']['input']>>;
+  ticketIdsIfNeed?: InputMaybe<Array<Scalars['ID']['input']>>;
+  totalParticipantCount: Scalars['Int']['input'];
 };
 
 export type GqlReservationCreatePayload = GqlReservationCreateSuccess;
@@ -1889,7 +1890,7 @@ export type GqlReservationHistorySortInput = {
 
 export const GqlReservationPaymentMethod = {
   Fee: 'FEE',
-  Point: 'POINT'
+  Ticket: 'TICKET'
 } as const;
 
 export type GqlReservationPaymentMethod = typeof GqlReservationPaymentMethod[keyof typeof GqlReservationPaymentMethod];

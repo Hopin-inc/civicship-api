@@ -43,7 +43,7 @@ export async function seedUsecase() {
         console.log("🧩 Creating Users & Communities...");
         const [users, communities] = await Promise.all([
           Promise.all(
-            Array.from({ length: 5 }).map((_, i) =>
+            Array.from({ length: 2 }).map((_, i) =>
               safeCreate("UserFactory", i, () => UserFactory.create()),
             ),
           ),
