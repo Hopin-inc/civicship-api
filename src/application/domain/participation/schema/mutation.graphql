@@ -5,11 +5,13 @@ extend type Mutation {
     participationCreatePersonalRecord(
         input: ParticipationCreatePersonalRecordInput!
     ): ParticipationCreatePersonalRecordPayload
+    @authz(rules: [IsUser, VerifySanitizeInput])
 
     participationDeletePersonalRecord(
         id: ID!
         permission: CheckIsSelfPermissionInput!
     ): ParticipationDeletePayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 }
 
 # ------------------------------

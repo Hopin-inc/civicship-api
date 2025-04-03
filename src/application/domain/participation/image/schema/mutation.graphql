@@ -6,6 +6,7 @@ extend type Mutation {
         input: ParticipationImageBulkUpdateInput!
         permission: CheckIsSelfPermissionInput!
     ): ParticipationImageBulkUpdatePayload
+    @authz(rules: [IsUser, VerifySanitizeInput])
 }
 
 # ------------------------------

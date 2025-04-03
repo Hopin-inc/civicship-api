@@ -48,19 +48,14 @@ export default class ReservationConverter {
     ];
   }
 
-  static checkConflict(
-    userId: string,
-    slotStartsAt: Date,
-    slotEndsAt: Date,
-  ): Prisma.ReservationWhereInput {
+  static checkConflict(userId: string, slotId: string): Prisma.ReservationWhereInput {
     return {
       createdBy: userId,
       status: {
         notIn: [ReservationStatus.REJECTED, ReservationStatus.CANCELED],
       },
       opportunitySlot: {
-        startsAt: { lt: slotEndsAt },
-        endsAt: { gt: slotStartsAt },
+        id: slotId,
       },
     };
   }

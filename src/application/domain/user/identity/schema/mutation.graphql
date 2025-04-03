@@ -3,10 +3,12 @@
 # ------------------------------
 extend type Mutation {
     userSignUp(input: UserSignUpInput!): CurrentUserPayload
+
     userDeleteMe(
         input: UserDeleteInput!
         permission: CheckIsSelfPermissionInput!
     ): UserDeletePayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 }
 
 # ------------------------------

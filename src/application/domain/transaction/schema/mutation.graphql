@@ -6,15 +6,19 @@ extend type Mutation {
         input: TransactionIssueCommunityPointInput!
         permission:CheckCommunityPermissionInput!
     ): TransactionIssueCommunityPointPayload
+    @authz(rules: [IsCommunityOwner, VerifySanitizeInput])
 
     transactionGrantCommunityPoint(
         input: TransactionGrantCommunityPointInput!
         permission:CheckCommunityPermissionInput!
     ): TransactionGrantCommunityPointPayload
+    @authz(rules: [IsCommunityOwner, VerifySanitizeInput])
+
     transactionDonateSelfPoint(
         input: TransactionDonateSelfPointInput!
         permission:CheckCommunityPermissionInput!
     ): TransactionDonateSelfPointPayload
+    @authz(rules: [IsCommunityMember, VerifySanitizeInput])
 }
 
 # ------------------------------

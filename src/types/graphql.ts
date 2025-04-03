@@ -86,6 +86,31 @@ export type GqlArticlesConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlAuthZDirectiveCompositeRulesInput = {
+  and?: InputMaybe<Array<InputMaybe<GqlAuthZRules>>>;
+  not?: InputMaybe<GqlAuthZRules>;
+  or?: InputMaybe<Array<InputMaybe<GqlAuthZRules>>>;
+};
+
+export type GqlAuthZDirectiveDeepCompositeRulesInput = {
+  and?: InputMaybe<Array<InputMaybe<GqlAuthZDirectiveDeepCompositeRulesInput>>>;
+  id?: InputMaybe<GqlAuthZRules>;
+  not?: InputMaybe<GqlAuthZDirectiveDeepCompositeRulesInput>;
+  or?: InputMaybe<Array<InputMaybe<GqlAuthZDirectiveDeepCompositeRulesInput>>>;
+};
+
+export const GqlAuthZRules = {
+  IsAdmin: 'IsAdmin',
+  IsCommunityManager: 'IsCommunityManager',
+  IsCommunityMember: 'IsCommunityMember',
+  IsCommunityOwner: 'IsCommunityOwner',
+  IsOpportunityOwner: 'IsOpportunityOwner',
+  IsSelf: 'IsSelf',
+  IsUser: 'IsUser',
+  VerifySanitizeInput: 'VerifySanitizeInput'
+} as const;
+
+export type GqlAuthZRules = typeof GqlAuthZRules[keyof typeof GqlAuthZRules];
 export type GqlCheckCommunityPermissionInput = {
   communityId: Scalars['ID']['input'];
 };
@@ -754,7 +779,7 @@ export type GqlMutationPlaceUpdateArgs = {
 
 export type GqlMutationReservationAcceptArgs = {
   id: Scalars['ID']['input'];
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -777,7 +802,7 @@ export type GqlMutationReservationJoinArgs = {
 
 export type GqlMutationReservationRejectArgs = {
   id: Scalars['ID']['input'];
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -2675,6 +2700,9 @@ export type GqlResolversTypes = ResolversObject<{
   ArticleFilterInput: GqlArticleFilterInput;
   ArticleSortInput: GqlArticleSortInput;
   ArticlesConnection: ResolverTypeWrapper<Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ArticleEdge']>>> }>;
+  AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
+  AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
+  AuthZRules: GqlAuthZRules;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
@@ -2935,6 +2963,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ArticleFilterInput: GqlArticleFilterInput;
   ArticleSortInput: GqlArticleSortInput;
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
+  AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
+  AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
   Boolean: Scalars['Boolean']['output'];
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
@@ -3164,6 +3194,14 @@ export type GqlResolversParentTypes = ResolversObject<{
   WalletSortInput: GqlWalletSortInput;
   WalletsConnection: Omit<GqlWalletsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['WalletEdge']>>> };
 }>;
+
+export type GqlAuthzDirectiveArgs = {
+  compositeRules?: Maybe<Array<Maybe<GqlAuthZDirectiveCompositeRulesInput>>>;
+  deepCompositeRules?: Maybe<Array<Maybe<GqlAuthZDirectiveDeepCompositeRulesInput>>>;
+  rules?: Maybe<Array<Maybe<GqlAuthZRules>>>;
+};
+
+export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = any, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
 export type GqlComplexityDirectiveArgs = {
   multipliers?: Maybe<Array<Scalars['String']['input']>>;
@@ -4403,6 +4441,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
 }>;
 
 export type GqlDirectiveResolvers<ContextType = any> = ResolversObject<{
+  authz?: GqlAuthzDirectiveResolver<any, any, ContextType>;
   complexity?: GqlComplexityDirectiveResolver<any, any, ContextType>;
   requireRole?: GqlRequireRoleDirectiveResolver<any, any, ContextType>;
 }>;

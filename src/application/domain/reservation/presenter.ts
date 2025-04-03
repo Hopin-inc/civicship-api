@@ -5,6 +5,7 @@ import {
   GqlReservationSetStatusSuccess,
 } from "@/types/graphql";
 import { PrismaReservation } from "@/application/domain/reservation/data/type";
+import OpportunitySlotPresenter from "@/application/domain/opportunitySlot/presenter";
 
 export default class ReservationPresenter {
   static query(records: GqlReservation[], hasNextPage: boolean): GqlReservationsConnection {
@@ -28,7 +29,7 @@ export default class ReservationPresenter {
 
     return {
       ...prop,
-      opportunitySlot,
+      opportunitySlot: OpportunitySlotPresenter.get(opportunitySlot),
       createdByUser,
       participations,
     };

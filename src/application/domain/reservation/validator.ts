@@ -28,6 +28,7 @@ export default class ReservationValidator {
     if (reservation.status !== ReservationStatus.ACCEPTED) {
       throw new ValidationError("Reservation is not accepted yet.");
     }
+    this.validateSlotScheduledAndNotStarted(reservation.opportunitySlot);
 
     const isAlreadyJoined = reservation.participations.some((p) => p.userId === userId);
     if (isAlreadyJoined) {

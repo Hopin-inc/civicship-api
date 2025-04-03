@@ -118,3 +118,40 @@ enum SortDirection {
     asc
     desc
 }
+
+# ------------------------------------------------
+# AuthZ
+# ------------------------------------------------
+# authz rules enum
+enum AuthZRules {
+    IsUser,
+    IsAdmin,
+    IsSelf,
+    IsCommunityOwner,
+    IsCommunityManager,
+    IsCommunityMember,
+    IsOpportunityOwner,
+    VerifySanitizeInput,
+}
+
+# this is a common boilerplate
+input AuthZDirectiveCompositeRulesInput {
+    and: [AuthZRules]
+    or: [AuthZRules]
+    not: AuthZRules
+}
+
+# this is a common boilerplate
+input AuthZDirectiveDeepCompositeRulesInput {
+    id: AuthZRules
+    and: [AuthZDirectiveDeepCompositeRulesInput]
+    or: [AuthZDirectiveDeepCompositeRulesInput]
+    not: AuthZDirectiveDeepCompositeRulesInput
+}
+
+# this is a common boilerplate
+directive @authz(
+    rules: [AuthZRules]
+    compositeRules: [AuthZDirectiveCompositeRulesInput]
+    deepCompositeRules: [AuthZDirectiveDeepCompositeRulesInput]
+) on FIELD_DEFINITION | OBJECT | INTERFACE
