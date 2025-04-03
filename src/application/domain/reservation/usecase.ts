@@ -134,7 +134,7 @@ export default class ReservationUseCase {
     const reservation = await ReservationService.findReservationOrThrow(ctx, id);
     ReservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
 
-    return this.issuer.public(ctx, async (tx) => {
+    await this.issuer.public(ctx, async (tx) => {
       await ReservationService.setStatus(
         ctx,
         reservation.id,
@@ -152,9 +152,10 @@ export default class ReservationUseCase {
       );
 
       await handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
-
-      return ReservationPresenter.setStatus(reservation);
     });
+
+    await NotificationService.pushReservationCanceledMessage(ctx, reservation);
+    return ReservationPresenter.setStatus(reservation);
   }
 
   static async userJoinReservation(

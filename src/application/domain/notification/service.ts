@@ -14,6 +14,7 @@ import {
   REDIRECT_URL,
 } from "@/application/domain/notification/const";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/reservation/reservationAppliedMessage";
+import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/reservation/reservationCanceledMessage";
 
 dayjs.locale("ja");
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
@@ -59,6 +60,31 @@ export default class NotificationService {
     const applicant = ctx.currentUser;
 
     const message = buildReservationAppliedMessage({
+      title: opportunitySlot.opportunity.title,
+      date,
+      time,
+      participantCount: `${participations.length}名`,
+      applicantName: applicant?.name ?? "申込者",
+      redirectUrl: REDIRECT_URL,
+    });
+
+    await Promise.all(lineIds.map((to) => lineClient.pushMessage({ to, messages: [message] })));
+  }
+
+  static async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
+    const lineIds =
+      process.env.ENV === "LOCAL"
+        ? [LOCAL_UID]
+        : extractLineIdsFromParticipations(reservation.participations);
+
+    const { date, time } = formatDateTime(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.endsAt,
+    );
+    const { opportunitySlot, participations } = reservation;
+    const applicant = ctx.currentUser;
+
+    const message = buildReservationCanceledMessage({
       title: opportunitySlot.opportunity.title,
       date,
       time,
