@@ -1,4 +1,4 @@
-import * as line from '@line/bot-sdk';
+import * as line from "@line/bot-sdk";
 
 const config: line.MiddlewareConfig = {
   channelSecret: process.env.LINE_MESSAGING_CHANNEL_SECRET!,
