@@ -3,6 +3,10 @@ import { Role } from "@prisma/client";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
 
 export function getCurrentUserId(ctx: IContext): string {
+  if (process.env.ENV === "LOCAL") {
+    return "local-user-id";
+  }
+
   const currentUserId = ctx.currentUser?.id;
   if (!currentUserId) {
     throw new AuthorizationError("User must be logged in");

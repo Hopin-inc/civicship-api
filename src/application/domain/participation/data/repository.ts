@@ -82,6 +82,17 @@ export default class ParticipationRepository {
     });
   }
 
+  static async createMany(
+    ctx: IContext,
+    data: Prisma.ParticipationCreateManyInput[],
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.participation.createMany({
+      data,
+      skipDuplicates: true,
+    });
+  }
+
   static async delete(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.participation.delete({

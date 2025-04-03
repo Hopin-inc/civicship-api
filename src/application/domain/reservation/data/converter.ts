@@ -6,7 +6,7 @@ import {
   Prisma,
   ReservationStatus,
 } from "@prisma/client";
-import { reservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/helper";
 
 export default class ReservationConverter {
   static filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
@@ -70,7 +70,7 @@ export default class ReservationConverter {
     currentUserId: string,
     participantCount: number,
     userIdsIfExists: string[],
-    { reservationStatus, participationStatus, participationStatusReason }: reservationStatuses,
+    { reservationStatus, participationStatus, participationStatusReason }: ReservationStatuses,
   ): Prisma.ReservationCreateInput {
     const userIds = [currentUserId, ...userIdsIfExists];
 

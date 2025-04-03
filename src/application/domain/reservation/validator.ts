@@ -7,20 +7,17 @@ export default class ReservationValidator {
   static validateReservable(
     slot: PrismaOpportunitySlot,
     participantCount: number,
-    currentParticipantCount: number,
+    remainingCapacity: number | undefined,
     reservations: PrismaReservation[],
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
     this.validateNoConflicts(reservations);
 
-    if (slot.capacity !== null) {
-      const remainingCapacity = slot.capacity - currentParticipantCount;
-      if (participantCount > remainingCapacity) {
-        throw new ValidationError("Capacity exceeded for this opportunity slot.", [
-          `remainingCapacity: ${remainingCapacity}`,
-          `requested: ${participantCount}`,
-        ]);
-      }
+    if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
+      throw new ValidationError("Capacity exceeded for this opportunity slot.", [
+        `remainingCapacity: ${remainingCapacity}`,
+        `requested: ${participantCount}`,
+      ]);
     }
   }
 

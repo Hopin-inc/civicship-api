@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_earliest_reservable_slot";

@@ -22,11 +22,6 @@ export default class ParticipationService {
     return await ParticipationRepository.query(ctx, where, orderBy, take, cursor, include);
   }
 
-  static async countActiveParticipantsBySlotId(ctx: IContext, slotId: string) {
-    const where = ParticipationConverter.countActiveBySlotId(slotId);
-    return await ParticipationRepository.count(ctx, where);
-  }
-
   static async findParticipation(ctx: IContext, id: string) {
     return await ParticipationRepository.find(ctx, id);
   }

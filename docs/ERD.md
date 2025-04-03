@@ -288,7 +288,7 @@ UNKNOWN UNKNOWN
 
   "t_opportunity_slots" {
     String slot_id "🗝️"
-    OpportunitySlotHostingStatus hostingStatus 
+    OpportunitySlotHostingStatus hosting_status 
     Int capacity "❓"
     DateTime starts_at 
     DateTime ends_at 
@@ -520,7 +520,7 @@ UNKNOWN UNKNOWN
     "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|o "t_places" : "place"
-    "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hostingStatus"
+    "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hosting_status"
     "t_opportunity_slots" o{--}o "mv_slot_remaining_capacity" : "remainingCapacityView"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"

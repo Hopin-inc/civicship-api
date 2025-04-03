@@ -53,12 +53,14 @@ export default class ReservationRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.ReservationCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.reservation.create({
-        data,
-        include: reservationInclude,
-      });
+  static async create(
+    ctx: IContext,
+    data: Prisma.ReservationCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.reservation.create({
+      data,
+      include: reservationInclude,
     });
   }
 
