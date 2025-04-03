@@ -1,4 +1,4 @@
-import { FlexMessage, FlexBubble, FlexBox } from "@line/bot-sdk";
+import { messagingApi } from "@line/bot-sdk";
 
 export interface ReservationAcceptedParams {
   title: string;
@@ -13,8 +13,10 @@ export interface ReservationAcceptedParams {
   redirectUrl: string;
 }
 
-export function buildReservationAcceptedMessage(params: ReservationAcceptedParams): FlexMessage {
-  const bubble: FlexBubble = {
+export function buildReservationAcceptedMessage(
+  params: ReservationAcceptedParams,
+): messagingApi.FlexMessage {
+  const bubble: messagingApi.FlexBubble = {
     type: "bubble",
     header: buildHeader(params.eventImageUrl),
     body: buildBody(params),
@@ -31,7 +33,7 @@ export function buildReservationAcceptedMessage(params: ReservationAcceptedParam
   };
 }
 
-function buildHeader(eventImageUrl: string): FlexBox {
+function buildHeader(eventImageUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "horizontal",
@@ -49,7 +51,7 @@ function buildHeader(eventImageUrl: string): FlexBox {
   };
 }
 
-function buildBody(params: ReservationAcceptedParams): FlexBox {
+function buildBody(params: ReservationAcceptedParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -137,7 +139,7 @@ function buildBody(params: ReservationAcceptedParams): FlexBox {
   };
 }
 
-function createRow(label: string, value: string): FlexBox {
+function createRow(label: string, value: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "horizontal",
@@ -150,7 +152,7 @@ function createRow(label: string, value: string): FlexBox {
   };
 }
 
-function buildFooter(redirectUrl: string): FlexBox {
+function buildFooter(redirectUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",

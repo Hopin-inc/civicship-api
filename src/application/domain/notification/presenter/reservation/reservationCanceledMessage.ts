@@ -1,4 +1,4 @@
-import { FlexBox, FlexBubble, FlexMessage } from "@line/bot-sdk";
+import { messagingApi } from "@line/bot-sdk";
 
 export interface ReservationCanceledParams {
   title: string;
@@ -9,8 +9,10 @@ export interface ReservationCanceledParams {
   redirectUrl: string;
 }
 
-export function buildReservationCanceledMessage(params: ReservationCanceledParams): FlexMessage {
-  const bubble: FlexBubble = {
+export function buildReservationCanceledMessage(
+  params: ReservationCanceledParams,
+): messagingApi.FlexMessage {
+  const bubble: messagingApi.FlexBubble = {
     type: "bubble",
     header: buildCanceledHeader(),
     body: buildCanceledBody(params),
@@ -27,7 +29,7 @@ export function buildReservationCanceledMessage(params: ReservationCanceledParam
   };
 }
 
-function buildCanceledHeader(): FlexBox {
+function buildCanceledHeader(): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -43,7 +45,7 @@ function buildCanceledHeader(): FlexBox {
   };
 }
 
-function buildCanceledBody(params: ReservationCanceledParams): FlexBox {
+function buildCanceledBody(params: ReservationCanceledParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -77,7 +79,7 @@ function buildCanceledBody(params: ReservationCanceledParams): FlexBox {
   };
 }
 
-function createRow(label: string, value: string): FlexBox {
+function createRow(label: string, value: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "horizontal",
@@ -90,7 +92,7 @@ function createRow(label: string, value: string): FlexBox {
   };
 }
 
-function buildCanceledFooter(redirectUrl: string): FlexBox {
+function buildCanceledFooter(redirectUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",

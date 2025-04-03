@@ -19,6 +19,15 @@ import { buildReservationCanceledMessage } from "@/application/domain/notificati
 dayjs.locale("ja");
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
+type ParticipationWithUserIdentity = {
+  user?: {
+    identities?: {
+      platform: IdentityPlatform;
+      uid: string;
+    }[];
+  } | null;
+};
+
 export default class NotificationService {
   static async pushCancelOpportunitySlotMessage(
     ctx: IContext,
@@ -144,13 +153,14 @@ function formatDateTime(start: Date, end: Date): { date: string; time: string } 
   return { date, time };
 }
 
-function extractLineIdsFromParticipations(participations: any[]): string[] {
+function extractLineIdsFromParticipations(
+  participations: ParticipationWithUserIdentity[],
+): string[] {
   return (
     participations?.flatMap(
       (p) =>
-        p.user?.identities
-          ?.filter((i: any) => i.platform === IdentityPlatform.LINE)
-          .map((i: any) => i.uid) ?? [],
+        p.user?.identities?.filter((i) => i.platform === IdentityPlatform.LINE).map((i) => i.uid) ??
+        [],
     ) ?? []
   );
 }

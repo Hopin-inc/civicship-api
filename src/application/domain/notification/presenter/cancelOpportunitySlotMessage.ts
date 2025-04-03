@@ -1,4 +1,4 @@
-import { FlexMessage, FlexBubble, FlexBox } from "@line/bot-sdk";
+import { messagingApi } from "@line/bot-sdk";
 
 interface CancelOpportunitySlotParams {
   title: string;
@@ -11,8 +11,8 @@ interface CancelOpportunitySlotParams {
 
 export function buildCancelOpportunitySlotMessage(
   params: CancelOpportunitySlotParams,
-): FlexMessage {
-  const bubble: FlexBubble = {
+): messagingApi.FlexMessage {
+  const bubble: messagingApi.FlexBubble = {
     type: "bubble",
     header: buildHeader(),
     body: buildBody(params),
@@ -27,7 +27,7 @@ export function buildCancelOpportunitySlotMessage(
   };
 }
 
-function buildHeader(): FlexBox {
+function buildHeader(): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -43,7 +43,7 @@ function buildHeader(): FlexBox {
   };
 }
 
-function buildBody(params: CancelOpportunitySlotParams): FlexBox {
+function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -144,7 +144,7 @@ function buildBody(params: CancelOpportunitySlotParams): FlexBox {
   };
 }
 
-function buildFooter(redirectUrl: string): FlexBox {
+function buildFooter(redirectUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
