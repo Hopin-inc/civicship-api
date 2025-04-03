@@ -1,4 +1,5 @@
 import {
+  ArticleCategory,
   CurrentPrefecture,
   EvaluationStatus,
   IdentityPlatform,
@@ -17,13 +18,22 @@ import {
   TransactionReason,
   WalletType,
 } from "@prisma/client";
-import { randAnimal, randFirstName, randLastName } from "@ngneat/falso";
 import {
+  randAnimal,
+  randCatchPhrase,
+  randFirstName,
+  randLastName,
+  randParagraph,
+  randUuid,
+} from "@ngneat/falso";
+import {
+  defineArticleFactory,
   defineCommunityFactory,
   defineEvaluationFactory,
   defineEvaluationHistoryFactory,
   defineIdentityFactory,
   defineMembershipFactory,
+  defineMembershipHistoryFactory,
   defineOpportunityFactory,
   defineOpportunitySlotFactory,
   defineParticipationFactory,
@@ -55,11 +65,17 @@ export const UserFactory = defineUserFactory({
   }),
 });
 
-export const IdentityFactory = defineIdentityFactory({
-  defaultData: () => ({
-    platform: randomEnum(IdentityPlatform),
-    user: UserFactory,
-  }),
+export const IdentityFactory = defineIdentityFactory.withTransientFields<{
+  transientUserId?: string;
+}>({})({
+  defaultData: async ({ transientUserId }) => {
+    const userId = transientUserId ?? (await UserFactory.create()).id;
+    return {
+      uid: randUuid(),
+      platform: IdentityPlatform.LINE,
+      user: { connect: { id: userId } },
+    };
+  },
 });
 
 export const CommunityFactory = defineCommunityFactory({
@@ -75,66 +91,115 @@ export const MembershipFactory = defineMembershipFactory.withTransientFields<{
   transientRole?: Role;
   transientStatus?: MembershipStatus;
   transientReason?: MembershipStatusReason;
+  transientUserId?: string;
+  transientCommunityId?: string;
 }>({})({
-  defaultData: ({ transientRole, transientStatus, transientReason }) => ({
-    user: UserFactory,
-    community: CommunityFactory,
+  defaultData: async ({
+    transientRole,
+    transientStatus,
+    transientReason,
+    transientUserId,
+    transientCommunityId,
+  }) => ({
+    user: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
+    community: { connect: { id: transientCommunityId ?? (await CommunityFactory.create()).id } },
     status: transientStatus ?? randomEnum(MembershipStatus),
     reason: transientReason ?? randomEnum(MembershipStatusReason),
     role: transientRole ?? randomEnum(Role),
-    // histories: {
-    //   create: [
-    //     {
-    //       status: transientStatus ?? randomEnum(MembershipStatus),
-    //       reason: transientReason ?? randomEnum(MembershipStatusReason),
-    //       createdByUser: UserFactory,
-    //     },
-    //   ],
-    // },
   }),
+});
+
+export const MembershipHistoryFactory = defineMembershipHistoryFactory.withTransientFields<{
+  transientStatus?: MembershipStatus;
+  transientReason?: MembershipStatusReason;
+  transientRole?: Role;
+  transientUserId?: string;
+  transientCommunityId?: string;
+}>({})({
+  defaultData: async ({
+    transientStatus,
+    transientReason,
+    transientRole,
+    transientUserId,
+    transientCommunityId,
+  }) => {
+    const userId = transientUserId ?? (await UserFactory.create()).id;
+    const communityId = transientCommunityId ?? (await CommunityFactory.create()).id;
+    const membership = await MembershipFactory.create({
+      transientUserId: userId,
+      transientCommunityId: communityId,
+    });
+    return {
+      membership: {
+        connect: {
+          userId_communityId: {
+            userId: membership.userId,
+            communityId: membership.communityId,
+          },
+        },
+      },
+      status: transientStatus ?? randomEnum(MembershipStatus),
+      reason: transientReason ?? randomEnum(MembershipStatusReason),
+      role: transientRole ?? randomEnum(Role),
+      createdByUser: { connect: { id: userId } },
+    };
+  },
 });
 
 export const WalletFactory = defineWalletFactory.withTransientFields<{
   transientType?: WalletType;
+  transientUserId?: string;
+  transientCommunityId?: string;
 }>({})({
-  defaultData: ({ transientType }) => ({
+  defaultData: async ({ transientType, transientUserId, transientCommunityId }) => ({
     type: transientType ?? randomEnum(WalletType),
-    user: UserFactory,
-    community: CommunityFactory,
+    user: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
+    community: { connect: { id: transientCommunityId ?? (await CommunityFactory.create()).id } },
   }),
 });
+
+// --- Utility & Ticket ---
 
 export const UtilityFactory = defineUtilityFactory.withTransientFields<{
   transientStatus?: PublishStatus;
+  transientCommunityId?: string;
 }>({})({
-  defaultData: ({ transientStatus }) => ({
+  defaultData: async ({ transientStatus, transientCommunityId }) => ({
     name: `Utility ${Math.random().toString(36).substring(2, 6)}`,
     pointsRequired: 10,
     publishStatus: transientStatus ?? randomEnum(PublishStatus),
-    community: CommunityFactory,
+    community: { connect: { id: transientCommunityId ?? (await CommunityFactory.create()).id } },
   }),
 });
-
-// --- Ticket ---
 
 export const TicketFactory = defineTicketFactory.withTransientFields<{
   transientStatus?: TicketStatus;
   transientReason?: TicketStatusReason;
+  transientWalletId?: string;
+  transientUtilityId?: string;
 }>({})({
-  defaultData: ({ transientStatus, transientReason }) => ({
+  defaultData: async ({
+    transientStatus,
+    transientReason,
+    transientWalletId,
+    transientUtilityId,
+  }) => ({
     status: transientStatus ?? randomEnum(TicketStatus),
     reason: transientReason ?? randomEnum(TicketStatusReason),
-    wallet: WalletFactory,
-    utility: UtilityFactory,
+    wallet: { connect: { id: transientWalletId ?? (await WalletFactory.create()).id } },
+    utility: { connect: { id: transientUtilityId ?? (await UtilityFactory.create()).id } },
   }),
 });
 
-export const TicketStatusHistoryFactory = defineTicketStatusHistoryFactory({
-  defaultData: () => ({
+export const TicketStatusHistoryFactory = defineTicketStatusHistoryFactory.withTransientFields<{
+  transientTicketId?: string;
+  transientUserId?: string;
+}>({})({
+  defaultData: async ({ transientTicketId, transientUserId }) => ({
     status: randomEnum(TicketStatus),
     reason: randomEnum(TicketStatusReason),
-    ticket: TicketFactory,
-    createdByUser: UserFactory,
+    ticket: { connect: { id: transientTicketId ?? (await TicketFactory.create()).id } },
+    createdByUser: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
   }),
 });
 
@@ -143,38 +208,101 @@ export const TicketStatusHistoryFactory = defineTicketStatusHistoryFactory({
 export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
   transientStatus?: PublishStatus;
   transientCategory?: OpportunityCategory;
+  transientCommunityId?: string;
+  transientUserId?: string;
 }>({})({
-  defaultData: ({ transientStatus, transientCategory }) => ({
+  defaultData: async ({
+    transientStatus,
+    transientCategory,
+    transientCommunityId,
+    transientUserId,
+  }) => ({
     title: `Opportunity ${Math.random().toString(36).substring(2, 6)}`,
     publishStatus: transientStatus ?? randomEnum(PublishStatus),
     requireApproval: false,
     category: transientCategory ?? randomEnum(OpportunityCategory),
     description: "Example opportunity",
-    community: CommunityFactory,
-    createdByUser: UserFactory,
+    community: { connect: { id: transientCommunityId ?? (await CommunityFactory.create()).id } },
+    createdByUser: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
     files: [],
   }),
 });
 
 export const OpportunitySlotFactory = defineOpportunitySlotFactory.withTransientFields<{
   transientStatus?: OpportunitySlotHostingStatus;
+  transientOpportunityId?: string;
 }>({})({
-  defaultData: ({ transientStatus }) => ({
+  defaultData: async ({ transientStatus, transientOpportunityId }) => ({
     hostingStatus: transientStatus ?? randomEnum(OpportunitySlotHostingStatus),
     capacity: 10,
     startsAt: new Date(),
     endsAt: new Date(Date.now() + 60 * 60 * 1000),
-    opportunity: OpportunityFactory,
+    opportunity: {
+      connect: { id: transientOpportunityId ?? (await OpportunityFactory.create()).id },
+    },
   }),
 });
 
 export const ReservationFactory = defineReservationFactory.withTransientFields<{
   transientStatus?: ReservationStatus;
+  transientSlotId?: string;
+  transientUserId?: string;
 }>({})({
-  defaultData: ({ transientStatus }) => ({
+  defaultData: async ({ transientStatus, transientSlotId, transientUserId }) => ({
     status: transientStatus ?? randomEnum(ReservationStatus),
-    opportunitySlot: OpportunitySlotFactory,
-    createdByUser: UserFactory,
+    opportunitySlot: {
+      connect: { id: transientSlotId ?? (await OpportunitySlotFactory.create()).id },
+    },
+    createdByUser: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
+  }),
+});
+
+// --- Article ---
+
+export const ArticleFactory = defineArticleFactory.withTransientFields<{
+  transientStatus?: PublishStatus;
+  transientCategory?: ArticleCategory;
+  transientCommunityId?: string;
+  transientAuthorIds?: string[];
+  transientRelatedUserIds?: string[];
+  transientOpportunityIds?: string[];
+}>({})({
+  defaultData: async ({
+    transientStatus,
+    transientCategory,
+    transientCommunityId,
+    transientAuthorIds,
+    transientRelatedUserIds,
+    transientOpportunityIds,
+  }) => ({
+    title: randCatchPhrase(),
+    introduction: randParagraph(),
+    category: transientCategory ?? randomEnum(ArticleCategory),
+    publishStatus: transientStatus ?? randomEnum(PublishStatus),
+    body: randParagraph(),
+    thumbnail: [
+      {
+        url: "https://example.com/sample-thumbnail.jpg",
+        alt: "sample image",
+      },
+    ],
+    publishedAt: new Date(),
+    community: { connect: { id: transientCommunityId ?? (await CommunityFactory.create()).id } },
+    authors: {
+      connect: transientAuthorIds?.map((id) => ({ id })) ?? [
+        { id: (await UserFactory.create()).id },
+      ],
+    },
+    relatedUsers: {
+      connect: transientRelatedUserIds?.map((id) => ({ id })) ?? [
+        { id: (await UserFactory.create()).id },
+      ],
+    },
+    opportunities: {
+      connect: transientOpportunityIds?.map((id) => ({ id })) ?? [
+        { id: (await OpportunityFactory.create()).id },
+      ],
+    },
   }),
 });
 
@@ -184,50 +312,79 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
   transientStatus?: ParticipationStatus;
   transientReason?: ParticipationStatusReason;
   transientSource?: Source;
+  transientUserId?: string;
+  transientCommunityId?: string;
+  transientReservationId?: string;
 }>({})({
-  defaultData: ({ transientStatus, transientReason, transientSource }) => ({
+  defaultData: async ({
+    transientStatus,
+    transientReason,
+    transientSource,
+    transientUserId,
+    transientCommunityId,
+    transientReservationId,
+  }) => ({
     status: transientStatus ?? randomEnum(ParticipationStatus),
     reason: transientReason ?? randomEnum(ParticipationStatusReason),
     source: transientSource ?? randomEnum(Source),
-    user: UserFactory,
-    community: CommunityFactory,
-    reservation: ReservationFactory,
+    user: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
+    community: { connect: { id: transientCommunityId ?? (await CommunityFactory.create()).id } },
+    reservation: {
+      connect: { id: transientReservationId ?? (await ReservationFactory.create()).id },
+    },
   }),
 });
 
-export const ParticipationImageFactory = defineParticipationImageFactory({
-  defaultData: () => ({
+export const ParticipationImageFactory = defineParticipationImageFactory.withTransientFields<{
+  transientParticipationId?: string;
+}>({})({
+  defaultData: async ({ transientParticipationId }) => ({
     url: "https://example.com/image.jpg",
-    participation: ParticipationFactory,
+    participation: {
+      connect: { id: transientParticipationId ?? (await ParticipationFactory.create()).id },
+    },
   }),
 });
 
-export const ParticipationStatusHistoryFactory = defineParticipationStatusHistoryFactory({
-  defaultData: () => ({
-    status: randomEnum(ParticipationStatus),
-    reason: randomEnum(ParticipationStatusReason),
-    participation: ParticipationFactory,
-    createdByUser: UserFactory,
-  }),
-});
+export const ParticipationStatusHistoryFactory =
+  defineParticipationStatusHistoryFactory.withTransientFields<{
+    transientParticipationId?: string;
+    transientUserId?: string;
+  }>({})({
+    defaultData: async ({ transientParticipationId, transientUserId }) => ({
+      status: randomEnum(ParticipationStatus),
+      reason: randomEnum(ParticipationStatusReason),
+      participation: {
+        connect: { id: transientParticipationId ?? (await ParticipationFactory.create()).id },
+      },
+      createdByUser: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
+    }),
+  });
 
 // --- Evaluation ---
 
 export const EvaluationFactory = defineEvaluationFactory.withTransientFields<{
   transientStatus?: EvaluationStatus;
+  transientParticipationId?: string;
+  transientUserId?: string;
 }>({})({
-  defaultData: ({ transientStatus }) => ({
+  defaultData: async ({ transientStatus, transientParticipationId, transientUserId }) => ({
     status: transientStatus ?? randomEnum(EvaluationStatus),
-    participation: ParticipationFactory,
-    evaluator: UserFactory,
+    participation: {
+      connect: { id: transientParticipationId ?? (await ParticipationFactory.create()).id },
+    },
+    evaluator: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
   }),
 });
 
-export const EvaluationHistoryFactory = defineEvaluationHistoryFactory({
-  defaultData: () => ({
+export const EvaluationHistoryFactory = defineEvaluationHistoryFactory.withTransientFields<{
+  transientEvaluationId?: string;
+  transientUserId?: string;
+}>({})({
+  defaultData: async ({ transientEvaluationId, transientUserId }) => ({
     status: randomEnum(EvaluationStatus),
-    evaluation: EvaluationFactory,
-    createdByUser: UserFactory,
+    evaluation: { connect: { id: transientEvaluationId ?? (await EvaluationFactory.create()).id } },
+    createdByUser: { connect: { id: transientUserId ?? (await UserFactory.create()).id } },
   }),
 });
 
@@ -235,11 +392,13 @@ export const EvaluationHistoryFactory = defineEvaluationHistoryFactory({
 
 export const TransactionFactory = defineTransactionFactory.withTransientFields<{
   transientReason?: TransactionReason;
+  transientFromWalletId?: string;
+  transientToWalletId?: string;
 }>({})({
-  defaultData: ({ transientReason }) => ({
+  defaultData: async ({ transientReason, transientFromWalletId, transientToWalletId }) => ({
     reason: transientReason ?? randomEnum(TransactionReason),
-    fromWallet: WalletFactory,
-    toWallet: WalletFactory,
+    fromWallet: { connect: { id: transientFromWalletId ?? (await WalletFactory.create()).id } },
+    toWallet: { connect: { id: transientToWalletId ?? (await WalletFactory.create()).id } },
     fromPointChange: -10,
     toPointChange: 10,
   }),
