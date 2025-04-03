@@ -3,7 +3,7 @@ import { IContext } from "@/types/server";
 import TicketRepository from "@/application/domain/ticket/data/repository";
 import TicketConverter from "@/application/domain/ticket/data/converter";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import TicketPresenter from "@/application/domain/ticket/presenter";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
@@ -58,17 +58,25 @@ export default class TicketService {
 
   static async reserveManyTickets(
     ctx: IContext,
-    tickets: PrismaTicket[],
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
+    participationIds: string[],
+    ticketIds?: string[],
+    tx?: Prisma.TransactionClient,
+  ) {
     const currentUserId = getCurrentUserId(ctx);
+    if (!ticketIds) throw new ValidationError("Ticket IDs are not provided");
 
-    const inputs = tickets.map((ticket) => ({
-      id: ticket.id,
-      data: TicketConverter.reserve(currentUserId),
+    if (ticketIds.length !== participationIds.length) {
+      throw new ValidationError("The number of tickets does not match the number of participants");
+    }
+
+    const updates = ticketIds.map((ticketId, index) => ({
+      id: ticketId,
+      data: TicketConverter.reserve(currentUserId, participationIds[index]),
     }));
 
-    await Promise.all(inputs.map(({ id, data }) => TicketRepository.update(ctx, id, data, tx)));
+    return await Promise.all(
+      updates.map(({ id, data }) => TicketRepository.update(ctx, id, data, tx)),
+    );
   }
 
   static async cancelReservedTicketsIfAvailable(

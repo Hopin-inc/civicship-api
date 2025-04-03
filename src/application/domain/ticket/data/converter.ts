@@ -43,7 +43,7 @@ export default class TicketConverter {
     };
   }
 
-  static reserve(currentUserId: string): Prisma.TicketUpdateInput {
+  static reserve(currentUserId: string, participationId?: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
       reason: TicketStatusReason.RESERVED,
@@ -51,22 +51,8 @@ export default class TicketConverter {
         create: {
           status: TicketStatus.DISABLED,
           reason: TicketStatusReason.RESERVED,
+          ...(participationId && { participation: { connect: { id: participationId } } }),
           createdByUser: { connect: { id: currentUserId } },
-        },
-      },
-    };
-  }
-
-  static reserveInline(base: Prisma.TicketCreateInput, userId: string): Prisma.TicketCreateInput {
-    return {
-      ...base,
-      status: TicketStatus.DISABLED,
-      reason: TicketStatusReason.RESERVED,
-      ticketStatusHistories: {
-        create: {
-          status: TicketStatus.DISABLED,
-          reason: TicketStatusReason.RESERVED,
-          createdByUser: { connect: { id: userId } },
         },
       },
     };
