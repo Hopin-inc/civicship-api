@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { userInclude } from "@/application/domain/user/data/type";
 
 export const opportunitySlotInclude = Prisma.validator<Prisma.OpportunitySlotInclude>()({
   opportunity: {
@@ -10,6 +11,7 @@ export const opportunitySlotInclude = Prisma.validator<Prisma.OpportunitySlotInc
       },
     },
   },
+  remainingCapacityView: true,
 });
 
 export const opportunitySlotWithParticipationInclude =
@@ -19,6 +21,7 @@ export const opportunitySlotWithParticipationInclude =
         requiredUtilities: {
           include: { community: true },
         },
+        createdByUser: { include: userInclude },
       },
     },
     reservations: {
