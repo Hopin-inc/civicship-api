@@ -54,7 +54,7 @@ jobs:
       with:
         credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
 
-    - name: pnpm gql:generate
+    - name: pnpm db:generate
       env:
         DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
       run: |
@@ -75,6 +75,9 @@ jobs:
 
         echo "Killing SSH tunnel"
         kill $SSH_PID
+
+    - name: pnpm gql:generate
+      run: pnpm gql:generate
 
     - name: pnpm build
       run: pnpm build
