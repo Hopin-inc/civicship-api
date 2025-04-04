@@ -12,12 +12,7 @@ extend type Mutation {
         id: ID!
         permission:CheckCommunityPermissionInput!
     ): OpportunityDeletePayload
-    @authz(
-        compositeRules: [
-            { or: [IsCommunityManager, IsOpportunityOwner] },
-            { and: [VerifySanitizeInput] }
-        ]
-    )
+    @authz(compositeRules: [{ or: [IsCommunityManager, IsOpportunityOwner] }])
 
     opportunityUpdateContent(
         id: ID!,

@@ -1,6 +1,6 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma, PublishStatus } from "@prisma/client";
-import { opportunityInclude } from "@/application/domain/opportunity/data/type";
+import { opportunityInclude, PrismaOpportunity } from "@/application/domain/opportunity/data/type";
 import { IContext } from "@/types/server";
 
 export default class OpportunityRepository {
@@ -12,7 +12,7 @@ export default class OpportunityRepository {
     orderBy: Prisma.OpportunityOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ) {
+  ): Promise<PrismaOpportunity[]> {
     return this.issuer.public(ctx, (tx) => {
       return tx.opportunity.findMany({
         where,

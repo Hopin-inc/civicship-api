@@ -18,6 +18,7 @@ import OpportunityPresenter from "@/application/domain/opportunity/presenter";
 import { PublishStatus, TicketStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { PrismaOpportunity } from "@/application/domain/opportunity/data/type";
 
 export default class OpportunityUseCase {
   static async anyoneBrowseOpportunities(
@@ -38,7 +39,7 @@ export default class OpportunityUseCase {
 
     await OpportunityService.validatePublishStatus(allowedPublishStatuses, filter);
 
-    const validatedFilter: GqlOpportunityFilterInput = validateByMembershipRoles(
+    const validatedFilter: GqlOpportunityFilterInput = this.validateByMembershipRoles(
       communityIds,
       isMember,
       isManager,
@@ -46,7 +47,7 @@ export default class OpportunityUseCase {
       filter,
     );
 
-    const records = await OpportunityService.fetchOpportunities(
+    const records: PrismaOpportunity[] = await OpportunityService.fetchOpportunities(
       ctx,
       {
         cursor,
@@ -55,7 +56,6 @@ export default class OpportunityUseCase {
       },
       take,
     );
-
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
 
@@ -70,7 +70,7 @@ export default class OpportunityUseCase {
     const communityIds = [permission.communityId];
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
 
-    const validatedFilter = validateByMembershipRoles(
+    const validatedFilter = this.validateByMembershipRoles(
       communityIds,
       isMember,
       isManager,
@@ -138,37 +138,37 @@ export default class OpportunityUseCase {
     const utilityIdSet = new Set(userTickets.map((t) => t.utilityId));
     return requiredUtilityIds.some((id) => utilityIdSet.has(id));
   }
-}
 
-function validateByMembershipRoles(
-  communityIds: string[],
-  isManager: Record<string, boolean>,
-  isMember: Record<string, boolean>,
-  currentUserId?: string,
-  filter?: GqlOpportunityFilterInput,
-): GqlOpportunityFilterInput {
-  const orConditions: GqlOpportunityFilterInput[] = communityIds.map((communityId) => {
-    if (isManager[communityId]) {
+  private static validateByMembershipRoles(
+    communityIds: string[],
+    isManager: Record<string, boolean>,
+    isMember: Record<string, boolean>,
+    currentUserId?: string,
+    filter?: GqlOpportunityFilterInput,
+  ): GqlOpportunityFilterInput {
+    const orConditions: GqlOpportunityFilterInput[] = communityIds.map((communityId) => {
+      if (isManager[communityId]) {
+        return {
+          and: [{ communityIds: [communityId] }, ...(filter ? [filter] : [])],
+        };
+      }
       return {
-        and: [{ communityIds: [communityId] }, ...(filter ? [filter] : [])],
+        and: [
+          { communityIds: [communityId] },
+          {
+            or: [
+              { publishStatus: [PublishStatus.PUBLIC] },
+              ...(isMember[communityId]
+                ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
+                : []),
+              ...(currentUserId ? [{ createdByUserIds: [currentUserId] }] : []),
+            ],
+          },
+          ...(filter ? [filter] : []),
+        ],
       };
-    }
-    return {
-      and: [
-        { communityIds: [communityId] },
-        {
-          or: [
-            { publishStatus: [PublishStatus.PUBLIC] },
-            ...(isMember[communityId]
-              ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
-              : []),
-            ...(currentUserId ? [{ createdByUserIds: [currentUserId] }] : []),
-          ],
-        },
-        ...(filter ? [filter] : []),
-      ],
-    };
-  });
+    });
 
-  return { or: orConditions };
+    return { or: orConditions };
+  }
 }

@@ -11,17 +11,6 @@ export const opportunityInclude = Prisma.validator<Prisma.OpportunityInclude>()(
   requiredUtilities: { include: utilityInclude },
 });
 
-export const opportunitySetHostingStatusInclude = Prisma.validator<Prisma.OpportunityInclude>()({
-  community: { include: communityInclude },
-  createdByUser: { include: userInclude },
-  place: { include: placeInclude },
-  requiredUtilities: { include: utilityInclude },
-});
-
 export type PrismaOpportunity = Prisma.OpportunityGetPayload<{
   include: typeof opportunityInclude;
-}>;
-
-export type PrismaOpportunitySetHostingStatus = Prisma.OpportunityGetPayload<{
-  include: typeof opportunitySetHostingStatusInclude;
 }>;

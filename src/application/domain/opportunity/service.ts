@@ -11,22 +11,18 @@ import { IContext } from "@/types/server";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunityConverter from "@/application/domain/opportunity/data/converter";
-import { PrismaOpportunitySlot } from "@/application/domain/opportunitySlot/data/type";
+import { PrismaOpportunity } from "@/application/domain/opportunity/data/type";
 
 export default class OpportunityService {
   static async fetchOpportunities(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryOpportunitiesArgs,
     take: number,
-  ) {
+  ): Promise<PrismaOpportunity[]> {
     const where = OpportunityConverter.filter(filter ?? {});
     const orderBy = OpportunityConverter.sort(sort ?? {});
 
     return await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
-  }
-
-  static async findOpportunity(ctx: IContext, id: string) {
-    return await OpportunityRepository.find(ctx, id);
   }
 
   static async findOpportunityAccessible(
@@ -55,7 +51,7 @@ export default class OpportunityService {
   static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
     const currentUserId = getCurrentUserId(ctx);
 
-    validatePlaceInput(input.place);
+    this.validatePlaceInput(input.place);
     const data: Prisma.OpportunityCreateInput = OpportunityConverter.create(input, currentUserId);
     return await OpportunityRepository.create(ctx, data);
   }
@@ -72,7 +68,7 @@ export default class OpportunityService {
     input: GqlOpportunityUpdateContentInput,
   ) {
     await this.findOpportunityOrThrow(ctx, id);
-    validatePlaceInput(input.place);
+    this.validatePlaceInput(input.place);
 
     const data: Prisma.OpportunityUpdateInput = OpportunityConverter.update(input);
     return await OpportunityRepository.update(ctx, id, data);
@@ -99,23 +95,13 @@ export default class OpportunityService {
     }
   }
 
-  static getSingleRequiredUtility(
-    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
-  ) {
-    if (requiredUtilities.length !== 1) {
-      throw new ValidationError("Exactly one required utility is allowed at this time.");
-    }
-
-    return requiredUtilities[0];
-  }
-}
-
-function validatePlaceInput(place?: GqlNestedPlaceConnectOrCreateInput): void {
-  if (place) {
-    if ((place.where && place.create) || (!place.where && !place.create)) {
-      throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
-        JSON.stringify(place),
-      ]);
+  private static validatePlaceInput(place?: GqlNestedPlaceConnectOrCreateInput): void {
+    if (place) {
+      if ((place.where && place.create) || (!place.where && !place.create)) {
+        throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
+          JSON.stringify(place),
+        ]);
+      }
     }
   }
 }
