@@ -50,8 +50,8 @@ export class PrismaClientIssuer {
         return await callback(tx);
       },
       {
-        maxWait: 5000,
         timeout: 10000,
+        maxWait: 5000,
       },
     );
   }

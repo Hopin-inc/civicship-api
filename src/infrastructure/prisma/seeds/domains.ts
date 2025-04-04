@@ -21,10 +21,17 @@ import {
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { initialize } from "@/__tests__/factories/__generated__";
 
+const seedCountMap = new Map<string, number>();
+function count(label: string) {
+  seedCountMap.set(label, (seedCountMap.get(label) ?? 0) + 1);
+}
+
 // --- 共通 try-catch ヘルパー ---
 async function safeCreate<T>(label: string, index: number, fn: () => PromiseLike<T>): Promise<T> {
   try {
-    return await Promise.resolve(fn());
+    const result = await Promise.resolve(fn());
+    count(label);
+    return result;
   } catch (err) {
     console.error(`❌ ${label} failed at index ${index}`, err);
     throw err;
@@ -248,9 +255,13 @@ export async function seedUsecase() {
         );
 
         console.log("🎉 Seeding succeeded!");
+        console.log("\n📊 Seeding Summary:");
+        for (const [label, count] of seedCountMap.entries()) {
+          console.log(`- ${label}: ${count} created`);
+        }
       },
       {
-        timeout: 60_000,
+        timeout: 60000,
         maxWait: 6000,
       },
     );
