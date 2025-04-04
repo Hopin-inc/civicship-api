@@ -1,10 +1,6 @@
 import { IContext } from "@/types/server";
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
-import {
-  GqlOpportunitySlotCreateInput,
-  GqlOpportunitySlotUpdateInput,
-  GqlQueryOpportunitySlotsArgs,
-} from "@/types/graphql";
+import { GqlOpportunitySlotCreateInput, GqlQueryOpportunitySlotsArgs } from "@/types/graphql";
 import OpportunitySlotRepository from "@/application/domain/opportunitySlot/data/repository";
 import OpportunitySlotConverter from "@/application/domain/opportunitySlot/data/converter";
 import { NotFoundError } from "@/errors/graphql";
@@ -63,20 +59,6 @@ export default class OpportunitySlotService {
 
     const data = OpportunitySlotConverter.createMany(opportunityId, inputs);
     return OpportunitySlotRepository.createMany(ctx, data, tx);
-  }
-
-  static async bulkUpdateOpportunitySlots(
-    ctx: IContext,
-    inputs: GqlOpportunitySlotUpdateInput[],
-    tx: Prisma.TransactionClient,
-  ) {
-    if (inputs.length === 0) return;
-
-    return await Promise.all(
-      inputs.map((input) =>
-        OpportunitySlotRepository.update(ctx, input.id, OpportunitySlotConverter.update(input), tx),
-      ),
-    );
   }
 
   static async bulkDeleteOpportunitySlots(

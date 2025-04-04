@@ -37,17 +37,10 @@ input OpportunitySlotsBulkUpdateInput {
     opportunityId: ID!
 
     create: [OpportunitySlotCreateInput!]
-    update: [OpportunitySlotUpdateInput!]
     delete: [ID!]
 }
 
 input OpportunitySlotCreateInput {
-    startsAt: Datetime!
-    endsAt: Datetime!
-}
-
-input OpportunitySlotUpdateInput {
-    id: ID!
     startsAt: Datetime!
     endsAt: Datetime!
 }

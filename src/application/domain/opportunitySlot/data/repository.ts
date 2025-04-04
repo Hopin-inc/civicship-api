@@ -56,29 +56,6 @@ export default class OpportunitySlotRepository {
     return tx.opportunitySlot.createMany({ data });
   }
 
-  static async update(
-    ctx: IContext,
-    id: string,
-    data: Prisma.OpportunitySlotUpdateInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.opportunitySlot.update({
-        where: { id },
-        data,
-        include: opportunitySlotInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.opportunitySlot.update({
-          where: { id },
-          data,
-          include: opportunitySlotInclude,
-        });
-      });
-    }
-  }
-
   static async setHostingStatus(
     ctx: IContext,
     id: string,

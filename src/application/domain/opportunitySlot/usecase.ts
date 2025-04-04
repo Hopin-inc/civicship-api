@@ -13,7 +13,7 @@ import OpportunitySlotService from "@/application/domain/opportunitySlot/service
 import OpportunitySlotPresenter from "@/application/domain/opportunitySlot/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { clampFirst } from "@/application/domain/utils";
-import { OpportunitySlotHostingStatus } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import ParticipationService from "@/application/domain/participation/service";
 import ParticipationStatusHistoryService from "@/application/domain/participation/statusHistory/service";
 import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/opportunitySlot/data/type";
@@ -52,10 +52,8 @@ export default class OpportunitySlotUseCase {
     { id, input }: GqlMutationOpportunitySlotSetHostingStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotSetHostingStatusPayload> {
-    let cancelledSlot: PrismaOpportunitySlotWithParticipation | null = null;
-
-    const res = await this.issuer.public(ctx, async (tx) => {
-      const slot = await OpportunitySlotService.setOpportunitySlotHostingStatus(
+    const slot = await this.issuer.public(ctx, async (tx) => {
+      const updated = await OpportunitySlotService.setOpportunitySlotHostingStatus(
         ctx,
         id,
         input.status,
@@ -63,29 +61,17 @@ export default class OpportunitySlotUseCase {
       );
 
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
-        const participationIds =
-          slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
-
-        await Promise.all([
-          ParticipationService.bulkCancelParticipationsByOpportunitySlot(ctx, participationIds, tx),
-          ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunitySlot(
-            ctx,
-            participationIds,
-            tx,
-          ),
-        ]);
-
-        cancelledSlot = slot;
+        await this.handleSlotCancellation(ctx, updated, tx);
       }
 
-      return slot;
+      return updated;
     });
 
-    if (cancelledSlot) {
-      await NotificationService.pushCancelOpportunitySlotMessage(ctx, cancelledSlot);
+    if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
+      await NotificationService.pushCancelOpportunitySlotMessage(ctx, slot);
     }
 
-    return OpportunitySlotPresenter.setHostingStatus(res);
+    return OpportunitySlotPresenter.setHostingStatus(slot);
   }
 
   static async managerBulkUpdateOpportunitySlots(
@@ -93,21 +79,39 @@ export default class OpportunitySlotUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
     return this.issuer.public(ctx, async (tx) => {
+      // コンフリクトを避けるためにデリートから実行
+      await OpportunitySlotService.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
       await OpportunitySlotService.bulkCreateOpportunitySlots(
         ctx,
         input.opportunityId,
         input.create ?? [],
         tx,
       );
-      await OpportunitySlotService.bulkUpdateOpportunitySlots(ctx, input.update ?? [], tx);
-      await OpportunitySlotService.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
 
       const rows = await OpportunitySlotService.fetchAllSlotByOpportunityId(
         ctx,
         input.opportunityId,
         tx,
       );
-      return OpportunitySlotPresenter.bulkUpdate(rows.map((r) => OpportunitySlotPresenter.get(r)));
+      return OpportunitySlotPresenter.bulkUpdate(rows);
     });
+  }
+
+  private static async handleSlotCancellation(
+    ctx: IContext,
+    slot: PrismaOpportunitySlotWithParticipation,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const participationIds =
+      slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
+
+    await Promise.all([
+      ParticipationService.bulkCancelParticipationsByOpportunitySlot(ctx, participationIds, tx),
+      ParticipationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunitySlot(
+        ctx,
+        participationIds,
+        tx,
+      ),
+    ]);
   }
 }

@@ -50,10 +50,10 @@ export default class OpportunitySlotPresenter {
     };
   }
 
-  static bulkUpdate(slots: GqlOpportunitySlot[]): GqlOpportunitySlotsBulkUpdateSuccess {
+  static bulkUpdate(slots: PrismaOpportunitySlot[]): GqlOpportunitySlotsBulkUpdateSuccess {
     return {
       __typename: "OpportunitySlotsBulkUpdateSuccess",
-      slots,
+      slots: slots.map(this.get),
     };
   }
 }

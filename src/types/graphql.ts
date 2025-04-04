@@ -1097,17 +1097,10 @@ export type GqlOpportunitySlotSortInput = {
   startsAt?: InputMaybe<GqlSortDirection>;
 };
 
-export type GqlOpportunitySlotUpdateInput = {
-  endsAt: Scalars['Datetime']['input'];
-  id: Scalars['ID']['input'];
-  startsAt: Scalars['Datetime']['input'];
-};
-
 export type GqlOpportunitySlotsBulkUpdateInput = {
   create?: InputMaybe<Array<GqlOpportunitySlotCreateInput>>;
   delete?: InputMaybe<Array<Scalars['ID']['input']>>;
   opportunityId: Scalars['ID']['input'];
-  update?: InputMaybe<Array<GqlOpportunitySlotUpdateInput>>;
 };
 
 export type GqlOpportunitySlotsBulkUpdatePayload = GqlOpportunitySlotsBulkUpdateSuccess;
@@ -2802,7 +2795,6 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunitySlotSetHostingStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySlotSetHostingStatusPayload']>;
   OpportunitySlotSetHostingStatusSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: GqlResolversTypes['OpportunitySlot'] }>;
   OpportunitySlotSortInput: GqlOpportunitySlotSortInput;
-  OpportunitySlotUpdateInput: GqlOpportunitySlotUpdateInput;
   OpportunitySlotsBulkUpdateInput: GqlOpportunitySlotsBulkUpdateInput;
   OpportunitySlotsBulkUpdatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunitySlotsBulkUpdatePayload']>;
   OpportunitySlotsBulkUpdateSuccess: ResolverTypeWrapper<Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<GqlResolversTypes['OpportunitySlot']> }>;
@@ -3057,7 +3049,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunitySlotSetHostingStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySlotSetHostingStatusPayload'];
   OpportunitySlotSetHostingStatusSuccess: Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: GqlResolversParentTypes['OpportunitySlot'] };
   OpportunitySlotSortInput: GqlOpportunitySlotSortInput;
-  OpportunitySlotUpdateInput: GqlOpportunitySlotUpdateInput;
   OpportunitySlotsBulkUpdateInput: GqlOpportunitySlotsBulkUpdateInput;
   OpportunitySlotsBulkUpdatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunitySlotsBulkUpdatePayload'];
   OpportunitySlotsBulkUpdateSuccess: Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<GqlResolversParentTypes['OpportunitySlot']> };

@@ -3,7 +3,6 @@ import {
   GqlCommunitySortInput,
   GqlOpportunitySlotCreateInput,
   GqlOpportunitySlotFilterInput,
-  GqlOpportunitySlotUpdateInput,
 } from "@/types/graphql";
 
 export default class OpportunitySlotConverter {
@@ -26,21 +25,5 @@ export default class OpportunitySlotConverter {
       startsAt: input.startsAt,
       endsAt: input.endsAt,
     }));
-  }
-
-  static setStatus(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
-    const { startsAt, endsAt } = input;
-    return {
-      startsAt: startsAt,
-      endsAt: endsAt,
-    };
-  }
-
-  static update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
-    const { startsAt, endsAt } = input;
-    return {
-      startsAt: startsAt,
-      endsAt: endsAt,
-    };
   }
 }
