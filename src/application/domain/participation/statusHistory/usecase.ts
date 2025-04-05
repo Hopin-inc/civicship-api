@@ -1,52 +1,38 @@
 import {
-  GqlParticipation,
-  GqlParticipationStatusHistoriesArgs,
   GqlParticipationStatusHistoriesConnection,
   GqlParticipationStatusHistory,
   GqlQueryParticipationStatusHistoriesArgs,
   GqlQueryParticipationStatusHistoryArgs,
-  GqlUser,
-  GqlUserParticipationStatusChangedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationStatusHistoryService from "@/application/domain/participation/statusHistory/service";
 import ParticipationStatusHistoryOutputFormat from "@/application/domain/participation/statusHistory/presenter";
+import { clampFirst } from "@/application/domain/utils";
+import ParticipationStatusHistoryPresenter from "@/application/domain/participation/statusHistory/presenter";
 
 export default class ParticipationStatusHistoryUseCase {
   static async visitorBrowseParticipationStatusHistories(
     { cursor, filter, sort, first }: GqlQueryParticipationStatusHistoriesArgs,
     ctx: IContext,
   ): Promise<GqlParticipationStatusHistoriesConnection> {
-    return ParticipationStatusHistoryService.fetchParticipationStatusHistories(ctx, {
-      cursor,
-      sort,
-      filter,
-      first,
-    });
-  }
+    const take = clampFirst(first);
 
-  static async visitorBrowseStatusHistoriesByParticipation(
-    { id }: GqlParticipation,
-    { first, cursor }: GqlParticipationStatusHistoriesArgs,
-    ctx: IContext,
-  ): Promise<GqlParticipationStatusHistoriesConnection> {
-    return ParticipationStatusHistoryService.fetchParticipationStatusHistories(ctx, {
-      cursor,
-      filter: { participationId: id },
-      first,
-    });
-  }
+    const records = await ParticipationStatusHistoryService.fetchParticipationStatusHistories(
+      ctx,
+      {
+        cursor,
+        sort,
+        filter,
+      },
+      take,
+    );
 
-  static async visitorBrowseParticipationStatusChangedByUser(
-    { id }: GqlUser,
-    { first, cursor }: GqlUserParticipationStatusChangedByMeArgs,
-    ctx: IContext,
-  ) {
-    return ParticipationStatusHistoryService.fetchParticipationStatusHistories(ctx, {
-      cursor,
-      filter: { createdById: id },
-      first,
-    });
+    const hasNextPage = records.length > take;
+    const data: GqlParticipationStatusHistory[] = records
+      .slice(0, take)
+      .map((record) => ParticipationStatusHistoryPresenter.get(record));
+
+    return ParticipationStatusHistoryPresenter.query(data, hasNextPage);
   }
 
   static async visitorViewParticipationStatusHistory(

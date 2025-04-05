@@ -1,44 +1,20 @@
 import { IContext } from "@/types/server";
-import {
-  GqlParticipationStatusHistoriesConnection,
-  GqlParticipationStatusHistory,
-  GqlParticipationStatusHistoryFilterInput,
-  GqlParticipationStatusHistorySortInput,
-} from "@/types/graphql";
+import { GqlQueryParticipationStatusHistoriesArgs } from "@/types/graphql";
 import ParticipationStatusHistoryRepository from "@/application/domain/participation/statusHistory/data/repository";
 import ParticipationStatusHistoryConverter from "@/application/domain/participation/statusHistory/data/converter";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import ParticipationStatusHistoryPresenter from "@/application/domain/participation/statusHistory/presenter";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 
 export default class ParticipationStatusHistoryService {
   static async fetchParticipationStatusHistories(
     ctx: IContext,
-    {
-      cursor,
-      filter,
-      sort,
-      first,
-    }: {
-      cursor?: string;
-      filter?: GqlParticipationStatusHistoryFilterInput;
-      sort?: GqlParticipationStatusHistorySortInput;
-      first?: number;
-    },
-  ): Promise<GqlParticipationStatusHistoriesConnection> {
-    const take = clampFirst(first);
-
+    { cursor, filter, sort }: GqlQueryParticipationStatusHistoriesArgs,
+    take: number,
+  ) {
     const where = ParticipationStatusHistoryConverter.filter(filter);
     const orderBy = ParticipationStatusHistoryConverter.sort(sort ?? {});
 
-    const res = await ParticipationStatusHistoryRepository.query(ctx, where, orderBy, take, cursor);
-
-    const hasNextPage = res.length > take;
-    const data: GqlParticipationStatusHistory[] = res
-      .slice(0, take)
-      .map((record) => ParticipationStatusHistoryPresenter.get(record));
-
-    return ParticipationStatusHistoryPresenter.query(data, hasNextPage);
+    return ParticipationStatusHistoryRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async findParticipationStatusHistory(ctx: IContext, id: string) {
