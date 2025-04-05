@@ -77,11 +77,16 @@ export default class ReservationUseCase {
     { input }: GqlMutationReservationCreateArgs,
     ctx: IContext,
   ): Promise<GqlReservationCreatePayload> {
+    const {
+      opportunitySlotId,
+      paymentMethod,
+      totalParticipantCount,
+      ticketIdsIfNeed,
+      otherUserIds,
+    } = input;
+
     const currentUserId = getCurrentUserId(ctx);
-    const slot = await OpportunitySlotService.findOpportunitySlotOrThrow(
-      ctx,
-      input.opportunitySlotId,
-    );
+    const slot = await OpportunitySlotService.findOpportunitySlotOrThrow(ctx, opportunitySlotId);
     await this.validateBeforeReserve(ctx, currentUserId, slot, input);
 
     const { communityId, requiredUtilities, requireApproval } = slot.opportunity;
@@ -94,22 +99,17 @@ export default class ReservationUseCase {
       const statuses = this.resolveReservationStatuses(requireApproval);
       const reservation = await ReservationService.createReservation(
         ctx,
-        input.opportunitySlotId,
-        input.totalParticipantCount,
-        input.otherUserIds,
+        opportunitySlotId,
+        totalParticipantCount,
+        otherUserIds,
         statuses,
         tx,
       );
 
-      const participationIds = reservation.participations.map((p) => p.id);
-      await this.handleReserveTicketsIfNeeded(
-        ctx,
-        tx,
-        input.paymentMethod,
-        requiredUtilities,
-        participationIds,
-        input.ticketIdsIfNeed,
-      );
+      if (requiredUtilities.length !== 0 && paymentMethod === GqlReservationPaymentMethod.Ticket) {
+        const participationIds = reservation.participations.map((p) => p.id);
+        await TicketService.reserveManyTickets(ctx, participationIds, ticketIdsIfNeed, tx);
+      }
 
       return reservation;
     });
@@ -243,20 +243,6 @@ export default class ReservationUseCase {
       slot.remainingCapacityView?.remainingCapacity ?? undefined,
       reservationExists,
     );
-  }
-
-  private static async handleReserveTicketsIfNeeded(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    paymentMethod: GqlReservationPaymentMethod,
-    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
-    participationIds: string[],
-    ticketIds?: string[],
-  ): Promise<void> {
-    if (requiredUtilities.length === 0) return;
-    if (paymentMethod !== GqlReservationPaymentMethod.Ticket) return;
-
-    await TicketService.reserveManyTickets(ctx, participationIds, ticketIds, tx);
   }
 
   private static async handleCancelReservation(
