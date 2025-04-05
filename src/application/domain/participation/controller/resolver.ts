@@ -47,9 +47,11 @@ const participationResolver = {
       args: GqlParticipationStatusHistoriesArgs,
       ctx: IContext,
     ) => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
-        parent,
-        args,
+      return ParticipationStatusHistoryUseCase.visitorBrowseParticipationStatusHistories(
+        {
+          ...args,
+          filter: { participationId: parent.id },
+        },
         ctx,
       );
     },
