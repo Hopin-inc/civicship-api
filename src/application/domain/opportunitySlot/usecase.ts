@@ -78,7 +78,7 @@ export default class OpportunitySlotUseCase {
     { input }: GqlMutationOpportunitySlotsBulkUpdateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    const slots = await this.issuer.public(ctx, async (tx) => {
       // コンフリクトを避けるためにデリートから実行
       await OpportunitySlotService.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
       await OpportunitySlotService.bulkCreateOpportunitySlots(
@@ -88,13 +88,10 @@ export default class OpportunitySlotUseCase {
         tx,
       );
 
-      const rows = await OpportunitySlotService.fetchAllSlotByOpportunityId(
-        ctx,
-        input.opportunityId,
-        tx,
-      );
-      return OpportunitySlotPresenter.bulkUpdate(rows);
+      return await OpportunitySlotService.fetchAllSlotByOpportunityId(ctx, input.opportunityId, tx);
     });
+
+    return OpportunitySlotPresenter.bulkUpdate(slots);
   }
 
   private static async handleSlotCancellation(
