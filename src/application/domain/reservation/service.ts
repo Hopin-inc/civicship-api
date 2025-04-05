@@ -1,26 +1,23 @@
-import { GqlReservationsConnection, GqlQueryReservationsArgs } from "@/types/graphql";
+import { GqlQueryReservationsArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ReservationRepository from "@/application/domain/reservation/data/repository";
 import ReservationConverter from "@/application/domain/reservation/data/converter";
-import ReservationPresenter from "@/application/domain/reservation/presenter";
 import { Prisma, ReservationStatus } from "@prisma/client";
-import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
-import { ReservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/type";
 import { PrismaReservation } from "@/application/domain/reservation/data/type";
 
 export default class ReservationService {
   static async fetchReservations(
     ctx: IContext,
-    { cursor, filter, sort, first }: GqlQueryReservationsArgs,
-  ): Promise<GqlReservationsConnection> {
-    const take = clampFirst(first);
+    { cursor, filter, sort }: GqlQueryReservationsArgs,
+    take: number,
+  ) {
     const where = ReservationConverter.filter(filter);
     const orderBy = ReservationConverter.sort(sort);
-    const results = await ReservationRepository.query(ctx, where, orderBy, take, cursor);
-    const hasNextPage = results.length > take;
-    const sliced = results.slice(0, take).map(ReservationPresenter.get);
-    return ReservationPresenter.query(sliced, hasNextPage);
+
+    return await ReservationRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async fetchConflictingReservations(

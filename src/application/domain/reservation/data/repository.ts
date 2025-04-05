@@ -25,16 +25,6 @@ export default class ReservationRepository {
     });
   }
 
-  static async count(
-    ctx: IContext,
-    where: Prisma.ReservationWhereInput,
-    tx: Prisma.TransactionClient,
-  ) {
-    return tx.reservation.count({
-      where,
-    });
-  }
-
   static async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.reservation.findUnique({

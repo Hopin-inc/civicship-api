@@ -1,12 +1,11 @@
 import { GqlReservationFilterInput, GqlReservationSortInput } from "@/types/graphql";
 import {
-  OpportunityCategory,
   ParticipationStatus,
   ParticipationStatusReason,
   Prisma,
   ReservationStatus,
 } from "@prisma/client";
-import { ReservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/type";
 
 export default class ReservationConverter {
   static filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
@@ -25,20 +24,6 @@ export default class ReservationConverter {
     if (filter.createdByUserId) conditions.push({ createdBy: filter.createdByUserId });
 
     return conditions.length ? { AND: conditions } : {};
-  }
-
-  static countByUserAndOpportunityCategory(
-    userId: string,
-    category: OpportunityCategory,
-  ): Prisma.ReservationWhereInput {
-    return {
-      createdBy: userId,
-      opportunitySlot: {
-        opportunity: {
-          category,
-        },
-      },
-    };
   }
 
   static sort(sort?: GqlReservationSortInput): Prisma.ReservationOrderByWithRelationInput[] {
@@ -69,7 +54,7 @@ export default class ReservationConverter {
   ): Prisma.ReservationCreateInput {
     const userIds = [currentUserId, ...userIdsIfExists];
 
-    const participations = createParticipations(
+    const participations = this.createParticipations(
       currentUserId,
       userIds,
       participantCount,
@@ -105,42 +90,38 @@ export default class ReservationConverter {
       },
     };
   }
-}
 
-function createParticipations(
-  currentUserId: string,
-  userIds: (string | undefined)[],
-  count: number,
-  status: ParticipationStatus,
-  reason: ParticipationStatusReason,
-): Prisma.ParticipationCreateWithoutReservationInput[] {
-  const results: Prisma.ParticipationCreateWithoutReservationInput[] = [];
-
-  for (let i = 0; i < count; i++) {
-    results.push(createParticipationInput(currentUserId, userIds[i], status, reason));
+  private static createParticipations(
+    currentUserId: string,
+    userIds: (string | undefined)[],
+    count: number,
+    status: ParticipationStatus,
+    reason: ParticipationStatusReason,
+  ): Prisma.ParticipationCreateWithoutReservationInput[] {
+    return Array.from({ length: count }, (_, i) =>
+      this.createParticipationInput(currentUserId, userIds[i], status, reason),
+    );
   }
 
-  return results;
-}
-
-function createParticipationInput(
-  currentUserId: string,
-  userId: string | undefined,
-  status: ParticipationStatus,
-  reason: ParticipationStatusReason,
-): Prisma.ParticipationCreateWithoutReservationInput {
-  return {
-    status,
-    reason,
-    ...(userId && {
-      user: { connect: { id: userId } },
-    }),
-    statusHistories: {
-      create: {
-        status,
-        reason,
-        createdByUser: { connect: { id: currentUserId } },
+  private static createParticipationInput(
+    currentUserId: string,
+    userId: string | undefined,
+    status: ParticipationStatus,
+    reason: ParticipationStatusReason,
+  ): Prisma.ParticipationCreateWithoutReservationInput {
+    return {
+      status,
+      reason,
+      ...(userId && {
+        user: { connect: { id: userId } },
+      }),
+      statusHistories: {
+        create: {
+          status,
+          reason,
+          createdByUser: { connect: { id: currentUserId } },
+        },
       },
-    },
-  };
+    };
+  }
 }
