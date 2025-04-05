@@ -8,7 +8,9 @@ import {
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
 
 export default class TicketPresenter {
-  static query(tickets: GqlTicket[], hasNextPage: boolean): GqlTicketsConnection {
+  static query(records: PrismaTicket[], hasNextPage: boolean, take: number): GqlTicketsConnection {
+    const tickets = records.slice(0, take).map((record) => this.get(record));
+
     return {
       totalCount: tickets.length,
       pageInfo: {

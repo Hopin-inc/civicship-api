@@ -18,6 +18,7 @@ import TransactionService from "@/application/domain/transaction/service";
 import { Prisma } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
+import { clampFirst } from "@/application/domain/utils";
 
 export default class TicketUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -26,7 +27,11 @@ export default class TicketUseCase {
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryTicketsArgs,
   ): Promise<GqlTicketsConnection> {
-    return TicketService.fetchTickets(ctx, { cursor, filter, sort, first });
+    const take = clampFirst(first);
+    const records = await TicketService.fetchTickets(ctx, { cursor, filter, sort }, take);
+
+    const hasNextPage = records.length > take;
+    return TicketPresenter.query(records, hasNextPage, take);
   }
 
   static async visitorViewTicket(
@@ -44,55 +49,59 @@ export default class TicketUseCase {
     ctx: IContext,
     { input }: GqlMutationTicketPurchaseArgs,
   ): Promise<GqlTicketPurchasePayload> {
-    const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.walletId);
-    const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
+    const [memberWallet, communityWallet] = await Promise.all([
+      WalletService.checkIfMemberWalletExists(ctx, input.walletId),
+      WalletService.findCommunityWalletOrThrow(ctx, input.communityId),
+    ]);
+    await WalletValidator.validateTransfer(input.pointsRequired, memberWallet, communityWallet);
 
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await WalletValidator.validateTransfer(input.pointsRequired, memberWallet, communityWallet);
-
+    const ticket = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       const transaction = await TransactionService.purchaseTicket(ctx, tx, {
         fromWalletId: memberWallet.id,
         toWalletId: communityWallet.id,
         transferPoints: input.pointsRequired,
       });
 
-      const result = await TicketService.purchaseTicket(
+      return await TicketService.purchaseTicket(
         ctx,
         memberWallet.id,
         input.utilityId,
         transaction.id,
         tx,
       );
-      return TicketPresenter.purchase(result);
     });
+
+    return TicketPresenter.purchase(ticket);
   }
 
   static async memberUseTicket(
     ctx: IContext,
     { id }: GqlMutationTicketUseArgs,
   ): Promise<GqlTicketUsePayload> {
-    const result = await TicketService.useTicket(ctx, id);
-    return TicketPresenter.use(result);
+    const ticket = await TicketService.useTicket(ctx, id);
+    return TicketPresenter.use(ticket);
   }
 
   static async memberRefundTicket(
     ctx: IContext,
     { id, input }: GqlMutationTicketRefundArgs,
   ): Promise<GqlTicketRefundPayload> {
-    const memberWallet = await WalletService.checkIfMemberWalletExists(ctx, input.walletId);
-    const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, input.communityId);
+    const [memberWallet, communityWallet] = await Promise.all([
+      WalletService.checkIfMemberWalletExists(ctx, input.walletId),
+      WalletService.findCommunityWalletOrThrow(ctx, input.communityId),
+    ]);
+    await WalletValidator.validateTransfer(input.pointsRequired, communityWallet, memberWallet);
 
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await WalletValidator.validateTransfer(input.pointsRequired, communityWallet, memberWallet);
-
+    const ticket = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       const transaction = await TransactionService.refundTicket(ctx, tx, {
         fromWalletId: memberWallet.id,
         toWalletId: communityWallet.id,
         transferPoints: input.pointsRequired,
       });
 
-      const result = await TicketService.refundTicket(ctx, id, transaction.id, tx);
-      return TicketPresenter.refund(result);
+      return await TicketService.refundTicket(ctx, id, transaction.id, tx);
     });
+
+    return TicketPresenter.refund(ticket);
   }
 }

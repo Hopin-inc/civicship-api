@@ -9,7 +9,7 @@ type Ticket {
     wallet: Wallet!
     utility: Utility!
 
-    ticketStatusHistories(
+    statusHistories(
         filter: TicketStatusHistoryFilterInput
         sort: TicketStatusHistorySortInput
         cursor: String

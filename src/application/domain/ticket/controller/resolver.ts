@@ -4,9 +4,11 @@ import {
   GqlMutationTicketPurchaseArgs,
   GqlMutationTicketUseArgs,
   GqlMutationTicketRefundArgs,
+  GqlTicket,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketUseCase from "@/application/domain/ticket/usecase";
+import TicketStatusHistoryUseCase from "@/application/domain/ticket/statusHistory/usecase";
 
 const ticketResolver = {
   Query: {
@@ -30,6 +32,15 @@ const ticketResolver = {
     },
     ticketRefund: async (_: unknown, args: GqlMutationTicketRefundArgs, ctx: IContext) => {
       return TicketUseCase.memberRefundTicket(ctx, args);
+    },
+  },
+
+  Ticket: {
+    statusHistories: async (parent: GqlTicket, args: GqlQueryTicketArgs, ctx: IContext) => {
+      return TicketStatusHistoryUseCase.visitorBrowseTicketStatusHistories(ctx, {
+        ...args,
+        filter: { ticketId: parent.id },
+      });
     },
   },
 };

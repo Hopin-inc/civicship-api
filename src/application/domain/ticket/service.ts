@@ -1,26 +1,22 @@
-import { GqlQueryTicketsArgs, GqlTicketsConnection } from "@/types/graphql";
+import { GqlQueryTicketsArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketRepository from "@/application/domain/ticket/data/repository";
 import TicketConverter from "@/application/domain/ticket/data/converter";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import TicketPresenter from "@/application/domain/ticket/presenter";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
 
 export default class TicketService {
   static async fetchTickets(
     ctx: IContext,
-    { first, sort, filter, cursor }: GqlQueryTicketsArgs,
-  ): Promise<GqlTicketsConnection> {
-    const take = clampFirst(first);
+    { sort, filter, cursor }: GqlQueryTicketsArgs,
+    take: number,
+  ) {
     const where = TicketConverter.filter(filter ?? {});
     const orderBy = TicketConverter.sort(sort ?? {});
 
-    const res = await TicketRepository.query(ctx, where, orderBy, take + 1, cursor);
-    const hasNextPage = res.length > take;
-    const data = res.slice(0, take).map((record) => TicketPresenter.get(record));
-    return TicketPresenter.query(data, hasNextPage);
+    return await TicketRepository.query(ctx, where, orderBy, take, cursor);
   }
 
   static async fetchTicketsByIds(ctx: IContext, ids: string[]) {
