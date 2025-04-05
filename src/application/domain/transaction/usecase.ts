@@ -84,12 +84,11 @@ export default class TransactionUseCase {
         TransactionReason.GRANT,
       );
 
-      const transaction = await TransactionService.grantCommunityPoint(ctx, input, toWalletId, tx);
-
-      return TransactionPresenter.grantCommunityPoint(transaction);
+      return await TransactionService.grantCommunityPoint(ctx, input, toWalletId, tx);
     });
     await TransactionRepository.refreshCurrentPoints(ctx);
-    return transaction;
+
+    return TransactionPresenter.grantCommunityPoint(transaction);
   }
 
   static async userDonateSelfPointToAnother(
@@ -98,7 +97,7 @@ export default class TransactionUseCase {
   ): Promise<GqlTransactionDonateSelfPointPayload> {
     const { communityId, fromWalletId, toUserId, toPointChange } = input;
 
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    const transaction = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await MembershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
       const [fromWallet, toWallet] = await Promise.all([
@@ -112,9 +111,9 @@ export default class TransactionUseCase {
         toPointChange,
       );
 
-      const transaction = await TransactionService.donateSelfPoint(ctx, input, toWalletId, tx);
-
-      return TransactionPresenter.giveUserPoint(transaction);
+      return await TransactionService.donateSelfPoint(ctx, input, toWalletId, tx);
     });
+
+    return TransactionPresenter.giveUserPoint(transaction);
   }
 }
