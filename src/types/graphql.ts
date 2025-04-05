@@ -1977,14 +1977,14 @@ export type GqlTicket = {
   id: Scalars['ID']['output'];
   reason: GqlTicketStatusReason;
   status: GqlTicketStatus;
-  ticketStatusHistories?: Maybe<GqlTicketStatusHistoriesConnection>;
+  statusHistories?: Maybe<GqlTicketStatusHistoriesConnection>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   utility: GqlUtility;
   wallet: GqlWallet;
 };
 
 
-export type GqlTicketTicketStatusHistoriesArgs = {
+export type GqlTicketStatusHistoriesArgs = {
   cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlTicketStatusHistoryFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -4004,7 +4004,7 @@ export type GqlTicketResolvers<ContextType = any, ParentType extends GqlResolver
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['TicketStatusReason'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['TicketStatus'], ParentType, ContextType>;
-  ticketStatusHistories?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlTicketTicketStatusHistoriesArgs>>;
+  statusHistories?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlTicketStatusHistoriesArgs>>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utility?: Resolver<GqlResolversTypes['Utility'], ParentType, ContextType>;
   wallet?: Resolver<GqlResolversTypes['Wallet'], ParentType, ContextType>;
