@@ -2376,6 +2376,7 @@ export type GqlUserSignUpInput = {
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
+  platform: GqlIdentityPlatform;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
 
