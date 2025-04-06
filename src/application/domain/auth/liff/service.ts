@@ -104,6 +104,7 @@ export class LIFFService {
           language: profile.language,
         },
         provider: SignInProvider["oidc.line"],
+        platform: "LINE"
       };
 
       // Create Firebase custom token
