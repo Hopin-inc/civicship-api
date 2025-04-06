@@ -111,6 +111,12 @@ function validateByMembershipRoles(
   currentUserId?: string,
   filter?: GqlUtilityFilterInput,
 ): GqlUtilityFilterInput {
+  if (communityIds.length === 0) {
+    return {
+      and: [{ publishStatus: [PublishStatus.PUBLIC] }, ...(filter ? [filter] : [])],
+    };
+  }
+
   const orConditions = communityIds.map((communityId) => {
     if (isManager[communityId]) {
       return {
