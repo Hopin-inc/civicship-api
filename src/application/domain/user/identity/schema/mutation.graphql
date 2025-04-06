@@ -15,6 +15,7 @@ extend type Mutation {
 # User Account Input Definitions
 # ------------------------------
 input UserSignUpInput {
+    platform: IdentityPlatform!
     name: String!
     slug: String
     image: ImageInput
