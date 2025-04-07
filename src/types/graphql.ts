@@ -86,6 +86,31 @@ export type GqlArticlesConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlAuthZDirectiveCompositeRulesInput = {
+  and?: InputMaybe<Array<InputMaybe<GqlAuthZRules>>>;
+  not?: InputMaybe<GqlAuthZRules>;
+  or?: InputMaybe<Array<InputMaybe<GqlAuthZRules>>>;
+};
+
+export type GqlAuthZDirectiveDeepCompositeRulesInput = {
+  and?: InputMaybe<Array<InputMaybe<GqlAuthZDirectiveDeepCompositeRulesInput>>>;
+  id?: InputMaybe<GqlAuthZRules>;
+  not?: InputMaybe<GqlAuthZDirectiveDeepCompositeRulesInput>;
+  or?: InputMaybe<Array<InputMaybe<GqlAuthZDirectiveDeepCompositeRulesInput>>>;
+};
+
+export const GqlAuthZRules = {
+  IsAdmin: 'IsAdmin',
+  IsCommunityManager: 'IsCommunityManager',
+  IsCommunityMember: 'IsCommunityMember',
+  IsCommunityOwner: 'IsCommunityOwner',
+  IsOpportunityOwner: 'IsOpportunityOwner',
+  IsSelf: 'IsSelf',
+  IsUser: 'IsUser',
+  VerifySanitizeInput: 'VerifySanitizeInput'
+} as const;
+
+export type GqlAuthZRules = typeof GqlAuthZRules[keyof typeof GqlAuthZRules];
 export type GqlCheckCommunityPermissionInput = {
   communityId: Scalars['ID']['input'];
 };
@@ -754,7 +779,7 @@ export type GqlMutationPlaceUpdateArgs = {
 
 export type GqlMutationReservationAcceptArgs = {
   id: Scalars['ID']['input'];
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -777,7 +802,7 @@ export type GqlMutationReservationJoinArgs = {
 
 export type GqlMutationReservationRejectArgs = {
   id: Scalars['ID']['input'];
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckOpportunityPermissionInput;
 };
 
 
@@ -908,6 +933,7 @@ export type GqlOpportunity = {
   files?: Maybe<Scalars['JSON']['output']>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
+  isReservableWithTicket?: Maybe<Scalars['Boolean']['output']>;
   place?: Maybe<GqlPlace>;
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
   publishStatus: GqlPublishStatus;
@@ -1156,6 +1182,7 @@ export type GqlParticipation = {
   source: GqlSource;
   status: GqlParticipationStatus;
   statusHistories?: Maybe<GqlParticipationStatusHistoriesConnection>;
+  ticketStatusHistories?: Maybe<Array<GqlTicketStatusHistory>>;
   transactions?: Maybe<GqlTransactionsConnection>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user?: Maybe<GqlUser>;
@@ -1828,9 +1855,10 @@ export type GqlReservationCancelInput = {
 
 export type GqlReservationCreateInput = {
   opportunitySlotId: Scalars['ID']['input'];
-  participantCount: Scalars['Int']['input'];
+  otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   paymentMethod: GqlReservationPaymentMethod;
-  userIdsIfExists?: InputMaybe<Array<Scalars['ID']['input']>>;
+  ticketIdsIfNeed?: InputMaybe<Array<Scalars['ID']['input']>>;
+  totalParticipantCount: Scalars['Int']['input'];
 };
 
 export type GqlReservationCreatePayload = GqlReservationCreateSuccess;
@@ -1887,7 +1915,7 @@ export type GqlReservationHistorySortInput = {
 
 export const GqlReservationPaymentMethod = {
   Fee: 'FEE',
-  Point: 'POINT'
+  Ticket: 'TICKET'
 } as const;
 
 export type GqlReservationPaymentMethod = typeof GqlReservationPaymentMethod[keyof typeof GqlReservationPaymentMethod];
@@ -2672,6 +2700,9 @@ export type GqlResolversTypes = ResolversObject<{
   ArticleFilterInput: GqlArticleFilterInput;
   ArticleSortInput: GqlArticleSortInput;
   ArticlesConnection: ResolverTypeWrapper<Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ArticleEdge']>>> }>;
+  AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
+  AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
+  AuthZRules: GqlAuthZRules;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
@@ -2932,6 +2963,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ArticleFilterInput: GqlArticleFilterInput;
   ArticleSortInput: GqlArticleSortInput;
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
+  AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
+  AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
   Boolean: Scalars['Boolean']['output'];
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
@@ -3161,6 +3194,14 @@ export type GqlResolversParentTypes = ResolversObject<{
   WalletSortInput: GqlWalletSortInput;
   WalletsConnection: Omit<GqlWalletsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['WalletEdge']>>> };
 }>;
+
+export type GqlAuthzDirectiveArgs = {
+  compositeRules?: Maybe<Array<Maybe<GqlAuthZDirectiveCompositeRulesInput>>>;
+  deepCompositeRules?: Maybe<Array<Maybe<GqlAuthZDirectiveDeepCompositeRulesInput>>>;
+  rules?: Maybe<Array<Maybe<GqlAuthZRules>>>;
+};
+
+export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = any, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
 export type GqlComplexityDirectiveArgs = {
   multipliers?: Maybe<Array<Scalars['String']['input']>>;
@@ -3538,6 +3579,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   files?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  isReservableWithTicket?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
@@ -3664,6 +3706,7 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
   source?: Resolver<GqlResolversTypes['Source'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ParticipationStatus'], ParentType, ContextType>;
   statusHistories?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlParticipationStatusHistoriesArgs>>;
+  ticketStatusHistories?: Resolver<Maybe<Array<GqlResolversTypes['TicketStatusHistory']>>, ParentType, ContextType>;
   transactions?: Resolver<Maybe<GqlResolversTypes['TransactionsConnection']>, ParentType, ContextType, Partial<GqlParticipationTransactionsArgs>>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
@@ -4398,6 +4441,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
 }>;
 
 export type GqlDirectiveResolvers<ContextType = any> = ResolversObject<{
+  authz?: GqlAuthzDirectiveResolver<any, any, ContextType>;
   complexity?: GqlComplexityDirectiveResolver<any, any, ContextType>;
   requireRole?: GqlRequireRoleDirectiveResolver<any, any, ContextType>;
 }>;

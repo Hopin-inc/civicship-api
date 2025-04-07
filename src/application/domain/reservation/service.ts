@@ -6,7 +6,7 @@ import ReservationPresenter from "@/application/domain/reservation/presenter";
 import { Prisma, ReservationStatus } from "@prisma/client";
 import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
-import { reservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/helper";
 import { PrismaReservation } from "@/application/domain/reservation/data/type";
 
 export default class ReservationService {
@@ -26,10 +26,9 @@ export default class ReservationService {
   static async fetchConflictingReservations(
     ctx: IContext,
     userId: string,
-    startsAt: Date,
-    endsAt: Date,
+    slotId: string,
   ): Promise<PrismaReservation[]> {
-    const where = ReservationConverter.checkConflict(userId, startsAt, endsAt);
+    const where = ReservationConverter.checkConflict(userId, slotId);
     return ReservationRepository.checkConflict(ctx, where);
   }
 
@@ -52,7 +51,8 @@ export default class ReservationService {
     opportunitySlotId: string,
     participantCount: number,
     userIdsIfExists: string[] = [],
-    reservationStatuses: reservationStatuses,
+    reservationStatuses: ReservationStatuses,
+    tx: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data = ReservationConverter.create(
@@ -62,7 +62,7 @@ export default class ReservationService {
       userIdsIfExists,
       reservationStatuses,
     );
-    return ReservationRepository.create(ctx, data);
+    return ReservationRepository.create(ctx, data, tx);
   }
 
   static async setStatus(

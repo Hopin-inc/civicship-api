@@ -6,15 +6,20 @@ extend type Mutation {
         input: TicketPurchaseInput!
         permission: CheckCommunityPermissionInput!
     ): TicketPurchasePayload
+    @authz(rules: [IsCommunityMember, VerifySanitizeInput])
+
     ticketUse(
         id: ID!
         permission: CheckIsSelfPermissionInput!
     ): TicketUsePayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
+
     ticketRefund(
         id: ID!
         input: TicketRefundInput!
         permission: CheckIsSelfPermissionInput!
     ): TicketRefundPayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 }
 
 # ------------------------------

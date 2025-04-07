@@ -2,7 +2,6 @@ import http from "http";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
-import { SignInProvider } from "@/consts/utils";
 import { userAuthInclude, userAuthSelect } from "@/application/domain/user/data/type";
 import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -23,7 +22,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
 
   const decoded = await auth.verifyIdToken(idToken);
   const uid = decoded.uid;
-  const platform = SignInProvider[decoded.firebase.sign_in_provider];
+  const platform = decoded.platform;
 
   const [currentUser, hasPermissions] = await Promise.all([
     issuer.internal(async (tx) =>

@@ -6,7 +6,7 @@ import {
   Prisma,
   ReservationStatus,
 } from "@prisma/client";
-import { reservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/reservation/helper";
 
 export default class ReservationConverter {
   static filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
@@ -48,19 +48,14 @@ export default class ReservationConverter {
     ];
   }
 
-  static checkConflict(
-    userId: string,
-    slotStartsAt: Date,
-    slotEndsAt: Date,
-  ): Prisma.ReservationWhereInput {
+  static checkConflict(userId: string, slotId: string): Prisma.ReservationWhereInput {
     return {
       createdBy: userId,
       status: {
         notIn: [ReservationStatus.REJECTED, ReservationStatus.CANCELED],
       },
       opportunitySlot: {
-        startsAt: { lt: slotEndsAt },
-        endsAt: { gt: slotStartsAt },
+        id: slotId,
       },
     };
   }
@@ -70,7 +65,7 @@ export default class ReservationConverter {
     currentUserId: string,
     participantCount: number,
     userIdsIfExists: string[],
-    { reservationStatus, participationStatus, participationStatusReason }: reservationStatuses,
+    { reservationStatus, participationStatus, participationStatusReason }: ReservationStatuses,
   ): Prisma.ReservationCreateInput {
     const userIds = [currentUserId, ...userIdsIfExists];
 

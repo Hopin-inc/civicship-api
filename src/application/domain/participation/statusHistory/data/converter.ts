@@ -33,7 +33,7 @@ export default class ParticipationStatusHistoryConverter {
       participationId,
       status,
       reason,
-      createdByUserId: currentUserId,
+      createdBy: currentUserId,
     }));
   }
 }

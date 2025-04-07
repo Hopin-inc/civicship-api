@@ -6,21 +6,42 @@ extend type Mutation {
         input: OpportunityCreateInput!
         permission:CheckCommunityPermissionInput!
     ): OpportunityCreatePayload
+    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+
     opportunityDelete(
         id: ID!
         permission:CheckCommunityPermissionInput!
     ): OpportunityDeletePayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
+
     opportunityUpdateContent(
         id: ID!,
         input: OpportunityUpdateContentInput!
         permission:CheckCommunityPermissionInput!
     ): OpportunityUpdateContentPayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
 
     opportunitySetPublishStatus(
         id: ID!
         input: OpportunitySetPublishStatusInput!
         permission:CheckCommunityPermissionInput!
     ): OpportunitySetPublishStatusPayload
+    @authz(
+        compositeRules: [
+            { or: [IsCommunityManager, IsOpportunityOwner] },
+            { and: [VerifySanitizeInput] }
+        ]
+    )
 }
 
 # ------------------------------

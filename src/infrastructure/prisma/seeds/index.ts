@@ -1,7 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
-import { seedMaster } from "@/infrastructure/prisma/seeds/master/master";
-// import { seedUsecase } from "@/infrastructure/prisma/seeds/domains";
+import { seedMaster } from "@/infrastructure/prisma/seeds/master";
+import { seedUsecase } from "@/infrastructure/prisma/seeds/domains";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -10,16 +10,13 @@ async function main() {
 
   if (args.includes("--master")) {
     console.log("Starting to seed cities and states...");
-    await seedMaster(
-      path.join(__dirname, "./master/city.csv"),
-      path.join(__dirname, "./master/state.csv"),
-    );
+    await seedMaster(path.join(__dirname, "./city.csv"), path.join(__dirname, "./state.csv"));
     console.log("Cities and states have been seeded!");
   }
 
   if (args.includes("--domain")) {
     console.log("Starting to seed users and communities...");
-    // await seedUsecase(path.join(__dirname, "./master/city.csv"));
+    await seedUsecase();
     console.log("Users and communities have been seeded!");
   }
 }

@@ -3,16 +3,21 @@
 # ------------------------------
 extend type Mutation {
     communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
+    @authz(rules: [IsUser, VerifySanitizeInput])
 
     communityDelete(
         id: ID!,
         permission:CheckCommunityPermissionInput!
     ): CommunityDeletePayload
+    @authz(rules: [IsCommunityOwner, VerifySanitizeInput])
+
     communityUpdateProfile(
         id: ID!,
         input: CommunityUpdateProfileInput!,
         permission:CheckCommunityPermissionInput!
     ): CommunityUpdateProfilePayload
+    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+
 }
 
 # ------------------------------

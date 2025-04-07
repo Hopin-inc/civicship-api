@@ -3,7 +3,7 @@ import { ParticipationStatus, ParticipationStatusReason, ReservationStatus } fro
 //  ------------------------------
 //  type for reservation usecase
 //  ------------------------------
-export type reservationStatuses = {
+export type ReservationStatuses = {
   reservationStatus: ReservationStatus;
   participationStatus: ParticipationStatus;
   participationStatusReason: ParticipationStatusReason;

@@ -1,3 +1,13 @@
+/*
+  Warnings:
+
+  - You are about to drop the column `hostingStatus` on the `t_opportunity_slots` table. All the data in the column will be lost.
+
+*/
+-- AlterTable
+ALTER TABLE "t_opportunity_slots" DROP COLUMN "hostingStatus",
+ADD COLUMN     "hosting_status" "OpportunitySlotHostingStatus" NOT NULL DEFAULT 'SCHEDULED';
+
 -- CreateMaterializedView
 CREATE MATERIALIZED VIEW mv_earliest_reservable_slot AS
 SELECT

@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_slot_remaining_capacity";
