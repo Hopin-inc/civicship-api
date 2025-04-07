@@ -1,0 +1,13 @@
+diff --git a/dist/esm/QueryComplexity.js b/dist/esm/QueryComplexity.js
+index 749a3abf42d2d0cad27dfdd8b1bbcc62575bf6cc..fe3c2e353d98cb959feb0650b01954e42700919f 100644
+--- a/dist/esm/QueryComplexity.js
++++ b/dist/esm/QueryComplexity.js
+@@ -3,7 +3,7 @@
+ /**
+  * Created by Ivo Meißner on 28.07.17.
+  */
+-import { getArgumentValues, getDirectiveValues, getVariableValues, } from 'graphql/execution/values';
++import { getArgumentValues, getDirectiveValues, getVariableValues, } from 'graphql/execution/values.js';
+ import { ValidationContext, isCompositeType, TypeInfo, visit, visitWithTypeInfo, isAbstractType, GraphQLObjectType, GraphQLInterfaceType, Kind, getNamedType, GraphQLError, SchemaMetaFieldDef, TypeMetaFieldDef, TypeNameMetaFieldDef, } from 'graphql';
+ function queryComplexityMessage(max, actual) {
+     return (`The query exceeds the maximum complexity of ${max}. ` +
