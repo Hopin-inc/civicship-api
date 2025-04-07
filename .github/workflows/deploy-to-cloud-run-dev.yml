@@ -46,7 +46,6 @@ jobs:
     - name: Install dependencies
       run: |
           pnpm install
-          find node_modules/.pnpm/graphql-query-complexity*/node_modules/ -type f -name "QueryComplexity.js" -exec sed -i 's|graphql/execution/values|graphql/execution/values.js|g' {} \;
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1

@@ -47,17 +47,23 @@ export default class ViewPresenter {
     const { relatedUsers, authors } = article;
     const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
 
+    const thumbnailUrl = article.thumbnail
+      ? (Array.isArray(article.thumbnail) && article.thumbnail.length > 0 && article.thumbnail[0].url)
+        ? article.thumbnail[0].url
+        : null
+      : null;
+
     return {
       id: article.id,
       title: article.title,
       source: GqlPortfolioSource.Article,
       category: article.category,
       date: article.publishedAt,
-      thumbnailUrl: article.thumbnail,
+      thumbnailUrl,
       participants: participations
         ? participations
-            .filter((user): user is NonNullable<typeof user> => user !== null)
-            .map((user) => UserPresenter.get(user))
+          .filter((user): user is NonNullable<typeof user> => user !== null)
+          .map((user) => UserPresenter.get(user))
         : [],
     };
   }
