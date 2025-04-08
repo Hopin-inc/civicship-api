@@ -29,7 +29,14 @@ export default class OpportunityPresenter {
   }
 
   static get(r: PrismaOpportunity): GqlOpportunity {
-    const { createdByUser, community, place, requiredUtilities, ...prop } = r;
+    const {
+      createdByUser,
+      community,
+      place,
+      requiredUtilities,
+      earliestReservableSlotView,
+      ...prop
+    } = r;
 
     return {
       ...prop,
@@ -37,6 +44,7 @@ export default class OpportunityPresenter {
       place: place ? PlacePresenter.get(place) : null,
       createdByUser,
       requiredUtilities: requiredUtilities.map(UtilityPresenter.get),
+      earliestReservableSlotView,
     };
   }
 
