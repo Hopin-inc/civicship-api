@@ -55,6 +55,17 @@ const randomEnum = <T extends object>(enumObj: T): T[keyof T] => {
   return values[Math.floor(Math.random() * values.length)];
 };
 
+const now = new Date();
+const isNow = Math.random() < 0.5;
+
+const startsAt = isNow
+  ? now
+  : new Date(now.getTime() + 1000 * 60 * 60 * 24 * (1 + Math.floor(Math.random() * 5))); // 明日〜5日後
+
+const endsAt = new Date(startsAt.getTime() + 1000 * 60 * 60); // +1時間
+
+const COMMUNITY_ID = "DEMO";
+
 // --- User & Community ---
 
 export const UserFactory = defineUserFactory({
@@ -77,6 +88,7 @@ export const IdentityFactory = defineIdentityFactory.withTransientFields<{
 
 export const CommunityFactory = defineCommunityFactory({
   defaultData: () => ({
+    id: COMMUNITY_ID,
     name: randAnimal(),
     pointName: `point-${Math.random().toString(36).substring(2, 6)}`,
   }),
@@ -91,7 +103,7 @@ export const MembershipFactory = defineMembershipFactory.withTransientFields<{
 }>({})({
   defaultData: async ({ transientRole, transientStatus, transientReason }) => ({
     user: { connect: { id: (await UserFactory.create()).id } },
-    community: { connect: { id: (await CommunityFactory.create()).id } },
+    community: { connect: { id: COMMUNITY_ID } },
     status: transientStatus ?? randomEnum(MembershipStatus),
     reason: transientReason ?? randomEnum(MembershipStatusReason),
     role: transientRole ?? randomEnum(Role),
@@ -128,7 +140,7 @@ export const WalletFactory = defineWalletFactory.withTransientFields<{
   defaultData: async ({ transientType }) => ({
     type: transientType ?? randomEnum(WalletType),
     user: { connect: { id: (await UserFactory.create()).id } },
-    community: { connect: { id: (await CommunityFactory.create()).id } },
+    community: { connect: { id: COMMUNITY_ID } },
   }),
 });
 
@@ -141,7 +153,7 @@ export const UtilityFactory = defineUtilityFactory.withTransientFields<{
     name: `Utility ${Math.random().toString(36).substring(2, 6)}`,
     pointsRequired: 10,
     publishStatus: transientStatus ?? randomEnum(PublishStatus),
-    community: { connect: { id: (await CommunityFactory.create()).id } },
+    community: { connect: { id: COMMUNITY_ID } },
   }),
 });
 
@@ -178,7 +190,7 @@ export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
     requireApproval: false,
     category: transientCategory ?? randomEnum(OpportunityCategory),
     description: "Example opportunity",
-    community: { connect: { id: (await CommunityFactory.create()).id } },
+    community: { connect: { id: COMMUNITY_ID } },
     createdByUser: { connect: { id: (await UserFactory.create()).id } },
     files: [],
   }),
@@ -190,8 +202,8 @@ export const OpportunitySlotFactory = defineOpportunitySlotFactory.withTransient
   defaultData: async ({ transientStatus }) => ({
     hostingStatus: transientStatus ?? randomEnum(OpportunitySlotHostingStatus),
     capacity: 10,
-    startsAt: new Date(),
-    endsAt: new Date(Date.now() + 60 * 60 * 1000),
+    startsAt,
+    endsAt,
     opportunity: { connect: { id: (await OpportunityFactory.create()).id } },
   }),
 });
@@ -225,7 +237,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
       },
     ],
     publishedAt: new Date(),
-    community: { connect: { id: (await CommunityFactory.create()).id } },
+    community: { connect: { id: COMMUNITY_ID } },
     authors: { connect: [{ id: (await UserFactory.create()).id }] },
     relatedUsers: { connect: [{ id: (await UserFactory.create()).id }] },
     opportunities: { connect: [{ id: (await OpportunityFactory.create()).id }] },
@@ -244,7 +256,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
     reason: transientReason ?? randomEnum(ParticipationStatusReason),
     source: transientSource ?? randomEnum(Source),
     user: { connect: { id: (await UserFactory.create()).id } },
-    community: { connect: { id: (await CommunityFactory.create()).id } },
+    community: { connect: { id: COMMUNITY_ID } },
     reservation: { connect: { id: (await ReservationFactory.create()).id } },
   }),
 });
