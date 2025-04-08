@@ -5,10 +5,14 @@ type Membership {
     user: User!
     community: Community!
 
+    headline: String
+    bio: String
+
     status: MembershipStatus!
     reason: MembershipStatusReason!
     role: Role!
 
+    hostedGeoView: [MembershipHostedGeoView!]
     membershipHistories(
         filter: MembershipHistoryFilterInput
         sort: MembershipHistorySortInput
@@ -18,6 +22,15 @@ type Membership {
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+type MembershipHostedGeoView{
+    userId: ID!
+    communityId: ID!
+
+    placeId: ID!
+    latitude: Decimal!
+    longitude: Decimal!
 }
 
 # ------------------------------

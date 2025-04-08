@@ -90,9 +90,12 @@ Table t_memberships {
   user t_users [not null]
   communityId String [not null]
   community t_communities [not null]
+  headline String
+  bio String
   status MembershipStatus [not null]
   reason MembershipStatusReason [not null]
   role Role [not null, default: 'MEMBER']
+  hostedGeoView v_membership_hosted_geo [not null]
   histories t_membership_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -357,6 +360,19 @@ Table t_utilities {
   updatedAt DateTime
 }
 
+Table v_membership_hosted_geo {
+  userId String [not null]
+  communityId String [not null]
+  placeId String [not null]
+  latitude Decimal [not null]
+  longitude Decimal [not null]
+  membership t_memberships [not null]
+
+  indexes {
+    (userId, communityId, placeId) [pk]
+  }
+}
+
 Table mv_current_points {
   walletId String [pk]
   currentPoint Int [not null]
@@ -607,6 +623,8 @@ Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
+
+Ref: v_membership_hosted_geo.(userId, communityId) > t_memberships.(userId, communityId)
 
 Ref: mv_current_points.walletId - t_wallets.id
 

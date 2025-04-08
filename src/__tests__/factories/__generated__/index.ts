@@ -21,6 +21,7 @@ import type { Transaction } from "@prisma/client";
 import type { Identity } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Utility } from "@prisma/client";
+import type { MembershipHostedGeoView } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
@@ -171,6 +172,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToMembership"
+            }, {
+                name: "hostedGeoView",
+                type: "MembershipHostedGeoView",
+                relationName: "MembershipToMembershipHostedGeoView"
             }, {
                 name: "histories",
                 type: "MembershipHistory",
@@ -495,6 +500,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "tickets",
                 type: "Ticket",
                 relationName: "TicketToUtility"
+            }]
+    }, {
+        name: "MembershipHostedGeoView",
+        fields: [{
+                name: "membership",
+                type: "Membership",
+                relationName: "MembershipToMembershipHostedGeoView"
             }]
     }, {
         name: "CurrentPointView",
@@ -1501,6 +1513,8 @@ type MembershipcommunityFactory = {
 };
 
 type MembershipFactoryDefineInput = {
+    headline?: string | null;
+    bio?: string | null;
     status?: MembershipStatus;
     reason?: MembershipStatusReason;
     role?: Role;
@@ -1508,6 +1522,7 @@ type MembershipFactoryDefineInput = {
     updatedAt?: Date | null;
     user: MembershipuserFactory | Prisma.UserCreateNestedOneWithoutMembershipsInput;
     community: MembershipcommunityFactory | Prisma.CommunityCreateNestedOneWithoutMembershipsInput;
+    hostedGeoView?: Prisma.MembershipHostedGeoViewCreateNestedManyWithoutMembershipInput;
     histories?: Prisma.MembershipHistoryCreateNestedManyWithoutMembershipInput;
 };
 
@@ -4480,6 +4495,165 @@ export const defineUtilityFactory = (<TOptions extends UtilityFactoryDefineOptio
 }) as UtilityFactoryBuilder;
 
 defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
+
+type MembershipHostedGeoViewScalarOrEnumFields = {
+    placeId: string;
+    latitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    longitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+};
+
+type MembershipHostedGeoViewmembershipFactory = {
+    _factoryFor: "Membership";
+    build: () => PromiseLike<Prisma.MembershipCreateNestedOneWithoutHostedGeoViewInput["create"]>;
+};
+
+type MembershipHostedGeoViewFactoryDefineInput = {
+    placeId?: string;
+    latitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    longitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    membership: MembershipHostedGeoViewmembershipFactory | Prisma.MembershipCreateNestedOneWithoutHostedGeoViewInput;
+};
+
+type MembershipHostedGeoViewTransientFields = Record<string, unknown> & Partial<Record<keyof MembershipHostedGeoViewFactoryDefineInput, never>>;
+
+type MembershipHostedGeoViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MembershipHostedGeoViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MembershipHostedGeoView, Prisma.MembershipHostedGeoViewCreateInput, TTransients>;
+
+type MembershipHostedGeoViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<MembershipHostedGeoViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: MembershipHostedGeoViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<MembershipHostedGeoView, Prisma.MembershipHostedGeoViewCreateInput, TTransients>;
+
+function isMembershipHostedGeoViewmembershipFactory(x: MembershipHostedGeoViewmembershipFactory | Prisma.MembershipCreateNestedOneWithoutHostedGeoViewInput | undefined): x is MembershipHostedGeoViewmembershipFactory {
+    return (x as any)?._factoryFor === "Membership";
+}
+
+type MembershipHostedGeoViewTraitKeys<TOptions extends MembershipHostedGeoViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface MembershipHostedGeoViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MembershipHostedGeoView";
+    build(inputData?: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>): PromiseLike<Prisma.MembershipHostedGeoViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>): PromiseLike<Prisma.MembershipHostedGeoViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>[]): PromiseLike<Prisma.MembershipHostedGeoViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>): PromiseLike<Prisma.MembershipHostedGeoViewCreateInput[]>;
+    pickForConnect(inputData: MembershipHostedGeoView): Pick<MembershipHostedGeoView, "userId" | "communityId" | "placeId">;
+    create(inputData?: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>): PromiseLike<MembershipHostedGeoView>;
+    createList(list: readonly Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>[]): PromiseLike<MembershipHostedGeoView[]>;
+    createList(count: number, item?: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>): PromiseLike<MembershipHostedGeoView[]>;
+    createForConnect(inputData?: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>): PromiseLike<Pick<MembershipHostedGeoView, "userId" | "communityId" | "placeId">>;
+}
+
+export interface MembershipHostedGeoViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MembershipHostedGeoViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MembershipHostedGeoViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateMembershipHostedGeoViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): MembershipHostedGeoViewScalarOrEnumFields {
+    return {
+        placeId: getScalarFieldValueGenerator().String({ modelName: "MembershipHostedGeoView", fieldName: "placeId", isId: true, isUnique: false, seq }),
+        latitude: getScalarFieldValueGenerator().Decimal({ modelName: "MembershipHostedGeoView", fieldName: "latitude", isId: false, isUnique: false, seq }),
+        longitude: getScalarFieldValueGenerator().Decimal({ modelName: "MembershipHostedGeoView", fieldName: "longitude", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineMembershipHostedGeoViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends MembershipHostedGeoViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): MembershipHostedGeoViewFactoryInterface<TTransients, MembershipHostedGeoViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly MembershipHostedGeoViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("MembershipHostedGeoView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateMembershipHostedGeoViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<MembershipHostedGeoViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<MembershipHostedGeoViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                membership: isMembershipHostedGeoViewmembershipFactory(defaultData.membership) ? {
+                    create: await defaultData.membership.build()
+                } : defaultData.membership
+            } as Prisma.MembershipHostedGeoViewCreateInput;
+            const data: Prisma.MembershipHostedGeoViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: MembershipHostedGeoView) => ({
+            userId: inputData.userId,
+            communityId: inputData.communityId,
+            placeId: inputData.placeId
+        });
+        const create = async (inputData: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().membershipHostedGeoView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.MembershipHostedGeoViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "MembershipHostedGeoView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: MembershipHostedGeoViewTraitKeys<TOptions>, ...names: readonly MembershipHostedGeoViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface MembershipHostedGeoViewFactoryBuilder {
+    <TOptions extends MembershipHostedGeoViewFactoryDefineOptions>(options: TOptions): MembershipHostedGeoViewFactoryInterface<{}, MembershipHostedGeoViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MembershipHostedGeoViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MembershipHostedGeoViewFactoryDefineOptions<TTransients>>(options: TOptions) => MembershipHostedGeoViewFactoryInterface<TTransients, MembershipHostedGeoViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link MembershipHostedGeoView} model.
+ *
+ * @param options
+ * @returns factory {@link MembershipHostedGeoViewFactoryInterface}
+ */
+export const defineMembershipHostedGeoViewFactory = (<TOptions extends MembershipHostedGeoViewFactoryDefineOptions>(options: TOptions): MembershipHostedGeoViewFactoryInterface<TOptions> => {
+    return defineMembershipHostedGeoViewFactoryInternal(options, {});
+}) as MembershipHostedGeoViewFactoryBuilder;
+
+defineMembershipHostedGeoViewFactory.withTransientFields = defaultTransientFieldValues => options => defineMembershipHostedGeoViewFactoryInternal(options, defaultTransientFieldValues);
 
 type CurrentPointViewScalarOrEnumFields = {
     currentPoint: number;
