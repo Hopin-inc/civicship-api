@@ -97,6 +97,7 @@ Table t_memberships {
   role Role [not null, default: 'MEMBER']
   hostedGeoView v_membership_hosted_geo [not null]
   histories t_membership_histories [not null]
+  hostedParticipationCountView v_membership_hosted_participation_count
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
@@ -373,6 +374,17 @@ Table v_membership_hosted_geo {
   }
 }
 
+Table v_membership_hosted_participation_count {
+  userId String [not null]
+  communityId String [not null]
+  totalCount Int [not null]
+  membership t_memberships [not null]
+
+  indexes {
+    (userId, communityId) [pk]
+  }
+}
+
 Table mv_current_points {
   walletId String [pk]
   currentPoint Int [not null]
@@ -625,6 +637,8 @@ Ref: t_identities.userId > t_users.id [delete: Cascade]
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 
 Ref: v_membership_hosted_geo.(userId, communityId) > t_memberships.(userId, communityId)
+
+Ref: v_membership_hosted_participation_count.(userId, communityId) - t_memberships.(userId, communityId)
 
 Ref: mv_current_points.walletId - t_wallets.id
 

@@ -30,11 +30,15 @@ export default class MembershipPresenter {
   }
 
   static get(r: PrismaMembership): GqlMembership {
-    const { community, ...prop } = r;
+    const { community, hostedGeoView, hostedParticipationCountView, ...prop } = r;
 
     return {
       ...prop,
       community: CommunityPresenter.get(community),
+      hostedGeoView: this.formatHostedGeoView(hostedGeoView),
+      hostedParticipationCountView: this.formatHostedParticipationCountView(
+        hostedParticipationCountView,
+      ),
     };
   }
 
@@ -78,5 +82,31 @@ export default class MembershipPresenter {
       __typename: "MembershipSetRoleSuccess",
       membership: this.get(r),
     };
+  }
+
+  private static formatHostedGeoView(
+    views?: PrismaMembership["hostedGeoView"],
+  ): GqlMembership["hostedGeoView"] {
+    return (
+      views?.map((geo) => ({
+        userId: geo.userId,
+        communityId: geo.communityId,
+        placeId: geo.placeId,
+        latitude: geo.latitude.toString(),
+        longitude: geo.longitude.toString(),
+      })) ?? []
+    );
+  }
+
+  private static formatHostedParticipationCountView(
+    view?: PrismaMembership["hostedParticipationCountView"],
+  ): GqlMembership["hostedParticipationCountView"] {
+    return view
+      ? {
+          userId: view.userId,
+          communityId: view.communityId,
+          totalCount: view.totalCount,
+        }
+      : null;
   }
 }

@@ -15,6 +15,8 @@ model Membership {
   hostedGeoView MembershipHostedGeoView[]
   histories     MembershipHistory[]
 
+  hostedParticipationCountView MembershipHostedParticipationCountView?
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -34,6 +36,17 @@ view MembershipHostedGeoView {
 
   @@id([userId, communityId, placeId])
   @@map("v_membership_hosted_geo")
+}
+
+view MembershipHostedParticipationCountView {
+  userId      String @map("user_id")
+  communityId String @map("community_id")
+  totalCount  Int    @map("total_participation_count")
+
+  membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
+
+  @@id([userId, communityId])
+  @@map("v_membership_hosted_participation_count")
 }
 
 enum Role {

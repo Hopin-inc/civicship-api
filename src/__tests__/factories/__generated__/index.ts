@@ -22,6 +22,7 @@ import type { Identity } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Utility } from "@prisma/client";
 import type { MembershipHostedGeoView } from "@prisma/client";
+import type { MembershipHostedParticipationCountView } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
@@ -180,6 +181,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "histories",
                 type: "MembershipHistory",
                 relationName: "MembershipToMembershipHistory"
+            }, {
+                name: "hostedParticipationCountView",
+                type: "MembershipHostedParticipationCountView",
+                relationName: "MembershipToMembershipHostedParticipationCountView"
             }]
     }, {
         name: "MembershipHistory",
@@ -507,6 +512,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "membership",
                 type: "Membership",
                 relationName: "MembershipToMembershipHostedGeoView"
+            }]
+    }, {
+        name: "MembershipHostedParticipationCountView",
+        fields: [{
+                name: "membership",
+                type: "Membership",
+                relationName: "MembershipToMembershipHostedParticipationCountView"
             }]
     }, {
         name: "CurrentPointView",
@@ -1512,6 +1524,11 @@ type MembershipcommunityFactory = {
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutMembershipsInput["create"]>;
 };
 
+type MembershiphostedParticipationCountViewFactory = {
+    _factoryFor: "MembershipHostedParticipationCountView";
+    build: () => PromiseLike<Prisma.MembershipHostedParticipationCountViewCreateNestedOneWithoutMembershipInput["create"]>;
+};
+
 type MembershipFactoryDefineInput = {
     headline?: string | null;
     bio?: string | null;
@@ -1524,6 +1541,7 @@ type MembershipFactoryDefineInput = {
     community: MembershipcommunityFactory | Prisma.CommunityCreateNestedOneWithoutMembershipsInput;
     hostedGeoView?: Prisma.MembershipHostedGeoViewCreateNestedManyWithoutMembershipInput;
     histories?: Prisma.MembershipHistoryCreateNestedManyWithoutMembershipInput;
+    hostedParticipationCountView?: MembershiphostedParticipationCountViewFactory | Prisma.MembershipHostedParticipationCountViewCreateNestedOneWithoutMembershipInput;
 };
 
 type MembershipTransientFields = Record<string, unknown> & Partial<Record<keyof MembershipFactoryDefineInput, never>>;
@@ -1545,6 +1563,10 @@ function isMembershipuserFactory(x: MembershipuserFactory | Prisma.UserCreateNes
 
 function isMembershipcommunityFactory(x: MembershipcommunityFactory | Prisma.CommunityCreateNestedOneWithoutMembershipsInput | undefined): x is MembershipcommunityFactory {
     return (x as any)?._factoryFor === "Community";
+}
+
+function isMembershiphostedParticipationCountViewFactory(x: MembershiphostedParticipationCountViewFactory | Prisma.MembershipHostedParticipationCountViewCreateNestedOneWithoutMembershipInput | undefined): x is MembershiphostedParticipationCountViewFactory {
+    return (x as any)?._factoryFor === "MembershipHostedParticipationCountView";
 }
 
 type MembershipTraitKeys<TOptions extends MembershipFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1613,7 +1635,10 @@ function defineMembershipFactoryInternal<TTransients extends Record<string, unkn
                 } : defaultData.user,
                 community: isMembershipcommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community
+                } : defaultData.community,
+                hostedParticipationCountView: isMembershiphostedParticipationCountViewFactory(defaultData.hostedParticipationCountView) ? {
+                    create: await defaultData.hostedParticipationCountView.build()
+                } : defaultData.hostedParticipationCountView
             } as Prisma.MembershipCreateInput;
             const data: Prisma.MembershipCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -4654,6 +4679,158 @@ export const defineMembershipHostedGeoViewFactory = (<TOptions extends Membershi
 }) as MembershipHostedGeoViewFactoryBuilder;
 
 defineMembershipHostedGeoViewFactory.withTransientFields = defaultTransientFieldValues => options => defineMembershipHostedGeoViewFactoryInternal(options, defaultTransientFieldValues);
+
+type MembershipHostedParticipationCountViewScalarOrEnumFields = {
+    totalCount: number;
+};
+
+type MembershipHostedParticipationCountViewmembershipFactory = {
+    _factoryFor: "Membership";
+    build: () => PromiseLike<Prisma.MembershipCreateNestedOneWithoutHostedParticipationCountViewInput["create"]>;
+};
+
+type MembershipHostedParticipationCountViewFactoryDefineInput = {
+    totalCount?: number;
+    membership: MembershipHostedParticipationCountViewmembershipFactory | Prisma.MembershipCreateNestedOneWithoutHostedParticipationCountViewInput;
+};
+
+type MembershipHostedParticipationCountViewTransientFields = Record<string, unknown> & Partial<Record<keyof MembershipHostedParticipationCountViewFactoryDefineInput, never>>;
+
+type MembershipHostedParticipationCountViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<MembershipHostedParticipationCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<MembershipHostedParticipationCountView, Prisma.MembershipHostedParticipationCountViewCreateInput, TTransients>;
+
+type MembershipHostedParticipationCountViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<MembershipHostedParticipationCountViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: MembershipHostedParticipationCountViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<MembershipHostedParticipationCountView, Prisma.MembershipHostedParticipationCountViewCreateInput, TTransients>;
+
+function isMembershipHostedParticipationCountViewmembershipFactory(x: MembershipHostedParticipationCountViewmembershipFactory | Prisma.MembershipCreateNestedOneWithoutHostedParticipationCountViewInput | undefined): x is MembershipHostedParticipationCountViewmembershipFactory {
+    return (x as any)?._factoryFor === "Membership";
+}
+
+type MembershipHostedParticipationCountViewTraitKeys<TOptions extends MembershipHostedParticipationCountViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface MembershipHostedParticipationCountViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "MembershipHostedParticipationCountView";
+    build(inputData?: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>): PromiseLike<Prisma.MembershipHostedParticipationCountViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>): PromiseLike<Prisma.MembershipHostedParticipationCountViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>[]): PromiseLike<Prisma.MembershipHostedParticipationCountViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>): PromiseLike<Prisma.MembershipHostedParticipationCountViewCreateInput[]>;
+    pickForConnect(inputData: MembershipHostedParticipationCountView): Pick<MembershipHostedParticipationCountView, "userId" | "communityId">;
+    create(inputData?: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>): PromiseLike<MembershipHostedParticipationCountView>;
+    createList(list: readonly Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>[]): PromiseLike<MembershipHostedParticipationCountView[]>;
+    createList(count: number, item?: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>): PromiseLike<MembershipHostedParticipationCountView[]>;
+    createForConnect(inputData?: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>): PromiseLike<Pick<MembershipHostedParticipationCountView, "userId" | "communityId">>;
+}
+
+export interface MembershipHostedParticipationCountViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends MembershipHostedParticipationCountViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): MembershipHostedParticipationCountViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateMembershipHostedParticipationCountViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): MembershipHostedParticipationCountViewScalarOrEnumFields {
+    return {
+        totalCount: getScalarFieldValueGenerator().Int({ modelName: "MembershipHostedParticipationCountView", fieldName: "totalCount", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineMembershipHostedParticipationCountViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends MembershipHostedParticipationCountViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): MembershipHostedParticipationCountViewFactoryInterface<TTransients, MembershipHostedParticipationCountViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly MembershipHostedParticipationCountViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("MembershipHostedParticipationCountView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateMembershipHostedParticipationCountViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<MembershipHostedParticipationCountViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<MembershipHostedParticipationCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                membership: isMembershipHostedParticipationCountViewmembershipFactory(defaultData.membership) ? {
+                    create: await defaultData.membership.build()
+                } : defaultData.membership
+            } as Prisma.MembershipHostedParticipationCountViewCreateInput;
+            const data: Prisma.MembershipHostedParticipationCountViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: MembershipHostedParticipationCountView) => ({
+            userId: inputData.userId,
+            communityId: inputData.communityId
+        });
+        const create = async (inputData: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().membershipHostedParticipationCountView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.MembershipHostedParticipationCountViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "MembershipHostedParticipationCountView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: MembershipHostedParticipationCountViewTraitKeys<TOptions>, ...names: readonly MembershipHostedParticipationCountViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface MembershipHostedParticipationCountViewFactoryBuilder {
+    <TOptions extends MembershipHostedParticipationCountViewFactoryDefineOptions>(options: TOptions): MembershipHostedParticipationCountViewFactoryInterface<{}, MembershipHostedParticipationCountViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends MembershipHostedParticipationCountViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends MembershipHostedParticipationCountViewFactoryDefineOptions<TTransients>>(options: TOptions) => MembershipHostedParticipationCountViewFactoryInterface<TTransients, MembershipHostedParticipationCountViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link MembershipHostedParticipationCountView} model.
+ *
+ * @param options
+ * @returns factory {@link MembershipHostedParticipationCountViewFactoryInterface}
+ */
+export const defineMembershipHostedParticipationCountViewFactory = (<TOptions extends MembershipHostedParticipationCountViewFactoryDefineOptions>(options: TOptions): MembershipHostedParticipationCountViewFactoryInterface<TOptions> => {
+    return defineMembershipHostedParticipationCountViewFactoryInternal(options, {});
+}) as MembershipHostedParticipationCountViewFactoryBuilder;
+
+defineMembershipHostedParticipationCountViewFactory.withTransientFields = defaultTransientFieldValues => options => defineMembershipHostedParticipationCountViewFactoryInternal(options, defaultTransientFieldValues);
 
 type CurrentPointViewScalarOrEnumFields = {
     currentPoint: number;

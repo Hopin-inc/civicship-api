@@ -6,6 +6,7 @@ export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
   community: { include: communityInclude },
   user: { include: userInclude },
   hostedGeoView: true,
+  hostedParticipationCountView: true,
 });
 
 export type PrismaMembership = Prisma.MembershipGetPayload<{

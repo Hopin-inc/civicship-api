@@ -457,6 +457,13 @@ UNKNOWN UNKNOWN
     }
   
 
+  "v_membership_hosted_participation_count" {
+    String userId "🗝️"
+    String communityId "🗝️"
+    Int totalCount 
+    }
+  
+
   "mv_current_points" {
     String walletId "🗝️"
     Int currentPoint 
@@ -510,6 +517,7 @@ UNKNOWN UNKNOWN
     "t_memberships" o|--|| "Role" : "enum:role"
     "t_memberships" o{--}o "v_membership_hosted_geo" : "hostedGeoView"
     "t_memberships" o{--}o "t_membership_histories" : "histories"
+    "t_memberships" o{--}o "v_membership_hosted_participation_count" : "hostedParticipationCountView"
     "t_membership_histories" o|--|| "Role" : "enum:role"
     "t_membership_histories" o|--|| "MembershipStatus" : "enum:status"
     "t_membership_histories" o|--|| "MembershipStatusReason" : "enum:reason"
@@ -602,6 +610,7 @@ UNKNOWN UNKNOWN
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
     "t_utilities" o{--}o "t_tickets" : "tickets"
     "v_membership_hosted_geo" o|--|| "t_memberships" : "membership"
+    "v_membership_hosted_participation_count" o|--|| "t_memberships" : "membership"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
     "mv_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
