@@ -26,6 +26,9 @@ jobs:
       # application settings
       ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
       APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+      # Jumpbox settings
+      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
+      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
 
     steps:
     - name: Checkout code
@@ -44,18 +47,32 @@ jobs:
       run: |
           pnpm install
 
-    - name: Set up Cloud SQL Proxy
-      run: |
-          echo '${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}' > credentials.json
-          wget https://dl.google.com/cloudsql/cloud_sql_proxy.linux.amd64 -O cloud_sql_proxy
-          chmod +x cloud_sql_proxy
-          ./cloud_sql_proxy -instances=$CLOUD_SQL_CONNECTION_NAME=tcp:5432 -credential_file=credentials.json &
-          sleep 10
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
 
     - name: pnpm db:generate
       env:
         DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
-      run: pnpm db:generate
+      run: |
+        echo "--- Connecting to DB via jumpbox ---"
+        gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
+          --tunnel-through-iap \
+          --zone=${{ env.JUMPBOX_ZONE }} \
+          --quiet -- -N -L 5432:localhost:5432 &
+        SSH_PID=$!
+        sleep 60
+        for i in {1..5}; do
+          pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
+          sleep 60
+        done
+
+        echo "--- Running prisma generate ---"
+        pnpm db:generate
+
+        echo "Killing SSH tunnel"
+        kill $SSH_PID
 
     - name: pnpm gql:generate
       run: pnpm gql:generate
@@ -63,21 +80,14 @@ jobs:
     - name: pnpm build
       run: pnpm build
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
-
     - name: Configure Docker for GCP Artifact Registry
       run: |
         gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
         gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
-
     - name: Build Docker image
       run: |
         pnpm dotenvx run -- docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest .
-
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
@@ -95,3 +105,7 @@ jobs:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
+
+    - name: Cleanup SSH Key
+      if: always()
+      run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub
