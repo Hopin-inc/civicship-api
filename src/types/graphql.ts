@@ -409,9 +409,8 @@ export type GqlMembership = {
   community: GqlCommunity;
   createdAt: Scalars['Datetime']['output'];
   headline?: Maybe<Scalars['String']['output']>;
-  hostedGeoView?: Maybe<Array<GqlMembershipHostedGeoView>>;
-  hostedParticipationCountView?: Maybe<GqlMembershipHostedParticipationCountView>;
   membershipHistories?: Maybe<GqlMembershipHistoriesConnection>;
+  participationView?: Maybe<GqlMembershipParticipationView>;
   reason: GqlMembershipStatusReason;
   role: GqlRole;
   status: GqlMembershipStatus;
@@ -479,20 +478,10 @@ export type GqlMembershipHistorySortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
 };
 
-export type GqlMembershipHostedGeoView = {
-  __typename?: 'MembershipHostedGeoView';
-  communityId: Scalars['ID']['output'];
-  latitude: Scalars['Decimal']['output'];
-  longitude: Scalars['Decimal']['output'];
-  placeId: Scalars['ID']['output'];
-  userId: Scalars['ID']['output'];
-};
-
-export type GqlMembershipHostedParticipationCountView = {
-  __typename?: 'MembershipHostedParticipationCountView';
-  communityId: Scalars['ID']['output'];
-  totalCount: Scalars['Int']['output'];
-  userId: Scalars['ID']['output'];
+export type GqlMembershipHostedMetrics = {
+  __typename?: 'MembershipHostedMetrics';
+  geo: Array<GqlMembershipParticipationLocation>;
+  totalParticipantCount: Scalars['Int']['output'];
 };
 
 export type GqlMembershipInviteInput = {
@@ -506,6 +495,25 @@ export type GqlMembershipInvitePayload = GqlMembershipInviteSuccess;
 export type GqlMembershipInviteSuccess = {
   __typename?: 'MembershipInviteSuccess';
   membership: GqlMembership;
+};
+
+export type GqlMembershipParticipatedMetrics = {
+  __typename?: 'MembershipParticipatedMetrics';
+  geo: Array<GqlMembershipParticipationLocation>;
+  totalParticipatedCount: Scalars['Int']['output'];
+};
+
+export type GqlMembershipParticipationLocation = {
+  __typename?: 'MembershipParticipationLocation';
+  latitude: Scalars['Decimal']['output'];
+  longitude: Scalars['Decimal']['output'];
+  placeId: Scalars['ID']['output'];
+};
+
+export type GqlMembershipParticipationView = {
+  __typename?: 'MembershipParticipationView';
+  hosted: GqlMembershipHostedMetrics;
+  participated: GqlMembershipParticipatedMetrics;
 };
 
 export type GqlMembershipRemoveInput = {
@@ -1196,7 +1204,6 @@ export type GqlParticipation = {
   evaluation?: Maybe<GqlEvaluation>;
   id: Scalars['ID']['output'];
   images?: Maybe<Scalars['JSON']['output']>;
-  opportunitySlot?: Maybe<GqlOpportunitySlot>;
   reason: GqlParticipationStatusReason;
   reservation?: Maybe<GqlReservation>;
   source: GqlSource;
@@ -1366,6 +1373,12 @@ export const GqlParticipationStatusReason = {
 } as const;
 
 export type GqlParticipationStatusReason = typeof GqlParticipationStatusReason[keyof typeof GqlParticipationStatusReason];
+export const GqlParticipationType = {
+  Hosted: 'HOSTED',
+  Participated: 'PARTICIPATED'
+} as const;
+
+export type GqlParticipationType = typeof GqlParticipationType[keyof typeof GqlParticipationType];
 export type GqlParticipationsConnection = {
   __typename?: 'ParticipationsConnection';
   edges: Array<GqlParticipationEdge>;
@@ -2776,11 +2789,13 @@ export type GqlResolversTypes = ResolversObject<{
   MembershipHistoryEdge: ResolverTypeWrapper<Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['MembershipHistory']> }>;
   MembershipHistoryFilterInput: GqlMembershipHistoryFilterInput;
   MembershipHistorySortInput: GqlMembershipHistorySortInput;
-  MembershipHostedGeoView: ResolverTypeWrapper<GqlMembershipHostedGeoView>;
-  MembershipHostedParticipationCountView: ResolverTypeWrapper<GqlMembershipHostedParticipationCountView>;
+  MembershipHostedMetrics: ResolverTypeWrapper<GqlMembershipHostedMetrics>;
   MembershipInviteInput: GqlMembershipInviteInput;
   MembershipInvitePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['MembershipInvitePayload']>;
   MembershipInviteSuccess: ResolverTypeWrapper<Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: GqlResolversTypes['Membership'] }>;
+  MembershipParticipatedMetrics: ResolverTypeWrapper<GqlMembershipParticipatedMetrics>;
+  MembershipParticipationLocation: ResolverTypeWrapper<GqlMembershipParticipationLocation>;
+  MembershipParticipationView: ResolverTypeWrapper<GqlMembershipParticipationView>;
   MembershipRemoveInput: GqlMembershipRemoveInput;
   MembershipRemovePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['MembershipRemovePayload']>;
   MembershipRemoveSuccess: ResolverTypeWrapper<GqlMembershipRemoveSuccess>;
@@ -2859,6 +2874,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusHistoryFilterInput: GqlParticipationStatusHistoryFilterInput;
   ParticipationStatusHistorySortInput: GqlParticipationStatusHistorySortInput;
   ParticipationStatusReason: GqlParticipationStatusReason;
+  ParticipationType: GqlParticipationType;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
@@ -3037,11 +3053,13 @@ export type GqlResolversParentTypes = ResolversObject<{
   MembershipHistoryEdge: Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['MembershipHistory']> };
   MembershipHistoryFilterInput: GqlMembershipHistoryFilterInput;
   MembershipHistorySortInput: GqlMembershipHistorySortInput;
-  MembershipHostedGeoView: GqlMembershipHostedGeoView;
-  MembershipHostedParticipationCountView: GqlMembershipHostedParticipationCountView;
+  MembershipHostedMetrics: GqlMembershipHostedMetrics;
   MembershipInviteInput: GqlMembershipInviteInput;
   MembershipInvitePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipInvitePayload'];
   MembershipInviteSuccess: Omit<GqlMembershipInviteSuccess, 'membership'> & { membership: GqlResolversParentTypes['Membership'] };
+  MembershipParticipatedMetrics: GqlMembershipParticipatedMetrics;
+  MembershipParticipationLocation: GqlMembershipParticipationLocation;
+  MembershipParticipationView: GqlMembershipParticipationView;
   MembershipRemoveInput: GqlMembershipRemoveInput;
   MembershipRemovePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipRemovePayload'];
   MembershipRemoveSuccess: GqlMembershipRemoveSuccess;
@@ -3442,9 +3460,8 @@ export type GqlMembershipResolvers<ContextType = any, ParentType extends GqlReso
   community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   headline?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  hostedGeoView?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHostedGeoView']>>, ParentType, ContextType>;
-  hostedParticipationCountView?: Resolver<Maybe<GqlResolversTypes['MembershipHostedParticipationCountView']>, ParentType, ContextType>;
   membershipHistories?: Resolver<Maybe<GqlResolversTypes['MembershipHistoriesConnection']>, ParentType, ContextType, Partial<GqlMembershipMembershipHistoriesArgs>>;
+  participationView?: Resolver<Maybe<GqlResolversTypes['MembershipParticipationView']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['MembershipStatusReason'], ParentType, ContextType>;
   role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['MembershipStatus'], ParentType, ContextType>;
@@ -3484,19 +3501,9 @@ export type GqlMembershipHistoryEdgeResolvers<ContextType = any, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlMembershipHostedGeoViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipHostedGeoView'] = GqlResolversParentTypes['MembershipHostedGeoView']> = ResolversObject<{
-  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  latitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
-  longitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
-  placeId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlMembershipHostedParticipationCountViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipHostedParticipationCountView'] = GqlResolversParentTypes['MembershipHostedParticipationCountView']> = ResolversObject<{
-  communityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+export type GqlMembershipHostedMetricsResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipHostedMetrics'] = GqlResolversParentTypes['MembershipHostedMetrics']> = ResolversObject<{
+  geo?: Resolver<Array<GqlResolversTypes['MembershipParticipationLocation']>, ParentType, ContextType>;
+  totalParticipantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3506,6 +3513,25 @@ export type GqlMembershipInvitePayloadResolvers<ContextType = any, ParentType ex
 
 export type GqlMembershipInviteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipInviteSuccess'] = GqlResolversParentTypes['MembershipInviteSuccess']> = ResolversObject<{
   membership?: Resolver<GqlResolversTypes['Membership'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlMembershipParticipatedMetricsResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipParticipatedMetrics'] = GqlResolversParentTypes['MembershipParticipatedMetrics']> = ResolversObject<{
+  geo?: Resolver<Array<GqlResolversTypes['MembershipParticipationLocation']>, ParentType, ContextType>;
+  totalParticipatedCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlMembershipParticipationLocationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipParticipationLocation'] = GqlResolversParentTypes['MembershipParticipationLocation']> = ResolversObject<{
+  latitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
+  longitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
+  placeId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlMembershipParticipationViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipParticipationView'] = GqlResolversParentTypes['MembershipParticipationView']> = ResolversObject<{
+  hosted?: Resolver<GqlResolversTypes['MembershipHostedMetrics'], ParentType, ContextType>;
+  participated?: Resolver<GqlResolversTypes['MembershipParticipatedMetrics'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3744,7 +3770,6 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
   evaluation?: Resolver<Maybe<GqlResolversTypes['Evaluation']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   images?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
-  opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['ParticipationStatusReason'], ParentType, ContextType>;
   reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType>;
   source?: Resolver<GqlResolversTypes['Source'], ParentType, ContextType>;
@@ -4369,10 +4394,12 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   MembershipHistoriesConnection?: GqlMembershipHistoriesConnectionResolvers<ContextType>;
   MembershipHistory?: GqlMembershipHistoryResolvers<ContextType>;
   MembershipHistoryEdge?: GqlMembershipHistoryEdgeResolvers<ContextType>;
-  MembershipHostedGeoView?: GqlMembershipHostedGeoViewResolvers<ContextType>;
-  MembershipHostedParticipationCountView?: GqlMembershipHostedParticipationCountViewResolvers<ContextType>;
+  MembershipHostedMetrics?: GqlMembershipHostedMetricsResolvers<ContextType>;
   MembershipInvitePayload?: GqlMembershipInvitePayloadResolvers<ContextType>;
   MembershipInviteSuccess?: GqlMembershipInviteSuccessResolvers<ContextType>;
+  MembershipParticipatedMetrics?: GqlMembershipParticipatedMetricsResolvers<ContextType>;
+  MembershipParticipationLocation?: GqlMembershipParticipationLocationResolvers<ContextType>;
+  MembershipParticipationView?: GqlMembershipParticipationViewResolvers<ContextType>;
   MembershipRemovePayload?: GqlMembershipRemovePayloadResolvers<ContextType>;
   MembershipRemoveSuccess?: GqlMembershipRemoveSuccessResolvers<ContextType>;
   MembershipSetInvitationStatusPayload?: GqlMembershipSetInvitationStatusPayloadResolvers<ContextType>;
