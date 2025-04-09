@@ -2,262 +2,184 @@ import {
   ArticleFactory,
   CommunityFactory,
   EvaluationFactory,
-  EvaluationHistoryFactory,
-  IdentityFactory,
   MembershipFactory,
   OpportunityFactory,
   OpportunitySlotFactory,
   ParticipationFactory,
-  ParticipationImageFactory,
-  ParticipationStatusHistoryFactory,
+  PlaceFactory,
   ReservationFactory,
   TicketFactory,
-  TicketStatusHistoryFactory,
   TransactionFactory,
   UserFactory,
   UtilityFactory,
   WalletFactory,
-} from "@/__tests__/factories/factory";
+} from "@/infrastructure/prisma/factories/factory";
 import { prismaClient } from "@/infrastructure/prisma/client";
-import { initialize } from "@/__tests__/factories/__generated__";
 
-// --- 共通 try-catch ヘルパー ---
-async function safeCreate<T>(label: string, index: number, fn: () => PromiseLike<T>): Promise<T> {
-  try {
-    return await Promise.resolve(fn());
-  } catch (err) {
-    console.error(`❌ ${label} failed at index ${index}`, err);
-    throw err;
-  }
-}
-
-initialize({ prisma: prismaClient });
+const NUM_UTILITIES = 2;
+const NUM_OPPORTUNITIES = 2;
+const NUM_SLOTS_PER_OPPORTUNITY = 1;
+const NUM_RESERVATIONS_PER_SLOT = 1;
+const NUM_TRANSACTIONS = 3;
 
 export async function seedUsecase() {
-  console.log("🌱 Seeding mock data...");
+  console.log("🔥 Resetting DB...");
 
-  try {
-    await prismaClient.$transaction(
-      async (tx) => {
-        // --- 👤 Users & 🏘️ Communities ---
-        console.log("🧩 Creating Users & Communities...");
-        const [users, communities] = await Promise.all([
-          Promise.all(
-            Array.from({ length: 2 }).map((_, i) =>
-              safeCreate("UserFactory", i, () => UserFactory.create()),
-            ),
-          ),
-          Promise.all(
-            Array.from({ length: 2 }).map((_, i) =>
-              safeCreate("CommunityFactory", i, () => CommunityFactory.create()),
-            ),
-          ),
-        ]);
+  await prismaClient.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe(`
+      TRUNCATE TABLE 
+        t_evaluation_histories,
+        t_evaluations,
+        t_participation_images,
+        t_participation_status_histories,
+        t_participations,
+        t_reservation_histories,
+        t_reservations,
+        t_opportunity_slots,
+        t_opportunities,
+        t_ticket_status_histories,
+        t_tickets,
+        t_utilities,
+        t_transactions,
+        t_wallets,
+        t_membership_histories,
+        t_memberships,
+        t_articles,
+        t_places,
+        m_cities,
+        m_states,
+        t_users,
+        t_communities
+      RESTART IDENTITY CASCADE;
+    `);
+  });
 
-        // --- 🆔 Identities ---
-        console.log("🔗 Creating Identities...");
-        await Promise.all(
-          users.map((user, i) =>
-            safeCreate("IdentityFactory", i, () =>
-              IdentityFactory.create({
-                user: { connect: { id: user.id } },
-              }),
-            ),
-          ),
-        );
+  console.log("🌱 Seeding mock data (connection-safe, sequential)...");
 
-        // --- 🤝 Memberships ---
-        console.log("🤝 Creating Memberships...");
-        const memberships = await Promise.all(
-          users.flatMap((user, i) =>
-            communities.map((community, j) =>
-              safeCreate("MembershipFactory", i * communities.length + j, () =>
-                MembershipFactory.create({
-                  user: { connect: { id: user.id } },
-                  community: { connect: { id: community.id } },
-                }),
-              ),
-            ),
-          ),
-        );
+  await prismaClient.$transaction(
+    async () => {
+      const { user, community, wallet } = await createBaseEntities();
+      await createUtilitiesAndTickets(user, community, wallet);
+      const opportunities = await createOpportunities(user, community);
+      await createNestedEntities(user, community, opportunities);
+      await createTransactions(wallet);
+      console.log("🎉 All seeding steps completed inside transaction!");
+    },
+    {
+      timeout: 120000,
+      maxWait: 12000,
+    },
+  );
+}
 
-        // --- 💰 Wallets / 🧺 Utilities / 📢 Opportunities ---
-        console.log("💰 Creating Wallets / 🧺 Utilities / 📢 Opportunities...");
-        const [wallets, utilities, opportunities] = await Promise.all([
-          Promise.all(
-            memberships.map((membership, i) =>
-              safeCreate("WalletFactory", i, () =>
-                WalletFactory.create({
-                  user: { connect: { id: membership.userId } },
-                  community: { connect: { id: membership.communityId } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            communities.map((community, i) =>
-              safeCreate("UtilityFactory", i, () =>
-                UtilityFactory.create({
-                  community: { connect: { id: community.id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            communities.map((community, i) =>
-              safeCreate("OpportunityFactory", i, () =>
-                OpportunityFactory.create({
-                  community: { connect: { id: community.id } },
-                  createdByUser: { connect: { id: users[i % users.length].id } },
-                }),
-              ),
-            ),
-          ),
-        ]);
+// --- STEP 1: User / Community / Wallet / Membership ---
+async function createBaseEntities() {
+  console.log("🧱 STEP 1: Creating base User, Community, Wallet, Membership...");
+  const [community, user] = await Promise.all([CommunityFactory.create(), UserFactory.create()]);
+  const [wallet] = await Promise.all([
+    WalletFactory.create({ transientUser: user, transientCommunity: community }),
+    MembershipFactory.create({ transientUser: user, transientCommunity: community }),
+  ]);
+  console.log("✅ STEP 1 completed.");
+  return { user, community, wallet };
+}
 
-        // --- 🎟️ Tickets & 💸 Transactions & 🗓️ Opportunity Slots & 📰 Articles ---
-        const [tickets, slots] = await Promise.all([
-          Promise.all(
-            wallets.map((wallet, i) =>
-              safeCreate("Ticket", i, () =>
-                TicketFactory.create({
-                  wallet: { connect: { id: wallet.id } },
-                  utility: { connect: { id: utilities[i % utilities.length].id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            opportunities.map((opportunity, i) =>
-              safeCreate("Slot", i, () =>
-                OpportunitySlotFactory.create({
-                  opportunity: { connect: { id: opportunity.id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            Array.from({ length: 10 }).map((_, i) =>
-              safeCreate("Transaction", i, () =>
-                TransactionFactory.create({
-                  fromWallet: { connect: { id: wallets[0].id } },
-                  toWallet: { connect: { id: wallets[1].id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            communities.map((community, i) =>
-              safeCreate("Article", i, () =>
-                ArticleFactory.create({
-                  community: { connect: { id: community.id } },
-                  authors: { connect: [{ id: users[i % users.length].id }] },
-                  relatedUsers: { connect: [{ id: users[(i + 1) % users.length].id }] },
-                  opportunities: { connect: [{ id: opportunities[i % opportunities.length].id }] },
-                }),
-              ),
-            ),
-          ),
-        ]);
+// --- STEP 2: Utilities & Tickets ---
+async function createUtilitiesAndTickets(user: any, community: any, wallet: any) {
+  console.log("🎫 STEP 2: Creating Utilities & Tickets...");
+  const utilities = await UtilityFactory.createList(NUM_UTILITIES, {
+    transientCommunity: community,
+  });
 
-        // --- 📝 Reservations ---
-        const [reservations] = await Promise.all([
-          Promise.all(
-            slots.map((slot, i) =>
-              safeCreate("Reservation", i, () =>
-                ReservationFactory.create({
-                  opportunitySlot: { connect: { id: slot.id } },
-                  createdByUser: { connect: { id: users[i % users.length].id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            tickets.map((ticket, i) =>
-              safeCreate("TicketStatusHistory", i, () =>
-                TicketStatusHistoryFactory.create({
-                  ticket: { connect: { id: ticket.id } },
-                  createdByUser: { connect: { id: users[i % users.length].id } },
-                }),
-              ),
-            ),
-          ),
-        ]);
+  await Promise.all(
+    utilities.map((utility) =>
+      TicketFactory.create({
+        transientUser: user,
+        transientWallet: wallet,
+        transientUtility: utility,
+      }),
+    ),
+  );
+  console.log("✅ STEP 2 completed.");
+}
 
-        // --- 🙋 Participations ---
-        console.log("🙋 Creating Participations...");
-        const participations = await Promise.all(
-          reservations.map((reservation, i) =>
-            safeCreate("Participation", i, () => {
-              const opportunity = opportunities[i % opportunities.length];
-              if (!opportunity.communityId) {
-                throw new Error(`Opportunity[${i}] has no communityId`);
-              }
-              return ParticipationFactory.create({
-                reservation: { connect: { id: reservation.id } },
-                user: { connect: { id: users[i % users.length].id } },
-                community: { connect: { id: opportunity.communityId } },
-              });
-            }),
-          ),
-        );
+// --- STEP 3: Place → Opportunity ---
+async function createOpportunities(user: any, community: any) {
+  console.log("🌍 STEP 3: Creating Places...");
+  const place = await PlaceFactory.createList(NUM_OPPORTUNITIES, {
+    transientCommunity: community,
+  });
 
-        const [evaluations] = await Promise.all([
-          Promise.all(
-            participations.map((p, i) =>
-              safeCreate("Evaluation", i, () =>
-                EvaluationFactory.create({
-                  participation: { connect: { id: p.id } },
-                  evaluator: { connect: { id: users[i % users.length].id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            participations.map((p, i) =>
-              safeCreate("ParticipationImage", i, () =>
-                ParticipationImageFactory.create({
-                  participation: { connect: { id: p.id } },
-                }),
-              ),
-            ),
-          ),
-          Promise.all(
-            participations.map((p, i) =>
-              safeCreate("ParticipationStatusHistory", i, () =>
-                ParticipationStatusHistoryFactory.create({
-                  participation: { connect: { id: p.id } },
-                  createdByUser: { connect: { id: users[i % users.length].id } },
-                }),
-              ),
-            ),
-          ),
-        ]);
+  console.log("📣 STEP 3-1: Creating Opportunities per Place...");
+  const opportunities = (
+    await Promise.all(
+      place.map((p) =>
+        OpportunityFactory.createList(NUM_OPPORTUNITIES, {
+          transientUser: user,
+          transientCommunity: community,
+          transientPlace: p,
+        }),
+      ),
+    )
+  ).flat();
+  console.log(`✅ STEP 3-1 completed. ${opportunities.length} opportunities created.`);
+  return opportunities;
+}
 
-        // --- 📘 Evaluation Histories ---
-        console.log("📘 Creating EvaluationHistory...");
-        await Promise.all(
-          evaluations.map((e, i) =>
-            safeCreate("EvaluationHistory", i, () =>
-              EvaluationHistoryFactory.create({
-                evaluation: { connect: { id: e.id } },
-                createdByUser: { connect: { id: users[i % users.length].id } },
-              }),
-            ),
-          ),
-        );
+// --- STEP 3-2: Opportunity → Slot → Reservation → Participation → Evaluation / Article ---
+async function createNestedEntities(user: any, community: any, opportunities: any[]) {
+  console.log(
+    "🧩 STEP 3-2: Creating Slots, Reservations, Participations, Evaluations, and Articles...",
+  );
 
-        console.log("🎉 Seeding succeeded!");
-      },
-      {
-        timeout: 60_000,
-        maxWait: 6000,
-      },
-    );
-  } catch (e) {
-    console.error("❌ Seeding failed with error:", e);
-    throw e;
+  for (const opportunity of opportunities) {
+    const slots = await OpportunitySlotFactory.createList(NUM_SLOTS_PER_OPPORTUNITY, {
+      transientOpportunity: opportunity,
+    });
+
+    for (const slot of slots) {
+      const reservations = await ReservationFactory.createList(NUM_RESERVATIONS_PER_SLOT, {
+        transientUser: user,
+        transientSlot: slot,
+      });
+
+      const participations = await Promise.all(
+        reservations.map((reservation) =>
+          ParticipationFactory.create({
+            transientUser: user,
+            transientReservation: reservation,
+            transientCommunity: community,
+          }),
+        ),
+      );
+
+      await Promise.all(
+        participations.map((p) =>
+          EvaluationFactory.create({
+            transientParticipation: p,
+            transientUser: user,
+          }),
+        ),
+      );
+    }
+
+    await ArticleFactory.create({
+      transientCommunity: community,
+      transientAuthor: user,
+      transientRelatedUsers: [user],
+      transientOpportunity: opportunity,
+    });
   }
 
-  console.log("✅ Seeding completed!");
+  console.log("✅ STEP 3-2 completed.");
+}
+
+// --- STEP 4: Transactions ---
+async function createTransactions(wallet: any) {
+  console.log("💸 STEP 4: Creating Transactions...");
+  await TransactionFactory.createList(NUM_TRANSACTIONS, {
+    transientFromWallet: wallet,
+    transientToWallet: wallet,
+  });
+  console.log("✅ STEP 4 completed.");
 }

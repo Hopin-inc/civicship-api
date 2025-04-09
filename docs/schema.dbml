@@ -95,9 +95,9 @@ Table t_memberships {
   status MembershipStatus [not null]
   reason MembershipStatusReason [not null]
   role Role [not null, default: 'MEMBER']
-  hostedGeoView v_membership_hosted_geo [not null]
   histories t_membership_histories [not null]
-  hostedParticipationCountView v_membership_hosted_participation_count
+  participationGeoViews v_membership_participation_geo [not null]
+  participationCountViews v_membership_participation_count [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
@@ -361,9 +361,10 @@ Table t_utilities {
   updatedAt DateTime
 }
 
-Table v_membership_hosted_geo {
+Table v_membership_participation_geo {
   userId String [not null]
   communityId String [not null]
+  type ParticipationType [not null]
   placeId String [not null]
   latitude Decimal [not null]
   longitude Decimal [not null]
@@ -374,14 +375,15 @@ Table v_membership_hosted_geo {
   }
 }
 
-Table v_membership_hosted_participation_count {
+Table v_membership_participation_count {
   userId String [not null]
   communityId String [not null]
+  type ParticipationType [not null]
   totalCount Int [not null]
   membership t_memberships [not null]
 
   indexes {
-    (userId, communityId) [pk]
+    (userId, communityId, type) [pk]
   }
 }
 
@@ -472,6 +474,11 @@ Enum MembershipStatusReason {
   WITHDRAWN
   REMOVED
   ASSIGNED
+}
+
+Enum ParticipationType {
+  HOSTED
+  PARTICIPATED
 }
 
 Enum WalletType {
@@ -636,9 +643,9 @@ Ref: t_identities.userId > t_users.id [delete: Cascade]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 
-Ref: v_membership_hosted_geo.(userId, communityId) > t_memberships.(userId, communityId)
+Ref: v_membership_participation_geo.(userId, communityId) > t_memberships.(userId, communityId)
 
-Ref: v_membership_hosted_participation_count.(userId, communityId) - t_memberships.(userId, communityId)
+Ref: v_membership_participation_count.(userId, communityId) > t_memberships.(userId, communityId)
 
 Ref: mv_current_points.walletId - t_wallets.id
 
