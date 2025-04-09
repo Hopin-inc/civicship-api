@@ -35,8 +35,8 @@ export default class MembershipPresenter {
     return {
       ...prop,
       community: CommunityPresenter.get(community),
-      hostedGeoView: this.formatHostedGeoView(hostedGeoView),
-      hostedParticipationCountView: this.formatHostedParticipationCountView(
+      hostedGeoView: MembershipPresenter.formatHostedGeoView(hostedGeoView),
+      hostedParticipationCountView: MembershipPresenter.formatHostedParticipationCountView(
         hostedParticipationCountView,
       ),
     };

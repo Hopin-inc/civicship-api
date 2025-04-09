@@ -32,7 +32,8 @@ export default class OpportunitySlotPresenter {
     return {
       ...prop,
       opportunity: opportunity ? opportunity : null,
-      remainingCapacityView: this.formatRemainingCapacityView(remainingCapacityView),
+      remainingCapacityView:
+        OpportunitySlotPresenter.formatRemainingCapacityView(remainingCapacityView),
     };
   }
 
