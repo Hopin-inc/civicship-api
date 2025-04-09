@@ -5,9 +5,14 @@ type Membership {
     user: User!
     community: Community!
 
+    headline: String
+    bio: String
+
     status: MembershipStatus!
     reason: MembershipStatusReason!
     role: Role!
+
+    participationView: MembershipParticipationView
 
     membershipHistories(
         filter: MembershipHistoryFilterInput
@@ -18,6 +23,27 @@ type Membership {
 
     createdAt: Datetime!
     updatedAt: Datetime
+}
+
+type MembershipParticipationView {
+    hosted: MembershipHostedMetrics!
+    participated: MembershipParticipatedMetrics!
+}
+
+type MembershipHostedMetrics {
+    geo: [MembershipParticipationLocation!]!
+    totalParticipantCount: Int! # ← 他人が参加した人数
+}
+
+type MembershipParticipatedMetrics {
+    geo: [MembershipParticipationLocation!]!
+    totalParticipatedCount: Int! # ← 自分が参加した回数
+}
+
+type MembershipParticipationLocation{
+    placeId: ID!
+    latitude: Decimal!
+    longitude: Decimal!
 }
 
 # ------------------------------
@@ -47,4 +73,9 @@ enum MembershipStatusReason {
     REMOVED
 
     ASSIGNED
+}
+
+enum ParticipationType {
+    HOSTED
+    PARTICIPATED
 }

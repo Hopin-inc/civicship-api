@@ -9,6 +9,7 @@ export const opportunityInclude = Prisma.validator<Prisma.OpportunityInclude>()(
   createdByUser: { include: userInclude },
   place: { include: placeInclude },
   requiredUtilities: { include: utilityInclude },
+  earliestReservableSlotView: true,
 });
 
 export const opportunitySetHostingStatusInclude = Prisma.validator<Prisma.OpportunityInclude>()({
@@ -16,6 +17,7 @@ export const opportunitySetHostingStatusInclude = Prisma.validator<Prisma.Opport
   createdByUser: { include: userInclude },
   place: { include: placeInclude },
   requiredUtilities: { include: utilityInclude },
+  earliestReservableSlotView: true,
 });
 
 export type PrismaOpportunity = Prisma.OpportunityGetPayload<{

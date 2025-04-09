@@ -5,17 +5,52 @@ model Membership {
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
+  headline String?
+  bio      String?
+
   status MembershipStatus
   reason MembershipStatusReason
   role   Role                   @default(MEMBER)
 
   histories MembershipHistory[]
 
+  participationGeoViews   MembershipParticipationGeoView[]
+  participationCountViews MembershipParticipationCountView[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@id([userId, communityId])
   @@map("t_memberships")
+}
+
+view MembershipParticipationGeoView {
+  userId      String @map("user_id")
+  communityId String @map("community_id")
+
+  type ParticipationType
+
+  placeId   String  @map("place_id")
+  latitude  Decimal
+  longitude Decimal
+
+  membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
+
+  @@id([userId, communityId, placeId])
+  @@map("v_membership_participation_geo")
+}
+
+view MembershipParticipationCountView {
+  userId      String @map("user_id")
+  communityId String @map("community_id")
+
+  type       ParticipationType
+  totalCount Int               @map("total_participation_count")
+
+  membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
+
+  @@id([userId, communityId, type])
+  @@map("v_membership_participation_count")
 }
 
 enum Role {
@@ -42,4 +77,9 @@ enum MembershipStatusReason {
   REMOVED
 
   ASSIGNED
+}
+
+enum ParticipationType {
+  HOSTED
+  PARTICIPATED
 }

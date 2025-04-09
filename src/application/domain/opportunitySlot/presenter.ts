@@ -32,12 +32,8 @@ export default class OpportunitySlotPresenter {
     return {
       ...prop,
       opportunity: opportunity ? opportunity : null,
-      remainingCapacityView: remainingCapacityView
-        ? {
-            opportunitySlotId: remainingCapacityView.slotId,
-            remainingCapacity: remainingCapacityView.remainingCapacity,
-          }
-        : null,
+      remainingCapacityView:
+        OpportunitySlotPresenter.formatRemainingCapacityView(remainingCapacityView),
     };
   }
 
@@ -55,5 +51,16 @@ export default class OpportunitySlotPresenter {
       __typename: "OpportunitySlotsBulkUpdateSuccess",
       slots,
     };
+  }
+
+  private static formatRemainingCapacityView(
+    view?: PrismaOpportunitySlot["remainingCapacityView"],
+  ): GqlOpportunitySlot["remainingCapacityView"] {
+    return view
+      ? {
+          opportunitySlotId: view.slotId,
+          remainingCapacity: view.remainingCapacity,
+        }
+      : null;
   }
 }
