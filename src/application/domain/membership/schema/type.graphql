@@ -12,8 +12,7 @@ type Membership {
     reason: MembershipStatusReason!
     role: Role!
 
-    hostedGeoView: [MembershipHostedGeoView!]
-    hostedParticipationCountView: MembershipHostedParticipationCountView
+    participationView: MembershipParticipationView
 
     membershipHistories(
         filter: MembershipHistoryFilterInput
@@ -26,20 +25,25 @@ type Membership {
     updatedAt: Datetime
 }
 
-type MembershipHostedGeoView{
-    userId: ID!
-    communityId: ID!
+type MembershipParticipationView {
+    hosted: MembershipHostedMetrics!
+    participated: MembershipParticipatedMetrics!
+}
 
+type MembershipHostedMetrics {
+    geo: [MembershipParticipationLocation!]!
+    totalParticipantCount: Int! # ← 他人が参加した人数
+}
+
+type MembershipParticipatedMetrics {
+    geo: [MembershipParticipationLocation!]!
+    totalParticipatedCount: Int! # ← 自分が参加した回数
+}
+
+type MembershipParticipationLocation{
     placeId: ID!
     latitude: Decimal!
     longitude: Decimal!
-}
-
-type MembershipHostedParticipationCountView{
-    userId: ID!
-    communityId: ID!
-
-    totalCount: Int!
 }
 
 # ------------------------------
@@ -69,4 +73,9 @@ enum MembershipStatusReason {
     REMOVED
 
     ASSIGNED
+}
+
+enum ParticipationType {
+    HOSTED
+    PARTICIPATED
 }

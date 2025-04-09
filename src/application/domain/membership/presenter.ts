@@ -6,6 +6,9 @@ import {
   GqlMembershipWithdrawSuccess,
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
+  GqlMembershipParticipationView,
+  GqlMembershipParticipatedMetrics,
+  GqlMembershipHostedMetrics,
 } from "@/types/graphql";
 import { PrismaMembership } from "@/application/domain/membership/data/type";
 import CommunityPresenter from "@/application/domain/community/presenter";
@@ -30,14 +33,14 @@ export default class MembershipPresenter {
   }
 
   static get(r: PrismaMembership): GqlMembership {
-    const { community, hostedGeoView, hostedParticipationCountView, ...prop } = r;
+    const { community, participationGeoViews, participationCountViews, ...prop } = r;
 
     return {
       ...prop,
       community: CommunityPresenter.get(community),
-      hostedGeoView: MembershipPresenter.formatHostedGeoView(hostedGeoView),
-      hostedParticipationCountView: MembershipPresenter.formatHostedParticipationCountView(
-        hostedParticipationCountView,
+      participationView: MembershipPresenter.formatParticipationView(
+        participationGeoViews,
+        participationCountViews,
       ),
     };
   }
@@ -84,29 +87,50 @@ export default class MembershipPresenter {
     };
   }
 
-  private static formatHostedGeoView(
-    views?: PrismaMembership["hostedGeoView"],
-  ): GqlMembership["hostedGeoView"] {
-    return (
-      views?.map((geo) => ({
-        userId: geo.userId,
-        communityId: geo.communityId,
-        placeId: geo.placeId,
-        latitude: geo.latitude.toString(),
-        longitude: geo.longitude.toString(),
-      })) ?? []
-    );
+  private static formatParticipationView(
+    geoList?: PrismaMembership["participationGeoViews"],
+    countList?: PrismaMembership["participationCountViews"],
+  ): GqlMembershipParticipationView {
+    return {
+      hosted: this.extractHostedMetrics(geoList, countList),
+      participated: this.extractParticipatedMetrics(geoList, countList),
+    };
   }
 
-  private static formatHostedParticipationCountView(
-    view?: PrismaMembership["hostedParticipationCountView"],
-  ): GqlMembership["hostedParticipationCountView"] {
-    return view
-      ? {
-          userId: view.userId,
-          communityId: view.communityId,
-          totalCount: view.totalCount,
-        }
-      : null;
+  private static extractHostedMetrics(
+    geoList?: PrismaMembership["participationGeoViews"],
+    countList?: PrismaMembership["participationCountViews"],
+  ): GqlMembershipHostedMetrics {
+    const geo =
+      geoList
+        ?.filter((g) => g.type === "HOSTED")
+        .map((g) => ({
+          placeId: g.placeId,
+          latitude: g.latitude.toString(),
+          longitude: g.longitude.toString(),
+        })) ?? [];
+
+    const totalParticipantCount = countList?.find((c) => c.type === "HOSTED")?.totalCount ?? 0;
+
+    return { geo, totalParticipantCount };
+  }
+
+  private static extractParticipatedMetrics(
+    geoList?: PrismaMembership["participationGeoViews"],
+    countList?: PrismaMembership["participationCountViews"],
+  ): GqlMembershipParticipatedMetrics {
+    const geo =
+      geoList
+        ?.filter((g) => g.type === "PARTICIPATED")
+        .map((g) => ({
+          placeId: g.placeId,
+          latitude: g.latitude.toString(),
+          longitude: g.longitude.toString(),
+        })) ?? [];
+
+    const totalParticipatedCount =
+      countList?.find((c) => c.type === "PARTICIPATED")?.totalCount ?? 0;
+
+    return { geo, totalParticipatedCount };
   }
 }

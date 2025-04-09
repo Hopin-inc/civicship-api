@@ -12,10 +12,10 @@ model Membership {
   reason MembershipStatusReason
   role   Role                   @default(MEMBER)
 
-  hostedGeoView MembershipHostedGeoView[]
-  histories     MembershipHistory[]
+  histories MembershipHistory[]
 
-  hostedParticipationCountView MembershipHostedParticipationCountView?
+  participationGeoViews   MembershipParticipationGeoView[]
+  participationCountViews MembershipParticipationCountView[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -24,9 +24,11 @@ model Membership {
   @@map("t_memberships")
 }
 
-view MembershipHostedGeoView {
+view MembershipParticipationGeoView {
   userId      String @map("user_id")
   communityId String @map("community_id")
+
+  type ParticipationType
 
   placeId   String  @map("place_id")
   latitude  Decimal
@@ -35,18 +37,20 @@ view MembershipHostedGeoView {
   membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
 
   @@id([userId, communityId, placeId])
-  @@map("v_membership_hosted_geo")
+  @@map("v_membership_participation_geo")
 }
 
-view MembershipHostedParticipationCountView {
+view MembershipParticipationCountView {
   userId      String @map("user_id")
   communityId String @map("community_id")
-  totalCount  Int    @map("total_participation_count")
+
+  type       ParticipationType
+  totalCount Int               @map("total_participation_count")
 
   membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
 
-  @@id([userId, communityId])
-  @@map("v_membership_hosted_participation_count")
+  @@id([userId, communityId, type])
+  @@map("v_membership_participation_count")
 }
 
 enum Role {
@@ -73,4 +77,9 @@ enum MembershipStatusReason {
   REMOVED
 
   ASSIGNED
+}
+
+enum ParticipationType {
+  HOSTED
+  PARTICIPATED
 }
