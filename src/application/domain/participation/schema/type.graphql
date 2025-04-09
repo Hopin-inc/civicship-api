@@ -9,7 +9,6 @@ type Participation {
 
     user: User
     community: Community
-    opportunitySlot: OpportunitySlot
     reservation: Reservation
 
     evaluation: Evaluation
