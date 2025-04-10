@@ -1,21 +1,6 @@
 ```mermaid
 erDiagram
 
-        ArticleCategory {
-            ACTIVITY_REPORT ACTIVITY_REPORT
-INTERVIEW INTERVIEW
-        }
-    
-
-
-        EvaluationStatus {
-            PENDING PENDING
-PASSED PASSED
-FAILED FAILED
-        }
-    
-
-
         PublishStatus {
             PUBLIC PUBLIC
 COMMUNITY_INTERNAL COMMUNITY_INTERNAL
@@ -27,6 +12,31 @@ PRIVATE PRIVATE
         Source {
             INTERNAL INTERNAL
 EXTERNAL EXTERNAL
+        }
+    
+
+
+        SysRole {
+            SYS_ADMIN SYS_ADMIN
+USER USER
+        }
+    
+
+
+        CurrentPrefecture {
+            KAGAWA KAGAWA
+TOKUSHIMA TOKUSHIMA
+KOCHI KOCHI
+EHIME EHIME
+OUTSIDE_SHIKOKU OUTSIDE_SHIKOKU
+UNKNOWN UNKNOWN
+        }
+    
+
+
+        IdentityPlatform {
+            LINE LINE
+FACEBOOK FACEBOOK
         }
     
 
@@ -74,6 +84,13 @@ MEMBER MEMBER
     
 
 
+        ArticleCategory {
+            ACTIVITY_REPORT ACTIVITY_REPORT
+INTERVIEW INTERVIEW
+        }
+    
+
+
         OpportunityCategory {
             QUEST QUEST
 EVENT EVENT
@@ -86,6 +103,15 @@ ACTIVITY ACTIVITY
             SCHEDULED SCHEDULED
 CANCELLED CANCELLED
 COMPLETED COMPLETED
+        }
+    
+
+
+        ReservationStatus {
+            APPLIED APPLIED
+ACCEPTED ACCEPTED
+REJECTED REJECTED
+CANCELED CANCELED
         }
     
 
@@ -111,11 +137,10 @@ OPPORTUNITY_CANCELED OPPORTUNITY_CANCELED
     
 
 
-        ReservationStatus {
-            APPLIED APPLIED
-ACCEPTED ACCEPTED
-REJECTED REJECTED
-CANCELED CANCELED
+        EvaluationStatus {
+            PENDING PENDING
+PASSED PASSED
+FAILED FAILED
         }
     
 
@@ -148,41 +173,32 @@ TICKET_PURCHASED TICKET_PURCHASED
 TICKET_REFUNDED TICKET_REFUNDED
         }
     
+  "m_states" {
+    String code "🗝️"
+    String name 
+    String country_code 
+    }
+  
 
+  "m_cities" {
+    String code "🗝️"
+    String name 
+    String state_code 
+    String country_code 
+    }
+  
 
-        IdentityPlatform {
-            LINE LINE
-FACEBOOK FACEBOOK
-        }
-    
-
-
-        SysRole {
-            SYS_ADMIN SYS_ADMIN
-USER USER
-        }
-    
-
-
-        CurrentPrefecture {
-            KAGAWA KAGAWA
-TOKUSHIMA TOKUSHIMA
-KOCHI KOCHI
-EHIME EHIME
-OUTSIDE_SHIKOKU OUTSIDE_SHIKOKU
-UNKNOWN UNKNOWN
-        }
-    
-  "t_articles" {
+  "t_places" {
     String id "🗝️"
-    String title 
-    String introduction 
-    ArticleCategory category 
-    PublishStatus publish_status 
-    String body 
-    Json thumbnail "❓"
-    DateTime published_at 
-    String community_id 
+    String name 
+    String address 
+    Decimal latitude 
+    Decimal longitude 
+    Boolean is_manual 
+    String google_place_id "❓"
+    Json map_location "❓"
+    String city_code 
+    String community_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -201,41 +217,31 @@ UNKNOWN UNKNOWN
     }
   
 
-  "t_evaluations" {
+  "t_users" {
     String id "🗝️"
-    String participation_id 
-    String evaluator_id 
-    EvaluationStatus status 
-    String comment "❓"
-    String credentialUrl "❓"
-    DateTime issued_at "❓"
+    String name 
+    String slug 
+    String image "❓"
+    String bio "❓"
+    SysRole sys_role 
+    String url_website "❓"
+    String url_x "❓"
+    String url_facebook "❓"
+    String url_instagram "❓"
+    String url_youtube "❓"
+    String url_tiktok "❓"
+    CurrentPrefecture current_prefecture 
     DateTime created_at 
     DateTime updated_at "❓"
     }
   
 
-  "t_evaluation_histories" {
-    String id "🗝️"
-    String evaluationId 
-    EvaluationStatus status 
-    String created_by "❓"
-    String comment "❓"
+  "t_identities" {
+    String uid "🗝️"
+    IdentityPlatform platform 
+    String user_id 
     DateTime created_at 
-    }
-  
-
-  "m_cities" {
-    String code "🗝️"
-    String name 
-    String state_code 
-    String country_code 
-    }
-  
-
-  "m_states" {
-    String code "🗝️"
-    String name 
-    String country_code 
+    DateTime updated_at "❓"
     }
   
 
@@ -257,11 +263,10 @@ UNKNOWN UNKNOWN
     Role role 
     MembershipStatus status 
     MembershipStatusReason reason 
-    String userId 
-    String communityId 
+    String user_id 
+    String community_id 
     String created_by "❓"
     DateTime created_at 
-    DateTime updated_at "❓"
     }
   
 
@@ -270,6 +275,21 @@ UNKNOWN UNKNOWN
     WalletType type 
     String community_id 
     String user_id "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_articles" {
+    String id "🗝️"
+    String title 
+    String introduction 
+    ArticleCategory category 
+    PublishStatus publish_status 
+    String body 
+    Json thumbnail "❓"
+    DateTime published_at 
+    String community_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -287,9 +307,9 @@ UNKNOWN UNKNOWN
     Json files 
     Int points_to_earn "❓"
     Int fee_required "❓"
-    String created_by 
     String community_id "❓"
     String place_id "❓"
+    String created_by 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -298,61 +318,10 @@ UNKNOWN UNKNOWN
   "t_opportunity_slots" {
     String slot_id "🗝️"
     OpportunitySlotHostingStatus hosting_status 
-    Int capacity "❓"
     DateTime starts_at 
     DateTime ends_at 
+    Int capacity "❓"
     String opportunity_id 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_participations" {
-    String id "🗝️"
-    String user_id "❓"
-    String application_id "❓"
-    String community_id "❓"
-    Source source 
-    ParticipationStatus status 
-    ParticipationStatusReason reason 
-    String description "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_participation_images" {
-    String id "🗝️"
-    String url 
-    String caption "❓"
-    String participationId 
-    DateTime createdAt 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_participation_status_histories" {
-    String id "🗝️"
-    ParticipationStatus status 
-    ParticipationStatusReason reason 
-    String participation_id 
-    String created_by "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_places" {
-    String id "🗝️"
-    String name 
-    String address 
-    Decimal latitude 
-    Decimal longitude 
-    Boolean is_manual 
-    String google_place_id "❓"
-    Json map_location "❓"
-    String city_code 
-    String communityId "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -373,7 +342,77 @@ UNKNOWN UNKNOWN
     String reservation_id 
     ReservationStatus status 
     String created_by "❓"
-    DateTime createdAt 
+    DateTime created_at 
+    }
+  
+
+  "t_participations" {
+    String id "🗝️"
+    Source source 
+    ParticipationStatus status 
+    ParticipationStatusReason reason 
+    String description "❓"
+    String user_id "❓"
+    String reservation_id "❓"
+    String community_id "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_participation_images" {
+    String id "🗝️"
+    String participation_id 
+    String url 
+    String caption "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_participation_status_histories" {
+    String id "🗝️"
+    String participation_id 
+    ParticipationStatus status 
+    ParticipationStatusReason reason 
+    String created_by "❓"
+    DateTime created_at 
+    }
+  
+
+  "t_evaluations" {
+    String id "🗝️"
+    EvaluationStatus status 
+    String comment "❓"
+    String credential_url "❓"
+    DateTime issued_at "❓"
+    String participation_id 
+    String evaluator_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_evaluation_histories" {
+    String id "🗝️"
+    EvaluationStatus status 
+    String comment "❓"
+    String evaluation_id 
+    String created_by "❓"
+    DateTime created_at 
+    }
+  
+
+  "t_utilities" {
+    String id "🗝️"
+    PublishStatus publish_status 
+    String name 
+    String description "❓"
+    String image "❓"
+    Int points_required 
+    String community_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -390,12 +429,12 @@ UNKNOWN UNKNOWN
 
   "t_ticket_status_histories" {
     String id "🗝️"
+    String ticket_id 
     TicketStatus status 
     TicketStatusReason reason 
-    String ticket_id 
+    String transaction_id "❓"
     String participation_id "❓"
     String created_by "❓"
-    String transaction_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -409,47 +448,6 @@ UNKNOWN UNKNOWN
     String to "❓"
     Int to_point_change 
     String participation_id "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_identities" {
-    String uid "🗝️"
-    IdentityPlatform platform 
-    String user_id 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_users" {
-    String id "🗝️"
-    String name 
-    String slug 
-    String image "❓"
-    String bio "❓"
-    SysRole sys_role 
-    String url_website "❓"
-    String url_x "❓"
-    String url_facebook "❓"
-    String url_instagram "❓"
-    String url_youtube "❓"
-    String url_tiktok "❓"
-    CurrentPrefecture currentPrefecture 
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "t_utilities" {
-    String id "🗝️"
-    String name 
-    String description "❓"
-    String image "❓"
-    Int points_required 
-    PublishStatus publish_status 
-    String community_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -485,23 +483,23 @@ UNKNOWN UNKNOWN
     }
   
 
-  "mv_earliest_reservable_slot" {
+  "v_earliest_reservable_slot" {
     String opportunityId "🗝️"
     DateTime earliestReservableAt "❓"
     }
   
 
-  "mv_slot_remaining_capacity" {
+  "v_slot_remaining_capacity" {
     String slotId "🗝️"
     Int remainingCapacity "❓"
     }
   
-    "t_articles" o|--|| "ArticleCategory" : "enum:category"
-    "t_articles" o|--|| "PublishStatus" : "enum:publish_status"
-    "t_articles" o|--|| "t_communities" : "community"
-    "t_articles" o{--}o "t_users" : "authors"
-    "t_articles" o{--}o "t_users" : "relatedUsers"
-    "t_articles" o{--}o "t_opportunities" : "opportunities"
+    "m_states" o{--}o "m_cities" : "cities"
+    "m_cities" o|--|| "m_states" : "state"
+    "m_cities" o{--}o "t_places" : "places"
+    "t_places" o|--|| "m_cities" : "city"
+    "t_places" o|--|o "t_communities" : "community"
+    "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_places" : "places"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
@@ -509,16 +507,24 @@ UNKNOWN UNKNOWN
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
-    "t_evaluations" o|--|| "t_participations" : "participation"
-    "t_evaluations" o|--|| "t_users" : "evaluator"
-    "t_evaluations" o|--|| "EvaluationStatus" : "enum:status"
-    "t_evaluations" o{--}o "t_evaluation_histories" : "histories"
-    "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
-    "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
-    "t_evaluation_histories" o|--|o "t_users" : "createdByUser"
-    "m_cities" o|--|| "m_states" : "state"
-    "m_cities" o{--}o "t_places" : "places"
-    "m_states" o{--}o "m_cities" : "cities"
+    "t_users" o|--|| "SysRole" : "enum:sys_role"
+    "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
+    "t_users" o{--}o "t_identities" : "identities"
+    "t_users" o{--}o "t_memberships" : "memberships"
+    "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
+    "t_users" o{--}o "t_wallets" : "wallets"
+    "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
+    "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
+    "t_users" o{--}o "t_reservations" : "reservationsAppliedByMe"
+    "t_users" o{--}o "t_reservation_histories" : "reservationStatusChangedByMe"
+    "t_users" o{--}o "t_participations" : "participations"
+    "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
+    "t_users" o{--}o "t_evaluations" : "evaluationsEvaluatedByMe"
+    "t_users" o{--}o "t_evaluation_histories" : "evaluationCreatedByMe"
+    "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
+    "t_users" o{--}o "t_articles" : "articlesAboutMe"
+    "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
+    "t_identities" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
@@ -540,38 +546,25 @@ UNKNOWN UNKNOWN
     "t_wallets" o{--}o "t_transactions" : "fromTransactions"
     "t_wallets" o{--}o "t_transactions" : "toTransactions"
     "t_wallets" o{--}o "t_tickets" : "tickets"
+    "t_articles" o|--|| "ArticleCategory" : "enum:category"
+    "t_articles" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_articles" o|--|| "t_communities" : "community"
+    "t_articles" o{--}o "t_users" : "authors"
+    "t_articles" o{--}o "t_users" : "relatedUsers"
+    "t_articles" o{--}o "t_opportunities" : "opportunities"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
-    "t_opportunities" o{--}o "mv_earliest_reservable_slot" : "earliestReservableSlotView"
-    "t_opportunities" o{--}o "t_articles" : "articles"
-    "t_opportunities" o|--|| "t_users" : "createdByUser"
+    "t_opportunities" o{--}o "v_earliest_reservable_slot" : "earliestReservableSlotView"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|o "t_places" : "place"
+    "t_opportunities" o{--}o "t_articles" : "articles"
+    "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hosting_status"
-    "t_opportunity_slots" o{--}o "mv_slot_remaining_capacity" : "remainingCapacityView"
+    "t_opportunity_slots" o{--}o "v_slot_remaining_capacity" : "remainingCapacityView"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
-    "t_participations" o|--|o "t_users" : "user"
-    "t_participations" o|--|o "t_reservations" : "reservation"
-    "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
-    "t_participations" o|--|o "t_communities" : "community"
-    "t_participations" o|--|| "Source" : "enum:source"
-    "t_participations" o|--|| "ParticipationStatus" : "enum:status"
-    "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
-    "t_participations" o{--}o "t_evaluations" : "evaluation"
-    "t_participations" o{--}o "t_participation_images" : "images"
-    "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
-    "t_participations" o{--}o "t_transactions" : "transactions"
-    "t_participation_images" o|--|| "t_participations" : "participation"
-    "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
-    "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"
-    "t_participation_status_histories" o|--|| "t_participations" : "participation"
-    "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
-    "t_places" o|--|| "m_cities" : "city"
-    "t_places" o|--|o "t_communities" : "community"
-    "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_reservations" o|--|| "t_opportunity_slots" : "opportunitySlot"
     "t_reservations" o|--|| "ReservationStatus" : "enum:status"
     "t_reservations" o{--}o "t_participations" : "participations"
@@ -580,50 +573,55 @@ UNKNOWN UNKNOWN
     "t_reservation_histories" o|--|| "t_reservations" : "reservation"
     "t_reservation_histories" o|--|| "ReservationStatus" : "enum:status"
     "t_reservation_histories" o|--|o "t_users" : "createdByUser"
+    "t_participations" o|--|| "Source" : "enum:source"
+    "t_participations" o|--|| "ParticipationStatus" : "enum:status"
+    "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
+    "t_participations" o{--}o "t_participation_images" : "images"
+    "t_participations" o|--|o "t_users" : "user"
+    "t_participations" o|--|o "t_reservations" : "reservation"
+    "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
+    "t_participations" o|--|o "t_communities" : "community"
+    "t_participations" o{--}o "t_evaluations" : "evaluation"
+    "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
+    "t_participations" o{--}o "t_transactions" : "transactions"
+    "t_participation_images" o|--|| "t_participations" : "participation"
+    "t_participation_status_histories" o|--|| "t_participations" : "participation"
+    "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
+    "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"
+    "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
+    "t_evaluations" o|--|| "EvaluationStatus" : "enum:status"
+    "t_evaluations" o|--|| "t_participations" : "participation"
+    "t_evaluations" o|--|| "t_users" : "evaluator"
+    "t_evaluations" o{--}o "t_evaluation_histories" : "histories"
+    "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
+    "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
+    "t_evaluation_histories" o|--|o "t_users" : "createdByUser"
+    "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_utilities" o|--|| "t_communities" : "community"
+    "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
+    "t_utilities" o{--}o "t_tickets" : "tickets"
     "t_tickets" o|--|| "TicketStatus" : "enum:status"
     "t_tickets" o|--|| "TicketStatusReason" : "enum:reason"
     "t_tickets" o|--|| "t_wallets" : "wallet"
     "t_tickets" o|--|| "t_utilities" : "utility"
     "t_tickets" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
+    "t_ticket_status_histories" o|--|| "t_tickets" : "ticket"
     "t_ticket_status_histories" o|--|| "TicketStatus" : "enum:status"
     "t_ticket_status_histories" o|--|| "TicketStatusReason" : "enum:reason"
-    "t_ticket_status_histories" o|--|| "t_tickets" : "ticket"
+    "t_ticket_status_histories" o|--|o "t_transactions" : "transaction"
     "t_ticket_status_histories" o|--|o "t_participations" : "participation"
     "t_ticket_status_histories" o|--|o "t_users" : "createdByUser"
-    "t_ticket_status_histories" o|--|o "t_transactions" : "transaction"
     "t_transactions" o|--|| "TransactionReason" : "enum:reason"
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
-    "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
-    "t_identities" o|--|| "t_users" : "user"
-    "t_users" o|--|| "SysRole" : "enum:sys_role"
-    "t_users" o|--|| "CurrentPrefecture" : "enum:currentPrefecture"
-    "t_users" o{--}o "t_identities" : "identities"
-    "t_users" o{--}o "t_memberships" : "memberships"
-    "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
-    "t_users" o{--}o "t_wallets" : "wallets"
-    "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
-    "t_users" o{--}o "t_reservations" : "reservationsAppliedByMe"
-    "t_users" o{--}o "t_reservation_histories" : "reservationStatusChangedByMe"
-    "t_users" o{--}o "t_participations" : "participations"
-    "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
-    "t_users" o{--}o "t_evaluations" : "evaluationsEvaluatedByMe"
-    "t_users" o{--}o "t_evaluation_histories" : "evaluationCreatedByMe"
-    "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
-    "t_users" o{--}o "t_articles" : "articlesAboutMe"
-    "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
-    "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
-    "t_utilities" o|--|| "t_communities" : "community"
-    "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
-    "t_utilities" o{--}o "t_tickets" : "tickets"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
     "v_membership_participation_geo" o|--|| "t_memberships" : "membership"
     "v_membership_participation_count" o|--|| "ParticipationType" : "enum:type"
     "v_membership_participation_count" o|--|| "t_memberships" : "membership"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
-    "mv_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
-    "mv_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
+    "v_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
+    "v_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
 ```
