@@ -14,7 +14,6 @@ import type { OpportunitySlot } from "@prisma/client";
 import type { Reservation } from "@prisma/client";
 import type { ReservationHistory } from "@prisma/client";
 import type { Participation } from "@prisma/client";
-import type { ParticipationImage } from "@prisma/client";
 import type { ParticipationStatusHistory } from "@prisma/client";
 import type { Evaluation } from "@prisma/client";
 import type { EvaluationHistory } from "@prisma/client";
@@ -85,6 +84,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "opportunities",
                 type: "Opportunity",
                 relationName: "ImageToOpportunity"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "ImageToParticipation"
             }, {
                 name: "utilities",
                 type: "Utility",
@@ -396,8 +399,8 @@ const modelFieldDefinitions: ModelWithFields[] = [{
         name: "Participation",
         fields: [{
                 name: "images",
-                type: "ParticipationImage",
-                relationName: "ParticipationToParticipationImage"
+                type: "Image",
+                relationName: "ImageToParticipation"
             }, {
                 name: "user",
                 type: "User",
@@ -426,13 +429,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "transactions",
                 type: "Transaction",
                 relationName: "ParticipationToTransaction"
-            }]
-    }, {
-        name: "ParticipationImage",
-        fields: [{
-                name: "participation",
-                type: "Participation",
-                relationName: "ParticipationToParticipationImage"
             }]
     }, {
         name: "ParticipationStatusHistory",
@@ -617,6 +613,7 @@ type ImageFactoryDefineInput = {
     users?: Prisma.UserCreateNestedManyWithoutImageInput;
     communities?: Prisma.CommunityCreateNestedManyWithoutImageInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutImagesInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutImagesInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutImagesInput;
 };
 
@@ -3195,7 +3192,7 @@ type ParticipationFactoryDefineInput = {
     description?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
-    images?: Prisma.ParticipationImageCreateNestedManyWithoutParticipationInput;
+    images?: Prisma.ImageCreateNestedManyWithoutParticipationsInput;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
@@ -3362,161 +3359,6 @@ export const defineParticipationFactory = (<TOptions extends ParticipationFactor
 }) as ParticipationFactoryBuilder;
 
 defineParticipationFactory.withTransientFields = defaultTransientFieldValues => options => defineParticipationFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type ParticipationImageScalarOrEnumFields = {
-    url: string;
-};
-
-type ParticipationImageparticipationFactory = {
-    _factoryFor: "Participation";
-    build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutImagesInput["create"]>;
-};
-
-type ParticipationImageFactoryDefineInput = {
-    id?: string;
-    url?: string;
-    caption?: string | null;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    participation: ParticipationImageparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutImagesInput;
-};
-
-type ParticipationImageTransientFields = Record<string, unknown> & Partial<Record<keyof ParticipationImageFactoryDefineInput, never>>;
-
-type ParticipationImageFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<ParticipationImageFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<ParticipationImage, Prisma.ParticipationImageCreateInput, TTransients>;
-
-type ParticipationImageFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<ParticipationImageFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: ParticipationImageFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<ParticipationImage, Prisma.ParticipationImageCreateInput, TTransients>;
-
-function isParticipationImageparticipationFactory(x: ParticipationImageparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutImagesInput | undefined): x is ParticipationImageparticipationFactory {
-    return (x as any)?._factoryFor === "Participation";
-}
-
-type ParticipationImageTraitKeys<TOptions extends ParticipationImageFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface ParticipationImageFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "ParticipationImage";
-    build(inputData?: Partial<Prisma.ParticipationImageCreateInput & TTransients>): PromiseLike<Prisma.ParticipationImageCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.ParticipationImageCreateInput & TTransients>): PromiseLike<Prisma.ParticipationImageCreateInput>;
-    buildList(list: readonly Partial<Prisma.ParticipationImageCreateInput & TTransients>[]): PromiseLike<Prisma.ParticipationImageCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.ParticipationImageCreateInput & TTransients>): PromiseLike<Prisma.ParticipationImageCreateInput[]>;
-    pickForConnect(inputData: ParticipationImage): Pick<ParticipationImage, "id">;
-    create(inputData?: Partial<Prisma.ParticipationImageCreateInput & TTransients>): PromiseLike<ParticipationImage>;
-    createList(list: readonly Partial<Prisma.ParticipationImageCreateInput & TTransients>[]): PromiseLike<ParticipationImage[]>;
-    createList(count: number, item?: Partial<Prisma.ParticipationImageCreateInput & TTransients>): PromiseLike<ParticipationImage[]>;
-    createForConnect(inputData?: Partial<Prisma.ParticipationImageCreateInput & TTransients>): PromiseLike<Pick<ParticipationImage, "id">>;
-}
-
-export interface ParticipationImageFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ParticipationImageFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): ParticipationImageFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateParticipationImageScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): ParticipationImageScalarOrEnumFields {
-    return {
-        url: getScalarFieldValueGenerator().String({ modelName: "ParticipationImage", fieldName: "url", isId: false, isUnique: false, seq })
-    };
-}
-
-function defineParticipationImageFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ParticipationImageFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ParticipationImageFactoryInterface<TTransients, ParticipationImageTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly ParticipationImageTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("ParticipationImage", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.ParticipationImageCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateParticipationImageScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<ParticipationImageFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<ParticipationImageFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                participation: isParticipationImageparticipationFactory(defaultData.participation) ? {
-                    create: await defaultData.participation.build()
-                } : defaultData.participation
-            } as Prisma.ParticipationImageCreateInput;
-            const data: Prisma.ParticipationImageCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ParticipationImageCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: ParticipationImage) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.ParticipationImageCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().participationImage.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ParticipationImageCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.ParticipationImageCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "ParticipationImage" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: ParticipationImageTraitKeys<TOptions>, ...names: readonly ParticipationImageTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface ParticipationImageFactoryBuilder {
-    <TOptions extends ParticipationImageFactoryDefineOptions>(options: TOptions): ParticipationImageFactoryInterface<{}, ParticipationImageTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ParticipationImageTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ParticipationImageFactoryDefineOptions<TTransients>>(options: TOptions) => ParticipationImageFactoryInterface<TTransients, ParticipationImageTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link ParticipationImage} model.
- *
- * @param options
- * @returns factory {@link ParticipationImageFactoryInterface}
- */
-export const defineParticipationImageFactory = (<TOptions extends ParticipationImageFactoryDefineOptions>(options: TOptions): ParticipationImageFactoryInterface<TOptions> => {
-    return defineParticipationImageFactoryInternal(options, {});
-}) as ParticipationImageFactoryBuilder;
-
-defineParticipationImageFactory.withTransientFields = defaultTransientFieldValues => options => defineParticipationImageFactoryInternal(options, defaultTransientFieldValues);
 
 type ParticipationStatusHistoryScalarOrEnumFields = {
     status: ParticipationStatus;

@@ -378,16 +378,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
-  "t_participation_images" {
-    String id "🗝️"
-    String participation_id 
-    String url 
-    String caption "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
   "t_participation_status_histories" {
     String id "🗝️"
     String participation_id 
@@ -514,6 +504,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_images" o{--}o "t_users" : "users"
     "t_images" o{--}o "t_communities" : "communities"
     "t_images" o{--}o "t_opportunities" : "opportunities"
+    "t_images" o{--}o "t_participations" : "participations"
     "t_images" o{--}o "t_utilities" : "utilities"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
@@ -600,7 +591,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o|--|| "Source" : "enum:source"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
     "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
-    "t_participations" o{--}o "t_participation_images" : "images"
+    "t_participations" o{--}o "t_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
@@ -608,7 +599,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o{--}o "t_evaluations" : "evaluation"
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
-    "t_participation_images" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
     "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"

@@ -9,6 +9,7 @@ import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PrismaParticipation } from "@/application/domain/participation/data/type";
+import ImageService from "@/application/domain/image/service";
 
 export default class ParticipationService {
   static async fetchParticipations<T extends Prisma.ParticipationInclude>(
@@ -40,11 +41,20 @@ export default class ParticipationService {
     currentUserId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const data: Prisma.ParticipationCreateInput = ParticipationConverter.create(
-      input,
-      currentUserId,
+    const { data, images } = ParticipationConverter.create(input, currentUserId);
+
+    const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = await Promise.all(
+      images.map((img) => ImageService.uploadPublicImage(img, "participations")),
     );
-    return ParticipationRepository.create(ctx, data, tx);
+
+    const createInput: Prisma.ParticipationCreateInput = {
+      ...data,
+      images: {
+        create: uploadedImages,
+      },
+    };
+
+    return ParticipationRepository.create(ctx, createInput, tx);
   }
 
   static async deleteParticipation(ctx: IContext, id: string) {

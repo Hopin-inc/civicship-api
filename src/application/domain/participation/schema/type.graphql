@@ -6,6 +6,7 @@ type Participation {
     status: ParticipationStatus!
     reason: ParticipationStatusReason!
     source: Source!
+    images: [String!]
 
     user: User
     community: Community
@@ -13,7 +14,6 @@ type Participation {
 
     evaluation: Evaluation
     description: String
-    images: JSON
 
     ticketStatusHistories: [TicketStatusHistory!]
 

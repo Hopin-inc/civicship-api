@@ -20,6 +20,7 @@ Table t_images {
   users t_users [not null]
   communities t_communities [not null]
   opportunities t_opportunities [not null]
+  participations t_participations [not null]
   utilities t_utilities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -261,7 +262,7 @@ Table t_participations {
   status ParticipationStatus [not null, default: 'PENDING']
   reason ParticipationStatusReason [not null]
   description String
-  images t_participation_images [not null]
+  images t_images [not null]
   userId String
   user t_users
   reservationId String
@@ -272,16 +273,6 @@ Table t_participations {
   evaluation t_evaluations
   statusHistories t_participation_status_histories [not null]
   transactions t_transactions [not null]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table t_participation_images {
-  id String [pk]
-  participationId String [not null]
-  participation t_participations [not null]
-  url String [not null]
-  caption String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -435,6 +426,11 @@ Table v_slot_remaining_capacity {
 
 Table ImageToOpportunity {
   opportunitiesId String [ref: > t_opportunities.id]
+  imagesId String [ref: > t_images.id]
+}
+
+Table ImageToParticipation {
+  participationsId String [ref: > t_participations.id]
   imagesId String [ref: > t_images.id]
 }
 
@@ -644,8 +640,6 @@ Ref: t_participations.userId > t_users.id [delete: Set Null]
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
 Ref: t_participations.communityId > t_communities.id [delete: Set Null]
-
-Ref: t_participation_images.participationId > t_participations.id [delete: Cascade]
 
 Ref: t_participation_status_histories.participationId > t_participations.id [delete: Cascade]
 

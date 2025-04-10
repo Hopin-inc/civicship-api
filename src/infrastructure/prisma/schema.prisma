@@ -68,10 +68,11 @@ model Image {
   caption    String?
   strapiId   Int?    @map("strapi_id")
 
-  users         User[]
-  communities   Community[]
-  opportunities Opportunity[]
-  utilities     Utility[]
+  users          User[]
+  communities    Community[]
+  opportunities  Opportunity[]
+  participations Participation[]
+  utilities      Utility[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -565,7 +566,7 @@ model Participation {
   reason ParticipationStatusReason
 
   description String?
-  images      ParticipationImage[]
+  images      Image[]
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -604,21 +605,6 @@ enum ParticipationStatusReason {
   RESERVATION_REJECTED
 
   OPPORTUNITY_CANCELED
-}
-
-model ParticipationImage {
-  id String @id @default(cuid())
-
-  participationId String        @map("participation_id")
-  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
-
-  url     String
-  caption String?
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@map("t_participation_images")
 }
 
 model ParticipationStatusHistory {
