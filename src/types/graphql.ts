@@ -2456,7 +2456,7 @@ export type GqlUtility = {
   createdAt: Scalars['Datetime']['output'];
   description?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  images?: Maybe<Array<Scalars['String']['output']>>;
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
   publishStatus: GqlPublishStatus;
@@ -2484,7 +2484,7 @@ export type GqlUtilityTicketsArgs = {
 export type GqlUtilityCreateInput = {
   communityId: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
-  image?: InputMaybe<GqlImageInput>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   name: Scalars['String']['input'];
   pointsRequired: Scalars['Int']['input'];
 };
@@ -2535,7 +2535,7 @@ export type GqlUtilitySortInput = {
 
 export type GqlUtilityUpdateInfoInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  image?: InputMaybe<GqlImageInput>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   name: Scalars['String']['input'];
   pointsRequired: Scalars['Int']['input'];
 };
@@ -4284,7 +4284,7 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  images?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;

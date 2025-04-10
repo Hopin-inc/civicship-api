@@ -426,7 +426,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     PublishStatus publish_status 
     String name 
     String description "❓"
-    String image "❓"
     Int points_required 
     String community_id 
     DateTime created_at 
@@ -515,6 +514,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_images" o{--}o "t_users" : "users"
     "t_images" o{--}o "t_communities" : "communities"
     "t_images" o{--}o "t_opportunities" : "opportunities"
+    "t_images" o{--}o "t_utilities" : "utilities"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
@@ -621,6 +621,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
     "t_evaluation_histories" o|--|o "t_users" : "createdByUser"
     "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_utilities" o{--}o "t_images" : "images"
     "t_utilities" o|--|| "t_communities" : "community"
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
     "t_utilities" o{--}o "t_tickets" : "tickets"

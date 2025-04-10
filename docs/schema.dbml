@@ -20,6 +20,7 @@ Table t_images {
   users t_users [not null]
   communities t_communities [not null]
   opportunities t_opportunities [not null]
+  utilities t_utilities [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -327,7 +328,7 @@ Table t_utilities {
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   name String [not null]
   description String
-  image String
+  images t_images [not null]
   pointsRequired Int [not null]
   communityId String [not null]
   community t_communities [not null]
@@ -434,6 +435,11 @@ Table v_slot_remaining_capacity {
 
 Table ImageToOpportunity {
   opportunitiesId String [ref: > t_opportunities.id]
+  imagesId String [ref: > t_images.id]
+}
+
+Table ImageToUtility {
+  utilitiesId String [ref: > t_utilities.id]
   imagesId String [ref: > t_images.id]
 }
 

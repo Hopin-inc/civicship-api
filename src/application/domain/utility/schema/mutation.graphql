@@ -35,7 +35,7 @@ extend type Mutation {
 input UtilityCreateInput {
     name: String!
     description: String
-    image: ImageInput
+    images: [ImageInput!]
     pointsRequired: Int!
 
     communityId: ID!
@@ -44,7 +44,7 @@ input UtilityCreateInput {
 input UtilityUpdateInfoInput {
     name: String!
     description: String
-    image: ImageInput
+    images: [ImageInput!]
     pointsRequired: Int!
 }
 

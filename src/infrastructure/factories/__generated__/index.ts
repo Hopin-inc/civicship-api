@@ -85,6 +85,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "opportunities",
                 type: "Opportunity",
                 relationName: "ImageToOpportunity"
+            }, {
+                name: "utilities",
+                type: "Utility",
+                relationName: "ImageToUtility"
             }]
     }, {
         name: "State",
@@ -470,6 +474,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "Utility",
         fields: [{
+                name: "images",
+                type: "Image",
+                relationName: "ImageToUtility"
+            }, {
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToUtility"
@@ -609,6 +617,7 @@ type ImageFactoryDefineInput = {
     users?: Prisma.UserCreateNestedManyWithoutImageInput;
     communities?: Prisma.CommunityCreateNestedManyWithoutImageInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutImagesInput;
+    utilities?: Prisma.UtilityCreateNestedManyWithoutImagesInput;
 };
 
 type ImageTransientFields = Record<string, unknown> & Partial<Record<keyof ImageFactoryDefineInput, never>>;
@@ -4027,10 +4036,10 @@ type UtilityFactoryDefineInput = {
     publishStatus?: PublishStatus;
     name?: string;
     description?: string | null;
-    image?: string | null;
     pointsRequired?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
+    images?: Prisma.ImageCreateNestedManyWithoutUtilitiesInput;
     community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
     requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
     tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;

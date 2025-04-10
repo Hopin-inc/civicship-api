@@ -10,6 +10,7 @@ import { IContext } from "@/types/server";
 import UtilityConverter from "@/application/domain/utility/data/converter";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
+import ImageService from "@/application/domain/image/service";
 
 export default class UtilityService {
   static async fetchUtilities(
@@ -41,8 +42,20 @@ export default class UtilityService {
   }
 
   static async createUtility(ctx: IContext, input: GqlUtilityCreateInput) {
-    const data: Prisma.UtilityCreateInput = UtilityConverter.create(input);
-    return UtilityRepository.create(ctx, data);
+    const { data, images } = UtilityConverter.create(input);
+
+    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
+      images.map((img) => ImageService.uploadPublicImage(img, "utilities")),
+    );
+
+    const createInput: Prisma.UtilityCreateInput = {
+      ...data,
+      images: {
+        create: uploadedImages,
+      },
+    };
+
+    return await UtilityRepository.create(ctx, createInput);
   }
 
   static async deleteUtility(ctx: IContext, id: string) {
@@ -53,8 +66,20 @@ export default class UtilityService {
   static async updateUtilityInfo(ctx: IContext, { id, input }: GqlMutationUtilityUpdateInfoArgs) {
     await this.findUtilityOrThrow(ctx, id);
 
-    const data: Prisma.UtilityUpdateInput = UtilityConverter.updateInfo(input);
-    return UtilityRepository.update(ctx, id, data);
+    const { data, images } = UtilityConverter.updateInfo(input);
+
+    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
+      images.map((img) => ImageService.uploadPublicImage(img, "utilities")),
+    );
+
+    const updateInput: Prisma.UtilityUpdateInput = {
+      ...data,
+      images: {
+        create: uploadedImages,
+      },
+    };
+
+    return await UtilityRepository.update(ctx, id, updateInput);
   }
 
   static async validatePublishStatus(
