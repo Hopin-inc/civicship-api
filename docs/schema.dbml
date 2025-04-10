@@ -17,10 +17,11 @@ Table t_images {
   alt String
   caption String
   strapiId Int
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
   users t_users [not null]
   communities t_communities [not null]
+  opportunities t_opportunities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
 }
 
 Table m_states {
@@ -199,8 +200,7 @@ Table t_opportunities {
   category OpportunityCategory [not null]
   description String [not null]
   body String
-  image String
-  files Json [not null, default: '[]']
+  images t_images [not null]
   pointsToEarn Int
   feeRequired Int
   requiredUtilities t_utilities [not null]
@@ -430,6 +430,11 @@ Table v_slot_remaining_capacity {
   slotId String [pk]
   slot t_opportunity_slots [not null]
   remainingCapacity Int
+}
+
+Table ImageToOpportunity {
+  opportunitiesId String [ref: > t_opportunities.id]
+  imagesId String [ref: > t_images.id]
 }
 
 Table t_author_users_on_articles {

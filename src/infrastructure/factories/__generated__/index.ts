@@ -81,6 +81,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "communities",
                 type: "Community",
                 relationName: "CommunityToImage"
+            }, {
+                name: "opportunities",
+                type: "Opportunity",
+                relationName: "ImageToOpportunity"
             }]
     }, {
         name: "State",
@@ -307,6 +311,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "Opportunity",
         fields: [{
+                name: "images",
+                type: "Image",
+                relationName: "ImageToOpportunity"
+            }, {
                 name: "requiredUtilities",
                 type: "Utility",
                 relationName: "t_required_opportunities_on_utilities"
@@ -600,6 +608,7 @@ type ImageFactoryDefineInput = {
     updatedAt?: Date | null;
     users?: Prisma.UserCreateNestedManyWithoutImageInput;
     communities?: Prisma.CommunityCreateNestedManyWithoutImageInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutImagesInput;
 };
 
 type ImageTransientFields = Record<string, unknown> & Partial<Record<keyof ImageFactoryDefineInput, never>>;
@@ -2467,12 +2476,11 @@ type OpportunityFactoryDefineInput = {
     category?: OpportunityCategory;
     description?: string;
     body?: string | null;
-    image?: string | null;
-    files?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
     pointsToEarn?: number | null;
     feeRequired?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
+    images?: Prisma.ImageCreateNestedManyWithoutOpportunitiesInput;
     requiredUtilities?: Prisma.UtilityCreateNestedManyWithoutRequiredForOpportunitiesInput;
     slots?: Prisma.OpportunitySlotCreateNestedManyWithoutOpportunityInput;
     earliestReservableSlotView?: OpportunityearliestReservableSlotViewFactory | Prisma.EarliestReservableSlotViewCreateNestedOneWithoutOpportunityInput;

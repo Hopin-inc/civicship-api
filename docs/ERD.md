@@ -323,8 +323,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     OpportunityCategory category 
     String description 
     String body "❓"
-    String image "❓"
-    Json files 
     Int points_to_earn "❓"
     Int fee_required "❓"
     String community_id "❓"
@@ -516,6 +514,7 @@ TICKET_REFUNDED TICKET_REFUNDED
   
     "t_images" o{--}o "t_users" : "users"
     "t_images" o{--}o "t_communities" : "communities"
+    "t_images" o{--}o "t_opportunities" : "opportunities"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
@@ -578,6 +577,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_articles" o{--}o "t_opportunities" : "opportunities"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
+    "t_opportunities" o{--}o "t_images" : "images"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "v_earliest_reservable_slot" : "earliestReservableSlotView"

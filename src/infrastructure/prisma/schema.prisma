@@ -68,11 +68,12 @@ model Image {
   caption    String?
   strapiId   Int?    @map("strapi_id")
 
+  users         User[]
+  communities   Community[]
+  opportunities Opportunity[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-
-  users       User[]
-  communities Community[]
 
   @@map("t_images")
 }
@@ -430,8 +431,7 @@ model Opportunity {
   category    OpportunityCategory
   description String
   body        String?
-  image       String?
-  files       Json                @default("[]")
+  images      Image[]
 
   pointsToEarn      Int?      @map("points_to_earn")
   feeRequired       Int?      @map("fee_required")

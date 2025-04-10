@@ -960,9 +960,8 @@ export type GqlOpportunity = {
   description: Scalars['String']['output'];
   earliestReservableSlotView?: Maybe<GqlEarliestReservableSlotView>;
   feeRequired?: Maybe<Scalars['Int']['output']>;
-  files?: Maybe<Scalars['JSON']['output']>;
   id: Scalars['ID']['output'];
-  image?: Maybe<Scalars['String']['output']>;
+  images?: Maybe<Array<Scalars['String']['output']>>;
   isReservableWithTicket?: Maybe<Scalars['Boolean']['output']>;
   place?: Maybe<GqlPlace>;
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
@@ -997,8 +996,7 @@ export type GqlOpportunityCreateInput = {
   description: Scalars['String']['input'];
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
-  files?: InputMaybe<Scalars['JSON']['input']>;
-  image?: InputMaybe<GqlImageInput>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   place?: InputMaybe<GqlNestedPlaceConnectOrCreateInput>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
@@ -1166,8 +1164,7 @@ export type GqlOpportunityUpdateContentInput = {
   description: Scalars['String']['input'];
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
-  files?: InputMaybe<Scalars['JSON']['input']>;
-  image?: InputMaybe<GqlImageInput>;
+  images?: InputMaybe<Array<GqlImageInput>>;
   place?: InputMaybe<GqlNestedPlaceConnectOrCreateInput>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
@@ -3650,9 +3647,8 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   description?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   earliestReservableSlotView?: Resolver<Maybe<GqlResolversTypes['EarliestReservableSlotView']>, ParentType, ContextType>;
   feeRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
-  files?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  images?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   isReservableWithTicket?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
