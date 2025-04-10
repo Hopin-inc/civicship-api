@@ -91,7 +91,6 @@ export const UserFactory = defineUserFactory({
   defaultData: () => ({
     name: randFullName(),
     slug: randSlug().toLowerCase(),
-    image: randImg(),
     currentPrefecture: randomEnum(CurrentPrefecture),
     identities: {
       create: [

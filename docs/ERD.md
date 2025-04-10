@@ -173,6 +173,26 @@ TICKET_PURCHASED TICKET_PURCHASED
 TICKET_REFUNDED TICKET_REFUNDED
         }
     
+  "t_images" {
+    String id "🗝️"
+    Boolean is_public 
+    String url 
+    String bucket 
+    String folder_path 
+    String filename 
+    Int size "❓"
+    Int width "❓"
+    Int height "❓"
+    String mime 
+    String ext 
+    String alt "❓"
+    String caption "❓"
+    Int strapi_id "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "m_states" {
     String code "🗝️"
     String name 
@@ -221,16 +241,16 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     String name 
     String slug 
-    String image "❓"
     String bio "❓"
     SysRole sys_role 
+    CurrentPrefecture current_prefecture 
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"
     String url_instagram "❓"
     String url_youtube "❓"
     String url_tiktok "❓"
-    CurrentPrefecture current_prefecture 
+    String image_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -494,6 +514,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     Int remainingCapacity "❓"
     }
   
+    "t_images" o{--}o "t_users" : "users"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
@@ -509,6 +530,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_communities" o{--}o "t_articles" : "articles"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
+    "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"

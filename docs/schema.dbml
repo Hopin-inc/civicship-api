@@ -2,6 +2,26 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
+Table t_images {
+  id String [pk]
+  isPublic Boolean [not null]
+  url String [not null]
+  bucket String [not null]
+  folderPath String [not null]
+  filename String [not null]
+  size Int
+  width Int
+  height Int
+  mime String [not null]
+  ext String [not null]
+  alt String
+  caption String
+  strapiId Int
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  users t_users [not null]
+}
+
 Table m_states {
   code String [not null]
   name String [not null]
@@ -63,16 +83,17 @@ Table t_users {
   id String [pk]
   name String [not null]
   slug String [not null]
-  image String
   bio String
   sysRole SysRole [not null, default: 'USER']
+  currentPrefecture CurrentPrefecture [not null]
   urlWebsite String
   urlX String
   urlFacebook String
   urlInstagram String
   urlYoutube String
   urlTiktok String
-  currentPrefecture CurrentPrefecture [not null]
+  imageId String
+  image t_images
   identities t_identities [not null]
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
@@ -424,7 +445,7 @@ Table t_opportunities_on_articles {
   articlesId String [ref: > t_articles.id]
 }
 
-Table OpportunityToUtility {
+Table t_required_opportunities_on_utilities {
   requiredutilitiesId String [ref: > t_utilities.id]
   requiredforopportunitiesId String [ref: > t_opportunities.id]
 }
@@ -568,6 +589,8 @@ Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: R
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
 Ref: t_places.communityId > t_communities.id [delete: Set Null]
+
+Ref: t_users.imageId > t_images.id
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 

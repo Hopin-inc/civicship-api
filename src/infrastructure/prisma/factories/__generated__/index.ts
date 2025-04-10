@@ -2,6 +2,7 @@ import type { Article } from "@prisma/client";
 import type { Community } from "@prisma/client";
 import type { Evaluation } from "@prisma/client";
 import type { EvaluationHistory } from "@prisma/client";
+import type { Image } from "@prisma/client";
 import type { City } from "@prisma/client";
 import type { State } from "@prisma/client";
 import type { Membership } from "@prisma/client";
@@ -145,6 +146,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "createdByUser",
                 type: "User",
                 relationName: "EvaluationHistoryToUser"
+            }]
+    }, {
+        name: "Image",
+        fields: [{
+                name: "users",
+                type: "User",
+                relationName: "ImageToUser"
             }]
     }, {
         name: "City",
@@ -436,6 +444,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "User",
         fields: [{
+                name: "image",
+                type: "Image",
+                relationName: "ImageToUser"
+            }, {
                 name: "identities",
                 type: "Identity",
                 relationName: "IdentityToUser"
@@ -1209,6 +1221,171 @@ export const defineEvaluationHistoryFactory = (<TOptions extends EvaluationHisto
 }) as EvaluationHistoryFactoryBuilder;
 
 defineEvaluationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationHistoryFactoryInternal(options, defaultTransientFieldValues);
+
+type ImageScalarOrEnumFields = {
+    isPublic: boolean;
+    url: string;
+    bucket: string;
+    folderPath: string;
+    filename: string;
+    mime: string;
+    ext: string;
+};
+
+type ImageFactoryDefineInput = {
+    id?: string;
+    isPublic?: boolean;
+    url?: string;
+    bucket?: string;
+    folderPath?: string;
+    filename?: string;
+    size?: number | null;
+    width?: number | null;
+    height?: number | null;
+    mime?: string;
+    ext?: string;
+    alt?: string | null;
+    caption?: string | null;
+    strapiId?: number | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    users?: Prisma.UserCreateNestedManyWithoutImageInput;
+};
+
+type ImageTransientFields = Record<string, unknown> & Partial<Record<keyof ImageFactoryDefineInput, never>>;
+
+type ImageFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ImageFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Image, Prisma.ImageCreateInput, TTransients>;
+
+type ImageFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ImageFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ImageFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Image, Prisma.ImageCreateInput, TTransients>;
+
+type ImageTraitKeys<TOptions extends ImageFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ImageFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Image";
+    build(inputData?: Partial<Prisma.ImageCreateInput & TTransients>): PromiseLike<Prisma.ImageCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ImageCreateInput & TTransients>): PromiseLike<Prisma.ImageCreateInput>;
+    buildList(list: readonly Partial<Prisma.ImageCreateInput & TTransients>[]): PromiseLike<Prisma.ImageCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ImageCreateInput & TTransients>): PromiseLike<Prisma.ImageCreateInput[]>;
+    pickForConnect(inputData: Image): Pick<Image, "id">;
+    create(inputData?: Partial<Prisma.ImageCreateInput & TTransients>): PromiseLike<Image>;
+    createList(list: readonly Partial<Prisma.ImageCreateInput & TTransients>[]): PromiseLike<Image[]>;
+    createList(count: number, item?: Partial<Prisma.ImageCreateInput & TTransients>): PromiseLike<Image[]>;
+    createForConnect(inputData?: Partial<Prisma.ImageCreateInput & TTransients>): PromiseLike<Pick<Image, "id">>;
+}
+
+export interface ImageFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ImageFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ImageFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateImageScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ImageScalarOrEnumFields {
+    return {
+        isPublic: getScalarFieldValueGenerator().Boolean({ modelName: "Image", fieldName: "isPublic", isId: false, isUnique: false, seq }),
+        url: getScalarFieldValueGenerator().String({ modelName: "Image", fieldName: "url", isId: false, isUnique: false, seq }),
+        bucket: getScalarFieldValueGenerator().String({ modelName: "Image", fieldName: "bucket", isId: false, isUnique: false, seq }),
+        folderPath: getScalarFieldValueGenerator().String({ modelName: "Image", fieldName: "folderPath", isId: false, isUnique: false, seq }),
+        filename: getScalarFieldValueGenerator().String({ modelName: "Image", fieldName: "filename", isId: false, isUnique: false, seq }),
+        mime: getScalarFieldValueGenerator().String({ modelName: "Image", fieldName: "mime", isId: false, isUnique: false, seq }),
+        ext: getScalarFieldValueGenerator().String({ modelName: "Image", fieldName: "ext", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineImageFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ImageFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ImageFactoryInterface<TTransients, ImageTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ImageTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Image", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ImageCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateImageScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ImageFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ImageFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.ImageCreateInput;
+            const data: Prisma.ImageCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ImageCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Image) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ImageCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().image.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ImageCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ImageCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Image" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ImageTraitKeys<TOptions>, ...names: readonly ImageTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ImageFactoryBuilder {
+    <TOptions extends ImageFactoryDefineOptions>(options?: TOptions): ImageFactoryInterface<{}, ImageTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ImageTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ImageFactoryDefineOptions<TTransients>>(options?: TOptions) => ImageFactoryInterface<TTransients, ImageTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Image} model.
+ *
+ * @param options
+ * @returns factory {@link ImageFactoryInterface}
+ */
+export const defineImageFactory = (<TOptions extends ImageFactoryDefineOptions>(options?: TOptions): ImageFactoryInterface<TOptions> => {
+    return defineImageFactoryInternal(options ?? {}, {});
+}) as ImageFactoryBuilder;
+
+defineImageFactory.withTransientFields = defaultTransientFieldValues => options => defineImageFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type CityScalarOrEnumFields = {
     code: string;
@@ -4185,11 +4362,15 @@ type UserScalarOrEnumFields = {
     currentPrefecture: CurrentPrefecture;
 };
 
+type UserimageFactory = {
+    _factoryFor: "Image";
+    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutUsersInput["create"]>;
+};
+
 type UserFactoryDefineInput = {
     id?: string;
     name?: string;
     slug?: string;
-    image?: string | null;
     bio?: string | null;
     sysRole?: SysRole;
     urlWebsite?: string | null;
@@ -4201,6 +4382,7 @@ type UserFactoryDefineInput = {
     currentPrefecture?: CurrentPrefecture;
     createdAt?: Date;
     updatedAt?: Date | null;
+    image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
@@ -4229,6 +4411,10 @@ type UserFactoryDefineOptions<TTransients extends Record<string, unknown> = Reco
         [traitName: TraitName]: UserFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<User, Prisma.UserCreateInput, TTransients>;
+
+function isUserimageFactory(x: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput | undefined): x is UserimageFactory {
+    return (x as any)?._factoryFor === "Image";
+}
 
 type UserTraitKeys<TOptions extends UserFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
@@ -4291,7 +4477,11 @@ function defineUserFactoryInternal<TTransients extends Record<string, unknown>, 
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.UserCreateInput;
+            const defaultAssociations = {
+                image: isUserimageFactory(defaultData.image) ? {
+                    create: await defaultData.image.build()
+                } : defaultData.image
+            } as Prisma.UserCreateInput;
             const data: Prisma.UserCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;

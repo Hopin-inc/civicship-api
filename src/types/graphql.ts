@@ -1,5 +1,5 @@
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import { User, Community, Membership, MembershipHistory, Wallet, CurrentPointView, AccumulatedPointView, Opportunity, OpportunitySlot, Place, Participation, ParticipationStatusHistory, Article, Utility, Ticket, TicketStatusHistory, Transaction, City, State } from '@prisma/client/index.d';
+import { User, Community, Membership, MembershipHistory, Wallet, CurrentPointView, AccumulatedPointView, Opportunity, OpportunitySlot, Place, Participation, ParticipationStatusHistory, Article, Utility, Ticket, TicketStatusHistory, Transaction, City, State, Image } from '@prisma/client/index.d';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | undefined;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -19,6 +19,7 @@ export type Scalars = {
   Datetime: { input: Date; output: Date; }
   Decimal: { input: string; output: string; }
   JSON: { input: any; output: any; }
+  Upload: { input: Promise<import('graphql-upload-minimal').FileUpload>; output: Promise<import('graphql-upload-minimal').FileUpload>; }
 };
 
 export type GqlAccumulatedPointView = {
@@ -399,8 +400,9 @@ export const GqlIdentityPlatform = {
 
 export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
 export type GqlImageInput = {
-  base64: Scalars['String']['input'];
+  alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
+  file: Scalars['Upload']['input'];
 };
 
 export type GqlMembership = {
@@ -2957,6 +2959,7 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionReason: GqlTransactionReason;
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
+  Upload: ResolverTypeWrapper<Scalars['Upload']['output']>;
   User: ResolverTypeWrapper<User>;
   UserDeleteInput: GqlUserDeleteInput;
   UserDeletePayload: ResolverTypeWrapper<GqlUserDeletePayload>;
@@ -3203,6 +3206,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionIssueCommunityPointSuccess: Omit<GqlTransactionIssueCommunityPointSuccess, 'transaction'> & { transaction: GqlResolversParentTypes['Transaction'] };
   TransactionSortInput: GqlTransactionSortInput;
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
+  Upload: Scalars['Upload']['output'];
   User: User;
   UserDeleteInput: GqlUserDeleteInput;
   UserDeletePayload: GqlUserDeletePayload;
@@ -4208,6 +4212,10 @@ export type GqlTransactionsConnectionResolvers<ContextType = any, ParentType ext
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export interface GqlUploadScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['Upload'], any> {
+  name: 'Upload';
+}
+
 export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['User'] = GqlResolversParentTypes['User']> = ResolversObject<{
   articlesAboutMe?: Resolver<Maybe<GqlResolversTypes['ArticlesConnection']>, ParentType, ContextType, Partial<GqlUserArticlesAboutMeArgs>>;
   articlesWrittenByMe?: Resolver<Maybe<GqlResolversTypes['ArticlesConnection']>, ParentType, ContextType, Partial<GqlUserArticlesWrittenByMeArgs>>;
@@ -4491,6 +4499,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TransactionIssueCommunityPointPayload?: GqlTransactionIssueCommunityPointPayloadResolvers<ContextType>;
   TransactionIssueCommunityPointSuccess?: GqlTransactionIssueCommunityPointSuccessResolvers<ContextType>;
   TransactionsConnection?: GqlTransactionsConnectionResolvers<ContextType>;
+  Upload?: GraphQLScalarType;
   User?: GqlUserResolvers<ContextType>;
   UserDeletePayload?: GqlUserDeletePayloadResolvers<ContextType>;
   UserEdge?: GqlUserEdgeResolvers<ContextType>;
