@@ -3,6 +3,7 @@ import {
   GqlCommunityUpdateProfileInput,
   GqlCommunityFilterInput,
   GqlCommunitySortInput,
+  GqlImageInput,
 } from "@/types/graphql";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 
@@ -36,43 +37,51 @@ export default class CommunityConverter {
   static create(
     input: GqlCommunityCreateInput,
     currentUserId: string,
-  ): Prisma.CommunityCreateInput {
-    const { places, ...prop } = input;
+  ): {
+    data: Prisma.CommunityCreateInput;
+    image?: GqlImageInput;
+  } {
+    const { image, places, ...prop } = input;
 
     return {
-      ...prop,
-      image: input.image?.base64,
-      memberships: {
-        create: [
-          {
-            userId: currentUserId,
-            status: MembershipStatus.JOINED,
-            reason: MembershipStatusReason.CREATED_COMMUNITY,
-            role: Role.OWNER,
-            histories: {
-              create: {
-                status: MembershipStatus.JOINED,
-                reason: MembershipStatusReason.CREATED_COMMUNITY,
-                role: Role.OWNER,
-                createdByUser: { connect: { id: currentUserId } },
+      data: {
+        ...prop,
+        memberships: {
+          create: [
+            {
+              userId: currentUserId,
+              status: MembershipStatus.JOINED,
+              reason: MembershipStatusReason.CREATED_COMMUNITY,
+              role: Role.OWNER,
+              histories: {
+                create: {
+                  status: MembershipStatus.JOINED,
+                  reason: MembershipStatusReason.CREATED_COMMUNITY,
+                  role: Role.OWNER,
+                  createdByUser: { connect: { id: currentUserId } },
+                },
               },
             },
-          },
-        ],
+          ],
+        },
+        places: {
+          create: places?.map((place) => ({
+            ...place,
+            city: {
+              connect: { id: place.cityCode },
+            },
+          })),
+        },
       },
-      places: {
-        create: places?.map((place) => ({
-          ...place,
-          city: {
-            connect: { id: place.cityCode },
-          },
-        })),
-      },
+      image,
     };
   }
 
-  static update(input: GqlCommunityUpdateProfileInput): Prisma.CommunityUpdateInput {
-    const { places, ...prop } = input;
+  static update(input: GqlCommunityUpdateProfileInput): {
+    data: Prisma.CommunityUpdateInput;
+    image?: GqlImageInput;
+  } {
+    const { image, places, ...prop } = input;
     const { connectOrCreate, disconnect } = places;
 
     const existingPlaces = connectOrCreate
@@ -90,13 +99,15 @@ export default class CommunityConverter {
       });
 
     return {
-      ...prop,
-      image: input.image?.base64,
-      places: {
-        connect: existingPlaces,
-        create: newPlaces,
-        disconnect: disconnect?.map((id) => ({ id })),
+      data: {
+        ...prop,
+        places: {
+          connect: existingPlaces,
+          create: newPlaces,
+          disconnect: disconnect?.map((id) => ({ id })),
+        },
       },
+      image,
     };
   }
 }

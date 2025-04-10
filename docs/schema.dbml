@@ -20,6 +20,7 @@ Table t_images {
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   users t_users [not null]
+  communities t_communities [not null]
 }
 
 Table m_states {
@@ -64,10 +65,11 @@ Table t_communities {
   id String [pk]
   name String [not null]
   pointName String [not null]
-  image String
   bio String
   establishedAt DateTime
   website String
+  imageId String
+  image t_images
   places t_places [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
@@ -589,6 +591,8 @@ Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: R
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
 Ref: t_places.communityId > t_communities.id [delete: Set Null]
+
+Ref: t_communities.imageId > t_images.id
 
 Ref: t_users.imageId > t_images.id
 

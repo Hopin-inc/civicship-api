@@ -77,6 +77,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "users",
                 type: "User",
                 relationName: "ImageToUser"
+            }, {
+                name: "communities",
+                type: "Community",
+                relationName: "CommunityToImage"
             }]
     }, {
         name: "State",
@@ -114,6 +118,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "Community",
         fields: [{
+                name: "image",
+                type: "Image",
+                relationName: "CommunityToImage"
+            }, {
                 name: "places",
                 type: "Place",
                 relationName: "CommunityToPlace"
@@ -591,6 +599,7 @@ type ImageFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     users?: Prisma.UserCreateNestedManyWithoutImageInput;
+    communities?: Prisma.CommunityCreateNestedManyWithoutImageInput;
 };
 
 type ImageTransientFields = Record<string, unknown> & Partial<Record<keyof ImageFactoryDefineInput, never>>;
@@ -1215,16 +1224,21 @@ type CommunityScalarOrEnumFields = {
     pointName: string;
 };
 
+type CommunityimageFactory = {
+    _factoryFor: "Image";
+    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutCommunitiesInput["create"]>;
+};
+
 type CommunityFactoryDefineInput = {
     id?: string;
     name?: string;
     pointName?: string;
-    image?: string | null;
     bio?: string | null;
     establishedAt?: Date | null;
     website?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
+    image?: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput;
     places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
@@ -1246,6 +1260,10 @@ type CommunityFactoryDefineOptions<TTransients extends Record<string, unknown> =
         [traitName: TraitName]: CommunityFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Community, Prisma.CommunityCreateInput, TTransients>;
+
+function isCommunityimageFactory(x: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput | undefined): x is CommunityimageFactory {
+    return (x as any)?._factoryFor === "Image";
+}
 
 type CommunityTraitKeys<TOptions extends CommunityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
@@ -1307,7 +1325,11 @@ function defineCommunityFactoryInternal<TTransients extends Record<string, unkno
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.CommunityCreateInput;
+            const defaultAssociations = {
+                image: isCommunityimageFactory(defaultData.image) ? {
+                    create: await defaultData.image.build()
+                } : defaultData.image
+            } as Prisma.CommunityCreateInput;
             const data: Prisma.CommunityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;

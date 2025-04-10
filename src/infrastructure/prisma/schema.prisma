@@ -71,7 +71,8 @@ model Image {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  users User[]
+  users       User[]
+  communities Community[]
 
   @@map("t_images")
 }
@@ -139,10 +140,12 @@ model Community {
   name      String
   pointName String @map("point_name")
 
-  image         String?
   bio           String?
   establishedAt DateTime? @map("established_at")
   website       String?
+
+  imageId String? @map("image_id")
+  image   Image?  @relation(fields: [imageId], references: [id])
 
   places         Place[]
   memberships    Membership[]

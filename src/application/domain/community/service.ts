@@ -9,6 +9,7 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
+import ImageService from "@/application/domain/image/service";
 
 export default class CommunityService {
   static async fetchCommunities(
@@ -41,8 +42,21 @@ export default class CommunityService {
   ) {
     const userId = getCurrentUserId(ctx);
 
-    const data: Prisma.CommunityCreateInput = CommunityConverter.create(input, userId);
-    return CommunityRepository.create(ctx, data, tx);
+    const { data, image } = CommunityConverter.create(input, userId);
+
+    let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
+    if (image) {
+      uploadedImageData = await ImageService.uploadPublicImage(image, "communities");
+    }
+
+    const updateInput: Prisma.CommunityCreateInput = {
+      ...data,
+      image: {
+        create: uploadedImageData,
+      },
+    };
+
+    return CommunityRepository.create(ctx, updateInput, tx);
   }
 
   static async deleteCommunity(ctx: IContext, id: string) {
@@ -56,10 +70,23 @@ export default class CommunityService {
     input: GqlCommunityUpdateProfileInput,
   ) {
     await this.findCommunityOrThrow(ctx, id);
-
     validateConnectOrCreatePlacesInput(input);
-    const data: Prisma.CommunityUpdateInput = CommunityConverter.update(input);
-    return await CommunityRepository.update(ctx, id, data);
+
+    const { data, image } = CommunityConverter.update(input);
+
+    let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
+    if (image) {
+      uploadedImageData = await ImageService.uploadPublicImage(image, "communities");
+    }
+
+    const updateInput: Prisma.CommunityUpdateInput = {
+      ...data,
+      image: {
+        create: uploadedImageData,
+      },
+    };
+
+    return await CommunityRepository.update(ctx, id, updateInput);
   }
 }
 

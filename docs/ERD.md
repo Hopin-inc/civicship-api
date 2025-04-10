@@ -228,10 +228,10 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     String name 
     String point_name 
-    String image "❓"
     String bio "❓"
     DateTime established_at "❓"
     String website "❓"
+    String image_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -515,12 +515,14 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
     "t_images" o{--}o "t_users" : "users"
+    "t_images" o{--}o "t_communities" : "communities"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o|--|o "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"
+    "t_communities" o|--|o "t_images" : "image"
     "t_communities" o{--}o "t_places" : "places"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
