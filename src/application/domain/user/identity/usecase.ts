@@ -7,6 +7,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/domain/membership/service";
 import WalletService from "@/application/domain/membership/wallet/service";
 import { initialCommunityId } from "@/consts/utils";
+import ImageService from "@/application/domain/image/service";
 
 export default class IdentityUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -21,8 +22,17 @@ export default class IdentityUseCase {
     ctx: IContext,
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
-    const data = IdentityConverter.create(args);
-    const user = await IdentityService.createUserAndIdentity(data, ctx.uid, ctx.platform);
+    const { data, image } = IdentityConverter.create(args);
+
+    const uploadedImage = image ? await ImageService.uploadPublicImage(image, "users") : undefined;
+    const user = await IdentityService.createUserAndIdentity(
+      {
+        ...data,
+        image: uploadedImage ? { create: uploadedImage } : undefined,
+      },
+      ctx.uid,
+      ctx.platform,
+    );
 
     const res = await this.issuer.public(ctx, async (tx) => {
       await MembershipService.joinIfNeeded(ctx, user.id, initialCommunityId, tx);
