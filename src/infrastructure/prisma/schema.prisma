@@ -1,0 +1,778 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// debian-openssl-3.0.x for CloudRun, linux-arm64-openssl-3.0.x for local
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["views", "typedSql", "relationJoins"]
+  binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
+}
+
+generator erd {
+  provider                  = "prisma-erd-generator"
+  theme                     = "forest"
+  output                    = "../../../docs/ERD.md"
+  includeRelationFromFields = true
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+  output   = "../../../docs"
+}
+
+generator fabbrica {
+  provider    = "prisma-fabbrica"
+  output      = "../factories/__generated__"
+  noTranspile = true
+}
+
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PublishStatus {
+  PUBLIC
+  COMMUNITY_INTERNAL
+  PRIVATE
+}
+
+enum Source {
+  INTERNAL
+  EXTERNAL
+}
+
+// ------------------------------ Geography (State & City) ------------------------------
+
+model State {
+  code String
+
+  name        String
+  countryCode String @map("country_code") @db.Char(2)
+
+  cities City[]
+
+  @@id([code, countryCode])
+  @@map("m_states")
+}
+
+model City {
+  code String @id
+
+  name        String
+  stateCode   String @map("state_code")
+  countryCode String @map("country_code") @db.Char(2)
+
+  state  State   @relation(fields: [stateCode, countryCode], references: [code, countryCode], onDelete: Restrict)
+  places Place[]
+
+  @@map("m_cities")
+}
+
+// ------------------------------ Place Domain ------------------------------
+
+model Place {
+  id String @id @default(cuid())
+
+  name      String
+  address   String
+  latitude  Decimal
+  longitude Decimal
+
+  isManual      Boolean @map("is_manual")
+  googlePlaceId String? @map("google_place_id")
+  mapLocation   Json?   @map("map_location")
+
+  cityCode String @map("city_code")
+  city     City   @relation(fields: [cityCode], references: [code], onDelete: Restrict)
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+
+  opportunities Opportunity[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_places")
+}
+
+// ------------------------------ Community Domain ------------------------------
+
+model Community {
+  id String @id @default(cuid())
+
+  name      String
+  pointName String @map("point_name")
+
+  image         String?
+  bio           String?
+  establishedAt DateTime? @map("established_at")
+  website       String?
+
+  places         Place[]
+  memberships    Membership[]
+  wallets        Wallet[]
+  utilities      Utility[]
+  opportunities  Opportunity[]
+  participations Participation[]
+  articles       Article[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_communities")
+}
+
+// ------------------------------ User Domain ------------------------------
+
+model User {
+  id String @id @default(cuid())
+
+  name    String
+  slug    String
+  image   String?
+  bio     String?
+  sysRole SysRole @default(USER) @map("sys_role")
+
+  urlWebsite   String? @map("url_website")
+  urlX         String? @map("url_x")
+  urlFacebook  String? @map("url_facebook")
+  urlInstagram String? @map("url_instagram")
+  urlYoutube   String? @map("url_youtube")
+  urlTiktok    String? @map("url_tiktok")
+
+  currentPrefecture CurrentPrefecture @map("current_prefecture")
+  identities        Identity[]
+
+  memberships             Membership[]
+  membershipChangedByMe   MembershipHistory[]
+  wallets                 Wallet[]
+  ticketStatusChangedByMe TicketStatusHistory[]
+
+  opportunitiesCreatedByMe       Opportunity[]
+  reservationsAppliedByMe        Reservation[]
+  reservationStatusChangedByMe   ReservationHistory[]
+  participations                 Participation[]
+  participationStatusChangedByMe ParticipationStatusHistory[]
+  evaluationsEvaluatedByMe       Evaluation[]
+  evaluationCreatedByMe          EvaluationHistory[]
+
+  articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
+  articlesAboutMe     Article[] @relation("t_related_users_on_articles")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_users")
+}
+
+enum SysRole {
+  SYS_ADMIN
+  USER
+}
+
+enum CurrentPrefecture {
+  KAGAWA
+  TOKUSHIMA
+  KOCHI
+  EHIME
+  OUTSIDE_SHIKOKU
+  UNKNOWN
+}
+
+model Identity {
+  uid      String           @id
+  platform IdentityPlatform
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_identities")
+}
+
+enum IdentityPlatform {
+  LINE
+  FACEBOOK
+}
+
+// ------------------------------ Membership Domain ------------------------------
+
+model Membership {
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  headline String?
+  bio      String?
+
+  status MembershipStatus
+  reason MembershipStatusReason
+  role   Role                   @default(MEMBER)
+
+  histories               MembershipHistory[]
+  participationGeoViews   MembershipParticipationGeoView[]
+  participationCountViews MembershipParticipationCountView[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@id([userId, communityId])
+  @@map("t_memberships")
+}
+
+view MembershipParticipationGeoView {
+  userId      String @map("user_id")
+  communityId String @map("community_id")
+
+  type      ParticipationType
+  placeId   String            @map("place_id")
+  latitude  Decimal
+  longitude Decimal
+
+  membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
+
+  @@id([userId, communityId, placeId])
+  @@map("v_membership_participation_geo")
+}
+
+view MembershipParticipationCountView {
+  userId      String @map("user_id")
+  communityId String @map("community_id")
+
+  type       ParticipationType
+  totalCount Int               @map("total_count")
+  membership Membership        @relation(fields: [userId, communityId], references: [userId, communityId])
+
+  @@id([userId, communityId, type])
+  @@map("v_membership_participation_count")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  MEMBER
+}
+
+enum MembershipStatus {
+  PENDING
+  JOINED
+  LEFT
+}
+
+enum MembershipStatusReason {
+  CREATED_COMMUNITY
+
+  INVITED
+  CANCELED_INVITATION
+  ACCEPTED_INVITATION
+  DECLINED_INVITATION
+
+  WITHDRAWN
+  REMOVED
+
+  ASSIGNED
+}
+
+enum ParticipationType {
+  HOSTED
+  PARTICIPATED
+}
+
+model MembershipHistory {
+  id String @id @default(cuid())
+
+  role   Role                   @default(MEMBER)
+  status MembershipStatus
+  reason MembershipStatusReason
+
+  userId      String     @map("user_id")
+  communityId String     @map("community_id")
+  membership  Membership @relation(fields: [userId, communityId], references: [userId, communityId], onDelete: Cascade)
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("t_membership_histories")
+}
+
+model Wallet {
+  id String @id @default(cuid())
+
+  type WalletType @default(MEMBER)
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  userId      String?   @map("user_id")
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  currentPointView     CurrentPointView?
+  accumulatedPointView AccumulatedPointView?
+
+  fromTransactions Transaction[] @relation("from_wallet")
+  toTransactions   Transaction[] @relation("to_wallet")
+  tickets          Ticket[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_wallets")
+}
+
+view CurrentPointView {
+  walletId String @id @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+
+  currentPoint Int @map("current_point")
+
+  @@map("mv_current_points")
+}
+
+view AccumulatedPointView {
+  walletId String @id @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id])
+
+  accumulatedPoint Int @map("accumulated_point")
+
+  @@map("mv_accumulated_points")
+}
+
+enum WalletType {
+  COMMUNITY
+  MEMBER
+}
+
+// ------------------------------ Article Domain ------------------------------
+
+model Article {
+  id String @id @default(cuid())
+
+  title         String
+  introduction  String
+  category      ArticleCategory
+  publishStatus PublishStatus   @default(PUBLIC) @map("publish_status")
+  body          String
+  thumbnail     Json?
+  publishedAt   DateTime        @map("published_at")
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  authors       User[]        @relation("t_author_users_on_articles")
+  relatedUsers  User[]        @relation("t_related_users_on_articles")
+  opportunities Opportunity[] @relation("t_opportunities_on_articles")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_articles")
+}
+
+enum ArticleCategory {
+  ACTIVITY_REPORT
+  INTERVIEW
+}
+
+// ------------------------------ Opportunity Domain ------------------------------
+
+model Opportunity {
+  id String @id @default(cuid())
+
+  publishStatus   PublishStatus @default(PUBLIC) @map("publish_status")
+  requireApproval Boolean       @default(false) @map("require_approval")
+
+  title       String
+  category    OpportunityCategory
+  description String
+  body        String?
+  image       String?
+  files       Json                @default("[]")
+
+  pointsToEarn      Int?      @map("points_to_earn")
+  feeRequired       Int?      @map("fee_required")
+  requiredUtilities Utility[]
+
+  slots                      OpportunitySlot[]
+  earliestReservableSlotView EarliestReservableSlotView?
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  placeId String? @map("place_id")
+  place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
+
+  articles Article[] @relation("t_opportunities_on_articles")
+
+  createdBy     String @map("created_by")
+  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_opportunities")
+}
+
+enum OpportunityCategory {
+  QUEST
+  EVENT
+  ACTIVITY
+}
+
+view EarliestReservableSlotView {
+  opportunityId String      @id @map("opportunity_id")
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id])
+
+  earliestReservableAt DateTime? @map("earliest_reservable_at")
+
+  @@map("v_earliest_reservable_slot")
+}
+
+model OpportunitySlot {
+  id String @id @default(cuid())
+
+  hostingStatus OpportunitySlotHostingStatus @default(SCHEDULED) @map("hosting_status")
+
+  startsAt DateTime @map("starts_at")
+  endsAt   DateTime @map("ends_at")
+
+  capacity              Int?
+  remainingCapacityView RemainingCapacityView?
+
+  opportunityId String      @map("opportunity_id")
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  reservations Reservation[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_opportunity_slots")
+}
+
+enum OpportunitySlotHostingStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+view RemainingCapacityView {
+  slotId String          @id @map("slot_id")
+  slot   OpportunitySlot @relation(fields: [slotId], references: [id])
+
+  remainingCapacity Int? @map("remaining_capacity")
+
+  @@map("v_slot_remaining_capacity")
+}
+
+// ------------------------------ Reservation Domain ------------------------------
+
+model Reservation {
+  id String @id @default(cuid())
+
+  opportunitySlotId String          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot @relation(fields: [opportunitySlotId], references: [id], onDelete: Cascade)
+
+  status         ReservationStatus @default(APPLIED)
+  participations Participation[]
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  histories ReservationHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_reservations")
+}
+
+enum ReservationStatus {
+  APPLIED
+  ACCEPTED
+  REJECTED
+  CANCELED
+}
+
+model ReservationHistory {
+  id String @id @default(cuid())
+
+  reservationId String      @map("reservation_id")
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  status ReservationStatus
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("t_reservation_histories")
+}
+
+// ------------------------------ Participation Domain ------------------------------
+
+model Participation {
+  id String @id @default(cuid())
+
+  source Source                    @default(INTERNAL)
+  status ParticipationStatus       @default(PENDING)
+  reason ParticipationStatusReason
+
+  description String?
+  images      ParticipationImage[]
+
+  userId String? @map("user_id")
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  reservationId         String?               @map("reservation_id")
+  reservation           Reservation?          @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  ticketStatusHistories TicketStatusHistory[]
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+
+  evaluation      Evaluation?
+  statusHistories ParticipationStatusHistory[]
+  transactions    Transaction[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_participations")
+}
+
+enum ParticipationStatus {
+  PENDING
+  PARTICIPATING
+  PARTICIPATED
+  NOT_PARTICIPATING
+}
+
+enum ParticipationStatusReason {
+  PERSONAL_RECORD
+
+  RESERVATION_JOINED
+  RESERVATION_APPLIED
+  RESERVATION_CANCELED
+  RESERVATION_ACCEPTED
+  RESERVATION_REJECTED
+
+  OPPORTUNITY_CANCELED
+}
+
+model ParticipationImage {
+  id String @id @default(cuid())
+
+  participationId String        @map("participation_id")
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  url     String
+  caption String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_participation_images")
+}
+
+model ParticipationStatusHistory {
+  id String @id @default(cuid())
+
+  participationId String        @map("participation_id")
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  status ParticipationStatus
+  reason ParticipationStatusReason
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("t_participation_status_histories")
+}
+
+// ------------------------------ Evaluation Domain ------------------------------
+
+model Evaluation {
+  id String @id @default(cuid())
+
+  status        EvaluationStatus @default(PENDING)
+  comment       String?
+  credentialUrl String?          @map("credential_url")
+  issuedAt      DateTime?        @map("issued_at")
+
+  participationId String        @unique @map("participation_id")
+  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  evaluatorId String @map("evaluator_id")
+  evaluator   User   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
+
+  histories EvaluationHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_evaluations")
+}
+
+enum EvaluationStatus {
+  PENDING
+  PASSED
+  FAILED
+}
+
+model EvaluationHistory {
+  id String @id @default(cuid())
+
+  status  EvaluationStatus
+  comment String?
+
+  evaluationId String     @map("evaluation_id")
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("t_evaluation_histories")
+}
+
+// ------------------------------ Utility Domain ------------------------------
+
+model Utility {
+  id String @id @default(cuid())
+
+  publishStatus PublishStatus @default(PUBLIC) @map("publish_status")
+
+  name           String
+  description    String?
+  image          String?
+  pointsRequired Int     @map("points_required")
+
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  requiredForOpportunities Opportunity[]
+
+  tickets Ticket[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_utilities")
+}
+
+// ------------------------------ Ticket Domain ------------------------------
+
+model Ticket {
+  id String @id @default(cuid())
+
+  status TicketStatus       @default(AVAILABLE)
+  reason TicketStatusReason @default(PURCHASED)
+
+  walletId String @map("wallet_id")
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  utilityId String  @map("utility_id")
+  utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Restrict)
+
+  ticketStatusHistories TicketStatusHistory[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_tickets")
+}
+
+enum TicketStatus {
+  AVAILABLE
+  DISABLED
+}
+
+enum TicketStatusReason {
+  PURCHASED
+  CANCELED
+  RESERVED
+  USED
+  REFUNDED
+  EXPIRED
+}
+
+model TicketStatusHistory {
+  id String @id @default(cuid())
+
+  ticketId String @map("ticket_id")
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Restrict)
+
+  status TicketStatus       @default(AVAILABLE)
+  reason TicketStatusReason @default(PURCHASED)
+
+  transactionId String?      @unique @map("transaction_id")
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  participationId String?        @map("participation_id")
+  participation   Participation? @relation(fields: [participationId], references: [id])
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_ticket_status_histories")
+}
+
+// ------------------------------ Transaction Domain ------------------------------
+
+model Transaction {
+  id String @id @default(cuid())
+
+  reason TransactionReason
+
+  from            String?
+  fromWallet      Wallet? @relation("from_wallet", fields: [from], references: [id], onDelete: SetNull)
+  fromPointChange Int     @map("from_point_change")
+
+  to            String?
+  toWallet      Wallet? @relation("to_wallet", fields: [to], references: [id], onDelete: SetNull)
+  toPointChange Int     @map("to_point_change")
+
+  participationId String?        @map("participation_id")
+  participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
+
+  ticketStatusHistory TicketStatusHistory?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_transactions")
+}
+
+enum TransactionReason {
+  POINT_ISSUED
+  POINT_REWARD
+
+  ONBOARDING
+
+  DONATION
+  GRANT
+
+  TICKET_PURCHASED
+  TICKET_REFUNDED
+}
