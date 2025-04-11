@@ -39,7 +39,6 @@ export default class ParticipationService {
     ctx: IContext,
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
-    tx: Prisma.TransactionClient,
   ) {
     const { data, images } = ParticipationConverter.create(input, currentUserId);
 
@@ -54,7 +53,7 @@ export default class ParticipationService {
       },
     };
 
-    return ParticipationRepository.create(ctx, createInput, tx);
+    return ParticipationRepository.create(ctx, createInput);
   }
 
   static async deleteParticipation(ctx: IContext, id: string) {

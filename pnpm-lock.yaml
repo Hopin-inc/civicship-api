@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   graphql-query-complexity@1.0.0:
-    hash: ultqqqxr5kenygiwcx67j64jzy
+    hash: f96cbdef035f2debf524c33d56e6ab1ad02f95ecd801f42f51c2e39e0e883c9b
     path: patches/graphql-query-complexity@1.0.0.patch
 
 importers:
@@ -90,7 +90,7 @@ importers:
         version: 6.1.35(graphql@16.10.0)
       graphql-query-complexity:
         specifier: ^1.0.0
-        version: 1.0.0(patch_hash=ultqqqxr5kenygiwcx67j64jzy)(graphql@16.10.0)
+        version: 1.0.0(patch_hash=f96cbdef035f2debf524c33d56e6ab1ad02f95ecd801f42f51c2e39e0e883c9b)(graphql@16.10.0)
       graphql-scalars:
         specifier: ^1.24.2
         version: 1.24.2(graphql@16.10.0)
@@ -15225,7 +15225,7 @@ snapshots:
       '@graphql-tools/schema': 8.5.1(graphql@16.10.0)
       graphql: 16.10.0
 
-  graphql-query-complexity@1.0.0(patch_hash=ultqqqxr5kenygiwcx67j64jzy)(graphql@16.10.0):
+  graphql-query-complexity@1.0.0(patch_hash=f96cbdef035f2debf524c33d56e6ab1ad02f95ecd801f42f51c2e39e0e883c9b)(graphql@16.10.0):
     dependencies:
       graphql: 16.10.0
       lodash.get: 4.4.2

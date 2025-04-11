@@ -7,6 +7,7 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
     include: {
       opportunity: {
         include: {
+          images: true,
           createdByUser: { include: userInclude },
           place: true,
           requiredUtilities: {
@@ -19,7 +20,7 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
       remainingCapacityView: true,
     },
   },
-  createdByUser: { include: userInclude },
+  createdByUser: true,
   participations: { include: participationInclude },
 });
 

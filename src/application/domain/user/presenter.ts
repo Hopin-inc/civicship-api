@@ -19,7 +19,11 @@ export default class UserPresenter {
   }
 
   static get(r: PrismaUser): GqlUser {
-    return r;
+    const { image, ...prop } = r;
+    return {
+      ...prop,
+      image: image?.url ?? null,
+    };
   }
 
   static updateProfile(r: PrismaUser): GqlUserUpdateProfileSuccess {

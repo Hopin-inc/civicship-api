@@ -12,13 +12,9 @@ import { IContext } from "@/types/server";
 import ParticipationService from "@/application/domain/participation/service";
 import ParticipationPresenter from "@/application/domain/participation/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import ParticipationImageService from "@/application/domain/participation/image/service";
 import { participationInclude } from "@/application/domain/participation/data/type";
 
 export default class ParticipationUseCase {
-  private static issuer = new PrismaClientIssuer();
-
   static async visitorBrowseParticipations(
     { filter, first, sort, cursor }: GqlQueryParticipationsArgs,
     ctx: IContext,
@@ -55,23 +51,7 @@ export default class ParticipationUseCase {
     ctx: IContext,
   ): Promise<GqlParticipationCreatePersonalRecordPayload> {
     const currentUserId = getCurrentUserId(ctx);
-
-    const participation = await this.issuer.public(ctx, async (tx) => {
-      const participation = await ParticipationService.createParticipation(
-        ctx,
-        input,
-        currentUserId,
-        tx,
-      );
-      await ParticipationImageService.validateAndCreateImages(
-        ctx,
-        input.images,
-        participation.id,
-        tx,
-      );
-
-      return participation;
-    });
+    const participation = await ParticipationService.createParticipation(ctx, input, currentUserId);
 
     return ParticipationPresenter.create(participation);
   }

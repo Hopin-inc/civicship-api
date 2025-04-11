@@ -74,12 +74,21 @@ export default class ParticipationRepository {
   static async create(
     ctx: IContext,
     data: Prisma.ParticipationCreateInput,
-    tx: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient,
   ) {
-    return tx.participation.create({
-      data,
-      include: participationInclude,
-    });
+    if (tx) {
+      return tx.participation.create({
+        data,
+        include: participationInclude,
+      });
+    } else {
+      return this.issuer.public(ctx, (dbTx) => {
+        return dbTx.participation.create({
+          data,
+          include: participationInclude,
+        });
+      });
+    }
   }
 
   static async createMany(

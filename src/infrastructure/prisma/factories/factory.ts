@@ -31,6 +31,7 @@ import {
   randSlug,
   randState,
   randStreetAddress,
+  randUrl,
   randUuid,
 } from "@ngneat/falso";
 import {
@@ -38,6 +39,7 @@ import {
   defineCityFactory,
   defineCommunityFactory,
   defineEvaluationFactory,
+  defineImageFactory,
   defineMembershipFactory,
   defineOpportunityFactory,
   defineOpportunitySlotFactory,
@@ -77,6 +79,14 @@ registerScalarFieldValueGenerator({
 });
 
 initialize({ prisma: prismaClient });
+
+// --- User & Community ---
+
+export const ImageFactory = defineImageFactory({
+  defaultData: () => ({
+    url: randUrl(),
+  }),
+});
 
 // --- User & Community ---
 
@@ -381,6 +391,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
   transientUser?: { id: string };
   transientReservation?: { id: string };
   transientCommunity?: { id: string };
+  transientImage?: { id: string };
   transientStatus?: ParticipationStatus;
   transientReason?: ParticipationStatusReason;
   transientSource?: Source;
@@ -388,6 +399,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
   transientUser: undefined,
   transientReservation: undefined,
   transientCommunity: undefined,
+  transientImage: undefined,
   transientStatus: undefined,
   transientReason: undefined,
   transientSource: undefined,
@@ -396,6 +408,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
     transientUser,
     transientReservation,
     transientCommunity,
+    transientImage,
     transientStatus,
     transientReason,
     transientSource,
@@ -403,6 +416,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
     const user = transientUser ?? (await UserFactory.create());
     const reservation = transientReservation ?? (await ReservationFactory.create());
     const community = transientCommunity ?? (await CommunityFactory.create());
+    const image = transientImage ?? (await ImageFactory.create());
 
     const status = transientStatus ?? randomEnum(ParticipationStatus);
     const reason = transientReason ?? randomEnum(ParticipationStatusReason);
@@ -425,11 +439,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
         ],
       },
       images: {
-        create: [
-          {
-            url: randImg(),
-          },
-        ],
+        connect: { id: image.id },
       },
     };
   },

@@ -22,7 +22,7 @@ export const participationForPortfolioInclude = Prisma.validator<Prisma.Particip
     include: {
       opportunitySlot: {
         include: {
-          opportunity: { include: { place: { include: placeInclude } } },
+          opportunity: { include: { place: { include: placeInclude }, images: true } },
         },
       },
       participations: { include: { user: { include: userInclude } } },
