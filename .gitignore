@@ -135,3 +135,6 @@ certificates/
 
 # Docker
 container/docker/postgresql/init/*.sql
+
+# Credential
+credentials/
