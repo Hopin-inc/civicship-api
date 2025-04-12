@@ -8,6 +8,7 @@ import {
 import WalletUseCase from "@/application/domain/membership/wallet/usecase";
 import { IContext } from "@/types/server";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
+import TicketUseCase from "@/application/domain/ticket/usecase";
 
 const walletResolver = {
   Query: {
@@ -22,6 +23,12 @@ const walletResolver = {
   },
 
   Wallet: {
+    tickets: async (parent: GqlWallet, args: GqlQueryWalletArgs, ctx: IContext) => {
+      return TicketUseCase.visitorBrowseTickets(ctx, {
+        filter: { walletId: parent.id },
+        ...args,
+      });
+    },
     transactions: async (
       parent: GqlWallet,
       args: GqlWalletTransactionsArgs,
