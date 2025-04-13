@@ -3,7 +3,7 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - develop
+      - feature/fix-cloud-run-errors
 
 jobs:
   deploy:
