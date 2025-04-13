@@ -12,6 +12,7 @@ export const articleInclude = Prisma.validator<Prisma.ArticleInclude>()({
 export const articleForPortfolioInclude = Prisma.validator<Prisma.ArticleInclude>()({
   authors: { include: userInclude },
   relatedUsers: { include: userInclude },
+  thumbnail: true,
 });
 
 export type PrismaArticle = Prisma.ArticleGetPayload<{

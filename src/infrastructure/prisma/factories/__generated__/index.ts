@@ -81,17 +81,21 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Community",
                 relationName: "CommunityToImage"
             }, {
+                name: "articles",
+                type: "Article",
+                relationName: "ArticleToImage"
+            }, {
                 name: "opportunities",
                 type: "Opportunity",
-                relationName: "ImageToOpportunity"
+                relationName: "t_images_on_opportunities"
             }, {
                 name: "participations",
                 type: "Participation",
-                relationName: "ImageToParticipation"
+                relationName: "t_images_on_participations"
             }, {
                 name: "utilities",
                 type: "Utility",
-                relationName: "ImageToUtility"
+                relationName: "t_images_on_utilities"
             }]
     }, {
         name: "State",
@@ -299,6 +303,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "Article",
         fields: [{
+                name: "thumbnail",
+                type: "Image",
+                relationName: "ArticleToImage"
+            }, {
                 name: "community",
                 type: "Community",
                 relationName: "ArticleToCommunity"
@@ -320,7 +328,7 @@ const modelFieldDefinitions: ModelWithFields[] = [{
         fields: [{
                 name: "images",
                 type: "Image",
-                relationName: "ImageToOpportunity"
+                relationName: "t_images_on_opportunities"
             }, {
                 name: "requiredUtilities",
                 type: "Utility",
@@ -400,7 +408,7 @@ const modelFieldDefinitions: ModelWithFields[] = [{
         fields: [{
                 name: "images",
                 type: "Image",
-                relationName: "ImageToParticipation"
+                relationName: "t_images_on_participations"
             }, {
                 name: "user",
                 type: "User",
@@ -472,7 +480,7 @@ const modelFieldDefinitions: ModelWithFields[] = [{
         fields: [{
                 name: "images",
                 type: "Image",
-                relationName: "ImageToUtility"
+                relationName: "t_images_on_utilities"
             }, {
                 name: "community",
                 type: "Community",
@@ -612,6 +620,7 @@ type ImageFactoryDefineInput = {
     updatedAt?: Date | null;
     users?: Prisma.UserCreateNestedManyWithoutImageInput;
     communities?: Prisma.CommunityCreateNestedManyWithoutImageInput;
+    articles?: Prisma.ArticleCreateNestedManyWithoutThumbnailInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutImagesInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutImagesInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutImagesInput;
@@ -2285,6 +2294,11 @@ type ArticleScalarOrEnumFields = {
     publishedAt: Date;
 };
 
+type ArticlethumbnailFactory = {
+    _factoryFor: "Image";
+    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutArticlesInput["create"]>;
+};
+
 type ArticlecommunityFactory = {
     _factoryFor: "Community";
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutArticlesInput["create"]>;
@@ -2297,10 +2311,10 @@ type ArticleFactoryDefineInput = {
     category?: ArticleCategory;
     publishStatus?: PublishStatus;
     body?: string;
-    thumbnail?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     publishedAt?: Date;
     createdAt?: Date;
     updatedAt?: Date | null;
+    thumbnail?: ArticlethumbnailFactory | Prisma.ImageCreateNestedOneWithoutArticlesInput;
     community: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput;
     authors?: Prisma.UserCreateNestedManyWithoutArticlesWrittenByMeInput;
     relatedUsers?: Prisma.UserCreateNestedManyWithoutArticlesAboutMeInput;
@@ -2319,6 +2333,10 @@ type ArticleFactoryDefineOptions<TTransients extends Record<string, unknown> = R
         [traitName: string | symbol]: ArticleFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Article, Prisma.ArticleCreateInput, TTransients>;
+
+function isArticlethumbnailFactory(x: ArticlethumbnailFactory | Prisma.ImageCreateNestedOneWithoutArticlesInput | undefined): x is ArticlethumbnailFactory {
+    return (x as any)?._factoryFor === "Image";
+}
 
 function isArticlecommunityFactory(x: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput | undefined): x is ArticlecommunityFactory {
     return (x as any)?._factoryFor === "Community";
@@ -2388,6 +2406,9 @@ function defineArticleFactoryInternal<TTransients extends Record<string, unknown
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                thumbnail: isArticlethumbnailFactory(defaultData.thumbnail) ? {
+                    create: await defaultData.thumbnail.build()
+                } : defaultData.thumbnail,
                 community: isArticlecommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
                 } : defaultData.community

@@ -19,6 +19,7 @@ Table t_images {
   strapiId Int
   users t_users [not null]
   communities t_communities [not null]
+  articles t_articles [not null]
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   utilities t_utilities [not null]
@@ -183,8 +184,9 @@ Table t_articles {
   category ArticleCategory [not null]
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   body String [not null]
-  thumbnail Json
   publishedAt DateTime [not null]
+  thumbnailId String
+  thumbnail t_images
   communityId String [not null]
   community t_communities [not null]
   authors t_users [not null]
@@ -424,17 +426,17 @@ Table v_slot_remaining_capacity {
   remainingCapacity Int
 }
 
-Table ImageToOpportunity {
+Table t_images_on_opportunities {
   opportunitiesId String [ref: > t_opportunities.id]
   imagesId String [ref: > t_images.id]
 }
 
-Table ImageToParticipation {
+Table t_images_on_participations {
   participationsId String [ref: > t_participations.id]
   imagesId String [ref: > t_images.id]
 }
 
-Table ImageToUtility {
+Table t_images_on_utilities {
   utilitiesId String [ref: > t_utilities.id]
   imagesId String [ref: > t_images.id]
 }
@@ -616,6 +618,8 @@ Ref: t_membership_histories.createdBy > t_users.id [delete: Set Null]
 Ref: t_wallets.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_wallets.userId > t_users.id [delete: Set Null]
+
+Ref: t_articles.thumbnailId > t_images.id [delete: Set Null]
 
 Ref: t_articles.communityId > t_communities.id [delete: Cascade]
 

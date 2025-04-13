@@ -307,8 +307,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     ArticleCategory category 
     PublishStatus publish_status 
     String body 
-    Json thumbnail "❓"
     DateTime published_at 
+    String thumbnail_id "❓"
     String community_id 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -503,6 +503,7 @@ TICKET_REFUNDED TICKET_REFUNDED
   
     "t_images" o{--}o "t_users" : "users"
     "t_images" o{--}o "t_communities" : "communities"
+    "t_images" o{--}o "t_articles" : "articles"
     "t_images" o{--}o "t_opportunities" : "opportunities"
     "t_images" o{--}o "t_participations" : "participations"
     "t_images" o{--}o "t_utilities" : "utilities"
@@ -562,6 +563,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_wallets" o{--}o "t_tickets" : "tickets"
     "t_articles" o|--|| "ArticleCategory" : "enum:category"
     "t_articles" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_articles" o|--|o "t_images" : "thumbnail"
     "t_articles" o|--|| "t_communities" : "community"
     "t_articles" o{--}o "t_users" : "authors"
     "t_articles" o{--}o "t_users" : "relatedUsers"

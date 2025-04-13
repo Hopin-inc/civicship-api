@@ -68,11 +68,13 @@ model Image {
   caption    String?
   strapiId   Int?    @map("strapi_id")
 
-  users          User[]
-  communities    Community[]
-  opportunities  Opportunity[]
-  participations Participation[]
-  utilities      Utility[]
+  users       User[]
+  communities Community[]
+  articles    Article[]
+
+  opportunities  Opportunity[]   @relation("t_images_on_opportunities")
+  participations Participation[] @relation("t_images_on_participations")
+  utilities      Utility[]       @relation("t_images_on_utilities")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -400,8 +402,10 @@ model Article {
   category      ArticleCategory
   publishStatus PublishStatus   @default(PUBLIC) @map("publish_status")
   body          String
-  thumbnail     Json?
   publishedAt   DateTime        @map("published_at")
+
+  thumbnailId String? @map("thumbnail_id")
+  thumbnail   Image?  @relation(fields: [thumbnailId], references: [id], onDelete: SetNull)
 
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -433,7 +437,7 @@ model Opportunity {
   category    OpportunityCategory
   description String
   body        String?
-  images      Image[]
+  images      Image[]             @relation("t_images_on_opportunities")
 
   pointsToEarn      Int?      @map("points_to_earn")
   feeRequired       Int?      @map("fee_required")
@@ -561,12 +565,12 @@ model ReservationHistory {
 model Participation {
   id String @id @default(cuid())
 
-  source Source                    @default(INTERNAL)
-  status ParticipationStatus       @default(PENDING)
-  reason ParticipationStatusReason
-
+  source      Source                    @default(INTERNAL)
+  status      ParticipationStatus       @default(PENDING)
+  reason      ParticipationStatusReason
   description String?
-  images      Image[]
+
+  images Image[] @relation("t_images_on_participations")
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -681,7 +685,7 @@ model Utility {
   name        String
   description String?
 
-  images Image[]
+  images Image[] @relation("t_images_on_utilities")
 
   pointsRequired Int @map("points_required")
 

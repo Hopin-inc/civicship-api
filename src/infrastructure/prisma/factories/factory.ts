@@ -26,7 +26,6 @@ import {
   randCity,
   randCountryCode,
   randFullName,
-  randImg,
   randParagraph,
   randSlug,
   randState,
@@ -482,6 +481,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
   transientOpportunity?: { id: string };
   transientStatus?: PublishStatus;
   transientCategory?: ArticleCategory;
+  transientThumbnail?: { id: string };
 }>({
   transientCommunity: undefined,
   transientAuthor: undefined,
@@ -489,6 +489,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
   transientOpportunity: undefined,
   transientStatus: undefined,
   transientCategory: undefined,
+  transientThumbnail: undefined,
 })({
   defaultData: async ({
     transientCommunity,
@@ -497,11 +498,13 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
     transientOpportunity,
     transientStatus,
     transientCategory,
+    transientThumbnail,
   }) => {
     const community = transientCommunity ?? (await CommunityFactory.create());
     const author = transientAuthor ?? (await UserFactory.create());
     const relatedUsers = transientRelatedUsers ?? [await UserFactory.create()];
     const opportunity = transientOpportunity ?? (await OpportunityFactory.create());
+    const thumbnail = transientThumbnail ?? (await ImageFactory.create());
 
     return {
       title: randCatchPhrase(),
@@ -509,12 +512,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
       category: transientCategory ?? randomEnum(ArticleCategory),
       publishStatus: transientStatus ?? randomEnum(PublishStatus),
       body: randParagraph(),
-      thumbnail: [
-        {
-          url: randImg(),
-          alt: "sample image",
-        },
-      ],
+      thumbnail: { connect: { id: thumbnail.id } },
       publishedAt: new Date(),
       community: { connect: { id: community.id } },
       authors: { connect: [{ id: author.id }] },
