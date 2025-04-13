@@ -1,51 +1,51 @@
-import type { Article } from "@prisma/client";
-import type { Community } from "@prisma/client";
-import type { Evaluation } from "@prisma/client";
-import type { EvaluationHistory } from "@prisma/client";
-import type { City } from "@prisma/client";
 import type { State } from "@prisma/client";
+import type { City } from "@prisma/client";
+import type { Place } from "@prisma/client";
+import type { Community } from "@prisma/client";
+import type { User } from "@prisma/client";
+import type { Identity } from "@prisma/client";
 import type { Membership } from "@prisma/client";
 import type { MembershipHistory } from "@prisma/client";
 import type { Wallet } from "@prisma/client";
+import type { Article } from "@prisma/client";
 import type { Opportunity } from "@prisma/client";
 import type { OpportunitySlot } from "@prisma/client";
+import type { Reservation } from "@prisma/client";
+import type { ReservationHistory } from "@prisma/client";
 import type { Participation } from "@prisma/client";
 import type { ParticipationImage } from "@prisma/client";
 import type { ParticipationStatusHistory } from "@prisma/client";
-import type { Place } from "@prisma/client";
-import type { Reservation } from "@prisma/client";
-import type { ReservationHistory } from "@prisma/client";
+import type { Evaluation } from "@prisma/client";
+import type { EvaluationHistory } from "@prisma/client";
+import type { Utility } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
-import type { Identity } from "@prisma/client";
-import type { User } from "@prisma/client";
-import type { Utility } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
 import type { MembershipParticipationCountView } from "@prisma/client";
 import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
-import type { ArticleCategory } from "@prisma/client";
-import type { PublishStatus } from "@prisma/client";
-import type { EvaluationStatus } from "@prisma/client";
+import type { SysRole } from "@prisma/client";
+import type { CurrentPrefecture } from "@prisma/client";
+import type { IdentityPlatform } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
 import type { Role } from "@prisma/client";
 import type { WalletType } from "@prisma/client";
+import type { ArticleCategory } from "@prisma/client";
+import type { PublishStatus } from "@prisma/client";
 import type { OpportunityCategory } from "@prisma/client";
 import type { OpportunitySlotHostingStatus } from "@prisma/client";
+import type { ReservationStatus } from "@prisma/client";
 import type { Source } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
 import type { ParticipationStatusReason } from "@prisma/client";
-import type { ReservationStatus } from "@prisma/client";
+import type { EvaluationStatus } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
-import type { IdentityPlatform } from "@prisma/client";
-import type { SysRole } from "@prisma/client";
-import type { CurrentPrefecture } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -71,23 +71,37 @@ const { getClient } = initializer;
 export const { initialize } = initializer;
 
 const modelFieldDefinitions: ModelWithFields[] = [{
-        name: "Article",
+        name: "State",
         fields: [{
+                name: "cities",
+                type: "City",
+                relationName: "CityToState"
+            }]
+    }, {
+        name: "City",
+        fields: [{
+                name: "state",
+                type: "State",
+                relationName: "CityToState"
+            }, {
+                name: "places",
+                type: "Place",
+                relationName: "CityToPlace"
+            }]
+    }, {
+        name: "Place",
+        fields: [{
+                name: "city",
+                type: "City",
+                relationName: "CityToPlace"
+            }, {
                 name: "community",
                 type: "Community",
-                relationName: "ArticleToCommunity"
-            }, {
-                name: "authors",
-                type: "User",
-                relationName: "t_author_users_on_articles"
-            }, {
-                name: "relatedUsers",
-                type: "User",
-                relationName: "t_related_users_on_articles"
+                relationName: "CommunityToPlace"
             }, {
                 name: "opportunities",
                 type: "Opportunity",
-                relationName: "t_opportunities_on_articles"
+                relationName: "OpportunityToPlace"
             }]
     }, {
         name: "Community",
@@ -121,48 +135,70 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "ArticleToCommunity"
             }]
     }, {
-        name: "Evaluation",
+        name: "User",
         fields: [{
-                name: "participation",
-                type: "Participation",
-                relationName: "EvaluationToParticipation"
+                name: "identities",
+                type: "Identity",
+                relationName: "IdentityToUser"
             }, {
-                name: "evaluator",
-                type: "User",
+                name: "memberships",
+                type: "Membership",
+                relationName: "MembershipToUser"
+            }, {
+                name: "membershipChangedByMe",
+                type: "MembershipHistory",
+                relationName: "MembershipHistoryToUser"
+            }, {
+                name: "wallets",
+                type: "Wallet",
+                relationName: "UserToWallet"
+            }, {
+                name: "ticketStatusChangedByMe",
+                type: "TicketStatusHistory",
+                relationName: "TicketStatusHistoryToUser"
+            }, {
+                name: "opportunitiesCreatedByMe",
+                type: "Opportunity",
+                relationName: "OpportunityToUser"
+            }, {
+                name: "reservationsAppliedByMe",
+                type: "Reservation",
+                relationName: "ReservationToUser"
+            }, {
+                name: "reservationStatusChangedByMe",
+                type: "ReservationHistory",
+                relationName: "ReservationHistoryToUser"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "ParticipationToUser"
+            }, {
+                name: "participationStatusChangedByMe",
+                type: "ParticipationStatusHistory",
+                relationName: "ParticipationStatusHistoryToUser"
+            }, {
+                name: "evaluationsEvaluatedByMe",
+                type: "Evaluation",
                 relationName: "EvaluationToUser"
             }, {
-                name: "histories",
+                name: "evaluationCreatedByMe",
                 type: "EvaluationHistory",
-                relationName: "EvaluationToEvaluationHistory"
-            }]
-    }, {
-        name: "EvaluationHistory",
-        fields: [{
-                name: "evaluation",
-                type: "Evaluation",
-                relationName: "EvaluationToEvaluationHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
                 relationName: "EvaluationHistoryToUser"
-            }]
-    }, {
-        name: "City",
-        fields: [{
-                name: "state",
-                type: "State",
-                relationName: "CityToState"
             }, {
-                name: "places",
-                type: "Place",
-                relationName: "CityToPlace"
+                name: "articlesWrittenByMe",
+                type: "Article",
+                relationName: "t_author_users_on_articles"
+            }, {
+                name: "articlesAboutMe",
+                type: "Article",
+                relationName: "t_related_users_on_articles"
             }]
     }, {
-        name: "State",
+        name: "Identity",
         fields: [{
-                name: "cities",
-                type: "City",
-                relationName: "CityToState"
+                name: "user",
+                type: "User",
+                relationName: "IdentityToUser"
             }]
     }, {
         name: "Membership",
@@ -230,6 +266,25 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "TicketToWallet"
             }]
     }, {
+        name: "Article",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "ArticleToCommunity"
+            }, {
+                name: "authors",
+                type: "User",
+                relationName: "t_author_users_on_articles"
+            }, {
+                name: "relatedUsers",
+                type: "User",
+                relationName: "t_related_users_on_articles"
+            }, {
+                name: "opportunities",
+                type: "Opportunity",
+                relationName: "t_opportunities_on_articles"
+            }]
+    }, {
         name: "Opportunity",
         fields: [{
                 name: "requiredUtilities",
@@ -244,14 +299,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "EarliestReservableSlotView",
                 relationName: "EarliestReservableSlotViewToOpportunity"
             }, {
-                name: "articles",
-                type: "Article",
-                relationName: "t_opportunities_on_articles"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "OpportunityToUser"
-            }, {
                 name: "community",
                 type: "Community",
                 relationName: "CommunityToOpportunity"
@@ -259,6 +306,14 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "place",
                 type: "Place",
                 relationName: "OpportunityToPlace"
+            }, {
+                name: "articles",
+                type: "Article",
+                relationName: "t_opportunities_on_articles"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "OpportunityToUser"
             }]
     }, {
         name: "OpportunitySlot",
@@ -274,74 +329,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reservations",
                 type: "Reservation",
                 relationName: "OpportunitySlotToReservation"
-            }]
-    }, {
-        name: "Participation",
-        fields: [{
-                name: "user",
-                type: "User",
-                relationName: "ParticipationToUser"
-            }, {
-                name: "reservation",
-                type: "Reservation",
-                relationName: "ParticipationToReservation"
-            }, {
-                name: "ticketStatusHistories",
-                type: "TicketStatusHistory",
-                relationName: "ParticipationToTicketStatusHistory"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToParticipation"
-            }, {
-                name: "evaluation",
-                type: "Evaluation",
-                relationName: "EvaluationToParticipation"
-            }, {
-                name: "images",
-                type: "ParticipationImage",
-                relationName: "ParticipationToParticipationImage"
-            }, {
-                name: "statusHistories",
-                type: "ParticipationStatusHistory",
-                relationName: "ParticipationToParticipationStatusHistory"
-            }, {
-                name: "transactions",
-                type: "Transaction",
-                relationName: "ParticipationToTransaction"
-            }]
-    }, {
-        name: "ParticipationImage",
-        fields: [{
-                name: "participation",
-                type: "Participation",
-                relationName: "ParticipationToParticipationImage"
-            }]
-    }, {
-        name: "ParticipationStatusHistory",
-        fields: [{
-                name: "participation",
-                type: "Participation",
-                relationName: "ParticipationToParticipationStatusHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "ParticipationStatusHistoryToUser"
-            }]
-    }, {
-        name: "Place",
-        fields: [{
-                name: "city",
-                type: "City",
-                relationName: "CityToPlace"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToPlace"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "OpportunityToPlace"
             }]
     }, {
         name: "Reservation",
@@ -374,6 +361,100 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "ReservationHistoryToUser"
             }]
     }, {
+        name: "Participation",
+        fields: [{
+                name: "images",
+                type: "ParticipationImage",
+                relationName: "ParticipationToParticipationImage"
+            }, {
+                name: "user",
+                type: "User",
+                relationName: "ParticipationToUser"
+            }, {
+                name: "reservation",
+                type: "Reservation",
+                relationName: "ParticipationToReservation"
+            }, {
+                name: "ticketStatusHistories",
+                type: "TicketStatusHistory",
+                relationName: "ParticipationToTicketStatusHistory"
+            }, {
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToParticipation"
+            }, {
+                name: "evaluation",
+                type: "Evaluation",
+                relationName: "EvaluationToParticipation"
+            }, {
+                name: "statusHistories",
+                type: "ParticipationStatusHistory",
+                relationName: "ParticipationToParticipationStatusHistory"
+            }, {
+                name: "transactions",
+                type: "Transaction",
+                relationName: "ParticipationToTransaction"
+            }]
+    }, {
+        name: "ParticipationImage",
+        fields: [{
+                name: "participation",
+                type: "Participation",
+                relationName: "ParticipationToParticipationImage"
+            }]
+    }, {
+        name: "ParticipationStatusHistory",
+        fields: [{
+                name: "participation",
+                type: "Participation",
+                relationName: "ParticipationToParticipationStatusHistory"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "ParticipationStatusHistoryToUser"
+            }]
+    }, {
+        name: "Evaluation",
+        fields: [{
+                name: "participation",
+                type: "Participation",
+                relationName: "EvaluationToParticipation"
+            }, {
+                name: "evaluator",
+                type: "User",
+                relationName: "EvaluationToUser"
+            }, {
+                name: "histories",
+                type: "EvaluationHistory",
+                relationName: "EvaluationToEvaluationHistory"
+            }]
+    }, {
+        name: "EvaluationHistory",
+        fields: [{
+                name: "evaluation",
+                type: "Evaluation",
+                relationName: "EvaluationToEvaluationHistory"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "EvaluationHistoryToUser"
+            }]
+    }, {
+        name: "Utility",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToUtility"
+            }, {
+                name: "requiredForOpportunities",
+                type: "Opportunity",
+                relationName: "OpportunityToUtility"
+            }, {
+                name: "tickets",
+                type: "Ticket",
+                relationName: "TicketToUtility"
+            }]
+    }, {
         name: "Ticket",
         fields: [{
                 name: "wallet",
@@ -395,6 +476,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Ticket",
                 relationName: "TicketToTicketStatusHistory"
             }, {
+                name: "transaction",
+                type: "Transaction",
+                relationName: "TicketStatusHistoryToTransaction"
+            }, {
                 name: "participation",
                 type: "Participation",
                 relationName: "ParticipationToTicketStatusHistory"
@@ -402,10 +487,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "createdByUser",
                 type: "User",
                 relationName: "TicketStatusHistoryToUser"
-            }, {
-                name: "transaction",
-                type: "Transaction",
-                relationName: "TicketStatusHistoryToTransaction"
             }]
     }, {
         name: "Transaction",
@@ -425,87 +506,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "ticketStatusHistory",
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
-            }]
-    }, {
-        name: "Identity",
-        fields: [{
-                name: "user",
-                type: "User",
-                relationName: "IdentityToUser"
-            }]
-    }, {
-        name: "User",
-        fields: [{
-                name: "identities",
-                type: "Identity",
-                relationName: "IdentityToUser"
-            }, {
-                name: "memberships",
-                type: "Membership",
-                relationName: "MembershipToUser"
-            }, {
-                name: "membershipChangedByMe",
-                type: "MembershipHistory",
-                relationName: "MembershipHistoryToUser"
-            }, {
-                name: "wallets",
-                type: "Wallet",
-                relationName: "UserToWallet"
-            }, {
-                name: "opportunitiesCreatedByMe",
-                type: "Opportunity",
-                relationName: "OpportunityToUser"
-            }, {
-                name: "reservationsAppliedByMe",
-                type: "Reservation",
-                relationName: "ReservationToUser"
-            }, {
-                name: "reservationStatusChangedByMe",
-                type: "ReservationHistory",
-                relationName: "ReservationHistoryToUser"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "ParticipationToUser"
-            }, {
-                name: "participationStatusChangedByMe",
-                type: "ParticipationStatusHistory",
-                relationName: "ParticipationStatusHistoryToUser"
-            }, {
-                name: "evaluationsEvaluatedByMe",
-                type: "Evaluation",
-                relationName: "EvaluationToUser"
-            }, {
-                name: "evaluationCreatedByMe",
-                type: "EvaluationHistory",
-                relationName: "EvaluationHistoryToUser"
-            }, {
-                name: "articlesWrittenByMe",
-                type: "Article",
-                relationName: "t_author_users_on_articles"
-            }, {
-                name: "articlesAboutMe",
-                type: "Article",
-                relationName: "t_related_users_on_articles"
-            }, {
-                name: "ticketStatusChangedByMe",
-                type: "TicketStatusHistory",
-                relationName: "TicketStatusHistoryToUser"
-            }]
-    }, {
-        name: "Utility",
-        fields: [{
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToUtility"
-            }, {
-                name: "requiredForOpportunities",
-                type: "Opportunity",
-                relationName: "OpportunityToUtility"
-            }, {
-                name: "tickets",
-                type: "Ticket",
-                relationName: "TicketToUtility"
             }]
     }, {
         name: "MembershipParticipationGeoView",
@@ -551,247 +551,66 @@ const modelFieldDefinitions: ModelWithFields[] = [{
             }]
     }];
 
-type ArticleScalarOrEnumFields = {
-    title: string;
-    introduction: string;
-    category: ArticleCategory;
-    body: string;
-    publishedAt: Date;
-};
-
-type ArticlecommunityFactory = {
-    _factoryFor: "Community";
-    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutArticlesInput["create"]>;
-};
-
-type ArticleFactoryDefineInput = {
-    id?: string;
-    title?: string;
-    introduction?: string;
-    category?: ArticleCategory;
-    publishStatus?: PublishStatus;
-    body?: string;
-    thumbnail?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
-    publishedAt?: Date;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    community: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput;
-    authors?: Prisma.UserCreateNestedManyWithoutArticlesWrittenByMeInput;
-    relatedUsers?: Prisma.UserCreateNestedManyWithoutArticlesAboutMeInput;
-    opportunities?: Prisma.OpportunityCreateNestedManyWithoutArticlesInput;
-};
-
-type ArticleTransientFields = Record<string, unknown> & Partial<Record<keyof ArticleFactoryDefineInput, never>>;
-
-type ArticleFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<ArticleFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Article, Prisma.ArticleCreateInput, TTransients>;
-
-type ArticleFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<ArticleFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: ArticleFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Article, Prisma.ArticleCreateInput, TTransients>;
-
-function isArticlecommunityFactory(x: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput | undefined): x is ArticlecommunityFactory {
-    return (x as any)?._factoryFor === "Community";
-}
-
-type ArticleTraitKeys<TOptions extends ArticleFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface ArticleFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Article";
-    build(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Prisma.ArticleCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Prisma.ArticleCreateInput>;
-    buildList(list: readonly Partial<Prisma.ArticleCreateInput & TTransients>[]): PromiseLike<Prisma.ArticleCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Prisma.ArticleCreateInput[]>;
-    pickForConnect(inputData: Article): Pick<Article, "id">;
-    create(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Article>;
-    createList(list: readonly Partial<Prisma.ArticleCreateInput & TTransients>[]): PromiseLike<Article[]>;
-    createList(count: number, item?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Article[]>;
-    createForConnect(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Pick<Article, "id">>;
-}
-
-export interface ArticleFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ArticleFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): ArticleFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateArticleScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): ArticleScalarOrEnumFields {
-    return {
-        title: getScalarFieldValueGenerator().String({ modelName: "Article", fieldName: "title", isId: false, isUnique: false, seq }),
-        introduction: getScalarFieldValueGenerator().String({ modelName: "Article", fieldName: "introduction", isId: false, isUnique: false, seq }),
-        category: "ACTIVITY_REPORT",
-        body: getScalarFieldValueGenerator().String({ modelName: "Article", fieldName: "body", isId: false, isUnique: false, seq }),
-        publishedAt: getScalarFieldValueGenerator().DateTime({ modelName: "Article", fieldName: "publishedAt", isId: false, isUnique: false, seq })
-    };
-}
-
-function defineArticleFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ArticleFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ArticleFactoryInterface<TTransients, ArticleTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly ArticleTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Article", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.ArticleCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateArticleScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<ArticleFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<ArticleFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                community: isArticlecommunityFactory(defaultData.community) ? {
-                    create: await defaultData.community.build()
-                } : defaultData.community
-            } as Prisma.ArticleCreateInput;
-            const data: Prisma.ArticleCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ArticleCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Article) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.ArticleCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().article.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ArticleCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.ArticleCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Article" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: ArticleTraitKeys<TOptions>, ...names: readonly ArticleTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface ArticleFactoryBuilder {
-    <TOptions extends ArticleFactoryDefineOptions>(options: TOptions): ArticleFactoryInterface<{}, ArticleTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ArticleTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ArticleFactoryDefineOptions<TTransients>>(options: TOptions) => ArticleFactoryInterface<TTransients, ArticleTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link Article} model.
- *
- * @param options
- * @returns factory {@link ArticleFactoryInterface}
- */
-export const defineArticleFactory = (<TOptions extends ArticleFactoryDefineOptions>(options: TOptions): ArticleFactoryInterface<TOptions> => {
-    return defineArticleFactoryInternal(options, {});
-}) as ArticleFactoryBuilder;
-
-defineArticleFactory.withTransientFields = defaultTransientFieldValues => options => defineArticleFactoryInternal(options, defaultTransientFieldValues);
-
-type CommunityScalarOrEnumFields = {
+type StateScalarOrEnumFields = {
+    code: string;
     name: string;
-    pointName: string;
+    countryCode: string;
 };
 
-type CommunityFactoryDefineInput = {
-    id?: string;
+type StateFactoryDefineInput = {
+    code?: string;
     name?: string;
-    pointName?: string;
-    image?: string | null;
-    bio?: string | null;
-    establishedAt?: Date | null;
-    website?: string | null;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
-    memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
-    wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
-    utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
-    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
-    articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
+    countryCode?: string;
+    cities?: Prisma.CityCreateNestedManyWithoutStateInput;
 };
 
-type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
+type StateTransientFields = Record<string, unknown> & Partial<Record<keyof StateFactoryDefineInput, never>>;
 
-type CommunityFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<CommunityFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Community, Prisma.CommunityCreateInput, TTransients>;
+type StateFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<StateFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<State, Prisma.StateCreateInput, TTransients>;
 
-type CommunityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<CommunityFactoryDefineInput, BuildDataOptions<TTransients>>;
+type StateFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<StateFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: TraitName]: CommunityFactoryTrait<TTransients>;
+        [traitName: TraitName]: StateFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<Community, Prisma.CommunityCreateInput, TTransients>;
+} & CallbackDefineOptions<State, Prisma.StateCreateInput, TTransients>;
 
-type CommunityTraitKeys<TOptions extends CommunityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+type StateTraitKeys<TOptions extends StateFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
-export interface CommunityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Community";
-    build(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Prisma.CommunityCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Prisma.CommunityCreateInput>;
-    buildList(list: readonly Partial<Prisma.CommunityCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Prisma.CommunityCreateInput[]>;
-    pickForConnect(inputData: Community): Pick<Community, "id">;
-    create(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Community>;
-    createList(list: readonly Partial<Prisma.CommunityCreateInput & TTransients>[]): PromiseLike<Community[]>;
-    createList(count: number, item?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Community[]>;
-    createForConnect(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Pick<Community, "id">>;
+export interface StateFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "State";
+    build(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Prisma.StateCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Prisma.StateCreateInput>;
+    buildList(list: readonly Partial<Prisma.StateCreateInput & TTransients>[]): PromiseLike<Prisma.StateCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Prisma.StateCreateInput[]>;
+    pickForConnect(inputData: State): Pick<State, "code" | "countryCode">;
+    create(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<State>;
+    createList(list: readonly Partial<Prisma.StateCreateInput & TTransients>[]): PromiseLike<State[]>;
+    createList(count: number, item?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<State[]>;
+    createForConnect(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Pick<State, "code" | "countryCode">>;
 }
 
-export interface CommunityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityFactoryInterfaceWithoutTraits<TTransients>;
+export interface StateFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends StateFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): StateFactoryInterfaceWithoutTraits<TTransients>;
 }
 
-function autoGenerateCommunityScalarsOrEnums({ seq }: {
+function autoGenerateStateScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): CommunityScalarOrEnumFields {
+}): StateScalarOrEnumFields {
     return {
-        name: getScalarFieldValueGenerator().String({ modelName: "Community", fieldName: "name", isId: false, isUnique: false, seq }),
-        pointName: getScalarFieldValueGenerator().String({ modelName: "Community", fieldName: "pointName", isId: false, isUnique: false, seq })
+        code: getScalarFieldValueGenerator().String({ modelName: "State", fieldName: "code", isId: true, isUnique: false, seq }),
+        name: getScalarFieldValueGenerator().String({ modelName: "State", fieldName: "name", isId: false, isUnique: false, seq }),
+        countryCode: getScalarFieldValueGenerator().String({ modelName: "State", fieldName: "countryCode", isId: true, isUnique: false, seq })
     };
 }
 
-function defineCommunityFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityFactoryInterface<TTransients, CommunityTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly CommunityTraitKeys<TOptions>[] = []) => {
+function defineStateFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends StateFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): StateFactoryInterface<TTransients, StateTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly StateTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Community", modelFieldDefinitions);
+        const screen = createScreener("State", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -804,42 +623,43 @@ function defineCommunityFactoryInternal<TTransients extends Record<string, unkno
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.CommunityCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.StateCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateCommunityScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<CommunityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const requiredScalarData = autoGenerateStateScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<StateFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<CommunityFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<StateFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.CommunityCreateInput;
-            const data: Prisma.CommunityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            const defaultAssociations = {} as Prisma.StateCreateInput;
+            const data: Prisma.StateCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Community) => ({
-            id: inputData.id
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StateCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: State) => ({
+            code: inputData.code,
+            countryCode: inputData.countryCode
         });
-        const create = async (inputData: Partial<Prisma.CommunityCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.StateCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().community.create({ data });
+            const createdData = await getClient<PrismaClient>().state.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.CommunityCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StateCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.StateCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "Community" as const,
+            _factoryFor: "State" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -850,7 +670,7 @@ function defineCommunityFactoryInternal<TTransients extends Record<string, unkno
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: CommunityTraitKeys<TOptions>, ...names: readonly CommunityTraitKeys<TOptions>[]) => {
+    const useTraits = (name: StateTraitKeys<TOptions>, ...names: readonly StateTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -859,356 +679,22 @@ function defineCommunityFactoryInternal<TTransients extends Record<string, unkno
     };
 }
 
-interface CommunityFactoryBuilder {
-    <TOptions extends CommunityFactoryDefineOptions>(options?: TOptions): CommunityFactoryInterface<{}, CommunityTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends CommunityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityFactoryInterface<TTransients, CommunityTraitKeys<TOptions>>;
+interface StateFactoryBuilder {
+    <TOptions extends StateFactoryDefineOptions>(options?: TOptions): StateFactoryInterface<{}, StateTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends StateTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends StateFactoryDefineOptions<TTransients>>(options?: TOptions) => StateFactoryInterface<TTransients, StateTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link Community} model.
+ * Define factory for {@link State} model.
  *
  * @param options
- * @returns factory {@link CommunityFactoryInterface}
+ * @returns factory {@link StateFactoryInterface}
  */
-export const defineCommunityFactory = (<TOptions extends CommunityFactoryDefineOptions>(options?: TOptions): CommunityFactoryInterface<TOptions> => {
-    return defineCommunityFactoryInternal(options ?? {}, {});
-}) as CommunityFactoryBuilder;
+export const defineStateFactory = (<TOptions extends StateFactoryDefineOptions>(options?: TOptions): StateFactoryInterface<TOptions> => {
+    return defineStateFactoryInternal(options ?? {}, {});
+}) as StateFactoryBuilder;
 
-defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type EvaluationScalarOrEnumFields = {};
-
-type EvaluationparticipationFactory = {
-    _factoryFor: "Participation";
-    build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutEvaluationInput["create"]>;
-};
-
-type EvaluationevaluatorFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput["create"]>;
-};
-
-type EvaluationFactoryDefineInput = {
-    id?: string;
-    status?: EvaluationStatus;
-    comment?: string | null;
-    credentialUrl?: string | null;
-    issuedAt?: Date | null;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    participation: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput;
-    evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput;
-    histories?: Prisma.EvaluationHistoryCreateNestedManyWithoutEvaluationInput;
-};
-
-type EvaluationTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationFactoryDefineInput, never>>;
-
-type EvaluationFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<EvaluationFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Evaluation, Prisma.EvaluationCreateInput, TTransients>;
-
-type EvaluationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<EvaluationFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: EvaluationFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Evaluation, Prisma.EvaluationCreateInput, TTransients>;
-
-function isEvaluationparticipationFactory(x: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput | undefined): x is EvaluationparticipationFactory {
-    return (x as any)?._factoryFor === "Participation";
-}
-
-function isEvaluationevaluatorFactory(x: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput | undefined): x is EvaluationevaluatorFactory {
-    return (x as any)?._factoryFor === "User";
-}
-
-type EvaluationTraitKeys<TOptions extends EvaluationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface EvaluationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Evaluation";
-    build(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput>;
-    buildList(list: readonly Partial<Prisma.EvaluationCreateInput & TTransients>[]): PromiseLike<Prisma.EvaluationCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput[]>;
-    pickForConnect(inputData: Evaluation): Pick<Evaluation, "id">;
-    create(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Evaluation>;
-    createList(list: readonly Partial<Prisma.EvaluationCreateInput & TTransients>[]): PromiseLike<Evaluation[]>;
-    createList(count: number, item?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Evaluation[]>;
-    createForConnect(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Pick<Evaluation, "id">>;
-}
-
-export interface EvaluationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EvaluationFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): EvaluationFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateEvaluationScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): EvaluationScalarOrEnumFields {
-    return {};
-}
-
-function defineEvaluationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends EvaluationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): EvaluationFactoryInterface<TTransients, EvaluationTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly EvaluationTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Evaluation", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.EvaluationCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateEvaluationScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<EvaluationFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<EvaluationFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                participation: isEvaluationparticipationFactory(defaultData.participation) ? {
-                    create: await defaultData.participation.build()
-                } : defaultData.participation,
-                evaluator: isEvaluationevaluatorFactory(defaultData.evaluator) ? {
-                    create: await defaultData.evaluator.build()
-                } : defaultData.evaluator
-            } as Prisma.EvaluationCreateInput;
-            const data: Prisma.EvaluationCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Evaluation) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.EvaluationCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().evaluation.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.EvaluationCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Evaluation" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: EvaluationTraitKeys<TOptions>, ...names: readonly EvaluationTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface EvaluationFactoryBuilder {
-    <TOptions extends EvaluationFactoryDefineOptions>(options: TOptions): EvaluationFactoryInterface<{}, EvaluationTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends EvaluationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EvaluationFactoryDefineOptions<TTransients>>(options: TOptions) => EvaluationFactoryInterface<TTransients, EvaluationTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link Evaluation} model.
- *
- * @param options
- * @returns factory {@link EvaluationFactoryInterface}
- */
-export const defineEvaluationFactory = (<TOptions extends EvaluationFactoryDefineOptions>(options: TOptions): EvaluationFactoryInterface<TOptions> => {
-    return defineEvaluationFactoryInternal(options, {});
-}) as EvaluationFactoryBuilder;
-
-defineEvaluationFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationFactoryInternal(options, defaultTransientFieldValues);
-
-type EvaluationHistoryScalarOrEnumFields = {
-    status: EvaluationStatus;
-};
-
-type EvaluationHistoryevaluationFactory = {
-    _factoryFor: "Evaluation";
-    build: () => PromiseLike<Prisma.EvaluationCreateNestedOneWithoutHistoriesInput["create"]>;
-};
-
-type EvaluationHistorycreatedByUserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput["create"]>;
-};
-
-type EvaluationHistoryFactoryDefineInput = {
-    id?: string;
-    status?: EvaluationStatus;
-    comment?: string | null;
-    createdAt?: Date;
-    evaluation: EvaluationHistoryevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutHistoriesInput;
-    createdByUser?: EvaluationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput;
-};
-
-type EvaluationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationHistoryFactoryDefineInput, never>>;
-
-type EvaluationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<EvaluationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<EvaluationHistory, Prisma.EvaluationHistoryCreateInput, TTransients>;
-
-type EvaluationHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<EvaluationHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: EvaluationHistoryFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<EvaluationHistory, Prisma.EvaluationHistoryCreateInput, TTransients>;
-
-function isEvaluationHistoryevaluationFactory(x: EvaluationHistoryevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutHistoriesInput | undefined): x is EvaluationHistoryevaluationFactory {
-    return (x as any)?._factoryFor === "Evaluation";
-}
-
-function isEvaluationHistorycreatedByUserFactory(x: EvaluationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput | undefined): x is EvaluationHistorycreatedByUserFactory {
-    return (x as any)?._factoryFor === "User";
-}
-
-type EvaluationHistoryTraitKeys<TOptions extends EvaluationHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "EvaluationHistory";
-    build(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput>;
-    buildList(list: readonly Partial<Prisma.EvaluationHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.EvaluationHistoryCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput[]>;
-    pickForConnect(inputData: EvaluationHistory): Pick<EvaluationHistory, "id">;
-    create(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<EvaluationHistory>;
-    createList(list: readonly Partial<Prisma.EvaluationHistoryCreateInput & TTransients>[]): PromiseLike<EvaluationHistory[]>;
-    createList(count: number, item?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<EvaluationHistory[]>;
-    createForConnect(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Pick<EvaluationHistory, "id">>;
-}
-
-export interface EvaluationHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateEvaluationHistoryScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): EvaluationHistoryScalarOrEnumFields {
-    return {
-        status: "PENDING"
-    };
-}
-
-function defineEvaluationHistoryFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends EvaluationHistoryFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): EvaluationHistoryFactoryInterface<TTransients, EvaluationHistoryTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly EvaluationHistoryTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("EvaluationHistory", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.EvaluationHistoryCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateEvaluationHistoryScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<EvaluationHistoryFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<EvaluationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                evaluation: isEvaluationHistoryevaluationFactory(defaultData.evaluation) ? {
-                    create: await defaultData.evaluation.build()
-                } : defaultData.evaluation,
-                createdByUser: isEvaluationHistorycreatedByUserFactory(defaultData.createdByUser) ? {
-                    create: await defaultData.createdByUser.build()
-                } : defaultData.createdByUser
-            } as Prisma.EvaluationHistoryCreateInput;
-            const data: Prisma.EvaluationHistoryCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationHistoryCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: EvaluationHistory) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.EvaluationHistoryCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().evaluationHistory.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationHistoryCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.EvaluationHistoryCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "EvaluationHistory" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: EvaluationHistoryTraitKeys<TOptions>, ...names: readonly EvaluationHistoryTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface EvaluationHistoryFactoryBuilder {
-    <TOptions extends EvaluationHistoryFactoryDefineOptions>(options: TOptions): EvaluationHistoryFactoryInterface<{}, EvaluationHistoryTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends EvaluationHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EvaluationHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => EvaluationHistoryFactoryInterface<TTransients, EvaluationHistoryTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link EvaluationHistory} model.
- *
- * @param options
- * @returns factory {@link EvaluationHistoryFactoryInterface}
- */
-export const defineEvaluationHistoryFactory = (<TOptions extends EvaluationHistoryFactoryDefineOptions>(options: TOptions): EvaluationHistoryFactoryInterface<TOptions> => {
-    return defineEvaluationHistoryFactoryInternal(options, {});
-}) as EvaluationHistoryFactoryBuilder;
-
-defineEvaluationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationHistoryFactoryInternal(options, defaultTransientFieldValues);
+defineStateFactory.withTransientFields = defaultTransientFieldValues => options => defineStateFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type CityScalarOrEnumFields = {
     code: string;
@@ -1365,66 +851,97 @@ export const defineCityFactory = (<TOptions extends CityFactoryDefineOptions>(op
 
 defineCityFactory.withTransientFields = defaultTransientFieldValues => options => defineCityFactoryInternal(options, defaultTransientFieldValues);
 
-type StateScalarOrEnumFields = {
-    code: string;
+type PlaceScalarOrEnumFields = {
     name: string;
-    countryCode: string;
+    address: string;
+    latitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    longitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    isManual: boolean;
 };
 
-type StateFactoryDefineInput = {
-    code?: string;
+type PlacecityFactory = {
+    _factoryFor: "City";
+    build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutPlacesInput["create"]>;
+};
+
+type PlacecommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutPlacesInput["create"]>;
+};
+
+type PlaceFactoryDefineInput = {
+    id?: string;
     name?: string;
-    countryCode?: string;
-    cities?: Prisma.CityCreateNestedManyWithoutStateInput;
+    address?: string;
+    latitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    longitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
+    isManual?: boolean;
+    googlePlaceId?: string | null;
+    mapLocation?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
+    community?: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
 };
 
-type StateTransientFields = Record<string, unknown> & Partial<Record<keyof StateFactoryDefineInput, never>>;
+type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;
 
-type StateFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<StateFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<State, Prisma.StateCreateInput, TTransients>;
+type PlaceFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<PlaceFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Place, Prisma.PlaceCreateInput, TTransients>;
 
-type StateFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<StateFactoryDefineInput, BuildDataOptions<TTransients>>;
+type PlaceFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<PlaceFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: TraitName]: StateFactoryTrait<TTransients>;
+        [traitName: string | symbol]: PlaceFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<State, Prisma.StateCreateInput, TTransients>;
+} & CallbackDefineOptions<Place, Prisma.PlaceCreateInput, TTransients>;
 
-type StateTraitKeys<TOptions extends StateFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface StateFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "State";
-    build(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Prisma.StateCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Prisma.StateCreateInput>;
-    buildList(list: readonly Partial<Prisma.StateCreateInput & TTransients>[]): PromiseLike<Prisma.StateCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Prisma.StateCreateInput[]>;
-    pickForConnect(inputData: State): Pick<State, "code" | "countryCode">;
-    create(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<State>;
-    createList(list: readonly Partial<Prisma.StateCreateInput & TTransients>[]): PromiseLike<State[]>;
-    createList(count: number, item?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<State[]>;
-    createForConnect(inputData?: Partial<Prisma.StateCreateInput & TTransients>): PromiseLike<Pick<State, "code" | "countryCode">>;
+function isPlacecityFactory(x: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput | undefined): x is PlacecityFactory {
+    return (x as any)?._factoryFor === "City";
 }
 
-export interface StateFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends StateFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): StateFactoryInterfaceWithoutTraits<TTransients>;
+function isPlacecommunityFactory(x: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput | undefined): x is PlacecommunityFactory {
+    return (x as any)?._factoryFor === "Community";
 }
 
-function autoGenerateStateScalarsOrEnums({ seq }: {
+type PlaceTraitKeys<TOptions extends PlaceFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface PlaceFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Place";
+    build(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Prisma.PlaceCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Prisma.PlaceCreateInput>;
+    buildList(list: readonly Partial<Prisma.PlaceCreateInput & TTransients>[]): PromiseLike<Prisma.PlaceCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Prisma.PlaceCreateInput[]>;
+    pickForConnect(inputData: Place): Pick<Place, "id">;
+    create(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Place>;
+    createList(list: readonly Partial<Prisma.PlaceCreateInput & TTransients>[]): PromiseLike<Place[]>;
+    createList(count: number, item?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Place[]>;
+    createForConnect(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Pick<Place, "id">>;
+}
+
+export interface PlaceFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends PlaceFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): PlaceFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGeneratePlaceScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): StateScalarOrEnumFields {
+}): PlaceScalarOrEnumFields {
     return {
-        code: getScalarFieldValueGenerator().String({ modelName: "State", fieldName: "code", isId: true, isUnique: false, seq }),
-        name: getScalarFieldValueGenerator().String({ modelName: "State", fieldName: "name", isId: false, isUnique: false, seq }),
-        countryCode: getScalarFieldValueGenerator().String({ modelName: "State", fieldName: "countryCode", isId: true, isUnique: false, seq })
+        name: getScalarFieldValueGenerator().String({ modelName: "Place", fieldName: "name", isId: false, isUnique: false, seq }),
+        address: getScalarFieldValueGenerator().String({ modelName: "Place", fieldName: "address", isId: false, isUnique: false, seq }),
+        latitude: getScalarFieldValueGenerator().Decimal({ modelName: "Place", fieldName: "latitude", isId: false, isUnique: false, seq }),
+        longitude: getScalarFieldValueGenerator().Decimal({ modelName: "Place", fieldName: "longitude", isId: false, isUnique: false, seq }),
+        isManual: getScalarFieldValueGenerator().Boolean({ modelName: "Place", fieldName: "isManual", isId: false, isUnique: false, seq })
     };
 }
 
-function defineStateFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends StateFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): StateFactoryInterface<TTransients, StateTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly StateTraitKeys<TOptions>[] = []) => {
+function definePlaceFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends PlaceFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): PlaceFactoryInterface<TTransients, PlaceTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly PlaceTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("State", modelFieldDefinitions);
+        const screen = createScreener("Place", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -1437,43 +954,49 @@ function defineStateFactoryInternal<TTransients extends Record<string, unknown>,
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.StateCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.PlaceCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateStateScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<StateFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const requiredScalarData = autoGeneratePlaceScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<PlaceFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<StateFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<PlaceFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.StateCreateInput;
-            const data: Prisma.StateCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            const defaultAssociations = {
+                city: isPlacecityFactory(defaultData.city) ? {
+                    create: await defaultData.city.build()
+                } : defaultData.city,
+                community: isPlacecommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
+            } as Prisma.PlaceCreateInput;
+            const data: Prisma.PlaceCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StateCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: State) => ({
-            code: inputData.code,
-            countryCode: inputData.countryCode
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlaceCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Place) => ({
+            id: inputData.id
         });
-        const create = async (inputData: Partial<Prisma.StateCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.PlaceCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().state.create({ data });
+            const createdData = await getClient<PrismaClient>().place.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StateCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.StateCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlaceCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.PlaceCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "State" as const,
+            _factoryFor: "Place" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -1484,7 +1007,7 @@ function defineStateFactoryInternal<TTransients extends Record<string, unknown>,
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: StateTraitKeys<TOptions>, ...names: readonly StateTraitKeys<TOptions>[]) => {
+    const useTraits = (name: PlaceTraitKeys<TOptions>, ...names: readonly PlaceTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -1493,22 +1016,501 @@ function defineStateFactoryInternal<TTransients extends Record<string, unknown>,
     };
 }
 
-interface StateFactoryBuilder {
-    <TOptions extends StateFactoryDefineOptions>(options?: TOptions): StateFactoryInterface<{}, StateTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends StateTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends StateFactoryDefineOptions<TTransients>>(options?: TOptions) => StateFactoryInterface<TTransients, StateTraitKeys<TOptions>>;
+interface PlaceFactoryBuilder {
+    <TOptions extends PlaceFactoryDefineOptions>(options: TOptions): PlaceFactoryInterface<{}, PlaceTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends PlaceTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends PlaceFactoryDefineOptions<TTransients>>(options: TOptions) => PlaceFactoryInterface<TTransients, PlaceTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link State} model.
+ * Define factory for {@link Place} model.
  *
  * @param options
- * @returns factory {@link StateFactoryInterface}
+ * @returns factory {@link PlaceFactoryInterface}
  */
-export const defineStateFactory = (<TOptions extends StateFactoryDefineOptions>(options?: TOptions): StateFactoryInterface<TOptions> => {
-    return defineStateFactoryInternal(options ?? {}, {});
-}) as StateFactoryBuilder;
+export const definePlaceFactory = (<TOptions extends PlaceFactoryDefineOptions>(options: TOptions): PlaceFactoryInterface<TOptions> => {
+    return definePlaceFactoryInternal(options, {});
+}) as PlaceFactoryBuilder;
 
-defineStateFactory.withTransientFields = defaultTransientFieldValues => options => defineStateFactoryInternal(options ?? {}, defaultTransientFieldValues);
+definePlaceFactory.withTransientFields = defaultTransientFieldValues => options => definePlaceFactoryInternal(options, defaultTransientFieldValues);
+
+type CommunityScalarOrEnumFields = {
+    name: string;
+    pointName: string;
+};
+
+type CommunityFactoryDefineInput = {
+    id?: string;
+    name?: string;
+    pointName?: string;
+    image?: string | null;
+    bio?: string | null;
+    establishedAt?: Date | null;
+    website?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
+    memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
+    wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
+    utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutCommunityInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutCommunityInput;
+    articles?: Prisma.ArticleCreateNestedManyWithoutCommunityInput;
+};
+
+type CommunityTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFactoryDefineInput, never>>;
+
+type CommunityFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Community, Prisma.CommunityCreateInput, TTransients>;
+
+type CommunityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<CommunityFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: CommunityFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Community, Prisma.CommunityCreateInput, TTransients>;
+
+type CommunityTraitKeys<TOptions extends CommunityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Community";
+    build(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Prisma.CommunityCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Prisma.CommunityCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Prisma.CommunityCreateInput[]>;
+    pickForConnect(inputData: Community): Pick<Community, "id">;
+    create(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Community>;
+    createList(list: readonly Partial<Prisma.CommunityCreateInput & TTransients>[]): PromiseLike<Community[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Community[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityCreateInput & TTransients>): PromiseLike<Pick<Community, "id">>;
+}
+
+export interface CommunityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityScalarOrEnumFields {
+    return {
+        name: getScalarFieldValueGenerator().String({ modelName: "Community", fieldName: "name", isId: false, isUnique: false, seq }),
+        pointName: getScalarFieldValueGenerator().String({ modelName: "Community", fieldName: "pointName", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityFactoryInterface<TTransients, CommunityTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Community", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.CommunityCreateInput;
+            const data: Prisma.CommunityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Community) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().community.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Community" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityTraitKeys<TOptions>, ...names: readonly CommunityTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityFactoryBuilder {
+    <TOptions extends CommunityFactoryDefineOptions>(options?: TOptions): CommunityFactoryInterface<{}, CommunityTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityFactoryInterface<TTransients, CommunityTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Community} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityFactoryInterface}
+ */
+export const defineCommunityFactory = (<TOptions extends CommunityFactoryDefineOptions>(options?: TOptions): CommunityFactoryInterface<TOptions> => {
+    return defineCommunityFactoryInternal(options ?? {}, {});
+}) as CommunityFactoryBuilder;
+
+defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type UserScalarOrEnumFields = {
+    name: string;
+    slug: string;
+    currentPrefecture: CurrentPrefecture;
+};
+
+type UserFactoryDefineInput = {
+    id?: string;
+    name?: string;
+    slug?: string;
+    image?: string | null;
+    bio?: string | null;
+    sysRole?: SysRole;
+    urlWebsite?: string | null;
+    urlX?: string | null;
+    urlFacebook?: string | null;
+    urlInstagram?: string | null;
+    urlYoutube?: string | null;
+    urlTiktok?: string | null;
+    currentPrefecture?: CurrentPrefecture;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
+    memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+    membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
+    wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
+    ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
+    opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
+    reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
+    reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
+    participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
+    evaluationsEvaluatedByMe?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
+    evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
+    articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
+    articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
+};
+
+type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
+
+type UserFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UserFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<User, Prisma.UserCreateInput, TTransients>;
+
+type UserFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<UserFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: UserFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<User, Prisma.UserCreateInput, TTransients>;
+
+type UserTraitKeys<TOptions extends UserFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UserFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "User";
+    build(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Prisma.UserCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Prisma.UserCreateInput>;
+    buildList(list: readonly Partial<Prisma.UserCreateInput & TTransients>[]): PromiseLike<Prisma.UserCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Prisma.UserCreateInput[]>;
+    pickForConnect(inputData: User): Pick<User, "id">;
+    create(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<User>;
+    createList(list: readonly Partial<Prisma.UserCreateInput & TTransients>[]): PromiseLike<User[]>;
+    createList(count: number, item?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<User[]>;
+    createForConnect(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Pick<User, "id">>;
+}
+
+export interface UserFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UserFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUserScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UserScalarOrEnumFields {
+    return {
+        name: getScalarFieldValueGenerator().String({ modelName: "User", fieldName: "name", isId: false, isUnique: false, seq }),
+        slug: getScalarFieldValueGenerator().String({ modelName: "User", fieldName: "slug", isId: false, isUnique: false, seq }),
+        currentPrefecture: "KAGAWA"
+    };
+}
+
+function defineUserFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserFactoryInterface<TTransients, UserTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UserTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("User", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UserCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUserScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UserFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UserFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.UserCreateInput;
+            const data: Prisma.UserCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: User) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.UserCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().user.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UserCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "User" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UserTraitKeys<TOptions>, ...names: readonly UserTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UserFactoryBuilder {
+    <TOptions extends UserFactoryDefineOptions>(options?: TOptions): UserFactoryInterface<{}, UserTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UserTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserFactoryDefineOptions<TTransients>>(options?: TOptions) => UserFactoryInterface<TTransients, UserTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link User} model.
+ *
+ * @param options
+ * @returns factory {@link UserFactoryInterface}
+ */
+export const defineUserFactory = (<TOptions extends UserFactoryDefineOptions>(options?: TOptions): UserFactoryInterface<TOptions> => {
+    return defineUserFactoryInternal(options ?? {}, {});
+}) as UserFactoryBuilder;
+
+defineUserFactory.withTransientFields = defaultTransientFieldValues => options => defineUserFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type IdentityScalarOrEnumFields = {
+    uid: string;
+    platform: IdentityPlatform;
+};
+
+type IdentityuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIdentitiesInput["create"]>;
+};
+
+type IdentityFactoryDefineInput = {
+    uid?: string;
+    platform?: IdentityPlatform;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput;
+};
+
+type IdentityTransientFields = Record<string, unknown> & Partial<Record<keyof IdentityFactoryDefineInput, never>>;
+
+type IdentityFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<IdentityFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Identity, Prisma.IdentityCreateInput, TTransients>;
+
+type IdentityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<IdentityFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: IdentityFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Identity, Prisma.IdentityCreateInput, TTransients>;
+
+function isIdentityuserFactory(x: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput | undefined): x is IdentityuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type IdentityTraitKeys<TOptions extends IdentityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface IdentityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Identity";
+    build(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput>;
+    buildList(list: readonly Partial<Prisma.IdentityCreateInput & TTransients>[]): PromiseLike<Prisma.IdentityCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput[]>;
+    pickForConnect(inputData: Identity): Pick<Identity, "uid">;
+    create(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Identity>;
+    createList(list: readonly Partial<Prisma.IdentityCreateInput & TTransients>[]): PromiseLike<Identity[]>;
+    createList(count: number, item?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Identity[]>;
+    createForConnect(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Pick<Identity, "uid">>;
+}
+
+export interface IdentityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IdentityFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): IdentityFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateIdentityScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): IdentityScalarOrEnumFields {
+    return {
+        uid: getScalarFieldValueGenerator().String({ modelName: "Identity", fieldName: "uid", isId: true, isUnique: false, seq }),
+        platform: "LINE"
+    };
+}
+
+function defineIdentityFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends IdentityFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): IdentityFactoryInterface<TTransients, IdentityTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly IdentityTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Identity", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateIdentityScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<IdentityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<IdentityFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isIdentityuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.IdentityCreateInput;
+            const data: Prisma.IdentityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IdentityCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Identity) => ({
+            uid: inputData.uid
+        });
+        const create = async (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().identity.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IdentityCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Identity" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: IdentityTraitKeys<TOptions>, ...names: readonly IdentityTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface IdentityFactoryBuilder {
+    <TOptions extends IdentityFactoryDefineOptions>(options: TOptions): IdentityFactoryInterface<{}, IdentityTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends IdentityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IdentityFactoryDefineOptions<TTransients>>(options: TOptions) => IdentityFactoryInterface<TTransients, IdentityTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Identity} model.
+ *
+ * @param options
+ * @returns factory {@link IdentityFactoryInterface}
+ */
+export const defineIdentityFactory = (<TOptions extends IdentityFactoryDefineOptions>(options: TOptions): IdentityFactoryInterface<TOptions> => {
+    return defineIdentityFactoryInternal(options, {});
+}) as IdentityFactoryBuilder;
+
+defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
 
 type MembershipScalarOrEnumFields = {
     status: MembershipStatus;
@@ -1707,7 +1709,6 @@ type MembershipHistoryFactoryDefineInput = {
     status?: MembershipStatus;
     reason?: MembershipStatusReason;
     createdAt?: Date;
-    updatedAt?: Date | null;
     membership: MembershipHistorymembershipFactory | Prisma.MembershipCreateNestedOneWithoutHistoriesInput;
     createdByUser?: MembershipHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutMembershipChangedByMeInput;
 };
@@ -2049,6 +2050,177 @@ export const defineWalletFactory = (<TOptions extends WalletFactoryDefineOptions
 
 defineWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineWalletFactoryInternal(options, defaultTransientFieldValues);
 
+type ArticleScalarOrEnumFields = {
+    title: string;
+    introduction: string;
+    category: ArticleCategory;
+    body: string;
+    publishedAt: Date;
+};
+
+type ArticlecommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutArticlesInput["create"]>;
+};
+
+type ArticleFactoryDefineInput = {
+    id?: string;
+    title?: string;
+    introduction?: string;
+    category?: ArticleCategory;
+    publishStatus?: PublishStatus;
+    body?: string;
+    thumbnail?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    publishedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    community: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput;
+    authors?: Prisma.UserCreateNestedManyWithoutArticlesWrittenByMeInput;
+    relatedUsers?: Prisma.UserCreateNestedManyWithoutArticlesAboutMeInput;
+    opportunities?: Prisma.OpportunityCreateNestedManyWithoutArticlesInput;
+};
+
+type ArticleTransientFields = Record<string, unknown> & Partial<Record<keyof ArticleFactoryDefineInput, never>>;
+
+type ArticleFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ArticleFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Article, Prisma.ArticleCreateInput, TTransients>;
+
+type ArticleFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ArticleFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ArticleFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Article, Prisma.ArticleCreateInput, TTransients>;
+
+function isArticlecommunityFactory(x: ArticlecommunityFactory | Prisma.CommunityCreateNestedOneWithoutArticlesInput | undefined): x is ArticlecommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+type ArticleTraitKeys<TOptions extends ArticleFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ArticleFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Article";
+    build(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Prisma.ArticleCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Prisma.ArticleCreateInput>;
+    buildList(list: readonly Partial<Prisma.ArticleCreateInput & TTransients>[]): PromiseLike<Prisma.ArticleCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Prisma.ArticleCreateInput[]>;
+    pickForConnect(inputData: Article): Pick<Article, "id">;
+    create(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Article>;
+    createList(list: readonly Partial<Prisma.ArticleCreateInput & TTransients>[]): PromiseLike<Article[]>;
+    createList(count: number, item?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Article[]>;
+    createForConnect(inputData?: Partial<Prisma.ArticleCreateInput & TTransients>): PromiseLike<Pick<Article, "id">>;
+}
+
+export interface ArticleFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ArticleFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ArticleFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateArticleScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ArticleScalarOrEnumFields {
+    return {
+        title: getScalarFieldValueGenerator().String({ modelName: "Article", fieldName: "title", isId: false, isUnique: false, seq }),
+        introduction: getScalarFieldValueGenerator().String({ modelName: "Article", fieldName: "introduction", isId: false, isUnique: false, seq }),
+        category: "ACTIVITY_REPORT",
+        body: getScalarFieldValueGenerator().String({ modelName: "Article", fieldName: "body", isId: false, isUnique: false, seq }),
+        publishedAt: getScalarFieldValueGenerator().DateTime({ modelName: "Article", fieldName: "publishedAt", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineArticleFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ArticleFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ArticleFactoryInterface<TTransients, ArticleTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ArticleTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Article", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ArticleCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateArticleScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ArticleFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ArticleFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isArticlecommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
+            } as Prisma.ArticleCreateInput;
+            const data: Prisma.ArticleCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ArticleCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Article) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ArticleCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().article.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ArticleCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ArticleCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Article" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ArticleTraitKeys<TOptions>, ...names: readonly ArticleTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ArticleFactoryBuilder {
+    <TOptions extends ArticleFactoryDefineOptions>(options: TOptions): ArticleFactoryInterface<{}, ArticleTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ArticleTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ArticleFactoryDefineOptions<TTransients>>(options: TOptions) => ArticleFactoryInterface<TTransients, ArticleTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Article} model.
+ *
+ * @param options
+ * @returns factory {@link ArticleFactoryInterface}
+ */
+export const defineArticleFactory = (<TOptions extends ArticleFactoryDefineOptions>(options: TOptions): ArticleFactoryInterface<TOptions> => {
+    return defineArticleFactoryInternal(options, {});
+}) as ArticleFactoryBuilder;
+
+defineArticleFactory.withTransientFields = defaultTransientFieldValues => options => defineArticleFactoryInternal(options, defaultTransientFieldValues);
+
 type OpportunityScalarOrEnumFields = {
     title: string;
     category: OpportunityCategory;
@@ -2060,11 +2232,6 @@ type OpportunityearliestReservableSlotViewFactory = {
     build: () => PromiseLike<Prisma.EarliestReservableSlotViewCreateNestedOneWithoutOpportunityInput["create"]>;
 };
 
-type OpportunitycreatedByUserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
-};
-
 type OpportunitycommunityFactory = {
     _factoryFor: "Community";
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput["create"]>;
@@ -2073,6 +2240,11 @@ type OpportunitycommunityFactory = {
 type OpportunityplaceFactory = {
     _factoryFor: "Place";
     build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput["create"]>;
+};
+
+type OpportunitycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput["create"]>;
 };
 
 type OpportunityFactoryDefineInput = {
@@ -2092,10 +2264,10 @@ type OpportunityFactoryDefineInput = {
     requiredUtilities?: Prisma.UtilityCreateNestedManyWithoutRequiredForOpportunitiesInput;
     slots?: Prisma.OpportunitySlotCreateNestedManyWithoutOpportunityInput;
     earliestReservableSlotView?: OpportunityearliestReservableSlotViewFactory | Prisma.EarliestReservableSlotViewCreateNestedOneWithoutOpportunityInput;
-    articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
-    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     place?: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput;
+    articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
+    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
 };
 
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
@@ -2115,16 +2287,16 @@ function isOpportunityearliestReservableSlotViewFactory(x: OpportunityearliestRe
     return (x as any)?._factoryFor === "EarliestReservableSlotView";
 }
 
-function isOpportunitycreatedByUserFactory(x: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput | undefined): x is OpportunitycreatedByUserFactory {
-    return (x as any)?._factoryFor === "User";
-}
-
 function isOpportunitycommunityFactory(x: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput | undefined): x is OpportunitycommunityFactory {
     return (x as any)?._factoryFor === "Community";
 }
 
 function isOpportunityplaceFactory(x: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined): x is OpportunityplaceFactory {
     return (x as any)?._factoryFor === "Place";
+}
+
+function isOpportunitycreatedByUserFactory(x: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput | undefined): x is OpportunitycreatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
 }
 
 type OpportunityTraitKeys<TOptions extends OpportunityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -2192,15 +2364,15 @@ function defineOpportunityFactoryInternal<TTransients extends Record<string, unk
                 earliestReservableSlotView: isOpportunityearliestReservableSlotViewFactory(defaultData.earliestReservableSlotView) ? {
                     create: await defaultData.earliestReservableSlotView.build()
                 } : defaultData.earliestReservableSlotView,
-                createdByUser: isOpportunitycreatedByUserFactory(defaultData.createdByUser) ? {
-                    create: await defaultData.createdByUser.build()
-                } : defaultData.createdByUser,
                 community: isOpportunitycommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
                 } : defaultData.community,
                 place: isOpportunityplaceFactory(defaultData.place) ? {
                     create: await defaultData.place.build()
-                } : defaultData.place
+                } : defaultData.place,
+                createdByUser: isOpportunitycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
             } as Prisma.OpportunityCreateInput;
             const data: Prisma.OpportunityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -2276,9 +2448,9 @@ type OpportunitySlotopportunityFactory = {
 type OpportunitySlotFactoryDefineInput = {
     id?: string;
     hostingStatus?: OpportunitySlotHostingStatus;
-    capacity?: number | null;
     startsAt?: Date;
     endsAt?: Date;
+    capacity?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     remainingCapacityView?: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput;
@@ -2431,6 +2603,337 @@ export const defineOpportunitySlotFactory = (<TOptions extends OpportunitySlotFa
 
 defineOpportunitySlotFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunitySlotFactoryInternal(options, defaultTransientFieldValues);
 
+type ReservationScalarOrEnumFields = {};
+
+type ReservationopportunitySlotFactory = {
+    _factoryFor: "OpportunitySlot";
+    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput["create"]>;
+};
+
+type ReservationcreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput["create"]>;
+};
+
+type ReservationFactoryDefineInput = {
+    id?: string;
+    status?: ReservationStatus;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    opportunitySlot: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutReservationInput;
+    createdByUser?: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput;
+    histories?: Prisma.ReservationHistoryCreateNestedManyWithoutReservationInput;
+};
+
+type ReservationTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationFactoryDefineInput, never>>;
+
+type ReservationFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReservationFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Reservation, Prisma.ReservationCreateInput, TTransients>;
+
+type ReservationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ReservationFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ReservationFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Reservation, Prisma.ReservationCreateInput, TTransients>;
+
+function isReservationopportunitySlotFactory(x: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput | undefined): x is ReservationopportunitySlotFactory {
+    return (x as any)?._factoryFor === "OpportunitySlot";
+}
+
+function isReservationcreatedByUserFactory(x: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput | undefined): x is ReservationcreatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type ReservationTraitKeys<TOptions extends ReservationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReservationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Reservation";
+    build(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Prisma.ReservationCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Prisma.ReservationCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReservationCreateInput & TTransients>[]): PromiseLike<Prisma.ReservationCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Prisma.ReservationCreateInput[]>;
+    pickForConnect(inputData: Reservation): Pick<Reservation, "id">;
+    create(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Reservation>;
+    createList(list: readonly Partial<Prisma.ReservationCreateInput & TTransients>[]): PromiseLike<Reservation[]>;
+    createList(count: number, item?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Reservation[]>;
+    createForConnect(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Pick<Reservation, "id">>;
+}
+
+export interface ReservationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReservationFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReservationFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReservationScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReservationScalarOrEnumFields {
+    return {};
+}
+
+function defineReservationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReservationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReservationFactoryInterface<TTransients, ReservationTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReservationTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Reservation", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReservationCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReservationScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReservationFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReservationFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                opportunitySlot: isReservationopportunitySlotFactory(defaultData.opportunitySlot) ? {
+                    create: await defaultData.opportunitySlot.build()
+                } : defaultData.opportunitySlot,
+                createdByUser: isReservationcreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
+            } as Prisma.ReservationCreateInput;
+            const data: Prisma.ReservationCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Reservation) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReservationCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().reservation.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReservationCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Reservation" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReservationTraitKeys<TOptions>, ...names: readonly ReservationTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReservationFactoryBuilder {
+    <TOptions extends ReservationFactoryDefineOptions>(options: TOptions): ReservationFactoryInterface<{}, ReservationTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReservationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReservationFactoryDefineOptions<TTransients>>(options: TOptions) => ReservationFactoryInterface<TTransients, ReservationTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Reservation} model.
+ *
+ * @param options
+ * @returns factory {@link ReservationFactoryInterface}
+ */
+export const defineReservationFactory = (<TOptions extends ReservationFactoryDefineOptions>(options: TOptions): ReservationFactoryInterface<TOptions> => {
+    return defineReservationFactoryInternal(options, {});
+}) as ReservationFactoryBuilder;
+
+defineReservationFactory.withTransientFields = defaultTransientFieldValues => options => defineReservationFactoryInternal(options, defaultTransientFieldValues);
+
+type ReservationHistoryScalarOrEnumFields = {
+    status: ReservationStatus;
+};
+
+type ReservationHistoryreservationFactory = {
+    _factoryFor: "Reservation";
+    build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutHistoriesInput["create"]>;
+};
+
+type ReservationHistorycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput["create"]>;
+};
+
+type ReservationHistoryFactoryDefineInput = {
+    id?: string;
+    status?: ReservationStatus;
+    createdAt?: Date;
+    reservation: ReservationHistoryreservationFactory | Prisma.ReservationCreateNestedOneWithoutHistoriesInput;
+    createdByUser?: ReservationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput;
+};
+
+type ReservationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationHistoryFactoryDefineInput, never>>;
+
+type ReservationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ReservationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ReservationHistory, Prisma.ReservationHistoryCreateInput, TTransients>;
+
+type ReservationHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<ReservationHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: ReservationHistoryFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ReservationHistory, Prisma.ReservationHistoryCreateInput, TTransients>;
+
+function isReservationHistoryreservationFactory(x: ReservationHistoryreservationFactory | Prisma.ReservationCreateNestedOneWithoutHistoriesInput | undefined): x is ReservationHistoryreservationFactory {
+    return (x as any)?._factoryFor === "Reservation";
+}
+
+function isReservationHistorycreatedByUserFactory(x: ReservationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput | undefined): x is ReservationHistorycreatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type ReservationHistoryTraitKeys<TOptions extends ReservationHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ReservationHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ReservationHistory";
+    build(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.ReservationHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.ReservationHistoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput[]>;
+    pickForConnect(inputData: ReservationHistory): Pick<ReservationHistory, "id">;
+    create(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<ReservationHistory>;
+    createList(list: readonly Partial<Prisma.ReservationHistoryCreateInput & TTransients>[]): PromiseLike<ReservationHistory[]>;
+    createList(count: number, item?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<ReservationHistory[]>;
+    createForConnect(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Pick<ReservationHistory, "id">>;
+}
+
+export interface ReservationHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReservationHistoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ReservationHistoryFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateReservationHistoryScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ReservationHistoryScalarOrEnumFields {
+    return {
+        status: "APPLIED"
+    };
+}
+
+function defineReservationHistoryFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReservationHistoryFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReservationHistoryFactoryInterface<TTransients, ReservationHistoryTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ReservationHistoryTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ReservationHistory", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ReservationHistoryCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateReservationHistoryScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ReservationHistoryFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ReservationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                reservation: isReservationHistoryreservationFactory(defaultData.reservation) ? {
+                    create: await defaultData.reservation.build()
+                } : defaultData.reservation,
+                createdByUser: isReservationHistorycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
+            } as Prisma.ReservationHistoryCreateInput;
+            const data: Prisma.ReservationHistoryCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationHistoryCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ReservationHistory) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ReservationHistoryCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().reservationHistory.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationHistoryCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ReservationHistoryCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ReservationHistory" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ReservationHistoryTraitKeys<TOptions>, ...names: readonly ReservationHistoryTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ReservationHistoryFactoryBuilder {
+    <TOptions extends ReservationHistoryFactoryDefineOptions>(options: TOptions): ReservationHistoryFactoryInterface<{}, ReservationHistoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ReservationHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReservationHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => ReservationHistoryFactoryInterface<TTransients, ReservationHistoryTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ReservationHistory} model.
+ *
+ * @param options
+ * @returns factory {@link ReservationHistoryFactoryInterface}
+ */
+export const defineReservationHistoryFactory = (<TOptions extends ReservationHistoryFactoryDefineOptions>(options: TOptions): ReservationHistoryFactoryInterface<TOptions> => {
+    return defineReservationHistoryFactoryInternal(options, {});
+}) as ReservationHistoryFactoryBuilder;
+
+defineReservationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineReservationHistoryFactoryInternal(options, defaultTransientFieldValues);
+
 type ParticipationScalarOrEnumFields = {
     reason: ParticipationStatusReason;
 };
@@ -2463,12 +2966,12 @@ type ParticipationFactoryDefineInput = {
     description?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
+    images?: Prisma.ParticipationImageCreateNestedManyWithoutParticipationInput;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
     evaluation?: ParticipationevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutParticipationInput;
-    images?: Prisma.ParticipationImageCreateNestedManyWithoutParticipationInput;
     statusHistories?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutParticipationInput;
     transactions?: Prisma.TransactionCreateNestedManyWithoutParticipationInput;
 };
@@ -2806,7 +3309,6 @@ type ParticipationStatusHistoryFactoryDefineInput = {
     status?: ParticipationStatus;
     reason?: ParticipationStatusReason;
     createdAt?: Date;
-    updatedAt?: Date | null;
     participation: ParticipationStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutStatusHistoriesInput;
     createdByUser?: ParticipationStatusHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutParticipationStatusChangedByMeInput;
 };
@@ -2956,262 +3458,82 @@ export const defineParticipationStatusHistoryFactory = (<TOptions extends Partic
 
 defineParticipationStatusHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineParticipationStatusHistoryFactoryInternal(options, defaultTransientFieldValues);
 
-type PlaceScalarOrEnumFields = {
-    name: string;
-    address: string;
-    latitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
-    longitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
-    isManual: boolean;
+type EvaluationScalarOrEnumFields = {};
+
+type EvaluationparticipationFactory = {
+    _factoryFor: "Participation";
+    build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutEvaluationInput["create"]>;
 };
 
-type PlacecityFactory = {
-    _factoryFor: "City";
-    build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutPlacesInput["create"]>;
-};
-
-type PlacecommunityFactory = {
-    _factoryFor: "Community";
-    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutPlacesInput["create"]>;
-};
-
-type PlaceFactoryDefineInput = {
-    id?: string;
-    name?: string;
-    address?: string;
-    latitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
-    longitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
-    isManual?: boolean;
-    googlePlaceId?: string | null;
-    mapLocation?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
-    community?: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
-    opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
-};
-
-type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;
-
-type PlaceFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<PlaceFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Place, Prisma.PlaceCreateInput, TTransients>;
-
-type PlaceFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<PlaceFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: PlaceFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Place, Prisma.PlaceCreateInput, TTransients>;
-
-function isPlacecityFactory(x: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput | undefined): x is PlacecityFactory {
-    return (x as any)?._factoryFor === "City";
-}
-
-function isPlacecommunityFactory(x: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput | undefined): x is PlacecommunityFactory {
-    return (x as any)?._factoryFor === "Community";
-}
-
-type PlaceTraitKeys<TOptions extends PlaceFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface PlaceFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Place";
-    build(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Prisma.PlaceCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Prisma.PlaceCreateInput>;
-    buildList(list: readonly Partial<Prisma.PlaceCreateInput & TTransients>[]): PromiseLike<Prisma.PlaceCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Prisma.PlaceCreateInput[]>;
-    pickForConnect(inputData: Place): Pick<Place, "id">;
-    create(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Place>;
-    createList(list: readonly Partial<Prisma.PlaceCreateInput & TTransients>[]): PromiseLike<Place[]>;
-    createList(count: number, item?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Place[]>;
-    createForConnect(inputData?: Partial<Prisma.PlaceCreateInput & TTransients>): PromiseLike<Pick<Place, "id">>;
-}
-
-export interface PlaceFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends PlaceFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): PlaceFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGeneratePlaceScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): PlaceScalarOrEnumFields {
-    return {
-        name: getScalarFieldValueGenerator().String({ modelName: "Place", fieldName: "name", isId: false, isUnique: false, seq }),
-        address: getScalarFieldValueGenerator().String({ modelName: "Place", fieldName: "address", isId: false, isUnique: false, seq }),
-        latitude: getScalarFieldValueGenerator().Decimal({ modelName: "Place", fieldName: "latitude", isId: false, isUnique: false, seq }),
-        longitude: getScalarFieldValueGenerator().Decimal({ modelName: "Place", fieldName: "longitude", isId: false, isUnique: false, seq }),
-        isManual: getScalarFieldValueGenerator().Boolean({ modelName: "Place", fieldName: "isManual", isId: false, isUnique: false, seq })
-    };
-}
-
-function definePlaceFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends PlaceFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): PlaceFactoryInterface<TTransients, PlaceTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly PlaceTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Place", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.PlaceCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGeneratePlaceScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<PlaceFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<PlaceFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                city: isPlacecityFactory(defaultData.city) ? {
-                    create: await defaultData.city.build()
-                } : defaultData.city,
-                community: isPlacecommunityFactory(defaultData.community) ? {
-                    create: await defaultData.community.build()
-                } : defaultData.community
-            } as Prisma.PlaceCreateInput;
-            const data: Prisma.PlaceCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlaceCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Place) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.PlaceCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().place.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlaceCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.PlaceCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Place" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: PlaceTraitKeys<TOptions>, ...names: readonly PlaceTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface PlaceFactoryBuilder {
-    <TOptions extends PlaceFactoryDefineOptions>(options: TOptions): PlaceFactoryInterface<{}, PlaceTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends PlaceTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends PlaceFactoryDefineOptions<TTransients>>(options: TOptions) => PlaceFactoryInterface<TTransients, PlaceTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link Place} model.
- *
- * @param options
- * @returns factory {@link PlaceFactoryInterface}
- */
-export const definePlaceFactory = (<TOptions extends PlaceFactoryDefineOptions>(options: TOptions): PlaceFactoryInterface<TOptions> => {
-    return definePlaceFactoryInternal(options, {});
-}) as PlaceFactoryBuilder;
-
-definePlaceFactory.withTransientFields = defaultTransientFieldValues => options => definePlaceFactoryInternal(options, defaultTransientFieldValues);
-
-type ReservationScalarOrEnumFields = {};
-
-type ReservationopportunitySlotFactory = {
-    _factoryFor: "OpportunitySlot";
-    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput["create"]>;
-};
-
-type ReservationcreatedByUserFactory = {
+type EvaluationevaluatorFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput["create"]>;
 };
 
-type ReservationFactoryDefineInput = {
+type EvaluationFactoryDefineInput = {
     id?: string;
-    status?: ReservationStatus;
+    status?: EvaluationStatus;
+    comment?: string | null;
+    credentialUrl?: string | null;
+    issuedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date | null;
-    opportunitySlot: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutReservationInput;
-    createdByUser?: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput;
-    histories?: Prisma.ReservationHistoryCreateNestedManyWithoutReservationInput;
+    participation: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput;
+    evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput;
+    histories?: Prisma.EvaluationHistoryCreateNestedManyWithoutEvaluationInput;
 };
 
-type ReservationTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationFactoryDefineInput, never>>;
+type EvaluationTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationFactoryDefineInput, never>>;
 
-type ReservationFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<ReservationFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Reservation, Prisma.ReservationCreateInput, TTransients>;
+type EvaluationFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<EvaluationFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Evaluation, Prisma.EvaluationCreateInput, TTransients>;
 
-type ReservationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<ReservationFactoryDefineInput, BuildDataOptions<TTransients>>;
+type EvaluationFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<EvaluationFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: ReservationFactoryTrait<TTransients>;
+        [traitName: string | symbol]: EvaluationFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<Reservation, Prisma.ReservationCreateInput, TTransients>;
+} & CallbackDefineOptions<Evaluation, Prisma.EvaluationCreateInput, TTransients>;
 
-function isReservationopportunitySlotFactory(x: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput | undefined): x is ReservationopportunitySlotFactory {
-    return (x as any)?._factoryFor === "OpportunitySlot";
+function isEvaluationparticipationFactory(x: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput | undefined): x is EvaluationparticipationFactory {
+    return (x as any)?._factoryFor === "Participation";
 }
 
-function isReservationcreatedByUserFactory(x: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput | undefined): x is ReservationcreatedByUserFactory {
+function isEvaluationevaluatorFactory(x: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput | undefined): x is EvaluationevaluatorFactory {
     return (x as any)?._factoryFor === "User";
 }
 
-type ReservationTraitKeys<TOptions extends ReservationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+type EvaluationTraitKeys<TOptions extends EvaluationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
-export interface ReservationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Reservation";
-    build(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Prisma.ReservationCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Prisma.ReservationCreateInput>;
-    buildList(list: readonly Partial<Prisma.ReservationCreateInput & TTransients>[]): PromiseLike<Prisma.ReservationCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Prisma.ReservationCreateInput[]>;
-    pickForConnect(inputData: Reservation): Pick<Reservation, "id">;
-    create(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Reservation>;
-    createList(list: readonly Partial<Prisma.ReservationCreateInput & TTransients>[]): PromiseLike<Reservation[]>;
-    createList(count: number, item?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Reservation[]>;
-    createForConnect(inputData?: Partial<Prisma.ReservationCreateInput & TTransients>): PromiseLike<Pick<Reservation, "id">>;
+export interface EvaluationFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Evaluation";
+    build(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput>;
+    buildList(list: readonly Partial<Prisma.EvaluationCreateInput & TTransients>[]): PromiseLike<Prisma.EvaluationCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Prisma.EvaluationCreateInput[]>;
+    pickForConnect(inputData: Evaluation): Pick<Evaluation, "id">;
+    create(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Evaluation>;
+    createList(list: readonly Partial<Prisma.EvaluationCreateInput & TTransients>[]): PromiseLike<Evaluation[]>;
+    createList(count: number, item?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Evaluation[]>;
+    createForConnect(inputData?: Partial<Prisma.EvaluationCreateInput & TTransients>): PromiseLike<Pick<Evaluation, "id">>;
 }
 
-export interface ReservationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReservationFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): ReservationFactoryInterfaceWithoutTraits<TTransients>;
+export interface EvaluationFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EvaluationFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): EvaluationFactoryInterfaceWithoutTraits<TTransients>;
 }
 
-function autoGenerateReservationScalarsOrEnums({ seq }: {
+function autoGenerateEvaluationScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): ReservationScalarOrEnumFields {
+}): EvaluationScalarOrEnumFields {
     return {};
 }
 
-function defineReservationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReservationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReservationFactoryInterface<TTransients, ReservationTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly ReservationTraitKeys<TOptions>[] = []) => {
+function defineEvaluationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends EvaluationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): EvaluationFactoryInterface<TTransients, EvaluationTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly EvaluationTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Reservation", modelFieldDefinitions);
+        const screen = createScreener("Evaluation", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -3224,15 +3546,15 @@ function defineReservationFactoryInternal<TTransients extends Record<string, unk
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.ReservationCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.EvaluationCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateReservationScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<ReservationFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const requiredScalarData = autoGenerateEvaluationScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<EvaluationFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<ReservationFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<EvaluationFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
@@ -3240,33 +3562,33 @@ function defineReservationFactoryInternal<TTransients extends Record<string, unk
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                opportunitySlot: isReservationopportunitySlotFactory(defaultData.opportunitySlot) ? {
-                    create: await defaultData.opportunitySlot.build()
-                } : defaultData.opportunitySlot,
-                createdByUser: isReservationcreatedByUserFactory(defaultData.createdByUser) ? {
-                    create: await defaultData.createdByUser.build()
-                } : defaultData.createdByUser
-            } as Prisma.ReservationCreateInput;
-            const data: Prisma.ReservationCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+                participation: isEvaluationparticipationFactory(defaultData.participation) ? {
+                    create: await defaultData.participation.build()
+                } : defaultData.participation,
+                evaluator: isEvaluationevaluatorFactory(defaultData.evaluator) ? {
+                    create: await defaultData.evaluator.build()
+                } : defaultData.evaluator
+            } as Prisma.EvaluationCreateInput;
+            const data: Prisma.EvaluationCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Reservation) => ({
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Evaluation) => ({
             id: inputData.id
         });
-        const create = async (inputData: Partial<Prisma.ReservationCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.EvaluationCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().reservation.create({ data });
+            const createdData = await getClient<PrismaClient>().evaluation.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.ReservationCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.EvaluationCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "Reservation" as const,
+            _factoryFor: "Evaluation" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -3277,7 +3599,7 @@ function defineReservationFactoryInternal<TTransients extends Record<string, unk
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: ReservationTraitKeys<TOptions>, ...names: readonly ReservationTraitKeys<TOptions>[]) => {
+    const useTraits = (name: EvaluationTraitKeys<TOptions>, ...names: readonly EvaluationTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -3286,98 +3608,99 @@ function defineReservationFactoryInternal<TTransients extends Record<string, unk
     };
 }
 
-interface ReservationFactoryBuilder {
-    <TOptions extends ReservationFactoryDefineOptions>(options: TOptions): ReservationFactoryInterface<{}, ReservationTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ReservationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReservationFactoryDefineOptions<TTransients>>(options: TOptions) => ReservationFactoryInterface<TTransients, ReservationTraitKeys<TOptions>>;
+interface EvaluationFactoryBuilder {
+    <TOptions extends EvaluationFactoryDefineOptions>(options: TOptions): EvaluationFactoryInterface<{}, EvaluationTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends EvaluationTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EvaluationFactoryDefineOptions<TTransients>>(options: TOptions) => EvaluationFactoryInterface<TTransients, EvaluationTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link Reservation} model.
+ * Define factory for {@link Evaluation} model.
  *
  * @param options
- * @returns factory {@link ReservationFactoryInterface}
+ * @returns factory {@link EvaluationFactoryInterface}
  */
-export const defineReservationFactory = (<TOptions extends ReservationFactoryDefineOptions>(options: TOptions): ReservationFactoryInterface<TOptions> => {
-    return defineReservationFactoryInternal(options, {});
-}) as ReservationFactoryBuilder;
+export const defineEvaluationFactory = (<TOptions extends EvaluationFactoryDefineOptions>(options: TOptions): EvaluationFactoryInterface<TOptions> => {
+    return defineEvaluationFactoryInternal(options, {});
+}) as EvaluationFactoryBuilder;
 
-defineReservationFactory.withTransientFields = defaultTransientFieldValues => options => defineReservationFactoryInternal(options, defaultTransientFieldValues);
+defineEvaluationFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationFactoryInternal(options, defaultTransientFieldValues);
 
-type ReservationHistoryScalarOrEnumFields = {
-    status: ReservationStatus;
+type EvaluationHistoryScalarOrEnumFields = {
+    status: EvaluationStatus;
 };
 
-type ReservationHistoryreservationFactory = {
-    _factoryFor: "Reservation";
-    build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutHistoriesInput["create"]>;
+type EvaluationHistoryevaluationFactory = {
+    _factoryFor: "Evaluation";
+    build: () => PromiseLike<Prisma.EvaluationCreateNestedOneWithoutHistoriesInput["create"]>;
 };
 
-type ReservationHistorycreatedByUserFactory = {
+type EvaluationHistorycreatedByUserFactory = {
     _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput["create"]>;
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput["create"]>;
 };
 
-type ReservationHistoryFactoryDefineInput = {
+type EvaluationHistoryFactoryDefineInput = {
     id?: string;
-    status?: ReservationStatus;
+    status?: EvaluationStatus;
+    comment?: string | null;
     createdAt?: Date;
-    reservation: ReservationHistoryreservationFactory | Prisma.ReservationCreateNestedOneWithoutHistoriesInput;
-    createdByUser?: ReservationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput;
+    evaluation: EvaluationHistoryevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutHistoriesInput;
+    createdByUser?: EvaluationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput;
 };
 
-type ReservationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationHistoryFactoryDefineInput, never>>;
+type EvaluationHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof EvaluationHistoryFactoryDefineInput, never>>;
 
-type ReservationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<ReservationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<ReservationHistory, Prisma.ReservationHistoryCreateInput, TTransients>;
+type EvaluationHistoryFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<EvaluationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<EvaluationHistory, Prisma.EvaluationHistoryCreateInput, TTransients>;
 
-type ReservationHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<ReservationHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
+type EvaluationHistoryFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<EvaluationHistoryFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: ReservationHistoryFactoryTrait<TTransients>;
+        [traitName: string | symbol]: EvaluationHistoryFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<ReservationHistory, Prisma.ReservationHistoryCreateInput, TTransients>;
+} & CallbackDefineOptions<EvaluationHistory, Prisma.EvaluationHistoryCreateInput, TTransients>;
 
-function isReservationHistoryreservationFactory(x: ReservationHistoryreservationFactory | Prisma.ReservationCreateNestedOneWithoutHistoriesInput | undefined): x is ReservationHistoryreservationFactory {
-    return (x as any)?._factoryFor === "Reservation";
+function isEvaluationHistoryevaluationFactory(x: EvaluationHistoryevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutHistoriesInput | undefined): x is EvaluationHistoryevaluationFactory {
+    return (x as any)?._factoryFor === "Evaluation";
 }
 
-function isReservationHistorycreatedByUserFactory(x: ReservationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationStatusChangedByMeInput | undefined): x is ReservationHistorycreatedByUserFactory {
+function isEvaluationHistorycreatedByUserFactory(x: EvaluationHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutEvaluationCreatedByMeInput | undefined): x is EvaluationHistorycreatedByUserFactory {
     return (x as any)?._factoryFor === "User";
 }
 
-type ReservationHistoryTraitKeys<TOptions extends ReservationHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+type EvaluationHistoryTraitKeys<TOptions extends EvaluationHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
-export interface ReservationHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "ReservationHistory";
-    build(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput>;
-    buildList(list: readonly Partial<Prisma.ReservationHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.ReservationHistoryCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Prisma.ReservationHistoryCreateInput[]>;
-    pickForConnect(inputData: ReservationHistory): Pick<ReservationHistory, "id">;
-    create(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<ReservationHistory>;
-    createList(list: readonly Partial<Prisma.ReservationHistoryCreateInput & TTransients>[]): PromiseLike<ReservationHistory[]>;
-    createList(count: number, item?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<ReservationHistory[]>;
-    createForConnect(inputData?: Partial<Prisma.ReservationHistoryCreateInput & TTransients>): PromiseLike<Pick<ReservationHistory, "id">>;
+export interface EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "EvaluationHistory";
+    build(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput>;
+    buildList(list: readonly Partial<Prisma.EvaluationHistoryCreateInput & TTransients>[]): PromiseLike<Prisma.EvaluationHistoryCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Prisma.EvaluationHistoryCreateInput[]>;
+    pickForConnect(inputData: EvaluationHistory): Pick<EvaluationHistory, "id">;
+    create(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<EvaluationHistory>;
+    createList(list: readonly Partial<Prisma.EvaluationHistoryCreateInput & TTransients>[]): PromiseLike<EvaluationHistory[]>;
+    createList(count: number, item?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<EvaluationHistory[]>;
+    createForConnect(inputData?: Partial<Prisma.EvaluationHistoryCreateInput & TTransients>): PromiseLike<Pick<EvaluationHistory, "id">>;
 }
 
-export interface ReservationHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ReservationHistoryFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): ReservationHistoryFactoryInterfaceWithoutTraits<TTransients>;
+export interface EvaluationHistoryFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): EvaluationHistoryFactoryInterfaceWithoutTraits<TTransients>;
 }
 
-function autoGenerateReservationHistoryScalarsOrEnums({ seq }: {
+function autoGenerateEvaluationHistoryScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): ReservationHistoryScalarOrEnumFields {
+}): EvaluationHistoryScalarOrEnumFields {
     return {
-        status: "APPLIED"
+        status: "PENDING"
     };
 }
 
-function defineReservationHistoryFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReservationHistoryFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReservationHistoryFactoryInterface<TTransients, ReservationHistoryTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly ReservationHistoryTraitKeys<TOptions>[] = []) => {
+function defineEvaluationHistoryFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends EvaluationHistoryFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): EvaluationHistoryFactoryInterface<TTransients, EvaluationHistoryTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly EvaluationHistoryTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("ReservationHistory", modelFieldDefinitions);
+        const screen = createScreener("EvaluationHistory", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -3390,15 +3713,15 @@ function defineReservationHistoryFactoryInternal<TTransients extends Record<stri
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.ReservationHistoryCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.EvaluationHistoryCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateReservationHistoryScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<ReservationHistoryFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const requiredScalarData = autoGenerateEvaluationHistoryScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<EvaluationHistoryFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<ReservationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<EvaluationHistoryFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
@@ -3406,33 +3729,33 @@ function defineReservationHistoryFactoryInternal<TTransients extends Record<stri
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                reservation: isReservationHistoryreservationFactory(defaultData.reservation) ? {
-                    create: await defaultData.reservation.build()
-                } : defaultData.reservation,
-                createdByUser: isReservationHistorycreatedByUserFactory(defaultData.createdByUser) ? {
+                evaluation: isEvaluationHistoryevaluationFactory(defaultData.evaluation) ? {
+                    create: await defaultData.evaluation.build()
+                } : defaultData.evaluation,
+                createdByUser: isEvaluationHistorycreatedByUserFactory(defaultData.createdByUser) ? {
                     create: await defaultData.createdByUser.build()
                 } : defaultData.createdByUser
-            } as Prisma.ReservationHistoryCreateInput;
-            const data: Prisma.ReservationHistoryCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            } as Prisma.EvaluationHistoryCreateInput;
+            const data: Prisma.EvaluationHistoryCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationHistoryCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: ReservationHistory) => ({
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationHistoryCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: EvaluationHistory) => ({
             id: inputData.id
         });
-        const create = async (inputData: Partial<Prisma.ReservationHistoryCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.EvaluationHistoryCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().reservationHistory.create({ data });
+            const createdData = await getClient<PrismaClient>().evaluationHistory.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ReservationHistoryCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.ReservationHistoryCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.EvaluationHistoryCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.EvaluationHistoryCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "ReservationHistory" as const,
+            _factoryFor: "EvaluationHistory" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -3443,7 +3766,7 @@ function defineReservationHistoryFactoryInternal<TTransients extends Record<stri
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: ReservationHistoryTraitKeys<TOptions>, ...names: readonly ReservationHistoryTraitKeys<TOptions>[]) => {
+    const useTraits = (name: EvaluationHistoryTraitKeys<TOptions>, ...names: readonly EvaluationHistoryTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -3452,22 +3775,184 @@ function defineReservationHistoryFactoryInternal<TTransients extends Record<stri
     };
 }
 
-interface ReservationHistoryFactoryBuilder {
-    <TOptions extends ReservationHistoryFactoryDefineOptions>(options: TOptions): ReservationHistoryFactoryInterface<{}, ReservationHistoryTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends ReservationHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ReservationHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => ReservationHistoryFactoryInterface<TTransients, ReservationHistoryTraitKeys<TOptions>>;
+interface EvaluationHistoryFactoryBuilder {
+    <TOptions extends EvaluationHistoryFactoryDefineOptions>(options: TOptions): EvaluationHistoryFactoryInterface<{}, EvaluationHistoryTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends EvaluationHistoryTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends EvaluationHistoryFactoryDefineOptions<TTransients>>(options: TOptions) => EvaluationHistoryFactoryInterface<TTransients, EvaluationHistoryTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link ReservationHistory} model.
+ * Define factory for {@link EvaluationHistory} model.
  *
  * @param options
- * @returns factory {@link ReservationHistoryFactoryInterface}
+ * @returns factory {@link EvaluationHistoryFactoryInterface}
  */
-export const defineReservationHistoryFactory = (<TOptions extends ReservationHistoryFactoryDefineOptions>(options: TOptions): ReservationHistoryFactoryInterface<TOptions> => {
-    return defineReservationHistoryFactoryInternal(options, {});
-}) as ReservationHistoryFactoryBuilder;
+export const defineEvaluationHistoryFactory = (<TOptions extends EvaluationHistoryFactoryDefineOptions>(options: TOptions): EvaluationHistoryFactoryInterface<TOptions> => {
+    return defineEvaluationHistoryFactoryInternal(options, {});
+}) as EvaluationHistoryFactoryBuilder;
 
-defineReservationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineReservationHistoryFactoryInternal(options, defaultTransientFieldValues);
+defineEvaluationHistoryFactory.withTransientFields = defaultTransientFieldValues => options => defineEvaluationHistoryFactoryInternal(options, defaultTransientFieldValues);
+
+type UtilityScalarOrEnumFields = {
+    name: string;
+    pointsRequired: number;
+};
+
+type UtilitycommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutUtilitiesInput["create"]>;
+};
+
+type UtilityFactoryDefineInput = {
+    id?: string;
+    publishStatus?: PublishStatus;
+    name?: string;
+    description?: string | null;
+    image?: string | null;
+    pointsRequired?: number;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
+    requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
+    tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
+};
+
+type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
+
+type UtilityFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<UtilityFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<Utility, Prisma.UtilityCreateInput, TTransients>;
+
+type UtilityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<UtilityFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: UtilityFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<Utility, Prisma.UtilityCreateInput, TTransients>;
+
+function isUtilitycommunityFactory(x: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput | undefined): x is UtilitycommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+type UtilityTraitKeys<TOptions extends UtilityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface UtilityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "Utility";
+    build(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Prisma.UtilityCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Prisma.UtilityCreateInput>;
+    buildList(list: readonly Partial<Prisma.UtilityCreateInput & TTransients>[]): PromiseLike<Prisma.UtilityCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Prisma.UtilityCreateInput[]>;
+    pickForConnect(inputData: Utility): Pick<Utility, "id">;
+    create(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Utility>;
+    createList(list: readonly Partial<Prisma.UtilityCreateInput & TTransients>[]): PromiseLike<Utility[]>;
+    createList(count: number, item?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Utility[]>;
+    createForConnect(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Pick<Utility, "id">>;
+}
+
+export interface UtilityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UtilityFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): UtilityFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateUtilityScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): UtilityScalarOrEnumFields {
+    return {
+        name: getScalarFieldValueGenerator().String({ modelName: "Utility", fieldName: "name", isId: false, isUnique: false, seq }),
+        pointsRequired: getScalarFieldValueGenerator().Int({ modelName: "Utility", fieldName: "pointsRequired", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineUtilityFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UtilityFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UtilityFactoryInterface<TTransients, UtilityTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly UtilityTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("Utility", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.UtilityCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateUtilityScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<UtilityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<UtilityFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isUtilitycommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
+            } as Prisma.UtilityCreateInput;
+            const data: Prisma.UtilityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UtilityCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: Utility) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.UtilityCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().utility.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UtilityCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.UtilityCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "Utility" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: UtilityTraitKeys<TOptions>, ...names: readonly UtilityTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface UtilityFactoryBuilder {
+    <TOptions extends UtilityFactoryDefineOptions>(options: TOptions): UtilityFactoryInterface<{}, UtilityTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends UtilityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UtilityFactoryDefineOptions<TTransients>>(options: TOptions) => UtilityFactoryInterface<TTransients, UtilityTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link Utility} model.
+ *
+ * @param options
+ * @returns factory {@link UtilityFactoryInterface}
+ */
+export const defineUtilityFactory = (<TOptions extends UtilityFactoryDefineOptions>(options: TOptions): UtilityFactoryInterface<TOptions> => {
+    return defineUtilityFactoryInternal(options, {});
+}) as UtilityFactoryBuilder;
+
+defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
 
 type TicketScalarOrEnumFields = {};
 
@@ -3641,6 +4126,11 @@ type TicketStatusHistoryticketFactory = {
     build: () => PromiseLike<Prisma.TicketCreateNestedOneWithoutTicketStatusHistoriesInput["create"]>;
 };
 
+type TicketStatusHistorytransactionFactory = {
+    _factoryFor: "Transaction";
+    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput["create"]>;
+};
+
 type TicketStatusHistoryparticipationFactory = {
     _factoryFor: "Participation";
     build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutTicketStatusHistoriesInput["create"]>;
@@ -3651,11 +4141,6 @@ type TicketStatusHistorycreatedByUserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutTicketStatusChangedByMeInput["create"]>;
 };
 
-type TicketStatusHistorytransactionFactory = {
-    _factoryFor: "Transaction";
-    build: () => PromiseLike<Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput["create"]>;
-};
-
 type TicketStatusHistoryFactoryDefineInput = {
     id?: string;
     status?: TicketStatus;
@@ -3663,9 +4148,9 @@ type TicketStatusHistoryFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     ticket: TicketStatusHistoryticketFactory | Prisma.TicketCreateNestedOneWithoutTicketStatusHistoriesInput;
+    transaction?: TicketStatusHistorytransactionFactory | Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput;
     participation?: TicketStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTicketStatusHistoriesInput;
     createdByUser?: TicketStatusHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTicketStatusChangedByMeInput;
-    transaction?: TicketStatusHistorytransactionFactory | Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput;
 };
 
 type TicketStatusHistoryTransientFields = Record<string, unknown> & Partial<Record<keyof TicketStatusHistoryFactoryDefineInput, never>>;
@@ -3685,16 +4170,16 @@ function isTicketStatusHistoryticketFactory(x: TicketStatusHistoryticketFactory 
     return (x as any)?._factoryFor === "Ticket";
 }
 
+function isTicketStatusHistorytransactionFactory(x: TicketStatusHistorytransactionFactory | Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput | undefined): x is TicketStatusHistorytransactionFactory {
+    return (x as any)?._factoryFor === "Transaction";
+}
+
 function isTicketStatusHistoryparticipationFactory(x: TicketStatusHistoryparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTicketStatusHistoriesInput | undefined): x is TicketStatusHistoryparticipationFactory {
     return (x as any)?._factoryFor === "Participation";
 }
 
 function isTicketStatusHistorycreatedByUserFactory(x: TicketStatusHistorycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTicketStatusChangedByMeInput | undefined): x is TicketStatusHistorycreatedByUserFactory {
     return (x as any)?._factoryFor === "User";
-}
-
-function isTicketStatusHistorytransactionFactory(x: TicketStatusHistorytransactionFactory | Prisma.TransactionCreateNestedOneWithoutTicketStatusHistoryInput | undefined): x is TicketStatusHistorytransactionFactory {
-    return (x as any)?._factoryFor === "Transaction";
 }
 
 type TicketStatusHistoryTraitKeys<TOptions extends TicketStatusHistoryFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -3758,15 +4243,15 @@ function defineTicketStatusHistoryFactoryInternal<TTransients extends Record<str
                 ticket: isTicketStatusHistoryticketFactory(defaultData.ticket) ? {
                     create: await defaultData.ticket.build()
                 } : defaultData.ticket,
+                transaction: isTicketStatusHistorytransactionFactory(defaultData.transaction) ? {
+                    create: await defaultData.transaction.build()
+                } : defaultData.transaction,
                 participation: isTicketStatusHistoryparticipationFactory(defaultData.participation) ? {
                     create: await defaultData.participation.build()
                 } : defaultData.participation,
                 createdByUser: isTicketStatusHistorycreatedByUserFactory(defaultData.createdByUser) ? {
                     create: await defaultData.createdByUser.build()
-                } : defaultData.createdByUser,
-                transaction: isTicketStatusHistorytransactionFactory(defaultData.transaction) ? {
-                    create: await defaultData.transaction.build()
-                } : defaultData.transaction
+                } : defaultData.createdByUser
             } as Prisma.TicketStatusHistoryCreateInput;
             const data: Prisma.TicketStatusHistoryCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -4022,493 +4507,6 @@ export const defineTransactionFactory = (<TOptions extends TransactionFactoryDef
 }) as TransactionFactoryBuilder;
 
 defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type IdentityScalarOrEnumFields = {
-    uid: string;
-    platform: IdentityPlatform;
-};
-
-type IdentityuserFactory = {
-    _factoryFor: "User";
-    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIdentitiesInput["create"]>;
-};
-
-type IdentityFactoryDefineInput = {
-    uid?: string;
-    platform?: IdentityPlatform;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    user: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput;
-};
-
-type IdentityTransientFields = Record<string, unknown> & Partial<Record<keyof IdentityFactoryDefineInput, never>>;
-
-type IdentityFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<IdentityFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Identity, Prisma.IdentityCreateInput, TTransients>;
-
-type IdentityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<IdentityFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: IdentityFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Identity, Prisma.IdentityCreateInput, TTransients>;
-
-function isIdentityuserFactory(x: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput | undefined): x is IdentityuserFactory {
-    return (x as any)?._factoryFor === "User";
-}
-
-type IdentityTraitKeys<TOptions extends IdentityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface IdentityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Identity";
-    build(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput>;
-    buildList(list: readonly Partial<Prisma.IdentityCreateInput & TTransients>[]): PromiseLike<Prisma.IdentityCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Prisma.IdentityCreateInput[]>;
-    pickForConnect(inputData: Identity): Pick<Identity, "uid">;
-    create(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Identity>;
-    createList(list: readonly Partial<Prisma.IdentityCreateInput & TTransients>[]): PromiseLike<Identity[]>;
-    createList(count: number, item?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Identity[]>;
-    createForConnect(inputData?: Partial<Prisma.IdentityCreateInput & TTransients>): PromiseLike<Pick<Identity, "uid">>;
-}
-
-export interface IdentityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends IdentityFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): IdentityFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateIdentityScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): IdentityScalarOrEnumFields {
-    return {
-        uid: getScalarFieldValueGenerator().String({ modelName: "Identity", fieldName: "uid", isId: true, isUnique: false, seq }),
-        platform: "LINE"
-    };
-}
-
-function defineIdentityFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends IdentityFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): IdentityFactoryInterface<TTransients, IdentityTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly IdentityTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Identity", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateIdentityScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<IdentityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<IdentityFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                user: isIdentityuserFactory(defaultData.user) ? {
-                    create: await defaultData.user.build()
-                } : defaultData.user
-            } as Prisma.IdentityCreateInput;
-            const data: Prisma.IdentityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IdentityCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Identity) => ({
-            uid: inputData.uid
-        });
-        const create = async (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().identity.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.IdentityCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.IdentityCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Identity" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: IdentityTraitKeys<TOptions>, ...names: readonly IdentityTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface IdentityFactoryBuilder {
-    <TOptions extends IdentityFactoryDefineOptions>(options: TOptions): IdentityFactoryInterface<{}, IdentityTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends IdentityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends IdentityFactoryDefineOptions<TTransients>>(options: TOptions) => IdentityFactoryInterface<TTransients, IdentityTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link Identity} model.
- *
- * @param options
- * @returns factory {@link IdentityFactoryInterface}
- */
-export const defineIdentityFactory = (<TOptions extends IdentityFactoryDefineOptions>(options: TOptions): IdentityFactoryInterface<TOptions> => {
-    return defineIdentityFactoryInternal(options, {});
-}) as IdentityFactoryBuilder;
-
-defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
-
-type UserScalarOrEnumFields = {
-    name: string;
-    slug: string;
-    currentPrefecture: CurrentPrefecture;
-};
-
-type UserFactoryDefineInput = {
-    id?: string;
-    name?: string;
-    slug?: string;
-    image?: string | null;
-    bio?: string | null;
-    sysRole?: SysRole;
-    urlWebsite?: string | null;
-    urlX?: string | null;
-    urlFacebook?: string | null;
-    urlInstagram?: string | null;
-    urlYoutube?: string | null;
-    urlTiktok?: string | null;
-    currentPrefecture?: CurrentPrefecture;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
-    memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
-    membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
-    wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
-    opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
-    reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
-    reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
-    participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
-    evaluationsEvaluatedByMe?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
-    evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
-    articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
-    articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
-    ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
-};
-
-type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
-
-type UserFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<UserFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<User, Prisma.UserCreateInput, TTransients>;
-
-type UserFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<UserFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: TraitName]: UserFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<User, Prisma.UserCreateInput, TTransients>;
-
-type UserTraitKeys<TOptions extends UserFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface UserFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "User";
-    build(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Prisma.UserCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Prisma.UserCreateInput>;
-    buildList(list: readonly Partial<Prisma.UserCreateInput & TTransients>[]): PromiseLike<Prisma.UserCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Prisma.UserCreateInput[]>;
-    pickForConnect(inputData: User): Pick<User, "id">;
-    create(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<User>;
-    createList(list: readonly Partial<Prisma.UserCreateInput & TTransients>[]): PromiseLike<User[]>;
-    createList(count: number, item?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<User[]>;
-    createForConnect(inputData?: Partial<Prisma.UserCreateInput & TTransients>): PromiseLike<Pick<User, "id">>;
-}
-
-export interface UserFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UserFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): UserFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateUserScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): UserScalarOrEnumFields {
-    return {
-        name: getScalarFieldValueGenerator().String({ modelName: "User", fieldName: "name", isId: false, isUnique: false, seq }),
-        slug: getScalarFieldValueGenerator().String({ modelName: "User", fieldName: "slug", isId: false, isUnique: false, seq }),
-        currentPrefecture: "KAGAWA"
-    };
-}
-
-function defineUserFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UserFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UserFactoryInterface<TTransients, UserTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly UserTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("User", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.UserCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateUserScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<UserFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<UserFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.UserCreateInput;
-            const data: Prisma.UserCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: User) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.UserCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().user.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UserCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.UserCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "User" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: UserTraitKeys<TOptions>, ...names: readonly UserTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface UserFactoryBuilder {
-    <TOptions extends UserFactoryDefineOptions>(options?: TOptions): UserFactoryInterface<{}, UserTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends UserTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UserFactoryDefineOptions<TTransients>>(options?: TOptions) => UserFactoryInterface<TTransients, UserTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link User} model.
- *
- * @param options
- * @returns factory {@link UserFactoryInterface}
- */
-export const defineUserFactory = (<TOptions extends UserFactoryDefineOptions>(options?: TOptions): UserFactoryInterface<TOptions> => {
-    return defineUserFactoryInternal(options ?? {}, {});
-}) as UserFactoryBuilder;
-
-defineUserFactory.withTransientFields = defaultTransientFieldValues => options => defineUserFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
-type UtilityScalarOrEnumFields = {
-    name: string;
-    pointsRequired: number;
-};
-
-type UtilitycommunityFactory = {
-    _factoryFor: "Community";
-    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutUtilitiesInput["create"]>;
-};
-
-type UtilityFactoryDefineInput = {
-    id?: string;
-    name?: string;
-    description?: string | null;
-    image?: string | null;
-    pointsRequired?: number;
-    publishStatus?: PublishStatus;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
-    requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
-    tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
-};
-
-type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
-
-type UtilityFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<UtilityFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<Utility, Prisma.UtilityCreateInput, TTransients>;
-
-type UtilityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<UtilityFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: string | symbol]: UtilityFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<Utility, Prisma.UtilityCreateInput, TTransients>;
-
-function isUtilitycommunityFactory(x: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput | undefined): x is UtilitycommunityFactory {
-    return (x as any)?._factoryFor === "Community";
-}
-
-type UtilityTraitKeys<TOptions extends UtilityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface UtilityFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "Utility";
-    build(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Prisma.UtilityCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Prisma.UtilityCreateInput>;
-    buildList(list: readonly Partial<Prisma.UtilityCreateInput & TTransients>[]): PromiseLike<Prisma.UtilityCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Prisma.UtilityCreateInput[]>;
-    pickForConnect(inputData: Utility): Pick<Utility, "id">;
-    create(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Utility>;
-    createList(list: readonly Partial<Prisma.UtilityCreateInput & TTransients>[]): PromiseLike<Utility[]>;
-    createList(count: number, item?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Utility[]>;
-    createForConnect(inputData?: Partial<Prisma.UtilityCreateInput & TTransients>): PromiseLike<Pick<Utility, "id">>;
-}
-
-export interface UtilityFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends UtilityFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): UtilityFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateUtilityScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): UtilityScalarOrEnumFields {
-    return {
-        name: getScalarFieldValueGenerator().String({ modelName: "Utility", fieldName: "name", isId: false, isUnique: false, seq }),
-        pointsRequired: getScalarFieldValueGenerator().Int({ modelName: "Utility", fieldName: "pointsRequired", isId: false, isUnique: false, seq })
-    };
-}
-
-function defineUtilityFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends UtilityFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): UtilityFactoryInterface<TTransients, UtilityTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly UtilityTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("Utility", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.UtilityCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateUtilityScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<UtilityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<UtilityFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                community: isUtilitycommunityFactory(defaultData.community) ? {
-                    create: await defaultData.community.build()
-                } : defaultData.community
-            } as Prisma.UtilityCreateInput;
-            const data: Prisma.UtilityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UtilityCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: Utility) => ({
-            id: inputData.id
-        });
-        const create = async (inputData: Partial<Prisma.UtilityCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().utility.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.UtilityCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.UtilityCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "Utility" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: UtilityTraitKeys<TOptions>, ...names: readonly UtilityTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface UtilityFactoryBuilder {
-    <TOptions extends UtilityFactoryDefineOptions>(options: TOptions): UtilityFactoryInterface<{}, UtilityTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends UtilityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends UtilityFactoryDefineOptions<TTransients>>(options: TOptions) => UtilityFactoryInterface<TTransients, UtilityTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link Utility} model.
- *
- * @param options
- * @returns factory {@link UtilityFactoryInterface}
- */
-export const defineUtilityFactory = (<TOptions extends UtilityFactoryDefineOptions>(options: TOptions): UtilityFactoryInterface<TOptions> => {
-    return defineUtilityFactoryInternal(options, {});
-}) as UtilityFactoryBuilder;
-
-defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
 
 type MembershipParticipationGeoViewScalarOrEnumFields = {
     type: ParticipationType;
