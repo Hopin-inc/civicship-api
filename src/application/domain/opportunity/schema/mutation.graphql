@@ -51,8 +51,7 @@ input OpportunityCreateInput {
     title: String!
     description: String!
     body: String
-    image: ImageInput
-    files: JSON
+    images: [ImageInput!]
 
     category: OpportunityCategory!
     publishStatus: PublishStatus!
@@ -74,8 +73,7 @@ input OpportunityUpdateContentInput {
     title: String!
     description: String!
     body: String
-    image: ImageInput
-    files: JSON
+    images: [ImageInput!]
 
     category: OpportunityCategory!
     publishStatus: PublishStatus!

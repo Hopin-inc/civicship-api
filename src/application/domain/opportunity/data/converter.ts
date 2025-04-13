@@ -1,4 +1,5 @@
 import {
+  GqlImageInput,
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
   GqlOpportunitySortInput,
@@ -65,8 +66,11 @@ export default class OpportunityConverter {
   static create(
     input: GqlOpportunityCreateInput,
     currentUserId: string,
-  ): Prisma.OpportunityCreateInput {
-    const { place, image, communityId, ...prop } = input;
+  ): {
+    data: Omit<Prisma.OpportunityCreateInput, "images">;
+    images: GqlImageInput[];
+  } {
+    const { images, place, communityId, ...prop } = input;
 
     let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
 
@@ -86,16 +90,21 @@ export default class OpportunityConverter {
     }
 
     return {
-      ...prop,
-      image: image?.base64,
-      community: { connect: { id: communityId } },
-      createdByUser: { connect: { id: currentUserId } },
-      ...(finalPlace ? { place: finalPlace } : {}),
+      data: {
+        ...prop,
+        community: { connect: { id: communityId } },
+        createdByUser: { connect: { id: currentUserId } },
+        ...(finalPlace ? { place: finalPlace } : {}),
+      },
+      images: images ?? [],
     };
   }
 
-  static update(input: GqlOpportunityUpdateContentInput): Prisma.OpportunityUpdateInput {
-    const { place, image, ...prop } = input;
+  static update(input: GqlOpportunityUpdateContentInput): {
+    data: Omit<Prisma.OpportunityUpdateInput, "images">;
+    images: GqlImageInput[];
+  } {
+    const { place, images, ...prop } = input;
 
     let finalPlace: Prisma.PlaceUpdateOneWithoutOpportunitiesNestedInput | undefined = undefined;
 
@@ -115,9 +124,11 @@ export default class OpportunityConverter {
     }
 
     return {
-      ...prop,
-      image: image?.base64,
-      ...(finalPlace ? { place: finalPlace } : {}),
+      data: {
+        ...prop,
+        ...(finalPlace ? { place: finalPlace } : {}),
+      },
+      images: images ?? [],
     };
   }
 

@@ -1,4 +1,5 @@
 import {
+  GqlImageInput,
   GqlParticipationCreatePersonalRecordInput,
   GqlParticipationFilterInput,
   GqlParticipationSortInput,
@@ -93,19 +94,27 @@ export default class ParticipationConverter {
   static create(
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
-  ): Prisma.ParticipationCreateInput {
+  ): {
+    data: Omit<Prisma.ParticipationCreateInput, "images">;
+    images: GqlImageInput[];
+  } {
+    const { images, description } = input;
+
     return {
-      status: ParticipationStatus.PARTICIPATED,
-      reason: ParticipationStatusReason.PERSONAL_RECORD,
-      description: input.description ?? null,
-      user: { connect: { id: currentUserId } },
-      statusHistories: {
-        create: {
-          status: ParticipationStatus.PARTICIPATED,
-          reason: ParticipationStatusReason.PERSONAL_RECORD,
-          createdByUser: { connect: { id: currentUserId } },
+      data: {
+        status: ParticipationStatus.PARTICIPATED,
+        reason: ParticipationStatusReason.PERSONAL_RECORD,
+        description: description ?? null,
+        user: { connect: { id: currentUserId } },
+        statusHistories: {
+          create: {
+            status: ParticipationStatus.PARTICIPATED,
+            reason: ParticipationStatusReason.PERSONAL_RECORD,
+            createdByUser: { connect: { id: currentUserId } },
+          },
         },
       },
+      images: images ?? [],
     };
   }
 

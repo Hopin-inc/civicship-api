@@ -7,8 +7,7 @@ type Opportunity {
     title: String!
     description: String!
     body: String
-    image: String
-    files: JSON
+    images: [String!]
 
     category: OpportunityCategory!
     publishStatus: PublishStatus!

@@ -68,6 +68,7 @@ directive @requireRole(
 scalar Datetime
 scalar JSON
 scalar Decimal
+scalar Upload
 
 # ------------------------------------------------
 # Input Types
@@ -86,7 +87,8 @@ input CheckIsSelfPermissionInput {
 }
 
 input ImageInput {
-    base64: String!
+    file: Upload!
+    alt: String
     caption: String
 }
 

@@ -1,4 +1,4 @@
-import { GqlUserFilterInput, GqlUserSortInput, GqlUserUpdateProfileInput } from "@/types/graphql";
+import { GqlImageInput, GqlUserFilterInput, GqlUserSortInput, GqlUserUpdateProfileInput } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
 export default class UserConverter {
@@ -21,10 +21,11 @@ export default class UserConverter {
     };
   }
 
-  static update(input: GqlUserUpdateProfileInput): Prisma.UserUpdateInput {
-    return {
-      ...input,
-      image: input.image?.base64,
-    };
+  static update(input: GqlUserUpdateProfileInput): {
+    data: Prisma.UserUpdateInput,
+    image?: GqlImageInput,
+  } {
+    const { image, ...data } = input;
+    return { image, data };
   }
 }

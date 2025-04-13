@@ -48,7 +48,7 @@ export default class NotificationService {
       date,
       time,
       hostName: host.name,
-      hostImageUrl: host.image ?? DEFAULT_HOST_IMAGE_URL,
+      hostImageUrl: host.image?.url ?? DEFAULT_HOST_IMAGE_URL,
       redirectUrl: REDIRECT_URL,
     });
 
@@ -120,7 +120,7 @@ export default class NotificationService {
     );
     const {
       title,
-      image: eventImage,
+      images: eventImages,
       place,
       feeRequired,
       createdByUser,
@@ -129,14 +129,14 @@ export default class NotificationService {
 
     const message = buildReservationAcceptedMessage({
       title,
-      eventImageUrl: eventImage ?? DEFAULT_EVENT_IMAGE_URL,
+      eventImageUrl: eventImages[0].url ?? DEFAULT_EVENT_IMAGE_URL,
       date,
       time,
       place: place?.name ?? "場所未定",
       participantCount: `${reservation.participations.length}人`,
       price: calculateTotalPrice(feeRequired, reservation.participations.length),
       hostName,
-      hostImageUrl: hostImage ?? DEFAULT_HOST_IMAGE_URL,
+      hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
       redirectUrl: REDIRECT_URL,
     });
 

@@ -12,6 +12,7 @@ import {
 } from "@/types/graphql";
 import { PrismaMembership } from "@/application/domain/membership/data/type";
 import CommunityPresenter from "@/application/domain/community/presenter";
+import UserPresenter from "@/application/domain/user/presenter";
 
 export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
@@ -33,10 +34,11 @@ export default class MembershipPresenter {
   }
 
   static get(r: PrismaMembership): GqlMembership {
-    const { community, participationGeoViews, participationCountViews, ...prop } = r;
+    const { community, participationGeoViews, participationCountViews, user, ...prop } = r;
 
     return {
       ...prop,
+      user: UserPresenter.get(user),
       community: CommunityPresenter.get(community),
       participationView: MembershipPresenter.formatParticipationView(
         participationGeoViews,

@@ -11,7 +11,7 @@ import { IContext } from "@/types/server";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunityConverter from "@/application/domain/opportunity/data/converter";
-import { PrismaOpportunitySlot } from "@/application/domain/opportunitySlot/data/type";
+import ImageService from "@/application/domain/image/service";
 
 export default class OpportunityService {
   static async fetchOpportunities(
@@ -56,8 +56,20 @@ export default class OpportunityService {
     const currentUserId = getCurrentUserId(ctx);
 
     validatePlaceInput(input.place);
-    const data: Prisma.OpportunityCreateInput = OpportunityConverter.create(input, currentUserId);
-    return await OpportunityRepository.create(ctx, data);
+    const { data, images } = OpportunityConverter.create(input, currentUserId);
+
+    const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
+      images.map((img) => ImageService.uploadPublicImage(img, "opportunities")),
+    );
+
+    const createInput: Prisma.OpportunityCreateInput = {
+      ...data,
+      images: {
+        create: uploadedImages,
+      },
+    };
+
+    return await OpportunityRepository.create(ctx, createInput);
   }
 
   static async deleteOpportunity(ctx: IContext, id: string) {
@@ -74,14 +86,26 @@ export default class OpportunityService {
     await this.findOpportunityOrThrow(ctx, id);
     validatePlaceInput(input.place);
 
-    const data: Prisma.OpportunityUpdateInput = OpportunityConverter.update(input);
-    return await OpportunityRepository.update(ctx, id, data);
+    const { data, images } = OpportunityConverter.update(input);
+
+    const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
+      images.map((img) => ImageService.uploadPublicImage(img, "opportunities")),
+    );
+
+    const updateInput: Prisma.OpportunityUpdateInput = {
+      ...data,
+      images: {
+        create: uploadedImages,
+      },
+    };
+
+    return await OpportunityRepository.update(ctx, id, updateInput);
   }
 
   static async setOpportunityPublishStatus(ctx: IContext, id: string, status: PublishStatus) {
     await this.findOpportunityOrThrow(ctx, id);
 
-    return await OpportunityRepository.setPublishStatus(ctx, id, status);
+    return OpportunityRepository.setPublishStatus(ctx, id, status);
   }
 
   static async validatePublishStatus(
@@ -97,16 +121,6 @@ export default class OpportunityService {
         [JSON.stringify(filter?.publishStatus)],
       );
     }
-  }
-
-  static getSingleRequiredUtility(
-    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
-  ) {
-    if (requiredUtilities.length !== 1) {
-      throw new ValidationError("Exactly one required utility is allowed at this time.");
-    }
-
-    return requiredUtilities[0];
   }
 }
 

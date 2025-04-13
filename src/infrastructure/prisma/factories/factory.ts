@@ -26,11 +26,11 @@ import {
   randCity,
   randCountryCode,
   randFullName,
-  randImg,
   randParagraph,
   randSlug,
   randState,
   randStreetAddress,
+  randUrl,
   randUuid,
 } from "@ngneat/falso";
 import {
@@ -38,6 +38,7 @@ import {
   defineCityFactory,
   defineCommunityFactory,
   defineEvaluationFactory,
+  defineImageFactory,
   defineMembershipFactory,
   defineOpportunityFactory,
   defineOpportunitySlotFactory,
@@ -80,6 +81,14 @@ initialize({ prisma: prismaClient });
 
 // --- User & Community ---
 
+export const ImageFactory = defineImageFactory({
+  defaultData: () => ({
+    url: randUrl(),
+  }),
+});
+
+// --- User & Community ---
+
 export const CommunityFactory = defineCommunityFactory({
   defaultData: () => ({
     name: randAnimal(),
@@ -91,7 +100,6 @@ export const UserFactory = defineUserFactory({
   defaultData: () => ({
     name: randFullName(),
     slug: randSlug().toLowerCase(),
-    image: randImg(),
     currentPrefecture: randomEnum(CurrentPrefecture),
     identities: {
       create: [
@@ -382,6 +390,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
   transientUser?: { id: string };
   transientReservation?: { id: string };
   transientCommunity?: { id: string };
+  transientImage?: { id: string };
   transientStatus?: ParticipationStatus;
   transientReason?: ParticipationStatusReason;
   transientSource?: Source;
@@ -389,6 +398,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
   transientUser: undefined,
   transientReservation: undefined,
   transientCommunity: undefined,
+  transientImage: undefined,
   transientStatus: undefined,
   transientReason: undefined,
   transientSource: undefined,
@@ -397,6 +407,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
     transientUser,
     transientReservation,
     transientCommunity,
+    transientImage,
     transientStatus,
     transientReason,
     transientSource,
@@ -404,6 +415,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
     const user = transientUser ?? (await UserFactory.create());
     const reservation = transientReservation ?? (await ReservationFactory.create());
     const community = transientCommunity ?? (await CommunityFactory.create());
+    const image = transientImage ?? (await ImageFactory.create());
 
     const status = transientStatus ?? randomEnum(ParticipationStatus);
     const reason = transientReason ?? randomEnum(ParticipationStatusReason);
@@ -426,11 +438,7 @@ export const ParticipationFactory = defineParticipationFactory.withTransientFiel
         ],
       },
       images: {
-        create: [
-          {
-            url: randImg(),
-          },
-        ],
+        connect: { id: image.id },
       },
     };
   },
@@ -473,6 +481,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
   transientOpportunity?: { id: string };
   transientStatus?: PublishStatus;
   transientCategory?: ArticleCategory;
+  transientThumbnail?: { id: string };
 }>({
   transientCommunity: undefined,
   transientAuthor: undefined,
@@ -480,6 +489,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
   transientOpportunity: undefined,
   transientStatus: undefined,
   transientCategory: undefined,
+  transientThumbnail: undefined,
 })({
   defaultData: async ({
     transientCommunity,
@@ -488,11 +498,13 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
     transientOpportunity,
     transientStatus,
     transientCategory,
+    transientThumbnail,
   }) => {
     const community = transientCommunity ?? (await CommunityFactory.create());
     const author = transientAuthor ?? (await UserFactory.create());
     const relatedUsers = transientRelatedUsers ?? [await UserFactory.create()];
     const opportunity = transientOpportunity ?? (await OpportunityFactory.create());
+    const thumbnail = transientThumbnail ?? (await ImageFactory.create());
 
     return {
       title: randCatchPhrase(),
@@ -500,12 +512,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
       category: transientCategory ?? randomEnum(ArticleCategory),
       publishStatus: transientStatus ?? randomEnum(PublishStatus),
       body: randParagraph(),
-      thumbnail: [
-        {
-          url: randImg(),
-          alt: "sample image",
-        },
-      ],
+      thumbnail: { connect: { id: thumbnail.id } },
       publishedAt: new Date(),
       community: { connect: { id: community.id } },
       authors: { connect: [{ id: author.id }] },

@@ -33,7 +33,7 @@ export default class ViewPresenter {
       category: opportunity.category,
       date: startsAt,
       place: place ? PlacePresenter.get(place) : null,
-      thumbnailUrl: images?.[0]?.url ?? opportunity.image,
+      thumbnailUrl: images?.[0]?.url ?? opportunity.images[0].url,
       participants: reservation?.participations
         ? reservation.participations
             .map((p) => p.user)
@@ -48,7 +48,7 @@ export default class ViewPresenter {
     const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
 
     const thumbnailUrl = article.thumbnail
-      ? (Array.isArray(article.thumbnail) && article.thumbnail.length > 0 && article.thumbnail[0].url)
+      ? Array.isArray(article.thumbnail) && article.thumbnail.length > 0 && article.thumbnail[0].url
         ? article.thumbnail[0].url
         : null
       : null;
@@ -62,8 +62,8 @@ export default class ViewPresenter {
       thumbnailUrl,
       participants: participations
         ? participations
-          .filter((user): user is NonNullable<typeof user> => user !== null)
-          .map((user) => UserPresenter.get(user))
+            .filter((user): user is NonNullable<typeof user> => user !== null)
+            .map((user) => UserPresenter.get(user))
         : [],
     };
   }

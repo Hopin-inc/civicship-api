@@ -5,7 +5,7 @@ type Utility {
     id: ID!
     name: String!
     description: String
-    image: String
+    images: [String!]
     pointsRequired: Int!
     publishStatus: PublishStatus!
 

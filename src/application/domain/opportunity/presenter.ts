@@ -10,6 +10,7 @@ import { PrismaOpportunity } from "@/application/domain/opportunity/data/type";
 import PlacePresenter from "@/application/domain/place/presenter";
 import UtilityPresenter from "@/application/domain/utility/presenter";
 import CommunityPresenter from "@/application/domain/community/presenter";
+import UserPresenter from "@/application/domain/user/presenter";
 
 export default class OpportunityPresenter {
   static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
@@ -35,6 +36,7 @@ export default class OpportunityPresenter {
       place,
       requiredUtilities,
       earliestReservableSlotView,
+      images,
       ...prop
     } = r;
 
@@ -42,9 +44,10 @@ export default class OpportunityPresenter {
       ...prop,
       community: community ? CommunityPresenter.get(community) : null,
       place: place ? PlacePresenter.get(place) : null,
-      createdByUser,
+      createdByUser: createdByUser ? UserPresenter.get(createdByUser) : null,
       requiredUtilities: requiredUtilities.map(UtilityPresenter.get),
       earliestReservableSlotView,
+      images: images.map((image) => image.url),
     };
   }
 

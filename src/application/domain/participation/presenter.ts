@@ -5,6 +5,7 @@ import {
   GqlParticipationDeleteSuccess,
 } from "@/types/graphql";
 import { PrismaParticipation } from "@/application/domain/participation/data/type";
+import UserPresenter from "@/application/domain/user/presenter";
 
 export default class ParticipationPresenter {
   static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
@@ -24,12 +25,13 @@ export default class ParticipationPresenter {
   }
 
   static get(r: PrismaParticipation): GqlParticipation {
-    const { user, community, ...prop } = r;
+    const { user, community, images, ...prop } = r;
 
     return {
       ...prop,
-      user,
+      user: user ? UserPresenter.get(user) : null,
       community,
+      images: images.map((image) => image.url),
     };
   }
 

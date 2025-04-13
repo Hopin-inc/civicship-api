@@ -26,7 +26,7 @@ generator dbml {
 
 generator fabbrica {
   provider    = "prisma-fabbrica"
-  output      = "../factories/__generated__"
+  output      = "factories/__generated__"
   noTranspile = true
 }
 
@@ -48,6 +48,38 @@ enum PublishStatus {
 enum Source {
   INTERNAL
   EXTERNAL
+}
+
+// ------------------------------ General (Image) ------------------------------
+
+model Image {
+  id         String  @id @default(cuid())
+  isPublic   Boolean @map("is_public")
+  url        String
+  bucket     String
+  folderPath String  @map("folder_path")
+  filename   String
+  size       Int?
+  width      Int?
+  height     Int?
+  mime       String
+  ext        String
+  alt        String?
+  caption    String?
+  strapiId   Int?    @map("strapi_id")
+
+  users       User[]
+  communities Community[]
+  articles    Article[]
+
+  opportunities  Opportunity[]   @relation("t_images_on_opportunities")
+  participations Participation[] @relation("t_images_on_participations")
+  utilities      Utility[]       @relation("t_images_on_utilities")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_images")
 }
 
 // ------------------------------ Geography (State & City) ------------------------------
@@ -113,10 +145,12 @@ model Community {
   name      String
   pointName String @map("point_name")
 
-  image         String?
   bio           String?
   establishedAt DateTime? @map("established_at")
   website       String?
+
+  imageId String? @map("image_id")
+  image   Image?  @relation(fields: [imageId], references: [id])
 
   places         Place[]
   memberships    Membership[]
@@ -137,11 +171,11 @@ model Community {
 model User {
   id String @id @default(cuid())
 
-  name    String
-  slug    String
-  image   String?
-  bio     String?
-  sysRole SysRole @default(USER) @map("sys_role")
+  name              String
+  slug              String
+  bio               String?
+  sysRole           SysRole           @default(USER) @map("sys_role")
+  currentPrefecture CurrentPrefecture @map("current_prefecture")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")
@@ -150,8 +184,10 @@ model User {
   urlYoutube   String? @map("url_youtube")
   urlTiktok    String? @map("url_tiktok")
 
-  currentPrefecture CurrentPrefecture @map("current_prefecture")
-  identities        Identity[]
+  imageId String? @map("image_id")
+  image   Image?  @relation(fields: [imageId], references: [id])
+
+  identities Identity[]
 
   memberships             Membership[]
   membershipChangedByMe   MembershipHistory[]
@@ -366,8 +402,10 @@ model Article {
   category      ArticleCategory
   publishStatus PublishStatus   @default(PUBLIC) @map("publish_status")
   body          String
-  thumbnail     Json?
   publishedAt   DateTime        @map("published_at")
+
+  thumbnailId String? @map("thumbnail_id")
+  thumbnail   Image?  @relation(fields: [thumbnailId], references: [id], onDelete: SetNull)
 
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -399,12 +437,11 @@ model Opportunity {
   category    OpportunityCategory
   description String
   body        String?
-  image       String?
-  files       Json                @default("[]")
+  images      Image[]             @relation("t_images_on_opportunities")
 
   pointsToEarn      Int?      @map("points_to_earn")
   feeRequired       Int?      @map("fee_required")
-  requiredUtilities Utility[]
+  requiredUtilities Utility[] @relation("t_required_opportunities_on_utilities")
 
   slots                      OpportunitySlot[]
   earliestReservableSlotView EarliestReservableSlotView?
@@ -528,12 +565,12 @@ model ReservationHistory {
 model Participation {
   id String @id @default(cuid())
 
-  source Source                    @default(INTERNAL)
-  status ParticipationStatus       @default(PENDING)
-  reason ParticipationStatusReason
-
+  source      Source                    @default(INTERNAL)
+  status      ParticipationStatus       @default(PENDING)
+  reason      ParticipationStatusReason
   description String?
-  images      ParticipationImage[]
+
+  images Image[] @relation("t_images_on_participations")
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -572,21 +609,6 @@ enum ParticipationStatusReason {
   RESERVATION_REJECTED
 
   OPPORTUNITY_CANCELED
-}
-
-model ParticipationImage {
-  id String @id @default(cuid())
-
-  participationId String        @map("participation_id")
-  participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
-
-  url     String
-  caption String?
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@map("t_participation_images")
 }
 
 model ParticipationStatusHistory {
@@ -660,15 +682,17 @@ model Utility {
 
   publishStatus PublishStatus @default(PUBLIC) @map("publish_status")
 
-  name           String
-  description    String?
-  image          String?
-  pointsRequired Int     @map("points_required")
+  name        String
+  description String?
+
+  images Image[] @relation("t_images_on_utilities")
+
+  pointsRequired Int @map("points_required")
 
   communityId String    @map("community_id")
   community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
-  requiredForOpportunities Opportunity[]
+  requiredForOpportunities Opportunity[] @relation("t_required_opportunities_on_utilities")
 
   tickets Ticket[]
 

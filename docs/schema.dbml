@@ -2,6 +2,31 @@
 //// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 //// ------------------------------------------------------
 
+Table t_images {
+  id String [pk]
+  isPublic Boolean [not null]
+  url String [not null]
+  bucket String [not null]
+  folderPath String [not null]
+  filename String [not null]
+  size Int
+  width Int
+  height Int
+  mime String [not null]
+  ext String [not null]
+  alt String
+  caption String
+  strapiId Int
+  users t_users [not null]
+  communities t_communities [not null]
+  articles t_articles [not null]
+  opportunities t_opportunities [not null]
+  participations t_participations [not null]
+  utilities t_utilities [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
 Table m_states {
   code String [not null]
   name String [not null]
@@ -44,10 +69,11 @@ Table t_communities {
   id String [pk]
   name String [not null]
   pointName String [not null]
-  image String
   bio String
   establishedAt DateTime
   website String
+  imageId String
+  image t_images
   places t_places [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
@@ -63,16 +89,17 @@ Table t_users {
   id String [pk]
   name String [not null]
   slug String [not null]
-  image String
   bio String
   sysRole SysRole [not null, default: 'USER']
+  currentPrefecture CurrentPrefecture [not null]
   urlWebsite String
   urlX String
   urlFacebook String
   urlInstagram String
   urlYoutube String
   urlTiktok String
-  currentPrefecture CurrentPrefecture [not null]
+  imageId String
+  image t_images
   identities t_identities [not null]
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
@@ -157,8 +184,9 @@ Table t_articles {
   category ArticleCategory [not null]
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   body String [not null]
-  thumbnail Json
   publishedAt DateTime [not null]
+  thumbnailId String
+  thumbnail t_images
   communityId String [not null]
   community t_communities [not null]
   authors t_users [not null]
@@ -176,8 +204,7 @@ Table t_opportunities {
   category OpportunityCategory [not null]
   description String [not null]
   body String
-  image String
-  files Json [not null, default: '[]']
+  images t_images [not null]
   pointsToEarn Int
   feeRequired Int
   requiredUtilities t_utilities [not null]
@@ -237,7 +264,7 @@ Table t_participations {
   status ParticipationStatus [not null, default: 'PENDING']
   reason ParticipationStatusReason [not null]
   description String
-  images t_participation_images [not null]
+  images t_images [not null]
   userId String
   user t_users
   reservationId String
@@ -248,16 +275,6 @@ Table t_participations {
   evaluation t_evaluations
   statusHistories t_participation_status_histories [not null]
   transactions t_transactions [not null]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table t_participation_images {
-  id String [pk]
-  participationId String [not null]
-  participation t_participations [not null]
-  url String [not null]
-  caption String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -304,7 +321,7 @@ Table t_utilities {
   publishStatus PublishStatus [not null, default: 'PUBLIC']
   name String [not null]
   description String
-  image String
+  images t_images [not null]
   pointsRequired Int [not null]
   communityId String [not null]
   community t_communities [not null]
@@ -409,6 +426,21 @@ Table v_slot_remaining_capacity {
   remainingCapacity Int
 }
 
+Table t_images_on_opportunities {
+  opportunitiesId String [ref: > t_opportunities.id]
+  imagesId String [ref: > t_images.id]
+}
+
+Table t_images_on_participations {
+  participationsId String [ref: > t_participations.id]
+  imagesId String [ref: > t_images.id]
+}
+
+Table t_images_on_utilities {
+  utilitiesId String [ref: > t_utilities.id]
+  imagesId String [ref: > t_images.id]
+}
+
 Table t_author_users_on_articles {
   articleswrittenbymeId String [ref: > t_articles.id]
   authorsId String [ref: > t_users.id]
@@ -424,7 +456,7 @@ Table t_opportunities_on_articles {
   articlesId String [ref: > t_articles.id]
 }
 
-Table OpportunityToUtility {
+Table t_required_opportunities_on_utilities {
   requiredutilitiesId String [ref: > t_utilities.id]
   requiredforopportunitiesId String [ref: > t_opportunities.id]
 }
@@ -569,6 +601,10 @@ Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
 Ref: t_places.communityId > t_communities.id [delete: Set Null]
 
+Ref: t_communities.imageId > t_images.id
+
+Ref: t_users.imageId > t_images.id
+
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
@@ -582,6 +618,8 @@ Ref: t_membership_histories.createdBy > t_users.id [delete: Set Null]
 Ref: t_wallets.communityId > t_communities.id [delete: Cascade]
 
 Ref: t_wallets.userId > t_users.id [delete: Set Null]
+
+Ref: t_articles.thumbnailId > t_images.id [delete: Set Null]
 
 Ref: t_articles.communityId > t_communities.id [delete: Cascade]
 
@@ -606,8 +644,6 @@ Ref: t_participations.userId > t_users.id [delete: Set Null]
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
 Ref: t_participations.communityId > t_communities.id [delete: Set Null]
-
-Ref: t_participation_images.participationId > t_participations.id [delete: Cascade]
 
 Ref: t_participation_status_histories.participationId > t_participations.id [delete: Cascade]
 

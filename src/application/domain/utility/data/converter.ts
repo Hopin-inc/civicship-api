@@ -3,6 +3,7 @@ import {
   GqlUtilitySortInput,
   GqlUtilityCreateInput,
   GqlUtilityUpdateInfoInput,
+  GqlImageInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
@@ -40,18 +41,31 @@ export default class UtilityConverter {
     };
   }
 
-  static create(input: GqlUtilityCreateInput): Prisma.UtilityCreateInput {
+  static create(input: GqlUtilityCreateInput): {
+    data: Omit<Prisma.UtilityCreateInput, "images">;
+    images: GqlImageInput[];
+  } {
+    const { images, communityId, ...prop } = input;
     return {
-      ...input,
-      image: input.image?.base64,
-      community: { connect: { id: input.communityId } },
+      data: {
+        ...prop,
+        community: { connect: { id: communityId } },
+      },
+      images: images ?? [],
     };
   }
 
-  static updateInfo(input: GqlUtilityUpdateInfoInput): Prisma.UtilityUpdateInput {
+  static updateInfo(input: GqlUtilityUpdateInfoInput): {
+    data: Omit<Prisma.UtilityUpdateInput, "images">;
+    images: GqlImageInput[];
+  } {
+    const { images, ...prop } = input;
+
     return {
-      ...input,
-      image: input.image?.base64,
+      data: {
+        ...prop,
+      },
+      images: images ?? [],
     };
   }
 }

@@ -173,6 +173,26 @@ TICKET_PURCHASED TICKET_PURCHASED
 TICKET_REFUNDED TICKET_REFUNDED
         }
     
+  "t_images" {
+    String id "🗝️"
+    Boolean is_public 
+    String url 
+    String bucket 
+    String folder_path 
+    String filename 
+    Int size "❓"
+    Int width "❓"
+    Int height "❓"
+    String mime 
+    String ext 
+    String alt "❓"
+    String caption "❓"
+    Int strapi_id "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "m_states" {
     String code "🗝️"
     String name 
@@ -208,10 +228,10 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     String name 
     String point_name 
-    String image "❓"
     String bio "❓"
     DateTime established_at "❓"
     String website "❓"
+    String image_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -221,16 +241,16 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     String name 
     String slug 
-    String image "❓"
     String bio "❓"
     SysRole sys_role 
+    CurrentPrefecture current_prefecture 
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"
     String url_instagram "❓"
     String url_youtube "❓"
     String url_tiktok "❓"
-    CurrentPrefecture current_prefecture 
+    String image_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -287,8 +307,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     ArticleCategory category 
     PublishStatus publish_status 
     String body 
-    Json thumbnail "❓"
     DateTime published_at 
+    String thumbnail_id "❓"
     String community_id 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -303,8 +323,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     OpportunityCategory category 
     String description 
     String body "❓"
-    String image "❓"
-    Json files 
     Int points_to_earn "❓"
     Int fee_required "❓"
     String community_id "❓"
@@ -360,16 +378,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
-  "t_participation_images" {
-    String id "🗝️"
-    String participation_id 
-    String url 
-    String caption "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
   "t_participation_status_histories" {
     String id "🗝️"
     String participation_id 
@@ -408,7 +416,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     PublishStatus publish_status 
     String name 
     String description "❓"
-    String image "❓"
     Int points_required 
     String community_id 
     DateTime created_at 
@@ -494,12 +501,19 @@ TICKET_REFUNDED TICKET_REFUNDED
     Int remainingCapacity "❓"
     }
   
+    "t_images" o{--}o "t_users" : "users"
+    "t_images" o{--}o "t_communities" : "communities"
+    "t_images" o{--}o "t_articles" : "articles"
+    "t_images" o{--}o "t_opportunities" : "opportunities"
+    "t_images" o{--}o "t_participations" : "participations"
+    "t_images" o{--}o "t_utilities" : "utilities"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o|--|o "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"
+    "t_communities" o|--|o "t_images" : "image"
     "t_communities" o{--}o "t_places" : "places"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
@@ -509,6 +523,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_communities" o{--}o "t_articles" : "articles"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
+    "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
@@ -548,12 +563,14 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_wallets" o{--}o "t_tickets" : "tickets"
     "t_articles" o|--|| "ArticleCategory" : "enum:category"
     "t_articles" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_articles" o|--|o "t_images" : "thumbnail"
     "t_articles" o|--|| "t_communities" : "community"
     "t_articles" o{--}o "t_users" : "authors"
     "t_articles" o{--}o "t_users" : "relatedUsers"
     "t_articles" o{--}o "t_opportunities" : "opportunities"
     "t_opportunities" o|--|| "PublishStatus" : "enum:publish_status"
     "t_opportunities" o|--|| "OpportunityCategory" : "enum:category"
+    "t_opportunities" o{--}o "t_images" : "images"
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "v_earliest_reservable_slot" : "earliestReservableSlotView"
@@ -576,7 +593,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o|--|| "Source" : "enum:source"
     "t_participations" o|--|| "ParticipationStatus" : "enum:status"
     "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
-    "t_participations" o{--}o "t_participation_images" : "images"
+    "t_participations" o{--}o "t_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
@@ -584,7 +601,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o{--}o "t_evaluations" : "evaluation"
     "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
-    "t_participation_images" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
     "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"
@@ -597,6 +613,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
     "t_evaluation_histories" o|--|o "t_users" : "createdByUser"
     "t_utilities" o|--|| "PublishStatus" : "enum:publish_status"
+    "t_utilities" o{--}o "t_images" : "images"
     "t_utilities" o|--|| "t_communities" : "community"
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
     "t_utilities" o{--}o "t_tickets" : "tickets"

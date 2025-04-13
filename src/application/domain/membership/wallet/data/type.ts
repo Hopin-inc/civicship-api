@@ -1,9 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { userInclude } from "@/application/domain/user/data/type";
 
 export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
   community: true,
-  user: { include: userInclude },
+  user: true,
   currentPointView: true,
   accumulatedPointView: true,
 });

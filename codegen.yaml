@@ -17,6 +17,7 @@ generates:
         Datetime: Date
         Decimal: string
         JSON: any
+        Upload: "Promise<import('graphql-upload-minimal').FileUpload>"
       enumsAsConst: true
       mappers:
         User: "@prisma/client/index.d#User"
@@ -38,4 +39,5 @@ generates:
         Transaction: "@prisma/client/index.d#Transaction"
         City: "@prisma/client/index.d#City"
         State: "@prisma/client/index.d#State"
+#        Image: "@prisma/client/index.d#Image"
 #      contextType: "@/prisma/client#Context"
