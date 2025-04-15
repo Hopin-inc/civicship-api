@@ -134,6 +134,7 @@ enum AuthZRules {
     IsCommunityMember,
     IsOpportunityOwner,
     VerifySanitizeInput,
+    CanReadPhoneNumber
 }
 
 # this is a common boilerplate

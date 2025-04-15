@@ -1,8 +1,9 @@
-import { preExecRule } from "@graphql-authz/core";
+import { postExecRule, preExecRule } from "@graphql-authz/core";
 import { AuthenticationError, AuthorizationError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { Role } from "@prisma/client";
 import sanitize from "sanitize-html";
+import { GqlUser } from "@/types/graphql";
 
 // 🔐 ログイン済みか
 const IsUser = preExecRule({
@@ -182,6 +183,30 @@ function recursiveSanitize(input: Sanitizable): Sanitizable {
   return input;
 }
 
+const CanReadPhoneNumber = postExecRule({
+  error: "Not authorized to read phone number",
+})((context: IContext, _args: any, result: GqlUser) => {
+  const viewer = context.currentUser;
+  if (!viewer) throw new AuthenticationError("User must be logged in");
+
+  const isSelf = viewer.id === result.id;
+  const isAdmin = viewer.sysRole === "SYS_ADMIN";
+
+  const targetCommunityIds =
+    result.memberships?.edges?.flatMap((e) =>
+      e?.node?.community?.id ? [e.node.community.id] : [],
+    ) ?? [];
+
+  const isCommunityManager = targetCommunityIds.some((cid) =>
+    context.hasPermissions?.memberships?.some(
+      (m) => m.communityId === cid && (m.role === Role.OWNER || m.role === Role.MANAGER),
+    ),
+  );
+
+  if (isSelf || isAdmin || isCommunityManager) return true;
+  throw new AuthorizationError("Not authorized to read phone number");
+});
+
 export const rules = {
   IsUser,
   IsAdmin,
@@ -191,4 +216,5 @@ export const rules = {
   IsCommunityMember,
   IsOpportunityOwner,
   VerifySanitizeInput,
+  CanReadPhoneNumber,
 } as const;

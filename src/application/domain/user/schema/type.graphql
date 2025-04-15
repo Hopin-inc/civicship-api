@@ -3,11 +3,14 @@
 # ------------------------------
 type User {
     id: ID!
+
+    sysRole: SysRole!
     name: String!
     slug: String!
     image: String
     bio: String
-    sysRole: SysRole!
+    phoneNumber: String @authz(rules: [CanReadPhoneNumber])
+
     urlWebsite: String
     urlX: String
     urlFacebook: String

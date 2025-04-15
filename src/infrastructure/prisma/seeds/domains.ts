@@ -30,7 +30,7 @@ export async function seedUsecase() {
       TRUNCATE TABLE 
         t_evaluation_histories,
         t_evaluations,
-        t_participation_images,
+        t_images,
         t_participation_status_histories,
         t_participations,
         t_reservation_histories,
