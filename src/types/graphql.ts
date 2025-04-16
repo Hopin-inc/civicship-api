@@ -101,6 +101,7 @@ export type GqlAuthZDirectiveDeepCompositeRulesInput = {
 };
 
 export const GqlAuthZRules = {
+  CanReadPhoneNumber: 'CanReadPhoneNumber',
   IsAdmin: 'IsAdmin',
   IsCommunityManager: 'IsCommunityManager',
   IsCommunityMember: 'IsCommunityMember',
@@ -1435,6 +1436,7 @@ export type GqlPortfolio = {
   id: Scalars['ID']['output'];
   participants: Array<GqlUser>;
   place?: Maybe<GqlPlace>;
+  reservationStatus?: Maybe<GqlReservationStatus>;
   source: GqlPortfolioSource;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
   title: Scalars['String']['output'];
@@ -2189,6 +2191,7 @@ export type GqlUser = {
   opportunitiesCreatedByMe?: Maybe<GqlOpportunitiesConnection>;
   participationStatusChangedByMe?: Maybe<GqlParticipationStatusHistoriesConnection>;
   participations?: Maybe<GqlParticipationsConnection>;
+  phoneNumber?: Maybe<Scalars['String']['output']>;
   portfolios?: Maybe<GqlPortfoliosConnection>;
   reservationStatusChangedByMe?: Maybe<GqlReservationHistoriesConnection>;
   reservations?: Maybe<GqlReservationsConnection>;
@@ -3816,6 +3819,7 @@ export type GqlPortfolioResolvers<ContextType = any, ParentType extends GqlResol
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participants?: Resolver<Array<GqlResolversTypes['User']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
+  reservationStatus?: Resolver<Maybe<GqlResolversTypes['ReservationStatus']>, ParentType, ContextType>;
   source?: Resolver<GqlResolversTypes['PortfolioSource'], ParentType, ContextType>;
   thumbnailUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -4110,6 +4114,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   opportunitiesCreatedByMe?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUserOpportunitiesCreatedByMeArgs>>;
   participationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserParticipationStatusChangedByMeArgs>>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlUserParticipationsArgs>>;
+  phoneNumber?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   portfolios?: Resolver<Maybe<GqlResolversTypes['PortfoliosConnection']>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
   reservationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ReservationHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserReservationStatusChangedByMeArgs>>;
   reservations?: Resolver<Maybe<GqlResolversTypes['ReservationsConnection']>, ParentType, ContextType, Partial<GqlUserReservationsArgs>>;
