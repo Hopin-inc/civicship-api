@@ -3,7 +3,7 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - fix/graphql-another-module-issue
+      - develop
 
 jobs:
   deploy:
