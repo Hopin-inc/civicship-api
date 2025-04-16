@@ -139,7 +139,7 @@
 //       category: OpportunityCategory.QUEST,
 //       publishStatus: PublishStatus.PUBLIC,
 //       requireApproval: false,
-//       image: { base64: "updated-image" },
+//       // images: [{ file: {} }],
 //       place: {
 //         where: "place-123",
 //       },
