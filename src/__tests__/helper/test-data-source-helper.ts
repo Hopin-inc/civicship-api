@@ -1,15 +1,14 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
-import { opportunityInclude } from "@/application/domain/opportunity/data/type";
 import { communityInclude } from "@/application/domain/community/data/type";
 import { walletInclude } from "@/application/domain/membership/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
 import { utilityInclude } from "@/application/domain/utility/data/type";
 import { placeInclude } from "@/application/domain/place/data/type";
-import { membershipInclude } from "@/application/domain/membership/data/type";
 import { reservationInclude } from "@/application/domain/reservation/data/type";
 import { participationInclude } from "@/application/domain/participation/data/type";
+import { userInclude } from "@/application/domain/user/data/type";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
@@ -19,13 +18,16 @@ export default class TestDataSourceHelper {
   }
 
   static async deleteAll() {
+    await this.db.image.deleteMany();
+
     await this.db.participationStatusHistory.deleteMany();
     await this.db.participation.deleteMany();
 
     await this.db.reservation.deleteMany();
 
-    await this.db.ticket.deleteMany();
     await this.db.ticketStatusHistory.deleteMany();
+
+    await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
 
     await this.db.participationStatusHistory.deleteMany();
@@ -46,6 +48,12 @@ export default class TestDataSourceHelper {
 
   static async disconnect() {
     return await this.db.$disconnect();
+  }
+
+  static async createImage(data: Prisma.ImageCreateInput) {
+    return await this.db.image.create({
+      data,
+    });
   }
 
   // ======== User =========
@@ -74,7 +82,10 @@ export default class TestDataSourceHelper {
   static async createMembership(data: Prisma.MembershipCreateInput) {
     return await this.db.membership.create({
       data,
-      include: membershipInclude,
+      include: {
+        community: { include: communityInclude },
+        user: { include: userInclude },
+      },
     });
   }
 
@@ -108,7 +119,13 @@ export default class TestDataSourceHelper {
   static async createOpportunity(data: Prisma.OpportunityCreateInput) {
     return await this.db.opportunity.create({
       data,
-      include: opportunityInclude,
+      include: {
+        community: { include: communityInclude },
+        createdByUser: { include: userInclude },
+        place: { include: placeInclude },
+        images: true,
+        requiredUtilities: { include: utilityInclude },
+      },
     });
   }
 
