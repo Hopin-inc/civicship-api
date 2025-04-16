@@ -62,12 +62,16 @@ describe("EvaluationService", () => {
 
     it("should return participation, opportunity, and communityId if all are present", () => {
       const evaluation: PrismaEvaluation = {
-        id: evaluationId,
+        id: "eval-1",
         participation: {
           id: "p1",
           communityId: "c1",
-          opportunitySlot: {
-            opportunity: { id: "o1" },
+          reservation: {
+            opportunitySlot: {
+              opportunity: {
+                id: "o1",
+              },
+            },
           },
         },
       } as any;
@@ -96,8 +100,10 @@ describe("EvaluationService", () => {
         participation: {
           id: "p1",
           communityId: "c1",
-          opportunitySlot: {
-            opportunity: undefined,
+          reservation: {
+            opportunitySlot: {
+              opportunity: undefined,
+            },
           },
         },
       } as any;
@@ -113,8 +119,12 @@ describe("EvaluationService", () => {
         participation: {
           id: "p1",
           communityId: null,
-          opportunitySlot: {
-            opportunity: { id: "o1" },
+          reservation: {
+            opportunitySlot: {
+              opportunity: {
+                id: "o1",
+              },
+            },
           },
         },
       } as any;

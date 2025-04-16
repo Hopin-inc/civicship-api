@@ -58,18 +58,27 @@ describe("UtilityService", () => {
     it("should convert input and call repository.create", async () => {
       const input = {
         communityId: "c1",
-        image: { base64: "data:image/png;base64,..." },
+        images: [],
       };
-      const data = { dummy: true };
+
+      const converted = {
+        data: { dummy: true },
+        images: [],
+      };
+
       const created = { id: "u1" };
 
-      (UtilityConverter.create as jest.Mock).mockReturnValue(data);
+      (UtilityConverter.create as jest.Mock).mockReturnValue(converted);
       (UtilityRepository.create as jest.Mock).mockResolvedValue(created);
 
       const result = await UtilityService.createUtility(ctx, input as any);
+
       expect(result).toBe(created);
       expect(UtilityConverter.create).toHaveBeenCalledWith(input);
-      expect(UtilityRepository.create).toHaveBeenCalledWith(ctx, data);
+      expect(UtilityRepository.create).toHaveBeenCalledWith(
+        ctx,
+        expect.objectContaining({ dummy: true }),
+      );
     });
   });
 
@@ -96,14 +105,17 @@ describe("UtilityService", () => {
         id: "u1",
         input: {
           name: "Updated",
-          image: { base64: "new-img" },
+          images: [], // ✅ 修正ポイント
         },
       };
       const converted = { name: "Updated", image: "new-img" };
       const updated = { id: "u1", ...converted };
 
       (UtilityRepository.find as jest.Mock).mockResolvedValue({ id: "u1" });
-      (UtilityConverter.updateInfo as jest.Mock).mockReturnValue(converted);
+      (UtilityConverter.updateInfo as jest.Mock).mockReturnValue({
+        data: { name: "Updated", image: "new-img" },
+        images: [], // ✅ これがないと map で死ぬ
+      });
       (UtilityRepository.update as jest.Mock).mockResolvedValue(updated);
 
       const result = await UtilityService.updateUtilityInfo(ctx, args as any);
