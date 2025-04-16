@@ -101,6 +101,7 @@ export type GqlAuthZDirectiveDeepCompositeRulesInput = {
 };
 
 export const GqlAuthZRules = {
+  CanReadPhoneNumber: 'CanReadPhoneNumber',
   IsAdmin: 'IsAdmin',
   IsCommunityManager: 'IsCommunityManager',
   IsCommunityMember: 'IsCommunityMember',
@@ -2189,6 +2190,7 @@ export type GqlUser = {
   opportunitiesCreatedByMe?: Maybe<GqlOpportunitiesConnection>;
   participationStatusChangedByMe?: Maybe<GqlParticipationStatusHistoriesConnection>;
   participations?: Maybe<GqlParticipationsConnection>;
+  phoneNumber?: Maybe<Scalars['String']['output']>;
   portfolios?: Maybe<GqlPortfoliosConnection>;
   reservationStatusChangedByMe?: Maybe<GqlReservationHistoriesConnection>;
   reservations?: Maybe<GqlReservationsConnection>;
@@ -4110,6 +4112,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   opportunitiesCreatedByMe?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUserOpportunitiesCreatedByMeArgs>>;
   participationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserParticipationStatusChangedByMeArgs>>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlUserParticipationsArgs>>;
+  phoneNumber?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   portfolios?: Resolver<Maybe<GqlResolversTypes['PortfoliosConnection']>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
   reservationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ReservationHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserReservationStatusChangedByMeArgs>>;
   reservations?: Resolver<Maybe<GqlResolversTypes['ReservationsConnection']>, ParentType, ContextType, Partial<GqlUserReservationsArgs>>;
