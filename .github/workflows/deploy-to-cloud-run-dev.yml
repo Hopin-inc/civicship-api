@@ -87,7 +87,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        pnpm dotenvx run -- docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest .
+        pnpm dotenvx run -- docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest .
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
