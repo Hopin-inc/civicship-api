@@ -19,6 +19,10 @@
 //     await TestDataSourceHelper.disconnect();
 //   });
 //
+//   const now = new Date();
+//   const startsAt = new Date(now.getTime() + 60 * 60 * 1000);
+//   const endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+//
 //   describe("accept reservation application", () => {
 //     it("should create a member wallet if not existed", async () => {
 //       //////////////////////////////////////////////////
@@ -41,6 +45,16 @@
 //       const communityId = communityInserted.id;
 //
 //       // 1-3. opportunity
+//       const image = await TestDataSourceHelper.createImage({
+//         isPublic: true,
+//         url: "https://dummy.com/image.png",
+//         bucket: "string",
+//         folderPath: "string",
+//         filename: "string",
+//         mime: "string",
+//         ext: "string",
+//       });
+//
 //       const opportunityInserted = await TestDataSourceHelper.createOpportunity({
 //         category: OpportunityCategory.EVENT,
 //         description: "opportunity",
@@ -49,14 +63,15 @@
 //         title: "opportunity",
 //         community: { connect: { id: communityId } },
 //         createdByUser: { connect: { id: userId } },
+//         images: { connect: { id: image.id } },
 //       });
 //       const opportunityId = opportunityInserted.id;
 //
 //       // 1-4. opportunitySlot (予約対象の時間枠)
 //       const slotInserted = await TestDataSourceHelper.createOpportunitySlot({
 //         opportunity: { connect: { id: opportunityId } },
-//         startsAt: new Date("2025-01-01T10:00:00Z"),
-//         endsAt: new Date("2025-01-01T12:00:00Z"),
+//         startsAt,
+//         endsAt,
 //       });
 //       const slotId = slotInserted.id;
 //
@@ -72,7 +87,8 @@
 //       // 2. construct request (permission)
 //       //////////////////////////////////////////////////
 //       const permission = {
-//         communityId: communityId,
+//         communityId,
+//         opportunityId,
 //       };
 //
 //       //////////////////////////////////////////////////
@@ -124,6 +140,16 @@
 //       });
 //       const communityId = communityInserted.id;
 //
+//       const image = await TestDataSourceHelper.createImage({
+//         isPublic: true,
+//         url: "https://dummy.com/image.png",
+//         bucket: "string",
+//         folderPath: "string",
+//         filename: "string",
+//         mime: "string",
+//         ext: "string",
+//       });
+//
 //       const opportunityInserted = await TestDataSourceHelper.createOpportunity({
 //         category: OpportunityCategory.EVENT,
 //         description: "opportunity",
@@ -132,13 +158,14 @@
 //         title: "opportunity",
 //         community: { connect: { id: communityId } },
 //         createdByUser: { connect: { id: userId } },
+//         images: { connect: { id: image.id } },
 //       });
 //       const opportunityId = opportunityInserted.id;
 //
 //       const slotInserted = await TestDataSourceHelper.createOpportunitySlot({
 //         opportunity: { connect: { id: opportunityId } },
-//         startsAt: new Date("2025-01-01T10:00:00Z"),
-//         endsAt: new Date("2025-01-01T12:00:00Z"),
+//         startsAt,
+//         endsAt,
 //       });
 //
 //       const reservationInserted = await TestDataSourceHelper.createReservation({
@@ -159,7 +186,7 @@
 //       //////////////////////////////////////////////////
 //       // 2. construct request (input)
 //       //////////////////////////////////////////////////
-//       const permission = { communityId };
+//       const permission = { communityId, opportunityId };
 //
 //       //////////////////////////////////////////////////
 //       // 3. execute
@@ -207,6 +234,16 @@
 //       });
 //       const communityId = communityInserted.id;
 //
+//       const image = await TestDataSourceHelper.createImage({
+//         isPublic: true,
+//         url: "https://dummy.com/image.png",
+//         bucket: "string",
+//         folderPath: "string",
+//         filename: "string",
+//         mime: "string",
+//         ext: "string",
+//       });
+//
 //       const opportunityInserted = await TestDataSourceHelper.createOpportunity({
 //         category: OpportunityCategory.EVENT,
 //         description: "opportunity",
@@ -215,12 +252,13 @@
 //         title: "opportunity",
 //         community: { connect: { id: communityId } },
 //         createdByUser: { connect: { id: userId } },
+//         images: { connect: { id: image.id } },
 //       });
 //
 //       const slotInserted = await TestDataSourceHelper.createOpportunitySlot({
 //         opportunity: { connect: { id: opportunityInserted.id } },
-//         startsAt: new Date("2025-01-01T10:00:00Z"),
-//         endsAt: new Date("2025-01-01T12:00:00Z"),
+//         startsAt,
+//         endsAt,
 //       });
 //       const slotId = slotInserted.id;
 //
@@ -272,6 +310,16 @@
 //       });
 //       const communityId = communityInserted.id;
 //
+//       const image = await TestDataSourceHelper.createImage({
+//         isPublic: true,
+//         url: "https://dummy.com/image.png",
+//         bucket: "string",
+//         folderPath: "string",
+//         filename: "string",
+//         mime: "string",
+//         ext: "string",
+//       });
+//
 //       const opportunityInserted = await TestDataSourceHelper.createOpportunity({
 //         category: OpportunityCategory.EVENT,
 //         description: "opportunity",
@@ -280,6 +328,7 @@
 //         title: "opportunity",
 //         community: { connect: { id: communityId } },
 //         createdByUser: { connect: { id: userId } },
+//         images: { connect: { id: image.id } },
 //       });
 //
 //       // 既存 Member Wallet
@@ -292,8 +341,8 @@
 //
 //       const slotInserted = await TestDataSourceHelper.createOpportunitySlot({
 //         opportunity: { connect: { id: opportunityInserted.id } },
-//         startsAt: new Date("2025-01-01T10:00:00Z"),
-//         endsAt: new Date("2025-01-01T12:00:00Z"),
+//         startsAt,
+//         endsAt,
 //       });
 //       const slotId = slotInserted.id;
 //
