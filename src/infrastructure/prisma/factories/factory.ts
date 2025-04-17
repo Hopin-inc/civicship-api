@@ -30,7 +30,6 @@ import {
   randSlug,
   randState,
   randStreetAddress,
-  randUrl,
   randUuid,
 } from "@ngneat/falso";
 import {
@@ -83,7 +82,7 @@ initialize({ prisma: prismaClient });
 
 export const ImageFactory = defineImageFactory({
   defaultData: () => ({
-    url: randUrl(),
+    url: "https://placehold.jp/800x800.png",
   }),
 });
 
