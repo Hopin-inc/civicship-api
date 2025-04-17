@@ -214,6 +214,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String address 
     Decimal latitude 
     Decimal longitude 
+    String image_id "❓"
     Boolean is_manual 
     String google_place_id "❓"
     Json map_location "❓"
@@ -504,12 +505,14 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_images" o{--}o "t_users" : "users"
     "t_images" o{--}o "t_communities" : "communities"
     "t_images" o{--}o "t_articles" : "articles"
+    "t_images" o{--}o "t_places" : "places"
     "t_images" o{--}o "t_opportunities" : "opportunities"
     "t_images" o{--}o "t_participations" : "participations"
     "t_images" o{--}o "t_utilities" : "utilities"
     "m_states" o{--}o "m_cities" : "cities"
     "m_cities" o|--|| "m_states" : "state"
     "m_cities" o{--}o "t_places" : "places"
+    "t_places" o|--|o "t_images" : "image"
     "t_places" o|--|| "m_cities" : "city"
     "t_places" o|--|o "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"

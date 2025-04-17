@@ -85,6 +85,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Article",
                 relationName: "ArticleToImage"
             }, {
+                name: "places",
+                type: "Place",
+                relationName: "ImageToPlace"
+            }, {
                 name: "opportunities",
                 type: "Opportunity",
                 relationName: "t_images_on_opportunities"
@@ -118,6 +122,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "Place",
         fields: [{
+                name: "image",
+                type: "Image",
+                relationName: "ImageToPlace"
+            }, {
                 name: "city",
                 type: "City",
                 relationName: "CityToPlace"
@@ -621,6 +629,7 @@ type ImageFactoryDefineInput = {
     users?: Prisma.UserCreateNestedManyWithoutImageInput;
     communities?: Prisma.CommunityCreateNestedManyWithoutImageInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutThumbnailInput;
+    places?: Prisma.PlaceCreateNestedManyWithoutImageInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutImagesInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutImagesInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutImagesInput;
@@ -1069,6 +1078,11 @@ type PlaceScalarOrEnumFields = {
     isManual: boolean;
 };
 
+type PlaceimageFactory = {
+    _factoryFor: "Image";
+    build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutPlacesInput["create"]>;
+};
+
 type PlacecityFactory = {
     _factoryFor: "City";
     build: () => PromiseLike<Prisma.CityCreateNestedOneWithoutPlacesInput["create"]>;
@@ -1090,6 +1104,7 @@ type PlaceFactoryDefineInput = {
     mapLocation?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
+    image?: PlaceimageFactory | Prisma.ImageCreateNestedOneWithoutPlacesInput;
     city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
     community?: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
@@ -1107,6 +1122,10 @@ type PlaceFactoryDefineOptions<TTransients extends Record<string, unknown> = Rec
         [traitName: string | symbol]: PlaceFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Place, Prisma.PlaceCreateInput, TTransients>;
+
+function isPlaceimageFactory(x: PlaceimageFactory | Prisma.ImageCreateNestedOneWithoutPlacesInput | undefined): x is PlaceimageFactory {
+    return (x as any)?._factoryFor === "Image";
+}
 
 function isPlacecityFactory(x: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput | undefined): x is PlacecityFactory {
     return (x as any)?._factoryFor === "City";
@@ -1180,6 +1199,9 @@ function definePlaceFactoryInternal<TTransients extends Record<string, unknown>,
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                image: isPlaceimageFactory(defaultData.image) ? {
+                    create: await defaultData.image.build()
+                } : defaultData.image,
                 city: isPlacecityFactory(defaultData.city) ? {
                     create: await defaultData.city.build()
                 } : defaultData.city,

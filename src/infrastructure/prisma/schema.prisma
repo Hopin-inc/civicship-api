@@ -71,6 +71,7 @@ model Image {
   users       User[]
   communities Community[]
   articles    Article[]
+  places      Place[]
 
   opportunities  Opportunity[]   @relation("t_images_on_opportunities")
   participations Participation[] @relation("t_images_on_participations")
@@ -118,6 +119,9 @@ model Place {
   address   String
   latitude  Decimal
   longitude Decimal
+
+  imageId String? @map("image_id")
+  image   Image?  @relation(fields: [imageId], references: [id])
 
   isManual      Boolean @map("is_manual")
   googlePlaceId String? @map("google_place_id")

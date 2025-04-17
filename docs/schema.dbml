@@ -20,6 +20,7 @@ Table t_images {
   users t_users [not null]
   communities t_communities [not null]
   articles t_articles [not null]
+  places t_places [not null]
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   utilities t_utilities [not null]
@@ -53,6 +54,8 @@ Table t_places {
   address String [not null]
   latitude Decimal [not null]
   longitude Decimal [not null]
+  imageId String
+  image t_images
   isManual Boolean [not null]
   googlePlaceId String
   mapLocation Json
@@ -596,6 +599,8 @@ Enum TransactionReason {
 }
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
+
+Ref: t_places.imageId > t_images.id
 
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 

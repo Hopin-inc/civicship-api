@@ -1343,6 +1343,7 @@ export type GqlPlace = {
   createdAt: Scalars['Datetime']['output'];
   googlePlaceId?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
   isManual: Scalars['Boolean']['output'];
   latitude: Scalars['Decimal']['output'];
   longitude: Scalars['Decimal']['output'];
@@ -3764,6 +3765,7 @@ export type GqlPlaceResolvers<ContextType = any, ParentType extends GqlResolvers
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   googlePlaceId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   isManual?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   latitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
   longitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
