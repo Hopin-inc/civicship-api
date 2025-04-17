@@ -17,7 +17,6 @@ import {
 import { prismaClient } from "@/infrastructure/prisma/client";
 
 const NUM_UTILITIES = 3;
-const NUM_OPPORTUNITIES = 10;
 const NUM_SLOTS_PER_OPPORTUNITY = 3;
 const NUM_RESERVATIONS_PER_SLOT = 1;
 const NUM_TRANSACTIONS = 10;
@@ -56,11 +55,14 @@ export async function seedUsecase() {
   console.log("🧱 Creating base User, Community, Wallet, Membership...");
   const { user, community, wallet } = await createBaseEntities();
 
+  console.log("📍 Creating Places...");
+  const places = await createPlaces(community);
+
   console.log("🎫 Creating Utilities & Tickets...");
   await createUtilitiesAndTickets(user, community, wallet);
 
   console.log("📣 Creating Opportunities...");
-  const opportunities = await createOpportunities(user, community);
+  const opportunities = await createOpportunities(user, community, places);
 
   console.log("🧩 Creating Slots, Reservations, Participations, Evaluations, and Articles...");
   await createNestedEntities(user, community, opportunities);
@@ -101,14 +103,25 @@ async function createUtilitiesAndTickets(user: any, community: any, wallet: any)
   );
 }
 
-// STEP 3
-async function createOpportunities(user: any, community: any) {
-  const place = await PlaceFactory.create({ transientCommunity: community });
-  return await OpportunityFactory.createList(NUM_OPPORTUNITIES, {
-    transientUser: user,
+// 💡 STEP 1.5 を追加：Placeを複数作成
+async function createPlaces(community: any) {
+  return await PlaceFactory.createList(20, {
     transientCommunity: community,
-    transientPlace: place,
   });
+}
+
+// STEP 3
+// 修正後の createOpportunities 関数
+async function createOpportunities(user: any, community: any, places: any[]) {
+  return await Promise.all(
+    places.map((place) =>
+      OpportunityFactory.create({
+        transientUser: user,
+        transientCommunity: community,
+        transientPlace: place,
+      }),
+    ),
+  );
 }
 
 // STEP 4
