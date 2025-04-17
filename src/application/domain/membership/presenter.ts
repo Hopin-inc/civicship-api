@@ -108,6 +108,9 @@ export default class MembershipPresenter {
         ?.filter((g) => g.type === "HOSTED")
         .map((g) => ({
           placeId: g.placeId,
+          placeName: g.placeName,
+          placeImage: g.placeImage,
+          address: g.address,
           latitude: g.latitude.toString(),
           longitude: g.longitude.toString(),
         })) ?? [];
@@ -126,6 +129,9 @@ export default class MembershipPresenter {
         ?.filter((g) => g.type === "PARTICIPATED")
         .map((g) => ({
           placeId: g.placeId,
+          placeName: g.placeName,
+          placeImage: g.placeImage,
+          address: g.address,
           latitude: g.latitude.toString(),
           longitude: g.longitude.toString(),
         })) ?? [];

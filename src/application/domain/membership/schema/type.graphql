@@ -42,6 +42,10 @@ type MembershipParticipatedMetrics {
 
 type MembershipParticipationLocation{
     placeId: ID!
+    placeName: String!
+    placeImage: String!
+
+    address: String!
     latitude: Decimal!
     longitude: Decimal!
 }
