@@ -8,6 +8,8 @@ type Portfolio {
     source: PortfolioSource!
     category: String!
 
+    reservationStatus: ReservationStatus
+
     date: Datetime!
     place: Place
 

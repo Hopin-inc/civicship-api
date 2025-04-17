@@ -1436,6 +1436,7 @@ export type GqlPortfolio = {
   id: Scalars['ID']['output'];
   participants: Array<GqlUser>;
   place?: Maybe<GqlPlace>;
+  reservationStatus?: Maybe<GqlReservationStatus>;
   source: GqlPortfolioSource;
   thumbnailUrl?: Maybe<Scalars['String']['output']>;
   title: Scalars['String']['output'];
@@ -3818,6 +3819,7 @@ export type GqlPortfolioResolvers<ContextType = any, ParentType extends GqlResol
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participants?: Resolver<Array<GqlResolversTypes['User']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
+  reservationStatus?: Resolver<Maybe<GqlResolversTypes['ReservationStatus']>, ParentType, ContextType>;
   source?: Resolver<GqlResolversTypes['PortfolioSource'], ParentType, ContextType>;
   thumbnailUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;

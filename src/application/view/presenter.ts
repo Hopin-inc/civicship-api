@@ -27,10 +27,11 @@ export default class ViewPresenter {
     const place = opportunity.place;
 
     return {
-      id: opportunity.id,
+      id: p.id,
       title: opportunity.title,
       source: GqlPortfolioSource.Opportunity,
       category: opportunity.category,
+      reservationStatus: reservation?.status,
       date: startsAt,
       place: place ? PlacePresenter.get(place) : null,
       thumbnailUrl: images?.[0]?.url ?? opportunity.images[0].url,
