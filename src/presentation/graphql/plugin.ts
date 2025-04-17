@@ -1,14 +1,14 @@
 import { ApolloServerPlugin, GraphQLRequestContext } from "@apollo/server";
-import { getComplexity, directiveEstimator, simpleEstimator } from "graphql-query-complexity";
+// import { getComplexity, directiveEstimator, simpleEstimator } from "graphql-query-complexity";
 import { GraphQLError } from "graphql/error";
 import type { IContext } from "@/types/server";
-import logger from "@/infrastructure/logging";
-import {
-  DEFAULT_COMPLEXITY,
-  MAX_COMPLEXITY_PER_MINUTE,
-  MAX_COMPLEXITY_PER_USAGE,
-} from "@/consts/graphql";
-import { RateLimitError } from "@/errors/graphql";
+// import logger from "@/infrastructure/logging";
+// import {
+//   DEFAULT_COMPLEXITY,
+//   MAX_COMPLEXITY_PER_MINUTE,
+//   MAX_COMPLEXITY_PER_USAGE,
+// } from "@/consts/graphql";
+// import { RateLimitError } from "@/errors/graphql";
 
 /**
  * Apollo Server 用のレートリミットプラグイン（クエリ複雑度ベース）
@@ -22,34 +22,34 @@ const rateLimitPlugin: ApolloServerPlugin<IContext> = {
           throw new GraphQLError("GraphQL document is undefined");
         }
 
-        const complexity = getComplexity({
-          schema: ctx.schema,
-          query: ctx.document,
-          variables: ctx.request.variables,
-          estimators: [
-            directiveEstimator({ name: "complexity" }),
-            simpleEstimator({
-              defaultComplexity: DEFAULT_COMPLEXITY,
-            }),
-          ],
-        });
+        // const complexity = getComplexity({
+        //   schema: ctx.schema,
+        //   query: ctx.document,
+        //   variables: ctx.request.variables,
+        //   estimators: [
+        //     directiveEstimator({ name: "complexity" }),
+        //     simpleEstimator({
+        //       defaultComplexity: DEFAULT_COMPLEXITY,
+        //     }),
+        //   ],
+        // });
 
-        if (complexity > MAX_COMPLEXITY_PER_USAGE) {
-          throw new GraphQLError(
-            `Query is too complex: ${complexity}. Max allowed: ${MAX_COMPLEXITY_PER_USAGE}`,
-            {
-              extensions: {
-                code: "QUERY_COMPLEXITY_ERROR",
-              },
-            },
-          );
-        }
+        // if (complexity > MAX_COMPLEXITY_PER_USAGE) {
+        //   throw new GraphQLError(
+        //     `Query is too complex: ${complexity}. Max allowed: ${MAX_COMPLEXITY_PER_USAGE}`,
+        //     {
+        //       extensions: {
+        //         code: "QUERY_COMPLEXITY_ERROR",
+        //       },
+        //     },
+        //   );
+        // }
+        //
+        // logger.info(`Calculated query complexity: ${complexity}`);
 
-        logger.info(`Calculated query complexity: ${complexity}`);
-
-        if (complexity > MAX_COMPLEXITY_PER_MINUTE) {
-          throw new RateLimitError("Query complexity limit reached");
-        }
+        // if (complexity > MAX_COMPLEXITY_PER_MINUTE) {
+        //   throw new RateLimitError("Query complexity limit reached");
+        // }
       },
     };
   },
