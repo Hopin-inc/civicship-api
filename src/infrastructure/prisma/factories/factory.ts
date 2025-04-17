@@ -207,6 +207,8 @@ export const MembershipFactory = defineMembershipFactory.withTransientFields<{
     const role = transientRole ?? randomEnum(Role);
 
     return {
+      bio: randAnimal(),
+      headline: randAnimal(),
       user: { connect: { id: user.id } },
       community: { connect: { id: community.id } },
       status,
