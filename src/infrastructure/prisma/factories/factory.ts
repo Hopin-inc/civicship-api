@@ -158,13 +158,16 @@ export const CityFactory = defineCityFactory.withTransientFields<{
 export const PlaceFactory = definePlaceFactory.withTransientFields<{
   transientCity?: { code: string };
   transientCommunity?: { id: string };
+  transientImage?: { id: string };
 }>({
   transientCity: undefined,
   transientCommunity: undefined,
+  transientImage: undefined,
 })({
-  defaultData: async ({ transientCity, transientCommunity }) => {
+  defaultData: async ({ transientCity, transientCommunity, transientImage }) => {
     const city = transientCity ?? (await CityFactory.create());
     const community = transientCommunity ?? (await CommunityFactory.create());
+    const image = transientImage ?? (await ImageFactory.create());
 
     return {
       name: randCity() + "会場",
@@ -172,6 +175,7 @@ export const PlaceFactory = definePlaceFactory.withTransientFields<{
       isManual: true,
       city: { connect: { code: city.code } },
       community: { connect: { id: community.id } },
+      image: { connect: { id: image.id } },
     };
   },
 });
