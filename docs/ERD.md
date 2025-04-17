@@ -466,6 +466,9 @@ TICKET_REFUNDED TICKET_REFUNDED
     String communityId "🗝️"
     ParticipationType type 
     String placeId "🗝️"
+    String placeName 
+    String placeImage 
+    String address 
     Decimal latitude 
     Decimal longitude 
     }
@@ -475,6 +478,13 @@ TICKET_REFUNDED TICKET_REFUNDED
     String userId "🗝️"
     String communityId "🗝️"
     ParticipationType type "🗝️"
+    Int totalCount 
+    }
+  
+
+  "v_membership_hosted_opportunity_count" {
+    String userId "🗝️"
+    String communityId "🗝️"
     Int totalCount 
     }
   
@@ -549,6 +559,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_memberships" o|--|| "MembershipStatusReason" : "enum:reason"
     "t_memberships" o|--|| "Role" : "enum:role"
     "t_memberships" o{--}o "t_membership_histories" : "histories"
+    "t_memberships" o{--}o "v_membership_hosted_opportunity_count" : "opportunityHostedCountView"
     "t_memberships" o{--}o "v_membership_participation_geo" : "participationGeoViews"
     "t_memberships" o{--}o "v_membership_participation_count" : "participationCountViews"
     "t_membership_histories" o|--|| "Role" : "enum:role"
@@ -640,6 +651,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "v_membership_participation_geo" o|--|| "t_memberships" : "membership"
     "v_membership_participation_count" o|--|| "ParticipationType" : "enum:type"
     "v_membership_participation_count" o|--|| "t_memberships" : "membership"
+    "v_membership_hosted_opportunity_count" o|--|| "t_memberships" : "membership"
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
     "v_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"

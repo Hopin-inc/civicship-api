@@ -262,9 +262,11 @@ model Membership {
   reason MembershipStatusReason
   role   Role                   @default(MEMBER)
 
-  histories               MembershipHistory[]
-  participationGeoViews   MembershipParticipationGeoView[]
-  participationCountViews MembershipParticipationCountView[]
+  histories MembershipHistory[]
+
+  opportunityHostedCountView MembershipHostedOpportunityCountView?
+  participationGeoViews      MembershipParticipationGeoView[]
+  participationCountViews    MembershipParticipationCountView[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -277,8 +279,13 @@ view MembershipParticipationGeoView {
   userId      String @map("user_id")
   communityId String @map("community_id")
 
-  type      ParticipationType
-  placeId   String            @map("place_id")
+  type ParticipationType
+
+  placeId    String @map("place_id")
+  placeName  String @map("place_name")
+  placeImage String @map("place_image")
+
+  address   String
   latitude  Decimal
   longitude Decimal
 
@@ -298,6 +305,17 @@ view MembershipParticipationCountView {
 
   @@id([userId, communityId, type])
   @@map("v_membership_participation_count")
+}
+
+view MembershipHostedOpportunityCountView {
+  userId      String @map("user_id")
+  communityId String @map("community_id")
+
+  totalCount Int        @map("total_count")
+  membership Membership @relation(fields: [userId, communityId], references: [userId, communityId])
+
+  @@id([userId, communityId])
+  @@map("v_membership_hosted_opportunity_count")
 }
 
 enum Role {
