@@ -19,6 +19,8 @@ input UserSignUpInput {
     slug: String
     image: ImageInput
 
+    communityId: ID!
+
     currentPrefecture: CurrentPrefecture!
 }
 
