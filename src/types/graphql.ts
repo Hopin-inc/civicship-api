@@ -2342,6 +2342,7 @@ export type GqlUserFilterInput = {
 };
 
 export type GqlUserSignUpInput = {
+  communityId: Scalars['ID']['input'];
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
