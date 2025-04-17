@@ -30,7 +30,6 @@ import {
   randSlug,
   randState,
   randStreetAddress,
-  randUrl,
   randUuid,
 } from "@ngneat/falso";
 import {
@@ -83,7 +82,7 @@ initialize({ prisma: prismaClient });
 
 export const ImageFactory = defineImageFactory({
   defaultData: () => ({
-    url: randUrl(),
+    url: "https://placehold.jp/800x800.png",
   }),
 });
 
@@ -207,6 +206,8 @@ export const MembershipFactory = defineMembershipFactory.withTransientFields<{
     const role = transientRole ?? randomEnum(Role);
 
     return {
+      bio: randAnimal(),
+      headline: randAnimal(),
       user: { connect: { id: user.id } },
       community: { connect: { id: community.id } },
       status,
