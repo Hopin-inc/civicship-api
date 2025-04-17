@@ -75,7 +75,10 @@ export async function seedUsecase() {
 // --- STEP 1: User / Community / Wallet / Membership ---
 async function createBaseEntities() {
   console.log("🧱 STEP 1: Creating base User, Community, Wallet, Membership...");
-  const [community, user] = await Promise.all([CommunityFactory.create(), UserFactory.create()]);
+  const [community, user] = await Promise.all([
+    CommunityFactory.create({ id: "neo88" }),
+    UserFactory.create(),
+  ]);
   const [wallet] = await Promise.all([
     WalletFactory.create({ transientUser: user, transientCommunity: community }),
     MembershipFactory.create({ transientUser: user, transientCommunity: community }),
