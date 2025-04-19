@@ -3,17 +3,18 @@ name: Deploy to Cloud Run （prd）
 on:
   push:
     branches:
-      - master
+      # - master
+      - feature/deploy-to-co-creation-dao-prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: prd
+    environment: co-creation-dao-prod
     timeout-minutes: 30
 
     env:
       # stage
-      STAGE: dev
+      STAGE: co-creation-dao-prod
       # GCP settings
       GCP_REGION: ${{ secrets.GCP_REGION }}
       # GCP service account credentials
@@ -98,13 +99,13 @@ jobs:
       run: |
         docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
 
-    - name: Deploy to Cloud Run
-      id: 'deploy'
-      uses: 'google-github-actions/deploy-cloudrun@v2'
-      with:
-        service: ${{ env.APPLICATION_NAME }}
-        image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
-        region: ${{ env.GCP_REGION }}
+    # - name: Deploy to Cloud Run
+    #   id: 'deploy'
+    #   uses: 'google-github-actions/deploy-cloudrun@v2'
+    #   with:
+    #     service: ${{ env.APPLICATION_NAME }}
+    #     image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+    #     region: ${{ env.GCP_REGION }}
 
     - name: Cleanup SSH Key
       if: always()
