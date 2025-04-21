@@ -13,17 +13,19 @@ import { GqlReservationCreateInput, GqlReservationPaymentMethod } from "@/types/
 describe("Reservation Integration Tests", () => {
   jest.setTimeout(30_000);
 
+  let startsAt: Date;
+  let endsAt: Date;
+
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    const now = new Date();
+    startsAt = new Date(now.getTime() + 60 * 60 * 1000);
+    endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   });
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
   });
-
-  const now = new Date();
-  const startsAt = new Date(now.getTime() + 60 * 60 * 1000);
-  const endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
   describe("accept reservation application", () => {
     it("should create a member wallet if not existed", async () => {
@@ -39,10 +41,13 @@ describe("Reservation Integration Tests", () => {
       const userId = userInserted.id;
       const ctx = { currentUser: { id: userId } } as unknown as IContext;
 
+      const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
+      const pointName = `${communityName}-point`;
+
       // 1-2. community
       const communityInserted = await TestDataSourceHelper.createCommunity({
-        name: "community-1",
-        pointName: "community-1-point",
+        name: communityName,
+        pointName,
       });
       const communityId = communityInserted.id;
 
@@ -136,9 +141,12 @@ describe("Reservation Integration Tests", () => {
       const userId = userInserted.id;
       const ctx = { currentUser: { id: userId } } as unknown as IContext;
 
+      const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
+      const pointName = `${communityName}-point`;
+
       const communityInserted = await TestDataSourceHelper.createCommunity({
-        name: "community-1",
-        pointName: "community-1-point",
+        name: communityName,
+        pointName,
       });
       const communityId = communityInserted.id;
 
@@ -227,9 +235,12 @@ describe("Reservation Integration Tests", () => {
       const userId = userInserted.id;
       const ctx = { currentUser: { id: userId } } as unknown as IContext;
 
+      const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
+      const pointName = `${communityName}-point`;
+
       const communityInserted = await TestDataSourceHelper.createCommunity({
-        name: "community-1",
-        pointName: "community-1-point",
+        name: communityName,
+        pointName,
         image: undefined,
         bio: undefined,
         website: undefined,
@@ -303,9 +314,12 @@ describe("Reservation Integration Tests", () => {
       const userId = userInserted.id;
       const ctx = { currentUser: { id: userId } } as unknown as IContext;
 
+      const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
+      const pointName = `${communityName}-point`;
+
       const communityInserted = await TestDataSourceHelper.createCommunity({
-        name: "community-1",
-        pointName: "community-1-point",
+        name: communityName,
+        pointName,
         image: undefined,
         bio: undefined,
         website: undefined,

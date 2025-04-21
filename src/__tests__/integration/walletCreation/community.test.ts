@@ -9,7 +9,6 @@ describe("Community Integration Tests", () => {
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
-    await TestDataSourceHelper.disconnect();
   });
 
   afterAll(async () => {
@@ -37,8 +36,8 @@ describe("Community Integration Tests", () => {
       //////////////////////////////////////////////////
       // construct request
       //////////////////////////////////////////////////
-      const communityName = "community-1";
-      const pointName = "community-1-point";
+      const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
+      const pointName = `${communityName}-point`;
 
       const createCommunityInput: GqlCommunityCreateInput = {
         name: communityName,

@@ -15,7 +15,6 @@ describe("Transaction Integration Tests", () => {
   beforeEach(async () => {
     // clean up data before each test
     await TestDataSourceHelper.deleteAll();
-    await TestDataSourceHelper.disconnect();
   });
 
   afterAll(async () => {
@@ -46,8 +45,8 @@ describe("Transaction Integration Tests", () => {
       currentUser: { id: fromUserId },
     } as unknown as IContext;
 
-    const communityName = "community-1";
-    const pointName = "community-1-point";
+    const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
+    const pointName = `${communityName}-point`;
 
     const createCommunityInput: GqlCommunityCreateInput = {
       name: communityName,
