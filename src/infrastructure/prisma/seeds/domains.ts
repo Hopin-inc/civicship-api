@@ -53,52 +53,63 @@ export async function seedUsecase() {
   });
 
   console.log("🧱 Creating base User, Community, Wallet, Membership...");
-  const { user, community, wallet } = await createBaseEntities();
+  const { users, community, wallets } = await createBaseEntitiesForUsers();
 
   console.log("📍 Creating Places...");
   const places = await createPlaces(community);
 
   console.log("🎫 Creating Utilities & Tickets...");
-  await createUtilitiesAndTickets(user, community, wallet);
+  await createUtilitiesAndTickets(users, community, wallets);
 
   console.log("📣 Creating Opportunities...");
-  const opportunities = await createOpportunities(user, community, places);
+  const opportunities = await createOpportunities(users, community, places);
 
   console.log("🧩 Creating Slots, Reservations, Participations, Evaluations, and Articles...");
-  await createNestedEntities(user, community, opportunities);
+  await createNestedEntities(users, community, opportunities);
 
   console.log("💸 Creating Transactions...");
-  await createTransactions(wallet);
+  await createTransactions(wallets);
 
   console.log("🎉 All seeding steps completed!");
 }
 
 // STEP 1
-async function createBaseEntities() {
-  const [community, user] = await Promise.all([
-    CommunityFactory.create({ id: "neo88" }),
-    UserFactory.create(),
-  ]);
-  const [wallet] = await Promise.all([
-    WalletFactory.create({ transientUser: user, transientCommunity: community }),
-    MembershipFactory.create({ transientUser: user, transientCommunity: community }),
-  ]);
-  return { user, community, wallet };
+async function createBaseEntitiesForUsers() {
+  const community = await CommunityFactory.create({ id: "neo88" });
+  const users = await UserFactory.createList(10);
+
+  const membershipsAndWallets = await Promise.all(
+    users.map(async (user) => {
+      const [wallet] = await Promise.all([
+        WalletFactory.create({ transientUser: user, transientCommunity: community }),
+        MembershipFactory.create({ transientUser: user, transientCommunity: community }),
+      ]);
+      return { user, wallet };
+    }),
+  );
+
+  return {
+    community,
+    users: membershipsAndWallets.map((mw) => mw.user),
+    wallets: membershipsAndWallets.map((mw) => mw.wallet),
+  };
 }
 
 // STEP 2
-async function createUtilitiesAndTickets(user: any, community: any, wallet: any) {
+async function createUtilitiesAndTickets(users: any[], community: any, wallets: any[]) {
   const utilities = await UtilityFactory.createList(NUM_UTILITIES, {
     transientCommunity: community,
   });
 
   await Promise.all(
-    utilities.map((utility) =>
-      TicketFactory.create({
-        transientUser: user,
-        transientWallet: wallet,
-        transientUtility: utility,
-      }),
+    utilities.flatMap((utility) =>
+      users.map((user, i) =>
+        TicketFactory.create({
+          transientUser: user,
+          transientWallet: wallets[i],
+          transientUtility: utility,
+        }),
+      ),
     ),
   );
 }
@@ -111,12 +122,11 @@ async function createPlaces(community: any) {
 }
 
 // STEP 3
-// 修正後の createOpportunities 関数
-async function createOpportunities(user: any, community: any, places: any[]) {
+async function createOpportunities(users: any[], community: any, places: any[]) {
   return await Promise.all(
-    places.map((place) =>
+    places.map((place, i) =>
       OpportunityFactory.create({
-        transientUser: user,
+        transientUser: users[i % users.length], // ラウンドロビン
         transientCommunity: community,
         transientPlace: place,
       }),
@@ -125,9 +135,10 @@ async function createOpportunities(user: any, community: any, places: any[]) {
 }
 
 // STEP 4
-async function createNestedEntities(user: any, community: any, opportunities: any[]) {
+async function createNestedEntities(users: any[], community: any, opportunities: any[]) {
   await Promise.all(
-    opportunities.map(async (opportunity) => {
+    opportunities.map(async (opportunity, index) => {
+      const user = users[index % users.length]; // 分散
       const slots = await OpportunitySlotFactory.createList(NUM_SLOTS_PER_OPPORTUNITY, {
         transientOpportunity: opportunity,
       });
@@ -169,9 +180,13 @@ async function createNestedEntities(user: any, community: any, opportunities: an
 }
 
 // STEP 5
-async function createTransactions(wallet: any) {
-  await TransactionFactory.createList(NUM_TRANSACTIONS, {
-    transientFromWallet: wallet,
-    transientToWallet: wallet,
-  });
+async function createTransactions(wallets: any[]) {
+  await Promise.all(
+    Array.from({ length: NUM_TRANSACTIONS }).map((_, i) =>
+      TransactionFactory.create({
+        transientFromWallet: wallets[i % wallets.length],
+        transientToWallet: wallets[(i + 1) % wallets.length],
+      }),
+    ),
+  );
 }
