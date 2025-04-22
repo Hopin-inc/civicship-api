@@ -1,439 +1,235 @@
-// import transactionResolver from "@/presentation/graphql/resolvers/transaction";
-// import { GqlCommunityCreateInput, GqlTransactionDonateSelfPointInput, GqlTransactionGrantCommunityPointInput, GqlTransactionIssueCommunityPointInput } from "@/types/graphql";
-// import TestDataSourceHelper from "../../helper/test-data-source-helper";
-// import { IContext } from "@/types/server";
-// import { TransactionReason, WalletType } from "@prisma/client";
-//
-// describe("Transaction Integration Tests", () => {
-//     beforeEach(async () => {
-//         // clean up data before each test
-//         await TestDataSourceHelper.deleteAll();
-//         TestDataSourceHelper.disconnect();
-//     });
-//
-//     afterAll(async () => {
-//         // close DB transaction after each test
-//         TestDataSourceHelper.disconnect();
-//     });
-//
-//     it("should issue community points", async () => {
-//         //////////////////////////////////////////////////
-//         // insert seed data
-//         //////////////////////////////////////////////////
-//         const name = "John Doe"
-//         const slug = "user-1-slug"
-//         const createUserInput = {
-//             name: name,
-//             slug: slug,
-//             image: undefined
-//         }
-//         const userInserted = await TestDataSourceHelper.create(createUserInput);
-//         const userId = userInserted.id;
-//
-//         const ctx = { uid: userId } as unknown as IContext;
-//
-//         const communityName = "community-1";
-//         const pointName = "community-1-point";
-//
-//         const createCommunityInput: GqlCommunityCreateInput = {
-//             name: communityName,
-//             pointName: pointName,
-//             image: undefined,
-//             bio: undefined,
-//             establishedAt: undefined,
-//             website: undefined
-//         };
-//         const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
-//         const communityId = communityInserted.id;
-//
-//
-//         const createWalletInput =
-//         {
-//             type: WalletType.COMMUNITY,
-//             community: { connect: { id: communityId } },
-//         };
-//         const walletInserted = await TestDataSourceHelper.createWallet(createWalletInput);
-//         const walletId = walletInserted.id;
-//
-//
-//         //////////////////////////////////////////////////
-//         // construct request
-//         //////////////////////////////////////////////////
-//         const issuedPoint = 100;
-//         const input: GqlTransactionIssueCommunityPointInput = {
-//             toPointChange: issuedPoint,
-//             toWalletId: walletId
-//         };
-//
-//         //////////////////////////////////////////////////
-//         // execute
-//         //////////////////////////////////////////////////
-//         await transactionResolver.Mutation.transactionIssueCommunityPoint(
-//             {},
-//             { input: input },
-//             ctx
-//         );
-//
-//         //////////////////////////////////////////////////
-//         // assert result
-//         //////////////////////////////////////////////////
-//         const transactions = await TestDataSourceHelper.findAllTransactions();
-//         const transactionActual = transactions[0];
-//
-//         // トランザクションが1件だけ作成されていること
-//         expect(transactions.length).toEqual(1);
-//         // ポイント発行のレコードが作成されていること
-//         expect(transactionActual.reason).toEqual(TransactionReason.POINT_ISSUED);
-//         // 期待通りのwalletに移動していること
-//         expect(transactionActual.to).toEqual(walletId);
-//         // 期待通りのポイント数が移動していること
-//         expect(transactionActual.toPointChange).toEqual(issuedPoint);
-//         // // mv_current_pointsの値が期待通りにrefreshされていること
-//         // const currentPointActual = (await TestDataSourceHelper.findCommunityWallet(communityId))?.currentPointView?.currentPoint;
-//         // const initialPoint = 0;
-//         // const currentPointExpected = initialPoint + issuedPoint;
-//         // expect(currentPointActual).toEqual(currentPointExpected);
-//     });
-//
-//     it("should not donate self points when balance is insufficient", async () => {
-//         //////////////////////////////////////////////////
-//         // insert seed data
-//         //////////////////////////////////////////////////
-//         const name = "John Doe"
-//         const slug = "user-1-slug"
-//         const createUserInput = {
-//             name: name,
-//             slug: slug,
-//             image: undefined
-//         }
-//         const userInserted = await TestDataSourceHelper.create(createUserInput);
-//         const userId = userInserted.id;
-//
-//         const ctx = { uid: userId } as unknown as IContext;
-//
-//         const communityName = "community-1";
-//         const pointName = "community-1-point";
-//
-//         const createCommunityInput: GqlCommunityCreateInput = {
-//             name: communityName,
-//             pointName: pointName,
-//             image: undefined,
-//             bio: undefined,
-//             establishedAt: undefined,
-//             website: undefined
-//         };
-//         const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
-//         const communityId = communityInserted.id;
-//
-//
-//         const createCommunityWalletInput =
-//         {
-//             type: WalletType.COMMUNITY,
-//             community: { connect: { id: communityId } },
-//         };
-//         await TestDataSourceHelper.createWallet(createCommunityWalletInput);
-//
-//         const createMemberWalletInput =
-//         {
-//             type: WalletType.MEMBER,
-//             community: { connect: { id: communityId } },
-//             user: { connect: { id: userId } }
-//         };
-//         const memberWalletInserted = await TestDataSourceHelper.createWallet(createMemberWalletInput);
-//         const memberWalletId = memberWalletInserted.id;
-//
-//         //////////////////////////////////////////////////
-//         // construct request
-//         //////////////////////////////////////////////////
-//         const donatedPoints = 100;
-//         const input: GqlTransactionDonateSelfPointInput = {
-//             communityId: communityId,
-//             fromWalletId: memberWalletId,
-//             fromPointChange: donatedPoints,
-//             toPointChange: donatedPoints,
-//             toUserId: userId
-//         };
-//
-//         //////////////////////////////////////////////////
-//         // execute & assert result
-//         //////////////////////////////////////////////////
-//
-//         // errorをthrowすること
-//         const errorExpected = `Insufficient points in community wallet. Required: ${donatedPoints}, Available: 0`;
-//         await expect(transactionResolver.Mutation.transactionDonateSelfPoint(
-//             {},
-//             { input: input },
-//             ctx
-//         )).rejects.toThrow(errorExpected);
-//
-//         // transactionが作成されていないこと
-//         const transactions = await TestDataSourceHelper.findAllTransactions();
-//         expect(transactions.length).toEqual(0);
-//
-//         // mv_current_pointsがそもそも作成されていない
-//     });
-//
-//     it("should donate self points when balance is sufficient", async () => {
-//         //////////////////////////////////////////////////
-//         // insert seed data
-//         //////////////////////////////////////////////////
-//         const name = "John Doe"
-//         const slug = "user-1-slug"
-//         const createUserInput = {
-//             name: name,
-//             slug: slug,
-//             image: undefined
-//         }
-//         const fromUserInserted = await TestDataSourceHelper.create(createUserInput);
-//         const fromUserId = fromUserInserted.id;
-//
-//         const toUserInserted = await TestDataSourceHelper.create(createUserInput);
-//         const toUserId = toUserInserted.id;
-//
-//         const ctx = { uid: fromUserId } as unknown as IContext;
-//
-//         const communityName = "community-1";
-//         const pointName = "community-1-point";
-//
-//         const createCommunityInput: GqlCommunityCreateInput = {
-//             name: communityName,
-//             pointName: pointName,
-//             image: undefined,
-//             bio: undefined,
-//             establishedAt: undefined,
-//             website: undefined
-//         };
-//         const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
-//         const communityId = communityInserted.id;
-//
-//         const createFromMemberWalletInput =
-//         {
-//             type: WalletType.MEMBER,
-//             community: { connect: { id: communityId } },
-//             user: { connect: { id: fromUserId } }
-//         };
-//         const fromMemberWalletInserted = await TestDataSourceHelper.createWallet(createFromMemberWalletInput);
-//         const fromMemberWalletId = fromMemberWalletInserted.id;
-//
-//         const createToMemberWalletInput =
-//         {
-//             type: WalletType.MEMBER,
-//             community: { connect: { id: communityId } },
-//             user: { connect: { id: toUserId } }
-//         };
-//         const toMemberWalletInserted = await TestDataSourceHelper.createWallet(createToMemberWalletInput);
-//         const toMemberWalletId = toMemberWalletInserted.id;
-//
-//         const createTransactionInput = { to: fromMemberWalletId, toPointChange: 100, reason: TransactionReason.GRANT };
-//         await TestDataSourceHelper.createTransaction(createTransactionInput);
-//
-//         await TestDataSourceHelper.refreshCurrentPoints()
-//
-//         //////////////////////////////////////////////////
-//         // construct request
-//         //////////////////////////////////////////////////
-//         const donatedPoints = 100;
-//         const input: GqlTransactionDonateSelfPointInput = {
-//             communityId: communityId,
-//             fromWalletId: fromMemberWalletId,
-//             toUserId: toUserId,
-//             fromPointChange: donatedPoints,
-//             toPointChange: donatedPoints,
-//         };
-//
-//         //////////////////////////////////////////////////
-//         // execute
-//         //////////////////////////////////////////////////
-//
-//         await transactionResolver.Mutation.transactionDonateSelfPoint(
-//             {},
-//             { input: input },
-//             ctx
-//         );
-//
-//         //////////////////////////////////////////////////
-//         // execute
-//         //////////////////////////////////////////////////
-//
-//         const transactions = await TestDataSourceHelper.findAllTransactions();
-//         const transactionActual = transactions.find(t => t.reason === TransactionReason.DONATION);
-//
-//         // reasonがDONATIONのトランザクションが1件だけ作成されていること
-//         expect(transactionActual).toBeDefined();
-//
-//         // 期待通りのwalletから移動していること
-//         expect(transactionActual?.from).toEqual(fromMemberWalletId);
-//         // 期待通りのwalletに移動していること
-//         expect(transactionActual?.to).toEqual(toMemberWalletId);
-//         // 期待通りのポイント数が移動していること
-//         expect(transactionActual?.fromPointChange).toEqual(donatedPoints);
-//         expect(transactionActual?.toPointChange).toEqual(donatedPoints);
-//         // // mv_current_pointsの値が期待通りにrefreshされていること
-//         // const toMemberCurrentPointActual = (await TestDataSourceHelper.findMemberWallet(toUserId))?.currentPointView?.currentPoint;
-//         // const memberInitialPoint = 0;
-//         // const toMemberCurrentPointExpected = memberInitialPoint + donatedPoints;
-//         // expect(toMemberCurrentPointActual).toEqual(toMemberCurrentPointExpected);
-//     });
-//
-//     it("should grant community points to a user", async () => {
-//         //////////////////////////////////////////////////
-//         // insert seed data
-//         //////////////////////////////////////////////////
-//         const name = "John Doe"
-//         const slug = "user-1-slug"
-//         const createUserInput = {
-//             name: name,
-//             slug: slug,
-//             image: undefined
-//         }
-//         const userInserted = await TestDataSourceHelper.create(createUserInput);
-//         const userId = userInserted.id;
-//
-//         const ctx = { uid: userId } as unknown as IContext;
-//
-//         const communityName = "community-1";
-//         const pointName = "community-1-point";
-//
-//         const createCommunityInput = {
-//             name: communityName,
-//             pointName: pointName,
-//             image: undefined,
-//             bio: undefined,
-//             establishedAt: undefined,
-//             website: undefined
-//         };
-//         const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
-//         const communityId = communityInserted.id;
-//
-//         const createCommunityWalletInput = {
-//             type: WalletType.COMMUNITY,
-//             community: { connect: { id: communityId } },
-//         };
-//         const communityWalletInserted = await TestDataSourceHelper.createWallet(createCommunityWalletInput);
-//         const communityWalletId = communityWalletInserted.id;
-//
-//         const createMemberWalletInput =
-//         {
-//             type: WalletType.MEMBER,
-//             community: { connect: { id: communityId } },
-//             user: { connect: { id: userId } }
-//         };
-//         const memberWalletInserted = await TestDataSourceHelper.createWallet(createMemberWalletInput);
-//         const memberWalletId = memberWalletInserted.id;
-//
-//         const initialPoint = 50
-//         const createTransactionInput = { to: communityWalletId, toPointChange: initialPoint, reason: TransactionReason.POINT_ISSUED };
-//         await TestDataSourceHelper.createTransaction(createTransactionInput);
-//
-//         await TestDataSourceHelper.refreshCurrentPoints()
-//
-//         //////////////////////////////////////////////////
-//         // construct request
-//         //////////////////////////////////////////////////
-//         const grantedPoint = 50;
-//         const input: GqlTransactionGrantCommunityPointInput = {
-//             fromWalletId: communityWalletId,
-//             fromPointChange: grantedPoint,
-//             toPointChange: grantedPoint,
-//             communityId: communityId,
-//             toUserId: userId
-//         };
-//
-//         //////////////////////////////////////////////////
-//         // execute
-//         //////////////////////////////////////////////////
-//         await transactionResolver.Mutation.transactionGrantCommunityPoint(
-//             {},
-//             { input: input },
-//             ctx
-//         );
-//
-//         //////////////////////////////////////////////////
-//         // assert result
-//         //////////////////////////////////////////////////
-//         const transactions = await TestDataSourceHelper.findAllTransactions();
-//         const transactionActual = transactions.find(t => t.reason === TransactionReason.GRANT);
-//
-//         // reasonがGRANTのトランザクションが1件だけ作成されていること
-//         expect(transactionActual).toBeDefined();
-//         // ポイント付与のレコードが作成されていること
-//         expect(transactionActual?.reason).toEqual(TransactionReason.GRANT);
-//         // 期待通りのwalletに移動していること
-//         expect(transactionActual?.to).toEqual(memberWalletId);
-//         // 期待通りのポイント数が移動していること
-//         expect(transactionActual?.toPointChange).toEqual(grantedPoint);
-//         // // mv_current_pointsの値が期待通りにrefreshされていること
-//         // const currentPointActual = (await TestDataSourceHelper.findCommunityWallet(communityId))?.currentPointView?.currentPoint;
-//         // const currentPointExpected = initialPoint - grantedPoint;
-//         // expect(currentPointActual).toEqual(currentPointExpected);
-//     });
-//
-//     it("should not grant community points when balance is insufficient", async () => {
-//         //////////////////////////////////////////////////
-//         // insert seed data
-//         //////////////////////////////////////////////////
-//         const name = "John Doe"
-//         const slug = "user-1-slug"
-//         const createUserInput = {
-//             name: name,
-//             slug: slug,
-//             image: undefined
-//         }
-//         const userInserted = await TestDataSourceHelper.create(createUserInput);
-//         const userId = userInserted.id;
-//
-//         const ctx = { uid: userId } as unknown as IContext;
-//
-//         const communityName = "community-1";
-//         const pointName = "community-1-point";
-//
-//         const createCommunityInput = {
-//             name: communityName,
-//             pointName: pointName,
-//             image: undefined,
-//             bio: undefined,
-//             establishedAt: undefined,
-//             website: undefined
-//         };
-//         const communityInserted = await TestDataSourceHelper.createCommunity(createCommunityInput);
-//         const communityId = communityInserted.id;
-//
-//         const createWalletInput = {
-//             type: WalletType.COMMUNITY,
-//             community: { connect: { id: communityId } },
-//         };
-//         await TestDataSourceHelper.createWallet(createWalletInput);
-//         const walletInserted = await TestDataSourceHelper.createWallet(createWalletInput);
-//         const walletId = walletInserted.id;
-//
-//
-//         //////////////////////////////////////////////////
-//         // construct request
-//         //////////////////////////////////////////////////
-//         const grantedPoint = 100;
-//         const input: GqlTransactionGrantCommunityPointInput = {
-//             fromWalletId: walletId,
-//             fromPointChange: grantedPoint,
-//             toPointChange: grantedPoint,
-//             communityId: communityId,
-//             toUserId: userId
-//         };
-//
-//         //////////////////////////////////////////////////
-//         // execute & assert result
-//         //////////////////////////////////////////////////
-//         // errorをthrowすること
-//         const errorExpected = `Insufficient points in community wallet. Required: ${grantedPoint}, Available: 0`;
-//         await expect(transactionResolver.Mutation.transactionDonateSelfPoint(
-//             {},
-//             { input: input },
-//             ctx
-//         )).rejects.toThrow(errorExpected);
-//
-//         // transactionが作成されていないこと
-//         const transactions = await TestDataSourceHelper.findAllTransactions();
-//         expect(transactions.length).toEqual(0);
-//
-//         // mv_current_pointsがそもそも作成されていない
-//     });
-// });
+import {
+  GqlTransactionDonateSelfPointInput,
+  GqlTransactionGrantCommunityPointInput,
+  GqlTransactionIssueCommunityPointInput,
+} from "@/types/graphql";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import { IContext } from "@/types/server";
+import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
+import transactionResolver from "@/application/domain/transaction/controller/resolver";
+
+describe("Transaction Integration Tests", () => {
+  const ISSUE_POINTS = 100;
+  const DONATION_POINTS = 100;
+  const GRANT_POINTS = 50;
+
+  beforeEach(async () => {
+    await TestDataSourceHelper.deleteAll();
+  });
+
+  afterAll(async () => {
+    await TestDataSourceHelper.disconnect();
+  });
+
+  const createUserWithWallet = async (role: WalletType, communityId: string) => {
+    const user = await TestDataSourceHelper.createUser({
+      name: "John Doe",
+      slug: `user-${Math.random().toString(36).substring(2, 8)}`,
+      image: undefined,
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const wallet = await TestDataSourceHelper.createWallet({
+      type: role,
+      community: { connect: { id: communityId } },
+      user: { connect: { id: user.id } },
+    });
+    return { user, wallet };
+  };
+
+  const createUserAndContext = async () => {
+    const user = await TestDataSourceHelper.createUser({
+      name: "John Doe",
+      slug: `user-${Math.random().toString(36).substring(2, 8)}`,
+      image: undefined,
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+    const ctx = { currentUser: { id: user.id } } as unknown as IContext;
+    return { user, ctx };
+  };
+
+  const createCommunity = async () => {
+    return await TestDataSourceHelper.createCommunity({
+      name: "community-1",
+      pointName: "community-1-point",
+    });
+  };
+
+  it("should issue community points", async () => {
+    const { ctx } = await createUserAndContext();
+    const community = await createCommunity();
+
+    const wallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.COMMUNITY,
+      community: { connect: { id: community.id } },
+    });
+
+    const input: GqlTransactionIssueCommunityPointInput = {
+      transferPoints: ISSUE_POINTS,
+      toWalletId: wallet.id,
+    };
+
+    await transactionResolver.Mutation.transactionIssueCommunityPoint(
+      {},
+      { input, permission: { communityId: community.id } },
+      ctx,
+    );
+    await TestDataSourceHelper.refreshCurrentPoints();
+
+    const [transaction] = await TestDataSourceHelper.findAllTransactions();
+
+    expect(transaction.reason).toBe(TransactionReason.POINT_ISSUED);
+    expect(transaction.to).toBe(wallet.id);
+    expect(transaction.toPointChange).toBe(ISSUE_POINTS);
+  });
+
+  it("should not donate self points when balance is insufficient", async () => {
+    const { user, ctx } = await createUserAndContext();
+    const community = await createCommunity();
+
+    const wallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: user.id } },
+    });
+
+    const input: GqlTransactionDonateSelfPointInput = {
+      communityId: community.id,
+      fromWalletId: wallet.id,
+      transferPoints: DONATION_POINTS,
+      toUserId: user.id,
+    };
+
+    const expectedError = `Insufficient balance: current balance 0 is less than requested amount ${DONATION_POINTS}`;
+    await expect(
+      transactionResolver.Mutation.transactionDonateSelfPoint(
+        {},
+        { input, permission: { communityId: community.id } },
+        ctx,
+      ),
+    ).rejects.toThrow(expectedError);
+
+    const transactions = await TestDataSourceHelper.findAllTransactions();
+    expect(transactions).toHaveLength(0);
+  });
+
+  it("should donate self points when balance is sufficient", async () => {
+    const community = await createCommunity();
+    const { user: fromUser, wallet: fromWallet } = await createUserWithWallet(
+      WalletType.MEMBER,
+      community.id,
+    );
+    const { user: toUser, wallet: toWallet } = await createUserWithWallet(
+      WalletType.MEMBER,
+      community.id,
+    );
+    const ctx = { currentUser: { id: fromUser.id } } as unknown as IContext;
+
+    await TestDataSourceHelper.createTransaction({
+      toWallet: { connect: { id: fromWallet.id } },
+      fromPointChange: DONATION_POINTS,
+      toPointChange: DONATION_POINTS,
+      reason: TransactionReason.GRANT,
+    });
+
+    await TestDataSourceHelper.refreshCurrentPoints();
+
+    const input: GqlTransactionDonateSelfPointInput = {
+      communityId: community.id,
+      fromWalletId: fromWallet.id,
+      transferPoints: DONATION_POINTS,
+      toUserId: toUser.id,
+    };
+
+    await transactionResolver.Mutation.transactionDonateSelfPoint(
+      {},
+      { input, permission: { communityId: community.id } },
+      ctx,
+    );
+
+    const transaction = (await TestDataSourceHelper.findAllTransactions()).find(
+      (t) => t.reason === TransactionReason.DONATION,
+    );
+
+    expect(transaction).toBeDefined();
+    expect(transaction?.from).toBe(fromWallet.id);
+    expect(transaction?.to).toBe(toWallet.id);
+    expect(transaction?.fromPointChange).toBe(DONATION_POINTS);
+    expect(transaction?.toPointChange).toBe(DONATION_POINTS);
+  });
+
+  it("should grant community points to a user", async () => {
+    const { user, ctx } = await createUserAndContext();
+    const community = await createCommunity();
+
+    const communityWallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.COMMUNITY,
+      community: { connect: { id: community.id } },
+    });
+
+    const memberWallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: user.id } },
+    });
+
+    await TestDataSourceHelper.createTransaction({
+      toWallet: { connect: { id: communityWallet.id } },
+      fromPointChange: GRANT_POINTS,
+      toPointChange: GRANT_POINTS,
+      reason: TransactionReason.POINT_ISSUED,
+    });
+
+    await TestDataSourceHelper.refreshCurrentPoints();
+
+    const input: GqlTransactionGrantCommunityPointInput = {
+      fromWalletId: communityWallet.id,
+      transferPoints: GRANT_POINTS,
+      communityId: community.id,
+      toUserId: user.id,
+    };
+
+    await transactionResolver.Mutation.transactionGrantCommunityPoint(
+      {},
+      { input, permission: { communityId: community.id } },
+      ctx,
+    );
+
+    const transaction = (await TestDataSourceHelper.findAllTransactions()).find(
+      (t) => t.reason === TransactionReason.GRANT,
+    );
+
+    expect(transaction).toBeDefined();
+    expect(transaction?.reason).toBe(TransactionReason.GRANT);
+    expect(transaction?.to).toBe(memberWallet.id);
+    expect(transaction?.toPointChange).toBe(GRANT_POINTS);
+  });
+
+  it("should not grant community points when balance is insufficient", async () => {
+    const { user, ctx } = await createUserAndContext();
+    const community = await createCommunity();
+
+    const wallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.COMMUNITY,
+      community: { connect: { id: community.id } },
+    });
+
+    const input: GqlTransactionGrantCommunityPointInput = {
+      fromWalletId: wallet.id,
+      transferPoints: GRANT_POINTS * 2,
+      communityId: community.id,
+      toUserId: user.id,
+    };
+
+    const errorExpected = `Insufficient balance: current balance 0 is less than requested amount ${GRANT_POINTS * 2}`;
+    await expect(
+      transactionResolver.Mutation.transactionGrantCommunityPoint(
+        {},
+        { input, permission: { communityId: community.id } },
+        ctx,
+      ),
+    ).rejects.toThrow(errorExpected);
+
+    const transactions = await TestDataSourceHelper.findAllTransactions();
+    expect(transactions).toHaveLength(0);
+  });
+});
