@@ -22,8 +22,13 @@ export default class ViewPresenter {
   }
 
   static getFromParticipation(p: ValidParticipationForPortfolio): GqlPortfolio {
-    const { opportunitySlot, reservation, images } = p;
-    const { opportunity, startsAt } = opportunitySlot;
+    const { reservation, images } = p;
+
+    if (!reservation) {
+      throw new Error('Reservation is required for portfolio');
+    }
+
+    const { opportunity, startsAt } = reservation.opportunitySlot;
     const place = opportunity.place;
 
     return {
@@ -37,9 +42,9 @@ export default class ViewPresenter {
       thumbnailUrl: images?.[0]?.url ?? opportunity.images[0].url,
       participants: reservation?.participations
         ? reservation.participations
-            .map((p) => p.user)
-            .filter((user): user is NonNullable<typeof user> => user !== null)
-            .map((user) => UserPresenter.get(user))
+          .map((p) => p.user)
+          .filter((user): user is NonNullable<typeof user> => user !== null)
+          .map((user) => UserPresenter.get(user))
         : [],
     };
   }
@@ -63,8 +68,8 @@ export default class ViewPresenter {
       thumbnailUrl,
       participants: participations
         ? participations
-            .filter((user): user is NonNullable<typeof user> => user !== null)
-            .map((user) => UserPresenter.get(user))
+          .filter((user): user is NonNullable<typeof user> => user !== null)
+          .map((user) => UserPresenter.get(user))
         : [],
     };
   }

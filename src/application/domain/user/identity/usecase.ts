@@ -6,7 +6,6 @@ import IdentityPresenter from "@/application/domain/user/identity/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/domain/membership/service";
 import WalletService from "@/application/domain/membership/wallet/service";
-import { initialCommunityId } from "@/consts/utils";
 import ImageService from "@/application/domain/image/service";
 
 export default class IdentityUseCase {
@@ -34,8 +33,8 @@ export default class IdentityUseCase {
     );
 
     const res = await this.issuer.public(ctx, async (tx) => {
-      await MembershipService.joinIfNeeded(ctx, user.id, initialCommunityId, tx);
-      await WalletService.createMemberWalletIfNeeded(ctx, user.id, initialCommunityId, tx);
+      await MembershipService.joinIfNeeded(ctx, user.id, args.input.communityId, tx);
+      await WalletService.createMemberWalletIfNeeded(ctx, user.id, args.input.communityId, tx);
       return user;
     });
 

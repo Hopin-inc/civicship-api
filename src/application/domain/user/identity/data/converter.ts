@@ -6,11 +6,12 @@ export default class IdentityConverter {
     data: Prisma.UserCreateInput;
     image?: GqlImageInput;
   } {
-    const { image, slug, ...prop } = input;
+    const { image, slug, name, currentPrefecture } = input;
 
     return {
       data: {
-        ...prop,
+        name,
+        currentPrefecture,
         slug: slug || "",
       },
       image,

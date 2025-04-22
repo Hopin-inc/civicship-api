@@ -4,9 +4,12 @@
 type Place {
     id: ID!
     name: String!
+    image: String
+
     address: String!
     latitude: Decimal!
     longitude: Decimal!
+
     isManual: Boolean!
     googlePlaceId: String
     mapLocation: JSON

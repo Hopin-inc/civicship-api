@@ -20,6 +20,7 @@ Table t_images {
   users t_users [not null]
   communities t_communities [not null]
   articles t_articles [not null]
+  places t_places [not null]
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   utilities t_utilities [not null]
@@ -53,6 +54,8 @@ Table t_places {
   address String [not null]
   latitude Decimal [not null]
   longitude Decimal [not null]
+  imageId String
+  image t_images
   isManual Boolean [not null]
   googlePlaceId String
   mapLocation Json
@@ -138,6 +141,7 @@ Table t_memberships {
   reason MembershipStatusReason [not null]
   role Role [not null, default: 'MEMBER']
   histories t_membership_histories [not null]
+  opportunityHostedCountView v_membership_hosted_opportunity_count
   participationGeoViews v_membership_participation_geo [not null]
   participationCountViews v_membership_participation_count [not null]
   createdAt DateTime [default: `now()`, not null]
@@ -381,6 +385,9 @@ Table v_membership_participation_geo {
   communityId String [not null]
   type ParticipationType [not null]
   placeId String [not null]
+  placeName String [not null]
+  placeImage String [not null]
+  address String [not null]
   latitude Decimal [not null]
   longitude Decimal [not null]
   membership t_memberships [not null]
@@ -399,6 +406,17 @@ Table v_membership_participation_count {
 
   indexes {
     (userId, communityId, type) [pk]
+  }
+}
+
+Table v_membership_hosted_opportunity_count {
+  userId String [not null]
+  communityId String [not null]
+  totalCount Int [not null]
+  membership t_memberships [not null]
+
+  indexes {
+    (userId, communityId) [pk]
   }
 }
 
@@ -597,6 +615,8 @@ Enum TransactionReason {
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
+Ref: t_places.imageId > t_images.id
+
 Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 
 Ref: t_places.communityId > t_communities.id [delete: Set Null]
@@ -680,6 +700,8 @@ Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 Ref: v_membership_participation_geo.(userId, communityId) > t_memberships.(userId, communityId)
 
 Ref: v_membership_participation_count.(userId, communityId) > t_memberships.(userId, communityId)
+
+Ref: v_membership_hosted_opportunity_count.(userId, communityId) - t_memberships.(userId, communityId)
 
 Ref: mv_current_points.walletId - t_wallets.id
 
