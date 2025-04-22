@@ -66,6 +66,7 @@ describe("EvaluationService", () => {
         participation: {
           id: "p1",
           communityId: "c1",
+          userId: "u1", // ✅ 追加
           reservation: {
             opportunitySlot: {
               opportunity: {
@@ -74,6 +75,9 @@ describe("EvaluationService", () => {
             },
           },
         },
+        user: {
+          id: "u1",
+        },
       } as any;
 
       const result = EvaluationService.validateParticipationHasOpportunity(evaluation);
@@ -81,6 +85,7 @@ describe("EvaluationService", () => {
       expect(result.participation.id).toBe("p1");
       expect(result.opportunity.id).toBe("o1");
       expect(result.communityId).toBe("c1");
+      expect(result.userId).toBe("u1");
     });
 
     it("should throw if participation is missing", () => {
