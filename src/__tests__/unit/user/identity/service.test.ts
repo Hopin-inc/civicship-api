@@ -1,8 +1,14 @@
-import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
+import { IdentityPlatform } from "@prisma/client";
 import UserRepository from "@/application/domain/user/data/repository";
 import IdentityService from "@/application/domain/user/identity/service";
 import IdentityRepository from "@/application/domain/user/identity/data/repository";
 import { auth } from "@/infrastructure/libs/firebase";
+import {
+  mockFunctions,
+  TEST_IDENTITY,
+  TEST_USER,
+  TEST_USER_DATA,
+} from "@/__tests__/helper/test-data";
 
 jest.mock("@/infrastructure/libs/firebase", () => ({
   auth: {
@@ -15,66 +21,96 @@ jest.mock("@/application/domain/user/identity/data/repository");
 describe("IdentityService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // デフォルトのモック設定
+    mockFunctions.createWithIdentity(TEST_USER);
+    mockFunctions.findIdentity(TEST_IDENTITY);
+    mockFunctions.deleteWithIdentity(TEST_USER);
+    mockFunctions.deleteFirebaseUser();
   });
 
+  /**
+   * createUserAndIdentity はユーザーとアイデンティティを同時に作成するメソッド
+   * - ユーザー情報とアイデンティティ情報を同時に作成
+   * - 作成されたユーザー情報を返却
+   */
   describe("createUserAndIdentity", () => {
-    it("should create a user with identity", async () => {
-      const mockData = {
-        name: "Test User",
-        email: "test@example.com",
-        slug: "slug",
-        currentPrefecture: CurrentPrefecture.KAGAWA,
-      };
-      const mockUser = { id: "1", ...mockData };
+    it("should create a user with identity and return the created user data", async () => {
       const uid = "test-uid";
       const platform = IdentityPlatform.FACEBOOK;
 
-      (UserRepository.createWithIdentity as jest.Mock).mockResolvedValue(mockUser);
-
-      const result = await IdentityService.createUserAndIdentity(mockData, uid, platform);
+      const result = await IdentityService.createUserAndIdentity(TEST_USER_DATA, uid, platform);
 
       expect(UserRepository.createWithIdentity).toHaveBeenCalledWith({
-        ...mockData,
+        ...TEST_USER_DATA,
         identities: { create: { uid, platform } },
       });
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(TEST_USER);
+    });
+
+    it("should throw an error when user creation fails", async () => {
+      const uid = "test-uid";
+      const platform = IdentityPlatform.FACEBOOK;
+      const error = new Error("User creation failed");
+      (UserRepository.createWithIdentity as jest.Mock).mockRejectedValue(error);
+
+      await expect(
+        IdentityService.createUserAndIdentity(TEST_USER_DATA, uid, platform),
+      ).rejects.toThrow("User creation failed");
     });
   });
 
+  /**
+   * deleteUserAndIdentity はユーザーとアイデンティティを削除するメソッド
+   * - アイデンティティの存在確認
+   * - ユーザーとアイデンティティの削除
+   * - 削除されたユーザー情報を返却
+   */
   describe("deleteUserAndIdentity", () => {
-    it("should delete user and identity when identity exists", async () => {
-      const mockIdentity = { userId: "1", uid: "test-uid", platform: IdentityPlatform.LINE };
-      const mockUser = { id: "1", name: "Test User" };
+    it("should delete user and identity when identity exists and return the deleted user data", async () => {
+      const result = await IdentityService.deleteUserAndIdentity(TEST_IDENTITY.uid);
 
-      (IdentityRepository.find as jest.Mock).mockResolvedValue(mockIdentity);
-      (UserRepository.deleteWithIdentity as jest.Mock).mockResolvedValue(mockUser);
-
-      const result = await IdentityService.deleteUserAndIdentity("test-uid");
-
-      expect(IdentityRepository.find).toHaveBeenCalledWith("test-uid");
-      expect(UserRepository.deleteWithIdentity).toHaveBeenCalledWith(mockIdentity.userId);
-      expect(result).toEqual(mockUser);
+      expect(IdentityRepository.find).toHaveBeenCalledWith(TEST_IDENTITY.uid);
+      expect(UserRepository.deleteWithIdentity).toHaveBeenCalledWith(TEST_IDENTITY.userId);
+      expect(result).toEqual(TEST_USER);
     });
 
     it("should return null when identity does not exist", async () => {
-      (IdentityRepository.find as jest.Mock).mockResolvedValue(null);
+      mockFunctions.findIdentity(null);
 
       const result = await IdentityService.deleteUserAndIdentity("nonexistent-uid");
 
       expect(IdentityRepository.find).toHaveBeenCalledWith("nonexistent-uid");
       expect(result).toBeNull();
     });
+
+    it("should throw an error when user deletion fails", async () => {
+      const error = new Error("User deletion failed");
+      (UserRepository.deleteWithIdentity as jest.Mock).mockRejectedValue(error);
+
+      await expect(IdentityService.deleteUserAndIdentity(TEST_IDENTITY.uid)).rejects.toThrow(
+        "User deletion failed",
+      );
+    });
   });
 
+  /**
+   * deleteFirebaseAuthUser はFirebase認証ユーザーを削除するメソッド
+   * - Firebase認証ユーザーの削除
+   */
   describe("deleteFirebaseAuthUser", () => {
-    it("should delete the Firebase auth user", async () => {
-      const uid = "test-uid";
+    it("should delete the Firebase auth user successfully", async () => {
+      await IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid);
 
-      (auth.deleteUser as jest.Mock).mockResolvedValue(undefined);
+      expect(auth.deleteUser).toHaveBeenCalledWith(TEST_IDENTITY.uid);
+    });
 
-      await IdentityService.deleteFirebaseAuthUser(uid);
+    it("should throw an error when Firebase user deletion fails", async () => {
+      const error = new Error("Firebase user deletion failed");
+      (auth.deleteUser as jest.Mock).mockRejectedValue(error);
 
-      expect(auth.deleteUser).toHaveBeenCalledWith(uid);
+      await expect(IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid)).rejects.toThrow(
+        "Firebase user deletion failed",
+      );
     });
   });
 });
