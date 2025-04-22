@@ -62,6 +62,11 @@ export default class EvaluationService {
       throw new ValidationError("Community ID not found for participation", [evaluation.id]);
     }
 
-    return { participation, opportunity, communityId };
+    const userId = participation?.userId;
+    if (!userId) {
+      throw new ValidationError("User ID not found for participation", [evaluation.id]);
+    }
+
+    return { participation, opportunity, communityId, userId };
   }
 }

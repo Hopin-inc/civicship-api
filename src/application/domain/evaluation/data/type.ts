@@ -13,6 +13,7 @@ export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
           },
         },
       },
+      user: true,
     },
   },
 });

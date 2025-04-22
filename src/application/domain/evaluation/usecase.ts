@@ -51,7 +51,7 @@ export default class EvaluationUseCase {
         tx,
       );
 
-      const { participation, opportunity, communityId } =
+      const { participation, opportunity, communityId, userId } =
         EvaluationService.validateParticipationHasOpportunity(evaluation);
 
       if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
@@ -59,7 +59,7 @@ export default class EvaluationUseCase {
           ctx,
           tx,
           communityId,
-          participation.id,
+          userId,
           opportunity.pointsToEarn,
           TransactionReason.POINT_REWARD,
         );
