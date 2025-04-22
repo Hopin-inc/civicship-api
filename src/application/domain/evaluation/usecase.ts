@@ -24,10 +24,14 @@ export default class EvaluationUseCase {
     { cursor, filter, sort, first }: GqlQueryEvaluationsArgs,
   ): Promise<GqlEvaluationsConnection> {
     const take = clampFirst(first);
-    const records = await EvaluationService.fetchEvaluations(ctx, { cursor, filter, sort }, take);
+    const evaluations = await EvaluationService.fetchEvaluations(
+      ctx,
+      { cursor, filter, sort },
+      take,
+    );
 
-    const hasNextPage = records.length > take;
-    const data = records.slice(0, take).map(EvaluationPresenter.get);
+    const hasNextPage = evaluations.length > take;
+    const data = evaluations.slice(0, take).map(EvaluationPresenter.get);
     return EvaluationPresenter.query(data, hasNextPage);
   }
 
@@ -35,8 +39,8 @@ export default class EvaluationUseCase {
     ctx: IContext,
     { id }: GqlQueryEvaluationArgs,
   ): Promise<GqlEvaluation | null> {
-    const record = await EvaluationService.findEvaluation(ctx, id);
-    return record ? EvaluationPresenter.get(record) : null;
+    const evaluation = await EvaluationService.findEvaluation(ctx, id);
+    return evaluation ? EvaluationPresenter.get(evaluation) : null;
   }
 
   static async managerPassEvaluation(
@@ -84,7 +88,11 @@ export default class EvaluationUseCase {
     { input }: GqlMutationEvaluationFailArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
-    const res = await EvaluationService.createEvaluation(ctx, input, EvaluationStatus.FAILED);
-    return EvaluationPresenter.create(res);
+    const evaluation = await EvaluationService.createEvaluation(
+      ctx,
+      input,
+      EvaluationStatus.FAILED,
+    );
+    return EvaluationPresenter.create(evaluation);
   }
 }

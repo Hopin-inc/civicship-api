@@ -19,7 +19,7 @@ export default class EvaluationService {
     return await EvaluationRepository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findEvaluation(ctx: IContext, id: string): Promis,e<PrismaEvaluation | null> {
+  static async findEvaluation(ctx: IContext, id: string): Promise<PrismaEvaluation | null> {
     return await EvaluationRepository.find(ctx, id);
   }
 
