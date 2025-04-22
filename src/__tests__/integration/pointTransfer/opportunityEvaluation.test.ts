@@ -25,32 +25,25 @@ describe("Point Reward Tests", () => {
     comment: "テスト評価",
   };
 
+  let ctx: IContext;
+  let userId: string;
+  let communityId: string;
+  let communityWalletId: string;
+  let memberWalletId: string;
+  let participationId: string;
+
   beforeEach(async () => {
-    // テストデータの初期化
     await TestDataSourceHelper.deleteAll();
-  });
 
-  afterAll(async () => {
-    // データベース接続の解放
-    await TestDataSourceHelper.disconnect();
-  });
-
-  it("should give reward successfully", async () => {
-    //
-    // 👤 ユーザー作成
-    //
     const userInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
       slug: testSetup.slug,
       image: undefined,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const userId = userInserted.id;
-    const ctx = { currentUser: { id: userId } } as unknown as IContext;
+    userId = userInserted.id;
+    ctx = { currentUser: { id: userId } } as unknown as IContext;
 
-    //
-    // 🏘️ コミュニティ作成 & メンバーシップ登録
-    //
     const communityInserted = await TestDataSourceHelper.createCommunity({
       name: testSetup.communityName,
       pointName: testSetup.pointName,
@@ -59,7 +52,7 @@ describe("Point Reward Tests", () => {
       establishedAt: undefined,
       website: undefined,
     });
-    const communityId = communityInserted.id;
+    communityId = communityInserted.id;
 
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: userId } },
@@ -69,26 +62,20 @@ describe("Point Reward Tests", () => {
       reason: MembershipStatusReason.ASSIGNED,
     });
 
-    //
-    // 💰 ウォレット作成（コミュニティ / メンバー）
-    //
-    const communityWalletInserted = await TestDataSourceHelper.createWallet({
+    const communityWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.COMMUNITY,
       community: { connect: { id: communityId } },
     });
-    const communityWalletId = communityWalletInserted.id;
+    communityWalletId = communityWallet.id;
 
-    const memberWalletInserted = await TestDataSourceHelper.createWallet({
+    const memberWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
       community: { connect: { id: communityId } },
       user: { connect: { id: userId } },
     });
-    const memberWalletId = memberWalletInserted.id;
+    memberWalletId = memberWallet.id;
 
-    //
-    // 🎯 機会・スロット・予約・参加情報の作成
-    //
-    const opportunityInserted = await TestDataSourceHelper.createOpportunity({
+    const opportunity = await TestDataSourceHelper.createOpportunity({
       category: OpportunityCategory.QUEST,
       description: "opportunity",
       publishStatus: PublishStatus.PUBLIC,
@@ -98,33 +85,27 @@ describe("Point Reward Tests", () => {
       community: { connect: { id: communityId } },
       createdByUser: { connect: { id: userId } },
     });
-    const opportunityId = opportunityInserted.id;
 
-    const opportunitySlotInserted = await TestDataSourceHelper.createOpportunitySlot({
-      opportunity: { connect: { id: opportunityId } },
+    const opportunitySlot = await TestDataSourceHelper.createOpportunitySlot({
+      opportunity: { connect: { id: opportunity.id } },
       startsAt: new Date(),
       endsAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     });
-    const opportunitySlotId = opportunitySlotInserted.id;
 
-    const reservationInserted = await TestDataSourceHelper.createReservation({
-      opportunitySlot: { connect: { id: opportunitySlotId } },
+    const reservation = await TestDataSourceHelper.createReservation({
+      opportunitySlot: { connect: { id: opportunitySlot.id } },
       createdByUser: { connect: { id: userId } },
     });
-    const reservationId = reservationInserted.id;
 
-    const participationInserted = await TestDataSourceHelper.createParticipation({
+    const participation = await TestDataSourceHelper.createParticipation({
       status: ParticipationStatus.PENDING,
       reason: ParticipationStatusReason.RESERVATION_APPLIED,
       community: { connect: { id: communityId } },
       user: { connect: { id: userId } },
-      reservation: { connect: { id: reservationId } },
+      reservation: { connect: { id: reservation.id } },
     });
-    const participationId = participationInserted.id;
+    participationId = participation.id;
 
-    //
-    // 🔄 初期ポイント注入 & リフレッシュ
-    //
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: communityWalletId } },
       toPointChange: testSetup.communityInitialPoint,
@@ -133,60 +114,71 @@ describe("Point Reward Tests", () => {
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
+  });
 
-    //
-    // ✅ 評価処理の実行
-    //
+  afterAll(async () => {
+    await TestDataSourceHelper.disconnect();
+  });
+
+  it("creates POINT_REWARD transaction on evaluation", async () => {
     await evaluationResolver.Mutation.evaluationPass(
       {},
       {
         input: {
-          participationId: participationId,
+          participationId,
           comment: testSetup.comment,
         },
         permission: {
-          communityId: communityId,
+          communityId,
         },
+      },
+      ctx,
+    );
+
+    const transactions = await TestDataSourceHelper.findAllTransactions();
+    const transaction = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
+    expect(transaction).toBeDefined();
+  });
+
+  it("transfers points from community to member wallet", async () => {
+    await evaluationResolver.Mutation.evaluationPass(
+      {},
+      {
+        input: { participationId, comment: testSetup.comment },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const tx = (await TestDataSourceHelper.findAllTransactions()).find(
+      (t) => t.reason === TransactionReason.POINT_REWARD,
+    );
+
+    expect(tx?.from).toEqual(communityWalletId);
+    expect(tx?.to).toEqual(memberWalletId);
+    expect(tx?.fromPointChange).toEqual(testSetup.pointsToEarn);
+    expect(tx?.toPointChange).toEqual(testSetup.pointsToEarn);
+  });
+
+  it("updates currentPointView after evaluation", async () => {
+    await evaluationResolver.Mutation.evaluationPass(
+      {},
+      {
+        input: { participationId, comment: testSetup.comment },
+        permission: { communityId },
       },
       ctx,
     );
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    //
-    // ✅ 検証
-    //
-    const transactions = await TestDataSourceHelper.findAllTransactions();
-    const transactionActual = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
+    const memberPoint = (await TestDataSourceHelper.findMemberWallet(userId))?.currentPointView
+      ?.currentPoint;
+    expect(memberPoint).toBe(testSetup.pointsToEarn);
 
-    const allTransactions = await TestDataSourceHelper.findAllTransactions();
-
-    console.log(
-      "🚨 All Transactions:",
-      allTransactions.map((t) => ({
-        id: t.id,
-        reason: t.reason,
-        from: t.from,
-        to: t.to,
-        fromPointChange: t.fromPointChange,
-        toPointChange: t.toPointChange,
-      })),
-    );
-
-    expect(transactionActual).toBeDefined();
-    expect(transactionActual?.from).toEqual(communityWalletId);
-    expect(transactionActual?.to).toEqual(memberWalletId);
-    expect(transactionActual?.fromPointChange).toEqual(testSetup.pointsToEarn);
-    expect(transactionActual?.toPointChange).toEqual(testSetup.pointsToEarn);
-
-    const memberCurrentPointActual = (await TestDataSourceHelper.findMemberWallet(userId))
+    const communityPoint = (await TestDataSourceHelper.findCommunityWallet(communityId))
       ?.currentPointView?.currentPoint;
-    expect(memberCurrentPointActual).toEqual(testSetup.pointsToEarn);
-
-    const communityCurrentPointActual = (
-      await TestDataSourceHelper.findCommunityWallet(communityId)
-    )?.currentPointView?.currentPoint;
-    const expectedCommunityPoint = testSetup.communityInitialPoint - testSetup.pointsToEarn;
-    expect(communityCurrentPointActual).toEqual(expectedCommunityPoint);
+    const expected = testSetup.communityInitialPoint - testSetup.pointsToEarn;
+    expect(communityPoint).toBe(expected);
   });
 });
