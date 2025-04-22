@@ -14,7 +14,7 @@ export default class TestDataSourceHelper {
   private static db = prismaClient;
 
   static async findAll() {
-    return await this.db.user.findMany();
+    return this.db.user.findMany();
   }
 
   static async deleteAll() {
@@ -51,14 +51,14 @@ export default class TestDataSourceHelper {
   }
 
   static async createImage(data: Prisma.ImageCreateInput) {
-    return await this.db.image.create({
+    return this.db.image.create({
       data,
     });
   }
 
   // ======== User =========
   static async createUser(data: Prisma.UserCreateInput) {
-    return await this.db.user.create({
+    return this.db.user.create({
       data,
       include: {
         identities: true,
@@ -68,19 +68,19 @@ export default class TestDataSourceHelper {
 
   // ======== Community =========
   static async createCommunity(data: Prisma.CommunityCreateInput) {
-    return await this.db.community.create({
+    return this.db.community.create({
       data,
       include: communityInclude,
     });
   }
 
   static async findAllCommunity() {
-    return await this.db.community.findMany({});
+    return this.db.community.findMany({});
   }
 
   // ======== Membership & Wallet =========
   static async createMembership(data: Prisma.MembershipCreateInput) {
-    return await this.db.membership.create({
+    return this.db.membership.create({
       data,
       include: {
         community: { include: communityInclude },
@@ -90,14 +90,14 @@ export default class TestDataSourceHelper {
   }
 
   static async createWallet(data: Prisma.WalletCreateInput) {
-    return await this.db.wallet.create({
+    return this.db.wallet.create({
       data,
       include: walletInclude,
     });
   }
 
   static async findCommunityWallet(communityId: string) {
-    return await this.db.wallet.findFirst({
+    return this.db.wallet.findFirst({
       where: { communityId, type: WalletType.COMMUNITY },
       include: walletInclude,
     });
@@ -105,7 +105,7 @@ export default class TestDataSourceHelper {
 
   // 引数にcommunityIdを追加するかは実装次第
   static async findMemberWallet(userId: string, communityId?: string) {
-    return await this.db.wallet.findFirst({
+    return this.db.wallet.findFirst({
       where: {
         userId,
         type: WalletType.MEMBER,
@@ -117,7 +117,7 @@ export default class TestDataSourceHelper {
 
   // ======== Opportunity & OpportunitySlot =========
   static async createOpportunity(data: Prisma.OpportunityCreateInput) {
-    return await this.db.opportunity.create({
+    return this.db.opportunity.create({
       data,
       include: {
         community: { include: communityInclude },
@@ -130,7 +130,7 @@ export default class TestDataSourceHelper {
   }
 
   static async createOpportunitySlot(data: Prisma.OpportunitySlotCreateInput) {
-    return await this.db.opportunitySlot.create({
+    return this.db.opportunitySlot.create({
       data,
       // slotの include が必要ならここで設定
     });
@@ -138,32 +138,32 @@ export default class TestDataSourceHelper {
 
   // ======== Reservation (新ドメイン) ========
   static async createReservation(data: Prisma.ReservationCreateInput) {
-    return await this.db.reservation.create({
+    return this.db.reservation.create({
       data,
       include: reservationInclude,
     });
   }
 
   static async findReservationById(id: string) {
-    return await this.db.reservation.findUnique({
+    return this.db.reservation.findUnique({
       where: { id },
       include: reservationInclude,
     });
   }
 
   static async findAllReservations() {
-    return await this.db.reservation.findMany({
+    return this.db.reservation.findMany({
       include: reservationInclude,
     });
   }
 
   // ======== Transaction =========
   static async findAllTransactions() {
-    return await this.db.transaction.findMany();
+    return this.db.transaction.findMany();
   }
 
   static async createTransaction(data: Prisma.TransactionCreateInput) {
-    return await this.db.transaction.create({
+    return this.db.transaction.create({
       data,
       include: transactionInclude,
     });
@@ -171,7 +171,7 @@ export default class TestDataSourceHelper {
 
   // ======== Utility =========
   static async createUtility(data: Prisma.UtilityCreateInput) {
-    return await this.db.utility.create({
+    return this.db.utility.create({
       data,
       include: utilityInclude,
     });
@@ -179,7 +179,7 @@ export default class TestDataSourceHelper {
 
   // ======== Place =========
   static async createPlace(data: Prisma.PlaceCreateInput) {
-    return await this.db.place.create({
+    return this.db.place.create({
       data,
       include: placeInclude,
     });
@@ -187,25 +187,25 @@ export default class TestDataSourceHelper {
 
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
-    return await this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
   // ========== Participation関連 (不要になれば削除) =========
   static async createParticipation(data: Prisma.ParticipationCreateInput) {
-    return await this.db.participation.create({
+    return this.db.participation.create({
       data,
       include: participationInclude,
     });
   }
 
   static async findParticipationById(id: string) {
-    return await this.db.participation.findUnique({
+    return this.db.participation.findUnique({
       where: { id },
       include: participationInclude,
     });
   }
 
   static async findAllParticipation() {
-    return await this.db.participation.findMany({});
+    return this.db.participation.findMany({});
   }
 }
