@@ -12,14 +12,14 @@ export default class EvaluationService {
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryEvaluationsArgs,
     take: number,
-  ) {
+  ): Promise<PrismaEvaluation[]> {
     const where = EvaluationConverter.filter(filter ?? {});
     const orderBy = EvaluationConverter.sort(sort ?? {});
 
     return await EvaluationRepository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findEvaluation(ctx: IContext, id: string) {
+  static async findEvaluation(ctx: IContext, id: string): Promis,e<PrismaEvaluation | null> {
     return await EvaluationRepository.find(ctx, id);
   }
 
@@ -28,7 +28,7 @@ export default class EvaluationService {
     input: GqlEvaluationCreateInput,
     status: EvaluationStatus,
     tx?: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaEvaluation> {
     const isValidFinalStatus =
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 
@@ -47,7 +47,14 @@ export default class EvaluationService {
     return EvaluationRepository.create(ctx, data, tx);
   }
 
-  static validateParticipationHasOpportunity(evaluation: PrismaEvaluation) {
+  static validateParticipationHasOpportunity(evaluation: PrismaEvaluation): {
+    participation: NonNullable<PrismaEvaluation["participation"]>;
+    opportunity: NonNullable<
+      NonNullable<PrismaEvaluation["participation"]>["reservation"]
+    >["opportunitySlot"]["opportunity"];
+    communityId: string;
+    userId: string;
+  } {
     const participation = evaluation.participation;
     const opportunity = participation?.reservation?.opportunitySlot?.opportunity;
 
