@@ -81,14 +81,11 @@ export default class TransactionService {
     fromWalletId: string,
     toWalletId: string,
   ) {
-    const fromPointChange = -pointsToEarn;
-    const toPointChange = pointsToEarn;
-
     const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint({
       fromWalletId,
-      fromPointChange,
+      fromPointChange: pointsToEarn,
       toWalletId,
-      toPointChange,
+      toPointChange: pointsToEarn,
       participationId,
     });
 

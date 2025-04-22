@@ -1,9 +1,9 @@
 import {
-  GqlTransactionFilterInput,
-  GqlTransactionSortInput,
-  GqlTransactionIssueCommunityPointInput,
-  GqlTransactionGrantCommunityPointInput,
   GqlTransactionDonateSelfPointInput,
+  GqlTransactionFilterInput,
+  GqlTransactionGrantCommunityPointInput,
+  GqlTransactionIssueCommunityPointInput,
+  GqlTransactionSortInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
 
@@ -25,13 +25,13 @@ export default class TransactionConverter {
   static issueCommunityPoint(
     input: GqlTransactionIssueCommunityPointInput,
   ): Prisma.TransactionCreateInput {
-    const { toWalletId, toPointChange } = input;
+    const { toWalletId, transferPoints } = input;
 
     return {
       reason: TransactionReason.POINT_ISSUED,
       toWallet: { connect: { id: toWalletId } },
-      fromPointChange: 0,
-      toPointChange,
+      fromPointChange: transferPoints,
+      toPointChange: transferPoints,
     };
   }
 
@@ -39,14 +39,14 @@ export default class TransactionConverter {
     input: GqlTransactionGrantCommunityPointInput,
     toWalletId: string,
   ): Prisma.TransactionCreateInput {
-    const { fromWalletId, fromPointChange, toPointChange } = input;
+    const { fromWalletId, transferPoints } = input;
 
     return {
       reason: TransactionReason.GRANT,
       fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange,
+      fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
-      toPointChange,
+      toPointChange: transferPoints,
     };
   }
 
@@ -54,14 +54,14 @@ export default class TransactionConverter {
     input: GqlTransactionDonateSelfPointInput,
     toWalletId: string,
   ): Prisma.TransactionCreateInput {
-    const { fromWalletId, fromPointChange, toPointChange } = input;
+    const { fromWalletId, transferPoints } = input;
 
     return {
       reason: TransactionReason.DONATION,
       fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange,
+      fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
-      toPointChange,
+      toPointChange: transferPoints,
     };
   }
 

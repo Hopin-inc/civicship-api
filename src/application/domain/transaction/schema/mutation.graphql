@@ -26,23 +26,21 @@ extend type Mutation {
 # ------------------------------
 input TransactionIssueCommunityPointInput {
     toWalletId: ID!
-    toPointChange: Int!
+    transferPoints: Int!
 }
 
 input TransactionGrantCommunityPointInput {
     fromWalletId: ID!
-    fromPointChange: Int!
     toUserId: ID!
-    toPointChange: Int!
     communityId: ID!
+    transferPoints: Int!
 }
 
 input TransactionDonateSelfPointInput {
     fromWalletId: ID!
-    fromPointChange: Int!
     toUserId: ID!
-    toPointChange: Int!
     communityId: ID!
+    transferPoints: Int!
 }
 
 # ------------------------------
