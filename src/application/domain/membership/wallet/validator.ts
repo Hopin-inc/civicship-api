@@ -41,7 +41,7 @@ export default class WalletValidator {
     const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, communityId);
     const memberWallet = createIfNeeded
       ? await WalletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx)
-      : await WalletService.findMemberWalletOrThrow(ctx, communityId, userId, tx);
+      : await WalletService.findMemberWalletOrThrow(ctx, userId, communityId, tx);
 
     switch (direction) {
       case TransferDirection.COMMUNITY_TO_MEMBER:
