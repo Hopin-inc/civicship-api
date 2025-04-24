@@ -44,7 +44,7 @@ export default class IdentityUseCase {
   static async userDeleteAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     const uid = context.uid;
     const user = await IdentityService.deleteUserAndIdentity(uid);
-    await IdentityService.deleteFirebaseAuthUser(uid);
+    await IdentityService.deleteFirebaseAuthUser(uid, context.tenantId);
     return IdentityPresenter.delete(user);
   }
 }

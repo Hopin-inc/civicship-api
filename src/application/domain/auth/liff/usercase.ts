@@ -14,8 +14,12 @@ export class LIFFAuthUseCase {
     await LIFFService.verifyAccessToken(request.accessToken);
     const profile = await LIFFService.getProfile(request.accessToken);
 
-    const customToken = await LIFFService.createFirebaseCustomToken(profile);
-    
+    const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
+    if (!tenantId) {
+      throw new Error("FIREBASE_AUTH_TENANT_ID not defined.")
+    }
+    const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
+
     return {
       customToken,
       profile,

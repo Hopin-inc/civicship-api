@@ -27,7 +27,7 @@ export class LIFFService {
       const channelId = process.env.LINE_LIFF_CHANNEL_ID;
 
       if (!channelId) {
-        console.error("LINE_CHANNEL_ID is not defined in environment variables");
+        console.error("LINE_LIFF_CHANNEL_ID is not defined in environment variables");
         throw new Error("LINE configuration missing");
       }
 
@@ -92,7 +92,7 @@ export class LIFFService {
    * @param profile LINE user profile
    * @returns Firebase custom token
    */
-  static async createFirebaseCustomToken(profile: LINEProfile): Promise<string> {
+  static async createFirebaseCustomToken(profile: LINEProfile, tenantId?: string): Promise<string> {
     try {
       // Create custom claims with LINE user info
       const customClaims = {
@@ -108,7 +108,8 @@ export class LIFFService {
       };
 
       // Create Firebase custom token
-      const customToken = await auth.createCustomToken(profile.userId, customClaims);
+      const tenantedAuth = tenantId ? auth.tenantManager().authForTenant(tenantId) : auth;
+      const customToken = await tenantedAuth.createCustomToken(profile.userId, customClaims);
       return customToken;
     } catch (error) {
       console.error("Error creating Firebase custom token:", error);
