@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - feature/add_tenant_id_in_firebase_auth
 
 jobs:
   deploy:
