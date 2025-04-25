@@ -2,52 +2,55 @@ import { messagingApi } from "@line/bot-sdk";
 
 export interface ReservationAcceptedParams {
   title: string;
+  thumbnail: string;
+  year: string;
   date: string;
   time: string;
   place: string;
   participantCount: string;
-  price: string;
   hostName: string;
   hostImageUrl: string;
-  eventImageUrl: string;
   redirectUrl: string;
 }
 
 export function buildReservationAcceptedMessage(
   params: ReservationAcceptedParams,
 ): messagingApi.FlexMessage {
-  const bubble: messagingApi.FlexBubble = {
-    type: "bubble",
-    header: buildHeader(params.eventImageUrl),
-    body: buildBody(params),
-    footer: buildFooter(params.redirectUrl),
-    styles: {
-      footer: { separator: true },
-    },
-  };
-
   return {
     type: "flex",
-    altText: `${params.title} の予約確定のお知らせ`,
-    contents: bubble,
+    altText: `${params.date}開催「${params.title}」の予約が確定しました🙋`,
+    contents: buildBubble(params),
+    sender: {
+      name: params.hostName,
+      iconUrl: params.hostImageUrl,
+    },
   };
 }
 
-function buildHeader(eventImageUrl: string): messagingApi.FlexBox {
+function buildBubble(params: ReservationAcceptedParams): messagingApi.FlexBubble {
+  return {
+    type: "bubble",
+    header: buildHeader(params.thumbnail),
+    body: buildBody(params),
+    footer: buildFooter(params.redirectUrl),
+  };
+}
+
+function buildHeader(imageUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "horizontal",
+    paddingAll: "0px",
     contents: [
       {
         type: "image",
-        url: eventImageUrl,
+        url: imageUrl,
         size: "full",
         aspectMode: "cover",
-        aspectRatio: "20:13",
+        aspectRatio: "20:10",
         gravity: "center",
       },
     ],
-    paddingAll: "0px",
   };
 }
 
@@ -55,66 +58,86 @@ function buildBody(params: ReservationAcceptedParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    paddingStart: "20px",
-    paddingEnd: "20px",
+    paddingStart: "xl",
+    paddingEnd: "xl",
+    spacing: "sm",
+    contents: [buildTitle(), buildOpportunityInfo(params), buildHostSection(params)],
+  };
+}
+
+function buildTitle(): messagingApi.FlexText {
+  return {
+    type: "text",
+    text: "予約確定",
+    size: "xs",
+    color: "#1DB446",
+    weight: "bold",
+  };
+}
+
+function buildOpportunityInfo(params: ReservationAcceptedParams): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    margin: "md",
     contents: [
       {
         type: "text",
-        text: "予約確定のお知らせ",
-        size: "xl",
+        text: params.title,
+        size: "lg",
         weight: "bold",
         wrap: true,
-        color: "#111111",
+        color: "#333333",
       },
       {
         type: "text",
-        text: "ご予約が確定しました。以下の詳細をご確認ください。",
+        text: `${params.year}${params.date} ${params.time}`,
         size: "sm",
-        color: "#111111",
         wrap: true,
-        margin: "md",
+        color: "#555555",
       },
+      {
+        type: "text",
+        text: `${params.participantCount}・${params.place}`,
+        size: "xs",
+        color: "#999999",
+      },
+    ],
+  };
+}
+
+function buildHostSection(params: ReservationAcceptedParams): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "horizontal",
+    spacing: "md",
+    alignItems: "center",
+    margin: "xxl",
+    contents: [
       {
         type: "box",
         layout: "vertical",
-        spacing: "sm",
-        margin: "lg",
-        paddingAll: "13px",
-        backgroundColor: "#FAFAFA",
-        cornerRadius: "xs",
+        width: "64px",
+        height: "64px",
+        cornerRadius: "100px",
         contents: [
-          createRow("日付", params.date),
-          createRow("時間", params.time),
-          createRow("場所", params.place),
-          createRow("人数", params.participantCount),
-          createRow("金額", params.price),
+          {
+            type: "image",
+            url: params.hostImageUrl,
+            size: "full",
+            aspectMode: "cover",
+          },
         ],
       },
       {
         type: "box",
-        layout: "horizontal",
-        spacing: "md",
-        alignItems: "center",
-        margin: "xxl",
+        layout: "vertical",
         contents: [
           {
             type: "box",
-            layout: "vertical",
-            contents: [
-              {
-                type: "image",
-                url: params.hostImageUrl,
-                size: "full",
-                aspectMode: "cover",
-              },
-            ],
-            cornerRadius: "100px",
-            width: "64px",
-            height: "64px",
-          },
-          {
-            type: "box",
-            layout: "vertical",
+            layout: "horizontal",
+            spacing: "sm",
             contents: [
               {
                 type: "text",
@@ -123,31 +146,17 @@ function buildBody(params: ReservationAcceptedParams): messagingApi.FlexBox {
                 color: "#111111",
                 weight: "bold",
               },
-              {
-                type: "text",
-                text: "もしご都合が合わなければ、別日程でも楽しくご案内いたします！",
-                size: "xs",
-                color: "#555555",
-                wrap: true,
-              },
             ],
           },
+          {
+            type: "text",
+            text: "当日お会いできることを心待ちにしています☺️",
+            size: "xs",
+            color: "#111111",
+            wrap: true,
+          },
         ],
-        paddingBottom: "28px",
       },
-    ],
-  };
-}
-
-function createRow(label: string, value: string): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "horizontal",
-    spacing: "md",
-    alignItems: "center",
-    contents: [
-      { type: "text", text: label, size: "xs", color: "#555555", flex: 0 },
-      { type: "text", text: value, size: "md", color: "#111111" },
     ],
   };
 }
@@ -156,7 +165,7 @@ function buildFooter(redirectUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    spacing: "sm",
+    margin: "xxl",
     contents: [
       {
         type: "button",
@@ -168,6 +177,5 @@ function buildFooter(redirectUrl: string): messagingApi.FlexBox {
         },
       },
     ],
-    paddingAll: "10px",
   };
 }

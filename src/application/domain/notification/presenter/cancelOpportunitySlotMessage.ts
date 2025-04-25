@@ -2,6 +2,7 @@ import { messagingApi } from "@line/bot-sdk";
 
 interface CancelOpportunitySlotParams {
   title: string;
+  year: string;
   date: string;
   time: string;
   hostName: string;
@@ -14,32 +15,18 @@ export function buildCancelOpportunitySlotMessage(
 ): messagingApi.FlexMessage {
   const bubble: messagingApi.FlexBubble = {
     type: "bubble",
-    header: buildHeader(),
     body: buildBody(params),
     footer: buildFooter(params.redirectUrl),
-    styles: { footer: { separator: true } },
   };
 
   return {
     type: "flex",
-    altText: `${params.title} の開催中止のお知らせ`,
+    altText: `${params.date}開催「${params.title}」の開催を中止させていただきます🙇‍♀️`,
     contents: bubble,
-  };
-}
-
-function buildHeader(): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "vertical",
-    contents: [
-      {
-        type: "text",
-        text: "開催中止のお知らせ",
-        color: "#111111",
-        weight: "bold",
-        size: "lg",
-      },
-    ],
+    sender: {
+      name: params.hostName,
+      iconUrl: params.hostImageUrl,
+    },
   };
 }
 
@@ -47,45 +34,68 @@ function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    paddingStart: "20px",
-    paddingEnd: "20px",
+    paddingStart: "xl",
+    paddingEnd: "xl",
+    spacing: "sm",
+    contents: [
+      buildTitle(),
+      buildOpportunityInfo(params),
+      buildApologyMessage(),
+      buildHostSection(params),
+    ],
+  };
+}
+
+function buildTitle(): messagingApi.FlexText {
+  return {
+    type: "text",
+    text: "開催中止のお知らせ",
+    size: "xs",
+    color: "#EF4444",
+    weight: "bold",
+  };
+}
+
+function buildOpportunityInfo(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    margin: "md",
     contents: [
       {
         type: "text",
         text: params.title,
-        size: "md",
-        color: "#111111",
+        size: "lg",
         weight: "bold",
         wrap: true,
+        color: "#333333",
       },
       {
-        type: "box",
-        layout: "horizontal",
-        spacing: "md",
-        margin: "xl",
-        alignItems: "center",
-        contents: [
-          { type: "text", text: "日付", size: "xs", color: "#555555", flex: 0 },
-          { type: "text", text: params.date, size: "md", color: "#111111" },
-        ],
+        type: "text",
+        text: `${params.year}${params.date} ${params.time}`,
+        size: "sm",
+        wrap: true,
+        color: "#555555",
       },
-      {
-        type: "box",
-        layout: "horizontal",
-        spacing: "md",
-        alignItems: "center",
-        contents: [
-          { type: "text", text: "時間", size: "xs", color: "#555555", flex: 0 },
-          { type: "text", text: params.time, size: "md", color: "#111111" },
-        ],
-      },
+    ],
+  };
+}
+
+function buildApologyMessage(): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    paddingTop: "xl",
+    paddingBottom: "xl",
+    contents: [
       {
         type: "text",
         text: "お申し込みいただいたイベントは、やむを得ず中止とさせていただきました。",
         size: "sm",
         color: "#111111",
         wrap: true,
-        margin: "lg",
       },
       {
         type: "text",
@@ -93,33 +103,42 @@ function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
         size: "sm",
         color: "#111111",
         wrap: true,
-        margin: "sm",
+      },
+    ],
+  };
+}
+
+function buildHostSection(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "horizontal",
+    spacing: "md",
+    alignItems: "center",
+    margin: "xxl",
+    contents: [
+      {
+        type: "box",
+        layout: "vertical",
+        width: "64px",
+        height: "64px",
+        cornerRadius: "100px",
+        contents: [
+          {
+            type: "image",
+            url: params.hostImageUrl,
+            size: "full",
+            aspectMode: "cover",
+          },
+        ],
       },
       {
         type: "box",
-        layout: "horizontal",
-        spacing: "md",
-        alignItems: "center",
-        margin: "xxl",
+        layout: "vertical",
         contents: [
           {
             type: "box",
-            layout: "vertical",
-            contents: [
-              {
-                type: "image",
-                url: params.hostImageUrl,
-                size: "full",
-                aspectMode: "cover",
-              },
-            ],
-            cornerRadius: "100px",
-            width: "64px",
-            height: "64px",
-          },
-          {
-            type: "box",
-            layout: "vertical",
+            layout: "horizontal",
+            spacing: "sm",
             contents: [
               {
                 type: "text",
@@ -128,17 +147,16 @@ function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
                 color: "#111111",
                 weight: "bold",
               },
-              {
-                type: "text",
-                text: "もしご都合が合いましたら、別日程でのご参加をご検討いただけると嬉しいです。",
-                size: "xs",
-                color: "#555555",
-                wrap: true,
-              },
             ],
           },
+          {
+            type: "text",
+            text: "もしご都合が合いましたら、別日程でのご参加をご検討いただけると嬉しいです🙇‍♀️",
+            size: "xs",
+            color: "#111111",
+            wrap: true,
+          },
         ],
-        paddingBottom: "28px",
       },
     ],
   };
@@ -148,7 +166,7 @@ function buildFooter(redirectUrl: string): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    spacing: "sm",
+    margin: "xxl",
     contents: [
       {
         type: "button",
