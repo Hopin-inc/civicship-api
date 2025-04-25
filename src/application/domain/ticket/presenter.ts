@@ -7,8 +7,6 @@ import {
   GqlTicketUseSuccess,
 } from "@/types/graphql";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
-import TicketClaimLinkPresenter from "@/application/domain/ticketClaimLink/presenter";
-import { PrismaTicketClaimLink } from "@/application/domain/ticketClaimLink/data/type";
 
 export default class TicketPresenter {
   static query(tickets: GqlTicket[], hasNextPage: boolean): GqlTicketsConnection {
@@ -28,27 +26,20 @@ export default class TicketPresenter {
   }
 
   static get(r: PrismaTicket): GqlTicket {
-    const { utility, wallet, ...prop } = r;
+    const { utility, wallet, claimLink, ...prop } = r;
 
     return {
       ...prop,
       utility,
       wallet,
+      claimLink,
     };
   }
 
-  static claim(claimLinks: (PrismaTicketClaimLink | null | undefined)[]): GqlTicketClaimSuccess {
-    const uniqueClaimLinks = [
-      ...new Map(
-        claimLinks
-          .filter((link): link is PrismaTicketClaimLink => !!link)
-          .map((link) => [link.id, link]),
-      ).values(),
-    ];
-
+  static claim(tickets: PrismaTicket[]): GqlTicketClaimSuccess {
     return {
       __typename: "TicketClaimSuccess",
-      claimLinks: uniqueClaimLinks.map(TicketClaimLinkPresenter.get),
+      tickets: tickets.map(this.get),
     };
   }
 

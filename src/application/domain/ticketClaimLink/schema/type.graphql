@@ -19,6 +19,7 @@ type TicketClaimLink {
 # TicketClaimLink Enum Definitions
 # ------------------------------
 enum ClaimLinkStatus {
+    ISSUED
     CLAIMED
     EXPIRED
 }

@@ -115,8 +115,7 @@ export default class TicketUseCase {
       );
     });
 
-    const claimLinks = tickets.map((ticket) => ticket.claimLink);
-    return TicketPresenter.claim(claimLinks);
+    return TicketPresenter.claim(tickets);
   }
 
   static async memberPurchaseTicket(

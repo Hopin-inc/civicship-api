@@ -145,6 +145,14 @@ FAILED FAILED
     
 
 
+        ClaimLinkStatus {
+            ISSUED ISSUED
+CLAIMED CLAIMED
+EXPIRED EXPIRED
+        }
+    
+
+
         TicketStatus {
             AVAILABLE AVAILABLE
 DISABLED DISABLED
@@ -153,11 +161,12 @@ DISABLED DISABLED
 
 
         TicketStatusReason {
-            PURCHASED PURCHASED
-CANCELED CANCELED
-RESERVED RESERVED
-USED USED
+            GIFTED GIFTED
+PURCHASED PURCHASED
 REFUNDED REFUNDED
+RESERVED RESERVED
+CANCELED CANCELED
+USED USED
 EXPIRED EXPIRED
         }
     
@@ -424,12 +433,34 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_ticket_issuers" {
+    String id "🗝️"
+    Int qty_to_be_issued 
+    String utility_id 
+    String owner_id 
+    String claim_link_id "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_ticket_claim_links" {
+    String id "🗝️"
+    ClaimLinkStatus status 
+    Int qty 
+    String issuer_id 
+    DateTime claimed_at "❓"
+    DateTime created_at 
+    }
+  
+
   "t_tickets" {
     String id "🗝️"
     TicketStatus status 
     TicketStatusReason reason 
     String wallet_id 
     String utility_id 
+    String claim_link_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -551,6 +582,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_evaluation_histories" : "evaluationCreatedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
+    "t_users" o{--}o "t_ticket_issuers" : "ticketIssuer"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_users" : "user"
@@ -630,11 +662,19 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_utilities" o{--}o "t_images" : "images"
     "t_utilities" o|--|| "t_communities" : "community"
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
+    "t_utilities" o{--}o "t_ticket_issuers" : "ticketIssuer"
     "t_utilities" o{--}o "t_tickets" : "tickets"
+    "t_ticket_issuers" o|--|| "t_utilities" : "utility"
+    "t_ticket_issuers" o|--|| "t_users" : "owner"
+    "t_ticket_issuers" o{--}o "t_ticket_claim_links" : "claimLink"
+    "t_ticket_claim_links" o|--|| "ClaimLinkStatus" : "enum:status"
+    "t_ticket_claim_links" o|--|| "t_ticket_issuers" : "issuer"
+    "t_ticket_claim_links" o{--}o "t_tickets" : "tickets"
     "t_tickets" o|--|| "TicketStatus" : "enum:status"
     "t_tickets" o|--|| "TicketStatusReason" : "enum:reason"
     "t_tickets" o|--|| "t_wallets" : "wallet"
     "t_tickets" o|--|| "t_utilities" : "utility"
+    "t_tickets" o|--|o "t_ticket_claim_links" : "claimLink"
     "t_tickets" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_ticket_status_histories" o|--|| "t_tickets" : "ticket"
     "t_ticket_status_histories" o|--|| "TicketStatus" : "enum:status"
