@@ -49,11 +49,11 @@ export default class WalletValidator {
       case TransferDirection.MEMBER_TO_COMMUNITY:
         return { from: memberWallet, to: communityWallet };
       case TransferDirection.MEMBER_TO_MEMBER:
-        throw new ValidationError("Use validateMemberToMemberDonation() for DONATION");
+        throw new ValidationError("Use validateTransferMemberToMember()");
     }
   }
 
-  static async validateMemberToMemberDonation(
+  static async validateTransferMemberToMember(
     fromWallet: PrismaWallet,
     toWallet: PrismaWallet,
     transferPoints: number,
@@ -94,13 +94,12 @@ enum TransferDirection {
 
 function getTransferDirection(reason: TransactionReason): TransferDirection {
   switch (reason) {
-    case TransactionReason.POINT_REWARD:
     case TransactionReason.ONBOARDING:
     case TransactionReason.GRANT:
-    case TransactionReason.TICKET_REFUNDED:
       return TransferDirection.COMMUNITY_TO_MEMBER;
+    case TransactionReason.POINT_REWARD:
     case TransactionReason.TICKET_PURCHASED:
-      return TransferDirection.MEMBER_TO_COMMUNITY;
+    case TransactionReason.TICKET_REFUNDED:
     case TransactionReason.DONATION:
       return TransferDirection.MEMBER_TO_MEMBER;
     default:
