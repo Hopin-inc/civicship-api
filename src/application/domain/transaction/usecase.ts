@@ -106,13 +106,19 @@ export default class TransactionUseCase {
         WalletService.createMemberWalletIfNeeded(ctx, toUserId, communityId, tx),
       ]);
 
-      const { toWalletId } = await WalletValidator.validateMemberToMemberDonation(
+      const { toWalletId } = await WalletValidator.validateTransferMemberToMember(
         fromWallet,
         toWallet,
         transferPoints,
       );
 
-      const transaction = await TransactionService.donateSelfPoint(ctx, input, toWalletId, tx);
+      const transaction = await TransactionService.donateSelfPoint(
+        ctx,
+        fromWalletId,
+        toWalletId,
+        transferPoints,
+        tx,
+      );
 
       return TransactionPresenter.giveUserPoint(transaction);
     });
