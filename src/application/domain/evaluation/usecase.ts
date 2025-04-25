@@ -7,14 +7,15 @@ import {
   GqlQueryEvaluationArgs,
   GqlQueryEvaluationsArgs,
 } from "@/types/graphql";
-import { EvaluationStatus, TransactionReason } from "@prisma/client";
+import { EvaluationStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/evaluation/service";
 import EvaluationPresenter from "@/application/domain/evaluation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import TransactionService from "@/application/domain/transaction/service";
+import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import WalletService from "@/application/domain/membership/wallet/service";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
-import { clampFirst } from "@/application/domain/utils";
 
 export default class EvaluationUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -47,6 +48,8 @@ export default class EvaluationUseCase {
     { input }: GqlMutationEvaluationPassArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     const evaluation = await this.issuer.public(ctx, async (tx) => {
       const evaluation = await EvaluationService.createEvaluation(
         ctx,
@@ -59,13 +62,15 @@ export default class EvaluationUseCase {
         EvaluationService.validateParticipationHasOpportunity(evaluation);
 
       if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
-        const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
-          ctx,
-          tx,
-          communityId,
-          userId,
+        const [fromWallet, toWallet] = await Promise.all([
+          WalletService.findMemberWalletOrThrow(ctx, currentUserId, communityId, tx),
+          WalletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
+        ]);
+
+        const { fromWalletId, toWalletId } = await WalletValidator.validateTransferMemberToMember(
+          fromWallet,
+          toWallet,
           opportunity.pointsToEarn,
-          TransactionReason.POINT_REWARD,
         );
 
         await TransactionService.giveRewardPoint(
