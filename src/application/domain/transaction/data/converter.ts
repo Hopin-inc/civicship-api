@@ -88,7 +88,7 @@ export default class TransactionConverter {
     return {
       reason: TransactionReason.TICKET_PURCHASED,
       fromWallet: { connect: { id: params.fromWalletId } },
-      fromPointChange: -params.transferPoints,
+      fromPointChange: params.transferPoints,
       toWallet: { connect: { id: params.toWalletId } },
       toPointChange: params.transferPoints,
     };
@@ -98,7 +98,7 @@ export default class TransactionConverter {
     return {
       reason: TransactionReason.TICKET_REFUNDED,
       fromWallet: { connect: { id: params.fromWalletId } },
-      fromPointChange: -params.transferPoints,
+      fromPointChange: params.transferPoints,
       toWallet: { connect: { id: params.toWalletId } },
       toPointChange: params.transferPoints,
     };
