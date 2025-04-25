@@ -1,15 +1,15 @@
-import EvaluationService from "@/application/domain/evaluation/service";
+import EvaluationService from "@/application/domain/experience/evaluation/service";
 import { ValidationError } from "@/errors/graphql";
-import { PrismaEvaluation } from "@/application/domain/evaluation/data/type";
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { GqlEvaluationCreateInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
-import EvaluationConverter from "@/application/domain/evaluation/data/converter";
-import EvaluationRepository from "@/application/domain/evaluation/data/repository";
+import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
+import EvaluationRepository from "@/application/domain/experience/evaluation/data/repository";
 
-jest.mock("@/application/domain/evaluation/data/converter");
-jest.mock("@/application/domain/evaluation/data/repository");
+jest.mock("@/application/domain/experience/evaluation/data/converter");
+jest.mock("@/application/domain/experience/evaluation/data/repository");
 jest.mock("@/application/domain/utils");
 
 describe("EvaluationService", () => {

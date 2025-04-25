@@ -1,15 +1,15 @@
 import { IContext } from "@/types/server";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { GqlParticipationCreatePersonalRecordInput } from "@/types/graphql";
-import ParticipationConverter from "@/application/domain/participation/data/converter";
-import ParticipationRepository from "@/application/domain/participation/data/repository";
-import ParticipationService from "@/application/domain/participation/service";
+import ParticipationConverter from "@/application/domain/experience/participation/data/converter";
+import ParticipationRepository from "@/application/domain/experience/participation/data/repository";
+import ParticipationService from "@/application/domain/experience/participation/service";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { PrismaParticipation } from "@/application/domain/participation/data/type";
+import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { ValidationError } from "@/errors/graphql";
 
-jest.mock("@/application/domain/participation/data/converter");
-jest.mock("@/application/domain/participation/data/repository");
+jest.mock("@/application/domain/experience/participation/data/converter");
+jest.mock("@/application/domain/experience/participation/data/repository");
 jest.mock("@/application/domain/utils");
 
 describe("ParticipationService", () => {

@@ -1,12 +1,12 @@
 import { Prisma, WalletType } from "@prisma/client";
-import WalletService from "@/application/domain/wallet/service";
-import WalletRepository from "@/application/domain/wallet/data/repository";
+import WalletService from "@/application/domain/account/wallet/service";
+import WalletRepository from "@/application/domain/account/wallet/data/repository";
 import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import WalletConverter from "@/application/domain/wallet/data/converter";
+import WalletConverter from "@/application/domain/account/wallet/data/converter";
 
-jest.mock("@/application/domain/wallet/data/repository");
-jest.mock("@/application/domain/wallet/data/converter");
+jest.mock("@/application/domain/account/wallet/data/repository");
+jest.mock("@/application/domain/account/wallet/data/converter");
 
 describe("WalletService", () => {
   const mockCtx = {} as IContext;

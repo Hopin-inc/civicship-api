@@ -1,11 +1,11 @@
-import UserRepository from "@/application/domain/user/data/repository";
-import UserService from "@/application/domain/user/service";
+import UserRepository from "@/application/domain/account/user/data/repository";
+import UserService from "@/application/domain/account/user/service";
 import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
 import { GqlQueryUsersArgs, GqlSortDirection } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/user/data/repository");
+jest.mock("@/application/domain/account/user/data/repository");
 
 describe("UserService", () => {
   const TEST_USER_ID = "test-user";

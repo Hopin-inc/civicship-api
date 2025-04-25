@@ -5,12 +5,12 @@ import {
   GqlOpportunitySlotUpdateInput,
   GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
-import OpportunitySlotConverter from "@/application/domain/opportunitySlot/data/converter";
-import OpportunitySlotRepository from "@/application/domain/opportunitySlot/data/repository";
-import OpportunitySlotService from "@/application/domain/opportunitySlot/service";
+import OpportunitySlotConverter from "@/application/domain/experience/opportunitySlot/data/converter";
+import OpportunitySlotRepository from "@/application/domain/experience/opportunitySlot/data/repository";
+import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 
-jest.mock("@/application/domain/opportunitySlot/data/repository");
-jest.mock("@/application/domain/opportunitySlot/data/converter");
+jest.mock("@/application/domain/experience/opportunitySlot/data/repository");
+jest.mock("@/application/domain/experience/opportunitySlot/data/converter");
 
 describe("OpportunitySlotService", () => {
   let ctx: IContext;

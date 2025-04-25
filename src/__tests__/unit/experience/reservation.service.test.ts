@@ -1,6 +1,6 @@
-import ReservationService from "@/application/domain/reservation/service";
-import ReservationConverter from "@/application/domain/reservation/data/converter";
-import ReservationRepository from "@/application/domain/reservation/data/repository";
+import ReservationService from "@/application/domain/experience/reservation/service";
+import ReservationConverter from "@/application/domain/experience/reservation/data/converter";
+import ReservationRepository from "@/application/domain/experience/reservation/data/repository";
 import { getCurrentUserId } from "@/application/domain/utils";
 import {
   ParticipationStatus,
@@ -9,10 +9,10 @@ import {
   ReservationStatus,
 } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { ReservationStatuses } from "@/application/domain/reservation/helper";
+import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 
-jest.mock("@/application/domain/reservation/data/converter");
-jest.mock("@/application/domain/reservation/data/repository");
+jest.mock("@/application/domain/experience/reservation/data/converter");
+jest.mock("@/application/domain/experience/reservation/data/repository");
 jest.mock("@/application/domain/utils");
 
 describe("ReservationService", () => {

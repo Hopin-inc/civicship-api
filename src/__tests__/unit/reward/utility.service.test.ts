@@ -1,12 +1,12 @@
-import UtilityService from "@/application/domain/utility/service";
-import UtilityRepository from "@/application/domain/utility/data/repository";
-import UtilityConverter from "@/application/domain/utility/data/converter";
+import UtilityService from "@/application/domain/reward/utility/service";
+import UtilityRepository from "@/application/domain/reward/utility/data/repository";
+import UtilityConverter from "@/application/domain/reward/utility/data/converter";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/utility/data/converter");
-jest.mock("@/application/domain/utility/data/repository");
+jest.mock("@/application/domain/reward/utility/data/converter");
+jest.mock("@/application/domain/reward/utility/data/repository");
 
 describe("UtilityService", () => {
   const ctx = {} as IContext;

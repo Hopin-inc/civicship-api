@@ -1,13 +1,13 @@
-import TicketService from "@/application/domain/ticket/service";
-import TicketConverter from "@/application/domain/ticket/data/converter";
-import TicketRepository from "@/application/domain/ticket/data/repository";
+import TicketService from "@/application/domain/reward/ticket/service";
+import TicketConverter from "@/application/domain/reward/ticket/data/converter";
+import TicketRepository from "@/application/domain/reward/ticket/data/repository";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaTicket } from "@/application/domain/ticket/data/type";
+import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
 
-jest.mock("@/application/domain/ticket/data/converter");
-jest.mock("@/application/domain/ticket/data/repository");
+jest.mock("@/application/domain/reward/ticket/data/converter");
+jest.mock("@/application/domain/reward/ticket/data/repository");
 jest.mock("@/application/domain/utils");
 
 describe("TicketService", () => {
