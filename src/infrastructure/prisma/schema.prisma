@@ -193,9 +193,11 @@ model User {
 
   identities Identity[]
 
-  memberships             Membership[]
-  membershipChangedByMe   MembershipHistory[]
-  wallets                 Wallet[]
+  memberships           Membership[]
+  membershipChangedByMe MembershipHistory[]
+  wallets               Wallet[]
+
+  ticketIssuedByMe        TicketIssuer[]
   ticketStatusChangedByMe TicketStatusHistory[]
 
   opportunitiesCreatedByMe       Opportunity[]
@@ -716,7 +718,8 @@ model Utility {
 
   requiredForOpportunities Opportunity[] @relation("t_required_opportunities_on_utilities")
 
-  tickets Ticket[]
+  ticketIssuer TicketIssuer[]
+  tickets      Ticket[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -726,11 +729,50 @@ model Utility {
 
 // ------------------------------ Ticket Domain ------------------------------
 
+model TicketIssuer {
+  id String @id @default(cuid())
+
+  /// Maximum number of tickets claimable from this link
+  qtyToBeIssued Int @default(1) @map("qty_to_be_issued")
+
+  utilityId String  @map("utility_id")
+  utility   Utility @relation(fields: [utilityId], references: [id])
+
+  ownerId String @map("owner_id")
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  claimLinkId String?          @unique @map("claim_link_id")
+  claimLink   TicketClaimLink?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_ticket_issuers")
+}
+
+model TicketClaimLink {
+  id     String          @id @default(cuid())
+  status ClaimLinkStatus @default(ISSUED)
+
+  /// Max number of tickets a user can claim using this link
+  qty Int @default(1)
+
+  issuerId String       @unique @map("issuer_id")
+  issuer   TicketIssuer @relation(fields: [issuerId], references: [id])
+
+  tickets Ticket[]
+
+  claimedAt DateTime? @map("claimed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("t_ticket_claim_links")
+}
+
 model Ticket {
   id String @id @default(cuid())
 
   status TicketStatus       @default(AVAILABLE)
-  reason TicketStatusReason @default(PURCHASED)
+  reason TicketStatusReason @default(GIFTED)
 
   walletId String @map("wallet_id")
   wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
@@ -738,26 +780,15 @@ model Ticket {
   utilityId String  @map("utility_id")
   utility   Utility @relation(fields: [utilityId], references: [id], onDelete: Restrict)
 
+  claimLinkId String?          @map("claim_link_id")
+  claimLink   TicketClaimLink? @relation(fields: [claimLinkId], references: [id])
+
   ticketStatusHistories TicketStatusHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_tickets")
-}
-
-enum TicketStatus {
-  AVAILABLE
-  DISABLED
-}
-
-enum TicketStatusReason {
-  PURCHASED
-  CANCELED
-  RESERVED
-  USED
-  REFUNDED
-  EXPIRED
 }
 
 model TicketStatusHistory {
@@ -782,6 +813,38 @@ model TicketStatusHistory {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_ticket_status_histories")
+}
+
+enum ClaimLinkStatus {
+  ISSUED
+  CLAIMED
+  EXPIRED
+}
+
+enum TicketStatus {
+  AVAILABLE
+  DISABLED
+}
+
+enum TicketStatusReason {
+  /// Issued as a gift or transferred from another user
+  GIFTED
+
+  /// Issued through purchase or point redemption
+  PURCHASED
+  /// Reissued due to a refund process
+  REFUNDED
+
+  /// Automatically issued upon reservation
+  RESERVED
+  /// Invalidated due to cancellation
+  CANCELED
+
+  /// Marked as used by the ticket holder
+  USED
+
+  /// Automatically expired after the validity period
+  EXPIRED
 }
 
 // ------------------------------ Transaction Domain ------------------------------

@@ -2,6 +2,7 @@ import { messagingApi } from "@line/bot-sdk";
 
 export interface ReservationCanceledParams {
   title: string;
+  year: string;
   date: string;
   time: string;
   participantCount: string;
@@ -14,93 +15,98 @@ export function buildReservationCanceledMessage(
 ): messagingApi.FlexMessage {
   const bubble: messagingApi.FlexBubble = {
     type: "bubble",
-    header: buildCanceledHeader(),
-    body: buildCanceledBody(params),
-    footer: buildCanceledFooter(params.redirectUrl),
-    styles: {
-      footer: { separator: true },
-    },
+    body: buildBody(params),
+    footer: buildFooter(params.redirectUrl),
   };
 
   return {
     type: "flex",
-    altText: `${params.title} の申し込みがキャンセルされました`,
+    altText: `${params.date}の「${params.title}」の申込がキャンセルされました😭`,
     contents: bubble,
   };
 }
 
-function buildCanceledHeader(): messagingApi.FlexBox {
+function buildBody(params: ReservationCanceledParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
-    contents: [
-      {
-        type: "text",
-        text: "申し込みがキャンセルされました",
-        color: "#111111",
-        size: "lg",
-        weight: "bold",
-      },
-    ],
+    paddingStart: "xl",
+    paddingEnd: "xl",
+    spacing: "sm",
+    contents: [buildTitle(), buildOpportunityInfo(params), buildExplainMessage(params)],
   };
 }
 
-function buildCanceledBody(params: ReservationCanceledParams): messagingApi.FlexBox {
+function buildTitle(): messagingApi.FlexText {
   return {
-    type: "box",
-    layout: "vertical",
-    paddingAll: "20px",
-    backgroundColor: "#ffffff",
-    contents: [
-      {
-        type: "text",
-        text: "以下の体験予約がキャンセルされました。内容をご確認ください。",
-        size: "sm",
-        color: "#111111",
-        wrap: true,
-      },
-      {
-        type: "box",
-        layout: "vertical",
-        margin: "lg",
-        paddingAll: "13px",
-        backgroundColor: "#FAFAFA",
-        cornerRadius: "xs",
-        spacing: "md",
-        contents: [
-          createRow("体験名", params.title),
-          createRow("日程", params.date),
-          createRow("時間", params.time),
-          createRow("人数", params.participantCount),
-          createRow("申込者", params.applicantName),
-        ],
-      },
-    ],
+    type: "text",
+    text: "申込キャンセル",
+    size: "xs",
+    color: "#EF4444",
+    weight: "bold",
   };
 }
 
-function createRow(label: string, value: string): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "horizontal",
-    spacing: "md",
-    alignItems: "center",
-    contents: [
-      { type: "text", text: label, size: "xs", color: "#555555", flex: 0 },
-      { type: "text", text: value, size: "md", color: "#111111" },
-    ],
-  };
-}
-
-function buildCanceledFooter(redirectUrl: string): messagingApi.FlexBox {
+function buildOpportunityInfo(params: ReservationCanceledParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
     spacing: "sm",
+    margin: "md",
+    contents: [
+      {
+        type: "text",
+        text: params.title,
+        size: "lg",
+        weight: "bold",
+        wrap: true,
+        color: "#333333",
+      },
+      {
+        type: "text",
+        text: `${params.year}${params.date} ${params.time}`,
+        size: "sm",
+        wrap: true,
+        color: "#555555",
+      },
+      {
+        type: "text",
+        text: `${params.applicantName}・${params.participantCount}`,
+        size: "xs",
+        color: "#999999",
+      },
+    ],
+  };
+}
+
+function buildExplainMessage(params: ReservationCanceledParams): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    spacing: "sm",
+    paddingTop: "xl",
+    paddingBottom: "xl",
+    contents: [
+      {
+        type: "text",
+        text: `誠に残念ですが、${params.applicantName}さんの申込はキャンセルとなりました。`,
+        size: "sm",
+        color: "#111111",
+        wrap: true,
+      },
+    ],
+  };
+}
+
+function buildFooter(redirectUrl: string): messagingApi.FlexBox {
+  return {
+    type: "box",
+    layout: "vertical",
+    margin: "xxl",
     contents: [
       {
         type: "button",
-        style: "secondary",
+        style: "link",
         action: {
           type: "uri",
           label: "詳細を確認する",
@@ -108,6 +114,5 @@ function buildCanceledFooter(redirectUrl: string): messagingApi.FlexBox {
         },
       },
     ],
-    paddingAll: "10px",
   };
 }

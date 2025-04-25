@@ -1,171 +1,156 @@
-import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/opportunitySlot/data/type";
+import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/experience/opportunitySlot/data/type";
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
 import "dayjs/locale/ja";
 import { lineClient } from "@/infrastructure/libs/line";
 import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/cancelOpportunitySlotMessage";
-import { PrismaReservation } from "@/application/domain/reservation/data/type";
+import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/reservation/reservationAcceptedMessage";
-import { IdentityPlatform } from "@prisma/client";
-import {
-  DEFAULT_EVENT_IMAGE_URL,
-  DEFAULT_HOST_IMAGE_URL,
-  LOCAL_UID,
-  REDIRECT_URL,
-} from "@/application/domain/notification/const";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/reservation/reservationAppliedMessage";
 import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/reservation/reservationCanceledMessage";
+import { HTTPFetchError, messagingApi } from "@line/bot-sdk";
+
+export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
+export const DEFAULT_HOST_IMAGE_URL =
+  "https://s3-ap-northeast-1.amazonaws.com/seiryu/66b7cbe0421aa90001d53e2f/programs/66b863bb421aa90001d55278/guide1_images/display.jpg?1726810902";
+export const DEFAULT_THUMBNAIL =
+  "https://s3-ap-northeast-1.amazonaws.com/seiryu/66b7cbe0421aa90001d53e2f/events/carousel_image3s/display.jpg?1729667925";
+export const USER_MY_PAGE = "https://liff.line.me/2006078430-XGzG9kqm/users/me";
 
 dayjs.locale("ja");
-const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-
-type ParticipationWithUserIdentity = {
-  user?: {
-    identities?: {
-      platform: IdentityPlatform;
-      uid: string;
-    }[];
-  } | null;
-};
 
 export default class NotificationService {
   static async pushCancelOpportunitySlotMessage(
     ctx: IContext,
     slot: PrismaOpportunitySlotWithParticipation,
   ) {
-    const lineIds =
-      process.env.ENV === "LOCAL"
-        ? [LOCAL_UID]
-        : extractLineIdsFromParticipations(
-            slot.reservations?.flatMap((r) => r.participations ?? []) ?? [],
-          );
+    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
 
-    const { date, time } = formatDateTime(slot.startsAt, slot.endsAt);
+    const { year, date, time } = formatDateTime(slot.startsAt, slot.endsAt);
+    const opportunityId = slot.opportunityId;
+    const communityId = slot.opportunity.communityId;
     const host = slot.opportunity.createdByUser;
+
+    const redirectUrl = communityId
+      ? `https://liff.line.me/2006078430-XGzG9kqm/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
+      : `https://liff.line.me/2006078430-XGzG9kqm/activities/${opportunityId}&community_id=${communityId}`;
 
     const message = buildCancelOpportunitySlotMessage({
       title: slot.opportunity.title,
+      year,
       date,
       time,
       hostName: host.name,
       hostImageUrl: host.image?.url ?? DEFAULT_HOST_IMAGE_URL,
-      redirectUrl: REDIRECT_URL,
+      redirectUrl,
     });
 
-    await Promise.all(lineIds.map((to) => lineClient.pushMessage({ to, messages: [message] })));
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineIds =
-      process.env.ENV === "LOCAL"
-        ? [LOCAL_UID]
-        : extractLineIdsFromParticipations(reservation.participations);
-
-    const { date, time } = formatDateTime(
+    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
+    const { year, date, time } = formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
-    const { opportunitySlot, participations } = reservation;
+
+    const { opportunitySlot, participations, id } = reservation;
     const applicant = ctx.currentUser;
+    const redirectUrl = `https://liff.line.me/2006078430-XGzG9kqm/admin/reservations/${id}`;
 
     const message = buildReservationAppliedMessage({
       title: opportunitySlot.opportunity.title,
+      year,
       date,
       time,
-      participantCount: `${participations.length}名`,
-      applicantName: applicant?.name ?? "申込者",
-      redirectUrl: REDIRECT_URL,
+      participantCount: `${participations.length}人`,
+      applicantName: applicant?.name ?? "申込者不明",
+      redirectUrl,
     });
 
-    await Promise.all(lineIds.map((to) => lineClient.pushMessage({ to, messages: [message] })));
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineIds =
-      process.env.ENV === "LOCAL"
-        ? [LOCAL_UID]
-        : extractLineIdsFromParticipations(reservation.participations);
-
-    const { date, time } = formatDateTime(
+    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
+    const { year, date, time } = formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
-    const { opportunitySlot, participations } = reservation;
+    const { opportunitySlot, participations, id } = reservation;
     const applicant = ctx.currentUser;
+    const redirectUrl = `https://liff.line.me/2006078430-XGzG9kqm/admin/reservations/${id}`;
 
     const message = buildReservationCanceledMessage({
       title: opportunitySlot.opportunity.title,
+      year,
       date,
       time,
-      participantCount: `${participations.length}名`,
-      applicantName: applicant?.name ?? "申込者",
-      redirectUrl: REDIRECT_URL,
+      participantCount: `${participations.length}人`,
+      applicantName: applicant?.name ?? "申込者不明",
+      redirectUrl,
     });
 
-    await Promise.all(lineIds.map((to) => lineClient.pushMessage({ to, messages: [message] })));
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async pushReservationAcceptedMessage(
     ctx: IContext,
+    currentUserId: string,
     reservation: PrismaReservation,
   ): Promise<void> {
-    const lineIds =
-      process.env.ENV === "LOCAL"
-        ? [LOCAL_UID]
-        : extractLineIdsFromParticipations(reservation.participations);
+    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
 
-    const { date, time } = formatDateTime(
+    const { year, date, time } = formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
-    const {
-      title,
-      images: eventImages,
-      place,
-      feeRequired,
-      createdByUser,
-    } = reservation.opportunitySlot.opportunity;
-    const { name: hostName = "ホスト名未定", image: hostImage } = createdByUser ?? {};
+
+    const participation = reservation.participations.find((p) => p.userId === currentUserId);
+    const participationId = participation ? participation.id : undefined;
+
+    const redirectUrl = participationId
+      ? `https://liff.line.me/2006078430-XGzG9kqm/participations/${participationId}`
+      : USER_MY_PAGE;
+
+    const { title, images, place, createdByUser } = reservation.opportunitySlot.opportunity;
+    const { name: hostName = "案内人", image: hostImage } = createdByUser ?? {};
 
     const message = buildReservationAcceptedMessage({
       title,
-      eventImageUrl: eventImages[0].url ?? DEFAULT_EVENT_IMAGE_URL,
+      thumbnail: images[0].url ?? DEFAULT_THUMBNAIL,
+      year,
       date,
       time,
-      place: place?.name ?? "場所未定",
+      place: place?.name ?? "",
       participantCount: `${reservation.participations.length}人`,
-      price: calculateTotalPrice(feeRequired, reservation.participations.length),
       hostName,
       hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
-      redirectUrl: REDIRECT_URL,
+      redirectUrl,
     });
 
-    await Promise.all(
-      lineIds.map((uid) => lineClient.pushMessage({ to: uid, messages: [message] })),
-    );
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 }
 
-function formatDateTime(start: Date, end: Date): { date: string; time: string } {
-  const dow = weekdays[dayjs(start).day()];
-  const date = `${dayjs(start).format("YYYY年M月D日")}（${dow}）`;
-  const time = `${dayjs(start).format("HH:mm")}-${dayjs(end).format("HH:mm")}`;
-  return { date, time };
+async function safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
+  try {
+    await lineClient.pushMessage(params);
+  } catch (error) {
+    if (error instanceof HTTPFetchError) {
+      console.error("Status:", error.status);
+      console.error("Message:", error.message);
+      console.error("Response Body:", error.body);
+    } else {
+      console.error("Unexpected Error:", error);
+    }
+  }
 }
 
-function extractLineIdsFromParticipations(
-  participations: ParticipationWithUserIdentity[],
-): string[] {
-  return (
-    participations?.flatMap(
-      (p) =>
-        p.user?.identities?.filter((i) => i.platform === IdentityPlatform.LINE).map((i) => i.uid) ??
-        [],
-    ) ?? []
-  );
-}
-
-function calculateTotalPrice(feeRequired: number | null | undefined, count: number): string {
-  const fee = feeRequired ?? 0;
-  return `${fee * count}円`;
+function formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
+  const year = dayjs(start).format("YYYY年");
+  const date = dayjs(start).format("M月D日");
+  const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
+  return { year, date, time };
 }

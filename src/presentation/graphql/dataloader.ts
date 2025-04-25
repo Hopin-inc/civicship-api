@@ -1,21 +1,21 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { createUserLoader } from "@/application/domain/user/controller/dataloader";
+import { createUserLoader } from "@/application/domain/account/user/controller/dataloader";
 import { createTransactionLoader } from "@/application/domain/transaction/controller/dataloader";
-import { createOpportunityLoader } from "@/application/domain/opportunity/controller/dataloader";
-import { createParticipationLoader } from "@/application/domain/participation/controller/dataloader";
-import { createWalletLoader } from "@/application/domain/membership/wallet/controller/dataloader";
-import { createCommunityLoader } from "@/application/domain/community/controller/dataloader";
-import { createMembershipLoader } from "@/application/domain/membership/controller/dataloader";
-import { createUtilityLoader } from "@/application/domain/utility/controller/dataloader";
-import { createPlaceLoader } from "@/application/domain/place/controller/dataloader";
-import { createOpportunitySlotLoader } from "@/application/domain/opportunitySlot/controller/dataloader";
-import { createParticipationStatusHistoryLoader } from "@/application/domain/participation/statusHistory/controller/dataloader";
-import { createArticleLoader } from "@/application/domain/article/controller/dataloader";
-import { createTicketLoader } from "@/application/domain/ticket/controller/dataloader";
-import { createTicketStatusHistoryLoader } from "@/application/domain/ticket/statusHistory/controller/dataloader";
-import { createEvaluationLoader } from "@/application/domain/evaluation/controller/dataloader";
-import { createEvaluationHistoryLoader } from "@/application/domain/evaluation/evaluationHistory/controller/dataloader";
-import { createReservationLoader } from "@/application/domain/reservation/controller/dataloader";
+import { createOpportunityLoader } from "@/application/domain/experience/opportunity/controller/dataloader";
+import { createParticipationLoader } from "@/application/domain/experience/participation/controller/dataloader";
+import { createWalletLoader } from "@/application/domain/account/wallet/controller/dataloader";
+import { createCommunityLoader } from "@/application/domain/account/community/controller/dataloader";
+import { createMembershipLoader } from "@/application/domain/account/membership/controller/dataloader";
+import { createUtilityLoader } from "@/application/domain/reward/utility/controller/dataloader";
+import { createPlaceLoader } from "@/application/domain/location/place/controller/dataloader";
+import { createOpportunitySlotLoader } from "@/application/domain/experience/opportunitySlot/controller/dataloader";
+import { createParticipationStatusHistoryLoader } from "@/application/domain/experience/participation/statusHistory/controller/dataloader";
+import { createArticleLoader } from "@/application/domain/content/article/controller/dataloader";
+import { createTicketLoader } from "@/application/domain/reward/ticket/controller/dataloader";
+import { createTicketStatusHistoryLoader } from "@/application/domain/reward/ticket/statusHistory/controller/dataloader";
+import { createEvaluationLoader } from "@/application/domain/experience/evaluation/controller/dataloader";
+import { createEvaluationHistoryLoader } from "@/application/domain/experience/evaluation/evaluationHistory/controller/dataloader";
+import { createReservationLoader } from "@/application/domain/experience/reservation/controller/dataloader";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
