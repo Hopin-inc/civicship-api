@@ -9,6 +9,8 @@ import { placeInclude } from "@/application/domain/place/data/type";
 import { reservationInclude } from "@/application/domain/reservation/data/type";
 import { participationInclude } from "@/application/domain/participation/data/type";
 import { userInclude } from "@/application/domain/user/data/type";
+import { ticketIssuerInclude } from "@/application/domain/ticketClaimLink/issuer/data/type";
+import { ticketClaimLinkInclude } from "@/application/domain/ticketClaimLink/data/type";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;
@@ -26,6 +28,9 @@ export default class TestDataSourceHelper {
     await this.db.reservation.deleteMany();
 
     await this.db.ticketStatusHistory.deleteMany();
+
+    await this.db.ticketClaimLink.deleteMany();
+    await this.db.ticketIssuer.deleteMany();
 
     await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
@@ -92,6 +97,13 @@ export default class TestDataSourceHelper {
   static async createWallet(data: Prisma.WalletCreateInput) {
     return this.db.wallet.create({
       data,
+      include: walletInclude,
+    });
+  }
+
+  static async findWallet(walletId: string) {
+    return this.db.wallet.findUnique({
+      where: { id: walletId },
       include: walletInclude,
     });
   }
@@ -174,6 +186,22 @@ export default class TestDataSourceHelper {
     return this.db.utility.create({
       data,
       include: utilityInclude,
+    });
+  }
+
+  // ======== TicketIssuer =========
+  static async createTicketIssuer(data: Prisma.TicketIssuerCreateInput) {
+    return this.db.ticketIssuer.create({
+      data,
+      include: ticketIssuerInclude,
+    });
+  }
+
+  // ======== TicketClaimLink =========
+  static async createTicketClaimLink(data: Prisma.TicketClaimLinkCreateInput) {
+    return this.db.ticketClaimLink.create({
+      data,
+      include: ticketClaimLinkInclude,
     });
   }
 
