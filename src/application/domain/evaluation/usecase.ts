@@ -14,8 +14,8 @@ import EvaluationPresenter from "@/application/domain/evaluation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import TransactionService from "@/application/domain/transaction/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import WalletService from "@/application/domain/membership/wallet/service";
-import WalletValidator from "@/application/domain/membership/wallet/validator";
+import WalletService from "@/application/domain/wallet/service";
+import WalletValidator from "@/application/domain/wallet/validator";
 
 export default class EvaluationUseCase {
   private static issuer = new PrismaClientIssuer();

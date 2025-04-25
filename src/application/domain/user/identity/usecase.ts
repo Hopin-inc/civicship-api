@@ -5,7 +5,7 @@ import IdentityService from "@/application/domain/user/identity/service";
 import IdentityPresenter from "@/application/domain/user/identity/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/domain/membership/service";
-import WalletService from "@/application/domain/membership/wallet/service";
+import WalletService from "@/application/domain/wallet/service";
 import ImageService from "@/application/domain/image/service";
 
 export default class IdentityUseCase {

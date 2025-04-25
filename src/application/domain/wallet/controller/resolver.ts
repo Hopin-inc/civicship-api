@@ -5,7 +5,7 @@ import {
   GqlTransactionsConnection,
   GqlWalletTransactionsArgs,
 } from "@/types/graphql";
-import WalletUseCase from "@/application/domain/membership/wallet/usecase";
+import WalletUseCase from "@/application/domain/wallet/usecase";
 import { IContext } from "@/types/server";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TicketUseCase from "@/application/domain/ticket/usecase";

@@ -2,8 +2,8 @@ import { IContext } from "@/types/server";
 import { Prisma, TransactionReason } from "@prisma/client";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { GqlWallet } from "@/types/graphql";
-import WalletService from "@/application/domain/membership/wallet/service";
-import { PrismaWallet } from "@/application/domain/membership/wallet/data/type";
+import WalletService from "@/application/domain/wallet/service";
+import { PrismaWallet } from "@/application/domain/wallet/data/type";
 
 export default class WalletValidator {
   static async validateCommunityMemberTransfer(

@@ -20,7 +20,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/application/domain/participation/usecase";
-import WalletUseCase from "@/application/domain/membership/wallet/usecase";
+import WalletUseCase from "@/application/domain/wallet/usecase";
 import CommunityUseCase from "@/application/domain/community/usecase";
 import MembershipUseCase from "@/application/domain/membership/usecase";
 import OpportunityUseCase from "@/application/domain/opportunity/usecase";

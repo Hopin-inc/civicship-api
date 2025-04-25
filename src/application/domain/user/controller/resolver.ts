@@ -21,7 +21,7 @@ import {
 import { IContext } from "@/types/server";
 import UserUseCase from "@/application/domain/user/usecase";
 import MembershipUseCase from "@/application/domain/membership/usecase";
-import WalletUseCase from "@/application/domain/membership/wallet/usecase";
+import WalletUseCase from "@/application/domain/wallet/usecase";
 import OpportunityUseCase from "@/application/domain/opportunity/usecase";
 import ParticipationUseCase from "@/application/domain/participation/usecase";
 import ParticipationStatusHistoryUseCase from "@/application/domain/participation/statusHistory/usecase";

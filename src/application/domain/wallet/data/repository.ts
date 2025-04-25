@@ -1,7 +1,7 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { walletInclude } from "@/application/domain/membership/wallet/data/type";
+import { walletInclude } from "@/application/domain/wallet/data/type";
 
 export default class WalletRepository {
   private static issuer = new PrismaClientIssuer();

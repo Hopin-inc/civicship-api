@@ -23,7 +23,7 @@ import MembershipPresenter from "@/application/domain/membership/presenter";
 import MembershipService from "@/application/domain/membership/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
-import WalletService from "@/application/domain/membership/wallet/service";
+import WalletService from "@/application/domain/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class MembershipUseCase {

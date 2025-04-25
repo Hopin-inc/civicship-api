@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
-import WalletConverter from "@/application/domain/membership/wallet/data/converter";
-import WalletRepository from "@/application/domain/membership/wallet/data/repository";
+import WalletConverter from "@/application/domain/wallet/data/converter";
+import WalletRepository from "@/application/domain/wallet/data/repository";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
 import { NotFoundError } from "@/errors/graphql";

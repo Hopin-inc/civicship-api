@@ -15,7 +15,7 @@ import CommunityService from "@/application/domain/community/service";
 import CommunityPresenter from "@/application/domain/community/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import WalletService from "@/application/domain/membership/wallet/service";
+import WalletService from "@/application/domain/wallet/service";
 
 export default class CommunityUseCase {
   private static issuer = new PrismaClientIssuer();

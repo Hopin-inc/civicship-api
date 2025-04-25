@@ -3,7 +3,7 @@ import { createUserLoader } from "@/application/domain/user/controller/dataloade
 import { createTransactionLoader } from "@/application/domain/transaction/controller/dataloader";
 import { createOpportunityLoader } from "@/application/domain/opportunity/controller/dataloader";
 import { createParticipationLoader } from "@/application/domain/participation/controller/dataloader";
-import { createWalletLoader } from "@/application/domain/membership/wallet/controller/dataloader";
+import { createWalletLoader } from "@/application/domain/wallet/controller/dataloader";
 import { createCommunityLoader } from "@/application/domain/community/controller/dataloader";
 import { createMembershipLoader } from "@/application/domain/membership/controller/dataloader";
 import { createUtilityLoader } from "@/application/domain/utility/controller/dataloader";

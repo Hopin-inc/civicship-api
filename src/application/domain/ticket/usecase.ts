@@ -17,11 +17,11 @@ import {
 import { IContext } from "@/types/server";
 import TicketService from "@/application/domain/ticket/service";
 import TicketPresenter from "@/application/domain/ticket/presenter";
-import WalletService from "@/application/domain/membership/wallet/service";
+import WalletService from "@/application/domain/wallet/service";
 import TransactionService from "@/application/domain/transaction/service";
 import { Prisma } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import WalletValidator from "@/application/domain/membership/wallet/validator";
+import WalletValidator from "@/application/domain/wallet/validator";
 import { getCurrentUserId } from "@/application/domain/utils";
 import MembershipService from "@/application/domain/membership/service";
 import TicketClaimLinkService from "@/application/domain/ticketClaimLink/service";

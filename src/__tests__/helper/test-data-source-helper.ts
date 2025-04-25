@@ -2,7 +2,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { communityInclude } from "@/application/domain/community/data/type";
-import { walletInclude } from "@/application/domain/membership/wallet/data/type";
+import { walletInclude } from "@/application/domain/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
 import { utilityInclude } from "@/application/domain/utility/data/type";
 import { placeInclude } from "@/application/domain/place/data/type";
@@ -62,6 +62,13 @@ export default class TestDataSourceHelper {
   }
 
   // ======== User =========
+  static async findUser(id: string) {
+    return this.db.user.findUnique({
+      where: { id },
+      include: userInclude,
+    });
+  }
+
   static async createUser(data: Prisma.UserCreateInput) {
     return this.db.user.create({
       data,
@@ -84,6 +91,12 @@ export default class TestDataSourceHelper {
   }
 
   // ======== Membership & Wallet =========
+  static async findMembership(where: Prisma.MembershipWhereUniqueInput) {
+    return this.db.membership.findUnique({
+      where,
+    });
+  }
+
   static async createMembership(data: Prisma.MembershipCreateInput) {
     return this.db.membership.create({
       data,

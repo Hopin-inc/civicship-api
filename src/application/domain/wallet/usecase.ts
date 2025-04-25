@@ -4,8 +4,8 @@ import {
   GqlWallet,
   GqlWalletsConnection,
 } from "@/types/graphql";
-import WalletService from "@/application/domain/membership/wallet/service";
-import WalletPresenter from "@/application/domain/membership/wallet/presenter";
+import WalletService from "@/application/domain/wallet/service";
+import WalletPresenter from "@/application/domain/wallet/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
 

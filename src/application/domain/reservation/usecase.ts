@@ -27,7 +27,7 @@ import {
 } from "@prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunitySlotService from "@/application/domain/opportunitySlot/service";
-import WalletService from "@/application/domain/membership/wallet/service";
+import WalletService from "@/application/domain/wallet/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import ParticipationService from "@/application/domain/participation/service";
 import TicketService from "@/application/domain/ticket/service";
@@ -41,7 +41,7 @@ import { ReservationStatuses } from "@/application/domain/reservation/helper";
 import { PrismaParticipation } from "@/application/domain/participation/data/type";
 import ParticipationStatusHistoryService from "@/application/domain/participation/statusHistory/service";
 import { NotFoundError } from "@/errors/graphql";
-import WalletValidator from "@/application/domain/membership/wallet/validator";
+import WalletValidator from "@/application/domain/wallet/validator";
 import { PrismaReservation } from "@/application/domain/reservation/data/type";
 import NotificationService from "@/application/domain/notification/service";
 
