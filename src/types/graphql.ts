@@ -14,6 +14,8 @@ import {
   Place,
   State,
   Ticket,
+  TicketClaimLink,
+  TicketIssuer,
   TicketStatusHistory,
   Transaction,
   User,
@@ -3209,12 +3211,7 @@ export type GqlResolversTypes = ResolversObject<{
   SysRole: GqlSysRole;
   Ticket: ResolverTypeWrapper<Ticket>;
   TicketClaimInput: GqlTicketClaimInput;
-  TicketClaimLink: ResolverTypeWrapper<
-    Omit<GqlTicketClaimLink, "issuer" | "tickets"> & {
-      issuer: GqlResolversTypes["TicketIssuer"];
-      tickets?: Maybe<Array<GqlResolversTypes["Ticket"]>>;
-    }
-  >;
+  TicketClaimLink: ResolverTypeWrapper<TicketClaimLink>;
   TicketClaimPayload: ResolverTypeWrapper<
     GqlResolversUnionTypes<GqlResolversTypes>["TicketClaimPayload"]
   >;
@@ -3236,13 +3233,7 @@ export type GqlResolversTypes = ResolversObject<{
       issue: GqlResolversTypes["TicketIssuer"];
     }
   >;
-  TicketIssuer: ResolverTypeWrapper<
-    Omit<GqlTicketIssuer, "claimLink" | "owner" | "utility"> & {
-      claimLink?: Maybe<GqlResolversTypes["TicketClaimLink"]>;
-      owner: GqlResolversTypes["User"];
-      utility: GqlResolversTypes["Utility"];
-    }
-  >;
+  TicketIssuer: ResolverTypeWrapper<TicketIssuer>;
   TicketPurchaseInput: GqlTicketPurchaseInput;
   TicketPurchasePayload: ResolverTypeWrapper<
     GqlResolversUnionTypes<GqlResolversTypes>["TicketPurchasePayload"]
@@ -3701,10 +3692,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   String: Scalars["String"]["output"];
   Ticket: Ticket;
   TicketClaimInput: GqlTicketClaimInput;
-  TicketClaimLink: Omit<GqlTicketClaimLink, "issuer" | "tickets"> & {
-    issuer: GqlResolversParentTypes["TicketIssuer"];
-    tickets?: Maybe<Array<GqlResolversParentTypes["Ticket"]>>;
-  };
+  TicketClaimLink: TicketClaimLink;
   TicketClaimPayload: GqlResolversUnionTypes<GqlResolversParentTypes>["TicketClaimPayload"];
   TicketClaimSuccess: Omit<GqlTicketClaimSuccess, "tickets"> & {
     tickets: Array<GqlResolversParentTypes["Ticket"]>;
@@ -3716,11 +3704,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   TicketIssueSuccess: Omit<GqlTicketIssueSuccess, "issue"> & {
     issue: GqlResolversParentTypes["TicketIssuer"];
   };
-  TicketIssuer: Omit<GqlTicketIssuer, "claimLink" | "owner" | "utility"> & {
-    claimLink?: Maybe<GqlResolversParentTypes["TicketClaimLink"]>;
-    owner: GqlResolversParentTypes["User"];
-    utility: GqlResolversParentTypes["Utility"];
-  };
+  TicketIssuer: TicketIssuer;
   TicketPurchaseInput: GqlTicketPurchaseInput;
   TicketPurchasePayload: GqlResolversUnionTypes<GqlResolversParentTypes>["TicketPurchasePayload"];
   TicketPurchaseSuccess: Omit<GqlTicketPurchaseSuccess, "ticket"> & {
