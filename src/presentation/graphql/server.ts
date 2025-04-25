@@ -6,7 +6,6 @@ import http from "http";
 import schema from "@/presentation/graphql/schema";
 import { authZApolloPlugin } from "@graphql-authz/apollo-server-plugin";
 import { rules } from "@/presentation/graphql/rule";
-import debugLogger from "@/presentation/graphql/plugins/debugLogger";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -25,7 +24,6 @@ export async function createApolloServer(httpServer: http.Server) {
           throw new Error("Internal Server Error");
         },
       }),
-      debugLogger,  // TODO: disable this in prod environment
     ],
     formatError: (err) => {
       const { message, locations, path } = err;

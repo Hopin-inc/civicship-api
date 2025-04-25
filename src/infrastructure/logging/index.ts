@@ -40,7 +40,8 @@ if (isLocal) {
 }
 
 const logger = winston.createLogger({
-  level: isLocal ? "debug" : "info",
+  // level: isLocal ? "debug" : "info",
+  level: "debug",
   format: winston.format.combine(...format),
   transports,
 });

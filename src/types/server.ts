@@ -4,9 +4,11 @@ import { PrismaAuthUser, PrismaUserPermission } from "@/application/domain/user/
 
 export type LoggedInUserInfo = {
   uid: string;
+  tenantId: string;
   platform: IdentityPlatform;
   currentUser: PrismaAuthUser | null;
   hasPermissions: PrismaUserPermission | null;
+  // TODO: add DID authentication info
   loaders: Loaders;
 };
 

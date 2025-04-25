@@ -72,7 +72,7 @@ describe("IdentityService", () => {
 
       (auth.deleteUser as jest.Mock).mockResolvedValue(undefined);
 
-      await IdentityService.deleteFirebaseAuthUser(uid);
+      await IdentityService.deleteFirebaseAuthUser(uid, process.env.FIREBASE_AUTH_TENANT_ID!);
 
       expect(auth.deleteUser).toHaveBeenCalledWith(uid);
     });
