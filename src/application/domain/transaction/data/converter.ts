@@ -1,5 +1,4 @@
 import {
-  GqlTransactionDonateSelfPointInput,
   GqlTransactionFilterInput,
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionIssueCommunityPointInput,
@@ -51,11 +50,10 @@ export default class TransactionConverter {
   }
 
   static donateSelfPoint(
-    input: GqlTransactionDonateSelfPointInput,
+    fromWalletId: string,
     toWalletId: string,
+    transferPoints: number,
   ): Prisma.TransactionCreateInput {
-    const { fromWalletId, transferPoints } = input;
-
     return {
       reason: TransactionReason.DONATION,
       fromWallet: { connect: { id: fromWalletId } },

@@ -1,7 +1,6 @@
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import {
   GqlQueryTransactionsArgs,
-  GqlTransactionDonateSelfPointInput,
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionIssueCommunityPointInput,
 } from "@/types/graphql";
@@ -52,11 +51,12 @@ export default class TransactionService {
 
   static async donateSelfPoint(
     ctx: IContext,
-    input: GqlTransactionDonateSelfPointInput,
+    fromWalletId: string,
     toWalletId: string,
+    transferPoints: number,
     tx: Prisma.TransactionClient,
   ) {
-    const data = TransactionConverter.donateSelfPoint(input, toWalletId);
+    const data = TransactionConverter.donateSelfPoint(fromWalletId, toWalletId, transferPoints);
 
     const transaction = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
