@@ -1,56 +1,72 @@
-import type { Image } from "@prisma/client";
-import type { State } from "@prisma/client";
-import type { City } from "@prisma/client";
-import type { Place } from "@prisma/client";
-import type { Community } from "@prisma/client";
-import type { User } from "@prisma/client";
-import type { Identity } from "@prisma/client";
-import type { Membership } from "@prisma/client";
-import type { MembershipHistory } from "@prisma/client";
-import type { Wallet } from "@prisma/client";
-import type { Article } from "@prisma/client";
-import type { Opportunity } from "@prisma/client";
-import type { OpportunitySlot } from "@prisma/client";
-import type { Reservation } from "@prisma/client";
-import type { ReservationHistory } from "@prisma/client";
-import type { Participation } from "@prisma/client";
-import type { ParticipationStatusHistory } from "@prisma/client";
-import type { Evaluation } from "@prisma/client";
-import type { EvaluationHistory } from "@prisma/client";
-import type { Utility } from "@prisma/client";
-import type { Ticket } from "@prisma/client";
-import type { TicketStatusHistory } from "@prisma/client";
-import type { Transaction } from "@prisma/client";
-import type { MembershipParticipationGeoView } from "@prisma/client";
-import type { MembershipParticipationCountView } from "@prisma/client";
-import type { MembershipHostedOpportunityCountView } from "@prisma/client";
-import type { CurrentPointView } from "@prisma/client";
-import type { AccumulatedPointView } from "@prisma/client";
-import type { EarliestReservableSlotView } from "@prisma/client";
-import type { RemainingCapacityView } from "@prisma/client";
-import type { SysRole } from "@prisma/client";
-import type { CurrentPrefecture } from "@prisma/client";
-import type { IdentityPlatform } from "@prisma/client";
-import type { MembershipStatus } from "@prisma/client";
-import type { MembershipStatusReason } from "@prisma/client";
-import type { Role } from "@prisma/client";
-import type { WalletType } from "@prisma/client";
-import type { ArticleCategory } from "@prisma/client";
-import type { PublishStatus } from "@prisma/client";
-import type { OpportunityCategory } from "@prisma/client";
-import type { OpportunitySlotHostingStatus } from "@prisma/client";
-import type { ReservationStatus } from "@prisma/client";
-import type { Source } from "@prisma/client";
-import type { ParticipationStatus } from "@prisma/client";
-import type { ParticipationStatusReason } from "@prisma/client";
-import type { EvaluationStatus } from "@prisma/client";
-import type { TicketStatus } from "@prisma/client";
-import type { TicketStatusReason } from "@prisma/client";
-import type { TransactionReason } from "@prisma/client";
-import type { ParticipationType } from "@prisma/client";
-import type { Prisma, PrismaClient } from "@prisma/client";
-import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
-import type { ModelWithFields, Resolver, } from "@quramy/prisma-fabbrica/lib/internal";
+import type {
+  AccumulatedPointView,
+  Article,
+  ArticleCategory,
+  City,
+  ClaimLinkStatus,
+  Community,
+  CurrentPointView,
+  CurrentPrefecture,
+  EarliestReservableSlotView,
+  Evaluation,
+  EvaluationHistory,
+  EvaluationStatus,
+  Identity,
+  IdentityPlatform,
+  Image,
+  Membership,
+  MembershipHistory,
+  MembershipHostedOpportunityCountView,
+  MembershipParticipationCountView,
+  MembershipParticipationGeoView,
+  MembershipStatus,
+  MembershipStatusReason,
+  Opportunity,
+  OpportunityCategory,
+  OpportunitySlot,
+  OpportunitySlotHostingStatus,
+  Participation,
+  ParticipationStatus,
+  ParticipationStatusHistory,
+  ParticipationStatusReason,
+  ParticipationType,
+  Place,
+  Prisma,
+  PrismaClient,
+  PublishStatus,
+  RemainingCapacityView,
+  Reservation,
+  ReservationHistory,
+  ReservationStatus,
+  Role,
+  Source,
+  State,
+  SysRole,
+  Ticket,
+  TicketClaimLink,
+  TicketIssuer,
+  TicketStatus,
+  TicketStatusHistory,
+  TicketStatusReason,
+  Transaction,
+  TransactionReason,
+  User,
+  Utility,
+  Wallet,
+  WalletType,
+} from "@prisma/client";
+import type { ModelWithFields, Resolver } from "@quramy/prisma-fabbrica/lib/internal";
+import {
+  createCallbackChain,
+  createInitializer,
+  createScreener,
+  destructure,
+  getScalarFieldValueGenerator,
+  getSequenceCounter,
+  normalizeList,
+  normalizeResolver,
+} from "@quramy/prisma-fabbrica/lib/internal";
+
 export { resetSequence, registerScalarFieldValueGenerator, resetScalarFieldValueGenerator } from "@quramy/prisma-fabbrica/lib/internal";
 
 type BuildDataOptions<TTransients extends Record<string, unknown>> = {
@@ -71,545 +87,768 @@ const { getClient } = initializer;
 
 export const { initialize } = initializer;
 
-const modelFieldDefinitions: ModelWithFields[] = [{
-        name: "Image",
-        fields: [{
-                name: "users",
-                type: "User",
-                relationName: "ImageToUser"
-            }, {
-                name: "communities",
-                type: "Community",
-                relationName: "CommunityToImage"
-            }, {
-                name: "articles",
-                type: "Article",
-                relationName: "ArticleToImage"
-            }, {
-                name: "places",
-                type: "Place",
-                relationName: "ImageToPlace"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "t_images_on_opportunities"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "t_images_on_participations"
-            }, {
-                name: "utilities",
-                type: "Utility",
-                relationName: "t_images_on_utilities"
-            }]
-    }, {
-        name: "State",
-        fields: [{
-                name: "cities",
-                type: "City",
-                relationName: "CityToState"
-            }]
-    }, {
-        name: "City",
-        fields: [{
-                name: "state",
-                type: "State",
-                relationName: "CityToState"
-            }, {
-                name: "places",
-                type: "Place",
-                relationName: "CityToPlace"
-            }]
-    }, {
-        name: "Place",
-        fields: [{
-                name: "image",
-                type: "Image",
-                relationName: "ImageToPlace"
-            }, {
-                name: "city",
-                type: "City",
-                relationName: "CityToPlace"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToPlace"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "OpportunityToPlace"
-            }]
-    }, {
-        name: "Community",
-        fields: [{
-                name: "image",
-                type: "Image",
-                relationName: "CommunityToImage"
-            }, {
-                name: "places",
-                type: "Place",
-                relationName: "CommunityToPlace"
-            }, {
-                name: "memberships",
-                type: "Membership",
-                relationName: "CommunityToMembership"
-            }, {
-                name: "wallets",
-                type: "Wallet",
-                relationName: "CommunityToWallet"
-            }, {
-                name: "utilities",
-                type: "Utility",
-                relationName: "CommunityToUtility"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "CommunityToOpportunity"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "CommunityToParticipation"
-            }, {
-                name: "articles",
-                type: "Article",
-                relationName: "ArticleToCommunity"
-            }]
-    }, {
-        name: "User",
-        fields: [{
-                name: "image",
-                type: "Image",
-                relationName: "ImageToUser"
-            }, {
-                name: "identities",
-                type: "Identity",
-                relationName: "IdentityToUser"
-            }, {
-                name: "memberships",
-                type: "Membership",
-                relationName: "MembershipToUser"
-            }, {
-                name: "membershipChangedByMe",
-                type: "MembershipHistory",
-                relationName: "MembershipHistoryToUser"
-            }, {
-                name: "wallets",
-                type: "Wallet",
-                relationName: "UserToWallet"
-            }, {
-                name: "ticketStatusChangedByMe",
-                type: "TicketStatusHistory",
-                relationName: "TicketStatusHistoryToUser"
-            }, {
-                name: "opportunitiesCreatedByMe",
-                type: "Opportunity",
-                relationName: "OpportunityToUser"
-            }, {
-                name: "reservationsAppliedByMe",
-                type: "Reservation",
-                relationName: "ReservationToUser"
-            }, {
-                name: "reservationStatusChangedByMe",
-                type: "ReservationHistory",
-                relationName: "ReservationHistoryToUser"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "ParticipationToUser"
-            }, {
-                name: "participationStatusChangedByMe",
-                type: "ParticipationStatusHistory",
-                relationName: "ParticipationStatusHistoryToUser"
-            }, {
-                name: "evaluationsEvaluatedByMe",
-                type: "Evaluation",
-                relationName: "EvaluationToUser"
-            }, {
-                name: "evaluationCreatedByMe",
-                type: "EvaluationHistory",
-                relationName: "EvaluationHistoryToUser"
-            }, {
-                name: "articlesWrittenByMe",
-                type: "Article",
-                relationName: "t_author_users_on_articles"
-            }, {
-                name: "articlesAboutMe",
-                type: "Article",
-                relationName: "t_related_users_on_articles"
-            }]
-    }, {
-        name: "Identity",
-        fields: [{
-                name: "user",
-                type: "User",
-                relationName: "IdentityToUser"
-            }]
-    }, {
-        name: "Membership",
-        fields: [{
-                name: "user",
-                type: "User",
-                relationName: "MembershipToUser"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToMembership"
-            }, {
-                name: "histories",
-                type: "MembershipHistory",
-                relationName: "MembershipToMembershipHistory"
-            }, {
-                name: "opportunityHostedCountView",
-                type: "MembershipHostedOpportunityCountView",
-                relationName: "MembershipToMembershipHostedOpportunityCountView"
-            }, {
-                name: "participationGeoViews",
-                type: "MembershipParticipationGeoView",
-                relationName: "MembershipToMembershipParticipationGeoView"
-            }, {
-                name: "participationCountViews",
-                type: "MembershipParticipationCountView",
-                relationName: "MembershipToMembershipParticipationCountView"
-            }]
-    }, {
-        name: "MembershipHistory",
-        fields: [{
-                name: "membership",
-                type: "Membership",
-                relationName: "MembershipToMembershipHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "MembershipHistoryToUser"
-            }]
-    }, {
-        name: "Wallet",
-        fields: [{
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToWallet"
-            }, {
-                name: "user",
-                type: "User",
-                relationName: "UserToWallet"
-            }, {
-                name: "currentPointView",
-                type: "CurrentPointView",
-                relationName: "CurrentPointViewToWallet"
-            }, {
-                name: "accumulatedPointView",
-                type: "AccumulatedPointView",
-                relationName: "AccumulatedPointViewToWallet"
-            }, {
-                name: "fromTransactions",
-                type: "Transaction",
-                relationName: "from_wallet"
-            }, {
-                name: "toTransactions",
-                type: "Transaction",
-                relationName: "to_wallet"
-            }, {
-                name: "tickets",
-                type: "Ticket",
-                relationName: "TicketToWallet"
-            }]
-    }, {
-        name: "Article",
-        fields: [{
-                name: "thumbnail",
-                type: "Image",
-                relationName: "ArticleToImage"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "ArticleToCommunity"
-            }, {
-                name: "authors",
-                type: "User",
-                relationName: "t_author_users_on_articles"
-            }, {
-                name: "relatedUsers",
-                type: "User",
-                relationName: "t_related_users_on_articles"
-            }, {
-                name: "opportunities",
-                type: "Opportunity",
-                relationName: "t_opportunities_on_articles"
-            }]
-    }, {
-        name: "Opportunity",
-        fields: [{
-                name: "images",
-                type: "Image",
-                relationName: "t_images_on_opportunities"
-            }, {
-                name: "requiredUtilities",
-                type: "Utility",
-                relationName: "t_required_opportunities_on_utilities"
-            }, {
-                name: "slots",
-                type: "OpportunitySlot",
-                relationName: "OpportunityToOpportunitySlot"
-            }, {
-                name: "earliestReservableSlotView",
-                type: "EarliestReservableSlotView",
-                relationName: "EarliestReservableSlotViewToOpportunity"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToOpportunity"
-            }, {
-                name: "place",
-                type: "Place",
-                relationName: "OpportunityToPlace"
-            }, {
-                name: "articles",
-                type: "Article",
-                relationName: "t_opportunities_on_articles"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "OpportunityToUser"
-            }]
-    }, {
-        name: "OpportunitySlot",
-        fields: [{
-                name: "remainingCapacityView",
-                type: "RemainingCapacityView",
-                relationName: "OpportunitySlotToRemainingCapacityView"
-            }, {
-                name: "opportunity",
-                type: "Opportunity",
-                relationName: "OpportunityToOpportunitySlot"
-            }, {
-                name: "reservations",
-                type: "Reservation",
-                relationName: "OpportunitySlotToReservation"
-            }]
-    }, {
-        name: "Reservation",
-        fields: [{
-                name: "opportunitySlot",
-                type: "OpportunitySlot",
-                relationName: "OpportunitySlotToReservation"
-            }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "ParticipationToReservation"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "ReservationToUser"
-            }, {
-                name: "histories",
-                type: "ReservationHistory",
-                relationName: "ReservationToReservationHistory"
-            }]
-    }, {
-        name: "ReservationHistory",
-        fields: [{
-                name: "reservation",
-                type: "Reservation",
-                relationName: "ReservationToReservationHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "ReservationHistoryToUser"
-            }]
-    }, {
-        name: "Participation",
-        fields: [{
-                name: "images",
-                type: "Image",
-                relationName: "t_images_on_participations"
-            }, {
-                name: "user",
-                type: "User",
-                relationName: "ParticipationToUser"
-            }, {
-                name: "reservation",
-                type: "Reservation",
-                relationName: "ParticipationToReservation"
-            }, {
-                name: "ticketStatusHistories",
-                type: "TicketStatusHistory",
-                relationName: "ParticipationToTicketStatusHistory"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToParticipation"
-            }, {
-                name: "evaluation",
-                type: "Evaluation",
-                relationName: "EvaluationToParticipation"
-            }, {
-                name: "statusHistories",
-                type: "ParticipationStatusHistory",
-                relationName: "ParticipationToParticipationStatusHistory"
-            }, {
-                name: "transactions",
-                type: "Transaction",
-                relationName: "ParticipationToTransaction"
-            }]
-    }, {
-        name: "ParticipationStatusHistory",
-        fields: [{
-                name: "participation",
-                type: "Participation",
-                relationName: "ParticipationToParticipationStatusHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "ParticipationStatusHistoryToUser"
-            }]
-    }, {
-        name: "Evaluation",
-        fields: [{
-                name: "participation",
-                type: "Participation",
-                relationName: "EvaluationToParticipation"
-            }, {
-                name: "evaluator",
-                type: "User",
-                relationName: "EvaluationToUser"
-            }, {
-                name: "histories",
-                type: "EvaluationHistory",
-                relationName: "EvaluationToEvaluationHistory"
-            }]
-    }, {
-        name: "EvaluationHistory",
-        fields: [{
-                name: "evaluation",
-                type: "Evaluation",
-                relationName: "EvaluationToEvaluationHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "EvaluationHistoryToUser"
-            }]
-    }, {
-        name: "Utility",
-        fields: [{
-                name: "images",
-                type: "Image",
-                relationName: "t_images_on_utilities"
-            }, {
-                name: "community",
-                type: "Community",
-                relationName: "CommunityToUtility"
-            }, {
-                name: "requiredForOpportunities",
-                type: "Opportunity",
-                relationName: "t_required_opportunities_on_utilities"
-            }, {
-                name: "tickets",
-                type: "Ticket",
-                relationName: "TicketToUtility"
-            }]
-    }, {
-        name: "Ticket",
-        fields: [{
-                name: "wallet",
-                type: "Wallet",
-                relationName: "TicketToWallet"
-            }, {
-                name: "utility",
-                type: "Utility",
-                relationName: "TicketToUtility"
-            }, {
-                name: "ticketStatusHistories",
-                type: "TicketStatusHistory",
-                relationName: "TicketToTicketStatusHistory"
-            }]
-    }, {
-        name: "TicketStatusHistory",
-        fields: [{
-                name: "ticket",
-                type: "Ticket",
-                relationName: "TicketToTicketStatusHistory"
-            }, {
-                name: "transaction",
-                type: "Transaction",
-                relationName: "TicketStatusHistoryToTransaction"
-            }, {
-                name: "participation",
-                type: "Participation",
-                relationName: "ParticipationToTicketStatusHistory"
-            }, {
-                name: "createdByUser",
-                type: "User",
-                relationName: "TicketStatusHistoryToUser"
-            }]
-    }, {
-        name: "Transaction",
-        fields: [{
-                name: "fromWallet",
-                type: "Wallet",
-                relationName: "from_wallet"
-            }, {
-                name: "toWallet",
-                type: "Wallet",
-                relationName: "to_wallet"
-            }, {
-                name: "participation",
-                type: "Participation",
-                relationName: "ParticipationToTransaction"
-            }, {
-                name: "ticketStatusHistory",
-                type: "TicketStatusHistory",
-                relationName: "TicketStatusHistoryToTransaction"
-            }]
-    }, {
-        name: "MembershipParticipationGeoView",
-        fields: [{
-                name: "membership",
-                type: "Membership",
-                relationName: "MembershipToMembershipParticipationGeoView"
-            }]
-    }, {
-        name: "MembershipParticipationCountView",
-        fields: [{
-                name: "membership",
-                type: "Membership",
-                relationName: "MembershipToMembershipParticipationCountView"
-            }]
-    }, {
-        name: "MembershipHostedOpportunityCountView",
-        fields: [{
-                name: "membership",
-                type: "Membership",
-                relationName: "MembershipToMembershipHostedOpportunityCountView"
-            }]
-    }, {
-        name: "CurrentPointView",
-        fields: [{
-                name: "wallet",
-                type: "Wallet",
-                relationName: "CurrentPointViewToWallet"
-            }]
-    }, {
-        name: "AccumulatedPointView",
-        fields: [{
-                name: "wallet",
-                type: "Wallet",
-                relationName: "AccumulatedPointViewToWallet"
-            }]
-    }, {
-        name: "EarliestReservableSlotView",
-        fields: [{
-                name: "opportunity",
-                type: "Opportunity",
-                relationName: "EarliestReservableSlotViewToOpportunity"
-            }]
-    }, {
-        name: "RemainingCapacityView",
-        fields: [{
-                name: "slot",
-                type: "OpportunitySlot",
-                relationName: "OpportunitySlotToRemainingCapacityView"
-            }]
-    }];
+const modelFieldDefinitions: ModelWithFields[] = [
+  {
+    name: "Image",
+    fields: [
+      {
+        name: "users",
+        type: "User",
+        relationName: "ImageToUser",
+      },
+      {
+        name: "communities",
+        type: "Community",
+        relationName: "CommunityToImage",
+      },
+      {
+        name: "articles",
+        type: "Article",
+        relationName: "ArticleToImage",
+      },
+      {
+        name: "places",
+        type: "Place",
+        relationName: "ImageToPlace",
+      },
+      {
+        name: "opportunities",
+        type: "Opportunity",
+        relationName: "t_images_on_opportunities",
+      },
+      {
+        name: "participations",
+        type: "Participation",
+        relationName: "t_images_on_participations",
+      },
+      {
+        name: "utilities",
+        type: "Utility",
+        relationName: "t_images_on_utilities",
+      },
+    ],
+  },
+  {
+    name: "State",
+    fields: [
+      {
+        name: "cities",
+        type: "City",
+        relationName: "CityToState",
+      },
+    ],
+  },
+  {
+    name: "City",
+    fields: [
+      {
+        name: "state",
+        type: "State",
+        relationName: "CityToState",
+      },
+      {
+        name: "places",
+        type: "Place",
+        relationName: "CityToPlace",
+      },
+    ],
+  },
+  {
+    name: "Place",
+    fields: [
+      {
+        name: "image",
+        type: "Image",
+        relationName: "ImageToPlace",
+      },
+      {
+        name: "city",
+        type: "City",
+        relationName: "CityToPlace",
+      },
+      {
+        name: "community",
+        type: "Community",
+        relationName: "CommunityToPlace",
+      },
+      {
+        name: "opportunities",
+        type: "Opportunity",
+        relationName: "OpportunityToPlace",
+      },
+    ],
+  },
+  {
+    name: "Community",
+    fields: [
+      {
+        name: "image",
+        type: "Image",
+        relationName: "CommunityToImage",
+      },
+      {
+        name: "places",
+        type: "Place",
+        relationName: "CommunityToPlace",
+      },
+      {
+        name: "memberships",
+        type: "Membership",
+        relationName: "CommunityToMembership",
+      },
+      {
+        name: "wallets",
+        type: "Wallet",
+        relationName: "CommunityToWallet",
+      },
+      {
+        name: "utilities",
+        type: "Utility",
+        relationName: "CommunityToUtility",
+      },
+      {
+        name: "opportunities",
+        type: "Opportunity",
+        relationName: "CommunityToOpportunity",
+      },
+      {
+        name: "participations",
+        type: "Participation",
+        relationName: "CommunityToParticipation",
+      },
+      {
+        name: "articles",
+        type: "Article",
+        relationName: "ArticleToCommunity",
+      },
+    ],
+  },
+  {
+    name: "User",
+    fields: [
+      {
+        name: "image",
+        type: "Image",
+        relationName: "ImageToUser",
+      },
+      {
+        name: "identities",
+        type: "Identity",
+        relationName: "IdentityToUser",
+      },
+      {
+        name: "memberships",
+        type: "Membership",
+        relationName: "MembershipToUser",
+      },
+      {
+        name: "membershipChangedByMe",
+        type: "MembershipHistory",
+        relationName: "MembershipHistoryToUser",
+      },
+      {
+        name: "wallets",
+        type: "Wallet",
+        relationName: "UserToWallet",
+      },
+      {
+        name: "ticketIssuedByMe",
+        type: "TicketIssuer",
+        relationName: "TicketIssuerToUser",
+      },
+      {
+        name: "ticketStatusChangedByMe",
+        type: "TicketStatusHistory",
+        relationName: "TicketStatusHistoryToUser",
+      },
+      {
+        name: "opportunitiesCreatedByMe",
+        type: "Opportunity",
+        relationName: "OpportunityToUser",
+      },
+      {
+        name: "reservationsAppliedByMe",
+        type: "Reservation",
+        relationName: "ReservationToUser",
+      },
+      {
+        name: "reservationStatusChangedByMe",
+        type: "ReservationHistory",
+        relationName: "ReservationHistoryToUser",
+      },
+      {
+        name: "participations",
+        type: "Participation",
+        relationName: "ParticipationToUser",
+      },
+      {
+        name: "participationStatusChangedByMe",
+        type: "ParticipationStatusHistory",
+        relationName: "ParticipationStatusHistoryToUser",
+      },
+      {
+        name: "evaluationsEvaluatedByMe",
+        type: "Evaluation",
+        relationName: "EvaluationToUser",
+      },
+      {
+        name: "evaluationCreatedByMe",
+        type: "EvaluationHistory",
+        relationName: "EvaluationHistoryToUser",
+      },
+      {
+        name: "articlesWrittenByMe",
+        type: "Article",
+        relationName: "t_author_users_on_articles",
+      },
+      {
+        name: "articlesAboutMe",
+        type: "Article",
+        relationName: "t_related_users_on_articles",
+      },
+    ],
+  },
+  {
+    name: "Identity",
+    fields: [
+      {
+        name: "user",
+        type: "User",
+        relationName: "IdentityToUser",
+      },
+    ],
+  },
+  {
+    name: "Membership",
+    fields: [
+      {
+        name: "user",
+        type: "User",
+        relationName: "MembershipToUser",
+      },
+      {
+        name: "community",
+        type: "Community",
+        relationName: "CommunityToMembership",
+      },
+      {
+        name: "histories",
+        type: "MembershipHistory",
+        relationName: "MembershipToMembershipHistory",
+      },
+      {
+        name: "opportunityHostedCountView",
+        type: "MembershipHostedOpportunityCountView",
+        relationName: "MembershipToMembershipHostedOpportunityCountView",
+      },
+      {
+        name: "participationGeoViews",
+        type: "MembershipParticipationGeoView",
+        relationName: "MembershipToMembershipParticipationGeoView",
+      },
+      {
+        name: "participationCountViews",
+        type: "MembershipParticipationCountView",
+        relationName: "MembershipToMembershipParticipationCountView",
+      },
+    ],
+  },
+  {
+    name: "MembershipHistory",
+    fields: [
+      {
+        name: "membership",
+        type: "Membership",
+        relationName: "MembershipToMembershipHistory",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "MembershipHistoryToUser",
+      },
+    ],
+  },
+  {
+    name: "Wallet",
+    fields: [
+      {
+        name: "community",
+        type: "Community",
+        relationName: "CommunityToWallet",
+      },
+      {
+        name: "user",
+        type: "User",
+        relationName: "UserToWallet",
+      },
+      {
+        name: "currentPointView",
+        type: "CurrentPointView",
+        relationName: "CurrentPointViewToWallet",
+      },
+      {
+        name: "accumulatedPointView",
+        type: "AccumulatedPointView",
+        relationName: "AccumulatedPointViewToWallet",
+      },
+      {
+        name: "fromTransactions",
+        type: "Transaction",
+        relationName: "from_wallet",
+      },
+      {
+        name: "toTransactions",
+        type: "Transaction",
+        relationName: "to_wallet",
+      },
+      {
+        name: "tickets",
+        type: "Ticket",
+        relationName: "TicketToWallet",
+      },
+    ],
+  },
+  {
+    name: "Article",
+    fields: [
+      {
+        name: "thumbnail",
+        type: "Image",
+        relationName: "ArticleToImage",
+      },
+      {
+        name: "community",
+        type: "Community",
+        relationName: "ArticleToCommunity",
+      },
+      {
+        name: "authors",
+        type: "User",
+        relationName: "t_author_users_on_articles",
+      },
+      {
+        name: "relatedUsers",
+        type: "User",
+        relationName: "t_related_users_on_articles",
+      },
+      {
+        name: "opportunities",
+        type: "Opportunity",
+        relationName: "t_opportunities_on_articles",
+      },
+    ],
+  },
+  {
+    name: "Opportunity",
+    fields: [
+      {
+        name: "images",
+        type: "Image",
+        relationName: "t_images_on_opportunities",
+      },
+      {
+        name: "requiredUtilities",
+        type: "Utility",
+        relationName: "t_required_opportunities_on_utilities",
+      },
+      {
+        name: "slots",
+        type: "OpportunitySlot",
+        relationName: "OpportunityToOpportunitySlot",
+      },
+      {
+        name: "earliestReservableSlotView",
+        type: "EarliestReservableSlotView",
+        relationName: "EarliestReservableSlotViewToOpportunity",
+      },
+      {
+        name: "community",
+        type: "Community",
+        relationName: "CommunityToOpportunity",
+      },
+      {
+        name: "place",
+        type: "Place",
+        relationName: "OpportunityToPlace",
+      },
+      {
+        name: "articles",
+        type: "Article",
+        relationName: "t_opportunities_on_articles",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "OpportunityToUser",
+      },
+    ],
+  },
+  {
+    name: "OpportunitySlot",
+    fields: [
+      {
+        name: "remainingCapacityView",
+        type: "RemainingCapacityView",
+        relationName: "OpportunitySlotToRemainingCapacityView",
+      },
+      {
+        name: "opportunity",
+        type: "Opportunity",
+        relationName: "OpportunityToOpportunitySlot",
+      },
+      {
+        name: "reservations",
+        type: "Reservation",
+        relationName: "OpportunitySlotToReservation",
+      },
+    ],
+  },
+  {
+    name: "Reservation",
+    fields: [
+      {
+        name: "opportunitySlot",
+        type: "OpportunitySlot",
+        relationName: "OpportunitySlotToReservation",
+      },
+      {
+        name: "participations",
+        type: "Participation",
+        relationName: "ParticipationToReservation",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "ReservationToUser",
+      },
+      {
+        name: "histories",
+        type: "ReservationHistory",
+        relationName: "ReservationToReservationHistory",
+      },
+    ],
+  },
+  {
+    name: "ReservationHistory",
+    fields: [
+      {
+        name: "reservation",
+        type: "Reservation",
+        relationName: "ReservationToReservationHistory",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "ReservationHistoryToUser",
+      },
+    ],
+  },
+  {
+    name: "Participation",
+    fields: [
+      {
+        name: "images",
+        type: "Image",
+        relationName: "t_images_on_participations",
+      },
+      {
+        name: "user",
+        type: "User",
+        relationName: "ParticipationToUser",
+      },
+      {
+        name: "reservation",
+        type: "Reservation",
+        relationName: "ParticipationToReservation",
+      },
+      {
+        name: "ticketStatusHistories",
+        type: "TicketStatusHistory",
+        relationName: "ParticipationToTicketStatusHistory",
+      },
+      {
+        name: "community",
+        type: "Community",
+        relationName: "CommunityToParticipation",
+      },
+      {
+        name: "evaluation",
+        type: "Evaluation",
+        relationName: "EvaluationToParticipation",
+      },
+      {
+        name: "statusHistories",
+        type: "ParticipationStatusHistory",
+        relationName: "ParticipationToParticipationStatusHistory",
+      },
+      {
+        name: "transactions",
+        type: "Transaction",
+        relationName: "ParticipationToTransaction",
+      },
+    ],
+  },
+  {
+    name: "ParticipationStatusHistory",
+    fields: [
+      {
+        name: "participation",
+        type: "Participation",
+        relationName: "ParticipationToParticipationStatusHistory",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "ParticipationStatusHistoryToUser",
+      },
+    ],
+  },
+  {
+    name: "Evaluation",
+    fields: [
+      {
+        name: "participation",
+        type: "Participation",
+        relationName: "EvaluationToParticipation",
+      },
+      {
+        name: "evaluator",
+        type: "User",
+        relationName: "EvaluationToUser",
+      },
+      {
+        name: "histories",
+        type: "EvaluationHistory",
+        relationName: "EvaluationToEvaluationHistory",
+      },
+    ],
+  },
+  {
+    name: "EvaluationHistory",
+    fields: [
+      {
+        name: "evaluation",
+        type: "Evaluation",
+        relationName: "EvaluationToEvaluationHistory",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "EvaluationHistoryToUser",
+      },
+    ],
+  },
+  {
+    name: "Utility",
+    fields: [
+      {
+        name: "images",
+        type: "Image",
+        relationName: "t_images_on_utilities",
+      },
+      {
+        name: "community",
+        type: "Community",
+        relationName: "CommunityToUtility",
+      },
+      {
+        name: "requiredForOpportunities",
+        type: "Opportunity",
+        relationName: "t_required_opportunities_on_utilities",
+      },
+      {
+        name: "ticketIssuer",
+        type: "TicketIssuer",
+        relationName: "TicketIssuerToUtility",
+      },
+      {
+        name: "tickets",
+        type: "Ticket",
+        relationName: "TicketToUtility",
+      },
+    ],
+  },
+  {
+    name: "TicketIssuer",
+    fields: [
+      {
+        name: "utility",
+        type: "Utility",
+        relationName: "TicketIssuerToUtility",
+      },
+      {
+        name: "owner",
+        type: "User",
+        relationName: "TicketIssuerToUser",
+      },
+      {
+        name: "claimLink",
+        type: "TicketClaimLink",
+        relationName: "TicketClaimLinkToTicketIssuer",
+      },
+    ],
+  },
+  {
+    name: "TicketClaimLink",
+    fields: [
+      {
+        name: "issuer",
+        type: "TicketIssuer",
+        relationName: "TicketClaimLinkToTicketIssuer",
+      },
+      {
+        name: "tickets",
+        type: "Ticket",
+        relationName: "TicketToTicketClaimLink",
+      },
+    ],
+  },
+  {
+    name: "Ticket",
+    fields: [
+      {
+        name: "wallet",
+        type: "Wallet",
+        relationName: "TicketToWallet",
+      },
+      {
+        name: "utility",
+        type: "Utility",
+        relationName: "TicketToUtility",
+      },
+      {
+        name: "claimLink",
+        type: "TicketClaimLink",
+        relationName: "TicketToTicketClaimLink",
+      },
+      {
+        name: "ticketStatusHistories",
+        type: "TicketStatusHistory",
+        relationName: "TicketToTicketStatusHistory",
+      },
+    ],
+  },
+  {
+    name: "TicketStatusHistory",
+    fields: [
+      {
+        name: "ticket",
+        type: "Ticket",
+        relationName: "TicketToTicketStatusHistory",
+      },
+      {
+        name: "transaction",
+        type: "Transaction",
+        relationName: "TicketStatusHistoryToTransaction",
+      },
+      {
+        name: "participation",
+        type: "Participation",
+        relationName: "ParticipationToTicketStatusHistory",
+      },
+      {
+        name: "createdByUser",
+        type: "User",
+        relationName: "TicketStatusHistoryToUser",
+      },
+    ],
+  },
+  {
+    name: "Transaction",
+    fields: [
+      {
+        name: "fromWallet",
+        type: "Wallet",
+        relationName: "from_wallet",
+      },
+      {
+        name: "toWallet",
+        type: ",Wallet",
+        relationName: "to_wallet",
+      },
+      {
+        name: "participation",
+        type: "Participation",
+        relationName: "ParticipationToTransaction",
+      },
+      {
+        name: "ticketStatusHistory",
+        type: "TicketStatusHistory",
+        relationName: "TicketStatusHistoryToTransaction",
+      },
+    ],
+  },
+  {
+    name: "MembershipParticipationGeoView",
+    fields: [
+      {
+        name: "membership",
+        type: "Membership",
+        relationName: "MembershipToMembershipParticipationGeoView",
+      },
+    ],
+  },
+  {
+    name: "MembershipParticipationCountView",
+    fields: [
+      {
+        name: "membership",
+        type: "Membership",
+        relationName: "MembershipToMembershipParticipationCountView",
+      },
+    ],
+  },
+  {
+    name: "MembershipHostedOpportunityCountView",
+    fields: [
+      {
+        name: "membership",
+        type: "Membership",
+        relationName: "MembershipToMembershipHostedOpportunityCountView",
+      },
+    ],
+  },
+  {
+    name: "CurrentPointView",
+    fields: [
+      {
+        name: "wallet",
+        type: "Wallet",
+        relationName: "CurrentPointViewToWallet",
+      },
+    ],
+  },
+  {
+    name: "AccumulatedPointView",
+    fields: [
+      {
+        name: "wallet",
+        type: "Wallet",
+        relationName: "AccumulatedPointViewToWallet",
+      },
+    ],
+  },
+  {
+    name: "EarliestReservableSlotView",
+    fields: [
+      {
+        name: "opportunity",
+        type: "Opportunity",
+        relationName: "EarliestReservableSlotViewToOpportunity",
+      },
+    ],
+  },
+  {
+    name: "RemainingCapacityView",
+    fields: [
+      {
+        name: "slot",
+        type: "OpportunitySlot",
+        relationName: "OpportunitySlotToRemainingCapacityView",
+      },
+    ],
+  },
+];
 
 type ImageScalarOrEnumFields = {
     isPublic: boolean;
@@ -1456,35 +1695,36 @@ type UserimageFactory = {
 };
 
 type UserFactoryDefineInput = {
-    id?: string;
-    name?: string;
-    slug?: string;
-    bio?: string | null;
-    sysRole?: SysRole;
-    currentPrefecture?: CurrentPrefecture;
-    urlWebsite?: string | null;
-    urlX?: string | null;
-    urlFacebook?: string | null;
-    urlInstagram?: string | null;
-    urlYoutube?: string | null;
-    urlTiktok?: string | null;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
-    identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
-    memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
-    membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
-    wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
-    ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
-    opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
-    reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
-    reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
-    participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
-    evaluationsEvaluatedByMe?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
-    evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
-    articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
-    articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
+  id?: string;
+  name?: string;
+  slug?: string;
+  bio?: string | null;
+  sysRole?: SysRole;
+  currentPrefecture?: CurrentPrefecture;
+  urlWebsite?: string | null;
+  urlX?: string | null;
+  urlFacebook?: string | null;
+  urlInstagram?: string | null;
+  urlYoutube?: string | null;
+  urlTiktok?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date | null;
+  image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
+  identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
+  membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
+  wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
+  ticketIssuedByMe?: Prisma.TicketIssuerCreateNestedManyWithoutOwnerInput;
+  ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
+  opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
+  reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
+  reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
+  participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
+  participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
+  evaluationsEvaluatedByMe?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
+  evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
+  articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
+  articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
 };
 
 type UserTransientFields = Record<string, unknown> & Partial<Record<keyof UserFactoryDefineInput, never>>;
@@ -3942,17 +4182,18 @@ type UtilitycommunityFactory = {
 };
 
 type UtilityFactoryDefineInput = {
-    id?: string;
-    publishStatus?: PublishStatus;
-    name?: string;
-    description?: string | null;
-    pointsRequired?: number;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    images?: Prisma.ImageCreateNestedManyWithoutUtilitiesInput;
-    community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
-    requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
-    tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
+  id?: string;
+  publishStatus?: PublishStatus;
+  name?: string;
+  description?: string | null;
+  pointsRequired?: number;
+  createdAt?: Date;
+  updatedAt?: Date | null;
+  images?: Prisma.ImageCreateNestedManyWithoutUtilitiesInput;
+  community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
+  requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
+  ticketIssuer?: Prisma.TicketIssuerCreateNestedManyWithoutUtilityInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
 };
 
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
@@ -4093,6 +4334,371 @@ export const defineUtilityFactory = (<TOptions extends UtilityFactoryDefineOptio
 
 defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
 
+type TicketIssuerScalarOrEnumFields = {};
+
+type TicketIssuerutilityFactory = {
+  _factoryFor: "Utility";
+  build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput["create"]>;
+};
+
+type TicketIssuerownerFactory = {
+  _factoryFor: "User";
+  build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutTicketIssuedByMeInput["create"]>;
+};
+
+type TicketIssuerclaimLinkFactory = {
+  _factoryFor: "TicketClaimLink";
+  build: () => PromiseLike<Prisma.TicketClaimLinkCreateNestedOneWithoutIssuerInput["create"]>;
+};
+
+type TicketIssuerFactoryDefineInput = {
+  id?: string;
+  qtyToBeIssued?: number;
+  claimLinkId?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date | null;
+  utility: TicketIssuerutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput;
+  owner: TicketIssuerownerFactory | Prisma.UserCreateNestedOneWithoutTicketIssuedByMeInput;
+  claimLink?: TicketIssuerclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutIssuerInput;
+};
+
+type TicketIssuerTransientFields =
+  Record<string, unknown>
+  & Partial<Record<keyof TicketIssuerFactoryDefineInput, never>>;
+
+type TicketIssuerFactoryTrait<TTransients extends Record<string, unknown>> = {
+  data?: Resolver<Partial<TicketIssuerFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TicketIssuer, Prisma.TicketIssuerCreateInput, TTransients>;
+
+type TicketIssuerFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+  defaultData: Resolver<TicketIssuerFactoryDefineInput, BuildDataOptions<TTransients>>;
+  traits?: {
+    [traitName: string | symbol]: TicketIssuerFactoryTrait<TTransients>;
+  };
+} & CallbackDefineOptions<TicketIssuer, Prisma.TicketIssuerCreateInput, TTransients>;
+
+function isTicketIssuerutilityFactory(x: TicketIssuerutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput | undefined): x is TicketIssuerutilityFactory {
+  return (x as any)?._factoryFor === "Utility";
+}
+
+function isTicketIssuerownerFactory(x: TicketIssuerownerFactory | Prisma.UserCreateNestedOneWithoutTicketIssuedByMeInput | undefined): x is TicketIssuerownerFactory {
+  return (x as any)?._factoryFor === "User";
+}
+
+function isTicketIssuerclaimLinkFactory(x: TicketIssuerclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutIssuerInput | undefined): x is TicketIssuerclaimLinkFactory {
+  return (x as any)?._factoryFor === "TicketClaimLink";
+}
+
+type TicketIssuerTraitKeys<TOptions extends TicketIssuerFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TicketIssuerFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+  readonly _factoryFor: "TicketIssuer";
+
+  build(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Prisma.TicketIssuerCreateInput>;
+
+  buildCreateInput(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Prisma.TicketIssuerCreateInput>;
+
+  buildList(list: readonly Partial<Prisma.TicketIssuerCreateInput & TTransients>[]): PromiseLike<Prisma.TicketIssuerCreateInput[]>;
+
+  buildList(count: number, item?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Prisma.TicketIssuerCreateInput[]>;
+
+  pickForConnect(inputData: TicketIssuer): Pick<TicketIssuer, "id">;
+
+  create(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<TicketIssuer>;
+
+  createList(list: readonly Partial<Prisma.TicketIssuerCreateInput & TTransients>[]): PromiseLike<TicketIssuer[]>;
+
+  createList(count: number, item?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<TicketIssuer[]>;
+
+  createForConnect(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Pick<TicketIssuer, "id">>;
+}
+
+export interface TicketIssuerFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TicketIssuerFactoryInterfaceWithoutTraits<TTransients> {
+  use(name: TTraitName, ...names: readonly TTraitName[]): TicketIssuerFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTicketIssuerScalarsOrEnums({ seq }: {
+  readonly seq: number;
+}): TicketIssuerScalarOrEnumFields {
+  return {};
+}
+
+function defineTicketIssuerFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TicketIssuerFactoryDefineOptions<TTransients>>({
+                                                                                                                                                          defaultData: defaultDataResolver,
+                                                                                                                                                          onAfterBuild,
+                                                                                                                                                          onBeforeCreate,
+                                                                                                                                                          onAfterCreate,
+                                                                                                                                                          traits: traitsDefs = {}
+                     ,                                                                                                                                   }: TOptions, defaultTransientFieldValues: TTransients): TicketIssuerFactoryInterface<TTransients, TicketIssuerTraitKeys<TOptions>> {
+  const getFactoryWithTraits = (traitKeys: readonly TicketIssuerTraitKeys<TOptions>[] = []) => {
+    const seqKey = {};
+    const getSeq = () => getSequenceCounter(seqKey);
+    const screen = createScreener("TicketIssuer", modelFieldDefinitions);
+    const handleAfterBuild = createCallbackChain([
+      onAfterBuild,
+      ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+    ]);
+    const handleBeforeCreate = createCallbackChain([
+      ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+      onBeforeCreate,
+    ]);
+    const handleAfterCreate = createCallbackChain([
+      onAfterCreate,
+      ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+    ]);
+    const build = async (inputData: Partial<Prisma.TicketIssuerCreateInput & TTransients> = {}) => {
+      const seq = getSeq();
+      const requiredScalarData = autoGenerateTicketIssuerScalarsOrEnums({ seq });
+      const resolveValue = normalizeResolver<TicketIssuerFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+      const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+      const resolverInput = { seq, ...transientFields };
+      const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+        const acc = await queue;
+        const resolveTraitValue = normalizeResolver<Partial<TicketIssuerFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+        const traitData = await resolveTraitValue(resolverInput);
+        return {
+          ...acc,
+          ...traitData,
+        };
+      }, resolveValue(resolverInput));
+      const defaultAssociations = {
+        utility: isTicketIssuerutilityFactory(defaultData.utility) ? {
+          create: await defaultData.utility.build()
+        } : defaultDa,ta.utility,
+        owner: isTicketIssuerownerFactory(defaultData.owner) ? {
+          create: await defaultData.owner.build()
+        } : defaultDa,ta.owner,
+        claimLink: isTicketIssuerclaimLinkFactory(defaultData.claimLink) ? {
+          create: await defaultData.claimLink.build()
+        } : defaultDa,ta.claimLink
+      } as Prisma.Tic,ketIssuerCreateInput;
+      const data: Prisma.TicketIssuerCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+      await handleAfterBuild(data, transientFields);
+      return data;
+    };
+    const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketIssuerCreateInput & TTransients>>(...args).map(data => build(data)));
+    const pickForConnect = (inputData: TicketIssuer) => ({
+      id: inputData.id
+    });
+    const cre,ate = async (inputData: Partial<Prisma.TicketIssuerCreateInput & TTransients> = {}) => {
+      const data = await build({ ...inputData }).then(screen);
+      const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+      await handleBeforeCreate(data, transientFields);
+      const createdData = await getClient<PrismaClient>().ticketIssuer.create({ data });
+      await handleAfterCreate(createdData, transientFields);
+      return createdData;
+    };
+    const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketIssuerCreateInput & TTransients>>(...args).map(data => create(data)));
+    const createForConnect = (inputData: Partial<Prisma.TicketIssuerCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+    return {
+      _factoryFor: "TicketIssuer" as const,
+      build,
+      buildList,
+      buildCreateInput: build,
+      pickForConnect,
+      create,
+      createList,
+      createForConnect,
+    };
+  };
+  const factory = getFactoryWithTraits();
+  const useTraits = (name: TicketIssuerTraitKeys<TOptions>, ...names: readonly TicketIssuerTraitKeys<TOptions>[]) => {
+    return getFactoryWithTraits([name, ...names]);
+  };
+  return {
+    ...factory,
+    use: useTraits,
+  };
+}
+
+interface TicketIssuerFactoryBuilder {
+  <TOptions extends TicketIssuerFactoryDefineOptions>(options: TOptions): TicketIssuerFactoryInterface<{}, TicketIssuerTraitKeys<TOptions>>;
+
+  withTransientFields: <TTransients extends TicketIssuerTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TicketIssuerFactoryDefineOptions<TTransients>>(options: TOptions) => TicketIssuerFactoryInterface<TTransients, TicketIssuerTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TicketIssuer} model.
+ *
+ * @param options
+ * @returns factory {@link TicketIssuerFactoryInterface}
+ */
+export const defineTicketIssuerFactory = (<TOptions extends TicketIssuerFactoryDefineOptions>(options: TOptions): TicketIssuerFactoryInterface<TOptions> => {
+  return defineTicketIssuerFactoryInternal(options, {});
+}) as TicketIssuerFactoryBuilder;
+
+defineTicketIssuerFactory.withTransientFields = defaultTransientFieldValues => options => defineTicketIssuerFactoryInternal(options, defaultTransientFieldValues);
+
+type TicketClaimLinkScalarOrEnumFields = {};
+
+type TicketClaimLinkissuerFactory = {
+  _factoryFor: "TicketIssuer";
+  build: () => PromiseLike<Prisma.TicketIssuerCreateNestedOneWithoutClaimLinkInput["create"]>;
+};
+
+type TicketClaimLinkFactoryDefineInput = {
+  id?: string;
+  status?: ClaimLinkStatus;
+  qty?: number;
+  claimedAt?: Date | null;
+  createdAt?: Date;
+  issuer: TicketClaimLinkissuerFactory | Prisma.TicketIssuerCreateNestedOneWithoutClaimLinkInput;
+  tickets?: Prisma.TicketCreateNestedManyWithoutClaimLinkInput;
+};
+
+type TicketClaimLinkTransientFields =
+  Record<string, unknown>
+  & Partial<Record<keyof TicketClaimLinkFactoryDefineInput, never>>;
+
+type TicketClaimLinkFactoryTrait<TTransients extends Record<string, unknown>> = {
+  data?: Resolver<Partial<TicketClaimLinkFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TicketClaimLink, Prisma.TicketClaimLinkCreateInput, TTransients>;
+
+type TicketClaimLinkFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+  defaultData: Resolver<TicketClaimLinkFactoryDefineInput, BuildDataOptions<TTransients>>;
+  traits?: {
+    [traitName: string | symbol]: TicketClaimLinkFactoryTrait<TTransients>;
+  };
+} & CallbackDefineOptions<TicketClaimLink, Prisma.TicketClaimLinkCreateInput, TTransients>;
+
+function isTicketClaimLinkissuerFactory(x: TicketClaimLinkissuerFactory | Prisma.TicketIssuerCreateNestedOneWithoutClaimLinkInput | undefined): x is TicketClaimLinkissuerFactory {
+  return (x as any)?._factoryFor === "TicketIssuer";
+}
+
+type TicketClaimLinkTraitKeys<TOptions extends TicketClaimLinkFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TicketClaimLinkFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+  readonly _factoryFor: "TicketClaimLink";
+
+  build(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Prisma.TicketClaimLinkCreateInput>;
+
+  buildCreateInput(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Prisma.TicketClaimLinkCreateInput>;
+
+  buildList(list: readonly Partial<Prisma.TicketClaimLinkCreateInput & TTransients>[]): PromiseLike<Prisma.TicketClaimLinkCreateInput[]>;
+
+  buildList(count: number, item?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Prisma.TicketClaimLinkCreateInput[]>;
+
+  pickForConnect(inputData: TicketClaimLink): Pick<TicketClaimLink, "id">;
+
+  create(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<TicketClaimLink>;
+
+  createList(list: readonly Partial<Prisma.TicketClaimLinkCreateInput & TTransients>[]): PromiseLike<TicketClaimLink[]>;
+
+  createList(count: number, item?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<TicketClaimLink[]>;
+
+  createForConnect(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Pick<TicketClaimLink, "id">>;
+}
+
+export interface TicketClaimLinkFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TicketClaimLinkFactoryInterfaceWithoutTraits<TTransients> {
+  use(name: TTraitName, ...names: readonly TTraitName[]): TicketClaimLinkFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTicketClaimLinkScalarsOrEnums({ seq }: {
+  readonly seq: number;
+}): TicketClaimLinkScalarOrEnumFields {
+  return {};
+}
+
+function defineTicketClaimLinkFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TicketClaimLinkFactoryDefineOptions<TTransients>>({
+                                                                                                                                                                defaultData: defaultDataResolver,
+                                                                                                                                                                onAfterBuild,
+                                                                                                                                                                onBeforeCreate,
+                                                                                                                                                                onAfterCreate,
+                                                                                                                                                                traits: traitsDefs = {}
+                     ,                                                                                                                                         }: TOptions, defaultTransientFieldValues: TTransients): TicketClaimLinkFactoryInterface<TTransients, TicketClaimLinkTraitKeys<TOptions>> {
+  const getFactoryWithTraits = (traitKeys: readonly TicketClaimLinkTraitKeys<TOptions>[] = []) => {
+    const seqKey = {};
+    const getSeq = () => getSequenceCounter(seqKey);
+    const screen = createScreener("TicketClaimLink", modelFieldDefinitions);
+    const handleAfterBuild = createCallbackChain([
+      onAfterBuild,
+      ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+    ]);
+    const handleBeforeCreate = createCallbackChain([
+      ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+      onBeforeCreate,
+    ]);
+    const handleAfterCreate = createCallbackChain([
+      onAfterCreate,
+      ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+    ]);
+    const build = async (inputData: Partial<Prisma.TicketClaimLinkCreateInput & TTransients> = {}) => {
+      const seq = getSeq();
+      const requiredScalarData = autoGenerateTicketClaimLinkScalarsOrEnums({ seq });
+      const resolveValue = normalizeResolver<TicketClaimLinkFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+      const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+      const resolverInput = { seq, ...transientFields };
+      const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+        const acc = await queue;
+        const resolveTraitValue = normalizeResolver<Partial<TicketClaimLinkFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+        const traitData = await resolveTraitValue(resolverInput);
+        return {
+          ...acc,
+          ...traitData,
+        };
+      }, resolveValue(resolverInput));
+      const defaultAssociations = {
+        issuer: isTicketClaimLinkissuerFactory(defaultData.issuer) ? {
+          create: await defaultData.issuer.build()
+        } : defaultDa,ta.issuer
+      } as Prisma.Tic,ketClaimLinkCreateInput;
+      const data: Prisma.TicketClaimLinkCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+      await handleAfterBuild(data, transientFields);
+      return data;
+    };
+    const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketClaimLinkCreateInput & TTransients>>(...args).map(data => build(data)));
+    const pickForConnect = (inputData: TicketClaimLink) => ({
+      id: inputData.id
+    });
+    const cre,ate = async (inputData: Partial<Prisma.TicketClaimLinkCreateInput & TTransients> = {}) => {
+      const data = await build({ ...inputData }).then(screen);
+      const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+      await handleBeforeCreate(data, transientFields);
+      const createdData = await getClient<PrismaClient>().ticketClaimLink.create({ data });
+      await handleAfterCreate(createdData, transientFields);
+      return createdData;
+    };
+    const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketClaimLinkCreateInput & TTransients>>(...args).map(data => create(data)));
+    const createForConnect = (inputData: Partial<Prisma.TicketClaimLinkCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+    return {
+      _factoryFor: "TicketClaimLink" as const,
+      build,
+      buildList,
+      buildCreateInput: build,
+      pickForConnect,
+      create,
+      createList,
+      createForConnect,
+    };
+  };
+  const factory = getFactoryWithTraits();
+  const useTraits = (name: TicketClaimLinkTraitKeys<TOptions>, ...names: readonly TicketClaimLinkTraitKeys<TOptions>[]) => {
+    return getFactoryWithTraits([name, ...names]);
+  };
+  return {
+    ...factory,
+    use: useTraits,
+  };
+}
+
+interface TicketClaimLinkFactoryBuilder {
+  <TOptions extends TicketClaimLinkFactoryDefineOptions>(options: TOptions): TicketClaimLinkFactoryInterface<{}, TicketClaimLinkTraitKeys<TOptions>>;
+
+  withTransientFields: <TTransients extends TicketClaimLinkTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TicketClaimLinkFactoryDefineOptions<TTransients>>(options: TOptions) => TicketClaimLinkFactoryInterface<TTransients, TicketClaimLinkTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TicketClaimLink} model.
+ *
+ * @param options
+ * @returns factory {@link TicketClaimLinkFactoryInterface}
+ */
+export const defineTicketClaimLinkFactory = (<TOptions extends TicketClaimLinkFactoryDefineOptions>(options: TOptions): TicketClaimLinkFactoryInterface<TOptions> => {
+  return defineTicketClaimLinkFactoryInternal(options, {});
+}) as TicketClaimLinkFactoryBuilder;
+
+defineTicketClaimLinkFactory.withTransientFields = defaultTransientFieldValues => options => defineTicketClaimLinkFactoryInternal(options, defaultTransientFieldValues);
+
 type TicketScalarOrEnumFields = {};
 
 type TicketwalletFactory = {
@@ -4105,6 +4711,11 @@ type TicketutilityFactory = {
     build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutTicketsInput["create"]>;
 };
 
+type TicketclaimLinkFactory = {
+  _factoryFor: "TicketClaimLink";
+  build: () => PromiseLike<Prisma.TicketClaimLinkCreateNestedOneWithoutTicketsInput["create"]>;
+};
+
 type TicketFactoryDefineInput = {
     id?: string;
     status?: TicketStatus;
@@ -4113,6 +4724,7 @@ type TicketFactoryDefineInput = {
     updatedAt?: Date | null;
     wallet: TicketwalletFactory | Prisma.WalletCreateNestedOneWithoutTicketsInput;
     utility: TicketutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketsInput;
+  claimLink?: TicketclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutTicketsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutTicketInput;
 };
 
@@ -4135,6 +4747,10 @@ function isTicketwalletFactory(x: TicketwalletFactory | Prisma.WalletCreateNeste
 
 function isTicketutilityFactory(x: TicketutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketsInput | undefined): x is TicketutilityFactory {
     return (x as any)?._factoryFor === "Utility";
+}
+
+function isTicketclaimLinkFactory(x: TicketclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutTicketsInput | undefined): x is TicketclaimLinkFactory {
+  return (x as any)?._factoryFor === "TicketClaimLink";
 }
 
 type TicketTraitKeys<TOptions extends TicketFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -4200,7 +4816,10 @@ function defineTicketFactoryInternal<TTransients extends Record<string, unknown>
                 } : defaultData.wallet,
                 utility: isTicketutilityFactory(defaultData.utility) ? {
                     create: await defaultData.utility.build()
-                } : defaultData.utility
+                } : defaultData.utility,
+              claimLink: isTicketclaimLinkFactory(defaultData.claimLink) ? {
+                create: await defaultData.claimLink.build(),
+              } : defaultData.claimLink,
             } as Prisma.TicketCreateInput;
             const data: Prisma.TicketCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);

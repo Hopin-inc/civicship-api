@@ -107,6 +107,7 @@ Table t_users {
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
+  ticketIssuedByMe t_ticket_issuers [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
   reservationsAppliedByMe t_reservations [not null]
@@ -119,7 +120,6 @@ Table t_users {
   articlesAboutMe t_articles [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
-  ticketIssuer t_ticket_issuers [not null]
 }
 
 Table t_identities {
