@@ -20,7 +20,12 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     return {};
   }
 
-  const decoded = await auth.verifyIdToken(idToken);
+  const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
+  if (!tenantId) {
+    throw new Error("FIREBASE_AUTH_TENANT_ID not defined.");
+  }
+  const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
+  const decoded = await tenantedAuth.verifyIdToken(idToken);
   const uid = decoded.uid;
   const platform = decoded.platform;
 
@@ -43,6 +48,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
 
   return {
     uid,
+    tenantId,
     platform,
     currentUser,
     hasPermissions,
