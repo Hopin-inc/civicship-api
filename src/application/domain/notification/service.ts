@@ -8,7 +8,7 @@ import { PrismaReservation } from "@/application/domain/experience/reservation/d
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/reservation/reservationAcceptedMessage";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/reservation/reservationAppliedMessage";
 import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/reservation/reservationCanceledMessage";
-import { messagingApi } from "@line/bot-sdk";
+import { HTTPFetchError, messagingApi } from "@line/bot-sdk";
 
 export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
@@ -137,14 +137,13 @@ export default class NotificationService {
 async function safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
   try {
     await lineClient.pushMessage(params);
-  } catch (error: any) {
-    if (error.status === 429) {
-      console.warn("LINE Messaging API: Too Many Requests - Push skipped", {
-        message: error.body?.message,
-      });
+  } catch (error) {
+    if (error instanceof HTTPFetchError) {
+      console.error("Status:", error.status);
+      console.error("Message:", error.message);
+      console.error("Response Body:", error.body);
     } else {
-      console.error("LINE Messaging API Push Error", error);
-      throw error;
+      console.error("Unexpected Error:", error);
     }
   }
 }
