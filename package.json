@@ -12,6 +12,7 @@
     "dev:https": "dotenvx run -f .env --env='NODE_HTTPS=true' -- tsx watch src/index.ts",
     "lint": "eslint --fix src/ && prettier --write src/",
     "test": "jest --runInBand",
+    "test:cov": "jest --coverage --runInBand",
     "db:pull": "prisma db pull --schema src/infrastructure/prisma/schema.prisma",
     "db:seed-master": "tsx src/infrastructure/prisma/seeds/index.ts -- --master",
     "db:seed-domain": "tsx src/infrastructure/prisma/seeds/index.ts -- --domain",
