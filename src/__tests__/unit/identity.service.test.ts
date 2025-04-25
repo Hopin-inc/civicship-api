@@ -1,14 +1,8 @@
-import { IdentityPlatform } from "@prisma/client";
+import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 import UserRepository from "@/application/domain/user/data/repository";
 import IdentityService from "@/application/domain/user/identity/service";
 import IdentityRepository from "@/application/domain/user/identity/data/repository";
 import { auth } from "@/infrastructure/libs/firebase";
-import {
-  mockFunctions,
-  TEST_IDENTITY,
-  TEST_USER,
-  TEST_USER_DATA,
-} from "@/__tests__/helper/test-data";
 
 jest.mock("@/infrastructure/libs/firebase", () => ({
   auth: {
@@ -19,20 +13,45 @@ jest.mock("@/application/domain/user/data/repository");
 jest.mock("@/application/domain/user/identity/data/repository");
 
 describe("IdentityService", () => {
+  const TEST_USER_ID = "user-1";
+  const TEST_USER_DATA = {
+    name: "Test User",
+    email: "test@example.com",
+    slug: "test-user",
+    currentPrefecture: CurrentPrefecture.KAGAWA,
+  };
+  const TEST_USER = {
+    id: TEST_USER_ID,
+    ...TEST_USER_DATA,
+    role: "MEMBER",
+  };
+  const TEST_IDENTITY = {
+    userId: TEST_USER_ID,
+    uid: "test-uid",
+    platform: IdentityPlatform.LINE,
+  };
+
+  const mockFunctions = {
+    createWithIdentity: (result: typeof TEST_USER) =>
+      (UserRepository.createWithIdentity as jest.Mock).mockResolvedValue(result),
+
+    findIdentity: (result: typeof TEST_IDENTITY | null) =>
+      (IdentityRepository.find as jest.Mock).mockResolvedValue(result),
+
+    deleteWithIdentity: (result: typeof TEST_USER) =>
+      (UserRepository.deleteWithIdentity as jest.Mock).mockResolvedValue(result),
+
+    deleteFirebaseUser: () => (auth.deleteUser as jest.Mock).mockResolvedValue(undefined),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // デフォルトのモック設定
     mockFunctions.createWithIdentity(TEST_USER);
     mockFunctions.findIdentity(TEST_IDENTITY);
     mockFunctions.deleteWithIdentity(TEST_USER);
     mockFunctions.deleteFirebaseUser();
   });
 
-  /**
-   * createUserAndIdentity はユーザーとアイデンティティを同時に作成するメソッド
-   * - ユーザー情報とアイデンティティ情報を同時に作成
-   * - 作成されたユーザー情報を返却
-   */
   describe("createUserAndIdentity", () => {
     it("should create a user with identity and return the created user data", async () => {
       const uid = "test-uid";
@@ -59,12 +78,6 @@ describe("IdentityService", () => {
     });
   });
 
-  /**
-   * deleteUserAndIdentity はユーザーとアイデンティティを削除するメソッド
-   * - アイデンティティの存在確認
-   * - ユーザーとアイデンティティの削除
-   * - 削除されたユーザー情報を返却
-   */
   describe("deleteUserAndIdentity", () => {
     it("should delete user and identity when identity exists and return the deleted user data", async () => {
       const result = await IdentityService.deleteUserAndIdentity(TEST_IDENTITY.uid);
@@ -93,10 +106,6 @@ describe("IdentityService", () => {
     });
   });
 
-  /**
-   * deleteFirebaseAuthUser はFirebase認証ユーザーを削除するメソッド
-   * - Firebase認証ユーザーの削除
-   */
   describe("deleteFirebaseAuthUser", () => {
     it("should delete the Firebase auth user successfully", async () => {
       await IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid);

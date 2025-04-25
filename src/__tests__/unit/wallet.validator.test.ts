@@ -1,12 +1,12 @@
 import { Prisma, TransactionReason, WalletType } from "@prisma/client";
-import WalletService from "@/application/domain/membership/wallet/service";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import WalletValidator from "@/application/domain/membership/wallet/validator";
-import { PrismaWallet } from "@/application/domain/membership/wallet/data/type";
+import WalletService from "@/application/domain/wallet/service";
+import WalletValidator from "@/application/domain/wallet/validator";
+import { PrismaWallet } from "@/application/domain/wallet/data/type";
 
-jest.mock("@/application/domain/membership/wallet/data/repository");
-jest.mock("@/application/domain/membership/wallet/data/converter");
+jest.mock("@/application/domain/wallet/data/repository");
+jest.mock("@/application/domain/wallet/data/converter");
 
 describe("WalletValidator", () => {
   const mockCtx = {} as IContext;
@@ -60,67 +60,6 @@ describe("WalletValidator", () => {
         toWalletId: memberWallet.id,
       });
     });
-
-    it("should validate transfer for POINT_REWARD (use existing member wallet)", async () => {
-      jest
-        .spyOn(WalletService, "findCommunityWalletOrThrow")
-        .mockResolvedValue(communityWallet as any);
-      jest.spyOn(WalletService, "findMemberWalletOrThrow").mockResolvedValue(memberWallet as any);
-
-      const result = await WalletValidator.validateCommunityMemberTransfer(
-        mockCtx,
-        mockTx,
-        communityId,
-        userId,
-        transferPoints,
-        TransactionReason.POINT_REWARD,
-      );
-
-      expect(result).toEqual({
-        fromWalletId: communityWallet.id,
-        toWalletId: memberWallet.id,
-      });
-    });
-
-    it("should validate transfer for TICKET_PURCHASED (member to community)", async () => {
-      jest
-        .spyOn(WalletService, "findCommunityWalletOrThrow")
-        .mockResolvedValue(communityWallet as any);
-      jest.spyOn(WalletService, "findMemberWalletOrThrow").mockResolvedValue(memberWallet as any);
-
-      const result = await WalletValidator.validateCommunityMemberTransfer(
-        mockCtx,
-        mockTx,
-        communityId,
-        userId,
-        transferPoints,
-        TransactionReason.TICKET_PURCHASED,
-      );
-
-      expect(result).toEqual({
-        fromWalletId: memberWallet.id,
-        toWalletId: communityWallet.id,
-      });
-    });
-
-    it("should throw error for DONATION (unsupported direction)", async () => {
-      jest
-        .spyOn(WalletService, "findCommunityWalletOrThrow")
-        .mockRejectedValue(
-          new ValidationError("Use validateMemberToMemberDonation() for DONATION"),
-        );
-
-      await expect(
-        WalletValidator.validateCommunityMemberTransfer(
-          mockCtx,
-          mockTx,
-          communityId,
-          userId,
-          transferPoints,
-          TransactionReason.DONATION,
-        ),
-      ).rejects.toThrow(ValidationError);
-    });
   });
 
   describe("validateMemberToMemberDonation", () => {
@@ -145,12 +84,11 @@ describe("WalletValidator", () => {
     });
 
     it("should return wallet ids if validation passes", async () => {
-      // validateTransfer を spy に差し替える
       const validateTransferMock = jest
         .spyOn(WalletValidator as any, "validateTransfer")
         .mockResolvedValue(undefined);
 
-      const result = await WalletValidator.validateMemberToMemberDonation(
+      const result = await WalletValidator.validateTransferMemberToMember(
         fromWallet,
         toWallet,
         transferPoints,
@@ -170,7 +108,7 @@ describe("WalletValidator", () => {
         .mockRejectedValue(new InsufficientBalanceError(100, 200));
 
       await expect(
-        WalletValidator.validateMemberToMemberDonation(fromWallet, toWallet, transferPoints),
+        WalletValidator.validateTransferMemberToMember(fromWallet, toWallet, transferPoints),
       ).rejects.toThrow(InsufficientBalanceError);
     });
   });

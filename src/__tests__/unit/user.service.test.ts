@@ -2,24 +2,60 @@ import UserRepository from "@/application/domain/user/data/repository";
 import UserService from "@/application/domain/user/service";
 import { AuthorizationError, NotFoundError, ValidationError } from "@/errors/graphql";
 import { GqlQueryUsersArgs, GqlSortDirection } from "@/types/graphql";
-import {
-  COMMUNITY_PAGINATION,
-  DEFAULT_LIMIT,
-  DEFAULT_PAGINATION,
-  MOCK_USERS,
-  mockCtx,
-  mockFunctions,
-  mockTx,
-  TEST_USER,
-  TEST_USER_ID,
-} from "@/__tests__/helper/test-data";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
 
 jest.mock("@/application/domain/user/data/repository");
 
 describe("UserService", () => {
+  const TEST_USER_ID = "test-user";
+  const TEST_USER = {
+    id: TEST_USER_ID,
+    name: "Test User",
+    email: "test@example.com",
+    slug: "test-user",
+    role: "MEMBER",
+  };
+
+  const MOCK_USERS = [
+    { id: "1", name: "User 1", email: "user1@example.com" },
+    { id: "2", name: "User 2", email: "user2@example.com" },
+  ];
+
+  const DEFAULT_PAGINATION: GqlQueryUsersArgs = {
+    cursor: "1",
+    filter: {},
+    sort: {},
+  };
+
+  const COMMUNITY_PAGINATION: GqlQueryUsersArgs = {
+    cursor: "1",
+    filter: { keyword: "community-1" },
+    sort: {},
+  };
+
+  const DEFAULT_LIMIT = 2;
+
+  const mockCtx = {
+    currentUser: { id: TEST_USER_ID },
+    uid: TEST_USER_ID,
+  } as IContext;
+
+  const mockTx = {} as Prisma.TransactionClient;
+
+  const mockFunctions = {
+    find: (result: typeof TEST_USER | null) =>
+      (UserRepository.find as jest.Mock).mockResolvedValue(result),
+
+    query: (result: typeof MOCK_USERS | []) =>
+      (UserRepository.query as jest.Mock).mockResolvedValue(result),
+
+    updateProfile: (result: typeof TEST_USER | Promise<never>) =>
+      (UserRepository.updateProfile as jest.Mock).mockResolvedValue(result),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    // デフォルトのモック設定
     mockFunctions.find(TEST_USER);
     mockFunctions.query(MOCK_USERS);
   });
@@ -47,20 +83,14 @@ describe("UserService", () => {
     });
   });
 
-  /**
-   * fetchUsers は全ユーザーを取得するメソッド
-   * - ページネーション対応
-   * - フィルタリング対応（キーワード検索、ロール等）
-   * - ソート対応（作成日時等）
-   */
   describe("fetchUsers", () => {
     it("should return a list of users when users exist", async () => {
       const result = await UserService.fetchUsers(mockCtx, DEFAULT_PAGINATION, DEFAULT_LIMIT);
 
       expect(UserRepository.query).toHaveBeenCalledWith(
         mockCtx,
-        { AND: [{}, {}] }, // デフォルトのフィルター変換
-        { createdAt: "desc" }, // デフォルトのソート
+        { AND: [{}, {}] },
+        { createdAt: "desc" },
         DEFAULT_LIMIT,
         DEFAULT_PAGINATION.cursor,
       );
@@ -74,8 +104,8 @@ describe("UserService", () => {
 
       expect(UserRepository.query).toHaveBeenCalledWith(
         mockCtx,
-        { AND: [{}, {}] }, // デフォルトのフィルター変換
-        { createdAt: "desc" }, // デフォルトのソート
+        { AND: [{}, {}] },
+        { createdAt: "desc" },
         DEFAULT_LIMIT,
         DEFAULT_PAGINATION.cursor,
       );
@@ -108,12 +138,6 @@ describe("UserService", () => {
     });
   });
 
-  /**
-   * fetchCommunityMembers はコミュニティに所属するユーザーを取得するメソッド
-   * - コミュニティIDによるフィルタリング必須
-   * - メンバーシップステータスによるフィルタリング対応
-   * - ページネーション対応
-   */
   describe("fetchCommunityMembers", () => {
     it("should return a list of community members when members exist", async () => {
       const result = await UserService.fetchCommunityMembers(
