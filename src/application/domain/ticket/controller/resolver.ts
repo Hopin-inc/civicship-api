@@ -1,9 +1,11 @@
 import {
-  GqlQueryTicketsArgs,
-  GqlQueryTicketArgs,
+  GqlMutationTicketClaimArgs,
+  GqlMutationTicketIssueArgs,
   GqlMutationTicketPurchaseArgs,
-  GqlMutationTicketUseArgs,
   GqlMutationTicketRefundArgs,
+  GqlMutationTicketUseArgs,
+  GqlQueryTicketArgs,
+  GqlQueryTicketsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketUseCase from "@/application/domain/ticket/usecase";
@@ -22,6 +24,12 @@ const ticketResolver = {
   },
 
   Mutation: {
+    ticketIssue: async (_: unknown, args: GqlMutationTicketIssueArgs, ctx: IContext) => {
+      return TicketUseCase.managerIssueTicket(ctx, args);
+    },
+    ticketClaim: async (_: unknown, args: GqlMutationTicketClaimArgs, ctx: IContext) => {
+      return TicketUseCase.userClaimTicket(ctx, args.input);
+    },
     ticketPurchase: async (_: unknown, args: GqlMutationTicketPurchaseArgs, ctx: IContext) => {
       return TicketUseCase.memberPurchaseTicket(ctx, args);
     },

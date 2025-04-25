@@ -11,12 +11,14 @@ type Utility {
 
     community: Community!
 
+    ticketIssuers: [TicketIssuer!]
     tickets(
         filter: TicketFilterInput
         sort: TicketSortInput
         cursor: String
         first: Int
     ): TicketsConnection @complexity(value: 5, multipliers: ["first"])
+
     requiredForOpportunities(
         filter: OpportunityFilterInput
         sort: OpportunitySortInput

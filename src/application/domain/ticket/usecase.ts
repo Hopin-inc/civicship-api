@@ -1,14 +1,18 @@
 import {
-  GqlQueryTicketsArgs,
-  GqlQueryTicketArgs,
+  GqlMutationTicketIssueArgs,
   GqlMutationTicketPurchaseArgs,
-  GqlMutationTicketUseArgs,
   GqlMutationTicketRefundArgs,
+  GqlMutationTicketUseArgs,
+  GqlQueryTicketArgs,
+  GqlQueryTicketsArgs,
   GqlTicket,
-  GqlTicketsConnection,
+  GqlTicketClaimInput,
+  GqlTicketClaimPayload,
+  GqlTicketIssuePayload,
   GqlTicketPurchasePayload,
-  GqlTicketUsePayload,
   GqlTicketRefundPayload,
+  GqlTicketsConnection,
+  GqlTicketUsePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketService from "@/application/domain/ticket/service";
@@ -18,6 +22,11 @@ import TransactionService from "@/application/domain/transaction/service";
 import { Prisma } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletValidator from "@/application/domain/membership/wallet/validator";
+import { getCurrentUserId } from "@/application/domain/utils";
+import MembershipService from "@/application/domain/membership/service";
+import TicketClaimLinkService from "@/application/domain/ticketClaimLink/service";
+import TicketIssuerService from "@/application/domain/ticketClaimLink/issuer/service";
+import TicketIssuerPresenter from "@/application/domain/ticketClaimLink/issuer/presenter";
 
 export default class TicketUseCase {
   private static issuer = new PrismaClientIssuer();
@@ -38,6 +47,76 @@ export default class TicketUseCase {
       return null;
     }
     return TicketPresenter.get(ticket);
+  }
+
+  static async managerIssueTicket(
+    ctx: IContext,
+    { input }: GqlMutationTicketIssueArgs,
+  ): Promise<GqlTicketIssuePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
+    const issuedTicket = await TicketIssuerService.issueTicket(
+      ctx,
+      currentUserId,
+      input.utilityId,
+      input.qtyToBeIssued,
+    );
+
+    return TicketIssuerPresenter.issue(issuedTicket);
+  }
+
+  static async userClaimTicket(
+    ctx: IContext,
+    { ticketClaimLinkId }: GqlTicketClaimInput,
+  ): Promise<GqlTicketClaimPayload> {
+    const currentUserId = getCurrentUserId(ctx);
+    const claimLink = await TicketClaimLinkService.validateBeforeClaim(ctx, ticketClaimLinkId);
+
+    const issuedTicket = claimLink.issuer;
+    const { ownerId: ticketOwnerId, qtyToBeIssued, utility } = issuedTicket;
+    const { communityId, pointsRequired } = utility;
+    const transferPoints = pointsRequired * qtyToBeIssued;
+
+    const tickets = await this.issuer.public(ctx, async (tx) => {
+      await MembershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
+      const [ownerWallet, claimerWallet] = await Promise.all([
+        WalletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId, tx),
+        WalletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx),
+      ]);
+
+      const { fromWalletId: ownerWalletId, toWalletId: claimerWalletId } =
+        await WalletValidator.validateTransferMemberToMember(
+          ownerWallet,
+          claimerWallet,
+          transferPoints,
+        );
+
+      await TransactionService.donateSelfPoint(
+        ctx,
+        ownerWalletId,
+        claimerWalletId,
+        transferPoints,
+        tx,
+      );
+      await TransactionService.purchaseTicket(ctx, tx, {
+        fromWalletId: claimerWalletId,
+        toWalletId: ownerWalletId,
+        transferPoints,
+      });
+
+      await TicketClaimLinkService.markAsClaimed(ctx, ticketClaimLinkId, qtyToBeIssued, tx);
+      return await TicketService.claimTicketsByIssuerId(
+        ctx,
+        currentUserId,
+        ticketClaimLinkId,
+        issuedTicket,
+        claimerWalletId,
+        tx,
+      );
+    });
+
+    const claimLinks = tickets.map((ticket) => ticket.claimLink);
+    return TicketPresenter.claim(claimLinks);
   }
 
   static async memberPurchaseTicket(

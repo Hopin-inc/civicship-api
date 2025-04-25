@@ -7,6 +7,7 @@ import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import TicketPresenter from "@/application/domain/ticket/presenter";
 import { PrismaTicket } from "@/application/domain/ticket/data/type";
+import { PrismaTicketClaimLink } from "@/application/domain/ticketClaimLink/data/type";
 
 export default class TicketService {
   static async fetchTickets(
@@ -37,6 +38,21 @@ export default class TicketService {
       throw new NotFoundError("Ticket", { id });
     }
     return ticket;
+  }
+
+  static async claimTicketsByIssuerId(
+    ctx: IContext,
+    currentUserId: string,
+    claimLinkId: string,
+    issuedTicket: PrismaTicketClaimLink["issuer"],
+    walletId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTicket[]> {
+    const dataList: Prisma.TicketCreateInput[] = Array.from({
+      length: issuedTicket.qtyToBeIssued,
+    }).map(() => TicketConverter.claim(currentUserId, claimLinkId, issuedTicket, walletId));
+
+    return Promise.all(dataList.map((data) => TicketRepository.create(ctx, data, tx)));
   }
 
   static async purchaseManyTickets(

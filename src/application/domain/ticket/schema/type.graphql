@@ -6,8 +6,10 @@ type Ticket {
     status: TicketStatus!
     reason: TicketStatusReason!
 
-    wallet: Wallet!
-    utility: Utility!
+    claimLink: TicketClaimLink
+
+    utility: Utility
+    wallet: Wallet
 
     ticketStatusHistories(
         filter: TicketStatusHistoryFilterInput
@@ -29,10 +31,15 @@ enum TicketStatus {
 }
 
 enum TicketStatusReason {
+    GIFTED
+
     PURCHASED
-    CANCELED
-    RESERVED
-    USED
     REFUNDED
+
+    RESERVED
+    CANCELED
+
+    USED
+
     EXPIRED
 }

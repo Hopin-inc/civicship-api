@@ -2,17 +2,22 @@
 # Ticket Mutation Definitions
 # ------------------------------
 extend type Mutation {
+    ticketIssue(
+        input: TicketIssueInput!
+        permission: CheckCommunityPermissionInput!
+    ): TicketIssuePayload
+    @authz(rules: [IsCommunityMember, VerifySanitizeInput])
+
+    ticketClaim(
+        input: TicketClaimInput!
+    ): TicketClaimPayload
+    @authz(rules: [VerifySanitizeInput])
+
     ticketPurchase(
         input: TicketPurchaseInput!
         permission: CheckCommunityPermissionInput!
     ): TicketPurchasePayload
     @authz(rules: [IsCommunityMember, VerifySanitizeInput])
-
-    ticketUse(
-        id: ID!
-        permission: CheckIsSelfPermissionInput!
-    ): TicketUsePayload
-    @authz(rules: [IsSelf, VerifySanitizeInput])
 
     ticketRefund(
         id: ID!
@@ -20,11 +25,26 @@ extend type Mutation {
         permission: CheckIsSelfPermissionInput!
     ): TicketRefundPayload
     @authz(rules: [IsSelf, VerifySanitizeInput])
+
+    ticketUse(
+        id: ID!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketUsePayload
+    @authz(rules: [IsSelf, VerifySanitizeInput])
 }
 
 # ------------------------------
 # Ticket Mutation Input Definitions
 # ------------------------------
+input TicketIssueInput {
+    utilityId: ID!
+    qtyToBeIssued: Int!
+}
+
+input TicketClaimInput {
+    ticketClaimLinkId: ID!
+}
+
 input TicketPurchaseInput {
     walletId: ID!
     utilityId: ID!
@@ -41,6 +61,10 @@ input TicketRefundInput {
 # ------------------------------
 # Ticket Mutation Success Type Definitions
 # ------------------------------
+type TicketIssueSuccess {
+    issue: TicketIssuer!
+}
+
 type TicketPurchaseSuccess {
     ticket: Ticket!
 }
@@ -51,6 +75,10 @@ type TicketUseSuccess {
 
 type TicketRefundSuccess {
     ticket: Ticket!
+}
+
+type TicketClaimSuccess {
+    tickets: [Ticket!]!
 }
 
 # ------------------------------
@@ -64,3 +92,9 @@ union TicketUsePayload =
 
 union TicketRefundPayload =
     TicketRefundSuccess
+
+union TicketIssuePayload =
+    TicketIssueSuccess
+
+union TicketClaimPayload =
+    TicketClaimSuccess

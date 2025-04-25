@@ -1,5 +1,6 @@
 import { GqlTicketFilterInput, GqlTicketSortInput } from "@/types/graphql";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
+import { PrismaTicketClaimLink } from "@/application/domain/ticketClaimLink/data/type";
 
 export default class TicketConverter {
   static filter(filter: GqlTicketFilterInput): Prisma.TicketWhereInput {
@@ -16,6 +17,30 @@ export default class TicketConverter {
     return {
       createdAt: sort?.createdAt ?? Prisma.SortOrder.desc,
       status: sort?.status,
+    };
+  }
+
+  static claim(
+    currentUserId: string,
+    claimLinkId: string,
+    issuedTicket: PrismaTicketClaimLink["issuer"],
+    walletId: string,
+  ): Prisma.TicketCreateInput {
+    const { utilityId } = issuedTicket;
+
+    return {
+      status: TicketStatus.AVAILABLE,
+      reason: TicketStatusReason.GIFTED,
+      wallet: { connect: { id: walletId } },
+      utility: { connect: { id: utilityId } },
+      claimLink: { connect: { id: claimLinkId } },
+      ticketStatusHistories: {
+        create: {
+          status: TicketStatus.AVAILABLE,
+          reason: TicketStatusReason.GIFTED,
+          createdByUser: { connect: { id: currentUserId } },
+        },
+      },
     };
   }
 
