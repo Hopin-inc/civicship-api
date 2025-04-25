@@ -1,4 +1,4 @@
-import { PrismaParticipationForPortfolio } from "@/application/domain/participation/data/type";
+import { PrismaParticipationForPortfolio } from "@/application/domain/experience/participation/data/type";
 
 export default class ViewService {}
 

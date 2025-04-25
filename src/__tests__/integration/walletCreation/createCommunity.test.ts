@@ -1,7 +1,7 @@
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { GqlCommunityCreateInput } from "@/types/graphql";
-import communityResolver from "@/application/domain/community/controller/resolver";
+import communityResolver from "@/application/domain/account/community/controller/resolver";
 import { CurrentPrefecture } from "@prisma/client";
 
 describe("Community Integration Tests", () => {

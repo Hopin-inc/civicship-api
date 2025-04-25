@@ -8,7 +8,7 @@ import {
   TransactionReason,
   WalletType,
 } from "@prisma/client";
-import ticketResolver from "@/application/domain/ticket/controller/resolver";
+import ticketResolver from "@/application/domain/reward/ticket/controller/resolver";
 
 describe("Ticket Claim Tests", () => {
   const testSetup = {

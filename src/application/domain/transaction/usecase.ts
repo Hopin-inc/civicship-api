@@ -15,10 +15,10 @@ import TransactionService from "@/application/domain/transaction/service";
 import TransactionPresenter from "@/application/domain/transaction/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma, TransactionReason } from "@prisma/client";
-import MembershipService from "@/application/domain/membership/service";
+import MembershipService from "@/application/domain/account/membership/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import WalletValidator from "@/application/domain/wallet/validator";
-import WalletService from "@/application/domain/wallet/service";
+import WalletValidator from "@/application/domain/account/wallet/validator";
+import WalletService from "@/application/domain/account/wallet/service";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 
 export default class TransactionUseCase {

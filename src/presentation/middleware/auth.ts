@@ -2,7 +2,7 @@ import http from "http";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { IContext } from "@/types/server";
-import { userAuthInclude, userAuthSelect } from "@/application/domain/user/data/type";
+import { userAuthInclude, userAuthSelect } from "@/application/domain/account/user/data/type";
 import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";

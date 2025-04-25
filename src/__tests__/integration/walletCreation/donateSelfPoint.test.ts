@@ -3,7 +3,7 @@ import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
 import transactionResolver from "@/application/domain/transaction/controller/resolver";
-import CommunityConverter from "@/application/domain/community/data/converter";
+import CommunityConverter from "@/application/domain/account/community/data/converter";
 
 describe("Transaction DonateSelfPoint Integration Tests", () => {
   jest.setTimeout(30_000);

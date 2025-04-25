@@ -1,7 +1,7 @@
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, OpportunityCategory, PublishStatus, WalletType } from "@prisma/client";
-import reservationResolver from "@/application/domain/reservation/controller/resolver";
+import reservationResolver from "@/application/domain/experience/reservation/controller/resolver";
 import { GqlReservationCreateInput, GqlReservationPaymentMethod } from "@/types/graphql";
 
 describe("Reservation Integration Tests", () => {

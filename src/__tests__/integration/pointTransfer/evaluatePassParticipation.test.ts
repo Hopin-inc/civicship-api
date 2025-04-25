@@ -12,7 +12,7 @@ import {
   TransactionReason,
   WalletType,
 } from "@prisma/client";
-import evaluationResolver from "@/application/domain/evaluation/controller/resolver";
+import evaluationResolver from "@/application/domain/experience/evaluation/controller/resolver";
 
 describe("Point Reward Tests", () => {
   const testSetup = {

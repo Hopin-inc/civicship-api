@@ -1,8 +1,8 @@
-import MasterService from "@/application/domain/master/service";
-import MasterRepository from "@/application/domain/master/data/repository";
+import MasterService from "@/application/domain/location/master/service";
+import MasterRepository from "@/application/domain/location/master/data/repository";
 import { NotFoundError } from "@/errors/graphql";
 
-jest.mock("@/application/domain/master/data/repository");
+jest.mock("@/application/domain/location/master/data/repository");
 
 describe("MasterService", () => {
   describe("checkIfCityExists", () => {

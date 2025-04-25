@@ -1,16 +1,16 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
-import { communityInclude } from "@/application/domain/community/data/type";
-import { walletInclude } from "@/application/domain/wallet/data/type";
+import { communityInclude } from "@/application/domain/account/community/data/type";
+import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
-import { utilityInclude } from "@/application/domain/utility/data/type";
-import { placeInclude } from "@/application/domain/place/data/type";
-import { reservationInclude } from "@/application/domain/reservation/data/type";
-import { participationInclude } from "@/application/domain/participation/data/type";
-import { userInclude } from "@/application/domain/user/data/type";
-import { ticketIssuerInclude } from "@/application/domain/ticketClaimLink/issuer/data/type";
-import { ticketClaimLinkInclude } from "@/application/domain/ticketClaimLink/data/type";
+import { utilityInclude } from "@/application/domain/reward/utility/data/type";
+import { placeInclude } from "@/application/domain/location/place/data/type";
+import { reservationInclude } from "@/application/domain/experience/reservation/data/type";
+import { participationInclude } from "@/application/domain/experience/participation/data/type";
+import { userInclude } from "@/application/domain/account/user/data/type";
+import { ticketIssuerInclude } from "@/application/domain/reward/ticketIssuer/data/type";
+import { ticketClaimLinkInclude } from "@/application/domain/reward/ticketClaimLink/data/type";
 
 export default class TestDataSourceHelper {
   private static db = prismaClient;

@@ -1,10 +1,10 @@
-import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/opportunitySlot/data/type";
+import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/experience/opportunitySlot/data/type";
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
 import "dayjs/locale/ja";
 import { lineClient } from "@/infrastructure/libs/line";
 import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/cancelOpportunitySlotMessage";
-import { PrismaReservation } from "@/application/domain/reservation/data/type";
+import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/reservation/reservationAcceptedMessage";
 import { IdentityPlatform } from "@prisma/client";
 import {
