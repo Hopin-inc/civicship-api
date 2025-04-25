@@ -6,11 +6,7 @@ import {
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import TransactionConverter, {
-  GiveOnboardingPointParams,
-  PurchaseTicketParams,
-  RefundTicketParams,
-} from "@/application/domain/transaction/data/converter";
+import TransactionConverter from "@/application/domain/transaction/data/converter";
 
 export default class TransactionService {
   static async fetchTransactions(
@@ -63,33 +59,20 @@ export default class TransactionService {
     return transaction;
   }
 
-  static async giveOnboardingPoint(
-    ctx: IContext,
-    params: GiveOnboardingPointParams,
-    tx: Prisma.TransactionClient,
-  ) {
-    const data = TransactionConverter.giveOnboardingPoint(params);
-
-    const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
-    return res;
-  }
-
   static async giveRewardPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     participationId: string,
-    pointsToEarn: number,
+    transferPoints: number,
     fromWalletId: string,
     toWalletId: string,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint({
+    const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint(
       fromWalletId,
-      fromPointChange: pointsToEarn,
       toWalletId,
-      toPointChange: pointsToEarn,
       participationId,
-    });
+      transferPoints,
+    );
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
@@ -99,9 +82,15 @@ export default class TransactionService {
   static async purchaseTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    params: PurchaseTicketParams,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.purchaseTicket(params);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.purchaseTicket(
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+    );
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);
@@ -111,9 +100,15 @@ export default class TransactionService {
   static async refundTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    params: RefundTicketParams,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.refundTicket(params);
+    const data: Prisma.TransactionCreateInput = TransactionConverter.refundTicket(
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+    );
 
     const res = await TransactionRepository.create(ctx, data, tx);
     await TransactionRepository.refreshCurrentPoints(ctx, tx);

@@ -63,71 +63,61 @@ export default class TransactionConverter {
     };
   }
 
-  static giveOnboardingPoint(params: GiveOnboardingPointParams): Prisma.TransactionCreateInput {
+  static giveOnboardingPoint(
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+  ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.ONBOARDING,
-      fromWallet: { connect: { id: params.fromWalletId } },
-      fromPointChange: params.fromPointChange,
-      toWallet: { connect: { id: params.toWalletId } },
-      toPointChange: params.toPointChange,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
     };
   }
 
-  static giveRewardPoint(params: GiveRewardPointParams): Prisma.TransactionCreateInput {
+  static giveRewardPoint(
+    fromWalletId: string,
+    toWalletId: string,
+    participationId: string,
+    transferPoints: number,
+  ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_REWARD,
-      fromWallet: { connect: { id: params.fromWalletId } },
-      fromPointChange: params.fromPointChange,
-      toWallet: { connect: { id: params.toWalletId } },
-      toPointChange: params.toPointChange,
-      participation: { connect: { id: params.participationId } },
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
+      participation: { connect: { id: participationId } },
     };
   }
 
-  static purchaseTicket(params: PurchaseTicketParams): Prisma.TransactionCreateInput {
+  static purchaseTicket(
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+  ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.TICKET_PURCHASED,
-      fromWallet: { connect: { id: params.fromWalletId } },
-      fromPointChange: params.transferPoints,
-      toWallet: { connect: { id: params.toWalletId } },
-      toPointChange: params.transferPoints,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
     };
   }
 
-  static refundTicket(params: RefundTicketParams): Prisma.TransactionCreateInput {
+  static refundTicket(
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+  ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.TICKET_REFUNDED,
-      fromWallet: { connect: { id: params.fromWalletId } },
-      fromPointChange: params.transferPoints,
-      toWallet: { connect: { id: params.toWalletId } },
-      toPointChange: params.transferPoints,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
     };
   }
 }
-
-export type GiveOnboardingPointParams = {
-  fromWalletId: string;
-  toWalletId: string;
-  fromPointChange: number;
-  toPointChange: number;
-};
-
-export type GiveRewardPointParams = {
-  fromWalletId: string;
-  toWalletId: string;
-  fromPointChange: number;
-  toPointChange: number;
-  participationId: string;
-};
-
-export type PurchaseTicketParams = {
-  fromWalletId: string;
-  toWalletId: string;
-  transferPoints: number;
-};
-
-export type RefundTicketParams = {
-  fromWalletId: string;
-  toWalletId: string;
-  transferPoints: number;
-};

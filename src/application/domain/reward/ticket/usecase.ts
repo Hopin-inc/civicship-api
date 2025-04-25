@@ -98,11 +98,13 @@ export default class TicketUseCase {
         transferPoints,
         tx,
       );
-      await TransactionService.purchaseTicket(ctx, tx, {
-        fromWalletId: claimerWalletId,
-        toWalletId: ownerWalletId,
+      await TransactionService.purchaseTicket(
+        ctx,
+        tx,
+        claimerWalletId,
+        ownerWalletId,
         transferPoints,
-      });
+      );
 
       await TicketClaimLinkService.markAsClaimed(ctx, ticketClaimLinkId, qtyToBeIssued, tx);
       return await TicketService.claimTicketsByIssuerId(
@@ -128,11 +130,13 @@ export default class TicketUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await WalletValidator.validateTransfer(input.pointsRequired, memberWallet, communityWallet);
 
-      const transaction = await TransactionService.purchaseTicket(ctx, tx, {
-        fromWalletId: memberWallet.id,
-        toWalletId: communityWallet.id,
-        transferPoints: input.pointsRequired,
-      });
+      const transaction = await TransactionService.purchaseTicket(
+        ctx,
+        tx,
+        memberWallet.id,
+        communityWallet.id,
+        input.pointsRequired,
+      );
 
       const result = await TicketService.purchaseTicket(
         ctx,
@@ -163,11 +167,13 @@ export default class TicketUseCase {
     return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await WalletValidator.validateTransfer(input.pointsRequired, communityWallet, memberWallet);
 
-      const transaction = await TransactionService.refundTicket(ctx, tx, {
-        fromWalletId: memberWallet.id,
-        toWalletId: communityWallet.id,
-        transferPoints: input.pointsRequired,
-      });
+      const transaction = await TransactionService.refundTicket(
+        ctx,
+        tx,
+        memberWallet.id,
+        communityWallet.id,
+        input.pointsRequired,
+      );
 
       const result = await TicketService.refundTicket(ctx, id, transaction.id, tx);
       return TicketPresenter.refund(result);

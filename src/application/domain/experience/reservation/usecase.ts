@@ -311,22 +311,24 @@ async function refundUtilityTickets(
   tx: Prisma.TransactionClient,
 ): Promise<void> {
   const sample = tickets[0];
-  const totalPoints = sample.utility.pointsRequired * tickets.length;
+  const transferPoints = sample.utility.pointsRequired * tickets.length;
 
   const { fromWalletId, toWalletId } = await WalletValidator.validateCommunityMemberTransfer(
     ctx,
     tx,
     sample.utility.communityId,
     currentUserId,
-    totalPoints,
+    transferPoints,
     TransactionReason.TICKET_REFUNDED,
   );
 
-  const transaction = await TransactionService.refundTicket(ctx, tx, {
+  const transaction = await TransactionService.refundTicket(
+    ctx,
+    tx,
     fromWalletId,
     toWalletId,
-    transferPoints: totalPoints,
-  });
+    transferPoints,
+  );
 
   await TicketService.cancelReservedTicketsIfAvailable(ctx, tickets, currentUserId, tx);
   await TicketService.refundTickets(ctx, tickets, currentUserId, transaction.id, tx);
