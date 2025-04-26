@@ -1,4 +1,5 @@
 import { Storage } from '@google-cloud/storage';
+import logger from "@/infrastructure/logging";
 
 const base64Encoded = process.env.GCS_SERVICE_ACCOUNT_BASE64;
 const credentials = base64Encoded
@@ -27,7 +28,7 @@ export async function generateSignedUrl(fileName: string, folderPath?: string, b
       .getSignedUrl(options);
     return url;
   } catch (e) {
-    console.warn(e);
+    logger.warn(e);
     return "";
   }
 }

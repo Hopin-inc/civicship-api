@@ -2,6 +2,7 @@ import { PrismaClient, SysRole } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { AuthorizationError } from "@/errors/graphql";
+import logger from "@/infrastructure/logging";
 
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
@@ -15,10 +16,10 @@ export const prismaClient = new PrismaClient({
   ],
 });
 prismaClient.$on("query", async ({ query, params }) => {
-  console.info("Prisma: Query issued.", { query, params });
+  logger.debug("Prisma: Query issued.", { query, params });
 });
 prismaClient.$on("error", async ({ message, target }) => {
-  console.error("Prisma: Error occurred.", { message, target });
+  logger.error("Prisma: Error occurred.", { message, target });
 });
 
 export class PrismaClientIssuer {

@@ -22,7 +22,7 @@ const NUM_RESERVATIONS_PER_SLOT = 1;
 const NUM_TRANSACTIONS = 10;
 
 export async function seedUsecase() {
-  console.log("🔥 Resetting DB...");
+  console.info("🔥 Resetting DB...");
   await prismaClient.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(`
       TRUNCATE TABLE 
@@ -52,25 +52,25 @@ export async function seedUsecase() {
     `);
   });
 
-  console.log("🧱 Creating base User, Community, Wallet, Membership...");
+  console.info("🧱 Creating base User, Community, Wallet, Membership...");
   const { users, community, wallets } = await createBaseEntitiesForUsers();
 
-  console.log("📍 Creating Places...");
+  console.info("📍 Creating Places...");
   const places = await createPlaces(community);
 
-  console.log("🎫 Creating Utilities & Tickets...");
+  console.info("🎫 Creating Utilities & Tickets...");
   await createUtilitiesAndTickets(users, community, wallets);
 
-  console.log("📣 Creating Opportunities...");
+  console.info("📣 Creating Opportunities...");
   const opportunities = await createOpportunities(users, community, places);
 
-  console.log("🧩 Creating Slots, Reservations, Participations, Evaluations, and Articles...");
+  console.info("🧩 Creating Slots, Reservations, Participations, Evaluations, and Articles...");
   await createNestedEntities(users, community, opportunities);
 
-  console.log("💸 Creating Transactions...");
+  console.info("💸 Creating Transactions...");
   await createTransactions(wallets);
 
-  console.log("🎉 All seeding steps completed!");
+  console.info("🎉 All seeding steps completed!");
 }
 
 // STEP 1
