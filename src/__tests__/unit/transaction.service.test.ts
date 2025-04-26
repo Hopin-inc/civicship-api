@@ -4,8 +4,24 @@ import TransactionConverter from "@/application/domain/transaction/data/converte
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 
-jest.mock("@/application/domain/transaction/data/converter");
-jest.mock("@/application/domain/transaction/data/repository");
+jest.mock("@/application/domain/transaction/data/converter", () => ({
+  __esModule: true,
+  default: {
+    issueCommunityPoint: jest.fn(),
+    grantCommunityPoint: jest.fn(),
+    donateSelfPoint: jest.fn(),
+    giveRewardPoint: jest.fn(),
+    purchaseTicket: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/transaction/data/repository", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    refreshCurrentPoints: jest.fn(),
+  },
+}));
 
 describe("TransactionService", () => {
   const ctx = {} as IContext;

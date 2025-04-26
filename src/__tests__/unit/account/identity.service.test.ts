@@ -4,11 +4,23 @@ import IdentityService from "@/application/domain/account/user/identity/service"
 import IdentityRepository from "@/application/domain/account/user/identity/data/repository";
 import { auth } from "@/infrastructure/libs/firebase";
 
-jest.mock("@/infrastructure/libs/firebase", () => ({
-  auth: {
-    deleteUser: jest.fn(),
-  },
-}));
+jest.mock("@/infrastructure/libs/firebase", () => {
+  const mockDeleteUser = jest.fn();
+  const mockAuthForTenant = jest.fn(() => ({
+    deleteUser: mockDeleteUser,
+  }));
+  const mockTenantManager = jest.fn(() => ({
+    authForTenant: mockAuthForTenant,
+  }));
+
+  return {
+    auth: {
+      tenantManager: mockTenantManager,
+    },
+    __esModule: true,
+  };
+});
+
 jest.mock("@/application/domain/account/user/data/repository");
 jest.mock("@/application/domain/account/user/identity/data/repository");
 
@@ -28,7 +40,12 @@ describe("IdentityService", () => {
   const TEST_IDENTITY = {
     userId: TEST_USER_ID,
     uid: "test-uid",
+    tenantId: "test-tenant-id",
     platform: IdentityPlatform.LINE,
+  };
+
+  const mockTenantedAuth = {
+    deleteUser: jest.fn(),
   };
 
   const mockFunctions = {
@@ -41,7 +58,7 @@ describe("IdentityService", () => {
     deleteWithIdentity: (result: typeof TEST_USER) =>
       (UserRepository.deleteWithIdentity as jest.Mock).mockResolvedValue(result),
 
-    deleteFirebaseUser: () => (auth.deleteUser as jest.Mock).mockResolvedValue(undefined),
+    deleteFirebaseUser: () => mockTenantedAuth.deleteUser.mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -50,6 +67,8 @@ describe("IdentityService", () => {
     mockFunctions.findIdentity(TEST_IDENTITY);
     mockFunctions.deleteWithIdentity(TEST_USER);
     mockFunctions.deleteFirebaseUser();
+    // tenantManager → authForTenant のモック構成をセット
+    (auth.tenantManager().authForTenant as jest.Mock).mockReturnValue(mockTenantedAuth);
   });
 
   describe("createUserAndIdentity", () => {
@@ -108,18 +127,19 @@ describe("IdentityService", () => {
 
   describe("deleteFirebaseAuthUser", () => {
     it("should delete the Firebase auth user successfully", async () => {
-      await IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid);
+      await IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId);
 
-      expect(auth.deleteUser).toHaveBeenCalledWith(TEST_IDENTITY.uid);
+      expect(auth.tenantManager().authForTenant).toHaveBeenCalledWith(TEST_IDENTITY.tenantId);
+      expect(mockTenantedAuth.deleteUser).toHaveBeenCalledWith(TEST_IDENTITY.uid);
     });
 
     it("should throw an error when Firebase user deletion fails", async () => {
       const error = new Error("Firebase user deletion failed");
-      (auth.deleteUser as jest.Mock).mockRejectedValue(error);
+      mockTenantedAuth.deleteUser.mockRejectedValue(error);
 
-      await expect(IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid)).rejects.toThrow(
-        "Firebase user deletion failed",
-      );
+      await expect(
+        IdentityService.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId),
+      ).rejects.toThrow("Firebase user deletion failed");
     });
   });
 });

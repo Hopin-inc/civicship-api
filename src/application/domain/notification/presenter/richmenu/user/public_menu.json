@@ -4,22 +4,9 @@
     "height": 1686
   },
   "selected": true,
-  "name": "NEO四国88 ユーザーメニュー",
+  "name": "ユーザーメニュー",
   "chatBarText": "メニューを開く",
   "areas": [
-    {
-      "bounds": {
-        "x": 95,
-        "y": 146,
-        "width": 980,
-        "height": 318
-      },
-      "action": {
-        "type": "richmenuswitch",
-        "richMenuAliasId": "richmenu-alias-b",
-        "data": "richmenu-changed-to-b"
-      }
-    },
     {
       "bounds": {
         "x": 0,

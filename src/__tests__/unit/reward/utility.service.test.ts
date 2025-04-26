@@ -5,8 +5,25 @@ import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/reward/utility/data/converter");
-jest.mock("@/application/domain/reward/utility/data/repository");
+jest.mock("@/application/domain/reward/utility/data/converter", () => ({
+  __esModule: true,
+  default: {
+    findAccessible: jest.fn(),
+    create: jest.fn(),
+    updateInfo: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/reward/utility/data/repository", () => ({
+  __esModule: true,
+  default: {
+    findAccessible: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
 
 describe("UtilityService", () => {
   const ctx = {} as IContext;

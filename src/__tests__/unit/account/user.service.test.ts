@@ -5,7 +5,14 @@ import { GqlQueryUsersArgs, GqlSortDirection } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/account/user/data/repository");
+jest.mock("@/application/domain/account/user/data/repository", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    query: jest.fn(),
+    updateProfile: jest.fn(),
+  },
+}));
 
 describe("UserService", () => {
   const TEST_USER_ID = "test-user";

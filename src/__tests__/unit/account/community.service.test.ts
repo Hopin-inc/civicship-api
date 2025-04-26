@@ -5,8 +5,23 @@ import CommunityService from "@/application/domain/account/community/service";
 import { NotFoundError } from "@/errors/graphql";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
 
-jest.mock("@/application/domain/account/community/data/repository");
-jest.mock("@/application/domain/account/community/data/converter");
+jest.mock("@/application/domain/account/community/data/repository", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    find: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/account/community/data/converter", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    update: jest.fn(),
+  },
+}));
 
 describe("CommunityService", () => {
   const mockCtx: IContext = {};

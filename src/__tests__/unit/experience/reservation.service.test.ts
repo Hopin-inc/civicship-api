@@ -11,9 +11,26 @@ import {
 import { IContext } from "@/types/server";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 
-jest.mock("@/application/domain/experience/reservation/data/converter");
-jest.mock("@/application/domain/experience/reservation/data/repository");
-jest.mock("@/application/domain/utils");
+jest.mock("@/application/domain/experience/reservation/data/converter", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    setStatus: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/experience/reservation/data/repository", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    setStatus: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/utils", () => ({
+  __esModule: true,
+  getCurrentUserId: jest.fn(),
+}));
 
 describe("ReservationService", () => {
   const ctx = {} as IContext;

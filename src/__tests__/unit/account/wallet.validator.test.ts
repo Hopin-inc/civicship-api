@@ -5,8 +5,28 @@ import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 
-jest.mock("@/application/domain/account/wallet/data/repository");
-jest.mock("@/application/domain/account/wallet/data/converter");
+jest.mock("@/application/domain/account/wallet/data/repository", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    findFirstExistingMemberWallet: jest.fn(),
+    findCommunityWallet: jest.fn(),
+    query: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/account/wallet/data/converter", () => ({
+  __esModule: true,
+  default: {
+    filter: jest.fn(),
+    sort: jest.fn(),
+    createCommunityWallet: jest.fn(),
+    createMemberWallet: jest.fn(),
+  },
+}));
 
 describe("WalletValidator", () => {
   const mockCtx = {} as IContext;
