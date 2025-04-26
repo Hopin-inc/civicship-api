@@ -1,6 +1,6 @@
 import express from "express";
 import { lineClient, lineMiddleware } from "@/infrastructure/libs/line";
-import { LIFFAuthUseCase, LIFFLoginRequest } from "@/application/domain/auth/liff/usercase";
+import { LIFFAuthUseCase, LIFFLoginRequest } from "@/application/domain/account/auth/liff/usercase";
 import logger from "@/infrastructure/logging";
 
 const router = express();

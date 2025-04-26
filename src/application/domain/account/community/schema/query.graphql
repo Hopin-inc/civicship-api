@@ -1,0 +1,39 @@
+# ------------------------------
+# Community Query Definitions
+# ------------------------------
+extend type Query {
+    communities(
+        filter: CommunityFilterInput
+        sort: CommunitySortInput
+        cursor: String
+        first: Int
+    ): CommunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    community(id: ID!): Community
+}
+
+# ------------------------------
+# Community Connection Type Definitions
+# ------------------------------
+type CommunitiesConnection {
+    edges: [CommunityEdge!]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type CommunityEdge implements Edge {
+    cursor: String!
+    node: Community
+}
+
+# ------------------------------
+# Community Query Input Definitions
+# ------------------------------
+input CommunityFilterInput {
+    keyword: String
+    placeIds: [ID!]
+    cityCodes: [ID!]
+}
+
+input CommunitySortInput {
+    createdAt: SortDirection
+}

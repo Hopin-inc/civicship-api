@@ -39,11 +39,15 @@ async function startServer() {
     });
     res.status(500).json({ error: "Internal Server Error" });
   });
-  
+
   app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
   server.listen(port, () => {
-    logger.info(`🚀 Server ready at port ${port}`);
+    const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
+    const host = "localhost";
+    const url = `${protocol}://${host}:${port}/graphql`;
+
+    logger.info(`🚀 Server ready at ${url}`);
   });
 }
 

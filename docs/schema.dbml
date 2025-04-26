@@ -107,6 +107,7 @@ Table t_users {
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
+  ticketIssuedByMe t_ticket_issuers [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
   reservationsAppliedByMe t_reservations [not null]
@@ -330,19 +331,46 @@ Table t_utilities {
   communityId String [not null]
   community t_communities [not null]
   requiredForOpportunities t_opportunities [not null]
+  ticketIssuer t_ticket_issuers [not null]
   tickets t_tickets [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
 
+Table t_ticket_issuers {
+  id String [pk]
+  qtyToBeIssued Int [not null, default: 1, note: 'Maximum number of tickets claimable from this link']
+  utilityId String [not null]
+  utility t_utilities [not null]
+  ownerId String [not null]
+  owner t_users [not null]
+  claimLinkId String [unique]
+  claimLink t_ticket_claim_links
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_ticket_claim_links {
+  id String [pk]
+  status ClaimLinkStatus [not null, default: 'ISSUED']
+  qty Int [not null, default: 1, note: 'Max number of tickets a user can claim using this link']
+  issuerId String [unique, not null]
+  issuer t_ticket_issuers [not null]
+  tickets t_tickets [not null]
+  claimedAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+}
+
 Table t_tickets {
   id String [pk]
   status TicketStatus [not null, default: 'AVAILABLE']
-  reason TicketStatusReason [not null, default: 'PURCHASED']
+  reason TicketStatusReason [not null, default: 'GIFTED']
   walletId String [not null]
   wallet t_wallets [not null]
   utilityId String [not null]
   utility t_utilities [not null]
+  claimLinkId String
+  claimLink t_ticket_claim_links
   ticketStatusHistories t_ticket_status_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -589,17 +617,24 @@ Enum EvaluationStatus {
   FAILED
 }
 
+Enum ClaimLinkStatus {
+  ISSUED
+  CLAIMED
+  EXPIRED
+}
+
 Enum TicketStatus {
   AVAILABLE
   DISABLED
 }
 
 Enum TicketStatusReason {
+  GIFTED
   PURCHASED
-  CANCELED
-  RESERVED
-  USED
   REFUNDED
+  RESERVED
+  CANCELED
+  USED
   EXPIRED
 }
 
@@ -679,9 +714,17 @@ Ref: t_evaluation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
 
+Ref: t_ticket_issuers.utilityId > t_utilities.id
+
+Ref: t_ticket_issuers.ownerId > t_users.id
+
+Ref: t_ticket_claim_links.issuerId - t_ticket_issuers.id
+
 Ref: t_tickets.walletId > t_wallets.id [delete: Restrict]
 
 Ref: t_tickets.utilityId > t_utilities.id [delete: Restrict]
+
+Ref: t_tickets.claimLinkId > t_ticket_claim_links.id
 
 Ref: t_ticket_status_histories.ticketId > t_tickets.id [delete: Restrict]
 

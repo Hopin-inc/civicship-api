@@ -35,6 +35,8 @@ generates:
         Article: "@prisma/client/index.d#Article"
         Utility: "@prisma/client/index.d#Utility"
         Ticket: "@prisma/client/index.d#Ticket"
+        TicketIssuer: "@prisma/client/index.d#TicketIssuer"
+        TicketClaimLink: "@prisma/client/index.d#TicketClaimLink"
         TicketStatusHistory: "@prisma/client/index.d#TicketStatusHistory"
         Transaction: "@prisma/client/index.d#Transaction"
         City: "@prisma/client/index.d#City"

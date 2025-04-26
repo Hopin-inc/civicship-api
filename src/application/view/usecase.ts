@@ -1,16 +1,16 @@
 import { GqlPortfolio, GqlPortfoliosConnection, GqlUserPortfoliosArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
-import ParticipationService from "@/application/domain/participation/service";
+import ParticipationService from "@/application/domain/experience/participation/service";
 import ViewConverter from "@/application/view/data/converter";
 import ViewPresenter from "@/application/view/presenter";
 import {
   participationForPortfolioInclude,
   PrismaParticipationForPortfolio,
-} from "@/application/domain/participation/data/type";
+} from "@/application/domain/experience/participation/data/type";
 import { ValidParticipationForPortfolio } from "@/application/view/service";
-import ArticleService from "@/application/domain/article/service";
-import { articleForPortfolioInclude } from "@/application/domain/article/data/type";
+import ArticleService from "@/application/domain/content/article/service";
+import { articleForPortfolioInclude } from "@/application/domain/content/article/data/type";
 
 export default class ViewUseCase {
   static async visitorBrowsePortfolios(

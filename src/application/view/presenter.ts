@@ -1,8 +1,8 @@
 import { GqlPortfolio, GqlPortfoliosConnection, GqlPortfolioSource } from "@/types/graphql";
-import PlacePresenter from "@/application/domain/place/presenter";
-import UserPresenter from "@/application/domain/user/presenter";
+import PlacePresenter from "@/application/domain/location/place/presenter";
+import UserPresenter from "@/application/domain/account/user/presenter";
 import { ValidParticipationForPortfolio } from "@/application/view/service";
-import { PrismaArticleForPortfolio } from "@/application/domain/article/data/type";
+import { PrismaArticleForPortfolio } from "@/application/domain/content/article/data/type";
 
 export default class ViewPresenter {
   static query(r: GqlPortfolio[], hasNextPage: boolean): GqlPortfoliosConnection {
@@ -25,7 +25,7 @@ export default class ViewPresenter {
     const { reservation, images } = p;
 
     if (!reservation) {
-      throw new Error('Reservation is required for portfolio');
+      throw new Error("Reservation is required for portfolio");
     }
 
     const { opportunity, startsAt } = reservation.opportunitySlot;
@@ -42,9 +42,9 @@ export default class ViewPresenter {
       thumbnailUrl: images?.[0]?.url ?? opportunity.images[0].url,
       participants: reservation?.participations
         ? reservation.participations
-          .map((p) => p.user)
-          .filter((user): user is NonNullable<typeof user> => user !== null)
-          .map((user) => UserPresenter.get(user))
+            .map((p) => p.user)
+            .filter((user): user is NonNullable<typeof user> => user !== null)
+            .map((user) => UserPresenter.get(user))
         : [],
     };
   }
@@ -68,8 +68,8 @@ export default class ViewPresenter {
       thumbnailUrl,
       participants: participations
         ? participations
-          .filter((user): user is NonNullable<typeof user> => user !== null)
-          .map((user) => UserPresenter.get(user))
+            .filter((user): user is NonNullable<typeof user> => user !== null)
+            .map((user) => UserPresenter.get(user))
         : [],
     };
   }

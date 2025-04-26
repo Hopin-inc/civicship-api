@@ -18,6 +18,8 @@ import type { ParticipationStatusHistory } from "@prisma/client";
 import type { Evaluation } from "@prisma/client";
 import type { EvaluationHistory } from "@prisma/client";
 import type { Utility } from "@prisma/client";
+import type { TicketIssuer } from "@prisma/client";
+import type { TicketClaimLink } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
@@ -44,6 +46,7 @@ import type { Source } from "@prisma/client";
 import type { ParticipationStatus } from "@prisma/client";
 import type { ParticipationStatusReason } from "@prisma/client";
 import type { EvaluationStatus } from "@prisma/client";
+import type { ClaimLinkStatus } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
@@ -196,6 +199,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "wallets",
                 type: "Wallet",
                 relationName: "UserToWallet"
+            }, {
+                name: "ticketIssuedByMe",
+                type: "TicketIssuer",
+                relationName: "TicketIssuerToUser"
             }, {
                 name: "ticketStatusChangedByMe",
                 type: "TicketStatusHistory",
@@ -503,9 +510,39 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Opportunity",
                 relationName: "t_required_opportunities_on_utilities"
             }, {
+                name: "ticketIssuer",
+                type: "TicketIssuer",
+                relationName: "TicketIssuerToUtility"
+            }, {
                 name: "tickets",
                 type: "Ticket",
                 relationName: "TicketToUtility"
+            }]
+    }, {
+        name: "TicketIssuer",
+        fields: [{
+                name: "utility",
+                type: "Utility",
+                relationName: "TicketIssuerToUtility"
+            }, {
+                name: "owner",
+                type: "User",
+                relationName: "TicketIssuerToUser"
+            }, {
+                name: "claimLink",
+                type: "TicketClaimLink",
+                relationName: "TicketClaimLinkToTicketIssuer"
+            }]
+    }, {
+        name: "TicketClaimLink",
+        fields: [{
+                name: "issuer",
+                type: "TicketIssuer",
+                relationName: "TicketClaimLinkToTicketIssuer"
+            }, {
+                name: "tickets",
+                type: "Ticket",
+                relationName: "TicketToTicketClaimLink"
             }]
     }, {
         name: "Ticket",
@@ -517,6 +554,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "utility",
                 type: "Utility",
                 relationName: "TicketToUtility"
+            }, {
+                name: "claimLink",
+                type: "TicketClaimLink",
+                relationName: "TicketToTicketClaimLink"
             }, {
                 name: "ticketStatusHistories",
                 type: "TicketStatusHistory",
@@ -1475,6 +1516,7 @@ type UserFactoryDefineInput = {
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
+    ticketIssuedByMe?: Prisma.TicketIssuerCreateNestedManyWithoutOwnerInput;
     ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
     opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
     reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
@@ -3952,6 +3994,7 @@ type UtilityFactoryDefineInput = {
     images?: Prisma.ImageCreateNestedManyWithoutUtilitiesInput;
     community: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput;
     requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
+    ticketIssuer?: Prisma.TicketIssuerCreateNestedManyWithoutUtilityInput;
     tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
 };
 
@@ -4093,6 +4136,335 @@ export const defineUtilityFactory = (<TOptions extends UtilityFactoryDefineOptio
 
 defineUtilityFactory.withTransientFields = defaultTransientFieldValues => options => defineUtilityFactoryInternal(options, defaultTransientFieldValues);
 
+type TicketIssuerScalarOrEnumFields = {};
+
+type TicketIssuerutilityFactory = {
+    _factoryFor: "Utility";
+    build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput["create"]>;
+};
+
+type TicketIssuerownerFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutTicketIssuedByMeInput["create"]>;
+};
+
+type TicketIssuerclaimLinkFactory = {
+    _factoryFor: "TicketClaimLink";
+    build: () => PromiseLike<Prisma.TicketClaimLinkCreateNestedOneWithoutIssuerInput["create"]>;
+};
+
+type TicketIssuerFactoryDefineInput = {
+    id?: string;
+    qtyToBeIssued?: number;
+    claimLinkId?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    utility: TicketIssuerutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput;
+    owner: TicketIssuerownerFactory | Prisma.UserCreateNestedOneWithoutTicketIssuedByMeInput;
+    claimLink?: TicketIssuerclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutIssuerInput;
+};
+
+type TicketIssuerTransientFields = Record<string, unknown> & Partial<Record<keyof TicketIssuerFactoryDefineInput, never>>;
+
+type TicketIssuerFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TicketIssuerFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TicketIssuer, Prisma.TicketIssuerCreateInput, TTransients>;
+
+type TicketIssuerFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<TicketIssuerFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: TicketIssuerFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TicketIssuer, Prisma.TicketIssuerCreateInput, TTransients>;
+
+function isTicketIssuerutilityFactory(x: TicketIssuerutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput | undefined): x is TicketIssuerutilityFactory {
+    return (x as any)?._factoryFor === "Utility";
+}
+
+function isTicketIssuerownerFactory(x: TicketIssuerownerFactory | Prisma.UserCreateNestedOneWithoutTicketIssuedByMeInput | undefined): x is TicketIssuerownerFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+function isTicketIssuerclaimLinkFactory(x: TicketIssuerclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutIssuerInput | undefined): x is TicketIssuerclaimLinkFactory {
+    return (x as any)?._factoryFor === "TicketClaimLink";
+}
+
+type TicketIssuerTraitKeys<TOptions extends TicketIssuerFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TicketIssuerFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TicketIssuer";
+    build(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Prisma.TicketIssuerCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Prisma.TicketIssuerCreateInput>;
+    buildList(list: readonly Partial<Prisma.TicketIssuerCreateInput & TTransients>[]): PromiseLike<Prisma.TicketIssuerCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Prisma.TicketIssuerCreateInput[]>;
+    pickForConnect(inputData: TicketIssuer): Pick<TicketIssuer, "id">;
+    create(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<TicketIssuer>;
+    createList(list: readonly Partial<Prisma.TicketIssuerCreateInput & TTransients>[]): PromiseLike<TicketIssuer[]>;
+    createList(count: number, item?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<TicketIssuer[]>;
+    createForConnect(inputData?: Partial<Prisma.TicketIssuerCreateInput & TTransients>): PromiseLike<Pick<TicketIssuer, "id">>;
+}
+
+export interface TicketIssuerFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TicketIssuerFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TicketIssuerFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTicketIssuerScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TicketIssuerScalarOrEnumFields {
+    return {};
+}
+
+function defineTicketIssuerFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TicketIssuerFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TicketIssuerFactoryInterface<TTransients, TicketIssuerTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TicketIssuerTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TicketIssuer", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TicketIssuerCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTicketIssuerScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TicketIssuerFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TicketIssuerFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                utility: isTicketIssuerutilityFactory(defaultData.utility) ? {
+                    create: await defaultData.utility.build()
+                } : defaultData.utility,
+                owner: isTicketIssuerownerFactory(defaultData.owner) ? {
+                    create: await defaultData.owner.build()
+                } : defaultData.owner,
+                claimLink: isTicketIssuerclaimLinkFactory(defaultData.claimLink) ? {
+                    create: await defaultData.claimLink.build()
+                } : defaultData.claimLink
+            } as Prisma.TicketIssuerCreateInput;
+            const data: Prisma.TicketIssuerCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketIssuerCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TicketIssuer) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.TicketIssuerCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().ticketIssuer.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketIssuerCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TicketIssuerCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TicketIssuer" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TicketIssuerTraitKeys<TOptions>, ...names: readonly TicketIssuerTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TicketIssuerFactoryBuilder {
+    <TOptions extends TicketIssuerFactoryDefineOptions>(options: TOptions): TicketIssuerFactoryInterface<{}, TicketIssuerTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TicketIssuerTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TicketIssuerFactoryDefineOptions<TTransients>>(options: TOptions) => TicketIssuerFactoryInterface<TTransients, TicketIssuerTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TicketIssuer} model.
+ *
+ * @param options
+ * @returns factory {@link TicketIssuerFactoryInterface}
+ */
+export const defineTicketIssuerFactory = (<TOptions extends TicketIssuerFactoryDefineOptions>(options: TOptions): TicketIssuerFactoryInterface<TOptions> => {
+    return defineTicketIssuerFactoryInternal(options, {});
+}) as TicketIssuerFactoryBuilder;
+
+defineTicketIssuerFactory.withTransientFields = defaultTransientFieldValues => options => defineTicketIssuerFactoryInternal(options, defaultTransientFieldValues);
+
+type TicketClaimLinkScalarOrEnumFields = {};
+
+type TicketClaimLinkissuerFactory = {
+    _factoryFor: "TicketIssuer";
+    build: () => PromiseLike<Prisma.TicketIssuerCreateNestedOneWithoutClaimLinkInput["create"]>;
+};
+
+type TicketClaimLinkFactoryDefineInput = {
+    id?: string;
+    status?: ClaimLinkStatus;
+    qty?: number;
+    claimedAt?: Date | null;
+    createdAt?: Date;
+    issuer: TicketClaimLinkissuerFactory | Prisma.TicketIssuerCreateNestedOneWithoutClaimLinkInput;
+    tickets?: Prisma.TicketCreateNestedManyWithoutClaimLinkInput;
+};
+
+type TicketClaimLinkTransientFields = Record<string, unknown> & Partial<Record<keyof TicketClaimLinkFactoryDefineInput, never>>;
+
+type TicketClaimLinkFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<TicketClaimLinkFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<TicketClaimLink, Prisma.TicketClaimLinkCreateInput, TTransients>;
+
+type TicketClaimLinkFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<TicketClaimLinkFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: TicketClaimLinkFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<TicketClaimLink, Prisma.TicketClaimLinkCreateInput, TTransients>;
+
+function isTicketClaimLinkissuerFactory(x: TicketClaimLinkissuerFactory | Prisma.TicketIssuerCreateNestedOneWithoutClaimLinkInput | undefined): x is TicketClaimLinkissuerFactory {
+    return (x as any)?._factoryFor === "TicketIssuer";
+}
+
+type TicketClaimLinkTraitKeys<TOptions extends TicketClaimLinkFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface TicketClaimLinkFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "TicketClaimLink";
+    build(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Prisma.TicketClaimLinkCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Prisma.TicketClaimLinkCreateInput>;
+    buildList(list: readonly Partial<Prisma.TicketClaimLinkCreateInput & TTransients>[]): PromiseLike<Prisma.TicketClaimLinkCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Prisma.TicketClaimLinkCreateInput[]>;
+    pickForConnect(inputData: TicketClaimLink): Pick<TicketClaimLink, "id">;
+    create(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<TicketClaimLink>;
+    createList(list: readonly Partial<Prisma.TicketClaimLinkCreateInput & TTransients>[]): PromiseLike<TicketClaimLink[]>;
+    createList(count: number, item?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<TicketClaimLink[]>;
+    createForConnect(inputData?: Partial<Prisma.TicketClaimLinkCreateInput & TTransients>): PromiseLike<Pick<TicketClaimLink, "id">>;
+}
+
+export interface TicketClaimLinkFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends TicketClaimLinkFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): TicketClaimLinkFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateTicketClaimLinkScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): TicketClaimLinkScalarOrEnumFields {
+    return {};
+}
+
+function defineTicketClaimLinkFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends TicketClaimLinkFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): TicketClaimLinkFactoryInterface<TTransients, TicketClaimLinkTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly TicketClaimLinkTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("TicketClaimLink", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.TicketClaimLinkCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateTicketClaimLinkScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<TicketClaimLinkFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<TicketClaimLinkFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                issuer: isTicketClaimLinkissuerFactory(defaultData.issuer) ? {
+                    create: await defaultData.issuer.build()
+                } : defaultData.issuer
+            } as Prisma.TicketClaimLinkCreateInput;
+            const data: Prisma.TicketClaimLinkCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketClaimLinkCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: TicketClaimLink) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.TicketClaimLinkCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().ticketClaimLink.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.TicketClaimLinkCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.TicketClaimLinkCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "TicketClaimLink" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: TicketClaimLinkTraitKeys<TOptions>, ...names: readonly TicketClaimLinkTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface TicketClaimLinkFactoryBuilder {
+    <TOptions extends TicketClaimLinkFactoryDefineOptions>(options: TOptions): TicketClaimLinkFactoryInterface<{}, TicketClaimLinkTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends TicketClaimLinkTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends TicketClaimLinkFactoryDefineOptions<TTransients>>(options: TOptions) => TicketClaimLinkFactoryInterface<TTransients, TicketClaimLinkTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link TicketClaimLink} model.
+ *
+ * @param options
+ * @returns factory {@link TicketClaimLinkFactoryInterface}
+ */
+export const defineTicketClaimLinkFactory = (<TOptions extends TicketClaimLinkFactoryDefineOptions>(options: TOptions): TicketClaimLinkFactoryInterface<TOptions> => {
+    return defineTicketClaimLinkFactoryInternal(options, {});
+}) as TicketClaimLinkFactoryBuilder;
+
+defineTicketClaimLinkFactory.withTransientFields = defaultTransientFieldValues => options => defineTicketClaimLinkFactoryInternal(options, defaultTransientFieldValues);
+
 type TicketScalarOrEnumFields = {};
 
 type TicketwalletFactory = {
@@ -4105,6 +4477,11 @@ type TicketutilityFactory = {
     build: () => PromiseLike<Prisma.UtilityCreateNestedOneWithoutTicketsInput["create"]>;
 };
 
+type TicketclaimLinkFactory = {
+    _factoryFor: "TicketClaimLink";
+    build: () => PromiseLike<Prisma.TicketClaimLinkCreateNestedOneWithoutTicketsInput["create"]>;
+};
+
 type TicketFactoryDefineInput = {
     id?: string;
     status?: TicketStatus;
@@ -4113,6 +4490,7 @@ type TicketFactoryDefineInput = {
     updatedAt?: Date | null;
     wallet: TicketwalletFactory | Prisma.WalletCreateNestedOneWithoutTicketsInput;
     utility: TicketutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketsInput;
+    claimLink?: TicketclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutTicketsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutTicketInput;
 };
 
@@ -4135,6 +4513,10 @@ function isTicketwalletFactory(x: TicketwalletFactory | Prisma.WalletCreateNeste
 
 function isTicketutilityFactory(x: TicketutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketsInput | undefined): x is TicketutilityFactory {
     return (x as any)?._factoryFor === "Utility";
+}
+
+function isTicketclaimLinkFactory(x: TicketclaimLinkFactory | Prisma.TicketClaimLinkCreateNestedOneWithoutTicketsInput | undefined): x is TicketclaimLinkFactory {
+    return (x as any)?._factoryFor === "TicketClaimLink";
 }
 
 type TicketTraitKeys<TOptions extends TicketFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -4200,7 +4582,10 @@ function defineTicketFactoryInternal<TTransients extends Record<string, unknown>
                 } : defaultData.wallet,
                 utility: isTicketutilityFactory(defaultData.utility) ? {
                     create: await defaultData.utility.build()
-                } : defaultData.utility
+                } : defaultData.utility,
+                claimLink: isTicketclaimLinkFactory(defaultData.claimLink) ? {
+                    create: await defaultData.claimLink.build()
+                } : defaultData.claimLink
             } as Prisma.TicketCreateInput;
             const data: Prisma.TicketCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
