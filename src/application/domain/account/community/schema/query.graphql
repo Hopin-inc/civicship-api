@@ -15,7 +15,7 @@ extend type Query {
 # Community Connection Type Definitions
 # ------------------------------
 type CommunitiesConnection {
-    edges: [CommunityEdge]
+    edges: [CommunityEdge!]
     pageInfo: PageInfo!
     totalCount: Int!
 }

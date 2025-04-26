@@ -142,7 +142,7 @@ export const GqlClaimLinkStatus = {
 export type GqlClaimLinkStatus = typeof GqlClaimLinkStatus[keyof typeof GqlClaimLinkStatus];
 export type GqlCommunitiesConnection = {
   __typename?: 'CommunitiesConnection';
-  edges?: Maybe<Array<Maybe<GqlCommunityEdge>>>;
+  edges?: Maybe<Array<GqlCommunityEdge>>;
   pageInfo: GqlPageInfo;
   totalCount: Scalars['Int']['output'];
 };
@@ -156,11 +156,11 @@ export type GqlCommunity = {
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
   memberships?: Maybe<GqlMembershipsConnection>;
-  name: Scalars['String']['output'];
+  name?: Maybe<Scalars['String']['output']>;
   opportunities?: Maybe<GqlOpportunitiesConnection>;
   participations?: Maybe<GqlParticipationsConnection>;
   places?: Maybe<Array<GqlPlace>>;
-  pointName: Scalars['String']['output'];
+  pointName?: Maybe<Scalars['String']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   utilities?: Maybe<GqlUtilitiesConnection>;
   wallets?: Maybe<GqlWalletsConnection>;
@@ -2752,7 +2752,7 @@ export type GqlResolversTypes = ResolversObject<{
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: ResolverTypeWrapper<City>;
   ClaimLinkStatus: GqlClaimLinkStatus;
-  CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['CommunityEdge']>>> }>;
+  CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
   Community: ResolverTypeWrapper<Community>;
   CommunityCreateInput: GqlCommunityCreateInput;
   CommunityCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['CommunityCreatePayload']>;
@@ -3020,7 +3020,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: City;
-  CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['CommunityEdge']>>> };
+  CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
   CommunityCreateInput: GqlCommunityCreateInput;
   CommunityCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['CommunityCreatePayload'];
@@ -3316,7 +3316,7 @@ export type GqlCityResolvers<ContextType = any, ParentType extends GqlResolversP
 }>;
 
 export type GqlCommunitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CommunitiesConnection'] = GqlResolversParentTypes['CommunitiesConnection']> = ResolversObject<{
-  edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['CommunityEdge']>>>, ParentType, ContextType>;
+  edges?: Resolver<Maybe<Array<GqlResolversTypes['CommunityEdge']>>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3330,11 +3330,11 @@ export type GqlCommunityResolvers<ContextType = any, ParentType extends GqlResol
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   memberships?: Resolver<Maybe<GqlResolversTypes['MembershipsConnection']>, ParentType, ContextType, Partial<GqlCommunityMembershipsArgs>>;
-  name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   opportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlCommunityOpportunitiesArgs>>;
   participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlCommunityParticipationsArgs>>;
   places?: Resolver<Maybe<Array<GqlResolversTypes['Place']>>, ParentType, ContextType>;
-  pointName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  pointName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utilities?: Resolver<Maybe<GqlResolversTypes['UtilitiesConnection']>, ParentType, ContextType, Partial<GqlCommunityUtilitiesArgs>>;
   wallets?: Resolver<Maybe<GqlResolversTypes['WalletsConnection']>, ParentType, ContextType, Partial<GqlCommunityWalletsArgs>>;
