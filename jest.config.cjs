@@ -27,6 +27,7 @@ module.exports = {
     "/src/utils/fetch.ts",
     "/src/utils/misc.ts",
     "/src/types/",
+    "<rootDir>/dist/",
   ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
@@ -35,6 +36,7 @@ module.exports = {
     "<rootDir>/src/__tests__/helper/*.*",
     "<rootDir>/src/__tests__/utils.ts",
     "<rootDir>/src/__tests__/e2e/",
+    "<rootDir>/dist/",
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 };
