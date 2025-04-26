@@ -55,23 +55,6 @@ export default class TicketService {
     return Promise.all(dataList.map((data) => TicketRepository.create(ctx, data, tx)));
   }
 
-  static async purchaseManyTickets(
-    ctx: IContext,
-    walletId: string,
-    utilityId: string,
-    transactionId: string,
-    participationIds: string[],
-    tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicket[]> {
-    const currentUserId = getCurrentUserId(ctx);
-
-    const data: Prisma.TicketCreateInput[] = participationIds.map((participationId) =>
-      TicketConverter.purchase(currentUserId, walletId, utilityId, transactionId, participationId),
-    );
-
-    return Promise.all(data.map((d) => TicketRepository.create(ctx, d, tx)));
-  }
-
   static async reserveManyTickets(
     ctx: IContext,
     participationIds: string[],

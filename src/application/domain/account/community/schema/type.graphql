@@ -3,8 +3,8 @@
 # ------------------------------
 type Community {
     id: ID!
-    name: String!
-    pointName: String!
+    name: String
+    pointName: String
     image: String
     bio: String
     establishedAt: Datetime

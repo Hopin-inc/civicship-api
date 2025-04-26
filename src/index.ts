@@ -45,7 +45,7 @@ async function startServer() {
   server.listen(port, () => {
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
     const host = "localhost";
-    const url = `${protocol}://${host}:${port}`;
+    const url = `${protocol}://${host}:${port}/graphql`;
 
     logger.info(`🚀 Server ready at ${url}`);
   });
