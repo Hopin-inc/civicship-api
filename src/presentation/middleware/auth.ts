@@ -28,6 +28,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const decoded = await tenantedAuth.verifyIdToken(idToken);
   const uid = decoded.uid;
   const platform = decoded.platform;
+  console.log("decoded", decoded);
 
   const [currentUser, hasPermissions] = await Promise.all([
     issuer.internal(async (tx) =>
