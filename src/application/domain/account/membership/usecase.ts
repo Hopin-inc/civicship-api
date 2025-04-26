@@ -123,11 +123,15 @@ export default class MembershipUseCase {
   ): Promise<GqlMembershipWithdrawPayload> {
     const userId = getCurrentUserId(ctx);
     const { communityId } = input;
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await MembershipService.deleteMembership(ctx, tx, userId, communityId);
+
+    const membership = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const membership = await MembershipService.deleteMembership(ctx, tx, userId, communityId);
       await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
-      return MembershipPresenter.withdraw({ userId, communityId });
+      return membership;
     });
+
+    await NotificationService.switchRichMenuByRole(membership);
+    return MembershipPresenter.withdraw(membership);
   }
 
   static async ownerRemoveMember(
@@ -135,11 +139,15 @@ export default class MembershipUseCase {
     ctx: IContext,
   ): Promise<GqlMembershipRemovePayload> {
     const { userId, communityId } = input;
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await MembershipService.deleteMembership(ctx, tx, userId, communityId);
+
+    const membership = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const membership = await MembershipService.deleteMembership(ctx, tx, userId, communityId);
       await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
-      return MembershipPresenter.remove({ userId, communityId });
+      return membership;
     });
+
+    await NotificationService.switchRichMenuByRole(membership);
+    return MembershipPresenter.remove(membership);
   }
 
   static async ownerAssignOwner(

@@ -61,11 +61,8 @@ export default class MembershipPresenter {
     };
   }
 
-  static withdraw(membership: {
-    userId: string;
-    communityId: string;
-  }): GqlMembershipWithdrawSuccess {
-    const { userId, communityId } = membership;
+  static withdraw(r: PrismaMembership): GqlMembershipWithdrawSuccess {
+    const { userId, communityId } = r;
     return {
       __typename: "MembershipWithdrawSuccess",
       userId,
@@ -73,8 +70,8 @@ export default class MembershipPresenter {
     };
   }
 
-  static remove(membership: { userId: string; communityId: string }): GqlMembershipRemoveSuccess {
-    const { userId, communityId } = membership;
+  static remove(r: PrismaMembership): GqlMembershipRemoveSuccess {
+    const { userId, communityId } = r;
     return {
       __typename: "MembershipRemoveSuccess",
       userId,
