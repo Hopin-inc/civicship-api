@@ -6,7 +6,6 @@ import { userAuthInclude, userAuthSelect } from "@/application/domain/user/data/
 import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
-import logger from "@/infrastructure/logging";
 
 function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
   const idToken: string | undefined = req.headers["authorization"];
@@ -29,7 +28,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const decoded = await tenantedAuth.verifyIdToken(idToken);
   const uid = decoded.uid;
   const platform = decoded.platform;
-  logger.debug("decoded", decoded);
 
   const [currentUser, hasPermissions] = await Promise.all([
     issuer.internal(async (tx) =>

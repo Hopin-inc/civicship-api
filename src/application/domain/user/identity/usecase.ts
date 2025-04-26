@@ -22,6 +22,7 @@ export default class IdentityUseCase {
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
     const { data, image } = IdentityConverter.create(args);
+    console.debug({ ctx, data, image });
     const uploadedImage = image ? await ImageService.uploadPublicImage(image, "users") : undefined;
     const user = await IdentityService.createUserAndIdentity(
       {
