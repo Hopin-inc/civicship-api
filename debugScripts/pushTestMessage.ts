@@ -1,8 +1,8 @@
 import { lineClient } from "../src/infrastructure/libs/line";
-import { buildCancelOpportunitySlotMessage } from "../src/application/domain/notification/presenter/cancelOpportunitySlotMessage";
-import { buildReservationAppliedMessage } from "../src/application/domain/notification/presenter/reservation/reservationAppliedMessage";
-import { buildReservationAcceptedMessage } from "../src/application/domain/notification/presenter/reservation/reservationAcceptedMessage";
-import { buildReservationCanceledMessage } from "../src/application/domain/notification/presenter/reservation/reservationCanceledMessage";
+import { buildCancelOpportunitySlotMessage } from "../src/application/domain/notification/presenter/message/cancelOpportunitySlotMessage";
+import { buildReservationAppliedMessage } from "../src/application/domain/notification/presenter/message/applyReservationMessage";
+import { buildReservationAcceptedMessage } from "../src/application/domain/notification/presenter/message/acceptReservationMessage";
+import { buildReservationCanceledMessage } from "../src/application/domain/notification/presenter/message/cancelReservationMessage";
 import {
   DEFAULT_HOST_IMAGE_URL,
   DEFAULT_THUMBNAIL,

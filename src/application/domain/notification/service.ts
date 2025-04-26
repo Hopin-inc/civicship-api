@@ -3,12 +3,15 @@ import { IContext } from "@/types/server";
 import dayjs from "dayjs";
 import "dayjs/locale/ja";
 import { lineClient } from "@/infrastructure/libs/line";
-import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/cancelOpportunitySlotMessage";
+import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/cancelOpportunitySlotMessage";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
-import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/reservation/reservationAcceptedMessage";
-import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/reservation/reservationAppliedMessage";
-import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/reservation/reservationCanceledMessage";
+import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/message/acceptReservationMessage";
+import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/message/applyReservationMessage";
+import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/message/cancelReservationMessage";
 import { HTTPFetchError, messagingApi } from "@line/bot-sdk";
+import { IdentityPlatform, Role } from "@prisma/client";
+import { LINE_RICHMENU } from "@/application/domain/notification/presenter/richmenu/const";
+import { PrismaMembership } from "@/application/domain/account/membership/data/type";
 
 export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
@@ -131,6 +134,37 @@ export default class NotificationService {
     });
 
     await safePushMessage({ to: lineId, messages: [message] });
+  }
+
+  static async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
+    let lineUid = membership.user?.identities.find(
+      (identity) => identity.platform === IdentityPlatform.LINE,
+    )?.uid;
+
+    if (!lineUid) {
+      if (process.env.ENV === "LOCAL") {
+        lineUid = LOCAL_UID;
+      } else {
+        return;
+      }
+    }
+
+    const richMenuId =
+      membership.role === Role.OWNER || membership.role === Role.MANAGER
+        ? LINE_RICHMENU.ADMIN_MANAGE
+        : LINE_RICHMENU.PUBLIC;
+
+    try {
+      await lineClient.linkRichMenuIdToUser(lineUid, richMenuId);
+    } catch (error) {
+      if (error instanceof HTTPFetchError) {
+        console.error("Status:", error.status);
+        console.error("Message:", error.message);
+        console.error("Response Body:", error.body);
+      } else {
+        console.error("Unexpected Error:", error);
+      }
+    }
   }
 }
 
