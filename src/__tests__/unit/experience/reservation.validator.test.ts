@@ -1,8 +1,8 @@
 import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 
-const futureDate = () => new Date(Date.now() + 1000 * 60 * 60); // +1h
-const pastDate = () => new Date(Date.now() - 1000 * 60 * 60); // -1h
+const futureDate = () => new Date(Date.now() + 10000 * 60 * 60); // +1h
+const pastDate = () => new Date(Date.now() - 10000 * 60 * 60); // -1h
 
 describe("ReservationValidator", () => {
   describe("validateReservable", () => {

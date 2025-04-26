@@ -5,8 +5,27 @@ import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 
-jest.mock("@/application/domain/account/wallet/data/repository");
-jest.mock("@/application/domain/account/wallet/data/converter");
+jest.mock("@/application/domain/account/wallet/data/repository", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    findFirstExistingMemberWallet: jest.fn(),
+    findCommunityWallet: jest.fn(),
+    query: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
+jest.mock("@/application/domain/account/wallet/data/converter", () => ({
+  __esModule: true,
+  default: {
+    filter: jest.fn(),
+    sort: jest.fn(),
+    createCommunityWallet: jest.fn(),
+    createMemberWallet: jest.fn(),
+  },
+}));
 
 describe("WalletService", () => {
   const mockCtx = {} as IContext;

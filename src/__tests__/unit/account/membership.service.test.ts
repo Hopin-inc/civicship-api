@@ -6,9 +6,31 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/account/membership/data/repository");
-jest.mock("@/application/domain/account/membership/data/converter");
+jest.mock("@/application/domain/account/membership/data/repository", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    query: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/account/membership/data/converter", () => ({
+  __esModule: true,
+  default: {
+    filter: jest.fn(),
+    sort: jest.fn(),
+    cursor: jest.fn(),
+    invite: jest.fn(),
+    join: jest.fn(),
+    update: jest.fn(),
+  },
+}));
+
 jest.mock("@/application/domain/utils", () => ({
+  __esModule: true,
   getCurrentUserId: jest.fn(),
 }));
 

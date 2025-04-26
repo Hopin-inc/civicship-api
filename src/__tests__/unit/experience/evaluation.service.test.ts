@@ -8,9 +8,24 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import EvaluationRepository from "@/application/domain/experience/evaluation/data/repository";
 
-jest.mock("@/application/domain/experience/evaluation/data/converter");
-jest.mock("@/application/domain/experience/evaluation/data/repository");
-jest.mock("@/application/domain/utils");
+jest.mock("@/application/domain/experience/evaluation/data/converter", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/experience/evaluation/data/repository", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/utils", () => ({
+  __esModule: true,
+  getCurrentUserId: jest.fn(),
+}));
 
 describe("EvaluationService", () => {
   const ctx = {} as IContext;

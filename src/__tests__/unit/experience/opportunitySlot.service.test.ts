@@ -9,8 +9,27 @@ import OpportunitySlotConverter from "@/application/domain/experience/opportunit
 import OpportunitySlotRepository from "@/application/domain/experience/opportunitySlot/data/repository";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 
-jest.mock("@/application/domain/experience/opportunitySlot/data/repository");
-jest.mock("@/application/domain/experience/opportunitySlot/data/converter");
+jest.mock("@/application/domain/experience/opportunitySlot/data/repository", () => ({
+  __esModule: true,
+  default: {
+    find: jest.fn(),
+    findByOpportunityId: jest.fn(),
+    query: jest.fn(),
+    createMany: jest.fn(),
+    update: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/experience/opportunitySlot/data/converter", () => ({
+  __esModule: true,
+  default: {
+    filter: jest.fn(),
+    sort: jest.fn(),
+    createMany: jest.fn(),
+    update: jest.fn(),
+  },
+}));
 
 describe("OpportunitySlotService", () => {
   let ctx: IContext;

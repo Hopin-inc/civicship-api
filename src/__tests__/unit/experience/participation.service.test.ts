@@ -8,9 +8,27 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { ValidationError } from "@/errors/graphql";
 
-jest.mock("@/application/domain/experience/participation/data/converter");
-jest.mock("@/application/domain/experience/participation/data/repository");
-jest.mock("@/application/domain/utils");
+jest.mock("@/application/domain/experience/participation/data/converter", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    setStatus: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/experience/participation/data/repository", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    setStatus: jest.fn(),
+    bulkSetParticipationStatus: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/utils", () => ({
+  __esModule: true,
+  getCurrentUserId: jest.fn(),
+}));
 
 describe("ParticipationService", () => {
   let ctx: IContext;

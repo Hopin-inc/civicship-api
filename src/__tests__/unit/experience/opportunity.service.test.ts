@@ -7,9 +7,27 @@ import { NotFoundError, ValidationError } from "@/errors/graphql";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { GqlOpportunityUpdateContentInput } from "@/types/graphql";
 
-jest.mock("@/application/domain/experience/opportunity/data/repository");
-jest.mock("@/application/domain/experience/opportunity/data/converter");
+jest.mock("@/application/domain/experience/opportunity/data/repository", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    find: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    setPublishStatus: jest.fn(),
+  },
+}));
+
+jest.mock("@/application/domain/experience/opportunity/data/converter", () => ({
+  __esModule: true,
+  default: {
+    create: jest.fn(),
+    update: jest.fn(),
+  },
+}));
+
 jest.mock("@/application/domain/utils", () => ({
+  __esModule: true,
   getCurrentUserId: jest.fn(),
 }));
 
