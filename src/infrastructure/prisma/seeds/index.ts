@@ -9,21 +9,21 @@ async function main() {
   const __dirname = path.dirname(__filename);
 
   if (args.includes("--master")) {
-    console.log("Starting to seed cities and states...");
+    console.info("Starting to seed cities and states...");
     await seedMaster(path.join(__dirname, "./city.csv"), path.join(__dirname, "./state.csv"));
-    console.log("Cities and states have been seeded!");
+    console.info("Cities and states have been seeded!");
   }
 
   if (args.includes("--domain")) {
-    console.log("Starting to seed users and communities...");
+    console.info("Starting to seed users and communities...");
     await seedUsecase();
-    console.log("Users and communities have been seeded!");
+    console.info("Users and communities have been seeded!");
   }
 }
 
 main()
   .then(() => {
-    console.log("Seeding completed successfully!");
+    console.info("Seeding completed successfully!");
   })
   .catch((e) => {
     console.error(e);

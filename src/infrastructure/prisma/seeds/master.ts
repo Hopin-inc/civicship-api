@@ -4,7 +4,7 @@ import csvParser from "csv-parser";
 import { Prisma } from "@prisma/client";
 
 export async function seedMaster(citiesCsvPath: string, statesCsvPath: string) {
-  console.log("Seeding State...");
+  console.info("Seeding State...");
   const stateQueries: Prisma.PrismaPromise<unknown>[] = [];
   fs.createReadStream(statesCsvPath)
     .pipe(csvParser())
@@ -22,9 +22,9 @@ export async function seedMaster(citiesCsvPath: string, statesCsvPath: string) {
     })
     .on("end", async () => {
       await prismaClient.$transaction(stateQueries);
-      console.log("State has been seeded!");
+      console.info("State has been seeded!");
 
-      console.log("Seeding City...");
+      console.info("Seeding City...");
       const cityQueries: Prisma.PrismaPromise<unknown>[] = [];
       fs.createReadStream(citiesCsvPath)
         .pipe(csvParser())
@@ -43,7 +43,7 @@ export async function seedMaster(citiesCsvPath: string, statesCsvPath: string) {
         })
         .on("end", async () => {
           await prismaClient.$transaction(cityQueries);
-          console.log("City has been seeded!");
+          console.info("City has been seeded!");
         });
     });
 }

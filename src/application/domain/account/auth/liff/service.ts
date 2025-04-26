@@ -1,6 +1,7 @@
 import axios from "axios";
 import { SignInProvider } from "@/consts/utils";
 import { auth } from "@/infrastructure/libs/firebase";
+import logger from "@/infrastructure/logging";
 
 export interface LINEProfile {
   userId: string;
@@ -27,7 +28,7 @@ export class LIFFService {
       const channelId = process.env.LINE_LIFF_CHANNEL_ID;
 
       if (!channelId) {
-        console.error("LINE_LIFF_CHANNEL_ID is not defined in environment variables");
+        logger.error("LINE_LIFF_CHANNEL_ID is not defined in environment variables");
         throw new Error("LINE configuration missing");
       }
 
@@ -112,7 +113,7 @@ export class LIFFService {
       const customToken = await tenantedAuth.createCustomToken(profile.userId, customClaims);
       return customToken;
     } catch (error) {
-      console.error("Error creating Firebase custom token:", error);
+      logger.error("Error creating Firebase custom token:", error);
       throw new Error("Failed to create authentication token");
     }
   }

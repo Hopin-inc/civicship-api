@@ -26,15 +26,15 @@ import MembershipUseCase from "@/application/domain/account/membership/usecase";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import UtilityUseCase from "@/application/domain/reward/utility/usecase";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
+import logger from "@/infrastructure/logging";
 
 const communityResolver = {
   Query: {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) => {
       try {
-        console.log("START!!");
         return CommunityUseCase.userBrowseCommunities(args, ctx);
       } catch (e) {
-        console.error(e);
+        logger.error(e);
         return;
       }
     },
