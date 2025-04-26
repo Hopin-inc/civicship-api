@@ -34,7 +34,6 @@ module.exports = {
   },
   testPathIgnorePatterns: [
     "<rootDir>/src/__tests__/helper/*.*",
-    "<rootDir>/src/__tests__/utils.ts",
     "<rootDir>/src/__tests__/e2e/",
     "<rootDir>/dist/",
   ],

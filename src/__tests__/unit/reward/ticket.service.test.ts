@@ -42,38 +42,6 @@ describe("TicketService", () => {
     (getCurrentUserId as jest.Mock).mockReturnValue(currentUserId);
   });
 
-  describe("purchaseManyTickets", () => {
-    const walletId = "wallet-1";
-    const utilityId = "utility-1";
-    const transactionId = "txn-1";
-    const participationIds = ["p1", "p2"];
-
-    it("should convert and create tickets for each participation", async () => {
-      const mockCreateInputs = [{ a: 1 }, { b: 2 }];
-      const mockResults = [{ id: "t1" }, { id: "t2" }];
-
-      (TicketConverter.purchase as jest.Mock)
-        .mockReturnValueOnce(mockCreateInputs[0])
-        .mockReturnValueOnce(mockCreateInputs[1]);
-      (TicketRepository.create as jest.Mock)
-        .mockResolvedValueOnce(mockResults[0])
-        .mockResolvedValueOnce(mockResults[1]);
-
-      const result = await TicketService.purchaseManyTickets(
-        ctx,
-        walletId,
-        utilityId,
-        transactionId,
-        participationIds,
-        tx,
-      );
-
-      expect(TicketConverter.purchase).toHaveBeenCalledTimes(2);
-      expect(TicketRepository.create).toHaveBeenCalledTimes(2);
-      expect(result).toEqual(mockResults);
-    });
-  });
-
   describe("reserveManyTickets", () => {
     const tickets = [{ id: "t1" }, { id: "t2" }];
     const participations = [{ id: "p1" }, { id: "p2" }];

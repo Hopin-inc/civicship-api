@@ -1,7 +1,7 @@
 import TestDataSourceHelper from "@/__tests__/helper/test-data-source-helper";
 import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import request from "supertest";
-import { createTestApp, issueTestToken } from "@/__tests__/utils";
+import { createTestApp, issueTestToken } from "@/__tests__/helper/utils";
 import express from "express";
 
 let app: express.Application;
