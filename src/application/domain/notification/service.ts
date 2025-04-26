@@ -1,7 +1,7 @@
 import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/experience/opportunitySlot/data/type";
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
-import "dayjs/locale/ja";
+import "dayjs/locale/ja.js";
 import { lineClient } from "@/infrastructure/libs/line";
 import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/cancelOpportunitySlotMessage";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
