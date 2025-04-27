@@ -1,27 +1,34 @@
 import { ApolloArmor } from "@escape.tech/graphql-armor";
+import { GraphQLArmorConfig } from "@escape.tech/graphql-armor-types/dist/declarations/src";
 
-const armor = new ApolloArmor();
+const config: GraphQLArmorConfig = {
+  costLimit: {
+    enabled: true,
+    maxCost: 5000, // Maximum allowed query cost
+    objectCost: 2, // Default cost for object fields
+    scalarCost: 1, // Default cost for scalar fields
+    depthCostFactor: 1.5, // Cost increases with query depth
+  },
+  maxDepth: {
+    enabled: true,
+    n: 10, // Maximum allowed query depth
+  },
+  maxAliases: {
+    enabled: true,
+    n: 15, // Maximum number of aliases
+  },
+  maxDirectives: {
+    enabled: true,
+    n: 50, // Maximum number of directives
+  },
+  maxTokens: {
+    enabled: true,
+    n: 15000, // Maximum number of tokens (roughly equivalent to character limit)
+  },
+  blockFieldSuggestion: {
+    enabled: true, // Disable field suggestion hints
+  },
+};
+
+const armor = new ApolloArmor(config);
 export const armorProtection = armor.protect();
-
-// GraphQL Armor Default Protections:
-//
-// - Query Depth Limit: Restricts the maximum depth of GraphQL queries to prevent overly nested queries.
-//   Default: 6
-//
-// - Query Cost Limit: Evaluates the complexity of queries and rejects those that are too complex.
-//   Default maximum cost: 5000
-//
-// - Alias Count Limit: Limits the number of aliases that can be used in a single query.
-//   Default: 15
-//
-// - Directive Count Limit: Limits the number of directives that can be used in a single query.
-//   Default: 50
-//
-// - Character Limit: Restricts the maximum number of characters in a query to prevent excessively large queries.
-//   Default: 15000
-//
-// - Field Suggestion Disabling: Disables suggestions for non-existent fields to prevent information disclosure.
-//
-// - Batch Request Disabling: Disables the ability to send multiple queries in a single request to prevent abuse.
-//
-// - Stack Trace Hiding: Hides stack traces in error messages to prevent leakage of internal implementation details.
