@@ -1,4 +1,5 @@
 # civicship-api
+![logo.svg](./docs/asset/logo.svg)
 
 ## Overview
 
