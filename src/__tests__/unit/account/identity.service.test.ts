@@ -1,7 +1,7 @@
 import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 import UserRepository from "@/application/domain/account/user/data/repository";
-import IdentityService from "@/application/domain/account/user/identity/service";
-import IdentityRepository from "@/application/domain/account/user/identity/data/repository";
+import IdentityService from "@/application/domain/account/identity/service";
+import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import { auth } from "@/infrastructure/libs/firebase";
 
 jest.mock("@/infrastructure/libs/firebase", () => {
@@ -22,7 +22,7 @@ jest.mock("@/infrastructure/libs/firebase", () => {
 });
 
 jest.mock("@/application/domain/account/user/data/repository");
-jest.mock("@/application/domain/account/user/identity/data/repository");
+jest.mock("@/application/domain/account/identity/data/repository");
 
 describe("IdentityService", () => {
   const TEST_USER_ID = "user-1";
