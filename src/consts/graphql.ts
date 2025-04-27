@@ -1,4 +1,0 @@
-export const MAX_COMPLEXITY_PER_MINUTE = 1000000;
-
-export const DEFAULT_COMPLEXITY = 1;
-export const MAX_COMPLEXITY_PER_USAGE = 500000;
