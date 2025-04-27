@@ -12,7 +12,7 @@
     "dev:https": "dotenvx run -f .env --env='NODE_HTTPS=true' -- tsx watch src/index.ts",
     "lint": "eslint --fix src/ && prettier --write src/",
     "test": "jest --runInBand",
-    "test:cov": "jest --coverage --runInBand",
+    "test:coverage": "jest --coverage --runInBand",
     "db:pull": "prisma db pull --schema src/infrastructure/prisma/schema.prisma",
     "db:seed-master": "tsx src/infrastructure/prisma/seeds/index.ts -- --master",
     "db:seed-domain": "tsx src/infrastructure/prisma/seeds/index.ts -- --domain",
@@ -22,7 +22,6 @@
     "db:mark-rolled-back": "prisma migrate resolve --schema src/infrastructure/prisma/schema.prisma --rolled-back",
     "db:studio": "prisma studio --schema src/infrastructure/prisma/schema.prisma",
     "gql:generate": "graphql-codegen --config codegen.yaml",
-    "doc": "typedoc",
     "container:up": "ls src/infrastructure/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
     "container:down": "docker-compose down --rmi all --volumes --remove-orphans"
   },
@@ -112,8 +111,5 @@
     "sanitize-html": "^2.16.0",
     "tsconfig-paths": "^4.2.0",
     "winston": "^3.17.0"
-  },
-  "resolutions": {
-    "graphql": "16.10.0"
   }
 }
