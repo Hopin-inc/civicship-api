@@ -7,7 +7,7 @@ extend type Query {
         sort: PlaceSortInput
         cursor: String
         first: Int
-    ): PlacesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): PlacesConnection!
     place(id: ID!): Place
 }
 

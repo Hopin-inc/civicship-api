@@ -7,7 +7,7 @@ extend type Query {
         sort: UserSortInput
         cursor: String
         first: Int
-    ): UsersConnection! @complexity(value: 10, multipliers: ["first"])
+    ): UsersConnection!
     user(id: ID!): User
 }
 

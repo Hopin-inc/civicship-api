@@ -17,14 +17,14 @@ type Utility {
         sort: TicketSortInput
         cursor: String
         first: Int
-    ): TicketsConnection @complexity(value: 5, multipliers: ["first"])
+    ): TicketsConnection
 
     requiredForOpportunities(
         filter: OpportunityFilterInput
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection @complexity(value: 10, multipliers: ["first"])
+    ): OpportunitiesConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

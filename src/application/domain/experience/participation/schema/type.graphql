@@ -22,14 +22,14 @@ type Participation {
         sort: ParticipationStatusHistorySortInput
         cursor: String
         first: Int
-    ): ParticipationStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    ): ParticipationStatusHistoriesConnection
 
     transactions(
         filter: TransactionFilterInput
         sort: TransactionSortInput
         cursor: String
         first: Int
-    ): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+    ): TransactionsConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

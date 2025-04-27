@@ -18,13 +18,13 @@ type OpportunitySlot {
         sort: ReservationSortInput
         cursor: String
         first: Int
-    ): ReservationsConnection @complexity(value: 5, multipliers: ["first"])
+    ): ReservationsConnection
     participations(
         filter: ParticipationFilterInput
         sort: ParticipationSortInput
         cursor: String
         first: Int
-    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+    ): ParticipationsConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

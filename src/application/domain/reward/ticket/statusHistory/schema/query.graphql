@@ -7,7 +7,7 @@ extend type Query {
         sort: TicketStatusHistorySortInput
         cursor: String
         first: Int
-    ): TicketStatusHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): TicketStatusHistoriesConnection!
     ticketStatusHistory(id: ID!): TicketStatusHistory
 }
 

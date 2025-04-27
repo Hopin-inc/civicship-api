@@ -17,37 +17,37 @@ type Community {
         sort: MembershipSortInput
         cursor: MembershipCursorInput
         first: Int
-    ): MembershipsConnection @complexity(value: 5, multipliers: ["first"])
+    ): MembershipsConnection
     wallets(
         filter: WalletFilterInput
         sort: WalletSortInput
         cursor: String
         first: Int
-    ): WalletsConnection @complexity(value: 5, multipliers: ["first"])
+    ): WalletsConnection
     opportunities(
         filter: OpportunityFilterInput
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
+    ): OpportunitiesConnection
     participations(
         filter: ParticipationFilterInput
         sort: ParticipationSortInput
         cursor: String
         first: Int
-    ): ParticipationsConnection @complexity(value: 5, multipliers: ["first"])
+    ): ParticipationsConnection
     utilities(
         filter: UtilityFilterInput
         sort: UtilitySortInput
         cursor: String
         first: Int
-    ): UtilitiesConnection @complexity(value: 5, multipliers: ["first"])
+    ): UtilitiesConnection
     articles(
         filter: ArticleFilterInput
         sort: ArticleSortInput
         cursor: String
         first: Int
-    ): ArticlesConnection @complexity(value: 5, multipliers: ["first"])
+    ): ArticlesConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -7,7 +7,7 @@ extend type Query {
         sort: OpportunitySlotSortInput
         cursor: String
         first: Int
-    ): OpportunitySlotsConnection! @complexity(value: 10, multipliers: ["first"])
+    ): OpportunitySlotsConnection!
     opportunitySlot(id: ID!): OpportunitySlot
 }
 

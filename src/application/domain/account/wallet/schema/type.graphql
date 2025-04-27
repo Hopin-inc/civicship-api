@@ -16,14 +16,14 @@ type Wallet {
         sort: TicketSortInput
         cursor: String
         first: Int
-    ): TicketsConnection @complexity(value: 5, multipliers: ["first"])
+    ): TicketsConnection
 
     transactions(
         filter: TransactionFilterInput
         sort: TransactionSortInput
         cursor: String
         first: Int
-    ): TransactionsConnection @complexity(value: 5, multipliers: ["first"])
+    ): TransactionsConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

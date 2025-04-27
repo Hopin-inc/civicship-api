@@ -19,7 +19,7 @@ type Membership {
         sort: MembershipHistorySortInput
         cursor: String
         first: Int
-    ):MembershipHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    ):MembershipHistoriesConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

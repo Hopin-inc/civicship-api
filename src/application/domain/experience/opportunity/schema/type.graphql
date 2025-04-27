@@ -31,7 +31,7 @@ type Opportunity {
         sort: OpportunitySlotSortInput
         cursor: String
         first: Int
-    ): OpportunitySlotsConnection @complexity(value: 5, multipliers: ["first"])
+    ): OpportunitySlotsConnection
     earliestReservableSlotView: EarliestReservableSlotView
 
     createdAt: Datetime!
