@@ -7,7 +7,7 @@ extend type Query {
         sort: UtilitySortInput
         cursor: String
         first: Int
-    ): UtilitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): UtilitiesConnection!
     utility(
         id: ID!
         permission: CheckCommunityPermissionInput!

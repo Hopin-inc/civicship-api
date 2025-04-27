@@ -8,7 +8,7 @@ extend type Query {
         sort: EvaluationHistorySortInput
         cursor: String
         first: Int
-    ): EvaluationHistoriesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): EvaluationHistoriesConnection!
 
     evaluationHistory(id: ID!): EvaluationHistory
 }

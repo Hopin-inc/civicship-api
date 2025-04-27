@@ -22,7 +22,7 @@ type Place {
         sort: OpportunitySortInput
         cursor: String
         first: Int
-    ): OpportunitiesConnection @complexity(value: 5, multipliers: ["first"])
+    ): OpportunitiesConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

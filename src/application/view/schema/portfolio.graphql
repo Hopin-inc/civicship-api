@@ -32,7 +32,7 @@ extend type Query {
         sort: PortfolioSortInput
         cursor: String
         first: Int
-    ): PortfoliosConnection! @complexity(value: 10, multipliers: ["first"])
+    ): PortfoliosConnection!
 }
 
 # ------------------------------

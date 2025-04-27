@@ -17,7 +17,7 @@ type Evaluation {
         sort: EvaluationHistorySortInput
         cursor: String
         first: Int
-    ): EvaluationHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    ): EvaluationHistoriesConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

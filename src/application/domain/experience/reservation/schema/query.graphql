@@ -8,7 +8,7 @@ extend type Query {
         sort: ReservationSortInput
         cursor: String
         first: Int
-    ): ReservationsConnection! @complexity(value: 10, multipliers: ["first"])
+    ): ReservationsConnection!
 
     reservation(id: ID!): Reservation
 }

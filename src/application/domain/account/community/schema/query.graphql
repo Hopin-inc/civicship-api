@@ -7,7 +7,7 @@ extend type Query {
         sort: CommunitySortInput
         cursor: String
         first: Int
-    ): CommunitiesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): CommunitiesConnection!
     community(id: ID!): Community
 }
 

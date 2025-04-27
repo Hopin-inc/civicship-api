@@ -17,7 +17,7 @@ type Transaction {
         sort: TicketStatusHistorySortInput
         cursor: String
         first: Int
-    ): TicketStatusHistoriesConnection @complexity(value: 5, multipliers: ["first"])
+    ): TicketStatusHistoriesConnection
 
     createdAt: Datetime!
     updatedAt: Datetime

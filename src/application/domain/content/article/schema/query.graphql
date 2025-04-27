@@ -7,7 +7,7 @@ extend type Query {
         sort: ArticleSortInput
         cursor: String
         first: Int
-    ): ArticlesConnection! @complexity(value: 10, multipliers: ["first"])
+    ): ArticlesConnection!
     article(id: ID!, permission: CheckCommunityPermissionInput!): Article
 }
 
