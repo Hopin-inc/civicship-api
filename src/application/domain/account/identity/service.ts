@@ -1,7 +1,7 @@
 import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
 import UserRepository from "@/application/domain/account/user/data/repository";
-import IdentityRepository from "@/application/domain/account/user/identity/data/repository";
+import IdentityRepository from "@/application/domain/account/identity/data/repository";
 
 export default class IdentityService {
   static async createUserAndIdentity(

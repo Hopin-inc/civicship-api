@@ -2,7 +2,7 @@ import { mergeResolvers } from "@graphql-tools/merge";
 import communityResolver from "@/application/domain/account/community/controller/resolver";
 import membershipResolver from "@/application/domain/account/membership/controller/resolver";
 import userResolver from "@/application/domain/account/user/controller/resolver";
-import identityResolver from "@/application/domain/account/user/identity/controller/resolver";
+import identityResolver from "@/application/domain/account/identity/controller/resolver";
 import walletResolver from "@/application/domain/account/wallet/controller/resolver";
 import articleResolver from "@/application/domain/content/article/controller/resolver";
 import opportunityResolver from "@/application/domain/experience/opportunity/controller/resolver";

@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { GqlMutationUserSignUpArgs } from "@/types/graphql";
-import IdentityUseCase from "@/application/domain/account/user/identity/usecase";
+import IdentityUseCase from "@/application/domain/account/identity/usecase";
 
 const identityResolver = {
   Query: {

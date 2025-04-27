@@ -8,10 +8,11 @@ import { PrismaReservation } from "@/application/domain/experience/reservation/d
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/message/acceptReservationMessage";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/message/applyReservationMessage";
 import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/message/cancelReservationMessage";
-import { HTTPFetchError, messagingApi } from "@line/bot-sdk";
+import { HTTPFetchError, messagingApi, LINE_REQUEST_ID_HTTP_HEADER_NAME } from "@line/bot-sdk";
 import { IdentityPlatform, Role } from "@prisma/client";
 import { LINE_RICHMENU } from "@/application/domain/notification/presenter/richmenu/const";
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
+import logger from "@/infrastructure/logging";
 
 export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
@@ -29,7 +30,7 @@ export default class NotificationService {
   ) {
     const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
 
-    const { year, date, time } = formatDateTime(slot.startsAt, slot.endsAt);
+    const { year, date, time } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const opportunityId = slot.opportunityId;
     const communityId = slot.opportunity.communityId;
     const host = slot.opportunity.createdByUser;
@@ -48,12 +49,12 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: lineId, messages: [message] });
+    await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
     const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
-    const { year, date, time } = formatDateTime(
+    const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
@@ -72,12 +73,12 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: lineId, messages: [message] });
+    await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
     const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
-    const { year, date, time } = formatDateTime(
+    const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
@@ -95,7 +96,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: lineId, messages: [message] });
+    await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async pushReservationAcceptedMessage(
@@ -105,7 +106,7 @@ export default class NotificationService {
   ): Promise<void> {
     const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
 
-    const { year, date, time } = formatDateTime(
+    const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
@@ -133,7 +134,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: lineId, messages: [message] });
+    await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
   static async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
@@ -154,37 +155,68 @@ export default class NotificationService {
         ? LINE_RICHMENU.ADMIN_MANAGE
         : LINE_RICHMENU.PUBLIC;
 
+    await this.safeLinkRichMenuIdToUser(lineUid, richMenuId);
+  }
+
+  private static async safeLinkRichMenuIdToUser(userId: string, richMenuId: string) {
+    const endpoint = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
+
     try {
-      await lineClient.linkRichMenuIdToUser(lineUid, richMenuId);
+      const response = await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
+      this.logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse);
     } catch (error) {
-      if (error instanceof HTTPFetchError) {
-        console.error("Status:", error.status);
-        console.error("Message:", error.message);
-        console.error("Response Body:", error.body);
-      } else {
-        console.error("Unexpected Error:", error);
-      }
+      this.logLineApiError("linkRichMenuIdToUser", endpoint, error);
     }
   }
-}
 
-async function safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
-  try {
-    await lineClient.pushMessage(params);
-  } catch (error) {
+  private static async safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
+    const endpoint = "https://api.line.me/v2/bot/message/push";
+
+    try {
+      const response = await lineClient.pushMessageWithHttpInfo(params);
+      this.logLineApiSuccess("pushMessage", endpoint, response.httpResponse);
+    } catch (error) {
+      this.logLineApiError("pushMessage", endpoint, error);
+    }
+  }
+
+  private static formatDateTime(
+    start: Date,
+    end: Date,
+  ): { year: string; date: string; time: string } {
+    const year = dayjs(start).format("YYYY年");
+    const date = dayjs(start).format("M月D日");
+    const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
+    return { year, date, time };
+  }
+
+  private static logLineApiSuccess(operationName: string, endpoint: string, response: Response) {
+    logger.info(`LINE ${operationName} success`, {
+      requestId: response.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
+      endpoint,
+      method: "POST",
+      statusCode: response.status,
+    });
+  }
+
+  private static logLineApiError(operationName: string, endpoint: string, error: unknown) {
     if (error instanceof HTTPFetchError) {
-      console.error("Status:", error.status);
-      console.error("Message:", error.message);
-      console.error("Response Body:", error.body);
+      logger.error(`LINE ${operationName} failed`, {
+        requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
+        endpoint,
+        method: "POST",
+        statusCode: error.status,
+      });
+    } else if (error instanceof Error) {
+      logger.error(`Unexpected error on LINE ${operationName}`, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
     } else {
-      console.error("Unexpected Error:", error);
+      logger.error(`Unknown error on LINE ${operationName}`, {
+        error,
+      });
     }
   }
-}
-
-function formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
-  const year = dayjs(start).format("YYYY年");
-  const date = dayjs(start).format("M月D日");
-  const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
-  return { year, date, time };
 }

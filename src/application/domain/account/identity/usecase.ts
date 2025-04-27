@@ -1,8 +1,8 @@
 import { IContext } from "@/types/server";
 import { GqlCurrentUserPayload, GqlMutationUserSignUpArgs } from "@/types/graphql";
-import IdentityConverter from "@/application/domain/account/user/identity/data/converter";
-import IdentityService from "@/application/domain/account/user/identity/service";
-import IdentityPresenter from "@/application/domain/account/user/identity/presenter";
+import IdentityConverter from "@/application/domain/account/identity/data/converter";
+import IdentityService from "@/application/domain/account/identity/service";
+import IdentityPresenter from "@/application/domain/account/identity/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";

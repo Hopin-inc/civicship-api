@@ -2,7 +2,7 @@ import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { GqlMutationUserSignUpArgs } from "@/types/graphql";
 import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
-import identityResolver from "@/application/domain/account/user/identity/controller/resolver";
+import identityResolver from "@/application/domain/account/identity/controller/resolver";
 
 describe("User SignUp Integration Tests", () => {
   jest.setTimeout(30_000);
