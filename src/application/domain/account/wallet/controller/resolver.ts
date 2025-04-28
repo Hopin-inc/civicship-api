@@ -8,11 +8,11 @@ import {
 import { IContext } from "@/types/server";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { createWalletUseCase } from "@/application/domain/account/wallet/provider";
+import "reflect-metadata";
+import { container } from "tsyringe";
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
 
-const issuer = new PrismaClientIssuer();
-const walletUseCase = createWalletUseCase(issuer);
+const walletUseCase = container.resolve(WalletUseCase);
 
 const walletResolver = {
   Query: {
@@ -35,7 +35,8 @@ const walletResolver = {
       args: GqlWalletTransactionsArgs,
       ctx: IContext,
     ): Promise<GqlTransactionsConnection> => {
-      return TransactionUseCase.visitorBrowseTransactions(
+      const transactionUseCase = container.resolve(TransactionUseCase);
+      return transactionUseCase.visitorBrowseTransactions(
         {
           filter: { fromWalletId: parent.id, toWalletId: parent.id, ...args },
         },

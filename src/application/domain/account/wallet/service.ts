@@ -4,12 +4,14 @@ import { GqlQueryWalletsArgs } from "@/types/graphql";
 import { NotFoundError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class WalletService {
   constructor(
-    private readonly repository: IWalletRepository,
-    private readonly converter: WalletConverter,
-  ) {}
+    @inject("IWalletRepository") private readonly repository: IWalletRepository,
+    @inject("WalletConverter") private readonly converter: WalletConverter,
+  ) { }
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
     const where = this.converter.filter(filter ?? {});

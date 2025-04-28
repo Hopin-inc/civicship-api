@@ -1,4 +1,6 @@
+import "reflect-metadata";
 import { Prisma, TransactionReason, WalletType } from "@prisma/client";
+import { container } from "tsyringe";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import WalletValidator from "@/application/domain/account/wallet/validator";
@@ -41,9 +43,14 @@ describe("WalletValidator", () => {
   };
 
   beforeEach(() => {
-    mockService = new MockWalletService();
-    validator = new WalletValidator(mockService);
     jest.clearAllMocks();
+    container.reset();
+
+    mockService = new MockWalletService();
+
+    container.register("WalletService", { useValue: mockService });
+
+    validator = container.resolve(WalletValidator);
   });
 
   afterEach(() => {

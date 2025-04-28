@@ -3,9 +3,13 @@ import { Prisma, WalletType } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class WalletRepository implements IWalletRepository {
-  constructor(private readonly issuer: PrismaClientIssuer) {}
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+  ) { }
 
   async query(
     ctx: IContext,

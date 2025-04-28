@@ -12,11 +12,11 @@ import {
   GqlMutationMembershipAcceptMyInvitationArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { createMembershipUseCase } from "@/application/domain/account/membership/provider";
+import "reflect-metadata";
+import { container } from "tsyringe";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
 
-const issuer = new PrismaClientIssuer();
-const membershipUseCase = createMembershipUseCase(issuer);
+const membershipUseCase = container.resolve(MembershipUseCase);
 
 const membershipResolver = {
   Query: {

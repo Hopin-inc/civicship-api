@@ -1,10 +1,13 @@
+import "reflect-metadata";
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { container } from "tsyringe";
 import CommunityService from "@/application/domain/account/community/service";
 import { NotFoundError } from "@/errors/graphql";
 import { MockImageService } from "@/__tests__/helper/mock/image";
 import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
 import { GqlCommunityCreateInput, GqlCommunityUpdateProfileInput } from "@/types/graphql";
+import CommunityConverter from "@/application/domain/account/community/data/converter";
 
 describe("CommunityService", () => {
   class MockCommunityRepository implements ICommunityRepository {
@@ -15,23 +18,32 @@ describe("CommunityService", () => {
     delete = jest.fn();
   }
 
-  class MockCommunityConverter {
-    static create = jest.fn();
-    static update = jest.fn();
-    static filter = jest.fn();
-    static sort = jest.fn();
+  class MockCommunityConverter extends CommunityConverter {
+    create = jest.fn();
+    update = jest.fn();
+    filter = jest.fn();
+    sort = jest.fn();
   }
 
   let mockRepository: MockCommunityRepository;
+  let mockConverter: MockCommunityConverter;
   let service: CommunityService;
 
   const mockCtx = {} as IContext;
   const mockTx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
-    mockRepository = new MockCommunityRepository();
-    service = new CommunityService(mockRepository, MockCommunityConverter, MockImageService);
     jest.clearAllMocks();
+    container.reset();
+
+    mockRepository = new MockCommunityRepository();
+    mockConverter = new MockCommunityConverter();
+
+    container.register("ICommunityRepository", { useValue: mockRepository });
+    container.register("CommunityConverter", { useValue: mockConverter });
+    container.register("ImageService", { useValue: MockImageService });
+
+    service = container.resolve(CommunityService);
   });
 
   describe("createCommunityAndJoinAsOwner", () => {
@@ -58,7 +70,7 @@ describe("CommunityService", () => {
       const mockCommunity = { id: "community-1", ...convertedInput };
       const ctxWithUser = { currentUser: { id: "test-user" } } as IContext;
 
-      MockCommunityConverter.create.mockReturnValue({ data: convertedInput, image: undefined });
+      mockConverter.create.mockReturnValue({ data: convertedInput, image: undefined });
       mockRepository.create.mockResolvedValue(mockCommunity);
 
       const result = await service.createCommunityAndJoinAsOwner(
@@ -67,7 +79,7 @@ describe("CommunityService", () => {
         {} as Prisma.TransactionClient,
       );
 
-      expect(MockCommunityConverter.create).toHaveBeenCalledWith(input, "test-user");
+      expect(mockConverter.create).toHaveBeenCalledWith(input, "test-user");
       expect(mockRepository.create).toHaveBeenCalledWith(
         ctxWithUser,
         expect.objectContaining({ ...convertedInput, image: { create: undefined } }),
@@ -100,7 +112,7 @@ describe("CommunityService", () => {
 
       const mockCommunity = { id: "community-1" };
 
-      MockCommunityConverter.update.mockReturnValue({ data: updateInput, image: undefined });
+      mockConverter.update.mockReturnValue({ data: updateInput, image: undefined });
       mockRepository.find.mockResolvedValue(mockCommunity);
       mockRepository.update.mockResolvedValue(mockCommunity);
 
@@ -111,7 +123,7 @@ describe("CommunityService", () => {
         mockTx,
       );
 
-      expect(MockCommunityConverter.update).toHaveBeenCalledWith(updateInput);
+      expect(mockConverter.update).toHaveBeenCalledWith(updateInput);
       expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "community-1");
       expect(mockRepository.update).toHaveBeenCalledWith(
         mockCtx,

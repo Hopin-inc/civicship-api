@@ -11,12 +11,17 @@ import UserPresenter from "@/application/domain/account/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class UserUseCase {
   constructor(
-    private readonly issuer: PrismaClientIssuer,
-    private readonly service: UserService,
-  ) {}
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("UserService") private readonly service: Pick<
+      UserService,
+      "fetchCommunityMembers" | "findUser" | "updateProfile"
+    >,
+  ) { }
 
   async visitorBrowseCommunityMembers(
     ctx: IContext,

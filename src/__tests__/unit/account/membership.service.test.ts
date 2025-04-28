@@ -1,10 +1,14 @@
+import "reflect-metadata";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { container } from "tsyringe";
 import MembershipService from "@/application/domain/account/membership/service";
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
+import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
+import MembershipConverter from "@/application/domain/account/membership/data/converter";
 
 // --- Mockクラス ---
-class MockMembershipRepository {
+class MockMembershipRepository implements IMembershipRepository {
   query = jest.fn();
   find = jest.fn();
   create = jest.fn();
@@ -12,7 +16,7 @@ class MockMembershipRepository {
   delete = jest.fn();
 }
 
-class MockMembershipConverter {
+class MockMembershipConverter extends MembershipConverter {
   filter = jest.fn();
   sort = jest.fn();
   invite = jest.fn();
@@ -37,13 +41,19 @@ const userId = "user-123";
 const communityId = "community-123";
 
 beforeEach(() => {
+  jest.clearAllMocks();
+  container.reset();
+
   mockRepository = new MockMembershipRepository();
   mockConverter = new MockMembershipConverter();
   mockUtils = new MockUtils();
   mockUtils.getCurrentUserId = jest.fn().mockReturnValue("admin-user");
 
-  service = new MembershipService(mockRepository, mockConverter, mockUtils.getCurrentUserId);
-  jest.clearAllMocks();
+  container.register("IMembershipRepository", { useValue: mockRepository });
+  container.register("MembershipConverter", { useValue: mockConverter });
+  container.register("getCurrentUserId", { useValue: mockUtils.getCurrentUserId });
+
+  service = container.resolve(MembershipService);
 });
 
 afterEach(() => {

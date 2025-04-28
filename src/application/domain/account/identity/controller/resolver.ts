@@ -1,8 +1,10 @@
 import { IContext } from "@/types/server";
 import { GqlMutationUserSignUpArgs } from "@/types/graphql";
-import { createIdentityUseCase } from "@/application/domain/account/identity/provider";
+import "reflect-metadata";
+import { container } from "tsyringe";
+import IdentityUseCase from "@/application/domain/account/identity/usecase";
 
-const identityUseCase = createIdentityUseCase();
+const identityUseCase = container.resolve(IdentityUseCase);
 
 const identityResolver = {
   Query: {

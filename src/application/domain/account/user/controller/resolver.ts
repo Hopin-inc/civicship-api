@@ -24,15 +24,16 @@ import ParticipationUseCase from "@/application/domain/experience/participation/
 import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
 import ViewUseCase from "@/application/view/usecase";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { createWalletUseCase } from "@/application/domain/account/wallet/provider";
-import { createUserUseCase } from "@/application/domain/account/user/provider";
-import { createMembershipUseCase } from "@/application/domain/account/membership/provider";
+import "reflect-metadata";
+import { container } from "tsyringe";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import UserUseCase from "@/application/domain/account/user/usecase";
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
 
-const issuer = new PrismaClientIssuer();
-const walletUseCase = createWalletUseCase(issuer);
-const userUseCase = createUserUseCase(issuer);
-const membershipUseCase = createMembershipUseCase(issuer);
+const userUseCase = container.resolve(UserUseCase);
+const walletUseCase = container.resolve(WalletUseCase);
+const membershipUseCase = container.resolve(MembershipUseCase);
+const articleUseCase = container.resolve(ArticleUseCase);
 
 const userResolver = {
   Query: {
@@ -73,7 +74,7 @@ const userResolver = {
       args: GqlUserArticlesAboutMeArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
-      return ArticleUseCase.anyoneBrowseArticles(ctx, {
+      return articleUseCase.anyoneBrowseArticles(ctx, {
         ...args,
         filter: {
           ...args.filter,
@@ -115,7 +116,8 @@ const userResolver = {
       args: GqlUserOpportunitiesCreatedByMeArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(
+      const opportunityUseCase = container.resolve(OpportunityUseCase);
+      return opportunityUseCase.anyoneBrowseOpportunities(
         {
           ...args,
           filter: { ...args.filter, createdByUserIds: [parent.id] },

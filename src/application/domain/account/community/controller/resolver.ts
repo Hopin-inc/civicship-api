@@ -23,22 +23,18 @@ import ParticipationUseCase from "@/application/domain/experience/participation/
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import UtilityUseCase from "@/application/domain/reward/utility/usecase";
 import logger from "@/infrastructure/logging";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { createWalletUseCase } from "@/application/domain/account/wallet/provider";
-import { createCommunityUseCase } from "@/application/domain/account/community/provider";
-import { createMembershipUseCase } from "@/application/domain/account/membership/provider";
-import { createArticleUseCase } from "@/application/domain/content/article/provider";
-
-const issuer = new PrismaClientIssuer();
-const walletUseCase = createWalletUseCase(issuer);
-const communityUseCase = createCommunityUseCase(issuer);
-const membershipUseCase = createMembershipUseCase(issuer);
-const articleUseCase = createArticleUseCase(issuer);
+import "reflect-metadata";
+import { container } from "tsyringe";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import CommunityUseCase from "@/application/domain/account/community/usecase";
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
+import ArticleUseCase from "@/application/domain/content/article/usecase";
 
 const communityResolver = {
   Query: {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) => {
       try {
+        const communityUseCase = container.resolve(CommunityUseCase);
         return communityUseCase.userBrowseCommunities(args, ctx);
       } catch (e) {
         logger.error(e);
@@ -46,19 +42,27 @@ const communityResolver = {
       }
     },
     community: async (_: unknown, args: GqlQueryCommunityArgs, ctx: IContext) => {
+      const communityUseCase = container.resolve(CommunityUseCase);
       return communityUseCase.userViewCommunity(args, ctx);
     },
   },
   Mutation: {
-    communityCreate: async (_: unknown, args: GqlMutationCommunityCreateArgs, ctx: IContext) =>
-      communityUseCase.userCreateCommunityAndJoin(args, ctx),
-    communityDelete: async (_: unknown, args: GqlMutationCommunityDeleteArgs, ctx: IContext) =>
-      communityUseCase.managerDeleteCommunity(args, ctx),
+    communityCreate: async (_: unknown, args: GqlMutationCommunityCreateArgs, ctx: IContext) => {
+      const communityUseCase = container.resolve(CommunityUseCase);
+      return communityUseCase.userCreateCommunityAndJoin(args, ctx);
+    },
+    communityDelete: async (_: unknown, args: GqlMutationCommunityDeleteArgs, ctx: IContext) => {
+      const communityUseCase = container.resolve(CommunityUseCase);
+      return communityUseCase.managerDeleteCommunity(args, ctx);
+    },
     communityUpdateProfile: async (
       _: unknown,
       args: GqlMutationCommunityUpdateProfileArgs,
       ctx: IContext,
-    ) => communityUseCase.managerUpdateCommunityProfile(args, ctx),
+    ) => {
+      const communityUseCase = container.resolve(CommunityUseCase);
+      return communityUseCase.managerUpdateCommunityProfile(args, ctx);
+    },
   },
   Community: {
     memberships: async (
@@ -66,6 +70,7 @@ const communityResolver = {
       args: GqlCommunityMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
+      const membershipUseCase = container.resolve(MembershipUseCase);
       return membershipUseCase.visitorBrowseMemberships(
         {
           ...args,
@@ -80,7 +85,8 @@ const communityResolver = {
       args: GqlCommunityOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(
+      const opportunityUseCase = container.resolve(OpportunityUseCase);
+      return opportunityUseCase.anyoneBrowseOpportunities(
         {
           ...args,
           filter: { ...args.filter, communityIds: [parent.id] },
@@ -108,6 +114,7 @@ const communityResolver = {
       args: GqlCommunityWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
+      const walletUseCase = container.resolve(WalletUseCase);
       return walletUseCase.visitorBrowseWallets(
         {
           ...args,
@@ -133,6 +140,7 @@ const communityResolver = {
       args: GqlCommunityArticlesArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
+      const articleUseCase = container.resolve(ArticleUseCase);
       return articleUseCase.anyoneBrowseArticles(ctx, {
         ...args,
         filter: { ...args.filter, communityId: parent.id },

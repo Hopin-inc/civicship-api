@@ -4,13 +4,15 @@ import { Prisma } from "@prisma/client";
 import UserConverter from "@/application/domain/account/user/data/converter";
 import ImageService from "@/application/domain/content/image/service";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class UserService {
   constructor(
-    private readonly repository: IUserRepository,
-    private readonly converter: UserConverter,
-    private readonly imageService: ImageService,
-  ) {}
+    @inject("IUserRepository") private readonly repository: IUserRepository,
+    @inject("UserConverter") private readonly converter: UserConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
+  ) { }
 
   async fetchUsers(ctx: IContext, { cursor, filter, sort }: GqlQueryUsersArgs, take: number) {
     const where = this.converter.filter(filter ?? {});

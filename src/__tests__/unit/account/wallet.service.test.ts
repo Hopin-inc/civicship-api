@@ -1,8 +1,11 @@
+import "reflect-metadata";
 import { Prisma, WalletType } from "@prisma/client";
+import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
+import WalletConverter from "@/application/domain/account/wallet/data/converter";
 
 export class MockWalletRepository implements IWalletRepository {
   query = jest.fn();
@@ -13,7 +16,7 @@ export class MockWalletRepository implements IWalletRepository {
   delete = jest.fn();
 }
 
-export class MockWalletConverter {
+export class MockWalletConverter extends WalletConverter {
   filter = jest.fn();
   sort = jest.fn();
   createCommunityWallet = jest.fn();
@@ -48,10 +51,16 @@ describe("WalletService", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    container.reset();
+
     mockRepository = new MockWalletRepository();
     mockConverter = new MockWalletConverter();
-    walletService = new WalletService(mockRepository, mockConverter);
-    jest.clearAllMocks();
+
+    container.register("IWalletRepository", { useValue: mockRepository });
+    container.register("WalletConverter", { useValue: mockConverter });
+
+    walletService = container.resolve(WalletService);
   });
 
   describe("fetchWallets", () => {

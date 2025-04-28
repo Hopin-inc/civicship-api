@@ -21,14 +21,25 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class MembershipUseCase {
   constructor(
-    private readonly issuer: PrismaClientIssuer,
-    private readonly membershipService: MembershipService,
-    private readonly walletService: WalletService,
-    private readonly notificationService: NotificationService,
-  ) {}
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("MembershipService") private readonly membershipService: Pick<
+      MembershipService,
+      "fetchMemberships" | "findMembership" | "inviteMember" | "joinIfNeeded" | "setStatus" | "setRole" | "deleteMembership"
+    >,
+    @inject("WalletService") private readonly walletService: Pick<
+      WalletService,
+      "createMemberWalletIfNeeded" | "deleteMemberWallet"
+    >,
+    @inject("NotificationService") private readonly notificationService: Pick<
+      NotificationService,
+      "switchRichMenuByRole"
+    >,
+  ) { }
 
   async visitorBrowseMemberships(
     args: GqlQueryMembershipsArgs,

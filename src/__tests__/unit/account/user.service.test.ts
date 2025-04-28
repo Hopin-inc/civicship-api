@@ -1,12 +1,16 @@
+import "reflect-metadata";
 import { CurrentPrefecture, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { GqlMutationUserUpdateMyProfileArgs } from "@/types/graphql";
-
+import { container } from "tsyringe";
 import UserService from "@/application/domain/account/user/service";
+import { IUserRepository } from "@/application/domain/account/user/data/interface";
+import UserConverter from "@/application/domain/account/user/data/converter";
+import ImageService from "@/application/domain/content/image/service";
 
 describe("UserService", () => {
   // --- Mockクラスを定義 ---
-  class MockUserRepository {
+  class MockUserRepository implements IUserRepository {
     find = jest.fn();
     query = jest.fn();
     create = jest.fn();
@@ -14,13 +18,13 @@ describe("UserService", () => {
     delete = jest.fn();
   }
 
-  class MockUserConverter {
+  class MockUserConverter extends UserConverter {
     filter = jest.fn();
     sort = jest.fn();
     update = jest.fn();
   }
 
-  class MockImageService {
+  class MockImageService extends ImageService {
     uploadPublicImage = jest.fn();
   }
 
@@ -43,13 +47,18 @@ describe("UserService", () => {
   };
 
   beforeEach(() => {
+    jest.clearAllMocks();
+    container.reset();
+
     mockRepository = new MockUserRepository();
     mockConverter = new MockUserConverter();
     mockImageService = new MockImageService();
 
-    service = new UserService(mockRepository, mockConverter, mockImageService);
+    container.register("IUserRepository", { useValue: mockRepository });
+    container.register("UserConverter", { useValue: mockConverter });
+    container.register("ImageService", { useValue: mockImageService });
 
-    jest.clearAllMocks();
+    service = container.resolve(UserService);
   });
 
   afterEach(() => {

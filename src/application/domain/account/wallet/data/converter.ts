@@ -1,6 +1,8 @@
 import { GqlWalletFilterInput, GqlWalletSortInput } from "@/types/graphql";
 import { Prisma, WalletType } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class WalletConverter {
   filter(filter?: GqlWalletFilterInput): Prisma.WalletWhereInput {
     return {

@@ -8,9 +8,16 @@ import WalletService from "@/application/domain/account/wallet/service";
 import WalletPresenter from "@/application/domain/account/wallet/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class WalletUseCase {
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    @inject("WalletService") private readonly service: Pick<
+      WalletService,
+      "fetchWallets" | "findWallet"
+    >,
+  ) { }
 
   async visitorBrowseWallets(
     { filter, sort, cursor, first }: GqlQueryWalletsArgs,
@@ -18,7 +25,7 @@ export default class WalletUseCase {
   ): Promise<GqlWalletsConnection> {
     const take = clampFirst(first);
 
-    const records = await this.walletService.fetchWallets(ctx, { cursor, filter, sort }, take);
+    const records = await this.service.fetchWallets(ctx, { cursor, filter, sort }, take);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => {
@@ -29,7 +36,7 @@ export default class WalletUseCase {
   }
 
   async userViewWallet({ id }: GqlQueryWalletArgs, ctx: IContext): Promise<GqlWallet | null> {
-    const wallet = await this.walletService.findWallet(ctx, id);
+    const wallet = await this.service.findWallet(ctx, id);
     return wallet ? WalletPresenter.get(wallet) : null;
   }
 }

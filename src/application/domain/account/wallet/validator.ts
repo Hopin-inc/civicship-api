@@ -4,14 +4,16 @@ import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { GqlWallet } from "@/types/graphql";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class WalletValidator {
   constructor(
-    private readonly service: Pick<
+    @inject("WalletService") private readonly service: Pick<
       WalletService,
       "findCommunityWalletOrThrow" | "createMemberWalletIfNeeded" | "findMemberWalletOrThrow"
     >,
-  ) {}
+  ) { }
 
   async validateCommunityMemberTransfer(
     ctx: IContext,

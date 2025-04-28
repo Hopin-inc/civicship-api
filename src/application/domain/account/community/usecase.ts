@@ -16,13 +16,21 @@ import CommunityPresenter from "@/application/domain/account/community/presenter
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletService from "@/application/domain/account/wallet/service";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class CommunityUseCase {
   constructor(
-    private readonly issuer: PrismaClientIssuer,
-    private readonly communityService: CommunityService,
-    private readonly walletService: WalletService,
-  ) {}
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("CommunityService") private readonly communityService: Pick<
+      CommunityService,
+      "fetchCommunities" | "findCommunity" | "createCommunityAndJoinAsOwner" | "deleteCommunity" | "updateCommunityProfile"
+    >,
+    @inject("WalletService") private readonly walletService: Pick<
+      WalletService,
+      "createCommunityWallet" | "createMemberWalletIfNeeded"
+    >,
+  ) { }
 
   async userBrowseCommunities(
     { filter, sort, cursor, first }: GqlQueryCommunitiesArgs,

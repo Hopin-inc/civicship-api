@@ -10,13 +10,15 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class CommunityService {
   constructor(
-    private readonly repository: ICommunityRepository,
-    private readonly converter: CommunityConverter,
-    private readonly imageService: ImageService,
-  ) {}
+    @inject("ICommunityRepository") private readonly repository: ICommunityRepository,
+    @inject("CommunityConverter") private readonly converter: CommunityConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
+  ) { }
 
   async fetchCommunities(
     ctx: IContext,
