@@ -3,8 +3,7 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      # - develop
-      - feature/add-release-tag
+      - develop
 
 jobs:
   deploy:
@@ -117,25 +116,6 @@ jobs:
     - name: Push Docker image for batch job to Artifact Registry
       run: |
         docker push ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
-
-
-    - name: Create Git tag
-      run: |
-        # Install tzdata to use Japan timezone
-        sudo apt-get update && sudo apt-get install -y tzdata
-        sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
-        sudo dpkg-reconfigure -f noninteractive tzdata
-        
-        # Generate timestamp in yyyymmddhhmmss format
-        TAG_NAME=$(date +"%Y%m%d%H%M%S")
-        
-        # Configure Git user info (required inside GitHub Actions)
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        
-        # Create and push tag
-        git tag $TAG_NAME
-        git push origin $TAG_NAME
 
     - name: Cleanup SSH Key
       if: always()
