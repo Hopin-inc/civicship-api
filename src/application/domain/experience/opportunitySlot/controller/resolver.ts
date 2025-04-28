@@ -9,17 +9,17 @@ import {
 import { IContext } from "@/types/server";
 import OpportunitySlotUseCase from "@/application/domain/experience/opportunitySlot/usecase";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
+import { container } from "tsyringe";
 
 const opportunitySlotResolver = {
   Query: {
     opportunitySlots: async (_: unknown, args: GqlQueryOpportunitySlotsArgs, ctx: IContext) => {
-      return OpportunitySlotUseCase.visitorBrowseOpportunitySlots(args, ctx);
+      const useCase = container.resolve(OpportunitySlotUseCase);
+      return useCase.visitorBrowseOpportunitySlots(args, ctx);
     },
     opportunitySlot: async (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
-      if (!ctx.loaders?.opportunitySlot) {
-        return OpportunitySlotUseCase.visitorViewOpportunitySlot(args, ctx);
-      }
-      return ctx.loaders.opportunitySlot.load(args.id);
+      const useCase = container.resolve(OpportunitySlotUseCase);
+      return useCase.visitorViewOpportunitySlot(args, ctx);
     },
   },
 
@@ -29,14 +29,16 @@ const opportunitySlotResolver = {
       args: GqlMutationOpportunitySlotSetHostingStatusArgs,
       ctx: IContext,
     ) => {
-      return OpportunitySlotUseCase.managerSetOpportunitySlotHostingStatus(args, ctx);
+      const useCase = container.resolve(OpportunitySlotUseCase);
+      return useCase.managerSetOpportunitySlotHostingStatus(args, ctx);
     },
     opportunitySlotsBulkUpdate: async (
       _: unknown,
       args: GqlMutationOpportunitySlotsBulkUpdateArgs,
       ctx: IContext,
     ) => {
-      return OpportunitySlotUseCase.managerBulkUpdateOpportunitySlots(args, ctx);
+      const useCase = container.resolve(OpportunitySlotUseCase);
+      return useCase.managerBulkUpdateOpportunitySlots(args, ctx);
     },
   },
 
@@ -46,7 +48,8 @@ const opportunitySlotResolver = {
       args: GqlOpportunitySlotParticipationsArgs,
       ctx: IContext,
     ) => {
-      return ParticipationUseCase.visitorBrowseParticipations(
+      const useCase = container.resolve(ParticipationUseCase);
+      return useCase.visitorBrowseParticipations(
         {
           filter: { opportunitySlotId: parent.id },
           ...args,
