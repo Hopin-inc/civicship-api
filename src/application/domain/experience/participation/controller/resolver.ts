@@ -11,15 +11,19 @@ import {
 import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
+import { container } from "tsyringe";
 
 const participationResolver = {
   Query: {
-    participations: async (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) =>
-      ParticipationUseCase.visitorBrowseParticipations(args, ctx),
+    participations: async (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) => {
+      const useCase = container.resolve(ParticipationUseCase);
+      return useCase.visitorBrowseParticipations(args, ctx);
+    },
 
     participation: async (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
       if (!ctx.loaders?.participation) {
-        return ParticipationUseCase.visitorViewParticipation(args, ctx);
+        const useCase = container.resolve(ParticipationUseCase);
+        return useCase.visitorViewParticipation(args, ctx);
       }
       return await ctx.loaders.participation.load(args.id);
     },
@@ -30,7 +34,8 @@ const participationResolver = {
       args: GqlMutationParticipationCreatePersonalRecordArgs,
       ctx: IContext,
     ): Promise<GqlParticipationCreatePersonalRecordPayload> => {
-      return ParticipationUseCase.userCreatePersonalParticipationRecord(args, ctx);
+      const useCase = container.resolve(ParticipationUseCase);
+      return useCase.userCreatePersonalParticipationRecord(args, ctx);
     },
 
     participationDeletePersonalRecord: async (
@@ -38,7 +43,8 @@ const participationResolver = {
       args: GqlMutationParticipationDeletePersonalRecordArgs,
       ctx: IContext,
     ): Promise<GqlParticipationDeletePayload> => {
-      return ParticipationUseCase.userDeletePersonalParticipationRecord(args, ctx);
+      const useCase = container.resolve(ParticipationUseCase);
+      return useCase.userDeletePersonalParticipationRecord(args, ctx);
     },
   },
   Participation: {

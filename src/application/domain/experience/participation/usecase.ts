@@ -9,19 +9,27 @@ import {
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationService from "@/application/domain/experience/participation/service";
 import ParticipationPresenter from "@/application/domain/experience/participation/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { participationInclude } from "@/application/domain/experience/participation/data/type";
+import { inject, injectable } from "tsyringe";
+import { IParticipationService } from "@/application/domain/experience/participation/data/interface";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
+@injectable()
 export default class ParticipationUseCase {
-  static async visitorBrowseParticipations(
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("IParticipationService") private readonly service: IParticipationService,
+  ) {}
+
+  async visitorBrowseParticipations(
     { filter, first, sort, cursor }: GqlQueryParticipationsArgs,
     ctx: IContext,
   ): Promise<GqlParticipationsConnection> {
     const take = clampFirst(first);
 
-    const records = await ParticipationService.fetchParticipations(
+    const records = await this.service.fetchParticipations(
       ctx,
       { filter, sort, cursor },
       take,
@@ -35,35 +43,41 @@ export default class ParticipationUseCase {
     return ParticipationPresenter.query(data, hasNextPage);
   }
 
-  static async visitorViewParticipation(
+  async visitorViewParticipation(
     { id }: GqlQueryParticipationArgs,
     ctx: IContext,
   ): Promise<GqlParticipation | null> {
-    const res = await ParticipationService.findParticipation(ctx, id);
+    const res = await this.service.findParticipation(ctx, id);
     if (!res) {
       return null;
     }
     return ParticipationPresenter.get(res);
   }
 
-  static async userCreatePersonalParticipationRecord(
+  async userCreatePersonalParticipationRecord(
     { input }: GqlMutationParticipationCreatePersonalRecordArgs,
     ctx: IContext,
   ): Promise<GqlParticipationCreatePersonalRecordPayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const participation = await ParticipationService.createParticipation(ctx, input, currentUserId);
+
+    const participation = await this.issuer.public(ctx, async (tx) => {
+      return await this.service.createParticipation(ctx, input, currentUserId, tx);
+    });
 
     return ParticipationPresenter.create(participation);
   }
 
-  static async userDeletePersonalParticipationRecord(
+  async userDeletePersonalParticipationRecord(
     { id }: GqlMutationParticipationDeletePersonalRecordArgs,
     ctx: IContext,
   ): Promise<GqlParticipationDeletePayload> {
-    const participation = await ParticipationService.findParticipationOrThrow(ctx, id);
-    ParticipationService.validateDeletable(participation);
+    const deleted = await this.issuer.public(ctx, async (tx) => {
+      const participation = await this.service.findParticipationOrThrow(ctx, id);
+      this.service.validateDeletable(participation);
 
-    const deleted = await ParticipationService.deleteParticipation(ctx, id);
+      return await this.service.deleteParticipation(ctx, id, tx);
+    });
+
     return ParticipationPresenter.delete(deleted);
   }
 }

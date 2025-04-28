@@ -1,12 +1,17 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
-import { participationInclude } from "@/application/domain/experience/participation/data/type";
+import { participationInclude, PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { IContext } from "@/types/server";
+import { inject, injectable } from "tsyringe";
+import { IParticipationRepository } from "./interface";
 
-export default class ParticipationRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export class ParticipationRepository implements IParticipationRepository {
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+  ) { }
 
-  static async query<T extends Prisma.ParticipationInclude>(
+  async query<T extends Prisma.ParticipationInclude>(
     ctx: IContext,
     where: Prisma.ParticipationWhereInput,
     orderBy: Prisma.ParticipationOrderByWithRelationInput[],
@@ -28,7 +33,7 @@ export default class ParticipationRepository {
     );
   }
 
-  static async queryByReservationId(ctx: IContext, id: string) {
+  async queryByReservationId(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.participation.findMany({
         where: { reservationId: id },
@@ -37,112 +42,71 @@ export default class ParticipationRepository {
     });
   }
 
-  static async count(
+  async count(
     ctx: IContext,
     where: Prisma.ParticipationWhereInput,
-    tx?: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.participation.count({
+    return this.issuer.public(ctx, (dbTx) => {
+      return dbTx.participation.count({
         where,
       });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.participation.count({
-          where,
-        });
-      });
-    }
+    });
   }
 
-  static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
-    if (tx) {
+  async find(ctx: IContext, id: string): Promise<PrismaParticipation | null> {
+    return this.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
         include: participationInclude,
       });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.participation.findUnique({
-          where: { id },
-          include: participationInclude,
-        });
-      });
-    }
+    });
   }
 
-  static async create(
+  async create(
     ctx: IContext,
     data: Prisma.ParticipationCreateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.participation.create({
-        data,
-        include: participationInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.participation.create({
-          data,
-          include: participationInclude,
-        });
-      });
-    }
-  }
-
-  static async createMany(
-    ctx: IContext,
-    data: Prisma.ParticipationCreateManyInput[],
     tx: Prisma.TransactionClient,
-  ) {
-    return tx.participation.createMany({
+  ): Promise<PrismaParticipation> {
+    return tx.participation.create({
       data,
-      skipDuplicates: true,
+      include: participationInclude,
     });
   }
 
-  static async delete(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.participation.delete({
-        where: { id },
-        include: participationInclude,
-      });
-    });
-  }
-
-  static async setStatus(
+  async update(
     ctx: IContext,
     id: string,
     data: Prisma.ParticipationUpdateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.participation.update({
-        where: { id },
-        data,
-        include: participationInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.participation.update({
-          where: { id },
-          data,
-          include: participationInclude,
-        });
-      });
-    }
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaParticipation> {
+    return tx.participation.update({
+      where: { id },
+      data,
+      include: participationInclude,
+    });
   }
 
-  static async bulkSetParticipationStatus(
+  async delete(
     ctx: IContext,
-    ids: string[],
-    data: Prisma.ParticipationUpdateInput,
+    id: string,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaParticipation> {
+    return tx.participation.delete({
+      where: { id },
+      include: participationInclude,
+    });
+  }
+
+  async bulkSetStatusByReservation(
+    ctx: IContext,
+    participationIds: string[],
+    status: PrismaParticipation["status"],
+    reason: PrismaParticipation["reason"],
+    tx: Prisma.TransactionClient,
+  ): Promise<Prisma.BatchPayload> {
     return tx.participation.updateMany({
-      where: { id: { in: ids } },
-      data,
+      where: { id: { in: participationIds } },
+      data: { status, reason },
     });
   }
 }

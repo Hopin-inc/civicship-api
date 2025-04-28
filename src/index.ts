@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import http from "http";
 import { createServer } from "https";
 import fs from "fs";

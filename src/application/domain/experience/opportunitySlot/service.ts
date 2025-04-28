@@ -8,25 +8,32 @@ import {
 import OpportunitySlotRepository from "@/application/domain/experience/opportunitySlot/data/repository";
 import OpportunitySlotConverter from "@/application/domain/experience/opportunitySlot/data/converter";
 import { NotFoundError } from "@/errors/graphql";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class OpportunitySlotService {
-  static async fetchOpportunitySlots(
+  constructor(
+    @inject("OpportunitySlotRepository") private readonly repository: OpportunitySlotRepository,
+    @inject("OpportunitySlotConverter") private readonly converter: OpportunitySlotConverter,
+  ) {}
+
+  async fetchOpportunitySlots(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryOpportunitySlotsArgs,
     take: number,
   ) {
-    const where = OpportunitySlotConverter.filter(filter ?? {});
-    const orderBy = OpportunitySlotConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    return await OpportunitySlotRepository.query(ctx, where, orderBy, take, cursor);
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findOpportunitySlot(ctx: IContext, id: string) {
-    return OpportunitySlotRepository.find(ctx, id);
+  async findOpportunitySlot(ctx: IContext, id: string) {
+    return this.repository.find(ctx, id);
   }
 
-  static async findOpportunitySlotOrThrow(ctx: IContext, id: string) {
-    const record = await OpportunitySlotRepository.find(ctx, id);
+  async findOpportunitySlotOrThrow(ctx: IContext, id: string) {
+    const record = await this.repository.find(ctx, id);
 
     if (!record) {
       throw new NotFoundError("OpportunitySlot not found", { id });
@@ -35,25 +42,25 @@ export default class OpportunitySlotService {
     return record;
   }
 
-  static async fetchAllSlotByOpportunityId(
+  async fetchAllSlotByOpportunityId(
     ctx: IContext,
     opportunityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    return OpportunitySlotRepository.findByOpportunityId(ctx, opportunityId, tx);
+    return this.repository.findByOpportunityId(ctx, opportunityId);
   }
 
-  static async setOpportunitySlotHostingStatus(
+  async setOpportunitySlotHostingStatus(
     ctx: IContext,
     slotId: string,
     hostingStatus: OpportunitySlotHostingStatus,
     tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunitySlotOrThrow(ctx, slotId);
-    return await OpportunitySlotRepository.setHostingStatus(ctx, slotId, hostingStatus, tx);
+    return await this.repository.setHostingStatus(ctx, slotId, hostingStatus, tx);
   }
 
-  static async bulkCreateOpportunitySlots(
+  async bulkCreateOpportunitySlots(
     ctx: IContext,
     opportunityId: string,
     inputs: GqlOpportunitySlotCreateInput[],
@@ -61,11 +68,11 @@ export default class OpportunitySlotService {
   ) {
     if (inputs.length === 0) return;
 
-    const data = OpportunitySlotConverter.createMany(opportunityId, inputs);
-    return OpportunitySlotRepository.createMany(ctx, data, tx);
+    const data = this.converter.createMany(opportunityId, inputs);
+    return this.repository.createMany(ctx, data, tx);
   }
 
-  static async bulkUpdateOpportunitySlots(
+  async bulkUpdateOpportunitySlots(
     ctx: IContext,
     inputs: GqlOpportunitySlotUpdateInput[],
     tx: Prisma.TransactionClient,
@@ -74,17 +81,13 @@ export default class OpportunitySlotService {
 
     return await Promise.all(
       inputs.map((input) =>
-        OpportunitySlotRepository.update(ctx, input.id, OpportunitySlotConverter.update(input), tx),
+        this.repository.update(ctx, input.id, this.converter.update(input), tx),
       ),
     );
   }
 
-  static async bulkDeleteOpportunitySlots(
-    ctx: IContext,
-    ids: string[],
-    tx: Prisma.TransactionClient,
-  ) {
+  async bulkDeleteOpportunitySlots(ctx: IContext, ids: string[], tx: Prisma.TransactionClient) {
     if (ids.length === 0) return;
-    return await OpportunitySlotRepository.deleteMany(ctx, ids, tx);
+    return await this.repository.deleteMany(ctx, ids, tx);
   }
 }

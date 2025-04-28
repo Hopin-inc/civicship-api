@@ -13,7 +13,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import PlaceUseCase from "@/application/domain/location/place/usecase";
-import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
+import { container } from "tsyringe";
 
 const placeResolver = {
   Query: {
@@ -56,7 +56,8 @@ const placeResolver = {
       args: GqlPlaceOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(
+      const opportunityUseCase = container.resolve("OpportunityUseCase");
+      return opportunityUseCase.anyoneBrowseOpportunities(
         {
           ...args,
           filter: { ...args.filter, placeIds: [parent.id] },
