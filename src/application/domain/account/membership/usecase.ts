@@ -27,19 +27,12 @@ import { inject, injectable } from "tsyringe";
 export default class MembershipUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("MembershipService") private readonly membershipService: Pick<
-      MembershipService,
-      "fetchMemberships" | "findMembership" | "inviteMember" | "joinIfNeeded" | "setStatus" | "setRole" | "deleteMembership"
-    >,
-    @inject("WalletService") private readonly walletService: Pick<
-      WalletService,
-      "createMemberWalletIfNeeded" | "deleteMemberWallet"
-    >,
-    @inject("NotificationService") private readonly notificationService: Pick<
-      NotificationService,
-      "switchRichMenuByRole"
-    >,
-  ) { }
+    @inject("MembershipService") private readonly membershipService: MembershipService,
+    @inject("WalletService")
+    private readonly walletService: WalletService,
+    @inject("NotificationService")
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async visitorBrowseMemberships(
     args: GqlQueryMembershipsArgs,

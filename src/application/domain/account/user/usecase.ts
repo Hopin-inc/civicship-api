@@ -17,11 +17,8 @@ import { inject, injectable } from "tsyringe";
 export default class UserUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("UserService") private readonly service: Pick<
-      UserService,
-      "fetchCommunityMembers" | "findUser" | "updateProfile"
-    >,
-  ) { }
+    @inject("UserService") private readonly service: UserService,
+  ) {}
 
   async visitorBrowseCommunityMembers(
     ctx: IContext,

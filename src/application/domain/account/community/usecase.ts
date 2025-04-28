@@ -22,15 +22,10 @@ import { inject, injectable } from "tsyringe";
 export default class CommunityUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("CommunityService") private readonly communityService: Pick<
-      CommunityService,
-      "fetchCommunities" | "findCommunity" | "createCommunityAndJoinAsOwner" | "deleteCommunity" | "updateCommunityProfile"
-    >,
-    @inject("WalletService") private readonly walletService: Pick<
-      WalletService,
-      "createCommunityWallet" | "createMemberWalletIfNeeded"
-    >,
-  ) { }
+    @inject("CommunityService") private readonly communityService: CommunityService,
+    @inject("WalletService")
+    private readonly walletService: WalletService,
+  ) {}
 
   async userBrowseCommunities(
     { filter, sort, cursor, first }: GqlQueryCommunitiesArgs,
