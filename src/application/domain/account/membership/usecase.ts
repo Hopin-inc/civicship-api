@@ -4,179 +4,175 @@ import {
   GqlMembershipsConnection,
   GqlMembership,
   GqlMutationMembershipInviteArgs,
-  GqlMembershipInvitePayload,
   GqlMutationMembershipCancelInvitationArgs,
-  GqlMembershipSetInvitationStatusPayload,
   GqlMutationMembershipAcceptMyInvitationArgs,
   GqlMutationMembershipDenyMyInvitationArgs,
   GqlMutationMembershipWithdrawArgs,
-  GqlMembershipWithdrawPayload,
   GqlMutationMembershipRemoveArgs,
-  GqlMembershipRemovePayload,
   GqlMutationMembershipAssignOwnerArgs,
-  GqlMembershipSetRolePayload,
   GqlMutationMembershipAssignManagerArgs,
   GqlMutationMembershipAssignMemberArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
+import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import MembershipPresenter from "@/application/domain/account/membership/presenter";
 import MembershipService from "@/application/domain/account/membership/service";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
 import WalletService from "@/application/domain/account/wallet/service";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import NotificationService from "@/application/domain/notification/service";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export default class MembershipUseCase {
-  private static issuer = new PrismaClientIssuer();
+  constructor(
+    private readonly issuer: PrismaClientIssuer,
+    private readonly membershipService: MembershipService,
+    private readonly walletService: WalletService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
-  static async visitorBrowseMemberships(
-    { filter, sort, cursor, first }: GqlQueryMembershipsArgs,
+  async visitorBrowseMemberships(
+    args: GqlQueryMembershipsArgs,
     ctx: IContext,
   ): Promise<GqlMembershipsConnection> {
-    const take = clampFirst(first);
-
-    const records = await MembershipService.fetchMemberships(
-      ctx,
-      {
-        cursor,
-        sort,
-        filter,
-      },
-      take,
-    );
+    const take = clampFirst(args.first);
+    const records = await this.membershipService.fetchMemberships(ctx, args, take);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map(MembershipPresenter.get);
     return MembershipPresenter.query(data, hasNextPage);
   }
 
-  static async visitorViewMembership(
-    { userId, communityId }: GqlQueryMembershipArgs,
+  async visitorViewMembership(
+    args: GqlQueryMembershipArgs,
     ctx: IContext,
   ): Promise<GqlMembership | null> {
-    const membership = await MembershipService.findMembership(ctx, userId, communityId);
+    const membership = await this.membershipService.findMembership(
+      ctx,
+      args.userId,
+      args.communityId,
+    );
     return membership ? MembershipPresenter.get(membership) : null;
   }
 
-  static async ownerInviteMember(
-    { input }: GqlMutationMembershipInviteArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipInvitePayload> {
-    const membership = await MembershipService.inviteMember(ctx, input);
+  async ownerInviteMember(args: GqlMutationMembershipInviteArgs, ctx: IContext) {
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.inviteMember(ctx, args.input, tx);
+    });
     return MembershipPresenter.invite(membership);
   }
 
-  static async ownerCancelInvitation(
-    { input }: GqlMutationMembershipCancelInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const membership = await MembershipService.setStatus(
-      ctx,
-      input,
-      MembershipStatus.LEFT,
-      MembershipStatusReason.CANCELED_INVITATION,
-    );
-    return MembershipPresenter.setInvitationStatus(membership);
-  }
-
-  static async userAcceptMyInvitation(
-    { input }: GqlMutationMembershipAcceptMyInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const currentUserId = getCurrentUserId(ctx);
-
-    const membership = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const membership = await MembershipService.joinIfNeeded(
+  async ownerCancelInvitation(args: GqlMutationMembershipCancelInvitationArgs, ctx: IContext) {
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.setStatus(
         ctx,
-        currentUserId,
-        input.communityId,
+        args.input,
+        MembershipStatus.LEFT,
+        MembershipStatusReason.CANCELED_INVITATION,
         tx,
       );
-      await WalletService.createMemberWalletIfNeeded(ctx, currentUserId, input.communityId, tx);
-      return membership;
     });
-
-    await NotificationService.switchRichMenuByRole(membership);
     return MembershipPresenter.setInvitationStatus(membership);
   }
 
-  static async userDenyMyInvitation(
-    { input }: GqlMutationMembershipDenyMyInvitationArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSetInvitationStatusPayload> {
-    const userId = getCurrentUserId(ctx);
-    const { communityId } = input;
+  async userAcceptMyInvitation(args: GqlMutationMembershipAcceptMyInvitationArgs, ctx: IContext) {
+    const currentUserId = getCurrentUserId(ctx);
 
-    const membership = await MembershipService.setStatus(
-      ctx,
-      { userId, communityId },
-      MembershipStatus.LEFT,
-      MembershipStatusReason.DECLINED_INVITATION,
-    );
-    return MembershipPresenter.setInvitationStatus(membership);
-  }
-
-  static async memberWithdrawCommunity(
-    { input }: GqlMutationMembershipWithdrawArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipWithdrawPayload> {
-    const userId = getCurrentUserId(ctx);
-    const { communityId } = input;
-
-    const membership = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const membership = await MembershipService.deleteMembership(ctx, tx, userId, communityId);
-      await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      const membership = await this.membershipService.joinIfNeeded(
+        ctx,
+        currentUserId,
+        args.input.communityId,
+        tx,
+      );
+      await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        currentUserId,
+        args.input.communityId,
+        tx,
+      );
       return membership;
     });
 
-    await NotificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(membership);
+    return MembershipPresenter.setInvitationStatus(membership);
+  }
+
+  async userDenyMyInvitation(args: GqlMutationMembershipDenyMyInvitationArgs, ctx: IContext) {
+    const userId = getCurrentUserId(ctx);
+
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.setStatus(
+        ctx,
+        { userId, communityId: args.input.communityId },
+        MembershipStatus.LEFT,
+        MembershipStatusReason.DECLINED_INVITATION,
+        tx,
+      );
+    });
+
+    return MembershipPresenter.setInvitationStatus(membership);
+  }
+
+  async memberWithdrawCommunity(args: GqlMutationMembershipWithdrawArgs, ctx: IContext) {
+    const userId = getCurrentUserId(ctx);
+
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      const membership = await this.membershipService.deleteMembership(
+        ctx,
+        tx,
+        userId,
+        args.input.communityId,
+      );
+      await this.walletService.deleteMemberWallet(ctx, userId, args.input.communityId, tx);
+      return membership;
+    });
+
+    await this.notificationService.switchRichMenuByRole(membership);
     return MembershipPresenter.withdraw(membership);
   }
 
-  static async ownerRemoveMember(
-    { input }: GqlMutationMembershipRemoveArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipRemovePayload> {
-    const { userId, communityId } = input;
+  async ownerRemoveMember(args: GqlMutationMembershipRemoveArgs, ctx: IContext) {
+    const { userId, communityId } = args.input;
 
-    const membership = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      const membership = await MembershipService.deleteMembership(ctx, tx, userId, communityId);
-      await WalletService.deleteMemberWallet(ctx, userId, communityId, tx);
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      const membership = await this.membershipService.deleteMembership(
+        ctx,
+        tx,
+        userId,
+        communityId,
+      );
+      await this.walletService.deleteMemberWallet(ctx, userId, communityId, tx);
       return membership;
     });
 
-    await NotificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(membership);
     return MembershipPresenter.remove(membership);
   }
 
-  static async ownerAssignOwner(
-    { input }: GqlMutationMembershipAssignOwnerArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.setRole(ctx, input, Role.OWNER);
-    await NotificationService.switchRichMenuByRole(membership);
+  async ownerAssignOwner(args: GqlMutationMembershipAssignOwnerArgs, ctx: IContext) {
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.setRole(ctx, args.input, Role.OWNER, tx);
+    });
 
+    await this.notificationService.switchRichMenuByRole(membership);
     return MembershipPresenter.setRole(membership);
   }
 
-  static async managerAssignManager(
-    { input }: GqlMutationMembershipAssignManagerArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.setRole(ctx, input, Role.MANAGER);
-    await NotificationService.switchRichMenuByRole(membership);
+  async managerAssignManager(args: GqlMutationMembershipAssignManagerArgs, ctx: IContext) {
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.setRole(ctx, args.input, Role.MANAGER, tx);
+    });
 
+    await this.notificationService.switchRichMenuByRole(membership);
     return MembershipPresenter.setRole(membership);
   }
 
-  static async managerAssignMember(
-    { input }: GqlMutationMembershipAssignMemberArgs,
-    ctx: IContext,
-  ): Promise<GqlMembershipSetRolePayload> {
-    const membership = await MembershipService.setRole(ctx, input, Role.MEMBER);
-    await NotificationService.switchRichMenuByRole(membership);
+  async managerAssignMember(args: GqlMutationMembershipAssignMemberArgs, ctx: IContext) {
+    const membership = await this.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.setRole(ctx, args.input, Role.MEMBER, tx);
+    });
 
+    await this.notificationService.switchRichMenuByRole(membership);
     return MembershipPresenter.setRole(membership);
   }
 }

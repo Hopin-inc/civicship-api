@@ -19,24 +19,27 @@ import {
   GqlWalletsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import UserUseCase from "@/application/domain/account/user/usecase";
-import MembershipUseCase from "@/application/domain/account/membership/usecase";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
 import ViewUseCase from "@/application/view/usecase";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { createWalletUseCase } from "@/application/domain/account/wallet/provider";
+import { createUserUseCase } from "@/application/domain/account/user/provider";
+import { createMembershipUseCase } from "@/application/domain/account/membership/provider";
+
+const issuer = new PrismaClientIssuer();
+const walletUseCase = createWalletUseCase(issuer);
+const userUseCase = createUserUseCase(issuer);
+const membershipUseCase = createMembershipUseCase(issuer);
 
 const userResolver = {
   Query: {
     users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
-      UserUseCase.visitorBrowseCommunityMembers(ctx, args),
+      userUseCase.visitorBrowseCommunityMembers(ctx, args),
     user: async (_: unknown, args: GqlQueryUserArgs, ctx: IContext) => {
-      if (!ctx.loaders?.user) {
-        return UserUseCase.visitorViewMember(ctx, args);
-      }
-      return await ctx.loaders.user.load(args.id);
+      return userUseCase.visitorViewMember(ctx, args);
     },
   },
   Mutation: {
@@ -44,7 +47,7 @@ const userResolver = {
       _: unknown,
       args: GqlMutationUserUpdateMyProfileArgs,
       ctx: IContext,
-    ) => UserUseCase.userUpdateProfile(ctx, args),
+    ) => userUseCase.userUpdateProfile(ctx, args),
   },
 
   User: {
@@ -84,7 +87,7 @@ const userResolver = {
       args: GqlUserMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
-      return MembershipUseCase.visitorBrowseMemberships(
+      return membershipUseCase.visitorBrowseMemberships(
         {
           ...args,
           filter: { ...args.filter, userId: parent.id },
@@ -98,7 +101,7 @@ const userResolver = {
       args: GqlUserWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
-      return WalletUseCase.visitorBrowseWallets(
+      return walletUseCase.visitorBrowseWallets(
         {
           ...args,
           filter: { ...args.filter, userId: parent.id },

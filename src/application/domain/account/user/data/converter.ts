@@ -1,8 +1,13 @@
-import { GqlImageInput, GqlUserFilterInput, GqlUserSortInput, GqlUserUpdateProfileInput } from "@/types/graphql";
+import {
+  GqlImageInput,
+  GqlUserFilterInput,
+  GqlUserSortInput,
+  GqlUserUpdateProfileInput,
+} from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 
 export default class UserConverter {
-  static filter(filter: GqlUserFilterInput): Prisma.UserWhereInput {
+  filter(filter: GqlUserFilterInput): Prisma.UserWhereInput {
     return {
       AND: [
         filter?.sysRole ? { sysRole: filter?.sysRole } : {},
@@ -15,15 +20,15 @@ export default class UserConverter {
     };
   }
 
-  static sort(sort: GqlUserSortInput): Prisma.UserOrderByWithRelationInput {
+  sort(sort: GqlUserSortInput): Prisma.UserOrderByWithRelationInput {
     return {
       createdAt: sort?.createdAt ?? Prisma.SortOrder.desc,
     };
   }
 
-  static update(input: GqlUserUpdateProfileInput): {
-    data: Prisma.UserUpdateInput,
-    image?: GqlImageInput,
+  update(input: GqlUserUpdateProfileInput): {
+    data: Prisma.UserUpdateInput;
+    image?: GqlImageInput;
   } {
     const { image, ...data } = input;
     return { image, data };

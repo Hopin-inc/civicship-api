@@ -4,49 +4,54 @@ import {
   GqlQueryCommunitiesArgs,
 } from "@/types/graphql";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
-import CommunityRepository from "@/application/domain/account/community/data/repository";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
+import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
 
 export default class CommunityService {
-  static async fetchCommunities(
+  constructor(
+    private readonly repository: ICommunityRepository,
+    private readonly converter: CommunityConverter,
+    private readonly imageService: ImageService,
+  ) {}
+
+  async fetchCommunities(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryCommunitiesArgs,
     take: number,
   ) {
-    const where = CommunityConverter.filter(filter ?? {});
-    const orderBy = CommunityConverter.sort(sort ?? {});
-
-    return await CommunityRepository.query(ctx, where, orderBy, take, cursor);
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findCommunity(ctx: IContext, id: string) {
-    return await CommunityRepository.find(ctx, id);
+  async findCommunity(ctx: IContext, id: string) {
+    return await this.repository.find(ctx, id);
   }
 
-  static async findCommunityOrThrow(ctx: IContext, id: string) {
-    const community = await CommunityRepository.find(ctx, id);
+  async findCommunityOrThrow(ctx: IContext, id: string) {
+    const community = await this.repository.find(ctx, id);
     if (!community) {
       throw new NotFoundError("Community", { id });
     }
     return community;
   }
 
-  static async createCommunityAndJoinAsOwner(
+  async createCommunityAndJoinAsOwner(
     ctx: IContext,
     input: GqlCommunityCreateInput,
     tx: Prisma.TransactionClient,
   ) {
     const userId = getCurrentUserId(ctx);
 
-    const { data, image } = CommunityConverter.create(input, userId);
+    const { data, image } = this.converter.create(input, userId);
 
     let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
     if (image) {
-      uploadedImageData = await ImageService.uploadPublicImage(image, "communities");
+      uploadedImageData = await this.imageService.uploadPublicImage(image, "communities");
     }
 
     const updateInput: Prisma.CommunityCreateInput = {
@@ -56,27 +61,28 @@ export default class CommunityService {
       },
     };
 
-    return CommunityRepository.create(ctx, updateInput, tx);
+    return this.repository.create(ctx, updateInput, tx);
   }
 
-  static async deleteCommunity(ctx: IContext, id: string) {
+  async deleteCommunity(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     await this.findCommunityOrThrow(ctx, id);
-    return await CommunityRepository.delete(ctx, id);
+    return await this.repository.delete(ctx, id, tx);
   }
 
-  static async updateCommunityProfile(
+  async updateCommunityProfile(
     ctx: IContext,
     id: string,
     input: GqlCommunityUpdateProfileInput,
+    tx: Prisma.TransactionClient,
   ) {
     await this.findCommunityOrThrow(ctx, id);
     validateConnectOrCreatePlacesInput(input);
 
-    const { data, image } = CommunityConverter.update(input);
+    const { data, image } = this.converter.update(input);
 
     let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
     if (image) {
-      uploadedImageData = await ImageService.uploadPublicImage(image, "communities");
+      uploadedImageData = await this.imageService.uploadPublicImage(image, "communities");
     }
 
     const updateInput: Prisma.CommunityUpdateInput = {
@@ -86,7 +92,7 @@ export default class CommunityService {
       },
     };
 
-    return await CommunityRepository.update(ctx, id, updateInput);
+    return await this.repository.update(ctx, id, updateInput, tx);
   }
 }
 

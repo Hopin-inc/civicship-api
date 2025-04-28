@@ -2,11 +2,18 @@ import { IContext } from "@/types/server";
 import { Prisma, TransactionReason } from "@prisma/client";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { GqlWallet } from "@/types/graphql";
-import WalletService from "@/application/domain/account/wallet/service";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
+import WalletService from "@/application/domain/account/wallet/service";
 
 export default class WalletValidator {
-  static async validateCommunityMemberTransfer(
+  constructor(
+    private readonly service: Pick<
+      WalletService,
+      "findCommunityWalletOrThrow" | "createMemberWalletIfNeeded" | "findMemberWalletOrThrow"
+    >,
+  ) {}
+
+  async validateCommunityMemberTransfer(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     communityId: string,
@@ -30,7 +37,7 @@ export default class WalletValidator {
     return { fromWalletId: from.id, toWalletId: to.id };
   }
 
-  private static async getWalletPairByDirection(
+  private async getWalletPairByDirection(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     direction: TransferDirection,
@@ -38,10 +45,10 @@ export default class WalletValidator {
     userId: string,
     createIfNeeded: boolean,
   ) {
-    const communityWallet = await WalletService.findCommunityWalletOrThrow(ctx, communityId);
+    const communityWallet = await this.service.findCommunityWalletOrThrow(ctx, communityId);
     const memberWallet = createIfNeeded
-      ? await WalletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx)
-      : await WalletService.findMemberWalletOrThrow(ctx, userId, communityId, tx);
+      ? await this.service.createMemberWalletIfNeeded(ctx, userId, communityId, tx)
+      : await this.service.findMemberWalletOrThrow(ctx, userId, communityId);
 
     switch (direction) {
       case TransferDirection.COMMUNITY_TO_MEMBER:
@@ -53,7 +60,7 @@ export default class WalletValidator {
     }
   }
 
-  static async validateTransferMemberToMember(
+  async validateTransferMemberToMember(
     fromWallet: PrismaWallet,
     toWallet: PrismaWallet,
     transferPoints: number,
@@ -66,7 +73,7 @@ export default class WalletValidator {
     };
   }
 
-  static async validateTransfer(
+  async validateTransfer(
     transferPoints: number,
     fromWallet: GqlWallet | null,
     toWallet: GqlWallet | null,

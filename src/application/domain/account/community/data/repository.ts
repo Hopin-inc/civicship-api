@@ -2,11 +2,12 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
+import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
 
-export default class CommunityRepository {
-  private static issuer = new PrismaClientIssuer();
+export default class CommunityRepository implements ICommunityRepository {
+  constructor(private readonly issuer: PrismaClientIssuer) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.CommunityWhereInput,
     orderBy: Prisma.CommunityOrderByWithRelationInput[],
@@ -25,7 +26,7 @@ export default class CommunityRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.community.findUnique({
         where: { id },
@@ -34,33 +35,30 @@ export default class CommunityRepository {
     });
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.CommunityCreateInput,
-    tx: Prisma.TransactionClient,
-  ) {
+  async create(ctx: IContext, data: Prisma.CommunityCreateInput, tx: Prisma.TransactionClient) {
     return tx.community.create({
       data,
       include: communityInclude,
     });
   }
 
-  static async delete(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.community.delete({
-        where: { id },
-        include: communityInclude,
-      });
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.CommunityUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.community.update({
+      where: { id },
+      data,
+      include: communityInclude,
     });
   }
 
-  static async update(ctx: IContext, id: string, data: Prisma.CommunityUpdateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.community.update({
-        where: { id },
-        data,
-        include: communityInclude,
-      });
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+    return tx.community.delete({
+      where: { id },
+      include: communityInclude,
     });
   }
 }

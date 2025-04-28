@@ -5,20 +5,21 @@ import {
   GqlTransactionsConnection,
   GqlWalletTransactionsArgs,
 } from "@/types/graphql";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import { IContext } from "@/types/server";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { createWalletUseCase } from "@/application/domain/account/wallet/provider";
+
+const issuer = new PrismaClientIssuer();
+const walletUseCase = createWalletUseCase(issuer);
 
 const walletResolver = {
   Query: {
     wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
-      WalletUseCase.visitorBrowseWallets(args, ctx),
+      walletUseCase.visitorBrowseWallets(args, ctx),
     wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
-      if (!ctx.loaders?.wallet) {
-        return WalletUseCase.userViewWallet(args, ctx);
-      }
-      return await ctx.loaders.wallet.load(args.id);
+      return walletUseCase.userViewWallet(args, ctx);
     },
   },
 

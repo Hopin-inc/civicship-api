@@ -1,13 +1,16 @@
-import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { userInclude } from "@/application/domain/account/user/data/type";
 
-export default class UserRepository {
-  private static db = prismaClient;
-  private static issuer = new PrismaClientIssuer();
+export default class UserRepository implements IUserRepository {
+  constructor(
+    private readonly issuer: PrismaClientIssuer,
+    private readonly db: typeof prismaClient,
+  ) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.UserWhereInput,
     orderBy: Prisma.UserOrderByWithRelationInput,
@@ -18,15 +21,15 @@ export default class UserRepository {
       return tx.user.findMany({
         where,
         orderBy,
-        include: userInclude,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
+        include: userInclude,
       });
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.user.findUnique({
         where: { id },
@@ -35,7 +38,14 @@ export default class UserRepository {
     });
   }
 
-  static async updateProfile(
+  async create(data: Prisma.UserCreateInput) {
+    return this.db.user.create({
+      data,
+      include: userInclude,
+    });
+  }
+
+  async update(
     ctx: IContext,
     id: string,
     data: Prisma.UserUpdateInput,
@@ -48,21 +58,10 @@ export default class UserRepository {
     });
   }
 
-  static async createWithIdentity(data: Prisma.UserCreateInput) {
-    return this.db.user.create({
-      data,
-      include: {
-        identities: true,
-      },
-    });
-  }
-
-  static async deleteWithIdentity(id: string) {
+  async delete(id: string) {
     return this.db.user.delete({
       where: { id },
-      include: {
-        identities: true,
-      },
+      include: userInclude,
     });
   }
 }

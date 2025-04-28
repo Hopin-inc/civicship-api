@@ -1,15 +1,20 @@
 import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
-import UserRepository from "@/application/domain/account/user/data/repository";
-import IdentityRepository from "@/application/domain/account/identity/data/repository";
+import { IUserRepository } from "@/application/domain/account/user/data/interface";
+import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
 
 export default class IdentityService {
-  static async createUserAndIdentity(
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly identityRepository: IIdentityRepository,
+  ) {}
+
+  async createUserAndIdentity(
     data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
   ) {
-    return UserRepository.createWithIdentity({
+    return this.userRepository.create({
       ...data,
       identities: {
         create: { uid, platform },
@@ -17,16 +22,16 @@ export default class IdentityService {
     });
   }
 
-  static async deleteUserAndIdentity(uid: string): Promise<User | null> {
-    const identity = await IdentityRepository.find(uid);
+  async deleteUserAndIdentity(uid: string): Promise<User | null> {
+    const identity = await this.identityRepository.find(uid);
     if (identity) {
-      return UserRepository.deleteWithIdentity(identity.userId);
+      return this.userRepository.delete(identity.userId);
     } else {
       return null;
     }
   }
 
-  static async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
+  async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     return tenantedAuth.deleteUser(uid);
   }

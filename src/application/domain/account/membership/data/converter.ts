@@ -2,7 +2,7 @@ import { GqlMembershipFilterInput, GqlMembershipSortInput } from "@/types/graphq
 import { Prisma, MembershipStatus, Role, MembershipStatusReason } from "@prisma/client";
 
 export default class MembershipConverter {
-  static filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
+  filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
     return {
       AND: [
         filter?.userId ? { userId: filter.userId } : {},
@@ -13,11 +13,11 @@ export default class MembershipConverter {
     };
   }
 
-  static sort(sort?: GqlMembershipSortInput): Prisma.MembershipOrderByWithRelationInput[] {
+  sort(sort?: GqlMembershipSortInput): Prisma.MembershipOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static join(
+  join(
     currentUserId: string,
     communityId: string,
     joinedUserId?: string,
@@ -37,7 +37,7 @@ export default class MembershipConverter {
     };
   }
 
-  static invite(
+  invite(
     invitedUserId: string,
     communityId: string,
     currentUserId: string,
@@ -60,7 +60,7 @@ export default class MembershipConverter {
     };
   }
 
-  static update(
+  update(
     status: MembershipStatus,
     reason: MembershipStatusReason,
     role: Role,

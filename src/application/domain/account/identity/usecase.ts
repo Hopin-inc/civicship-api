@@ -9,22 +9,31 @@ import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 
 export default class IdentityUseCase {
-  private static issuer = new PrismaClientIssuer();
+  constructor(
+    private readonly issuer: PrismaClientIssuer,
+    private readonly identityService: IdentityService,
+    private readonly membershipService: MembershipService,
+    private readonly walletService: WalletService,
+    private readonly imageService: ImageService,
+  ) {}
 
-  static async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
+  async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     return {
       user: context.currentUser,
     };
   }
 
-  static async userCreateAccount(
+  async userCreateAccount(
     ctx: IContext,
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
     const { data, image } = IdentityConverter.create(args);
-    console.debug({ ctx, data, image });
-    const uploadedImage = image ? await ImageService.uploadPublicImage(image, "users") : undefined;
-    const user = await IdentityService.createUserAndIdentity(
+
+    const uploadedImage = image
+      ? await this.imageService.uploadPublicImage(image, "users")
+      : undefined;
+
+    const user = await this.identityService.createUserAndIdentity(
       {
         ...data,
         image: uploadedImage ? { create: uploadedImage } : undefined,
@@ -34,18 +43,18 @@ export default class IdentityUseCase {
     );
 
     const res = await this.issuer.public(ctx, async (tx) => {
-      await MembershipService.joinIfNeeded(ctx, user.id, args.input.communityId, tx);
-      await WalletService.createMemberWalletIfNeeded(ctx, user.id, args.input.communityId, tx);
+      await this.membershipService.joinIfNeeded(ctx, user.id, args.input.communityId, tx);
+      await this.walletService.createMemberWalletIfNeeded(ctx, user.id, args.input.communityId, tx);
       return user;
     });
 
     return IdentityPresenter.create(res);
   }
 
-  static async userDeleteAccount(context: IContext): Promise<GqlCurrentUserPayload> {
+  async userDeleteAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     const uid = context.uid;
-    const user = await IdentityService.deleteUserAndIdentity(uid);
-    await IdentityService.deleteFirebaseAuthUser(uid, context.tenantId);
+    const user = await this.identityService.deleteUserAndIdentity(uid);
+    await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
     return IdentityPresenter.delete(user);
   }
 }
