@@ -6,17 +6,17 @@ import {
   GqlMutationTransactionDonateSelfPointArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { container } from "tsyringe";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
+
+const transactionUseCase = container.resolve(TransactionUseCase);
 
 const transactionResolver = {
   Query: {
     transactions: async (_: unknown, args: GqlQueryTransactionsArgs, ctx: IContext) =>
-      TransactionUseCase.visitorBrowseTransactions(args, ctx),
+      transactionUseCase.visitorBrowseTransactions(args, ctx),
     transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
-      if (!ctx.loaders?.transaction) {
-        return TransactionUseCase.visitorViewTransaction(args, ctx);
-      }
-      return await ctx.loaders.transaction.load(args.id);
+      return transactionUseCase.visitorViewTransaction(args, ctx);
     },
   },
   Mutation: {
@@ -24,17 +24,17 @@ const transactionResolver = {
       _: unknown,
       args: GqlMutationTransactionIssueCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.ownerIssueCommunityPoint(args, ctx),
+    ) => transactionUseCase.ownerIssueCommunityPoint(args, ctx),
     transactionGrantCommunityPoint: async (
       _: unknown,
       { input }: GqlMutationTransactionGrantCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.managerGrantCommunityPoint(ctx, input),
+    ) => transactionUseCase.managerGrantCommunityPoint(ctx, input),
     transactionDonateSelfPoint: async (
       _: unknown,
       { input }: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.userDonateSelfPointToAnother(ctx, input),
+    ) => transactionUseCase.userDonateSelfPointToAnother(ctx, input),
   },
 };
 

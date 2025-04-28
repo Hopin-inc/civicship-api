@@ -1,81 +1,86 @@
-import { Prisma, TransactionReason } from "@prisma/client";
+import "reflect-metadata";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import TransactionConverter from "@/application/domain/transaction/data/converter";
-import TransactionRepository from "@/application/domain/transaction/data/repository";
+import { container } from "tsyringe";
 import TransactionService from "@/application/domain/transaction/service";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import {
+  GqlTransactionGrantCommunityPointInput,
+  GqlTransactionIssueCommunityPointInput,
+} from "@/types/graphql";
 
-jest.mock("@/application/domain/transaction/data/converter", () => ({
-  __esModule: true,
-  default: {
-    issueCommunityPoint: jest.fn(),
-    grantCommunityPoint: jest.fn(),
-    donateSelfPoint: jest.fn(),
-    giveRewardPoint: jest.fn(),
-    purchaseTicket: jest.fn(),
-  },
-}));
+class MockTransactionRepository {
+  create = jest.fn();
+  refreshCurrentPoints = jest.fn();
+}
 
-jest.mock("@/application/domain/transaction/data/repository", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    refreshCurrentPoints: jest.fn(),
-  },
-}));
+class MockTransactionConverter {
+  issueCommunityPoint = jest.fn();
+  grantCommunityPoint = jest.fn();
+  donateSelfPoint = jest.fn();
+  giveRewardPoint = jest.fn();
+  purchaseTicket = jest.fn();
+  refundTicket = jest.fn();
+}
 
 describe("TransactionService", () => {
-  const ctx = {} as IContext;
-  const tx = {} as Prisma.TransactionClient;
+  let mockRepository: MockTransactionRepository;
+  let mockConverter: MockTransactionConverter;
+  let mockService: ITransactionService;
+
+  const mockCtx = {} as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
+  const transferPoints = 100;
+  const walletId = "wallet-1";
   const communityId = "community-1";
   const userId = "user-1";
-  const walletId = "wallet-1";
-  const memberWalletId = "wallet-2";
-  const opportunityId = "opportunity-123";
   const participationId = "participation-123";
-  const transferPoints = 100;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    container.reset();
+
+    mockRepository = new MockTransactionRepository();
+    mockConverter = new MockTransactionConverter();
+
+    container.register("ITransactionRepository", { useValue: mockRepository });
+    container.register("TransactionConverter", { useValue: mockConverter });
+    container.register("ITransactionService", { useClass: TransactionService });
+
+    mockService = container.resolve(TransactionService);
   });
 
   describe("issueCommunityPoint", () => {
     it("should create transaction and refresh transferPoints", async () => {
       const mockTransaction = {
         id: "tx-1",
-        createdAt: new Date(),
-        updatedAt: null,
-        reason: TransactionReason.POINT_ISSUED,
-        participationId: null,
-        from: null,
+        reason: "POINT_ISSUED",
         fromPointChange: transferPoints,
         to: walletId,
         toPointChange: transferPoints,
       };
-      const input = {
-        communityId,
-        to: userId,
+
+      const input: GqlTransactionIssueCommunityPointInput = {
         toWalletId: walletId,
-        fromPointChange: transferPoints,
-        toPointChange: transferPoints,
         transferPoints: transferPoints,
       };
 
-      (TransactionConverter.issueCommunityPoint as jest.Mock).mockReturnValue(input);
-      (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
-      (TransactionRepository.refreshCurrentPoints as jest.Mock).mockResolvedValue(undefined);
-
-      const result = await TransactionService.issueCommunityPoint(ctx, input);
-
-      expect(TransactionConverter.issueCommunityPoint).toHaveBeenCalledWith({
-        communityId,
-        to: userId,
-        toWalletId: walletId,
+      const convertedData = {
+        reason: "POINT_ISSUED",
         fromPointChange: transferPoints,
+        to: walletId,
         toPointChange: transferPoints,
-        transferPoints: transferPoints,
-      });
-      expect(TransactionRepository.create).toHaveBeenCalledWith(ctx, input);
-      expect(TransactionRepository.refreshCurrentPoints).toHaveBeenCalledWith(ctx);
+      };
+
+      mockConverter.issueCommunityPoint.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
+
+      const result = await mockService.issueCommunityPoint(mockCtx, input, mockTx);
+
+      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(input);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
+      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -84,45 +89,35 @@ describe("TransactionService", () => {
     it("should create transaction and refresh transferPoints", async () => {
       const mockTransaction = {
         id: "tx-2",
-        createdAt: new Date(),
-        updatedAt: null,
-        reason: TransactionReason.GRANT,
-        participationId: null,
-        from: memberWalletId,
+        reason: "GRANT",
         fromPointChange: transferPoints,
         to: walletId,
         toPointChange: transferPoints,
       };
-      const input = {
+
+      const input: GqlTransactionGrantCommunityPointInput = {
         communityId,
-        toPointChange: transferPoints,
-        fromPointChange: transferPoints,
-        fromWalletId: memberWalletId,
-        toWalletId: walletId,
+        fromWalletId: walletId,
         toUserId: userId,
         transferPoints: transferPoints,
       };
 
-      (TransactionConverter.grantCommunityPoint as jest.Mock).mockReturnValue(input);
-      (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
-      (TransactionRepository.refreshCurrentPoints as jest.Mock).mockResolvedValue(undefined);
+      const convertedData = {
+        reason: "GRANT",
+        fromPointChange: transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
 
-      const result = await TransactionService.grantCommunityPoint(ctx, input, memberWalletId, tx);
+      mockConverter.grantCommunityPoint.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
-      expect(TransactionConverter.grantCommunityPoint).toHaveBeenCalledWith(
-        {
-          communityId,
-          toPointChange: transferPoints,
-          fromPointChange: transferPoints,
-          fromWalletId: memberWalletId,
-          toWalletId: walletId,
-          toUserId: userId,
-          transferPoints: transferPoints,
-        },
-        memberWalletId,
-      );
-      expect(TransactionRepository.create).toHaveBeenCalledWith(ctx, input, tx);
-      expect(TransactionRepository.refreshCurrentPoints).toHaveBeenCalledWith(ctx, tx);
+      const result = await mockService.grantCommunityPoint(mockCtx, input, walletId, mockTx);
+
+      expect(mockConverter.grantCommunityPoint).toHaveBeenCalledWith(input, walletId);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
+      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -131,44 +126,38 @@ describe("TransactionService", () => {
     it("should create transaction and refresh transferPoints", async () => {
       const mockTransaction = {
         id: "tx-3",
-        createdAt: new Date(),
-        updatedAt: null,
-        reason: TransactionReason.DONATION,
-        participationId: null,
-        from: memberWalletId,
+        reason: "DONATION",
         fromPointChange: transferPoints,
         to: walletId,
         toPointChange: transferPoints,
       };
-      const input = {
-        communityId,
-        toPointChange: transferPoints,
+
+      const convertedData = {
+        reason: "DONATION",
         fromPointChange: transferPoints,
-        fromWalletId: memberWalletId,
-        toWalletId: walletId,
-        toUserId: userId,
-        transferPoints: transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
       };
 
-      (TransactionConverter.donateSelfPoint as jest.Mock).mockReturnValue(input);
-      (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
-      (TransactionRepository.refreshCurrentPoints as jest.Mock).mockResolvedValue(undefined);
+      mockConverter.donateSelfPoint.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
-      const result = await TransactionService.donateSelfPoint(
-        ctx,
-        memberWalletId,
+      const result = await mockService.donateSelfPoint(
+        mockCtx,
+        walletId,
         walletId,
         transferPoints,
-        tx,
+        mockTx,
       );
 
-      expect(TransactionConverter.donateSelfPoint).toHaveBeenCalledWith(
-        memberWalletId,
+      expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
+        walletId,
         walletId,
         transferPoints,
       );
-      expect(TransactionRepository.create).toHaveBeenCalledWith(ctx, input, tx);
-      expect(TransactionRepository.refreshCurrentPoints).toHaveBeenCalledWith(ctx, tx);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
+      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -176,45 +165,43 @@ describe("TransactionService", () => {
   describe("giveRewardPoint", () => {
     it("should create transaction and refresh transferPoints", async () => {
       const mockTransaction = {
-        id: "tx-5",
-        createdAt: new Date(),
-        updatedAt: null,
-        reason: TransactionReason.POINT_REWARD,
+        id: "tx-4",
+        reason: "POINT_REWARD",
         participationId,
-        from: memberWalletId,
         fromPointChange: -transferPoints,
         to: walletId,
         toPointChange: transferPoints,
       };
-      const input = {
-        fromWalletId: memberWalletId,
-        fromPointChange: -transferPoints,
-        toWalletId: walletId,
-        toPointChange: transferPoints,
+
+      const convertedData = {
+        reason: "POINT_REWARD",
         participationId,
+        fromPointChange: -transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
       };
 
-      (TransactionConverter.giveRewardPoint as jest.Mock).mockReturnValue(input);
-      (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
-      (TransactionRepository.refreshCurrentPoints as jest.Mock).mockResolvedValue(undefined);
+      mockConverter.giveRewardPoint.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
-      const result = await TransactionService.giveRewardPoint(
-        ctx,
-        tx,
+      const result = await mockService.giveRewardPoint(
+        mockCtx,
+        mockTx,
         participationId,
         transferPoints,
-        memberWalletId,
+        walletId,
         walletId,
       );
 
-      expect(TransactionConverter.giveRewardPoint).toHaveBeenCalledWith(
-        memberWalletId,
+      expect(mockConverter.giveRewardPoint).toHaveBeenCalledWith(
+        walletId,
         walletId,
         participationId,
         transferPoints,
       );
-      expect(TransactionRepository.create).toHaveBeenCalledWith(ctx, input, tx);
-      expect(TransactionRepository.refreshCurrentPoints).toHaveBeenCalledWith(ctx, tx);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
+      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });
@@ -222,46 +209,71 @@ describe("TransactionService", () => {
   describe("purchaseTicket", () => {
     it("should create transaction and refresh transferPoints", async () => {
       const mockTransaction = {
-        id: "tx-6",
-        createdAt: new Date(),
-        updatedAt: null,
-        reason: TransactionReason.TICKET_PURCHASED,
-        participationId: null,
-        from: memberWalletId,
+        id: "tx-5",
+        reason: "TICKET_PURCHASED",
         fromPointChange: transferPoints,
         to: walletId,
         toPointChange: transferPoints,
       };
-      const input = {
-        userId,
-        communityId,
-        opportunityId,
-        fromWalletId: memberWalletId,
-        toWalletId: walletId,
+
+      const convertedData = {
+        reason: "TICKET_PURCHASED",
         fromPointChange: transferPoints,
+        to: walletId,
         toPointChange: transferPoints,
-        transferPoints: transferPoints,
       };
 
-      (TransactionConverter.purchaseTicket as jest.Mock).mockReturnValue(input);
-      (TransactionRepository.create as jest.Mock).mockResolvedValue(mockTransaction);
-      (TransactionRepository.refreshCurrentPoints as jest.Mock).mockResolvedValue(undefined);
+      mockConverter.purchaseTicket.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
-      const result = await TransactionService.purchaseTicket(
-        ctx,
-        tx,
-        memberWalletId,
+      const result = await mockService.purchaseTicket(
+        mockCtx,
+        mockTx,
+        walletId,
         walletId,
         transferPoints,
       );
 
-      expect(TransactionConverter.purchaseTicket).toHaveBeenCalledWith(
-        memberWalletId,
+      expect(mockConverter.purchaseTicket).toHaveBeenCalledWith(walletId, walletId, transferPoints);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
+      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
+      expect(result).toBe(mockTransaction);
+    });
+  });
+
+  describe("refundTicket", () => {
+    it("should create transaction and refresh transferPoints", async () => {
+      const mockTransaction = {
+        id: "tx-6",
+        reason: "TICKET_REFUNDED",
+        fromPointChange: transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
+
+      const convertedData = {
+        reason: "TICKET_REFUNDED",
+        fromPointChange: transferPoints,
+        to: walletId,
+        toPointChange: transferPoints,
+      };
+
+      mockConverter.refundTicket.mockReturnValue(convertedData);
+      mockRepository.create.mockResolvedValue(mockTransaction);
+      mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
+
+      const result = await mockService.refundTicket(
+        mockCtx,
+        mockTx,
+        walletId,
         walletId,
         transferPoints,
       );
-      expect(TransactionRepository.create).toHaveBeenCalledWith(ctx, input, tx);
-      expect(TransactionRepository.refreshCurrentPoints).toHaveBeenCalledWith(ctx, tx);
+
+      expect(mockConverter.refundTicket).toHaveBeenCalledWith(walletId, walletId, transferPoints);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
+      expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
     });
   });

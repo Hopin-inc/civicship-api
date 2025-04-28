@@ -1,13 +1,16 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { ITransactionRepository } from "@/application/domain/transaction/data/interface";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
+import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
+import { injectable } from "tsyringe";
 
-export default class TransactionRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class TransactionRepository implements ITransactionRepository {
+  constructor(private readonly issuer: PrismaClientIssuer) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.TransactionWhereInput,
     orderBy: Prisma.TransactionOrderByWithRelationInput[],
@@ -26,7 +29,7 @@ export default class TransactionRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.transaction.findUnique({
         where: { id },
@@ -35,33 +38,14 @@ export default class TransactionRepository {
     });
   }
 
-  static async refreshCurrentPoints(ctx: IContext, tx?: Prisma.TransactionClient) {
-    if (tx) {
-      return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
-      });
-    }
+  async refreshCurrentPoints(ctx: IContext, tx: Prisma.TransactionClient) {
+    return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.TransactionCreateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.transaction.create({
-        data,
-        include: transactionInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.transaction.create({
-          data,
-          include: transactionInclude,
-        });
-      });
-    }
+  async create(ctx: IContext, data: Prisma.TransactionCreateInput, tx: Prisma.TransactionClient) {
+    return tx.transaction.create({
+      data,
+      include: transactionInclude,
+    });
   }
 }

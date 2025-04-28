@@ -5,9 +5,11 @@ import {
   GqlTransactionSortInput,
 } from "@/types/graphql";
 import { Prisma, TransactionReason } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class TransactionConverter {
-  static filter(filter?: GqlTransactionFilterInput): Prisma.TransactionWhereInput {
+  filter(filter?: GqlTransactionFilterInput): Prisma.TransactionWhereInput {
     return {
       AND: [
         filter?.reason ? { reason: filter?.reason } : {},
@@ -17,11 +19,11 @@ export default class TransactionConverter {
     };
   }
 
-  static sort(sort?: GqlTransactionSortInput): Prisma.TransactionOrderByWithRelationInput[] {
+  sort(sort?: GqlTransactionSortInput): Prisma.TransactionOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static issueCommunityPoint(
+  issueCommunityPoint(
     input: GqlTransactionIssueCommunityPointInput,
   ): Prisma.TransactionCreateInput {
     const { toWalletId, transferPoints } = input;
@@ -34,7 +36,7 @@ export default class TransactionConverter {
     };
   }
 
-  static grantCommunityPoint(
+  grantCommunityPoint(
     input: GqlTransactionGrantCommunityPointInput,
     toWalletId: string,
   ): Prisma.TransactionCreateInput {
@@ -49,7 +51,7 @@ export default class TransactionConverter {
     };
   }
 
-  static donateSelfPoint(
+  donateSelfPoint(
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
@@ -63,21 +65,7 @@ export default class TransactionConverter {
     };
   }
 
-  static giveOnboardingPoint(
-    fromWalletId: string,
-    toWalletId: string,
-    transferPoints: number,
-  ): Prisma.TransactionCreateInput {
-    return {
-      reason: TransactionReason.ONBOARDING,
-      fromWallet: { connect: { id: fromWalletId } },
-      fromPointChange: transferPoints,
-      toWallet: { connect: { id: toWalletId } },
-      toPointChange: transferPoints,
-    };
-  }
-
-  static giveRewardPoint(
+  giveRewardPoint(
     fromWalletId: string,
     toWalletId: string,
     participationId: string,
@@ -93,7 +81,7 @@ export default class TransactionConverter {
     };
   }
 
-  static purchaseTicket(
+  purchaseTicket(
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
@@ -107,7 +95,7 @@ export default class TransactionConverter {
     };
   }
 
-  static refundTicket(
+  refundTicket(
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
