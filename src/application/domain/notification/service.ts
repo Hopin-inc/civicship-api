@@ -24,7 +24,7 @@ export const USER_MY_PAGE = "https://liff.line.me/2006078430-XGzG9kqm/users/me";
 dayjs.locale("ja");
 
 export default class NotificationService {
-  static async pushCancelOpportunitySlotMessage(
+  async pushCancelOpportunitySlotMessage(
     ctx: IContext,
     slot: PrismaOpportunitySlotWithParticipation,
   ) {
@@ -52,7 +52,7 @@ export default class NotificationService {
     await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
-  static async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
+  async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
     const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -76,7 +76,7 @@ export default class NotificationService {
     await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
-  static async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
+  async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
     const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -99,7 +99,7 @@ export default class NotificationService {
     await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
-  static async pushReservationAcceptedMessage(
+  async pushReservationAcceptedMessage(
     ctx: IContext,
     currentUserId: string,
     reservation: PrismaReservation,
@@ -137,7 +137,7 @@ export default class NotificationService {
     await this.safePushMessage({ to: lineId, messages: [message] });
   }
 
-  static async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
+  async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
     let lineUid = membership.user?.identities.find(
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;
@@ -158,7 +158,7 @@ export default class NotificationService {
     await this.safeLinkRichMenuIdToUser(lineUid, richMenuId);
   }
 
-  private static async safeLinkRichMenuIdToUser(userId: string, richMenuId: string) {
+  private async safeLinkRichMenuIdToUser(userId: string, richMenuId: string) {
     const endpoint = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
 
     try {
@@ -169,7 +169,7 @@ export default class NotificationService {
     }
   }
 
-  private static async safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
+  private async safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
     const endpoint = "https://api.line.me/v2/bot/message/push";
 
     try {
@@ -180,17 +180,14 @@ export default class NotificationService {
     }
   }
 
-  private static formatDateTime(
-    start: Date,
-    end: Date,
-  ): { year: string; date: string; time: string } {
+  private formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
     const year = dayjs(start).format("YYYY年");
     const date = dayjs(start).format("M月D日");
     const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
     return { year, date, time };
   }
 
-  private static logLineApiSuccess(operationName: string, endpoint: string, response: Response) {
+  private logLineApiSuccess(operationName: string, endpoint: string, response: Response) {
     logger.info(`LINE ${operationName} success`, {
       requestId: response.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
       endpoint,
@@ -199,7 +196,7 @@ export default class NotificationService {
     });
   }
 
-  private static logLineApiError(operationName: string, endpoint: string, error: unknown) {
+  private logLineApiError(operationName: string, endpoint: string, error: unknown) {
     if (error instanceof HTTPFetchError) {
       logger.error(`LINE ${operationName} failed`, {
         requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
