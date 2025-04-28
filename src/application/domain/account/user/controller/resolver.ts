@@ -131,7 +131,8 @@ const userResolver = {
       args: GqlUserParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      return ParticipationUseCase.visitorBrowseParticipations(
+      const participationUseCase = container.resolve(ParticipationUseCase);
+      return participationUseCase.visitorBrowseParticipations(
         {
           filter: { userIds: [parent.id] },
           ...args,

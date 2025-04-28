@@ -100,7 +100,8 @@ const communityResolver = {
       args: GqlCommunityParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      return ParticipationUseCase.visitorBrowseParticipations(
+      const participationUseCase = container.resolve(ParticipationUseCase);
+      return participationUseCase.visitorBrowseParticipations(
         {
           filter: { communityId: parent.id },
           ...args,
