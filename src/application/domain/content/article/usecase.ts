@@ -11,9 +11,11 @@ import ArticlePresenter from "@/application/domain/content/article/presenter";
 import { PublishStatus } from "@prisma/client";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { articleInclude } from "@/application/domain/content/article/data/type";
+import { injectable, inject } from "tsyringe";
 
+@injectable()
 export default class ArticleUseCase {
-  constructor(private service: ArticleService) {}
+  constructor(@inject("ArticleService") private service: ArticleService) { }
 
   async anyoneBrowseArticles(
     ctx: IContext,

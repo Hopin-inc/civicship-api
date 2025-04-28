@@ -2,13 +2,53 @@ import { GqlTransactionDonateSelfPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
-import transactionResolver from "@/application/domain/transaction/controller/resolver";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+
+class MockTransactionService {
+  donateSelfPoint = jest.fn();
+}
+
+class MockMembershipService {
+  joinIfNeeded = jest.fn();
+}
+
+class MockWalletService {
+  createMemberWalletIfNeeded = jest.fn();
+}
+
+class MockWalletValidator {
+  validateTransferMemberToMember = jest.fn();
+}
 
 describe("Point Donate Tests", () => {
   const DONATION_POINTS = 100;
 
+  let transactionUseCase: TransactionUseCase;
+  let mockTransactionService: MockTransactionService;
+  let mockWalletService: MockWalletService;
+  let mockMembershipService: MockMembershipService;
+  let mockWalletValidator: MockWalletValidator;
+
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    // モックインスタンスの作成
+    mockTransactionService = new MockTransactionService();
+    mockWalletService = new MockWalletService();
+    mockMembershipService = new MockMembershipService();
+    mockWalletValidator = new MockWalletValidator();
+
+    // TransactionUseCaseをモックサービスで初期化
+    const issuer = new PrismaClientIssuer();
+    transactionUseCase = new TransactionUseCase(
+      issuer,
+      mockTransactionService as any,
+      mockMembershipService as any,
+      mockWalletService as any,
+      mockWalletValidator as any,
+    );
   });
 
   afterAll(async () => {
@@ -63,11 +103,7 @@ describe("Point Donate Tests", () => {
       transferPoints: DONATION_POINTS,
     };
 
-    await transactionResolver.Mutation.transactionDonateSelfPoint(
-      {},
-      { input, permission: { communityId: community.id } },
-      ctx,
-    );
+    await transactionUseCase.userDonateSelfPointToAnother(ctx, input);
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
       (t) => t.reason === TransactionReason.DONATION,
@@ -113,13 +149,9 @@ describe("Point Donate Tests", () => {
       transferPoints: 9999, // 残高不足
     };
 
-    await expect(
-      transactionResolver.Mutation.transactionDonateSelfPoint(
-        {},
-        { input, permission: { communityId: community.id } },
-        ctx,
-      ),
-    ).rejects.toThrow(/Insufficient balance/i);
+    await expect(transactionUseCase.userDonateSelfPointToAnother(ctx, input)).rejects.toThrow(
+      /Insufficient balance/i,
+    );
 
     const txs = await TestDataSourceHelper.findAllTransactions();
     expect(txs).toHaveLength(0);

@@ -4,12 +4,14 @@ import { ValidationError } from "@/errors/graphql";
 import { IArticleRepository } from "@/application/domain/content/article/data/interface";
 import { IContext } from "@/types/server";
 import { GqlArticleFilterInput, GqlQueryArticlesArgs } from "@/types/graphql";
+import { injectable, inject } from "tsyringe";
 
+@injectable()
 export default class ArticleService {
   constructor(
-    private readonly repository: IArticleRepository,
-    private readonly converter: ArticleConverter,
-  ) {}
+    @inject("IArticleRepository") private readonly repository: IArticleRepository,
+    @inject("ArticleConverter") private readonly converter: ArticleConverter,
+  ) { }
 
   async fetchArticles<T extends Prisma.ArticleInclude>(
     ctx: IContext,

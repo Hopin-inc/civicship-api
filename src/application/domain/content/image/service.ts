@@ -2,7 +2,9 @@ import { Prisma } from "@prisma/client";
 import { GqlImageInput } from "@/types/graphql";
 import { gcsBucketName, storage } from "@/infrastructure/libs/storage";
 import path from "path";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ImageService {
   async uploadPublicImage(
     image: GqlImageInput,

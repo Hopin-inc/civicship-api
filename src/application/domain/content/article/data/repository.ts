@@ -2,9 +2,11 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { articleInclude } from "@/application/domain/content/article/data/type";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
 
+@injectable()
 export default class ArticleRepository {
-  constructor(private readonly issuer: PrismaClientIssuer) {}
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) { }
 
   async query<T extends Prisma.ArticleInclude>(
     ctx: IContext,

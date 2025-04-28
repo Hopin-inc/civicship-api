@@ -1,10 +1,10 @@
 import { GqlQueryArticleArgs, GqlQueryArticlesArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { createArticleUseCase } from "@/application/domain/content/article/provider";
+import "reflect-metadata";
+import { container } from "tsyringe";
+import ArticleUseCase from "@/application/domain/content/article/usecase";
 
-const issuer = new PrismaClientIssuer();
-const articleUseCase = createArticleUseCase(issuer);
+const articleUseCase = container.resolve(ArticleUseCase);
 
 const articleResolver = {
   Query: {
