@@ -6,9 +6,11 @@ import {
   GqlOpportunityUpdateContentInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class OpportunityConverter {
-  static filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
+  filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
     if (!filter) return {};
 
     const conditions: Prisma.OpportunityWhereInput[] = [
@@ -37,7 +39,7 @@ export default class OpportunityConverter {
     return conditions.length ? { AND: conditions } : {};
   }
 
-  static sort(sort?: GqlOpportunitySortInput): Prisma.OpportunityOrderByWithRelationInput[] {
+  sort(sort?: GqlOpportunitySortInput): Prisma.OpportunityOrderByWithRelationInput[] {
     if (sort?.earliestSlotStartsAt) {
       return [
         {
@@ -52,7 +54,7 @@ export default class OpportunityConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static findAccessible(
+  findAccessible(
     id: string,
     filter?: GqlOpportunityFilterInput,
   ): Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput {
@@ -63,7 +65,7 @@ export default class OpportunityConverter {
     };
   }
 
-  static create(
+  create(
     input: GqlOpportunityCreateInput,
     currentUserId: string,
   ): {
@@ -78,15 +80,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
+          const { cityCode, communityId, ...restCreate } = place.create!;
+          return {
+            create: {
+              ...restCreate,
+              city: { connect: { code: cityCode } },
+              community: { connect: { id: communityId } },
+            },
+          };
+        })();
     }
 
     return {
@@ -100,7 +102,7 @@ export default class OpportunityConverter {
     };
   }
 
-  static update(input: GqlOpportunityUpdateContentInput): {
+  update(input: GqlOpportunityUpdateContentInput): {
     data: Omit<Prisma.OpportunityUpdateInput, "images">;
     images: GqlImageInput[];
   } {
@@ -112,15 +114,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
+          const { cityCode, communityId, ...restCreate } = place.create!;
+          return {
+            create: {
+              ...restCreate,
+              city: { connect: { code: cityCode } },
+              community: { connect: { id: communityId } },
+            },
+          };
+        })();
     }
 
     return {
@@ -132,7 +134,7 @@ export default class OpportunityConverter {
     };
   }
 
-  private static opportunityFilter(
+  private opportunityFilter(
     filter: GqlOpportunityFilterInput,
   ): Prisma.OpportunityWhereInput[] {
     const conditions: Prisma.OpportunityWhereInput[] = [];
@@ -154,7 +156,7 @@ export default class OpportunityConverter {
     return conditions;
   }
 
-  private static opportunitySlotFilter(
+  private opportunitySlotFilter(
     filter: GqlOpportunityFilterInput,
   ): Prisma.OpportunityWhereInput[] {
     const slotConditions: Prisma.OpportunitySlotWhereInput[] = [];

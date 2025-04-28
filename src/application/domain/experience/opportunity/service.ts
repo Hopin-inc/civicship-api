@@ -12,31 +12,39 @@ import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunityConverter from "@/application/domain/experience/opportunity/data/converter";
 import ImageService from "@/application/domain/content/image/service";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class OpportunityService {
-  static async fetchOpportunities(
+  constructor(
+    @inject("OpportunityRepository") private readonly repository: OpportunityRepository,
+    @inject("OpportunityConverter") private readonly converter: OpportunityConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
+  ) { }
+
+  async fetchOpportunities(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryOpportunitiesArgs,
     take: number,
   ) {
-    const where = OpportunityConverter.filter(filter ?? {});
-    const orderBy = OpportunityConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    return await OpportunityRepository.query(ctx, where, orderBy, take, cursor);
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findOpportunity(ctx: IContext, id: string) {
-    return await OpportunityRepository.find(ctx, id);
+  async findOpportunity(ctx: IContext, id: string) {
+    return await this.repository.find(ctx, id);
   }
 
-  static async findOpportunityAccessible(
+  async findOpportunityAccessible(
     ctx: IContext,
     id: string,
     filter: GqlOpportunityFilterInput,
   ) {
-    const where = OpportunityConverter.findAccessible(id, filter ?? {});
+    const where = this.converter.findAccessible(id, filter ?? {});
 
-    const opportunity = await OpportunityRepository.findAccessible(ctx, where);
+    const opportunity = await this.repository.findAccessible(ctx, where);
     if (!opportunity) {
       return null;
     }
@@ -44,22 +52,22 @@ export default class OpportunityService {
     return opportunity;
   }
 
-  static async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
-    const opportunity = await OpportunityRepository.find(ctx, opportunityId);
+  async findOpportunityOrThrow(ctx: IContext, opportunityId: string) {
+    const opportunity = await this.repository.find(ctx, opportunityId);
     if (!opportunity) {
       throw new NotFoundError("Opportunity", { opportunityId });
     }
     return opportunity;
   }
 
-  static async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput) {
+  async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput, tx: Prisma.TransactionClient) {
     const currentUserId = getCurrentUserId(ctx);
 
     validatePlaceInput(input.place);
-    const { data, images } = OpportunityConverter.create(input, currentUserId);
+    const { data, images } = this.converter.create(input, currentUserId);
 
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
-      images.map((img) => ImageService.uploadPublicImage(img, "opportunities")),
+      images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
     );
 
     const createInput: Prisma.OpportunityCreateInput = {
@@ -69,27 +77,28 @@ export default class OpportunityService {
       },
     };
 
-    return await OpportunityRepository.create(ctx, createInput);
+    return await this.repository.create(ctx, createInput, tx);
   }
 
-  static async deleteOpportunity(ctx: IContext, id: string) {
+  async deleteOpportunity(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     await this.findOpportunityOrThrow(ctx, id);
 
-    return await OpportunityRepository.delete(ctx, id);
+    return await this.repository.delete(ctx, id, tx);
   }
 
-  static async updateOpportunityContent(
+  async updateOpportunityContent(
     ctx: IContext,
     id: string,
     input: GqlOpportunityUpdateContentInput,
+    tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunityOrThrow(ctx, id);
     validatePlaceInput(input.place);
 
-    const { data, images } = OpportunityConverter.update(input);
+    const { data, images } = this.converter.update(input);
 
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
-      images.map((img) => ImageService.uploadPublicImage(img, "opportunities")),
+      images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),
     );
 
     const updateInput: Prisma.OpportunityUpdateInput = {
@@ -99,16 +108,16 @@ export default class OpportunityService {
       },
     };
 
-    return await OpportunityRepository.update(ctx, id, updateInput);
+    return await this.repository.update(ctx, id, updateInput, tx);
   }
 
-  static async setOpportunityPublishStatus(ctx: IContext, id: string, status: PublishStatus) {
+  async setOpportunityPublishStatus(ctx: IContext, id: string, status: PublishStatus, tx: Prisma.TransactionClient) {
     await this.findOpportunityOrThrow(ctx, id);
 
-    return OpportunityRepository.setPublishStatus(ctx, id, status);
+    return this.repository.setPublishStatus(ctx, id, status, tx);
   }
 
-  static async validatePublishStatus(
+  async validatePublishStatus(
     allowedStatuses: PublishStatus[],
     filter?: GqlOpportunityFilterInput,
   ) {
