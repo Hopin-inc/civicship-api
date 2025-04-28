@@ -43,6 +43,8 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import NotificationService from "@/application/domain/notification/service";
 import { IParticipationService } from "@/application/domain/experience/participation/data/interface";
+import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
+import TicketService from "@/application/domain/reward/ticket/service";
 
 @injectable()
 export default class ReservationUseCase {
@@ -57,8 +59,8 @@ export default class ReservationUseCase {
     private readonly opportunitySlotService: OpportunitySlotService,
     @inject("ParticipationService") private readonly participationService: IParticipationService,
     @inject("ParticipationStatusHistoryService")
-    private readonly participationStatusHistoryService: IParticipationStatusHistoryService,
-    @inject("TicketService") private readonly ticketService: ITicketService,
+    private readonly participationStatusHistoryService: ParticipationStatusHistoryService,
+    @inject("TicketService") private readonly ticketService: TicketService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
 
     @inject("NotificationService") private readonly notificationService: NotificationService,
@@ -283,7 +285,7 @@ export default class ReservationUseCase {
     if (requiredUtilities.length === 0) return;
     if (paymentMethod !== GqlReservationPaymentMethod.Ticket) return;
 
-    await this.ticketService.reserveManyTickets(ctx, participationIds, ticketIds, tx);
+    await this.ticketService.reserveManyTickets(ctx, participationIds, tx, ticketIds);
   }
 
   private async handleRefundTicketAfterCancelIfNeeded(

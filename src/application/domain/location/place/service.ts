@@ -1,50 +1,54 @@
 import { GqlPlaceCreateInput, GqlPlaceUpdateInput, GqlQueryPlacesArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
+import { injectable, inject } from "tsyringe";
 import PlaceConverter from "@/application/domain/location/place/data/converter";
-import PlaceRepository from "@/application/domain/location/place/data/repository";
+import { IPlaceRepository, IPlaceService } from "@/application/domain/location/place/data/interface";
 import { NotFoundError } from "@/errors/graphql";
 
-export default class PlaceService {
-  static async fetchPlaces(
+@injectable()
+export default class PlaceService implements IPlaceService {
+  constructor(
+    @inject("PlaceConverter") private readonly converter: PlaceConverter,
+    @inject("IPlaceRepository") private readonly repository: IPlaceRepository,
+  ) { }
+
+  async fetchPlaces(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryPlacesArgs,
     take: number,
   ) {
-    const where = PlaceConverter.filter(filter ?? {});
-    const orderBy = PlaceConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    return await PlaceRepository.query(ctx, where, orderBy, take, cursor);
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findPlace(ctx: IContext, id: string) {
-    return await PlaceRepository.find(ctx, id);
+  async findPlace(ctx: IContext, id: string) {
+    return await this.repository.find(ctx, id);
   }
 
-  static async findPlaceOrThrow(ctx: IContext, id: string) {
-    const place = await PlaceRepository.find(ctx, id);
+  async findPlaceOrThrow(ctx: IContext, id: string) {
+    const place = await this.repository.find(ctx, id);
     if (!place) {
       throw new NotFoundError("Place", { id });
     }
     return place;
   }
 
-  static async createPlace(ctx: IContext, input: GqlPlaceCreateInput) {
-    const data: Prisma.PlaceCreateInput = PlaceConverter.create(input);
-
-    return PlaceRepository.create(ctx, data);
+  async createPlace(ctx: IContext, input: GqlPlaceCreateInput, tx: Prisma.TransactionClient) {
+    const data: Prisma.PlaceCreateInput = this.converter.create(input);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static async deletePlace(ctx: IContext, id: string) {
+  async deletePlace(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     await this.findPlaceOrThrow(ctx, id);
-
-    return await PlaceRepository.delete(ctx, id);
+    return this.repository.delete(ctx, id, tx);
   }
 
-  static async updatePlace(ctx: IContext, id: string, input: GqlPlaceUpdateInput) {
+  async updatePlace(ctx: IContext, id: string, input: GqlPlaceUpdateInput, tx: Prisma.TransactionClient) {
     await this.findPlaceOrThrow(ctx, id);
-
-    const data: Prisma.PlaceUpdateInput = PlaceConverter.update(input);
-    return await PlaceRepository.update(ctx, id, data);
+    const data: Prisma.PlaceUpdateInput = this.converter.update(input);
+    return this.repository.update(ctx, id, data, tx);
   }
 }

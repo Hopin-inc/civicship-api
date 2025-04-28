@@ -53,11 +53,8 @@ const participationResolver = {
       args: GqlParticipationStatusHistoriesArgs,
       ctx: IContext,
     ) => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
-        parent,
-        args,
-        ctx,
-      );
+      const usecase = container.resolve(ParticipationStatusHistoryUseCase);
+      return usecase.visitorBrowseStatusHistoriesByParticipation(parent, args, ctx);
     },
   },
 };

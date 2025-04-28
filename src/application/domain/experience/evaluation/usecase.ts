@@ -1,3 +1,4 @@
+import { inject, injectable } from "tsyringe";
 import {
   GqlEvaluation,
   GqlEvaluationCreatePayload,
@@ -13,19 +14,26 @@ import EvaluationService from "@/application/domain/experience/evaluation/servic
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import TransactionService from "@/application/domain/transaction/service";
-import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
+import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 
+@injectable()
 export default class EvaluationUseCase {
-  private static issuer = new PrismaClientIssuer();
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("EvaluationService") private readonly evaluationService: EvaluationService,
+    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("WalletService") private readonly walletService: WalletService,
+    @inject("WalletValidator") private readonly walletValidator: WalletValidator,
+  ) {}
 
-  static async visitorBrowseEvaluations(
+  async visitorBrowseEvaluations(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryEvaluationsArgs,
   ): Promise<GqlEvaluationsConnection> {
     const take = clampFirst(first);
-    const evaluations = await EvaluationService.fetchEvaluations(
+    const evaluations = await this.evaluationService.fetchEvaluations(
       ctx,
       { cursor, filter, sort },
       take,
@@ -36,22 +44,22 @@ export default class EvaluationUseCase {
     return EvaluationPresenter.query(data, hasNextPage);
   }
 
-  static async visitorViewEvaluation(
+  async visitorViewEvaluation(
     ctx: IContext,
     { id }: GqlQueryEvaluationArgs,
   ): Promise<GqlEvaluation | null> {
-    const evaluation = await EvaluationService.findEvaluation(ctx, id);
+    const evaluation = await this.evaluationService.findEvaluation(ctx, id);
     return evaluation ? EvaluationPresenter.get(evaluation) : null;
   }
 
-  static async managerPassEvaluation(
+  async managerPassEvaluation(
     { input }: GqlMutationEvaluationPassArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
 
     const evaluation = await this.issuer.public(ctx, async (tx) => {
-      const evaluation = await EvaluationService.createEvaluation(
+      const evaluation = await this.evaluationService.createEvaluation(
         ctx,
         input,
         EvaluationStatus.PASSED,
@@ -59,21 +67,22 @@ export default class EvaluationUseCase {
       );
 
       const { participation, opportunity, communityId, userId } =
-        EvaluationService.validateParticipationHasOpportunity(evaluation);
+        this.evaluationService.validateParticipationHasOpportunity(evaluation);
 
       if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
         const [fromWallet, toWallet] = await Promise.all([
-          WalletService.findMemberWalletOrThrow(ctx, currentUserId, communityId, tx),
-          WalletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
+          this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
+          this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
         ]);
 
-        const { fromWalletId, toWalletId } = await WalletValidator.validateTransferMemberToMember(
-          fromWallet,
-          toWallet,
-          opportunity.pointsToEarn,
-        );
+        const { fromWalletId, toWalletId } =
+          await this.walletValidator.validateTransferMemberToMember(
+            fromWallet,
+            toWallet,
+            opportunity.pointsToEarn,
+          );
 
-        await TransactionService.giveRewardPoint(
+        await this.transactionService.giveRewardPoint(
           ctx,
           tx,
           participation.id,
@@ -89,11 +98,11 @@ export default class EvaluationUseCase {
     return EvaluationPresenter.create(evaluation);
   }
 
-  static async managerFailEvaluation(
+  async managerFailEvaluation(
     { input }: GqlMutationEvaluationFailArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
-    const evaluation = await EvaluationService.createEvaluation(
+    const evaluation = await this.evaluationService.createEvaluation(
       ctx,
       input,
       EvaluationStatus.FAILED,

@@ -130,7 +130,8 @@ const communityResolver = {
       args: GqlCommunityUtilitiesArgs,
       ctx: IContext,
     ): Promise<GqlUtilitiesConnection> => {
-      return UtilityUseCase.anyoneBrowseUtilities(ctx, {
+      const utilityUseCase = container.resolve(UtilityUseCase);
+      return utilityUseCase.anyoneBrowseUtilities(ctx, {
         ...args,
         filter: { ...args.filter, communityId: parent.id },
       });

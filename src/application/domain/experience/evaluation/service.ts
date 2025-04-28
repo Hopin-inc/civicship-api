@@ -1,5 +1,6 @@
+import { inject, injectable } from "tsyringe";
 import { GqlEvaluationCreateInput, GqlQueryEvaluationsArgs } from "@/types/graphql";
-import EvaluationRepository from "@/application/domain/experience/evaluation/data/repository";
+import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
@@ -7,23 +8,30 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { ValidationError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
+@injectable()
 export default class EvaluationService {
-  static async fetchEvaluations(
+  constructor(
+    @inject("EvaluationRepository")
+    private readonly repository: IEvaluationRepository,
+    private readonly converter: EvaluationConverter,
+  ) {}
+
+  async fetchEvaluations(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryEvaluationsArgs,
     take: number,
   ): Promise<PrismaEvaluation[]> {
-    const where = EvaluationConverter.filter(filter ?? {});
-    const orderBy = EvaluationConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    return await EvaluationRepository.query(ctx, where, orderBy, take, cursor);
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findEvaluation(ctx: IContext, id: string): Promise<PrismaEvaluation | null> {
-    return await EvaluationRepository.find(ctx, id);
+  async findEvaluation(ctx: IContext, id: string): Promise<PrismaEvaluation | null> {
+    return await this.repository.find(ctx, id);
   }
 
-  static async createEvaluation(
+  async createEvaluation(
     ctx: IContext,
     input: GqlEvaluationCreateInput,
     status: EvaluationStatus,
@@ -37,17 +45,12 @@ export default class EvaluationService {
     }
 
     const currentUserId = getCurrentUserId(ctx);
-    const data = EvaluationConverter.create(
-      input.participationId,
-      currentUserId,
-      status,
-      input.comment,
-    );
+    const data = this.converter.create(input.participationId, currentUserId, status, input.comment);
 
-    return EvaluationRepository.create(ctx, data, tx);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static validateParticipationHasOpportunity(evaluation: PrismaEvaluation): {
+  validateParticipationHasOpportunity(evaluation: PrismaEvaluation): {
     participation: NonNullable<PrismaEvaluation["participation"]>;
     opportunity: NonNullable<
       NonNullable<PrismaEvaluation["participation"]>["reservation"]

@@ -146,7 +146,10 @@ const userResolver = {
       args: GqlUserParticipationStatusChangedByMeArgs,
       ctx: IContext,
     ): Promise<GqlParticipationStatusHistoriesConnection> => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseParticipationStatusChangedByUser(
+      const participationStatusHistoryUseCase = container.resolve(
+        ParticipationStatusHistoryUseCase,
+      );
+      return participationStatusHistoryUseCase.visitorBrowseParticipationStatusChangedByUser(
         parent,
         args,
         ctx,

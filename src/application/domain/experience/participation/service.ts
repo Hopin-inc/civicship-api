@@ -16,7 +16,7 @@ import ParticipationConverter from "@/application/domain/experience/participatio
 import ImageService from "@/application/domain/content/image/service";
 
 @injectable()
-export class ParticipationService implements IParticipationService {
+export default class ParticipationService implements IParticipationService {
   constructor(
     @inject("IParticipationRepository") private readonly repository: IParticipationRepository,
     @inject("IParticipationConverter") private readonly converter: ParticipationConverter,

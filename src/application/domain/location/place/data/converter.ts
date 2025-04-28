@@ -5,9 +5,11 @@ import {
   GqlPlaceUpdateInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
-export default class PlaceInputFormat {
-  static filter(filter?: GqlPlaceFilterInput): Prisma.PlaceWhereInput {
+@injectable()
+export default class PlaceConverter {
+  filter(filter?: GqlPlaceFilterInput): Prisma.PlaceWhereInput {
     return {
       AND: [
         filter?.keyword ? { name: { contains: filter.keyword } } : {},
@@ -17,11 +19,11 @@ export default class PlaceInputFormat {
     };
   }
 
-  static sort(sort?: GqlPlaceSortInput): Prisma.PlaceOrderByWithRelationInput[] {
+  sort(sort?: GqlPlaceSortInput): Prisma.PlaceOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static create(input: GqlPlaceCreateInput): Prisma.PlaceCreateInput {
+  create(input: GqlPlaceCreateInput): Prisma.PlaceCreateInput {
     const { cityCode, opportunityIds, communityId, ...prop } = input;
     return {
       ...prop,
@@ -31,7 +33,7 @@ export default class PlaceInputFormat {
     };
   }
 
-  static update(input: GqlPlaceUpdateInput): Prisma.PlaceUpdateInput {
+  update(input: GqlPlaceUpdateInput): Prisma.PlaceUpdateInput {
     const { cityCode, opportunityIds, ...prop } = input;
 
     return {

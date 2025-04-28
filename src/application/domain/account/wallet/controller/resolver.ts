@@ -25,7 +25,8 @@ const walletResolver = {
 
   Wallet: {
     tickets: async (parent: GqlWallet, args: GqlQueryWalletArgs, ctx: IContext) => {
-      return TicketUseCase.visitorBrowseTickets(ctx, {
+      const ticketUseCase = container.resolve(TicketUseCase);
+      return ticketUseCase.visitorBrowseTickets(ctx, {
         filter: { walletId: parent.id },
         ...args,
       });

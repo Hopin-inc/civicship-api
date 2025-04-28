@@ -2,11 +2,17 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ticketInclude } from "@/application/domain/reward/ticket/data/type";
+import { inject, injectable } from "tsyringe";
+import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
 
-export default class TicketRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class TicketRepository implements ITicketRepository {
+  constructor(
+    @inject("PrismaClientIssuer")
+    private readonly issuer: PrismaClientIssuer,
+  ) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.TicketWhereInput,
     orderBy: Prisma.TicketOrderByWithRelationInput,
@@ -25,7 +31,7 @@ export default class TicketRepository {
     });
   }
 
-  static async queryByIds(ctx: IContext, ids: string[]) {
+  async queryByIds(ctx: IContext, ids: string[]) {
     return this.issuer.public(ctx, (tx) => {
       return tx.ticket.findMany({
         where: { id: { in: ids } },
@@ -34,7 +40,7 @@ export default class TicketRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.ticket.findUnique({
         where: { id },
@@ -43,14 +49,14 @@ export default class TicketRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.TicketCreateInput, tx: Prisma.TransactionClient) {
+  async create(ctx: IContext, data: Prisma.TicketCreateInput, tx: Prisma.TransactionClient) {
     return tx.ticket.create({
       data,
       include: ticketInclude,
     });
   }
 
-  static async delete(ctx: IContext, id: string) {
+  async delete(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.ticket.delete({
         where: { id },
@@ -59,26 +65,16 @@ export default class TicketRepository {
     });
   }
 
-  static async update(
+  async update(
     ctx: IContext,
     id: string,
     data: Prisma.TicketUpdateInput,
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.ticket.update({
-        where: { id },
-        data,
-        include: ticketInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.ticket.update({
-          where: { id },
-          data,
-          include: ticketInclude,
-        });
-      });
-    }
+    return tx.ticket.update({
+      where: { id },
+      data,
+      include: ticketInclude,
+    });
   }
 }

@@ -27,6 +27,19 @@ import OpportunityUseCase from "@/application/domain/experience/opportunity/usec
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { ReservationRepository } from "@/application/domain/experience/reservation/data/repository";
 import { ReservationService } from "@/application/domain/experience/reservation/service";
+import ParticipationStatusHistoryRepository from "@/application/domain/experience/participation/statusHistory/data/repository";
+import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
+import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
+import { ParticipationRepository } from "@/application/domain/experience/participation/data/repository";
+import ParticipationService from "@/application/domain/experience/participation/service";
+import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
+import TicketUseCase from "@/application/domain/reward/ticket/usecase";
+import TicketRepository from "@/application/domain/reward/ticket/data/repository";
+import TicketService from "@/application/domain/reward/ticket/service";
+import PlaceRepository from "./location/place/data/repository";
+import PlaceService from "./location/place/service";
+import PlaceUseCase from "./location/place/usecase";
+import PlaceConverter from "./location/place/data/converter";
 
 container.register("TransactionUseCase", { useClass: TransactionUseCase });
 container.register("TransactionRepository", {
@@ -65,3 +78,30 @@ container.register("ReservationUseCase", { useClass: ReservationUseCase });
 container.register("ReservationService", { useClass: ReservationService });
 container.register("ReservationRepository", { useClass: ReservationRepository });
 container.register("ReservationConverter", { useClass: ReservationConverter });
+
+container.register("ParticipationStatusHistoryRepository", {
+  useClass: ParticipationStatusHistoryRepository,
+});
+container.register("ParticipationStatusHistoryService", {
+  useClass: ParticipationStatusHistoryService,
+});
+container.register("ParticipationStatusHistoryUseCase", {
+  useClass: ParticipationStatusHistoryUseCase,
+});
+
+container.register("ParticipationRepository", { useClass: ParticipationRepository });
+container.register("ParticipationService", { useClass: ParticipationService });
+container.register("ParticipationUseCase", { useClass: ParticipationUseCase });
+
+container.register("TicketRepository", { useClass: TicketRepository });
+container.register("TicketService", { useClass: TicketService });
+container.register("TicketUseCase", { useClass: TicketUseCase });
+
+container.register("PlaceRepository", { useClass: PlaceRepository });
+container.register("PlaceService", { useClass: PlaceService });
+container.register("PlaceUseCase", { useClass: PlaceUseCase });
+container.register("PlaceConverter", { useClass: PlaceConverter });
+container.register("IPlaceRepository", { useClass: PlaceRepository });
+container.register("IPlaceService", { useClass: PlaceService });
+
+container.register("ViewUseCase", { useClass: ViewUseCase });

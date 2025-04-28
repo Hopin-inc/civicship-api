@@ -1,3 +1,4 @@
+import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -5,11 +6,15 @@ import {
   PrismaTicketIssuer,
   ticketIssuerInclude,
 } from "@/application/domain/reward/ticketIssuer/data/type";
+import { ITicketIssuerRepository } from "./interface";
 
-export default class TicketIssuerRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class TicketIssuerRepository implements ITicketIssuerRepository {
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+  ) { }
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.TicketIssuerWhereInput,
     orderBy: Prisma.TicketIssuerOrderByWithRelationInput,
@@ -28,7 +33,7 @@ export default class TicketIssuerRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string): Promise<PrismaTicketIssuer | null> {
+  find(ctx: IContext, id: string): Promise<PrismaTicketIssuer | null> {
     return this.issuer.public(ctx, (tx) => {
       return tx.ticketIssuer.findUnique({
         where: { id },
@@ -37,15 +42,14 @@ export default class TicketIssuerRepository {
     });
   }
 
-  static async create(
+  create(
     ctx: IContext,
     data: Prisma.TicketIssuerCreateInput,
+    tx: Prisma.TransactionClient,
   ): Promise<PrismaTicketIssuer> {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.ticketIssuer.create({
-        data,
-        include: ticketIssuerInclude,
-      });
+    return tx.ticketIssuer.create({
+      data,
+      include: ticketIssuerInclude,
     });
   }
 }

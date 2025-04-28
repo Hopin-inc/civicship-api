@@ -1,46 +1,54 @@
+import { inject, injectable } from "tsyringe";
 import { GqlQueryTicketsArgs, GqlTicketsConnection } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import TicketRepository from "@/application/domain/reward/ticket/data/repository";
-import TicketConverter from "@/application/domain/reward/ticket/data/converter";
+import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import TicketPresenter from "@/application/domain/reward/ticket/presenter";
 import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
 import { PrismaTicketClaimLink } from "@/application/domain/reward/ticketClaimLink/data/type";
+import TicketConverter from "@/application/domain/reward/ticket/data/converter";
 
+@injectable()
 export default class TicketService {
-  static async fetchTickets(
+  constructor(
+    @inject("TicketRepository")
+    private readonly repository: ITicketRepository,
+    private readonly converter: TicketConverter,
+  ) {}
+
+  async fetchTickets(
     ctx: IContext,
     { first, sort, filter, cursor }: GqlQueryTicketsArgs,
   ): Promise<GqlTicketsConnection> {
     const take = clampFirst(first);
-    const where = TicketConverter.filter(filter ?? {});
-    const orderBy = TicketConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    const res = await TicketRepository.query(ctx, where, orderBy, take + 1, cursor);
+    const res = await this.repository.query(ctx, where, orderBy, take + 1, cursor);
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map((record) => TicketPresenter.get(record));
     return TicketPresenter.query(data, hasNextPage);
   }
 
-  static async fetchTicketsByIds(ctx: IContext, ids: string[]) {
-    return await TicketRepository.queryByIds(ctx, ids);
+  async fetchTicketsByIds(ctx: IContext, ids: string[]) {
+    return await this.repository.queryByIds(ctx, ids);
   }
 
-  static async findTicket(ctx: IContext, id: string) {
-    return TicketRepository.find(ctx, id);
+  async findTicket(ctx: IContext, id: string) {
+    return this.repository.find(ctx, id);
   }
 
-  static async findTicketOrThrow(ctx: IContext, id: string): Promise<PrismaTicket> {
-    const ticket = await TicketRepository.find(ctx, id);
+  async findTicketOrThrow(ctx: IContext, id: string): Promise<PrismaTicket> {
+    const ticket = await this.repository.find(ctx, id);
     if (!ticket) {
       throw new NotFoundError("Ticket", { id });
     }
     return ticket;
   }
 
-  static async claimTicketsByIssuerId(
+  async claimTicketsByIssuerId(
     ctx: IContext,
     currentUserId: string,
     claimLinkId: string,
@@ -50,16 +58,16 @@ export default class TicketService {
   ): Promise<PrismaTicket[]> {
     const dataList: Prisma.TicketCreateInput[] = Array.from({
       length: issuedTicket.qtyToBeIssued,
-    }).map(() => TicketConverter.claim(currentUserId, claimLinkId, issuedTicket, walletId));
+    }).map(() => this.converter.claim(currentUserId, claimLinkId, issuedTicket, walletId));
 
-    return Promise.all(dataList.map((data) => TicketRepository.create(ctx, data, tx)));
+    return Promise.all(dataList.map((data) => this.repository.create(ctx, data, tx)));
   }
 
-  static async reserveManyTickets(
+  async reserveManyTickets(
     ctx: IContext,
     participationIds: string[],
+    tx: Prisma.TransactionClient,
     ticketIds?: string[],
-    tx?: Prisma.TransactionClient,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     if (!ticketIds) throw new ValidationError("Ticket IDs are not provided");
@@ -70,15 +78,15 @@ export default class TicketService {
 
     const updates = ticketIds.map((ticketId, index) => ({
       id: ticketId,
-      data: TicketConverter.reserve(currentUserId, participationIds[index]),
+      data: this.converter.reserve(currentUserId, participationIds[index]),
     }));
 
     return await Promise.all(
-      updates.map(({ id, data }) => TicketRepository.update(ctx, id, data, tx)),
+      updates.map(({ id, data }) => this.repository.update(ctx, id, data, tx)),
     );
   }
 
-  static async cancelReservedTicketsIfAvailable(
+  async cancelReservedTicketsIfAvailable(
     ctx: IContext,
     tickets: PrismaTicket[],
     currentUserId: string,
@@ -89,14 +97,14 @@ export default class TicketService {
         ticket.status === TicketStatus.DISABLED && ticket.reason === TicketStatusReason.RESERVED,
     );
 
-    const data = TicketConverter.cancelReserved(currentUserId);
+    const data = this.converter.cancelReserved(currentUserId);
 
     await Promise.all(
-      cancellableTickets.map((ticket) => TicketRepository.update(ctx, ticket.id, data, tx)),
+      cancellableTickets.map((ticket) => this.repository.update(ctx, ticket.id, data, tx)),
     );
   }
 
-  static async refundTickets(
+  async refundTickets(
     ctx: IContext,
     tickets: PrismaTicket[],
     currentUserId: string,
@@ -105,17 +113,17 @@ export default class TicketService {
   ): Promise<void> {
     await Promise.all(
       tickets.map((ticket) =>
-        TicketRepository.update(
+        this.repository.update(
           ctx,
           ticket.id,
-          TicketConverter.refund(currentUserId, transactionId),
+          this.converter.refund(currentUserId, transactionId),
           tx,
         ),
       ),
     );
   }
 
-  static async purchaseTicket(
+  async purchaseTicket(
     ctx: IContext,
     walletId: string,
     utilityId: string,
@@ -124,11 +132,11 @@ export default class TicketService {
   ): Promise<PrismaTicket> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const data = TicketConverter.purchase(currentUserId, walletId, utilityId, transactionId);
-    return TicketRepository.create(ctx, data, tx);
+    const data = this.converter.purchase(currentUserId, walletId, utilityId, transactionId);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static async refundTicket(
+  async refundTicket(
     ctx: IContext,
     id: string,
     transactionId: string,
@@ -137,15 +145,15 @@ export default class TicketService {
     const currentUserId = getCurrentUserId(ctx);
     await this.findTicketOrThrow(ctx, id);
 
-    const data = TicketConverter.refund(currentUserId, transactionId);
-    return TicketRepository.update(ctx, id, data, tx);
+    const data = this.converter.refund(currentUserId, transactionId);
+    return this.repository.update(ctx, id, data, tx);
   }
 
-  static async useTicket(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
+  async useTicket(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaTicket> {
     const currentUserId = getCurrentUserId(ctx);
     await this.findTicketOrThrow(ctx, id);
 
-    const data: Prisma.TicketUpdateInput = TicketConverter.use(currentUserId);
-    return TicketRepository.update(ctx, id, data, tx);
+    const data: Prisma.TicketUpdateInput = this.converter.use(currentUserId);
+    return this.repository.update(ctx, id, data, tx);
   }
 }

@@ -1,12 +1,17 @@
+import { injectable, inject } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { utilityInclude } from "@/application/domain/reward/utility/data/type";
+import { IUtilityRepository } from "./interface";
 
-export default class UtilityRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class UtilityRepository implements IUtilityRepository {
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+  ) { }
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.UtilityWhereInput,
     orderBy: Prisma.UtilityOrderByWithRelationInput,
@@ -25,7 +30,7 @@ export default class UtilityRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where: { id },
@@ -33,9 +38,8 @@ export default class UtilityRepository {
       });
     });
   }
-  w;
 
-  static async findAccessible(
+  async findAccessible(
     ctx: IContext,
     where: Prisma.UtilityWhereUniqueInput & Prisma.UtilityWhereInput,
   ) {
@@ -47,31 +51,25 @@ export default class UtilityRepository {
     });
   }
 
-  static async create(ctx: IContext, data: Prisma.UtilityCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.utility.create({
-        data,
-        include: utilityInclude,
-      });
+  async create(ctx: IContext, data: Prisma.UtilityCreateInput, tx: Prisma.TransactionClient) {
+    return tx.utility.create({
+      data,
+      include: utilityInclude,
     });
   }
 
-  static async delete(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.utility.delete({
-        where: { id },
-        include: utilityInclude,
-      });
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+    return tx.utility.delete({
+      where: { id },
+      include: utilityInclude,
     });
   }
 
-  static async update(ctx: IContext, id: string, data: Prisma.UtilityUpdateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.utility.update({
-        where: { id },
-        data,
-        include: utilityInclude,
-      });
+  async update(ctx: IContext, id: string, data: Prisma.UtilityUpdateInput, tx: Prisma.TransactionClient) {
+    return tx.utility.update({
+      where: { id },
+      data,
+      include: utilityInclude,
     });
   }
 }

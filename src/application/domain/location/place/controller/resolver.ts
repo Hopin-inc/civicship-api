@@ -14,15 +14,18 @@ import {
 import { IContext } from "@/types/server";
 import PlaceUseCase from "@/application/domain/location/place/usecase";
 import { container } from "tsyringe";
+import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 
 const placeResolver = {
   Query: {
     places: async (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
-      return PlaceUseCase.userBrowsePlaces(args, ctx);
+      const useCase = container.resolve(PlaceUseCase);
+      return useCase.userBrowsePlaces(args, ctx);
     },
     place: async (_: unknown, args: GqlQueryPlaceArgs, ctx: IContext) => {
       if (!ctx.loaders?.place) {
-        return PlaceUseCase.userViewPlace(args, ctx);
+        const useCase = container.resolve(PlaceUseCase);
+        return useCase.userViewPlace(args, ctx);
       }
       return await ctx.loaders.place.load(args.id);
     },
@@ -33,21 +36,24 @@ const placeResolver = {
       args: GqlMutationPlaceCreateArgs,
       ctx: IContext,
     ): Promise<GqlPlaceCreatePayload> => {
-      return PlaceUseCase.managerCreatePlace(args, ctx);
+      const useCase = container.resolve(PlaceUseCase);
+      return useCase.managerCreatePlace(args, ctx);
     },
     placeDelete: async (
       _: unknown,
       args: GqlMutationPlaceDeleteArgs,
       ctx: IContext,
     ): Promise<GqlPlaceDeletePayload> => {
-      return PlaceUseCase.managerDeletePlace(args, ctx);
+      const useCase = container.resolve(PlaceUseCase);
+      return useCase.managerDeletePlace(args, ctx);
     },
     placeUpdate: async (
       _: unknown,
       args: GqlMutationPlaceUpdateArgs,
       ctx: IContext,
     ): Promise<GqlPlaceUpdatePayload> => {
-      return PlaceUseCase.managerUpdatePlace(args, ctx);
+      const useCase = container.resolve(PlaceUseCase);
+      return useCase.managerUpdatePlace(args, ctx);
     },
   },
   Place: {
@@ -56,7 +62,7 @@ const placeResolver = {
       args: GqlPlaceOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      const opportunityUseCase = container.resolve("OpportunityUseCase");
+      const opportunityUseCase = container.resolve<OpportunityUseCase>("OpportunityUseCase");
       return opportunityUseCase.anyoneBrowseOpportunities(
         {
           ...args,
