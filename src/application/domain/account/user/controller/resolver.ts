@@ -57,7 +57,8 @@ const userResolver = {
       args: GqlUserPortfoliosArgs,
       ctx: IContext,
     ): Promise<GqlPortfoliosConnection> => {
-      return ViewUseCase.visitorBrowsePortfolios(
+      const useCase = container.resolve(ViewUseCase);
+      return useCase.visitorBrowsePortfolios(
         {
           ...args,
           filter: {
