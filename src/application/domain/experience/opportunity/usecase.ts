@@ -24,9 +24,9 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 @injectable()
 export default class OpportunityUseCase {
   constructor(
-    @inject("OpportunityService") private readonly service: OpportunityService,
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
+    @inject("OpportunityService") private readonly service: OpportunityService,
+  ) {}
 
   async anyoneBrowseOpportunities(
     { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
@@ -124,7 +124,12 @@ export default class OpportunityUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
     return this.issuer.public(ctx, async (tx) => {
-      const record = await this.service.setOpportunityPublishStatus(ctx, id, input.publishStatus, tx);
+      const record = await this.service.setOpportunityPublishStatus(
+        ctx,
+        id,
+        input.publishStatus,
+        tx,
+      );
       return OpportunityPresenter.setPublishStatus(record);
     });
   }
