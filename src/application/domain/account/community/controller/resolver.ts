@@ -22,17 +22,18 @@ import { IContext } from "@/types/server";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import UtilityUseCase from "@/application/domain/reward/utility/usecase";
-import ArticleUseCase from "@/application/domain/content/article/usecase";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { createWalletUseCase } from "@/application/domain/account/wallet/provider";
 import { createCommunityUseCase } from "@/application/domain/account/community/provider";
 import { createMembershipUseCase } from "@/application/domain/account/membership/provider";
+import { createArticleUseCase } from "@/application/domain/content/article/provider";
 
 const issuer = new PrismaClientIssuer();
 const walletUseCase = createWalletUseCase(issuer);
 const communityUseCase = createCommunityUseCase(issuer);
 const membershipUseCase = createMembershipUseCase(issuer);
+const articleUseCase = createArticleUseCase(issuer);
 
 const communityResolver = {
   Query: {
@@ -132,7 +133,7 @@ const communityResolver = {
       args: GqlCommunityArticlesArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
-      return ArticleUseCase.anyoneBrowseArticles(ctx, {
+      return articleUseCase.anyoneBrowseArticles(ctx, {
         ...args,
         filter: { ...args.filter, communityId: parent.id },
       });

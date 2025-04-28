@@ -26,10 +26,11 @@ export default class CommunityPresenter {
   }
 
   static get(r: PrismaCommunity): GqlCommunity {
-    const { places, ...prop } = r;
+    const { places, image, ...prop } = r;
 
     return {
       ...prop,
+      image: image ? image.url : null,
       places: places?.map(PlacePresenter.get) ?? [],
     };
   }

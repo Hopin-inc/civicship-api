@@ -4,16 +4,16 @@ import { articleInclude } from "@/application/domain/content/article/data/type";
 import { IContext } from "@/types/server";
 
 export default class ArticleRepository {
-  private static issuer = new PrismaClientIssuer();
+  constructor(private readonly issuer: PrismaClientIssuer) {}
 
-  static async query<T extends Prisma.ArticleInclude>(
+  async query<T extends Prisma.ArticleInclude>(
     ctx: IContext,
     where: Prisma.ArticleWhereInput,
     orderBy: Prisma.ArticleOrderByWithRelationInput[],
     take: number,
     cursor?: string,
     include: T = articleInclude as T,
-  ): Promise<Prisma.ArticleGetPayload<{ include: T }>[]> {
+  ) {
     return this.issuer.public(ctx, (tx) =>
       tx.article.findMany({
         where,
@@ -26,7 +26,7 @@ export default class ArticleRepository {
     );
   }
 
-  static async findAccessible(
+  async findAccessible(
     ctx: IContext,
     where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
   ) {
