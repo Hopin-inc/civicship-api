@@ -3258,13 +3258,6 @@ export type GqlAuthzDirectiveArgs = {
 
 export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = any, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
-export type GqlComplexityDirectiveArgs = {
-  multipliers?: Maybe<Array<Scalars['String']['input']>>;
-  value: Scalars['Int']['input'];
-};
-
-export type GqlComplexityDirectiveResolver<Result, Parent, ContextType = any, Args = GqlComplexityDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
-
 export type GqlRequireRoleDirectiveArgs = {
   role: GqlRole;
 };
@@ -4548,6 +4541,5 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
 
 export type GqlDirectiveResolvers<ContextType = any> = ResolversObject<{
   authz?: GqlAuthzDirectiveResolver<any, any, ContextType>;
-  complexity?: GqlComplexityDirectiveResolver<any, any, ContextType>;
   requireRole?: GqlRequireRoleDirectiveResolver<any, any, ContextType>;
 }>;
