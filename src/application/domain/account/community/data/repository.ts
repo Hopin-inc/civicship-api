@@ -3,7 +3,9 @@ import { Prisma } from "@prisma/client";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class CommunityRepository implements ICommunityRepository {
   constructor(private readonly issuer: PrismaClientIssuer) {}
 

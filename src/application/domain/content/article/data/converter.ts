@@ -1,6 +1,8 @@
 import { GqlArticleCategory, GqlArticleFilterInput, GqlArticleSortInput } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ArticleConverter {
   filter(filter?: GqlArticleFilterInput): Prisma.ArticleWhereInput {
     if (!filter) return {};

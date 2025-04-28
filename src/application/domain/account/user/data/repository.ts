@@ -3,12 +3,14 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { userInclude } from "@/application/domain/account/user/data/type";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class UserRepository implements IUserRepository {
   constructor(
-    private readonly issuer: PrismaClientIssuer,
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     private readonly db: typeof prismaClient,
-  ) {}
+  ) { }
 
   async query(
     ctx: IContext,

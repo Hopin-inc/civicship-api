@@ -1,6 +1,8 @@
 import { GqlMembershipFilterInput, GqlMembershipSortInput } from "@/types/graphql";
 import { Prisma, MembershipStatus, Role, MembershipStatusReason } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class MembershipConverter {
   filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
     return {

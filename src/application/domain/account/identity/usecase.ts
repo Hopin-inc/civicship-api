@@ -7,15 +7,17 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
+import { injectable, inject } from "tsyringe";
 
+@injectable()
 export default class IdentityUseCase {
   constructor(
-    private readonly issuer: PrismaClientIssuer,
-    private readonly identityService: IdentityService,
-    private readonly membershipService: MembershipService,
-    private readonly walletService: WalletService,
-    private readonly imageService: ImageService,
-  ) {}
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("IdentityService") private readonly identityService: IdentityService,
+    @inject("MembershipService") private readonly membershipService: MembershipService,
+    @inject("WalletService") private readonly walletService: WalletService,
+    @inject("ImageService") private readonly imageService: ImageService,
+  ) { }
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
     return {

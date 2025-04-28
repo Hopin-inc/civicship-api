@@ -4,11 +4,11 @@ import { IContext } from "@/types/server";
 import { ITransactionRepository } from "@/application/domain/transaction/data/interface";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
-import { injectable } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 
 @injectable()
 export default class TransactionRepository implements ITransactionRepository {
-  constructor(private readonly issuer: PrismaClientIssuer) {}
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) { }
 
   async query(
     ctx: IContext,

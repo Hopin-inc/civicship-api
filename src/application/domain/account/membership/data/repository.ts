@@ -3,9 +3,14 @@ import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { membershipInclude } from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class MembershipRepository implements IMembershipRepository {
-  constructor(private readonly issuer: PrismaClientIssuer) {}
+  constructor(
+    @inject("PrismaClientIssuer")
+    private readonly issuer: PrismaClientIssuer,
+  ) {}
 
   async query(
     ctx: IContext,

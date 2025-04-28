@@ -2,12 +2,14 @@ import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
+import { injectable, inject } from "tsyringe";
 
+@injectable()
 export default class IdentityService {
   constructor(
-    private readonly userRepository: IUserRepository,
-    private readonly identityRepository: IIdentityRepository,
-  ) {}
+    @inject("IUserRepository") private readonly userRepository: IUserRepository,
+    @inject("IIdentityRepository") private readonly identityRepository: IIdentityRepository,
+  ) { }
 
   async createUserAndIdentity(
     data: Prisma.UserCreateInput,

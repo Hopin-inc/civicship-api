@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import "@/application/provider";
 import http from "http";
 import { createServer } from "https";
 import fs from "fs";

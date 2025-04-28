@@ -6,7 +6,9 @@ import {
   GqlImageInput,
 } from "@/types/graphql";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class CommunityConverter {
   filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
     return {

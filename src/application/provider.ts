@@ -1,9 +1,9 @@
-import "reflect-metadata";
 import { container } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
+import IMembershipRepository from "@/application/domain/account/membership/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 import MembershipService from "@/application/domain/account/membership/service";
 import MembershipUseCase from "@/application/domain/account/membership/usecase";
@@ -13,7 +13,13 @@ import CommunityService from "@/application/domain/account/community/service";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
 import UserService from "@/application/domain/account/user/service";
 import IdentityService from "@/application/domain/account/identity/service";
+import IdentityUseCase from "@/application/domain/account/identity/usecase";
+import IdentityRepository from "@/application/domain/account/identity/data/repository";
+import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
+import ArticleService from "@/application/domain/content/article/service";
+import ArticleRepository from "@/application/domain/content/article/data/repository";
+import ArticleConverter from "@/application/domain/content/article/data/converter";
 import ImageService from "@/application/domain/content/image/service";
 import NotificationService from "@/application/domain/notification/service";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
@@ -41,6 +47,12 @@ import PlaceService from "@/application/domain/location/place/service";
 import PlaceRepository from "@/application/domain/location/place/data/repository";
 import PlaceConverter from "@/application/domain/location/place/data/converter";
 import ViewUseCase from "@/application/view/usecase";
+import MembershipConverter from "@/application/domain/account/membership/data/converter";
+import { getCurrentUserId } from "@/application/domain/utils";
+import WalletRepository from "@/application/domain/account/wallet/data/repository";
+import WalletConverter from "@/application/domain/account/wallet/data/converter";
+import UserRepository from "@/application/domain/account/user/data/repository";
+import UserConverter from "@/application/domain/account/user/data/converter";
 
 // ------------------------------
 // 🚀 container.register
@@ -48,25 +60,41 @@ import ViewUseCase from "@/application/view/usecase";
 
 // Infrastructure
 container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
+container.register("prismaClient", { useValue: prismaClient });
+
+// Utils
+container.register("getCurrentUserId", { useValue: getCurrentUserId });
 
 // Transaction
 container.register("TransactionUseCase", { useClass: TransactionUseCase });
-container.register("TransactionRepository", { useClass: TransactionRepository });
+container.register("ITransactionRepository", { useClass: TransactionRepository });
 container.register("TransactionConverter", { useClass: TransactionConverter });
-container.register("TransactionService", { useClass: TransactionService });
+container.register("ITransactionService", { useClass: TransactionService });
 
 // Account
-container.register("MembershipService", { useClass: MembershipService });
+container.register("IMembershipRepository", { useClass: IMembershipRepository });
 container.register("MembershipUseCase", { useClass: MembershipUseCase });
+container.register("MembershipService", { useClass: MembershipService });
+container.register("MembershipConverter", { useClass: MembershipConverter });
 container.register("WalletService", { useClass: WalletService });
 container.register("WalletValidator", { useClass: WalletValidator });
+container.register("IWalletRepository", { useClass: WalletRepository });
+container.register("WalletConverter", { useClass: WalletConverter });
+container.register("IUserRepository", { useClass: UserRepository });
+container.register("UserConverter", { useClass: UserConverter });
 container.register("CommunityService", { useClass: CommunityService });
 container.register("CommunityUseCase", { useClass: CommunityUseCase });
 container.register("UserService", { useClass: UserService });
 container.register("IdentityService", { useClass: IdentityService });
+container.register("IdentityUseCase", { useClass: IdentityUseCase });
+container.register("IIdentityRepository", { useClass: IdentityRepository });
+container.register("IdentityConverter", { useClass: IdentityConverter });
 
 // Content
 container.register("ArticleUseCase", { useClass: ArticleUseCase });
+container.register("ArticleService", { useClass: ArticleService });
+container.register("IArticleRepository", { useClass: ArticleRepository });
+container.register("ArticleConverter", { useClass: ArticleConverter });
 container.register("ImageService", { useClass: ImageService });
 container.register("NotificationService", { useClass: NotificationService });
 

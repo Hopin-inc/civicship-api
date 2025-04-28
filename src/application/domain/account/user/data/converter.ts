@@ -5,7 +5,9 @@ import {
   GqlUserUpdateProfileInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class UserConverter {
   filter(filter: GqlUserFilterInput): Prisma.UserWhereInput {
     return {
@@ -13,8 +15,8 @@ export default class UserConverter {
         filter?.sysRole ? { sysRole: filter?.sysRole } : {},
         filter.keyword
           ? {
-              OR: [{ name: { contains: filter.keyword } }, { slug: { contains: filter.keyword } }],
-            }
+            OR: [{ name: { contains: filter.keyword } }, { slug: { contains: filter.keyword } }],
+          }
           : {},
       ],
     };
