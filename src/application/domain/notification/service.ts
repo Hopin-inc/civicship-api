@@ -2,17 +2,16 @@ import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/exp
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
 import "dayjs/locale/ja.js";
-import { lineClient } from "@/infrastructure/libs/line";
 import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/cancelOpportunitySlotMessage";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/message/acceptReservationMessage";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/message/applyReservationMessage";
 import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/message/cancelReservationMessage";
-import { HTTPFetchError, messagingApi, LINE_REQUEST_ID_HTTP_HEADER_NAME } from "@line/bot-sdk";
 import { IdentityPlatform, Role } from "@prisma/client";
 import { LINE_RICHMENU } from "@/application/domain/notification/presenter/richmenu/const";
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
-import logger from "@/infrastructure/logging";
+import { injectable } from "tsyringe";
+import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 
 export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
@@ -23,6 +22,7 @@ export const USER_MY_PAGE = "https://liff.line.me/2006078430-XGzG9kqm/users/me";
 
 dayjs.locale("ja");
 
+@injectable()
 export default class NotificationService {
   async pushCancelOpportunitySlotMessage(
     ctx: IContext,
@@ -49,7 +49,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await this.safePushMessage({ to: lineId, messages: [message] });
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
@@ -73,7 +73,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await this.safePushMessage({ to: lineId, messages: [message] });
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
@@ -96,7 +96,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await this.safePushMessage({ to: lineId, messages: [message] });
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   async pushReservationAcceptedMessage(
@@ -134,7 +134,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await this.safePushMessage({ to: lineId, messages: [message] });
+    await safePushMessage({ to: lineId, messages: [message] });
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
@@ -155,29 +155,7 @@ export default class NotificationService {
         ? LINE_RICHMENU.ADMIN_MANAGE
         : LINE_RICHMENU.PUBLIC;
 
-    await this.safeLinkRichMenuIdToUser(lineUid, richMenuId);
-  }
-
-  private async safeLinkRichMenuIdToUser(userId: string, richMenuId: string) {
-    const endpoint = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
-
-    try {
-      const response = await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
-      this.logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse);
-    } catch (error) {
-      this.logLineApiError("linkRichMenuIdToUser", endpoint, error);
-    }
-  }
-
-  private async safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
-    const endpoint = "https://api.line.me/v2/bot/message/push";
-
-    try {
-      const response = await lineClient.pushMessageWithHttpInfo(params);
-      this.logLineApiSuccess("pushMessage", endpoint, response.httpResponse);
-    } catch (error) {
-      this.logLineApiError("pushMessage", endpoint, error);
-    }
+    await safeLinkRichMenuIdToUser(lineUid, richMenuId);
   }
 
   private formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
@@ -185,35 +163,5 @@ export default class NotificationService {
     const date = dayjs(start).format("M月D日");
     const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
     return { year, date, time };
-  }
-
-  private logLineApiSuccess(operationName: string, endpoint: string, response: Response) {
-    logger.info(`LINE ${operationName} success`, {
-      requestId: response.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
-      endpoint,
-      method: "POST",
-      statusCode: response.status,
-    });
-  }
-
-  private logLineApiError(operationName: string, endpoint: string, error: unknown) {
-    if (error instanceof HTTPFetchError) {
-      logger.error(`LINE ${operationName} failed`, {
-        requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
-        endpoint,
-        method: "POST",
-        statusCode: error.status,
-      });
-    } else if (error instanceof Error) {
-      logger.error(`Unexpected error on LINE ${operationName}`, {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
-    } else {
-      logger.error(`Unknown error on LINE ${operationName}`, {
-        error,
-      });
-    }
   }
 }
