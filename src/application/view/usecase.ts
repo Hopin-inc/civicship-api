@@ -1,19 +1,26 @@
+import { inject, injectable } from "tsyringe";
 import { GqlPortfolio, GqlPortfoliosConnection, GqlUserPortfoliosArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
-import ParticipationService from "@/application/domain/experience/participation/service";
-import ViewConverter from "@/application/view/data/converter";
-import ViewPresenter from "@/application/view/presenter";
 import {
   participationForPortfolioInclude,
   PrismaParticipationForPortfolio,
 } from "@/application/domain/experience/participation/data/type";
 import { ValidParticipationForPortfolio } from "@/application/view/service";
+import ViewConverter from "@/application/view/data/converter";
+import ViewPresenter from "@/application/view/presenter";
+import ParticipationService from "@/application/domain/experience/participation/service";
 import ArticleService from "@/application/domain/content/article/service";
 import { articleForPortfolioInclude } from "@/application/domain/content/article/data/type";
 
+@injectable()
 export default class ViewUseCase {
-  static async visitorBrowsePortfolios(
+  constructor(
+    @inject("ParticipationService") private readonly participationService: ParticipationService,
+    @inject("ArticleService") private readonly articleService: ArticleService,
+  ) {}
+
+  async visitorBrowsePortfolios(
     { filter, sort, cursor, first }: GqlUserPortfoliosArgs,
     ctx: IContext,
   ): Promise<GqlPortfoliosConnection> {
@@ -22,13 +29,13 @@ export default class ViewUseCase {
     const articleSort = ViewConverter.sort(sort);
 
     const [participations, articles] = await Promise.all([
-      ParticipationService.fetchParticipations(
+      this.participationService.fetchParticipations(
         ctx,
         { filter, sort: participationSort, cursor },
         take,
         participationForPortfolioInclude,
       ),
-      ArticleService.fetchArticles(
+      this.articleService.fetchArticles(
         ctx,
         { filter, sort: articleSort, cursor },
         take,
@@ -38,7 +45,7 @@ export default class ViewUseCase {
 
     const safeParticipations = participations
       .slice(0, take)
-      .filter(hasSlotAndOpportunity)
+      .filter(this.hasSlotAndOpportunity)
       .map((p) => ViewPresenter.getFromParticipation(p));
 
     const articlePortfolios = articles.slice(0, take).map((a) => ViewPresenter.getFromArticle(a));
@@ -52,10 +59,10 @@ export default class ViewUseCase {
 
     return ViewPresenter.query(sliced, hasNextPage);
   }
-}
 
-function hasSlotAndOpportunity(
-  p: PrismaParticipationForPortfolio,
-): p is ValidParticipationForPortfolio {
-  return !!p.reservation?.opportunitySlot && !!p.reservation?.opportunitySlot.opportunity;
+  private hasSlotAndOpportunity(
+    p: PrismaParticipationForPortfolio,
+  ): p is ValidParticipationForPortfolio {
+    return !!p.reservation?.opportunitySlot && !!p.reservation?.opportunitySlot.opportunity;
+  }
 }
