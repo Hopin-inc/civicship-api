@@ -1,17 +1,37 @@
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
-import membershipResolver from "@/application/domain/account/membership/controller/resolver";
-import NotificationService from "@/application/domain/notification/service";
-import WalletService from "@/application/domain/account/wallet/service";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { createMembershipService } from "@/application/domain/account/membership/provider";
 
-jest.mock("@/application/domain/notification/service");
-jest.mock("@/application/domain/account/wallet/service");
+class MockWalletService {
+  createMemberWalletIfNeeded = jest.fn();
+}
+class MockNotificationService {
+  switchRichMenuByRole = jest.fn();
+}
 
 describe("Membership Accept My Invitation Tests", () => {
+  let membershipUseCase: MembershipUseCase;
+  let walletServiceMock: MockWalletService;
+  let notificationServiceMock: MockNotificationService;
+
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
+
+    const issuer = new PrismaClientIssuer();
+    const membershipService = createMembershipService(issuer);
+    walletServiceMock = new MockWalletService();
+    notificationServiceMock = new MockNotificationService();
+
+    membershipUseCase = new MembershipUseCase(
+      issuer,
+      membershipService,
+      walletServiceMock as any,
+      notificationServiceMock as any,
+    );
   });
 
   afterAll(async () => {
@@ -46,8 +66,7 @@ describe("Membership Accept My Invitation Tests", () => {
     };
 
     // Act
-    const result = await membershipResolver.Mutation.membershipAcceptMyInvitation(
-      {},
+    const result = await membershipUseCase.userAcceptMyInvitation(
       { input, permission: { userId: ctx.currentUser!.id } },
       ctx,
     );
@@ -67,8 +86,8 @@ describe("Membership Accept My Invitation Tests", () => {
     expect(result.membership?.status).toBe("JOINED");
 
     // Wallet作成が呼ばれていること
-    expect(WalletService.createMemberWalletIfNeeded).toHaveBeenCalledTimes(1);
-    expect(WalletService.createMemberWalletIfNeeded).toHaveBeenCalledWith(
+    expect(walletServiceMock.createMemberWalletIfNeeded).toHaveBeenCalledTimes(1);
+    expect(walletServiceMock.createMemberWalletIfNeeded).toHaveBeenCalledWith(
       expect.any(Object), // ctx
       user.id,
       community.id,
@@ -76,8 +95,8 @@ describe("Membership Accept My Invitation Tests", () => {
     );
 
     // リッチメニュー切り替えが呼ばれていること
-    expect(NotificationService.switchRichMenuByRole).toHaveBeenCalledTimes(1);
-    expect(NotificationService.switchRichMenuByRole).toHaveBeenCalledWith(
+    expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: user.id,
         communityId: community.id,
@@ -109,8 +128,8 @@ describe("Membership Accept My Invitation Tests", () => {
 
     const input = { userId: user.id, communityId: community.id };
 
-    const result = await membershipResolver.Mutation.membershipAcceptMyInvitation(
-      {},
+    // Act
+    const result = await membershipUseCase.userAcceptMyInvitation(
       { input, permission: { userId: ctx.currentUser!.id } },
       ctx,
     );
@@ -133,12 +152,13 @@ describe("Membership Accept My Invitation Tests", () => {
 
     const input = { userId: user.id, communityId: community.id };
 
-    const result = await membershipResolver.Mutation.membershipAcceptMyInvitation(
-      {},
+    // Act
+    const result = await membershipUseCase.userAcceptMyInvitation(
       { input, permission: { userId: ctx.currentUser!.id } },
       ctx,
     );
 
+    // Assert
     const createdMembership = await TestDataSourceHelper.findMembership({
       userId_communityId: {
         userId: user.id,
