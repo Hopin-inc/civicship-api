@@ -13,10 +13,9 @@ import TicketConverter from "@/application/domain/reward/ticket/data/converter";
 @injectable()
 export default class TicketService {
   constructor(
-    @inject("TicketRepository")
-    private readonly repository: ITicketRepository,
-    private readonly converter: TicketConverter,
-  ) {}
+    @inject("TicketRepository") private readonly repository: ITicketRepository,
+    @inject("TicketConverter") private readonly converter: TicketConverter,
+  ) { }
 
   async fetchTickets(
     ctx: IContext,
