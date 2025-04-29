@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 import IdentityService from "@/application/domain/account/identity/service";
 import { auth } from "@/infrastructure/libs/firebase";

@@ -1,23 +1,32 @@
-import { ClaimLinkStatus } from "@prisma/client";
+import "reflect-metadata";
+import { ClaimLinkStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TicketClaimLinkService from "@/application/domain/reward/ticketClaimLink/service";
-import TicketClaimLinkRepository from "@/application/domain/reward/ticketClaimLink/data/repository";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 
-jest.mock("@/application/domain/reward/ticketClaimLink/data/repository", () => ({
-  __esModule: true,
-  default: {
-    find: jest.fn(),
-    update: jest.fn(),
-  },
-}));
-
 describe("TicketClaimLinkService", () => {
+  // --- Mockクラス ---
+  class MockTicketClaimLinkRepository {
+    query = jest.fn();
+    find = jest.fn();
+    update = jest.fn();
+  }
+
+  // --- モックインスタンス ---
+  let mockRepository: MockTicketClaimLinkRepository;
+  let service: TicketClaimLinkService;
+
   const ctx = {} as IContext;
-  const tx = {} as any; // Prisma.TransactionClientのモック
+  const tx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRepository = new MockTicketClaimLinkRepository();
+    service = new TicketClaimLinkService(mockRepository);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe("validateBeforeClaim", () => {
@@ -27,24 +36,20 @@ describe("TicketClaimLinkService", () => {
     const validStatuses = [ClaimLinkStatus.ISSUED];
 
     it("should throw NotFoundError if link not found", async () => {
-      (TicketClaimLinkRepository.find as jest.Mock).mockResolvedValue(null);
+      mockRepository.find.mockResolvedValue(null);
 
-      await expect(TicketClaimLinkService.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(
-        NotFoundError,
-      );
-      expect(TicketClaimLinkRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
+      await expect(service.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(NotFoundError);
+      expect(mockRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
     });
 
     it.each(errorStatuses)("should throw ValidationError if link status is %s", async (status) => {
-      (TicketClaimLinkRepository.find as jest.Mock).mockResolvedValue({
+      mockRepository.find.mockResolvedValue({
         id: claimLinkId,
         status,
       });
 
-      await expect(TicketClaimLinkService.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(
-        ValidationError,
-      );
-      expect(TicketClaimLinkRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
+      await expect(service.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(ValidationError);
+      expect(mockRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
     });
 
     it.each(validStatuses)("should return link if status is %s", async (status) => {
@@ -53,12 +58,12 @@ describe("TicketClaimLinkService", () => {
         status,
       };
 
-      (TicketClaimLinkRepository.find as jest.Mock).mockResolvedValue(validLink);
+      mockRepository.find.mockResolvedValue(validLink);
 
-      const result = await TicketClaimLinkService.validateBeforeClaim(ctx, claimLinkId);
+      const result = await service.validateBeforeClaim(ctx, claimLinkId);
 
       expect(result).toBe(validLink);
-      expect(TicketClaimLinkRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
+      expect(mockRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
     });
   });
 
@@ -67,11 +72,11 @@ describe("TicketClaimLinkService", () => {
     const qty = 2;
 
     it("should call update with correct arguments", async () => {
-      (TicketClaimLinkRepository.update as jest.Mock).mockResolvedValue({});
+      mockRepository.update.mockResolvedValue({});
 
-      await TicketClaimLinkService.markAsClaimed(ctx, claimLinkId, qty, tx);
+      await service.markAsClaimed(ctx, claimLinkId, qty, tx);
 
-      expect(TicketClaimLinkRepository.update).toHaveBeenCalledWith(
+      expect(mockRepository.update).toHaveBeenCalledWith(
         ctx,
         claimLinkId,
         expect.objectContaining({
@@ -82,10 +87,5 @@ describe("TicketClaimLinkService", () => {
         tx,
       );
     });
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
   });
 });
