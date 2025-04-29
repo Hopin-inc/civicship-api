@@ -7,10 +7,7 @@ import { inject, injectable } from "tsyringe";
 
 @injectable()
 export default class MembershipRepository implements IMembershipRepository {
-  constructor(
-    @inject("PrismaClientIssuer")
-    private readonly issuer: PrismaClientIssuer,
-  ) {}
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
   async query(
     ctx: IContext,

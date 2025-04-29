@@ -6,7 +6,7 @@ import { IReservationRepository } from "@/application/domain/experience/reservat
 import { injectable } from "tsyringe";
 
 @injectable()
-export class ReservationRepository implements IReservationRepository {
+export default class ReservationRepository implements IReservationRepository {
   constructor(private readonly issuer: PrismaClientIssuer) {}
 
   async query(

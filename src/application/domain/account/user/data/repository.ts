@@ -9,8 +9,8 @@ import { inject, injectable } from "tsyringe";
 export default class UserRepository implements IUserRepository {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    private readonly db: typeof prismaClient,
-  ) { }
+    @inject("prismaClient") private readonly db: typeof prismaClient,
+  ) {}
 
   async query(
     ctx: IContext,

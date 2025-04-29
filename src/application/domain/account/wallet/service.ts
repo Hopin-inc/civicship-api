@@ -9,9 +9,9 @@ import { inject, injectable } from "tsyringe";
 @injectable()
 export default class WalletService {
   constructor(
-    @inject("IWalletRepository") private readonly repository: IWalletRepository,
+    @inject("WalletRepository") private readonly repository: IWalletRepository,
     @inject("WalletConverter") private readonly converter: WalletConverter,
-  ) { }
+  ) {}
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
     const where = this.converter.filter(filter ?? {});

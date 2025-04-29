@@ -1,15 +1,27 @@
+import "reflect-metadata";
 import { GqlCommunityCreateInput, GqlTransactionDonateSelfPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
-import transactionResolver from "@/application/domain/transaction/controller/resolver";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
 
 describe("Transaction DonateSelfPoint Integration Tests", () => {
   jest.setTimeout(30_000);
+  let useCase: TransactionUseCase;
+  let communityConverter: CommunityConverter;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(TransactionUseCase);
+    communityConverter = container.resolve(CommunityConverter);
   });
 
   afterAll(async () => {
@@ -50,7 +62,7 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
       establishedAt: undefined,
       website: undefined,
     };
-    const prismaCreateInput = CommunityConverter.create(createCommunityInput, ctx.uid);
+    const prismaCreateInput = communityConverter.create(createCommunityInput, ctx.uid);
     const communityInserted = await TestDataSourceHelper.createCommunity(prismaCreateInput.data);
     const communityId = communityInserted.id;
 
@@ -89,11 +101,7 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
     // execute
     //////////////////////////////////////////////////
 
-    await transactionResolver.Mutation.transactionDonateSelfPoint(
-      {},
-      { input: input, permission: { communityId } },
-      ctx,
-    );
+    await useCase.userDonateSelfPointToAnother(ctx, input);
 
     //////////////////////////////////////////////////
     // execute

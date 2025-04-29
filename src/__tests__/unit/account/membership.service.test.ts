@@ -49,7 +49,7 @@ beforeEach(() => {
   mockUtils = new MockUtils();
   mockUtils.getCurrentUserId = jest.fn().mockReturnValue("admin-user");
 
-  container.register("IMembershipRepository", { useValue: mockRepository });
+  container.register("MembershipRepository", { useValue: mockRepository });
   container.register("MembershipConverter", { useValue: mockConverter });
   container.register("getCurrentUserId", { useValue: mockUtils.getCurrentUserId });
 

@@ -9,9 +9,9 @@ import { injectable, inject } from "tsyringe";
 @injectable()
 export default class ArticleService {
   constructor(
-    @inject("IArticleRepository") private readonly repository: IArticleRepository,
+    @inject("ArticleRepository") private readonly repository: IArticleRepository,
     @inject("ArticleConverter") private readonly converter: ArticleConverter,
-  ) { }
+  ) {}
 
   async fetchArticles<T extends Prisma.ArticleInclude>(
     ctx: IContext,

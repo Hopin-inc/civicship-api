@@ -11,9 +11,8 @@ import { PrismaEvaluation } from "@/application/domain/experience/evaluation/dat
 @injectable()
 export default class EvaluationService {
   constructor(
-    @inject("EvaluationRepository")
-    private readonly repository: IEvaluationRepository,
-    private readonly converter: EvaluationConverter,
+    @inject("EvaluationRepository") private readonly repository: IEvaluationRepository,
+    @inject("EvaluationConverter") private readonly converter: EvaluationConverter,
   ) {}
 
   async fetchEvaluations(

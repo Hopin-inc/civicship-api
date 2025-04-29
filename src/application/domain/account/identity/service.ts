@@ -7,9 +7,9 @@ import { injectable, inject } from "tsyringe";
 @injectable()
 export default class IdentityService {
   constructor(
-    @inject("IUserRepository") private readonly userRepository: IUserRepository,
-    @inject("IIdentityRepository") private readonly identityRepository: IIdentityRepository,
-  ) { }
+    @inject("UserRepository") private readonly userRepository: IUserRepository,
+    @inject("IdentityRepository") private readonly identityRepository: IIdentityRepository,
+  ) {}
 
   async createUserAndIdentity(
     data: Prisma.UserCreateInput,

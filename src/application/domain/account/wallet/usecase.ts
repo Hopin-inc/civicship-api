@@ -13,11 +13,9 @@ import { inject, injectable } from "tsyringe";
 @injectable()
 export default class WalletUseCase {
   constructor(
-    @inject("WalletService") private readonly service: Pick<
-      WalletService,
-      "fetchWallets" | "findWallet"
-    >,
-  ) { }
+    @inject("WalletService")
+    private readonly service: Pick<WalletService, "fetchWallets" | "findWallet">,
+  ) {}
 
   async visitorBrowseWallets(
     { filter, sort, cursor, first }: GqlQueryWalletsArgs,

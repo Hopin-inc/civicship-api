@@ -9,10 +9,10 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 @injectable()
 export default class TicketIssuerService implements ITicketIssuerService {
   constructor(
-    @inject("ITicketIssuerRepository") private readonly repository: ITicketIssuerRepository,
+    @inject("TicketIssuerRepository") private readonly repository: ITicketIssuerRepository,
     @inject("TicketIssuerConverter") private readonly converter: TicketIssuerConverter,
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
+  ) {}
 
   async findTicketIssuer(ctx: IContext, id: string): Promise<PrismaTicketIssuer | null> {
     return await this.repository.find(ctx, id);

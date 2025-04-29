@@ -1,14 +1,24 @@
+import "reflect-metadata";
 import { GqlTransactionGrantCommunityPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
-import transactionResolver from "@/application/domain/transaction/controller/resolver";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
 
 describe("Point Grant Tests", () => {
   const GRANT_POINTS = 50;
+  let transactionUseCase: TransactionUseCase;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    transactionUseCase = container.resolve(TransactionUseCase);
   });
 
   afterAll(async () => {
@@ -55,11 +65,7 @@ describe("Point Grant Tests", () => {
       communityId: community.id,
     };
 
-    await transactionResolver.Mutation.transactionGrantCommunityPoint(
-      {},
-      { input, permission: { communityId: community.id } },
-      ctx,
-    );
+    await transactionUseCase.managerGrantCommunityPoint(ctx, input);
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
       (t) => t.reason === TransactionReason.GRANT,
@@ -95,13 +101,9 @@ describe("Point Grant Tests", () => {
       toUserId: user.id,
     };
 
-    await expect(
-      transactionResolver.Mutation.transactionGrantCommunityPoint(
-        {},
-        { input, permission: { communityId: community.id } },
-        ctx,
-      ),
-    ).rejects.toThrow(/Insufficient balance/i);
+    await expect(transactionUseCase.managerGrantCommunityPoint(ctx, input)).rejects.toThrow(
+      /Insufficient balance/i,
+    );
 
     const txs = await TestDataSourceHelper.findAllTransactions();
     expect(txs).toHaveLength(0);

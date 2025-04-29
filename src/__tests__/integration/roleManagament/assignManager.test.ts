@@ -8,8 +8,8 @@ import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
 import MembershipService from "@/application/domain/account/membership/service";
+import { registerProductionDependencies } from "@/application/provider";
 
-// --- Mockクラス ---
 class MockWalletService implements Partial<WalletService> {
   createMemberWalletIfNeeded = jest.fn();
 }
@@ -18,8 +18,7 @@ class MockNotificationService implements Partial<NotificationService> {
   switchRichMenuByRole = jest.fn();
 }
 
-// --- テスト ---
-describe("Membership Assign Manager Tests", () => {
+describe("Membership Integration: Assign Owner", () => {
   let membershipUseCase: MembershipUseCase;
   let walletServiceMock: MockWalletService;
   let notificationServiceMock: MockNotificationService;
@@ -28,14 +27,17 @@ describe("Membership Assign Manager Tests", () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
     container.reset();
+    registerProductionDependencies();
 
-    const issuer = new PrismaClientIssuer();
     const membershipService = container.resolve(MembershipService);
+
     walletServiceMock = new MockWalletService();
     notificationServiceMock = new MockNotificationService();
 
     container.register("WalletService", { useValue: walletServiceMock });
     container.register("NotificationService", { useValue: notificationServiceMock });
+
+    const issuer = container.resolve(PrismaClientIssuer);
 
     membershipUseCase = new MembershipUseCase(
       issuer,
@@ -43,6 +45,10 @@ describe("Membership Assign Manager Tests", () => {
       walletServiceMock as any,
       notificationServiceMock as any,
     );
+  });
+
+  afterAll(async () => {
+    await TestDataSourceHelper.disconnect();
   });
 
   afterAll(async () => {

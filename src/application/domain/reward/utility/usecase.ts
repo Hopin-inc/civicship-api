@@ -23,7 +23,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 export default class UtilityUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("IUtilityService") private readonly service: IUtilityService,
+    @inject("UtilityService") private readonly service: IUtilityService,
   ) {}
 
   async anyoneBrowseUtilities(

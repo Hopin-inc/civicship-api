@@ -54,9 +54,9 @@ beforeEach(() => {
   mockConverter = new MockUtilityConverter();
   mockImageService = new MockImageService();
 
-  container.register("IUtilityRepository", { useValue: mockRepository });
+  container.register("UtilityRepository", { useValue: mockRepository });
   container.register("UtilityConverter", { useValue: mockConverter });
-  container.register("IImageService", { useValue: mockImageService });
+  container.register("ImageService", { useValue: mockImageService });
 
   service = container.resolve(UtilityService);
 });

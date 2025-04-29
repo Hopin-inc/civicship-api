@@ -25,11 +25,11 @@ import { inject, injectable } from "tsyringe";
 export default class TransactionUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("ITransactionService") private readonly transactionService: ITransactionService,
+    @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
-  ) { }
+  ) {}
 
   async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,

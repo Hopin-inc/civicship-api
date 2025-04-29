@@ -20,9 +20,9 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 @injectable()
 export default class PlaceUseCase {
   constructor(
-    @inject("IPlaceService") private readonly service: IPlaceService,
+    @inject("PlaceService") private readonly service: IPlaceService,
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
+  ) {}
 
   async userBrowsePlaces(
     { filter, sort, cursor, first }: GqlQueryPlacesArgs,

@@ -43,9 +43,9 @@ describe("TransactionService", () => {
     mockRepository = new MockTransactionRepository();
     mockConverter = new MockTransactionConverter();
 
-    container.register("ITransactionRepository", { useValue: mockRepository });
+    container.register("TransactionRepository", { useValue: mockRepository });
     container.register("TransactionConverter", { useValue: mockConverter });
-    container.register("ITransactionService", { useClass: TransactionService });
+    container.register("TransactionService", { useClass: TransactionService });
 
     mockService = container.resolve(TransactionService);
   });

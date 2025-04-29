@@ -57,7 +57,7 @@ describe("WalletService", () => {
     mockRepository = new MockWalletRepository();
     mockConverter = new MockWalletConverter();
 
-    container.register("IWalletRepository", { useValue: mockRepository });
+    container.register("WalletRepository", { useValue: mockRepository });
     container.register("WalletConverter", { useValue: mockConverter });
 
     walletService = container.resolve(WalletService);

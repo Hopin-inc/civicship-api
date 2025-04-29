@@ -13,17 +13,17 @@ import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import TransactionService from "@/application/domain/transaction/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
 
 @injectable()
 export default class EvaluationUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("EvaluationService") private readonly evaluationService: EvaluationService,
-    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
   ) {}

@@ -3,7 +3,7 @@ import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
-import IMembershipRepository from "@/application/domain/account/membership/data/repository";
+import ICommunityRepository from "@/application/domain/account/community/data/repository";
 import TransactionService from "@/application/domain/transaction/service";
 import MembershipService from "@/application/domain/account/membership/service";
 import MembershipUseCase from "@/application/domain/account/membership/usecase";
@@ -30,12 +30,12 @@ import OpportunitySlotService from "@/application/domain/experience/opportunityS
 import OpportunitySlotRepository from "@/application/domain/experience/opportunitySlot/data/repository";
 import OpportunitySlotConverter from "@/application/domain/experience/opportunitySlot/data/converter";
 import ReservationUseCase from "@/application/domain/experience/reservation/usecase";
-import { ReservationRepository } from "@/application/domain/experience/reservation/data/repository";
+import ReservationRepository from "@/application/domain/experience/reservation/data/repository";
 import ReservationConverter from "@/application/domain/experience/reservation/data/converter";
-import { ReservationService } from "@/application/domain/experience/reservation/service";
+import ReservationService from "@/application/domain/experience/reservation/service";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import ParticipationService from "@/application/domain/experience/participation/service";
-import { ParticipationRepository } from "@/application/domain/experience/participation/data/repository";
+import ParticipationRepository from "@/application/domain/experience/participation/data/repository";
 import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import ParticipationStatusHistoryRepository from "@/application/domain/experience/participation/statusHistory/data/repository";
@@ -53,94 +53,185 @@ import WalletRepository from "@/application/domain/account/wallet/data/repositor
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import UserRepository from "@/application/domain/account/user/data/repository";
 import UserConverter from "@/application/domain/account/user/data/converter";
+import OpportunityConverter from "@/application/domain/experience/opportunity/data/converter";
+import CommunityConverter from "@/application/domain/account/community/data/converter";
+import UserUseCase from "@/application/domain/account/user/usecase";
+import ParticipationConverter from "@/application/domain/experience/participation/data/converter";
+import ParticipationStatusHistoryConverter from "@/application/domain/experience/participation/statusHistory/data/converter";
+import TicketConverter from "@/application/domain/reward/ticket/data/converter";
+import TicketClaimLinkService from "@/application/domain/reward/ticketClaimLink/service";
+import TicketClaimLinkRepository from "@/application/domain/reward/ticketClaimLink/data/repository";
+import TicketIssuerService from "@/application/domain/reward/ticketIssuer/service";
+import TicketIssuerRepository from "@/application/domain/reward/ticketIssuer/data/repository";
+import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
+import EvaluationService from "@/application/domain/experience/evaluation/service";
+import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
+import EvaluationRepository from "@/application/domain/experience/evaluation/data/repository";
+import TicketIssuerConverter from "@/application/domain/reward/ticketIssuer/data/converter";
+import UtilityUseCase from "@/application/domain/reward/utility/usecase";
+import UtilityService from "@/application/domain/reward/utility/service";
+import UtilityConverter from "@/application/domain/reward/utility/data/converter";
+import UtilityRepository from "@/application/domain/reward/utility/data/repository";
+import MembershipRepository from "@/application/domain/account/membership/data/repository";
+import ReservationValidator from "@/application/domain/experience/reservation/validator";
 
-// ------------------------------
-// 🚀 container.register
-// ------------------------------
+export function registerProductionDependencies() {
+  // ------------------------------
+  // 🏗️ Infrastructure
+  // ------------------------------
 
-// Infrastructure
-container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
-container.register("prismaClient", { useValue: prismaClient });
+  container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
+  container.register("prismaClient", { useValue: prismaClient });
+  container.register("getCurrentUserId", { useValue: getCurrentUserId });
 
-// Utils
-container.register("getCurrentUserId", { useValue: getCurrentUserId });
+  // ------------------------------
+  // 👥 Account
+  // ------------------------------
 
-// Transaction
-container.register("TransactionUseCase", { useClass: TransactionUseCase });
-container.register("ITransactionRepository", { useClass: TransactionRepository });
-container.register("TransactionConverter", { useClass: TransactionConverter });
-container.register("ITransactionService", { useClass: TransactionService });
+  // 🪪 Membership
+  container.register("MembershipRepository", { useClass: MembershipRepository });
+  container.register("MembershipUseCase", { useClass: MembershipUseCase });
+  container.register("MembershipService", { useClass: MembershipService });
+  container.register("MembershipConverter", { useClass: MembershipConverter });
 
-// Account
-container.register("IMembershipRepository", { useClass: IMembershipRepository });
-container.register("MembershipUseCase", { useClass: MembershipUseCase });
-container.register("MembershipService", { useClass: MembershipService });
-container.register("MembershipConverter", { useClass: MembershipConverter });
-container.register("WalletService", { useClass: WalletService });
-container.register("WalletValidator", { useClass: WalletValidator });
-container.register("IWalletRepository", { useClass: WalletRepository });
-container.register("WalletConverter", { useClass: WalletConverter });
-container.register("IUserRepository", { useClass: UserRepository });
-container.register("UserConverter", { useClass: UserConverter });
-container.register("CommunityService", { useClass: CommunityService });
-container.register("CommunityUseCase", { useClass: CommunityUseCase });
-container.register("UserService", { useClass: UserService });
-container.register("IdentityService", { useClass: IdentityService });
-container.register("IdentityUseCase", { useClass: IdentityUseCase });
-container.register("IIdentityRepository", { useClass: IdentityRepository });
-container.register("IdentityConverter", { useClass: IdentityConverter });
+  // 👛 Wallet
+  container.register("WalletService", { useClass: WalletService });
+  container.register("WalletValidator", { useClass: WalletValidator });
+  container.register("WalletRepository", { useClass: WalletRepository });
+  container.register("WalletConverter", { useClass: WalletConverter });
 
-// Content
-container.register("ArticleUseCase", { useClass: ArticleUseCase });
-container.register("ArticleService", { useClass: ArticleService });
-container.register("IArticleRepository", { useClass: ArticleRepository });
-container.register("ArticleConverter", { useClass: ArticleConverter });
-container.register("ImageService", { useClass: ImageService });
-container.register("NotificationService", { useClass: NotificationService });
+  // 🙋 User
+  container.register("UserRepository", { useClass: UserRepository });
+  container.register("UserConverter", { useClass: UserConverter });
+  container.register("UserService", { useClass: UserService });
+  container.register("UserUseCase", { useClass: UserUseCase });
 
-// Experience: Opportunity
-container.register("OpportunityUseCase", { useClass: OpportunityUseCase });
-container.register("OpportunityService", { useClass: OpportunityService });
-container.register("OpportunityRepository", { useClass: OpportunityRepository });
+  // 🏘️ Community
+  container.register("CommunityRepository", { useClass: ICommunityRepository });
+  container.register("CommunityConverter", { useClass: CommunityConverter });
+  container.register("CommunityService", { useClass: CommunityService });
+  container.register("CommunityUseCase", { useClass: CommunityUseCase });
 
-// Experience: OpportunitySlot
-container.register("OpportunitySlotUseCase", { useClass: OpportunitySlotUseCase });
-container.register("OpportunitySlotService", { useClass: OpportunitySlotService });
-container.register("OpportunitySlotRepository", { useClass: OpportunitySlotRepository });
-container.register("OpportunitySlotConverter", { useClass: OpportunitySlotConverter });
+  // 🆔 Identity
+  container.register("IdentityService", { useClass: IdentityService });
+  container.register("IdentityUseCase", { useClass: IdentityUseCase });
+  container.register("IdentityRepository", { useClass: IdentityRepository });
+  container.register("IdentityConverter", { useClass: IdentityConverter });
 
-// Experience: Reservation
-container.register("ReservationUseCase", { useClass: ReservationUseCase });
-container.register("ReservationService", { useClass: ReservationService });
-container.register("ReservationRepository", { useClass: ReservationRepository });
-container.register("ReservationConverter", { useClass: ReservationConverter });
+  // ------------------------------
+  // 📰 Content
+  // ------------------------------
 
-// Experience: Participation
-container.register("ParticipationUseCase", { useClass: ParticipationUseCase });
-container.register("ParticipationService", { useClass: ParticipationService });
-container.register("ParticipationRepository", { useClass: ParticipationRepository });
+  container.register("ArticleUseCase", { useClass: ArticleUseCase });
+  container.register("ArticleService", { useClass: ArticleService });
+  container.register("ArticleRepository", { useClass: ArticleRepository });
+  container.register("ArticleConverter", { useClass: ArticleConverter });
 
-// Experience: ParticipationStatusHistory
-container.register("ParticipationStatusHistoryUseCase", {
-  useClass: ParticipationStatusHistoryUseCase,
-});
-container.register("ParticipationStatusHistoryService", {
-  useClass: ParticipationStatusHistoryService,
-});
-container.register("ParticipationStatusHistoryRepository", {
-  useClass: ParticipationStatusHistoryRepository,
-});
+  container.register("ImageService", { useClass: ImageService });
 
-// Reward: Ticket
-container.register("TicketUseCase", { useClass: TicketUseCase });
-container.register("TicketService", { useClass: TicketService });
-container.register("TicketRepository", { useClass: TicketRepository });
+  // ------------------------------
+  // ✉️ Notification
+  // ------------------------------
 
-// Location: Place
-container.register("PlaceUseCase", { useClass: PlaceUseCase });
-container.register("PlaceService", { useClass: PlaceService });
-container.register("PlaceRepository", { useClass: PlaceRepository });
-container.register("PlaceConverter", { useClass: PlaceConverter });
+  container.register("NotificationService", { useClass: NotificationService });
 
-// View
-container.register("ViewUseCase", { useClass: ViewUseCase });
+  // ------------------------------
+  // 🎯 Experience
+  // ------------------------------
+
+  // 🪧 Opportunity
+  container.register("OpportunityUseCase", { useClass: OpportunityUseCase });
+  container.register("OpportunityService", { useClass: OpportunityService });
+  container.register("OpportunityConverter", { useClass: OpportunityConverter });
+  container.register("OpportunityRepository", { useClass: OpportunityRepository });
+
+  // 🕰️ OpportunitySlot
+  container.register("OpportunitySlotUseCase", { useClass: OpportunitySlotUseCase });
+  container.register("OpportunitySlotService", { useClass: OpportunitySlotService });
+  container.register("OpportunitySlotRepository", { useClass: OpportunitySlotRepository });
+  container.register("OpportunitySlotConverter", { useClass: OpportunitySlotConverter });
+
+  // 📅 Reservation
+  container.register("ReservationUseCase", { useClass: ReservationUseCase });
+  container.register("ReservationService", { useClass: ReservationService });
+  container.register("ReservationRepository", { useClass: ReservationRepository });
+  container.register("ReservationConverter", { useClass: ReservationConverter });
+  container.register("ReservationValidator", { useClass: ReservationValidator });
+
+  // 🧍 Participation
+  container.register("ParticipationUseCase", { useClass: ParticipationUseCase });
+  container.register("ParticipationService", { useClass: ParticipationService });
+  container.register("ParticipationConverter", { useClass: ParticipationConverter });
+  container.register("ParticipationRepository", { useClass: ParticipationRepository });
+
+  // 🔄 ParticipationStatusHistory
+  container.register("ParticipationStatusHistoryUseCase", {
+    useClass: ParticipationStatusHistoryUseCase,
+  });
+  container.register("ParticipationStatusHistoryService", {
+    useClass: ParticipationStatusHistoryService,
+  });
+  container.register("ParticipationStatusHistoryConverter", {
+    useClass: ParticipationStatusHistoryConverter,
+  });
+  container.register("ParticipationStatusHistoryRepository", {
+    useClass: ParticipationStatusHistoryRepository,
+  });
+
+  // ------------------------------
+  // 🎁 Reward
+  // ------------------------------
+
+  // 🧠 Evaluation
+  container.register("EvaluationUseCase", { useClass: EvaluationUseCase });
+  container.register("EvaluationService", { useClass: EvaluationService });
+  container.register("EvaluationConverter", { useClass: EvaluationConverter });
+  container.register("EvaluationRepository", { useClass: EvaluationRepository });
+
+  // 🛠️ Utility
+  container.register("UtilityUseCase", { useClass: UtilityUseCase });
+  container.register("UtilityService", { useClass: UtilityService });
+  container.register("UtilityConverter", { useClass: UtilityConverter });
+  container.register("UtilityRepository", { useClass: UtilityRepository });
+
+  // 🎟️ Ticket
+  container.register("TicketUseCase", { useClass: TicketUseCase });
+  container.register("TicketService", { useClass: TicketService });
+  container.register("TicketConverter", { useClass: TicketConverter });
+  container.register("TicketRepository", { useClass: TicketRepository });
+
+  // 🏷️ TicketClaimLink
+  container.register("TicketClaimLinkService", { useClass: TicketClaimLinkService });
+  container.register("TicketClaimLinkRepository", { useClass: TicketClaimLinkRepository });
+
+  // 🧾 TicketIssuer
+  container.register("TicketIssuerService", { useClass: TicketIssuerService });
+  container.register("TicketIssuerConverter", { useClass: TicketIssuerConverter });
+  container.register("TicketIssuerRepository", { useClass: TicketIssuerRepository });
+
+  // ------------------------------
+  // 📍 Location
+  // ------------------------------
+
+  container.register("PlaceUseCase", { useClass: PlaceUseCase });
+  container.register("PlaceService", { useClass: PlaceService });
+  container.register("PlaceRepository", { useClass: PlaceRepository });
+  container.register("PlaceConverter", { useClass: PlaceConverter });
+
+  // ------------------------------
+  // 💸 Transaction
+  // ------------------------------
+
+  container.register("TransactionUseCase", { useClass: TransactionUseCase });
+  container.register("TransactionRepository", { useClass: TransactionRepository });
+  container.register("TransactionConverter", { useClass: TransactionConverter });
+  container.register("TransactionService", { useClass: TransactionService });
+
+  // ------------------------------
+  // 👓 View
+  // ------------------------------
+
+  container.register("ViewUseCase", { useClass: ViewUseCase });
+}
+
+registerProductionDependencies();

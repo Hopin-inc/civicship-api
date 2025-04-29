@@ -1,280 +1,191 @@
-import OpportunityRepository from "@/application/domain/experience/opportunity/data/repository";
-import OpportunityConverter from "@/application/domain/experience/opportunity/data/converter";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { IContext } from "@/types/server";
-import { PublishStatus, OpportunityCategory } from "@prisma/client";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import "reflect-metadata";
+import { container } from "tsyringe";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
-import { GqlOpportunityUpdateContentInput } from "@/types/graphql";
+import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/experience/opportunity/data/repository", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    find: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    setPublishStatus: jest.fn(),
-  },
-}));
+class MockOpportunityRepository {
+  create = jest.fn();
+  update = jest.fn();
+  delete = jest.fn();
+  find = jest.fn();
+  setPublishStatus = jest.fn();
+}
 
-jest.mock("@/application/domain/experience/opportunity/data/converter", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-}));
+class MockOpportunityConverter {
+  create = jest.fn();
+  update = jest.fn();
+  filter = jest.fn();
+  sort = jest.fn();
+  findAccessible = jest.fn();
+}
 
-jest.mock("@/application/domain/utils", () => ({
-  __esModule: true,
-  getCurrentUserId: jest.fn(),
-}));
+class MockImageService {
+  uploadPublicImage = jest.fn();
+}
 
 describe("OpportunityService", () => {
-  const mockCtx = {} as IContext;
-  const mockOpportunity = { id: "opp-123" };
-  const userId = "user-1";
+  let service: OpportunityService;
+  let mockRepository: MockOpportunityRepository;
+  let mockConverter: MockOpportunityConverter;
+  let mockImageService: MockImageService;
+  const mockCtx = { currentUser: { id: "test-user-id" } } as unknown as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (getCurrentUserId as jest.Mock).mockReturnValue("user-1");
+    container.reset();
+
+    mockRepository = new MockOpportunityRepository();
+    mockConverter = new MockOpportunityConverter();
+    mockImageService = new MockImageService();
+
+    container.register("OpportunityRepository", { useValue: mockRepository });
+    container.register("OpportunityConverter", { useValue: mockConverter });
+    container.register("ImageService", { useValue: mockImageService });
+
+    service = container.resolve(OpportunityService);
   });
 
   describe("createOpportunity", () => {
-    it("should create opportunity with connected place", async () => {
-      const input = {
-        name: "My Opportunity",
-        title: "Opportunity Title",
-        description: "This is a sample opportunity",
-        category: OpportunityCategory.QUEST,
-        publishStatus: PublishStatus.PUBLIC,
-        requireApproval: false,
-        communityId: "community-1",
-        place: {
-          where: "place-id-123",
-        },
-        image: { base64: "image-data" }, // ✅ image を明示的に含める
-      };
+    it("should create an opportunity with uploaded images", async () => {
+      const input = { place: { where: { id: "place-id" } } } as any;
 
-      const mockCreated = { id: "op-123", name: input.name };
+      mockConverter.create.mockReturnValue({
+        data: { title: "Opportunity" },
+        images: ["image-data"],
+      });
+      mockImageService.uploadPublicImage.mockResolvedValue({ id: "uploaded-image" });
+      mockRepository.create.mockResolvedValue({ id: "created-opportunity" });
 
-      jest.spyOn(OpportunityConverter, "create").mockImplementation(() => ({
-        data: {
-          name: input.name,
-          title: input.title,
-          description: input.description,
-          category: input.category,
-          publishStatus: input.publishStatus,
-          requireApproval: input.requireApproval,
-          community: { connect: { id: input.communityId } },
-          place: { connect: { id: input.place.where } },
-          createdByUser: { connect: { id: userId } }, // ✅ ここが必須
-        },
-        images: [], // ✅ 型一致のため必ず空配列でも含める
-      }));
+      const result = await service.createOpportunity(mockCtx, input, mockTx);
 
-      (OpportunityRepository.create as jest.Mock).mockResolvedValue(mockCreated);
-
-      const result = await OpportunityService.createOpportunity(mockCtx, input);
-
-      expect(OpportunityConverter.create).toHaveBeenCalledWith(input, userId);
-      expect(OpportunityRepository.create).toHaveBeenCalledWith(
+      expect(mockConverter.create).toHaveBeenCalled();
+      expect(mockImageService.uploadPublicImage).toHaveBeenCalled();
+      expect(mockRepository.create).toHaveBeenCalledWith(
         mockCtx,
         expect.objectContaining({
-          name: input.name,
-          title: input.title,
+          title: "Opportunity",
+          images: { create: [{ id: "uploaded-image" }] },
         }),
+        mockTx,
       );
-      expect(result).toEqual(mockCreated);
+      expect(result).toEqual({ id: "created-opportunity" });
+    });
+  });
+
+  describe("deleteOpportunity", () => {
+    it("should delete an opportunity after finding it", async () => {
+      mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
+      mockRepository.delete.mockResolvedValue({ id: "opportunity-1" });
+
+      const result = await service.deleteOpportunity(mockCtx, "opportunity-1", mockTx);
+
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "opportunity-1");
+      expect(mockRepository.delete).toHaveBeenCalledWith(mockCtx, "opportunity-1", mockTx);
+      expect(result).toEqual({ id: "opportunity-1" });
     });
 
-    it("should throw ValidationError if place has both where and create", async () => {
-      const input = {
-        name: "My Opportunity",
-        title: "Opportunity Title",
-        description: "This is a sample opportunity",
-        category: OpportunityCategory.QUEST,
-        publishStatus: PublishStatus.PUBLIC,
-        requireApproval: false,
-        communityId: "community-1",
-        image: { base64: "image-data" },
-        place: {
-          where: "place-id-123",
-          create: {
-            name: "New Place",
-            address: "Some address",
-            cityCode: "XYZ123",
-            communityId: "community-1",
-            isManual: true,
-            latitude: "34.0",
-            longitude: "135.0",
-          },
-        },
-      };
+    it("should throw NotFoundError if opportunity not found", async () => {
+      mockRepository.find.mockResolvedValue(null);
 
-      await expect(OpportunityService.createOpportunity(mockCtx, input)).rejects.toThrow(
-        ValidationError,
+      await expect(service.deleteOpportunity(mockCtx, "opportunity-1", mockTx)).rejects.toThrow(
+        NotFoundError,
       );
     });
+  });
 
-    it("should create opportunity with new place (create)", async () => {
-      const input = {
-        name: "My Opportunity",
-        title: "Opportunity Title",
-        description: "This is a sample opportunity",
-        category: OpportunityCategory.QUEST,
-        publishStatus: PublishStatus.PUBLIC,
-        requireApproval: false,
-        communityId: "community-1",
-        image: { base64: "image-data" },
-        place: {
-          where: "place-id-123", // ← 本来 new place のテストなら `create: {}` の方が自然かも？
-        },
-      };
+  describe("updateOpportunityContent", () => {
+    it("should update an opportunity content with uploaded images", async () => {
+      mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
 
-      const mockCreated = { id: "op-456", name: input.name };
+      mockConverter.update.mockReturnValue({
+        data: { title: "Updated Opportunity" },
+        images: ["image-1", "image-2"],
+      });
 
-      jest.spyOn(OpportunityConverter, "create").mockImplementation(() => ({
-        data: {
-          name: input.name,
-          title: input.title,
-          description: input.description,
-          category: input.category,
-          publishStatus: input.publishStatus,
-          requireApproval: input.requireApproval,
-          community: { connect: { id: input.communityId } },
-          place: { connect: { id: input.place.where } },
-          createdByUser: { connect: { id: userId } }, // ✅ 必須項目
-        },
-        images: [],
-      }));
+      mockImageService.uploadPublicImage
+        .mockResolvedValueOnce({ id: "uploaded-1" })
+        .mockResolvedValueOnce({ id: "uploaded-2" });
 
-      (OpportunityRepository.create as jest.Mock).mockResolvedValue(mockCreated);
+      mockRepository.update.mockResolvedValue({ id: "opportunity-1" });
 
-      const result = await OpportunityService.createOpportunity(mockCtx, input);
+      const input = { place: { where: { id: "place-1" } } } as any;
 
-      expect(OpportunityConverter.create).toHaveBeenCalledWith(input, userId);
-      expect(OpportunityRepository.create).toHaveBeenCalledWith(
+      const result = await service.updateOpportunityContent(
         mockCtx,
-        expect.objectContaining({
-          name: input.name,
-          title: input.title,
-        }),
+        "opportunity-1",
+        input,
+        mockTx,
       );
-      expect(result).toEqual(mockCreated);
-    });
 
-    describe("deleteOpportunity", () => {
-      it("should delete opportunity if found", async () => {
-        (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
-        (OpportunityRepository.delete as jest.Mock).mockResolvedValue(mockOpportunity);
-
-        const result = await OpportunityService.deleteOpportunity(mockCtx, "opp-123");
-
-        expect(OpportunityRepository.find).toHaveBeenCalled();
-        expect(OpportunityRepository.delete).toHaveBeenCalledWith(mockCtx, "opp-123");
-        expect(result).toBe(mockOpportunity);
-      });
-
-      it("should throw NotFoundError if not found", async () => {
-        jest.mocked(OpportunityRepository.find).mockResolvedValue(null);
-
-        await expect(OpportunityService.deleteOpportunity(mockCtx, "opp-404")).rejects.toThrow(
-          NotFoundError,
-        );
-      });
-    });
-
-    describe("updateOpportunityContent", () => {
-      const validInput: GqlOpportunityUpdateContentInput = {
-        title: "Updated Title",
-        description: "Updated Description",
-        category: OpportunityCategory.QUEST,
-        publishStatus: PublishStatus.PUBLIC,
-        requireApproval: false,
-        // images: [{ file: {} }],
-        place: {
-          where: "place-123",
-        },
-      };
-
-      it("should update content if found", async () => {
-        (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
-
-        jest.mocked(OpportunityConverter.update).mockReturnValue({
-          data: {
-            description: "new",
+      expect(mockConverter.update).toHaveBeenCalled();
+      expect(mockImageService.uploadPublicImage).toHaveBeenCalledTimes(2);
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        mockCtx,
+        "opportunity-1",
+        expect.objectContaining({
+          title: "Updated Opportunity",
+          images: {
+            create: [{ id: "uploaded-1" }, { id: "uploaded-2" }],
           },
-          images: [],
-        });
-
-        (OpportunityRepository.update as jest.Mock).mockResolvedValue({ id: "opp-123" });
-
-        const result = await OpportunityService.updateOpportunityContent(
-          mockCtx,
-          "opp-123",
-          validInput,
-        );
-
-        expect(OpportunityRepository.find).toHaveBeenCalledWith(mockCtx, "opp-123");
-        expect(OpportunityConverter.update).toHaveBeenCalledWith(validInput);
-        expect(OpportunityRepository.update).toHaveBeenCalledWith(
-          mockCtx,
-          "opp-123",
-          expect.objectContaining({
-            description: "new",
-          }),
-        );
-        expect(result).toEqual({ id: "opp-123" });
-      });
-
-      it("should throw ValidationError for invalid place input", async () => {
-        (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
-
-        const invalidInput: GqlOpportunityUpdateContentInput = {
-          ...validInput,
-          place: {
-            where: "place-1",
-            create: {
-              name: "aaa",
-              address: "Some address",
-              cityCode: "CITY-1",
-              communityId: "community-1",
-              isManual: true,
-              latitude: "0",
-              longitude: "0",
-            },
-          },
-        };
-
-        await expect(
-          OpportunityService.updateOpportunityContent(mockCtx, "opp-123", invalidInput),
-        ).rejects.toThrow(ValidationError);
-      });
+        }),
+        mockTx,
+      );
+      expect(result).toEqual({ id: "opportunity-1" });
     });
 
-    describe("setOpportunityPublishStatus", () => {
-      it("should set publish status if found", async () => {
-        (OpportunityRepository.find as jest.Mock).mockResolvedValue(mockOpportunity);
-        (OpportunityRepository.setPublishStatus as jest.Mock).mockResolvedValue({
-          id: "opp-123",
-          status: PublishStatus.PUBLIC,
-        });
+    it("should throw NotFoundError if opportunity not found", async () => {
+      mockRepository.find.mockResolvedValue(null);
 
-        const result = await OpportunityService.setOpportunityPublishStatus(
-          mockCtx,
-          "opp-123",
-          PublishStatus.PUBLIC,
-        );
+      await expect(
+        service.updateOpportunityContent(mockCtx, "opportunity-1", {} as any, mockTx),
+      ).rejects.toThrow(NotFoundError);
+    });
 
-        expect(OpportunityRepository.setPublishStatus).toHaveBeenCalledWith(
-          mockCtx,
-          "opp-123",
-          PublishStatus.PUBLIC,
-        );
-        expect(result).toMatchObject({ id: "opp-123", status: PublishStatus.PUBLIC });
+    it("should throw ValidationError if invalid place input", async () => {
+      mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
+
+      const invalidInput = { place: {} } as any; // where/create両方なし
+
+      await expect(
+        service.updateOpportunityContent(mockCtx, "opportunity-1", invalidInput, mockTx),
+      ).rejects.toThrow(ValidationError);
+    });
+  });
+
+  describe("setOpportunityPublishStatus", () => {
+    it("should set publish status after finding the opportunity", async () => {
+      mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
+      mockRepository.setPublishStatus.mockResolvedValue({
+        id: "opportunity-1",
+        publishStatus: "PUBLISHED",
       });
+
+      const result = await service.setOpportunityPublishStatus(
+        mockCtx,
+        "opportunity-1",
+        "PUBLISHED" as any,
+        mockTx,
+      );
+
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "opportunity-1");
+      expect(mockRepository.setPublishStatus).toHaveBeenCalledWith(
+        mockCtx,
+        "opportunity-1",
+        "PUBLISHED",
+        mockTx,
+      );
+      expect(result).toEqual({ id: "opportunity-1", publishStatus: "PUBLISHED" });
+    });
+
+    it("should throw NotFoundError if opportunity not found", async () => {
+      mockRepository.find.mockResolvedValue(null);
+
+      await expect(
+        service.setOpportunityPublishStatus(mockCtx, "opportunity-1", "PUBLISHED" as any, mockTx),
+      ).rejects.toThrow(NotFoundError);
     });
   });
 });

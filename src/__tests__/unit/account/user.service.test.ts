@@ -54,7 +54,7 @@ describe("UserService", () => {
     mockConverter = new MockUserConverter();
     mockImageService = new MockImageService();
 
-    container.register("IUserRepository", { useValue: mockRepository });
+    container.register("UserRepository", { useValue: mockRepository });
     container.register("UserConverter", { useValue: mockConverter });
     container.register("ImageService", { useValue: mockImageService });
 

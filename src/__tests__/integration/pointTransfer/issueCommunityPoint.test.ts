@@ -1,14 +1,24 @@
+import "reflect-metadata";
 import { GqlTransactionIssueCommunityPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
-import transactionResolver from "@/application/domain/transaction/controller/resolver";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
 
 describe("Point Issue Tests", () => {
   const ISSUE_POINTS = 100;
+  let transactionUseCase: TransactionUseCase;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    transactionUseCase = container.resolve(TransactionUseCase);
   });
 
   afterAll(async () => {
@@ -38,8 +48,7 @@ describe("Point Issue Tests", () => {
       toWalletId: wallet.id,
     };
 
-    await transactionResolver.Mutation.transactionIssueCommunityPoint(
-      {},
+    await transactionUseCase.ownerIssueCommunityPoint(
       { input, permission: { communityId: community.id } },
       ctx,
     );

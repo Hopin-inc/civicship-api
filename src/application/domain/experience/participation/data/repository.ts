@@ -1,15 +1,16 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
-import { participationInclude, PrismaParticipation } from "@/application/domain/experience/participation/data/type";
+import {
+  participationInclude,
+  PrismaParticipation,
+} from "@/application/domain/experience/participation/data/type";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import { IParticipationRepository } from "./interface";
 
 @injectable()
-export class ParticipationRepository implements IParticipationRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
+export default class ParticipationRepository implements IParticipationRepository {
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
   async query<T extends Prisma.ParticipationInclude>(
     ctx: IContext,
@@ -42,10 +43,7 @@ export class ParticipationRepository implements IParticipationRepository {
     });
   }
 
-  async count(
-    ctx: IContext,
-    where: Prisma.ParticipationWhereInput,
-  ) {
+  async count(ctx: IContext, where: Prisma.ParticipationWhereInput) {
     return this.issuer.public(ctx, (dbTx) => {
       return dbTx.participation.count({
         where,

@@ -18,9 +18,9 @@ import ImageService from "@/application/domain/content/image/service";
 @injectable()
 export default class ParticipationService implements IParticipationService {
   constructor(
-    @inject("IParticipationRepository") private readonly repository: IParticipationRepository,
-    @inject("IParticipationConverter") private readonly converter: ParticipationConverter,
-    @inject("IImageService") private readonly imageService: ImageService,
+    @inject("ParticipationRepository") private readonly repository: IParticipationRepository,
+    @inject("ParticipationConverter") private readonly converter: ParticipationConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
   ) {}
 
   async fetchParticipations<T extends Prisma.ParticipationInclude>(

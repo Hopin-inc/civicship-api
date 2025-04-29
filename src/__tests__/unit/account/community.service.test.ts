@@ -4,8 +4,8 @@ import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/
 import { container } from "tsyringe";
 import CommunityService from "@/application/domain/account/community/service";
 import { NotFoundError } from "@/errors/graphql";
-import { MockImageService } from "@/__tests__/helper/mock/image";
-import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
+import { MockImageService } from "@/__tests__/helper/mock-helper";
+import ICommunityRepository from "@/application/domain/account/community/data/interface";
 import { GqlCommunityCreateInput, GqlCommunityUpdateProfileInput } from "@/types/graphql";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
 
@@ -39,7 +39,7 @@ describe("CommunityService", () => {
     mockRepository = new MockCommunityRepository();
     mockConverter = new MockCommunityConverter();
 
-    container.register("ICommunityRepository", { useValue: mockRepository });
+    container.register("CommunityRepository", { useValue: mockRepository });
     container.register("CommunityConverter", { useValue: mockConverter });
     container.register("ImageService", { useValue: MockImageService });
 

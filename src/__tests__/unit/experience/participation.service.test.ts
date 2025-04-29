@@ -1,205 +1,177 @@
-import { IContext } from "@/types/server";
-import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
-import { GqlParticipationCreatePersonalRecordInput } from "@/types/graphql";
-import ParticipationConverter from "@/application/domain/experience/participation/data/converter";
-import ParticipationRepository from "@/application/domain/experience/participation/data/repository";
+import "reflect-metadata";
+import { container } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
-import { ValidationError } from "@/errors/graphql";
+import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
 
-jest.mock("@/application/domain/experience/participation/data/converter", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    setStatus: jest.fn(),
-  },
-}));
+class MockParticipationRepository {
+  query = jest.fn();
+  find = jest.fn();
+  create = jest.fn();
+  delete = jest.fn();
+  update = jest.fn();
+  bulkSetStatusByReservation = jest.fn();
+}
 
-jest.mock("@/application/domain/experience/participation/data/repository", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    setStatus: jest.fn(),
-    bulkSetParticipationStatus: jest.fn(),
-  },
-}));
+class MockParticipationConverter {
+  filter = jest.fn();
+  sort = jest.fn();
+  create = jest.fn();
+  setStatus = jest.fn();
+}
 
-jest.mock("@/application/domain/utils", () => ({
-  __esModule: true,
-  getCurrentUserId: jest.fn(),
-}));
+class MockImageService {
+  uploadPublicImage = jest.fn();
+}
 
 describe("ParticipationService", () => {
-  let ctx: IContext;
-  const tx = {} as Prisma.TransactionClient;
-  const currentUserId = "user-123";
+  let service: ParticipationService;
+  let mockRepository: MockParticipationRepository;
+  let mockConverter: MockParticipationConverter;
+  let mockImageService: MockImageService;
+  const mockCtx = { currentUser: { id: "test-user-id" } } as unknown as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
-    ctx = { currentUser: { id: currentUserId } } as IContext;
     jest.clearAllMocks();
+    container.reset();
+
+    mockRepository = new MockParticipationRepository();
+    mockConverter = new MockParticipationConverter();
+    mockImageService = new MockImageService();
+
+    container.register("ParticipationRepository", { useValue: mockRepository });
+    container.register("ParticipationConverter", { useValue: mockConverter });
+    container.register("ImageService", { useValue: mockImageService });
+
+    service = container.resolve(ParticipationService);
   });
 
   describe("createParticipation", () => {
-    const input: GqlParticipationCreatePersonalRecordInput = {
-      description: "test record",
-      images: [],
-    };
+    it("should create participation with uploaded images", async () => {
+      const input = { title: "My Participation" } as any;
+      const createdData = { data: { userId: "test-user-id" }, images: ["img1", "img2"] };
+      const uploadedImages = [{ id: "img-up-1" }, { id: "img-up-2" }];
 
-    const prismaInput: Prisma.ParticipationCreateInput = {
-      status: ParticipationStatus.PARTICIPATED,
-      reason: ParticipationStatusReason.PERSONAL_RECORD,
-      description: input.description,
-      user: { connect: { id: currentUserId } },
-      statusHistories: {
-        create: {
-          status: ParticipationStatus.PARTICIPATED,
-          reason: ParticipationStatusReason.PERSONAL_RECORD,
-          createdByUser: { connect: { id: currentUserId } },
+      mockConverter.create.mockReturnValue(createdData);
+      mockImageService.uploadPublicImage
+        .mockResolvedValueOnce(uploadedImages[0])
+        .mockResolvedValueOnce(uploadedImages[1]);
+      mockRepository.create.mockResolvedValue({ id: "participation-1" });
+
+      const result = await service.createParticipation(mockCtx, input, "test-user-id", mockTx);
+
+      expect(mockConverter.create).toHaveBeenCalledWith(input, "test-user-id");
+      expect(mockImageService.uploadPublicImage).toHaveBeenCalledTimes(2);
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        mockCtx,
+        {
+          ...createdData.data,
+          images: { create: uploadedImages },
         },
-      },
-      images: { create: [] }, // ✅ ここに含めてしまえばOK！
-    };
+        mockTx,
+      );
+      expect(result).toEqual({ id: "participation-1" });
+    });
+  });
 
-    it("should create a personal participation", async () => {
-      const mockResult = { id: "1" };
+  describe("deleteParticipation", () => {
+    it("should delete after findOrThrow success", async () => {
+      mockRepository.find.mockResolvedValue({ id: "p1" });
+      mockRepository.delete.mockResolvedValue({ id: "p1" });
 
-      (ParticipationConverter.create as jest.Mock).mockReturnValue({
-        data: prismaInput,
-        images: [],
-      });
+      const result = await service.deleteParticipation(mockCtx, "p1", mockTx);
 
-      (ParticipationRepository.create as jest.Mock).mockResolvedValue(mockResult);
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "p1");
+      expect(mockRepository.delete).toHaveBeenCalledWith(mockCtx, "p1", mockTx);
+      expect(result).toEqual({ id: "p1" });
+    });
 
-      const result = await ParticipationService.createParticipation(ctx, input, currentUserId);
+    it("should throw NotFoundError if not found", async () => {
+      mockRepository.find.mockResolvedValue(null);
 
-      expect(ParticipationConverter.create).toHaveBeenCalledWith(input, currentUserId);
-      expect(ParticipationRepository.create).toHaveBeenCalledWith(ctx, prismaInput);
-      expect(result).toBe(mockResult);
+      await expect(service.deleteParticipation(mockCtx, "p1", mockTx)).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 
   describe("setStatus", () => {
-    const id = "participation-1";
-    const status = ParticipationStatus.NOT_PARTICIPATING;
-    const reason = ParticipationStatusReason.RESERVATION_CANCELED;
+    it("should update participation status", async () => {
+      const id = "p1";
+      const status = "JOINED" as any;
+      const reason = "ATTENDED" as any;
+      const updatedData = { status: "JOINED", reason: "ATTENDED" };
 
-    const prismaInput: Prisma.ParticipationUpdateInput = {
-      status,
-      reason,
-      statusHistories: {
-        create: {
-          status,
-          reason,
-          createdByUser: { connect: { id: currentUserId } },
-        },
-      },
-    };
+      mockConverter.setStatus.mockReturnValue(updatedData);
+      mockRepository.update.mockResolvedValue({ id: "p1" });
 
-    it("should call setStatus with currentUserId", async () => {
-      (ParticipationConverter.setStatus as jest.Mock).mockReturnValue(prismaInput);
-      (ParticipationRepository.setStatus as jest.Mock).mockResolvedValue("updated");
+      const result = await service.setStatus(mockCtx, id, status, reason, mockTx);
 
-      const result = await ParticipationService.setStatus(
-        ctx,
-        id,
-        status,
-        reason,
-        currentUserId,
-        tx,
-      );
-
-      expect(ParticipationConverter.setStatus).toHaveBeenCalledWith(currentUserId, status, reason);
-      expect(ParticipationRepository.setStatus).toHaveBeenCalledWith(ctx, id, prismaInput, tx);
-      expect(result).toBe("updated");
-    });
-
-    it("should fallback to getCurrentUserId if not provided", async () => {
-      (getCurrentUserId as jest.Mock).mockReturnValue(currentUserId);
-      (ParticipationConverter.setStatus as jest.Mock).mockReturnValue(prismaInput);
-      (ParticipationRepository.setStatus as jest.Mock).mockResolvedValue("updated");
-
-      const result = await ParticipationService.setStatus(ctx, id, status, reason, undefined, tx);
-
-      expect(getCurrentUserId).toHaveBeenCalledWith(ctx);
-      expect(result).toBe("updated");
+      expect(mockConverter.setStatus).toHaveBeenCalledWith("test-user-id", status, reason);
+      expect(mockRepository.update).toHaveBeenCalledWith(mockCtx, id, updatedData, mockTx);
+      expect(result).toEqual({ id: "p1" });
     });
   });
 
   describe("bulkSetStatusByReservation", () => {
-    const ids = ["p1", "p2"];
-    const status = ParticipationStatus.PARTICIPATING;
-    const reason = ParticipationStatusReason.RESERVATION_ACCEPTED;
+    it("should bulk set status by reservation", async () => {
+      const ids = ["p1", "p2"];
+      mockRepository.bulkSetStatusByReservation.mockResolvedValue({ count: 2 });
 
-    it("should call repository with correct args", async () => {
-      const mockResult = { count: 2 };
-      (ParticipationRepository.bulkSetParticipationStatus as jest.Mock).mockResolvedValue(
-        mockResult,
-      );
-
-      const result = await ParticipationService.bulkSetStatusByReservation(
-        ctx,
+      const result = await service.bulkSetStatusByReservation(
+        mockCtx,
         ids,
-        status,
-        reason,
-        tx,
+        "JOINED" as any,
+        "ATTENDED" as any,
+        mockTx,
       );
 
-      expect(ParticipationRepository.bulkSetParticipationStatus).toHaveBeenCalledWith(
-        ctx,
+      expect(mockRepository.bulkSetStatusByReservation).toHaveBeenCalledWith(
+        mockCtx,
         ids,
-        { status, reason },
-        tx,
+        "JOINED",
+        "ATTENDED",
+        mockTx,
       );
-      expect(result).toBe(mockResult);
+      expect(result).toEqual({ count: 2 });
     });
   });
 
-  describe("bulkCancelParticipationsByOpportunity", () => {
-    const ids = ["p3", "p4"];
+  describe("bulkCancelParticipationsByOpportunitySlot", () => {
+    it("should bulk cancel participations", async () => {
+      const ids = ["p1", "p2"];
+      mockRepository.bulkSetStatusByReservation.mockResolvedValue({ count: 2 });
 
-    it("should cancel participations with fixed status/reason", async () => {
-      const mockResult = { count: 2 };
-      (ParticipationRepository.bulkSetParticipationStatus as jest.Mock).mockResolvedValue(
-        mockResult,
-      );
+      const result = await service.bulkCancelParticipationsByOpportunitySlot(mockCtx, ids, mockTx);
 
-      const result = await ParticipationService.bulkCancelParticipationsByOpportunitySlot(
-        ctx,
+      expect(mockRepository.bulkSetStatusByReservation).toHaveBeenCalledWith(
+        mockCtx,
         ids,
-        tx,
+        "NOT_PARTICIPATING",
+        "OPPORTUNITY_CANCELED",
+        mockTx,
       );
-
-      expect(ParticipationRepository.bulkSetParticipationStatus).toHaveBeenCalledWith(
-        ctx,
-        ids,
-        {
-          status: ParticipationStatus.NOT_PARTICIPATING,
-          reason: ParticipationStatusReason.OPPORTUNITY_CANCELED,
-        },
-        tx,
-      );
-      expect(result).toBe(mockResult);
+      expect(result).toEqual({ count: 2 });
     });
   });
 
   describe("validateDeletable", () => {
-    it("should throw ValidationError if reason is not PERSONAL_RECORD", () => {
-      const invalid: PrismaParticipation = {
-        id: "1",
-        reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
-      } as any;
+    it("should pass if participation is personal record", () => {
+      const participation = { reason: "PERSONAL_RECORD" } as any;
 
-      expect(() => ParticipationService.validateDeletable(invalid)).toThrow(ValidationError);
+      expect(() => {
+        service.validateDeletable(participation);
+      }).not.toThrow();
     });
 
-    it("should pass if reason is PERSONAL_RECORD", () => {
-      const valid: PrismaParticipation = {
-        id: "2",
-        reason: ParticipationStatusReason.PERSONAL_RECORD,
-      } as any;
+    it("should throw ValidationError if participation is not personal record", () => {
+      const participation = { reason: "ATTENDED" } as any;
 
-      expect(() => ParticipationService.validateDeletable(valid)).not.toThrow();
+      expect(() => {
+        service.validateDeletable(participation);
+      }).toThrow(ValidationError);
     });
   });
 });

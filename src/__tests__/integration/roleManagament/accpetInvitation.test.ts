@@ -8,6 +8,7 @@ import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
 import MembershipService from "@/application/domain/account/membership/service";
+import { registerProductionDependencies } from "@/application/provider";
 
 class MockWalletService implements Partial<WalletService> {
   createMemberWalletIfNeeded = jest.fn();
@@ -17,7 +18,7 @@ class MockNotificationService implements Partial<NotificationService> {
   switchRichMenuByRole = jest.fn();
 }
 
-describe("Membership Accept My Invitation Tests", () => {
+describe("Membership Integration: Assign Owner", () => {
   let membershipUseCase: MembershipUseCase;
   let walletServiceMock: MockWalletService;
   let notificationServiceMock: MockNotificationService;
@@ -26,14 +27,17 @@ describe("Membership Accept My Invitation Tests", () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
     container.reset();
+    registerProductionDependencies();
 
-    const issuer = new PrismaClientIssuer();
     const membershipService = container.resolve(MembershipService);
+
     walletServiceMock = new MockWalletService();
     notificationServiceMock = new MockNotificationService();
 
     container.register("WalletService", { useValue: walletServiceMock });
     container.register("NotificationService", { useValue: notificationServiceMock });
+
+    const issuer = container.resolve(PrismaClientIssuer);
 
     membershipUseCase = new MembershipUseCase(
       issuer,

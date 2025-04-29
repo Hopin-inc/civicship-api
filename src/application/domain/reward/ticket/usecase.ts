@@ -17,21 +17,17 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-
 import TicketService from "@/application/domain/reward/ticket/service";
 import TicketPresenter from "@/application/domain/reward/ticket/presenter";
 import TicketIssuerService from "@/application/domain/reward/ticketIssuer/service";
 import TicketIssuerPresenter from "@/application/domain/reward/ticketIssuer/presenter";
 import TicketClaimLinkService from "@/application/domain/reward/ticketClaimLink/service";
-
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import MembershipService from "@/application/domain/account/membership/service";
-
-import TransactionService from "@/application/domain/transaction/service";
-
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
 
 @injectable()
 export default class TicketUseCase {
@@ -43,9 +39,9 @@ export default class TicketUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("MembershipService") private readonly membershipService: MembershipService,
-    @inject("TransactionService") private readonly transactionService: TransactionService,
+    @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
+  ) {}
 
   async visitorBrowseTickets(
     ctx: IContext,

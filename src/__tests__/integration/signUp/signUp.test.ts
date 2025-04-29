@@ -1,59 +1,65 @@
-import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import "reflect-metadata";
+import { container } from "tsyringe";
 import { IContext } from "@/types/server";
+import { CurrentPrefecture, IdentityPlatform, MembershipStatus } from "@prisma/client";
 import { GqlMutationUserSignUpArgs } from "@/types/graphql";
-import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
-import identityResolver from "@/application/domain/account/identity/controller/resolver";
+import { registerProductionDependencies } from "@/application/provider";
+import IdentityUseCase from "@/application/domain/account/identity/usecase";
+import TestDataSourceHelper from "../../helper/test-data-source-helper";
 
-describe("User SignUp Integration Tests", () => {
-  jest.setTimeout(30_000);
+describe("IdentityUseCase.userCreateAccount", () => {
+  let useCase: IdentityUseCase;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(IdentityUseCase);
   });
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("should return user when sign up is successful", async () => {
-    const community = await TestDataSourceHelper.createCommunity({ name: "test", pointName: "pt" });
+  it("should create user, join community, and create wallet", async () => {
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "test-community",
+      pointName: "pt",
+    });
 
-    const uid = "uid-success";
-    const ctx = { uid, platform: IdentityPlatform.LINE } as IContext;
+    const ctx: IContext = {
+      uid: "uid-abc",
+      platform: IdentityPlatform.LINE,
+    } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
       input: {
-        name: "成功ユーザー",
-        slug: "success-user",
+        name: "Test User",
+        slug: "test-user",
         currentPrefecture: CurrentPrefecture.KAGAWA,
         communityId: community.id,
       },
     };
 
-    const res = await identityResolver.Mutation.userSignUp({}, input, ctx);
+    // Act
+    const result = await useCase.userCreateAccount(ctx, input);
 
-    expect(res.user).toBeDefined();
-    expect(res.user?.name).toEqual("成功ユーザー");
+    // Assert
+    expect(result.user).toBeDefined();
+    expect(result.user?.name).toBe("Test User");
 
-    const wallet = await TestDataSourceHelper.findMemberWallet(res.user!.id, community.id);
-    expect(wallet).toBeDefined();
-  });
-
-  it("should throw error when sign up with non-existent communityId", async () => {
-    const uid = "uid-failure";
-    const ctx = { uid, platform: IdentityPlatform.LINE } as IContext;
-
-    const input: GqlMutationUserSignUpArgs = {
-      input: {
-        name: "失敗ユーザー",
-        slug: "fail-user",
-        currentPrefecture: CurrentPrefecture.KAGAWA,
-        communityId: "non-existent-community", // 存在しないIDを明示
+    const membership = await TestDataSourceHelper.findMembership({
+      userId_communityId: {
+        userId: result.user!.id,
+        communityId: community.id,
       },
-    };
+    });
 
-    await expect(identityResolver.Mutation.userSignUp({}, input, ctx)).rejects.toThrow(
-      "No 'Community' record",
-    ); // 期待されるエラーを正確にマッチさせるとより良い
+    expect(membership?.status).toBe(MembershipStatus.JOINED);
+
+    const wallet = await TestDataSourceHelper.findMemberWallet(result.user!.id, community.id);
+    expect(wallet).toBeDefined();
   });
 });

@@ -9,16 +9,16 @@ import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
-import { ICommunityRepository } from "@/application/domain/account/community/data/interface";
 import { inject, injectable } from "tsyringe";
+import ICommunityRepository from "@/application/domain/account/community/data/interface";
 
 @injectable()
 export default class CommunityService {
   constructor(
-    @inject("ICommunityRepository") private readonly repository: ICommunityRepository,
+    @inject("CommunityRepository") private readonly repository: ICommunityRepository,
     @inject("CommunityConverter") private readonly converter: CommunityConverter,
     @inject("ImageService") private readonly imageService: ImageService,
-  ) { }
+  ) {}
 
   async fetchCommunities(
     ctx: IContext,

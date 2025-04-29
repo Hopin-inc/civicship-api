@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaCommunity } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 
-export interface ICommunityRepository {
+export default interface ICommunityRepository {
   query(
     ctx: IContext,
     where: Prisma.CommunityWhereInput,

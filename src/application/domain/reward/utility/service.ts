@@ -15,9 +15,9 @@ import { IUtilityService, IUtilityRepository } from "./data/interface";
 @injectable()
 export default class UtilityService implements IUtilityService {
   constructor(
-    @inject("IUtilityRepository") private readonly repository: IUtilityRepository,
+    @inject("UtilityRepository") private readonly repository: IUtilityRepository,
     @inject("UtilityConverter") private readonly converter: UtilityConverter,
-    @inject("IImageService") private readonly imageService: IImageService,
+    @inject("ImageService") private readonly imageService: IImageService,
   ) {}
 
   async fetchUtilities(

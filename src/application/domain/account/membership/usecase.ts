@@ -28,8 +28,7 @@ export default class MembershipUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("MembershipService") private readonly membershipService: MembershipService,
-    @inject("WalletService")
-    private readonly walletService: WalletService,
+    @inject("WalletService") private readonly walletService: WalletService,
     @inject("NotificationService")
     private readonly notificationService: NotificationService,
   ) {}

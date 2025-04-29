@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { ITransactionRepository, ITransactionService } from "@/application/domain/transaction/data/interface";
+import {
+  ITransactionRepository,
+  ITransactionService,
+} from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import {
   GqlQueryTransactionsArgs,
@@ -12,9 +15,9 @@ import { inject, injectable } from "tsyringe";
 @injectable()
 export default class TransactionService implements ITransactionService {
   constructor(
-    @inject("ITransactionRepository") private readonly repository: ITransactionRepository,
+    @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
-  ) { }
+  ) {}
 
   async fetchTransactions(
     ctx: IContext,

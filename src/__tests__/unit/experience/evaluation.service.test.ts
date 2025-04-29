@@ -1,157 +1,168 @@
+import "reflect-metadata";
+import { container } from "tsyringe";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import { ValidationError } from "@/errors/graphql";
-import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
-import { GqlEvaluationCreateInput } from "@/types/graphql";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { EvaluationStatus, Prisma } from "@prisma/client";
-import { getCurrentUserId } from "@/application/domain/utils";
-import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
-import EvaluationRepository from "@/application/domain/experience/evaluation/data/repository";
 
-jest.mock("@/application/domain/experience/evaluation/data/converter", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-  },
-}));
+class MockEvaluationRepository {
+  query = jest.fn();
+  find = jest.fn();
+  create = jest.fn();
+}
 
-jest.mock("@/application/domain/experience/evaluation/data/repository", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-  },
-}));
-
-jest.mock("@/application/domain/utils", () => ({
-  __esModule: true,
-  getCurrentUserId: jest.fn(),
-}));
+class MockEvaluationConverter {
+  filter = jest.fn();
+  sort = jest.fn();
+  create = jest.fn();
+}
 
 describe("EvaluationService", () => {
-  const ctx = {} as IContext;
-  const tx = {} as Prisma.TransactionClient;
-  const evaluatorId = "user-123";
-  const input: GqlEvaluationCreateInput = {
-    participationId: "p1",
-    comment: "Looks good!",
-  };
+  let service: EvaluationService;
+  let mockRepository: MockEvaluationRepository;
+  let mockConverter: MockEvaluationConverter;
+  const mockCtx = { currentUser: { id: "test-user-id" } } as unknown as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (getCurrentUserId as jest.Mock).mockReturnValue(evaluatorId);
+    container.reset();
+
+    mockRepository = new MockEvaluationRepository();
+    mockConverter = new MockEvaluationConverter();
+
+    container.register("EvaluationRepository", { useValue: mockRepository });
+    container.register("EvaluationConverter", { useValue: mockConverter });
+
+    service = container.resolve(EvaluationService);
   });
 
   describe("createEvaluation", () => {
-    it("should create a PASSED evaluation", async () => {
-      const status = EvaluationStatus.PASSED;
-      const prismaInput = { dummy: true } as any;
-      const mockResult = { id: "eval-1" };
+    it("should create evaluation if status is PASSED or FAILED", async () => {
+      const input = {
+        participationId: "participation-1",
+        comment: "Great job!",
+      } as any;
 
-      (EvaluationConverter.create as jest.Mock).mockReturnValue(prismaInput);
-      (EvaluationRepository.create as jest.Mock).mockResolvedValue(mockResult);
+      const status = "PASSED" as any;
+      const converted = { participationId: "participation-1", userId: "test-user-id" };
 
-      const result = await EvaluationService.createEvaluation(ctx, input, status, tx);
+      mockConverter.create.mockReturnValue(converted);
+      mockRepository.create.mockResolvedValue({ id: "evaluation-1" });
 
-      expect(getCurrentUserId).toHaveBeenCalledWith(ctx);
-      expect(EvaluationConverter.create).toHaveBeenCalledWith(
+      const result = await service.createEvaluation(mockCtx, input, status, mockTx);
+
+      expect(mockConverter.create).toHaveBeenCalledWith(
         input.participationId,
-        evaluatorId,
+        "test-user-id",
         status,
         input.comment,
       );
-      expect(EvaluationRepository.create).toHaveBeenCalledWith(ctx, prismaInput, tx);
-      expect(result).toBe(mockResult);
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, converted, mockTx);
+      expect(result).toEqual({ id: "evaluation-1" });
     });
 
-    it("should throw ValidationError for invalid status", async () => {
-      const invalidStatus = EvaluationStatus.PENDING;
+    it("should throw ValidationError if status is not PASSED or FAILED", async () => {
+      const input = { participationId: "p1", comment: "ok" } as any;
+      const invalidStatus = "REVIEWING" as any; // 不正なステータス
 
-      await expect(
-        EvaluationService.createEvaluation(ctx, input, invalidStatus, tx),
-      ).rejects.toThrow(ValidationError);
+      await expect(service.createEvaluation(mockCtx, input, invalidStatus, mockTx)).rejects.toThrow(
+        ValidationError,
+      );
     });
   });
 
   describe("validateParticipationHasOpportunity", () => {
-    const evaluationId = "eval-1";
-
-    it("should return participation, opportunity, and communityId if all are present", () => {
-      const evaluation: PrismaEvaluation = {
-        id: "eval-1",
+    it("should return participation, opportunity, communityId, userId if all exist", () => {
+      const evaluation = {
+        id: "evaluation-1",
         participation: {
-          id: "p1",
-          communityId: "c1",
-          userId: "u1", // ✅ 追加
+          id: "participation-1",
+          communityId: "community-1",
+          userId: "user-1",
           reservation: {
             opportunitySlot: {
-              opportunity: {
-                id: "o1",
-              },
-            },
-          },
-        },
-        user: {
-          id: "u1",
-        },
-      } as any;
-
-      const result = EvaluationService.validateParticipationHasOpportunity(evaluation);
-
-      expect(result.participation.id).toBe("p1");
-      expect(result.opportunity.id).toBe("o1");
-      expect(result.communityId).toBe("c1");
-      expect(result.userId).toBe("u1");
-    });
-
-    it("should throw if participation is missing", () => {
-      const evaluation: PrismaEvaluation = {
-        id: evaluationId,
-        participation: undefined,
-      } as any;
-
-      expect(() => EvaluationService.validateParticipationHasOpportunity(evaluation)).toThrow(
-        ValidationError,
-      );
-    });
-
-    it("should throw if opportunity is missing", () => {
-      const evaluation: PrismaEvaluation = {
-        id: evaluationId,
-        participation: {
-          id: "p1",
-          communityId: "c1",
-          reservation: {
-            opportunitySlot: {
-              opportunity: undefined,
+              opportunity: { id: "opportunity-1" },
             },
           },
         },
       } as any;
 
-      expect(() => EvaluationService.validateParticipationHasOpportunity(evaluation)).toThrow(
-        ValidationError,
-      );
+      const result = service.validateParticipationHasOpportunity(evaluation);
+
+      expect(result.participation.id).toBe("participation-1");
+      expect(result.opportunity.id).toBe("opportunity-1");
+      expect(result.communityId).toBe("community-1");
+      expect(result.userId).toBe("user-1");
     });
 
-    it("should throw if communityId is missing", () => {
-      const evaluation: PrismaEvaluation = {
-        id: evaluationId,
+    it("should throw ValidationError if participation is missing", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: null,
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(ValidationError);
+    });
+
+    it("should throw ValidationError if opportunity is missing", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          id: "p1",
+          communityId: "community-1",
+          userId: "user-1",
+          reservation: {
+            opportunitySlot: { opportunity: null },
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(ValidationError);
+    });
+
+    it("should throw ValidationError if communityId is missing", () => {
+      const evaluation = {
+        id: "evaluation-1",
         participation: {
           id: "p1",
           communityId: null,
+          userId: "user-1",
           reservation: {
             opportunitySlot: {
-              opportunity: {
-                id: "o1",
-              },
+              opportunity: { id: "opportunity-1" },
             },
           },
         },
       } as any;
 
-      expect(() => EvaluationService.validateParticipationHasOpportunity(evaluation)).toThrow(
-        ValidationError,
-      );
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(ValidationError);
+    });
+
+    it("should throw ValidationError if userId is missing", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          id: "p1",
+          communityId: "community-1",
+          userId: null,
+          reservation: {
+            opportunitySlot: {
+              opportunity: { id: "opportunity-1" },
+            },
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(ValidationError);
     });
   });
 });

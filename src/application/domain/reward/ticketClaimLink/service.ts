@@ -9,20 +9,14 @@ import { ITicketClaimLinkRepository, ITicketClaimLinkService } from "./data/inte
 @injectable()
 export default class TicketClaimLinkService implements ITicketClaimLinkService {
   constructor(
-    @inject("ITicketClaimLinkRepository") private readonly repository: ITicketClaimLinkRepository,
-  ) { }
+    @inject("TicketClaimLinkRepository") private readonly repository: ITicketClaimLinkRepository,
+  ) {}
 
-  async findTicketClaimLink(
-    ctx: IContext,
-    id: string,
-  ): Promise<PrismaTicketClaimLink | null> {
+  async findTicketClaimLink(ctx: IContext, id: string): Promise<PrismaTicketClaimLink | null> {
     return await this.repository.find(ctx, id);
   }
 
-  async findTicketClaimLinkOrThrow(
-    ctx: IContext,
-    id: string,
-  ): Promise<PrismaTicketClaimLink> {
+  async findTicketClaimLinkOrThrow(ctx: IContext, id: string): Promise<PrismaTicketClaimLink> {
     const link = await this.repository.find(ctx, id);
     if (!link) {
       throw new NotFoundError("TicketClaimLink", { id });

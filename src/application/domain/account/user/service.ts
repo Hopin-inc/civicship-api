@@ -9,10 +9,10 @@ import { inject, injectable } from "tsyringe";
 @injectable()
 export default class UserService {
   constructor(
-    @inject("IUserRepository") private readonly repository: IUserRepository,
+    @inject("UserRepository") private readonly repository: IUserRepository,
     @inject("UserConverter") private readonly converter: UserConverter,
     @inject("ImageService") private readonly imageService: ImageService,
-  ) { }
+  ) {}
 
   async fetchUsers(ctx: IContext, { cursor, filter, sort }: GqlQueryUsersArgs, take: number) {
     const where = this.converter.filter(filter ?? {});

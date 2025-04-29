@@ -18,10 +18,10 @@ import { inject, injectable } from "tsyringe";
 @injectable()
 export default class MembershipService {
   constructor(
-    @inject("IMembershipRepository") private readonly repository: IMembershipRepository,
+    @inject("MembershipRepository") private readonly repository: IMembershipRepository,
     @inject("MembershipConverter") private readonly converter: MembershipConverter,
     @inject("getCurrentUserId") private readonly currentUserId: typeof getCurrentUserId,
-  ) { }
+  ) {}
 
   async fetchMemberships(
     ctx: IContext,

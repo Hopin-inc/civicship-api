@@ -1,54 +1,24 @@
+import "reflect-metadata";
 import { GqlTransactionDonateSelfPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-
-class MockTransactionService {
-  donateSelfPoint = jest.fn();
-}
-
-class MockMembershipService {
-  joinIfNeeded = jest.fn();
-}
-
-class MockWalletService {
-  createMemberWalletIfNeeded = jest.fn();
-}
-
-class MockWalletValidator {
-  validateTransferMemberToMember = jest.fn();
-}
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
 
 describe("Point Donate Tests", () => {
   const DONATION_POINTS = 100;
-
   let transactionUseCase: TransactionUseCase;
-  let mockTransactionService: MockTransactionService;
-  let mockWalletService: MockWalletService;
-  let mockMembershipService: MockMembershipService;
-  let mockWalletValidator: MockWalletValidator;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
 
-    // モックインスタンスの作成
-    mockTransactionService = new MockTransactionService();
-    mockWalletService = new MockWalletService();
-    mockMembershipService = new MockMembershipService();
-    mockWalletValidator = new MockWalletValidator();
+    container.reset();
+    registerProductionDependencies();
 
-    // TransactionUseCaseをモックサービスで初期化
-    const issuer = new PrismaClientIssuer();
-    transactionUseCase = new TransactionUseCase(
-      issuer,
-      mockTransactionService as any,
-      mockMembershipService as any,
-      mockWalletService as any,
-      mockWalletValidator as any,
-    );
+    transactionUseCase = container.resolve(TransactionUseCase);
   });
 
   afterAll(async () => {

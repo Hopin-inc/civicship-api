@@ -14,13 +14,10 @@ import ReservationPresenter from "@/application/domain/experience/reservation/pr
 import { GqlQueryReservationsArgs, GqlReservationsConnection } from "@/types/graphql";
 
 @injectable()
-export class ReservationService implements IReservationService {
+export default class ReservationService implements IReservationService {
   constructor(
-    @inject("ReservationRepository")
-    private readonly repository: IReservationRepository,
-
-    @inject("ReservationConverter")
-    private readonly converter: ReservationConverter,
+    @inject("ReservationRepository") private readonly repository: IReservationRepository,
+    @inject("ReservationConverter") private readonly converter: ReservationConverter,
   ) {}
 
   async fetchReservations(
