@@ -32,10 +32,6 @@ const IsSelf = preExecRule({
 const IsCommunityOwner = preExecRule({
   error: new AuthorizationError("User must be community owner"),
 })((context: IContext, args: any) => {
-  console.log("🛡️ IsCommunityOwner called with", {
-    context: context.hasPermissions?.memberships,
-    args,
-  });
   const user = context.currentUser;
   const permission = args.permission;
 
