@@ -1,67 +1,144 @@
-# 📋 Features Overview
+# Milestone
 
-This project empowers communities and users with the following business-oriented features:
+## 📘 はじめに：この資料の目的
 
-## 👤 User Account Management
-**Purpose: Basic account operations including registration and deactivation**
+本資料は、以下の目的で作成されたものです：
 
-- New signup (DID issuance)
-- Update profile information
-- Delete account (deactivation)
+- 既存ステークホルダーに**現状の実装状況と方針**を正確に伝え、導入に向けた協議の土台にすること
+- 私たちがオープンソースで開発中のデジタル基盤を活用したい方向けに説明すること
 
-## 🏘️ Community Management
-**Purpose: Create and manage groups based on organizations or local communities**
+---
 
-- Create and delete communities
-- Update community profile (description, images, etc.)
+## 🌐 Web3設計方針（2025年4月時点）
 
-## 👥 Member Invitation and Role Management
-**Purpose: Support safe and smooth team management with roles and participation workflows**
+1. **識別（DID - Decentralized Identifier）**
+- 分散型識別子であり、ユーザー自身が生成・管理可能な自己主権型ID。
+- W3C により標準化されており、DID Document に公開鍵やサービスエンドポイント等を記述。
+- 本システムでは、Firebase Auth によるログイン後、自動的に DID を生成。
 
-- Invite, cancel, accept, reject, and remove members
-- Assign roles (Member / Manager / Owner)
-- Voluntary withdrawal from communities
+2. **証明（VC - Verifiable Credential）**  
+- 発行者が署名した検証可能な資格情報であり、W3C により標準化。
+- ユーザーは自身の DID Wallet 内で VC を保持し、必要に応じて提示可能。
 
-## 🎯 Opportunity and Slot Management
-**Purpose: Design and publish opportunities to clearly present participation options**
+3. **資産（Token / NFT）**  
+- 現在はオフチェーン実装で対応。
+- チケットや会員証としてのNFT発行を検討中。
+- DID Wallet とは異なり、ユーザーが管理する資産の可視化・移転が主な目的。
 
-- Create, edit, and delete opportunities
-- Toggle public/private status
-- Bulk update multiple slots
-- Manage slot status (scheduled/canceled)
+4. **管理(Custodial Wallet)**
+- ユーザーの秘密鍵やVCをシステム側で管理中。
+- ユーザーはウォレットの操作や秘密鍵の管理を意識することなく、サービスを利用可能。
+- 「地域体験の記録」をVCとして発行するため、“使われること”を優先。
 
-## 🗓️ Reservation and Participation Management
-**Purpose: Confirm participation intent in advance and build meaningful relationships**
+---
 
-- Create, approve, reject, and cancel reservations
-- Allow non-reservers to join reservations
-- Create and delete personal participation records (Personal Record)
+## 🧩 実装機能一覧（2025年4月時点）  
+現時点で提供されている主な機能群を、目的・分類ごとに整理しています。
 
-## ✍️ Post-Participation Evaluation
-**Purpose: Evaluate participants’ activities and issue Verifiable Credentials (VCs)**
+### 🧑‍🤝‍🧑 Account  
+**本システムの操作主体管理を担う**
 
-- Register evaluations such as "pass" or "fail" after participation
+#### 👤 user（利用者）
+- 新規登録する
+- プロフィールを編集する
+- アカウントを削除する
 
-## 🎫 Ticket Issuance and Usage
-**Purpose: Enhance engagement and circulation with digital ticket functionality**
+#### 🏘️ community（団体）
+- コミュニティを作成する
+- プロフィールを編集する
+- コミュニティを削除する
 
-- Issue, claim, purchase, use, and refund tickets
+#### 🪪 membership（会員）
+- コミュニティに参加する
+- コミュニティに招待する
+- コミュニティから退会する
+- メンバーの権限を変更する
+- メンバーを強制退会させる
 
-## 💸 Point System and Transaction Management
-**Purpose: Enable point circulation based on experiences and contributions**
+---
 
-- Issue community points
-- Grant points from a community to members
-- Donate points between users
+### 🧪 Experience  
+**関わりしろの募集・応募、活動後の評価までを担う**
 
-## 🛠️ Utility Management
-**Purpose: Manage exchangeable items or experiences (utilities)**
+#### 📣 opportunity（募集）
+- 募集を登録する
+- 募集を編集する
+- 募集を公開/非公開する
+- 募集を削除する
 
-- Create, update, and delete utilities
-- Toggle public visibility
+#### 🗓️ opportunitySlot（開催日時）
+- 募集の開催日時を編集する
+- 開催日時の実施予定を変更する
 
-## 📍 Place (Opportunity Location) Management
-**Purpose: Manage and display locations where opportunities are held**
+#### 📩 reservation（応募）
+- 予約を申し込む
+- 予約を承認する
+- 予約を否認する
+- 予約をキャンセルする
+- 同行者の予約に加わる
 
-- Create, update, and delete places
+#### 🧾 participation（活動）
+- 過去の活動を申請する
+- 申請した活動を削除する
+
+#### ✅ evaluation（評価）
+- 活動を評価する
+
+---
+
+### 📍 Location  
+**Opportunity（募集）、Participation（活動）の地理情報を担う**
+
+#### 🗺️ place（実施場所）
+- 実施場所を作成する
+- 実施場所を編集する
+- 実施場所を削除する
+
+---
+
+### 📝 Content  
+**Opportunity（募集）へのReservation（応募）促進を担う**
+
+#### 📰 article（記事）
+- 記事を作成する
+- 記事を編集する
+- 記事を公開/非公開する
+- 記事を削除する
+
+---
+
+### 🎁 Reward  
+**Participation（活動）の感謝を示す対価を担う**
+
+#### 🙋 utility（特典）
+- 特典を登録する
+- 特典を編集する
+- 特典を公開/非公開する
+- 特典を削除する
+
+#### 🎟️ ticket（チケット）
+- チケットを買う
+- チケットをあげる/もらう
+- チケットを払い戻す
+- チケットを使う
+
+---
+
+### 💸 Transaction 
+**コミュニティの原資発行、能動的なポイントの流通を担う**
+
+- コミュニティポイントを発行する
+- コミュニティからポイントを助成する
+- （自分の）ポイントをあげる
+
+---
+
+## ✉️ お問い合わせ
+
+この基盤・仕組みを自地域・団体でも活用したい方、  
+または詳細仕様を確認したい技術者の方は、以下までご連絡ください：
+
+阪田 直樹
+([**Facebook**](https://www.facebook.com/naoki.sakata.3133/))
+
 
