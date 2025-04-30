@@ -86,16 +86,6 @@
 
 ---
 
-### 📍 Location  
-**Opportunity（募集）、Participation（活動）の地理情報を担う**
-
-#### 🗺️ place（実施場所）
-- 実施場所を作成する
-- 実施場所を編集する
-- 実施場所を削除する
-
----
-
 ### 📝 Content  
 **Opportunity（募集）へのReservation（応募）促進を担う**
 
