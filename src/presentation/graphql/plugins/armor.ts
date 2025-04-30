@@ -11,7 +11,7 @@ const config: GraphQLArmorConfig = {
   },
   maxDepth: {
     enabled: true,
-    n: 10, // Maximum allowed query depth
+    n: 20, // Maximum allowed query depth
   },
   maxAliases: {
     enabled: true,
