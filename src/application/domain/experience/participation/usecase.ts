@@ -20,7 +20,7 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 export default class ParticipationUseCase {
   constructor(
     @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("IParticipationService") private readonly service: IParticipationService,
+    @inject("ParticipationService") private readonly service: IParticipationService,
   ) {}
 
   async visitorBrowseParticipations(

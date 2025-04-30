@@ -1,5 +1,4 @@
 import { mergeResolvers } from "@graphql-tools/merge";
-import communityResolver from "@/application/domain/account/community/controller/resolver";
 import membershipResolver from "@/application/domain/account/membership/controller/resolver";
 import userResolver from "@/application/domain/account/user/controller/resolver";
 import identityResolver from "@/application/domain/account/identity/controller/resolver";
@@ -13,13 +12,22 @@ import evaluationResolver from "@/application/domain/experience/evaluation/contr
 import placeResolver from "@/application/domain/location/place/controller/resolver";
 import ticketResolver from "@/application/domain/reward/ticket/controller/resolver";
 import utilityResolver from "@/application/domain/reward/utility/controller/resolver";
-import transactionResolver from "@/application/domain/transaction/controller/resolver";
+import { TransactionResolver } from "@/application/domain/transaction/controller/resolver";
+import { container } from "tsyringe";
+import { CommunityResolver } from "@/application/domain/account/community/controller/resolver";
+
+const transactionResolver = container.resolve(TransactionResolver);
+const communityResolver = container.resolve(CommunityResolver);
 
 const resolvers = mergeResolvers([
   // account
   identityResolver,
   userResolver,
-  communityResolver,
+  {
+    Query: communityResolver.Query,
+    Mutation: communityResolver.Mutation,
+    Community: communityResolver.Community,
+  },
   membershipResolver,
   walletResolver,
 
@@ -40,6 +48,6 @@ const resolvers = mergeResolvers([
   utilityResolver,
   ticketResolver,
 
-  transactionResolver,
+  { Query: transactionResolver.Query, Mutation: transactionResolver.Mutation },
 ]);
 export default resolvers;

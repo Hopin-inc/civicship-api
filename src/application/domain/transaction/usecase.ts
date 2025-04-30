@@ -70,7 +70,7 @@ export default class TransactionUseCase {
     return TransactionPresenter.issueCommunityPoint(res);
   }
 
-  async managerGrantCommunityPoint(
+  async ownerGrantCommunityPoint(
     ctx: IContext,
     input: GqlTransactionGrantCommunityPointInput,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {

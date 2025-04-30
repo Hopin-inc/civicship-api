@@ -61,7 +61,7 @@ export default class CommunityUseCase {
     });
   }
 
-  async managerDeleteCommunity(
+  async ownerDeleteCommunity(
     { id }: GqlMutationCommunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlCommunityDeletePayload> {

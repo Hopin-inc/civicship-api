@@ -74,6 +74,7 @@ import UtilityConverter from "@/application/domain/reward/utility/data/converter
 import UtilityRepository from "@/application/domain/reward/utility/data/repository";
 import MembershipRepository from "@/application/domain/account/membership/data/repository";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -95,6 +96,7 @@ export function registerProductionDependencies() {
   container.register("MembershipConverter", { useClass: MembershipConverter });
 
   // 👛 Wallet
+  container.register("WalletUseCase", { useClass: WalletUseCase });
   container.register("WalletService", { useClass: WalletService });
   container.register("WalletValidator", { useClass: WalletValidator });
   container.register("WalletRepository", { useClass: WalletRepository });
