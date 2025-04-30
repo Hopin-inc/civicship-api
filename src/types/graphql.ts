@@ -890,7 +890,6 @@ export type GqlMutationTransactionIssueCommunityPointArgs = {
 
 
 export type GqlMutationUserDeleteMeArgs = {
-  input: GqlUserDeleteInput;
   permission: GqlCheckIsSelfPermissionInput;
 };
 
@@ -2390,14 +2389,9 @@ export type GqlUserWalletsArgs = {
   sort?: InputMaybe<GqlWalletSortInput>;
 };
 
-export type GqlUserDeleteInput = {
-  /** Used for permission checking. */
-  userId: Scalars['ID']['input'];
-};
-
 export type GqlUserDeletePayload = {
   __typename?: 'UserDeletePayload';
-  userId: Scalars['ID']['output'];
+  userId?: Maybe<Scalars['ID']['output']>;
 };
 
 export type GqlUserEdge = GqlEdge & {
@@ -2969,7 +2963,6 @@ export type GqlResolversTypes = ResolversObject<{
   TransactionsConnection: ResolverTypeWrapper<Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TransactionEdge']>>> }>;
   Upload: ResolverTypeWrapper<Scalars['Upload']['output']>;
   User: ResolverTypeWrapper<User>;
-  UserDeleteInput: GqlUserDeleteInput;
   UserDeletePayload: ResolverTypeWrapper<GqlUserDeletePayload>;
   UserEdge: ResolverTypeWrapper<Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversTypes['User']> }>;
   UserFilterInput: GqlUserFilterInput;
@@ -3216,7 +3209,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   TransactionsConnection: Omit<GqlTransactionsConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TransactionEdge']>>> };
   Upload: Scalars['Upload']['output'];
   User: User;
-  UserDeleteInput: GqlUserDeleteInput;
   UserDeletePayload: GqlUserDeletePayload;
   UserEdge: Omit<GqlUserEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['User']> };
   UserFilterInput: GqlUserFilterInput;
@@ -3628,7 +3620,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   transactionDonateSelfPoint?: Resolver<Maybe<GqlResolversTypes['TransactionDonateSelfPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionDonateSelfPointArgs, 'input' | 'permission'>>;
   transactionGrantCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionGrantCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionGrantCommunityPointArgs, 'input' | 'permission'>>;
   transactionIssueCommunityPoint?: Resolver<Maybe<GqlResolversTypes['TransactionIssueCommunityPointPayload']>, ParentType, ContextType, RequireFields<GqlMutationTransactionIssueCommunityPointArgs, 'input' | 'permission'>>;
-  userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'input' | 'permission'>>;
+  userDeleteMe?: Resolver<Maybe<GqlResolversTypes['UserDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserDeleteMeArgs, 'permission'>>;
   userSignUp?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType, RequireFields<GqlMutationUserSignUpArgs, 'input'>>;
   userUpdateMyProfile?: Resolver<Maybe<GqlResolversTypes['UserUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationUserUpdateMyProfileArgs, 'input' | 'permission'>>;
   utilityCreate?: Resolver<Maybe<GqlResolversTypes['UtilityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationUtilityCreateArgs, 'input' | 'permission'>>;
@@ -4264,7 +4256,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
 }>;
 
 export type GqlUserDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['UserDeletePayload'] = GqlResolversParentTypes['UserDeletePayload']> = ResolversObject<{
-  userId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  userId?: Resolver<Maybe<GqlResolversTypes['ID']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 

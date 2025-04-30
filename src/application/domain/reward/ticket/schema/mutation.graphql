@@ -11,6 +11,7 @@ extend type Mutation {
     ticketClaim(
         input: TicketClaimInput!
     ): TicketClaimPayload
+    @authz(rules: [IsUser])
 
     ticketPurchase(
         input: TicketPurchaseInput!

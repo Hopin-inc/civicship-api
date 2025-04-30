@@ -24,13 +24,13 @@ extend type Mutation {
         id: ID!
         permission: CheckOpportunityPermissionInput!
     ): ReservationSetStatusPayload
-    @authz(compositeRules: [{ or: [IsCommunityManager, IsOpportunityOwner] }])
+    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
 
     reservationReject(
         id: ID!
         permission: CheckOpportunityPermissionInput!
     ): ReservationSetStatusPayload
-    @authz(compositeRules: [{ or: [IsCommunityManager, IsOpportunityOwner] }])
+    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
 }
 
 # ------------------------------
