@@ -34,7 +34,7 @@ module.exports = {
   },
   testPathIgnorePatterns: [
     "<rootDir>/src/__tests__/helper/*.*",
-    "<rootDir>/src/__tests__/e2e/",
+    // "<rootDir>/src/__tests__/auth/",
     "<rootDir>/dist/",
   ],
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
