@@ -21,10 +21,11 @@ export default class ArticlePresenter {
   }
 
   static get(r: PrismaArticle): GqlArticle {
-    const { community, opportunities, authors, relatedUsers, ...prop } = r;
+    const { community, opportunities, authors, relatedUsers, thumbnail, ...prop } = r;
 
     return {
       ...prop,
+      thumbnail: thumbnail?.url,
       community,
       authors: authors.map(UserPresenter.get),
       relatedUsers: relatedUsers.map(UserPresenter.get),
