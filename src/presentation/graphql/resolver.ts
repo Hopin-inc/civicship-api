@@ -1,5 +1,4 @@
 import { mergeResolvers } from "@graphql-tools/merge";
-import membershipResolver from "@/application/domain/account/membership/controller/resolver";
 import userResolver from "@/application/domain/account/user/controller/resolver";
 import identityResolver from "@/application/domain/account/identity/controller/resolver";
 import walletResolver from "@/application/domain/account/wallet/controller/resolver";
@@ -12,12 +11,14 @@ import evaluationResolver from "@/application/domain/experience/evaluation/contr
 import placeResolver from "@/application/domain/location/place/controller/resolver";
 import ticketResolver from "@/application/domain/reward/ticket/controller/resolver";
 import utilityResolver from "@/application/domain/reward/utility/controller/resolver";
-import { TransactionResolver } from "@/application/domain/transaction/controller/resolver";
 import { container } from "tsyringe";
-import { CommunityResolver } from "@/application/domain/account/community/controller/resolver";
+import MembershipResolver from "@/application/domain/account/membership/controller/resolver";
+import TransactionResolver from "@/application/domain/transaction/controller/resolver";
+import CommunityResolver from "@/application/domain/account/community/controller/resolver";
 
 const transactionResolver = container.resolve(TransactionResolver);
 const communityResolver = container.resolve(CommunityResolver);
+const membershipResolver = container.resolve(MembershipResolver);
 
 const resolvers = mergeResolvers([
   // account
@@ -28,7 +29,10 @@ const resolvers = mergeResolvers([
     Mutation: communityResolver.Mutation,
     Community: communityResolver.Community,
   },
-  membershipResolver,
+  {
+    Query: membershipResolver.Query,
+    Mutation: membershipResolver.Mutation,
+  },
   walletResolver,
 
   // content

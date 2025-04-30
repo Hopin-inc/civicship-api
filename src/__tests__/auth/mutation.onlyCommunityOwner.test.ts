@@ -38,7 +38,10 @@ const queries = {
     mutation ($input: MembershipSetRoleInput!, $permission: CheckCommunityPermissionInput!) {
       membershipAssignOwner(input: $input, permission: $permission) {
         ... on MembershipSetRoleSuccess {
-          membership { id }
+          membership {
+            user { id }
+            community { id }
+          }
         }
       }
     }`,
@@ -98,11 +101,19 @@ const mockCommunityUseCase = {
   }),
 };
 const mockMembershipUseCase = {
-  assignOwner: jest.fn().mockResolvedValue({
+  ownerAssignOwner: jest.fn().mockResolvedValue({
     __typename: "MembershipSetRoleSuccess",
-    membership: { id: "membership-1" },
+    membership: {
+      id: "membership-1",
+      user: {
+        id: "user-2",
+      },
+      community: {
+        id: "community-1",
+      },
+    },
   }),
-  remove: jest.fn().mockResolvedValue({
+  ownerRemoveMember: jest.fn().mockResolvedValue({
     __typename: "MembershipRemoveSuccess",
     userId: "user-2",
     communityId: "community-1",
@@ -141,6 +152,9 @@ describe("Owner-only mutations - AuthZ", () => {
       const res = await request(app).post("/graphql").send({ query, variables: vars });
       const error = res.body.errors?.[0];
 
+      console.log("useCaseFn", useCaseFn);
+      console.dir(res.body, { depth: null });
+
       if (allowed) {
         expect(res.body.data).toBeDefined();
         expect(error).toBeUndefined();
@@ -175,12 +189,12 @@ describe("Owner-only mutations - AuthZ", () => {
     "membershipAssignOwner",
     queries.membershipAssignOwner,
     variables.assignOwner,
-    mockMembershipUseCase.assignOwner,
+    mockMembershipUseCase.ownerAssignOwner,
   );
   runTest(
     "membershipRemove",
     queries.membershipRemove,
     variables.remove,
-    mockMembershipUseCase.remove,
+    mockMembershipUseCase.ownerRemoveMember,
   );
 });

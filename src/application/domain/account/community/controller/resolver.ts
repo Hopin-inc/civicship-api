@@ -23,7 +23,7 @@ import UtilityUseCase from "@/application/domain/reward/utility/usecase";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
 
 @injectable()
-export class CommunityResolver {
+export default class CommunityResolver {
   constructor(
     @inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase,
     @inject("MembershipUseCase") private readonly membershipUseCase: MembershipUseCase,

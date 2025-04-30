@@ -10,7 +10,7 @@ import { inject, injectable } from "tsyringe";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 
 @injectable()
-export class TransactionResolver {
+export default class TransactionResolver {
   constructor(@inject("TransactionUseCase") private readonly useCase: TransactionUseCase) {}
 
   Query = {
