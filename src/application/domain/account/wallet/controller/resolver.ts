@@ -12,21 +12,22 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import WalletUseCase from "@/application/domain/account/wallet/usecase";
 
-const walletUseCase = container.resolve(WalletUseCase);
-
 const walletResolver = {
   Query: {
-    wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
-      walletUseCase.visitorBrowseWallets(args, ctx),
+    wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) => {
+      const usecase = container.resolve(WalletUseCase);
+      return usecase.visitorBrowseWallets(args, ctx);
+    },
     wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
-      return walletUseCase.userViewWallet(args, ctx);
+      const usecase = container.resolve(WalletUseCase);
+      return usecase.userViewWallet(args, ctx);
     },
   },
 
   Wallet: {
     tickets: async (parent: GqlWallet, args: GqlQueryWalletArgs, ctx: IContext) => {
-      const ticketUseCase = container.resolve(TicketUseCase);
-      return ticketUseCase.visitorBrowseTickets(ctx, {
+      const usecase = container.resolve(TicketUseCase);
+      return usecase.visitorBrowseTickets(ctx, {
         filter: { walletId: parent.id },
         ...args,
       });
@@ -36,8 +37,8 @@ const walletResolver = {
       args: GqlWalletTransactionsArgs,
       ctx: IContext,
     ): Promise<GqlTransactionsConnection> => {
-      const transactionUseCase = container.resolve(TransactionUseCase);
-      return transactionUseCase.visitorBrowseTransactions(
+      const usecase = container.resolve(TransactionUseCase);
+      return usecase.visitorBrowseTransactions(
         {
           filter: { fromWalletId: parent.id, toWalletId: parent.id, ...args },
         },

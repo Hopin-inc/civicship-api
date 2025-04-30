@@ -30,17 +30,15 @@ import MembershipUseCase from "@/application/domain/account/membership/usecase";
 import UserUseCase from "@/application/domain/account/user/usecase";
 import WalletUseCase from "@/application/domain/account/wallet/usecase";
 
-const userUseCase = container.resolve(UserUseCase);
-const walletUseCase = container.resolve(WalletUseCase);
-const membershipUseCase = container.resolve(MembershipUseCase);
-const articleUseCase = container.resolve(ArticleUseCase);
-
 const userResolver = {
   Query: {
-    users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
-      userUseCase.visitorBrowseCommunityMembers(ctx, args),
+    users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) => {
+      const usecase = container.resolve(UserUseCase);
+      return usecase.visitorBrowseCommunityMembers(ctx, args);
+    },
     user: async (_: unknown, args: GqlQueryUserArgs, ctx: IContext) => {
-      return userUseCase.visitorViewMember(ctx, args);
+      const usecase = container.resolve(UserUseCase);
+      return usecase.visitorViewMember(ctx, args);
     },
   },
   Mutation: {
@@ -48,7 +46,10 @@ const userResolver = {
       _: unknown,
       args: GqlMutationUserUpdateMyProfileArgs,
       ctx: IContext,
-    ) => userUseCase.userUpdateProfile(ctx, args),
+    ) => {
+      const usecase = container.resolve(UserUseCase);
+      return usecase.userUpdateProfile(ctx, args);
+    },
   },
 
   User: {
@@ -75,7 +76,8 @@ const userResolver = {
       args: GqlUserArticlesAboutMeArgs,
       ctx: IContext,
     ): Promise<GqlArticlesConnection> => {
-      return articleUseCase.anyoneBrowseArticles(ctx, {
+      const usecase = container.resolve(ArticleUseCase);
+      return usecase.anyoneBrowseArticles(ctx, {
         ...args,
         filter: {
           ...args.filter,
@@ -89,7 +91,8 @@ const userResolver = {
       args: GqlUserMembershipsArgs,
       ctx: IContext,
     ): Promise<GqlMembershipsConnection> => {
-      return membershipUseCase.visitorBrowseMemberships(
+      const usecase = container.resolve(MembershipUseCase);
+      return usecase.visitorBrowseMemberships(
         {
           ...args,
           filter: { ...args.filter, userId: parent.id },
@@ -97,13 +100,13 @@ const userResolver = {
         ctx,
       );
     },
-
     wallets: async (
       parent: GqlUser,
       args: GqlUserWalletsArgs,
       ctx: IContext,
     ): Promise<GqlWalletsConnection> => {
-      return walletUseCase.visitorBrowseWallets(
+      const usecase = container.resolve(WalletUseCase);
+      return usecase.visitorBrowseWallets(
         {
           ...args,
           filter: { ...args.filter, userId: parent.id },
@@ -117,8 +120,8 @@ const userResolver = {
       args: GqlUserOpportunitiesCreatedByMeArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      const opportunityUseCase = container.resolve(OpportunityUseCase);
-      return opportunityUseCase.anyoneBrowseOpportunities(
+      const usecase = container.resolve(OpportunityUseCase);
+      return usecase.anyoneBrowseOpportunities(
         {
           ...args,
           filter: { ...args.filter, createdByUserIds: [parent.id] },
@@ -126,14 +129,13 @@ const userResolver = {
         ctx,
       );
     },
-
     participations: async (
       parent: GqlUser,
       args: GqlUserParticipationsArgs,
       ctx: IContext,
     ): Promise<GqlParticipationsConnection> => {
-      const participationUseCase = container.resolve(ParticipationUseCase);
-      return participationUseCase.visitorBrowseParticipations(
+      const usecase = container.resolve(ParticipationUseCase);
+      return usecase.visitorBrowseParticipations(
         {
           filter: { userIds: [parent.id] },
           ...args,
@@ -141,20 +143,13 @@ const userResolver = {
         ctx,
       );
     },
-
     participationStatusChangedByMe: async (
       parent: GqlUser,
       args: GqlUserParticipationStatusChangedByMeArgs,
       ctx: IContext,
     ): Promise<GqlParticipationStatusHistoriesConnection> => {
-      const participationStatusHistoryUseCase = container.resolve(
-        ParticipationStatusHistoryUseCase,
-      );
-      return participationStatusHistoryUseCase.visitorBrowseParticipationStatusChangedByUser(
-        parent,
-        args,
-        ctx,
-      );
+      const usecase = container.resolve(ParticipationStatusHistoryUseCase);
+      return usecase.visitorBrowseParticipationStatusChangedByUser(parent, args, ctx);
     },
   },
 };
