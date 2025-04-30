@@ -6,16 +6,15 @@ import { applyMiddleware } from "graphql-middleware";
 import errorMiddleware from "@/presentation/middleware/error";
 import resolvers from "@/presentation/graphql/resolver";
 import { authZDirective } from "@graphql-authz/directive";
-import { fileURLToPath } from "url";
 import path from "path";
+import { getESMDirname } from "@/presentation/graphql/schema/esmPath";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const baseDir = getESMDirname();
 
 // GraphQL ファイルの読み込み対象パス
 const schemaPaths = [
-  path.join(__dirname, "../../../application/**/*.graphql"),
-  path.join(__dirname, "../../../presentation/**/*.graphql"),
+  path.join(baseDir, "../../../application/**/*.graphql"),
+  path.join(baseDir, "../../../presentation/**/*.graphql"),
 ];
 
 // AuthZ Directive Transformer の取得
