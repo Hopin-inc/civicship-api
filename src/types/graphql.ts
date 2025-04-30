@@ -108,8 +108,7 @@ export const GqlAuthZRules = {
   IsCommunityOwner: 'IsCommunityOwner',
   IsOpportunityOwner: 'IsOpportunityOwner',
   IsSelf: 'IsSelf',
-  IsUser: 'IsUser',
-  VerifySanitizeInput: 'VerifySanitizeInput'
+  IsUser: 'IsUser'
 } as const;
 
 export type GqlAuthZRules = typeof GqlAuthZRules[keyof typeof GqlAuthZRules];
