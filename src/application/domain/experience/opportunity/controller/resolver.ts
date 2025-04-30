@@ -9,71 +9,61 @@ import {
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import OpportunitySlotUseCase from "@/application/domain/experience/opportunitySlot/usecase";
-import { container } from "tsyringe";
 
-const opportunityResolver = {
-  Query: {
-    opportunities: async (_: unknown, args: GqlQueryOpportunitiesArgs, ctx: IContext) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.anyoneBrowseOpportunities(args, ctx);
+@injectable()
+export default class OpportunityResolver {
+  constructor(
+    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
+    @inject("OpportunitySlotUseCase") private readonly slotUseCase: OpportunitySlotUseCase,
+  ) {}
+
+  Query = {
+    opportunities: (_: unknown, args: GqlQueryOpportunitiesArgs, ctx: IContext) => {
+      return this.opportunityUseCase.anyoneBrowseOpportunities(args, ctx);
     },
-    opportunity: async (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.visitorViewOpportunity(args, ctx);
+    opportunity: (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
+      return this.opportunityUseCase.visitorViewOpportunity(args, ctx);
     },
-  },
-  Mutation: {
-    opportunityCreate: async (
-      _: unknown,
-      args: GqlMutationOpportunityCreateArgs,
-      ctx: IContext,
-    ) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.managerCreateOpportunity(args, ctx);
+  };
+
+  Mutation = {
+    opportunityCreate: (_: unknown, args: GqlMutationOpportunityCreateArgs, ctx: IContext) => {
+      return this.opportunityUseCase.managerCreateOpportunity(args, ctx);
     },
-    opportunityDelete: async (
-      _: unknown,
-      args: GqlMutationOpportunityDeleteArgs,
-      ctx: IContext,
-    ) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.managerDeleteOpportunity(args, ctx);
+    opportunityDelete: (_: unknown, args: GqlMutationOpportunityDeleteArgs, ctx: IContext) => {
+      return this.opportunityUseCase.managerDeleteOpportunity(args, ctx);
     },
-    opportunityUpdateContent: async (
+    opportunityUpdateContent: (
       _: unknown,
       args: GqlMutationOpportunityUpdateContentArgs,
       ctx: IContext,
     ) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.managerUpdateOpportunityContent(args, ctx);
+      return this.opportunityUseCase.managerUpdateOpportunityContent(args, ctx);
     },
-    opportunitySetPublishStatus: async (
+    opportunitySetPublishStatus: (
       _: unknown,
       args: GqlMutationOpportunitySetPublishStatusArgs,
       ctx: IContext,
     ) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.managerSetOpportunityPublishStatus(args, ctx);
+      return this.opportunityUseCase.managerSetOpportunityPublishStatus(args, ctx);
     },
-  },
-  Opportunity: {
-    isReservableWithTicket: async (parent: GqlOpportunity, _, ctx: IContext) => {
-      const useCase = container.resolve(OpportunityUseCase);
-      return useCase.checkUserHasValidTicketForOpportunity(ctx, parent.id);
+  };
+
+  Opportunity = {
+    isReservableWithTicket: (parent: GqlOpportunity, _: unknown, ctx: IContext) => {
+      return this.opportunityUseCase.checkUserHasValidTicketForOpportunity(ctx, parent.id);
     },
-    slots: async (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
-      const useCase = container.resolve(OpportunitySlotUseCase);
-      return useCase.visitorBrowseOpportunitySlots(
+    slots: (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
+      return this.slotUseCase.visitorBrowseOpportunitySlots(
         {
           ...args,
-          filter: { opportunityId: parent.id },
+          filter: { ...args.filter, opportunityId: parent.id },
         },
         ctx,
       );
     },
-  },
-};
-
-export default opportunityResolver;
+  };
+}

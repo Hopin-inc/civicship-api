@@ -1,57 +1,83 @@
-import { mergeResolvers } from "@graphql-tools/merge";
-import userResolver from "@/application/domain/account/user/controller/resolver";
-import identityResolver from "@/application/domain/account/identity/controller/resolver";
-import walletResolver from "@/application/domain/account/wallet/controller/resolver";
-import articleResolver from "@/application/domain/content/article/controller/resolver";
-import opportunityResolver from "@/application/domain/experience/opportunity/controller/resolver";
-import opportunitySlotResolver from "@/application/domain/experience/opportunitySlot/controller/resolver";
-import reservationResolver from "@/application/domain/experience/reservation/controller/resolver";
-import participationResolver from "@/application/domain/experience/participation/controller/resolver";
-import evaluationResolver from "@/application/domain/experience/evaluation/controller/resolver";
-import placeResolver from "@/application/domain/location/place/controller/resolver";
-import ticketResolver from "@/application/domain/reward/ticket/controller/resolver";
-import utilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import { container } from "tsyringe";
+
+import IdentityResolver from "@/application/domain/account/identity/controller/resolver";
+import UserResolver from "@/application/domain/account/user/controller/resolver";
+import WalletResolver from "@/application/domain/account/wallet/controller/resolver";
 import MembershipResolver from "@/application/domain/account/membership/controller/resolver";
-import TransactionResolver from "@/application/domain/transaction/controller/resolver";
 import CommunityResolver from "@/application/domain/account/community/controller/resolver";
+import ArticleResolver from "@/application/domain/content/article/controller/resolver";
+import OpportunityResolver from "@/application/domain/experience/opportunity/controller/resolver";
+import OpportunitySlotResolver from "@/application/domain/experience/opportunitySlot/controller/resolver";
+import ReservationResolver from "@/application/domain/experience/reservation/controller/resolver";
+import ParticipationResolver from "@/application/domain/experience/participation/controller/resolver";
+import EvaluationResolver from "@/application/domain/experience/evaluation/controller/resolver";
+import PlaceResolver from "@/application/domain/location/place/controller/resolver";
+import TicketResolver from "@/application/domain/reward/ticket/controller/resolver";
+import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
+import TransactionResolver from "@/application/domain/transaction/controller/resolver";
 
-const transactionResolver = container.resolve(TransactionResolver);
-const communityResolver = container.resolve(CommunityResolver);
-const membershipResolver = container.resolve(MembershipResolver);
+const identity = container.resolve(IdentityResolver);
+const user = container.resolve(UserResolver);
+const wallet = container.resolve(WalletResolver);
+const membership = container.resolve(MembershipResolver);
+const community = container.resolve(CommunityResolver);
 
-const resolvers = mergeResolvers([
-  // account
-  identityResolver,
-  userResolver,
-  {
-    Query: communityResolver.Query,
-    Mutation: communityResolver.Mutation,
-    Community: communityResolver.Community,
+const article = container.resolve(ArticleResolver);
+
+const opportunity = container.resolve(OpportunityResolver);
+const opportunitySlot = container.resolve(OpportunitySlotResolver);
+const reservation = container.resolve(ReservationResolver);
+const participation = container.resolve(ParticipationResolver);
+const evaluation = container.resolve(EvaluationResolver);
+
+const place = container.resolve(PlaceResolver);
+
+const ticket = container.resolve(TicketResolver);
+const utility = container.resolve(UtilityResolver);
+
+const transaction = container.resolve(TransactionResolver);
+
+const resolvers = {
+  Query: {
+    ...identity.Query,
+    ...user.Query,
+    ...community.Query,
+    ...membership.Query,
+    ...wallet.Query,
+    ...article.Query,
+    ...opportunity.Query,
+    ...opportunitySlot.Query,
+    ...reservation.Query,
+    ...participation.Query,
+    ...evaluation.Query,
+    ...place.Query,
+    ...utility.Query,
+    ...ticket.Query,
+    ...transaction.Query,
   },
-  {
-    Query: membershipResolver.Query,
-    Mutation: membershipResolver.Mutation,
+  Mutation: {
+    ...identity.Mutation,
+    ...user.Mutation,
+    ...community.Mutation,
+    ...membership.Mutation,
+    ...opportunity.Mutation,
+    ...opportunitySlot.Mutation,
+    ...reservation.Mutation,
+    ...participation.Mutation,
+    ...evaluation.Mutation,
+    ...place.Mutation,
+    ...utility.Mutation,
+    ...ticket.Mutation,
+    ...transaction.Mutation,
   },
-  walletResolver,
+  User: user.User,
+  Community: community.Community,
+  Opportunity: opportunity.Opportunity,
+  OpportunitySlot: opportunitySlot.OpportunitySlot,
+  Participation: participation.Participation,
+  Place: place.Place,
+  Utility: utility.Utility,
+  Wallet: wallet.Wallet,
+};
 
-  // content
-  articleResolver,
-
-  // experience
-  opportunityResolver,
-  opportunitySlotResolver,
-  reservationResolver,
-  participationResolver,
-  evaluationResolver,
-
-  // location
-  placeResolver,
-
-  // reward
-  utilityResolver,
-  ticketResolver,
-
-  { Query: transactionResolver.Query, Mutation: transactionResolver.Mutation },
-]);
 export default resolvers;

@@ -91,7 +91,7 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     //////////////////////////////////////////////////
     // execute
     //////////////////////////////////////////////////
-    await useCase.managerGrantCommunityPoint(ctx, input);
+    await useCase.ownerGrantCommunityPoint(ctx, input);
 
     //////////////////////////////////////////////////
     // assert result

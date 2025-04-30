@@ -9,43 +9,39 @@ import {
   GqlMutationReservationCancelArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { container } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 import ReservationUseCase from "@/application/domain/experience/reservation/usecase";
 
-const reservationResolver = {
-  Query: {
-    reservations: (_: unknown, args: GqlQueryReservationsArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.visitorBrowseReservations(ctx, args);
-    },
-    reservation: async (_: unknown, args: GqlQueryReservationArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.visitorViewReservation(ctx, args);
-    },
-  },
+@injectable()
+export default class ReservationResolver {
+  constructor(
+    @inject("ReservationUseCase") private readonly reservationUseCase: ReservationUseCase,
+  ) {}
 
-  Mutation: {
+  Query = {
+    reservations: (_: unknown, args: GqlQueryReservationsArgs, ctx: IContext) => {
+      return this.reservationUseCase.visitorBrowseReservations(ctx, args);
+    },
+    reservation: (_: unknown, args: GqlQueryReservationArgs, ctx: IContext) => {
+      return this.reservationUseCase.visitorViewReservation(ctx, args);
+    },
+  };
+
+  Mutation = {
     reservationCreate: (_: unknown, args: GqlMutationReservationCreateArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.userReserveParticipation(args, ctx);
+      return this.reservationUseCase.userReserveParticipation(args, ctx);
     },
     reservationAccept: (_: unknown, args: GqlMutationReservationAcceptArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.managerAcceptReservation(args, ctx);
+      return this.reservationUseCase.managerAcceptReservation(args, ctx);
     },
     reservationReject: (_: unknown, args: GqlMutationReservationRejectArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.managerRejectReservation(args, ctx);
+      return this.reservationUseCase.managerRejectReservation(args, ctx);
     },
     reservationCancel: (_: unknown, args: GqlMutationReservationCancelArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.userCancelMyReservation(args, ctx);
+      return this.reservationUseCase.userCancelMyReservation(args, ctx);
     },
     reservationJoin: (_: unknown, args: GqlMutationReservationJoinArgs, ctx: IContext) => {
-      const usecase = container.resolve(ReservationUseCase);
-      return usecase.userJoinReservation(args, ctx);
+      return this.reservationUseCase.userJoinReservation(args, ctx);
     },
-  },
-};
-
-export default reservationResolver;
+  };
+}

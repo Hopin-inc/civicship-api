@@ -65,7 +65,7 @@ describe("Point Grant Tests", () => {
       communityId: community.id,
     };
 
-    await transactionUseCase.managerGrantCommunityPoint(ctx, input);
+    await transactionUseCase.ownerGrantCommunityPoint(ctx, input);
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
       (t) => t.reason === TransactionReason.GRANT,
@@ -101,7 +101,7 @@ describe("Point Grant Tests", () => {
       toUserId: user.id,
     };
 
-    await expect(transactionUseCase.managerGrantCommunityPoint(ctx, input)).rejects.toThrow(
+    await expect(transactionUseCase.ownerGrantCommunityPoint(ctx, input)).rejects.toThrow(
       /Insufficient balance/i,
     );
 

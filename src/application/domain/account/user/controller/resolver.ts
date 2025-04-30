@@ -1,157 +1,147 @@
 import {
-  GqlArticlesConnection,
-  GqlMembershipsConnection,
-  GqlMutationUserUpdateMyProfileArgs,
-  GqlOpportunitiesConnection,
-  GqlParticipationsConnection,
-  GqlParticipationStatusHistoriesConnection,
-  GqlPortfoliosConnection,
-  GqlQueryUserArgs,
   GqlQueryUsersArgs,
+  GqlQueryUserArgs,
+  GqlMutationUserUpdateMyProfileArgs,
   GqlUser,
+  GqlUserPortfoliosArgs,
   GqlUserArticlesAboutMeArgs,
   GqlUserMembershipsArgs,
+  GqlUserWalletsArgs,
   GqlUserOpportunitiesCreatedByMeArgs,
   GqlUserParticipationsArgs,
   GqlUserParticipationStatusChangedByMeArgs,
-  GqlUserPortfoliosArgs,
-  GqlUserWalletsArgs,
+  GqlPortfoliosConnection,
+  GqlArticlesConnection,
+  GqlMembershipsConnection,
   GqlWalletsConnection,
+  GqlOpportunitiesConnection,
+  GqlParticipationsConnection,
+  GqlParticipationStatusHistoriesConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
+
+import UserUseCase from "@/application/domain/account/user/usecase";
+import ViewUseCase from "@/application/view/usecase";
+import ArticleUseCase from "@/application/domain/content/article/usecase";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
-import ViewUseCase from "@/application/view/usecase";
-import ArticleUseCase from "@/application/domain/content/article/usecase";
-import "reflect-metadata";
-import { container } from "tsyringe";
-import MembershipUseCase from "@/application/domain/account/membership/usecase";
-import UserUseCase from "@/application/domain/account/user/usecase";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
 
-const userResolver = {
-  Query: {
-    users: async (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) => {
-      const usecase = container.resolve(UserUseCase);
-      return usecase.visitorBrowseCommunityMembers(ctx, args);
-    },
-    user: async (_: unknown, args: GqlQueryUserArgs, ctx: IContext) => {
-      const usecase = container.resolve(UserUseCase);
-      return usecase.visitorViewMember(ctx, args);
-    },
-  },
-  Mutation: {
-    userUpdateMyProfile: async (
-      _: unknown,
-      args: GqlMutationUserUpdateMyProfileArgs,
-      ctx: IContext,
-    ) => {
-      const usecase = container.resolve(UserUseCase);
-      return usecase.userUpdateProfile(ctx, args);
-    },
-  },
+@injectable()
+export default class UserResolver {
+  constructor(
+    @inject("UserUseCase") private readonly userUseCase: UserUseCase,
+    @inject("ViewUseCase") private readonly viewUseCase: ViewUseCase,
+    @inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase,
+    @inject("MembershipUseCase") private readonly membershipUseCase: MembershipUseCase,
+    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
+    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
+    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
+    @inject("ParticipationStatusHistoryUseCase")
+    private readonly participationStatusHistoryUseCase: ParticipationStatusHistoryUseCase,
+  ) {}
 
-  User: {
-    portfolios: async (
+  Query = {
+    users: (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
+      this.userUseCase.visitorBrowseCommunityMembers(ctx, args),
+
+    user: (_: unknown, args: GqlQueryUserArgs, ctx: IContext) =>
+      this.userUseCase.visitorViewMember(ctx, args),
+  };
+
+  Mutation = {
+    userUpdateMyProfile: (_: unknown, args: GqlMutationUserUpdateMyProfileArgs, ctx: IContext) =>
+      this.userUseCase.userUpdateProfile(ctx, args),
+  };
+
+  User = {
+    portfolios: (
       parent: GqlUser,
       args: GqlUserPortfoliosArgs,
       ctx: IContext,
-    ): Promise<GqlPortfoliosConnection> => {
-      const useCase = container.resolve(ViewUseCase);
-      return useCase.visitorBrowsePortfolios(
+    ): Promise<GqlPortfoliosConnection> =>
+      this.viewUseCase.visitorBrowsePortfolios(
         {
           ...args,
-          filter: {
-            ...args.filter,
-            userIds: [parent.id],
-          },
+          filter: { ...args.filter, userIds: [parent.id] },
         },
         ctx,
-      );
-    },
+      ),
 
-    articlesAboutMe: async (
+    articlesAboutMe: (
       parent: GqlUser,
       args: GqlUserArticlesAboutMeArgs,
       ctx: IContext,
-    ): Promise<GqlArticlesConnection> => {
-      const usecase = container.resolve(ArticleUseCase);
-      return usecase.anyoneBrowseArticles(ctx, {
+    ): Promise<GqlArticlesConnection> =>
+      this.articleUseCase.anyoneBrowseArticles(ctx, {
         ...args,
-        filter: {
-          ...args.filter,
-          authors: [parent.id],
-        },
-      });
-    },
+        filter: { ...args.filter, authors: [parent.id] },
+      }),
 
-    memberships: async (
+    memberships: (
       parent: GqlUser,
       args: GqlUserMembershipsArgs,
       ctx: IContext,
-    ): Promise<GqlMembershipsConnection> => {
-      const usecase = container.resolve(MembershipUseCase);
-      return usecase.visitorBrowseMemberships(
+    ): Promise<GqlMembershipsConnection> =>
+      this.membershipUseCase.visitorBrowseMemberships(
         {
           ...args,
           filter: { ...args.filter, userId: parent.id },
         },
         ctx,
-      );
-    },
-    wallets: async (
+      ),
+
+    wallets: (
       parent: GqlUser,
       args: GqlUserWalletsArgs,
       ctx: IContext,
-    ): Promise<GqlWalletsConnection> => {
-      const usecase = container.resolve(WalletUseCase);
-      return usecase.visitorBrowseWallets(
+    ): Promise<GqlWalletsConnection> =>
+      this.walletUseCase.visitorBrowseWallets(
         {
           ...args,
           filter: { ...args.filter, userId: parent.id },
         },
         ctx,
-      );
-    },
+      ),
 
-    opportunitiesCreatedByMe: async (
+    opportunitiesCreatedByMe: (
       parent: GqlUser,
       args: GqlUserOpportunitiesCreatedByMeArgs,
       ctx: IContext,
-    ): Promise<GqlOpportunitiesConnection> => {
-      const usecase = container.resolve(OpportunityUseCase);
-      return usecase.anyoneBrowseOpportunities(
+    ): Promise<GqlOpportunitiesConnection> =>
+      this.opportunityUseCase.anyoneBrowseOpportunities(
         {
           ...args,
           filter: { ...args.filter, createdByUserIds: [parent.id] },
         },
         ctx,
-      );
-    },
-    participations: async (
+      ),
+
+    participations: (
       parent: GqlUser,
       args: GqlUserParticipationsArgs,
       ctx: IContext,
-    ): Promise<GqlParticipationsConnection> => {
-      const usecase = container.resolve(ParticipationUseCase);
-      return usecase.visitorBrowseParticipations(
+    ): Promise<GqlParticipationsConnection> =>
+      this.participationUseCase.visitorBrowseParticipations(
         {
-          filter: { userIds: [parent.id] },
           ...args,
+          filter: { userIds: [parent.id], ...(args.filter || {}) },
         },
         ctx,
-      );
-    },
-    participationStatusChangedByMe: async (
+      ),
+
+    participationStatusChangedByMe: (
       parent: GqlUser,
       args: GqlUserParticipationStatusChangedByMeArgs,
       ctx: IContext,
-    ): Promise<GqlParticipationStatusHistoriesConnection> => {
-      const usecase = container.resolve(ParticipationStatusHistoryUseCase);
-      return usecase.visitorBrowseParticipationStatusChangedByUser(parent, args, ctx);
-    },
-  },
-};
-
-export default userResolver;
+    ): Promise<GqlParticipationStatusHistoriesConnection> =>
+      this.participationStatusHistoryUseCase.visitorBrowseParticipationStatusChangedByUser(
+        parent,
+        args,
+        ctx,
+      ),
+  };
+}
