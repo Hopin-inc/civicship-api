@@ -17,7 +17,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const idToken = getIdTokenFromRequest(req);
 
   if (!idToken) {
-    return {};
+    return { issuer };
   }
 
   const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;

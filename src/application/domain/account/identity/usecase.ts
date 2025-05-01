@@ -31,6 +31,9 @@ export default class IdentityUseCase {
     ctx: IContext,
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
+    if (!ctx.uid || !ctx.platform) {
+      throw new Error("Authentication required (uid or platform missing)");
+    }
     const { data, image } = IdentityConverter.create(args);
 
     const uploadedImage = image
@@ -56,6 +59,9 @@ export default class IdentityUseCase {
   }
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {
+    if (!context.uid || !context.platform || !context.tenantId) {
+      throw new Error("Authentication required (uid or platform missing)");
+    }
     const uid = context.uid;
     const user = await this.identityService.deleteUserAndIdentity(uid);
     await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);

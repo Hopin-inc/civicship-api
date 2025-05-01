@@ -136,7 +136,7 @@ export default class OpportunityUseCase {
   ): Promise<boolean> {
     if (!ctx.currentUser) return false;
 
-    const opportunity = await ctx.loaders.opportunity.load(opportunityId);
+    const opportunity = await this.service.findOpportunity(ctx, opportunityId);
     if (!opportunity) return false;
 
     const requiredUtilityIds = opportunity.requiredUtilities?.map((u) => u.id) ?? [];

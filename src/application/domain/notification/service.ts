@@ -28,7 +28,14 @@ export default class NotificationService {
     ctx: IContext,
     slot: PrismaOpportunitySlotWithParticipation,
   ) {
-    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
 
     const { year, date, time } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const opportunityId = slot.opportunityId;
@@ -53,7 +60,15 @@ export default class NotificationService {
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
+
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
@@ -77,7 +92,14 @@ export default class NotificationService {
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
@@ -104,7 +126,14 @@ export default class NotificationService {
     currentUserId: string,
     reservation: PrismaReservation,
   ): Promise<void> {
-    const lineId = process.env.ENV === "LOCAL" ? LOCAL_UID : ctx.uid;
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
