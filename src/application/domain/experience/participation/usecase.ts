@@ -14,14 +14,10 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { participationInclude } from "@/application/domain/experience/participation/data/type";
 import { inject, injectable } from "tsyringe";
 import { IParticipationService } from "@/application/domain/experience/participation/data/interface";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class ParticipationUseCase {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("ParticipationService") private readonly service: IParticipationService,
-  ) {}
+  constructor(@inject("ParticipationService") private readonly service: IParticipationService) {}
 
   async visitorBrowseParticipations(
     { filter, first, sort, cursor }: GqlQueryParticipationsArgs,
@@ -60,7 +56,7 @@ export default class ParticipationUseCase {
   ): Promise<GqlParticipationCreatePersonalRecordPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const participation = await this.issuer.public(ctx, async (tx) => {
+    const participation = await ctx.issuer.public(ctx, async (tx) => {
       return await this.service.createParticipation(ctx, input, currentUserId, tx);
     });
 
@@ -71,7 +67,7 @@ export default class ParticipationUseCase {
     { id }: GqlMutationParticipationDeletePersonalRecordArgs,
     ctx: IContext,
   ): Promise<GqlParticipationDeletePayload> {
-    const deleted = await this.issuer.public(ctx, async (tx) => {
+    const deleted = await ctx.issuer.public(ctx, async (tx) => {
       const participation = await this.service.findParticipationOrThrow(ctx, id);
       this.service.validateDeletable(participation);
 

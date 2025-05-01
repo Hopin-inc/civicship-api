@@ -1,17 +1,11 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ticketInclude } from "@/application/domain/reward/ticket/data/type";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
 
 @injectable()
 export default class TicketRepository implements ITicketRepository {
-  constructor(
-    @inject("PrismaClientIssuer")
-    private readonly issuer: PrismaClientIssuer,
-  ) {}
-
   async query(
     ctx: IContext,
     where: Prisma.TicketWhereInput,
@@ -19,7 +13,7 @@ export default class TicketRepository implements ITicketRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.findMany({
         where,
         orderBy,
@@ -32,7 +26,7 @@ export default class TicketRepository implements ITicketRepository {
   }
 
   async queryByIds(ctx: IContext, ids: string[]) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.findMany({
         where: { id: { in: ids } },
         include: ticketInclude,
@@ -41,7 +35,7 @@ export default class TicketRepository implements ITicketRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.findUnique({
         where: { id },
         include: ticketInclude,
@@ -57,7 +51,7 @@ export default class TicketRepository implements ITicketRepository {
   }
 
   async delete(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.delete({
         where: { id },
         include: ticketInclude,

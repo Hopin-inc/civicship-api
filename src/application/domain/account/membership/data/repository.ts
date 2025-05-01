@@ -1,14 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { membershipInclude } from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class MembershipRepository implements IMembershipRepository {
-  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
-
   async query(
     ctx: IContext,
     where: Prisma.MembershipWhereInput,
@@ -16,7 +13,7 @@ export default class MembershipRepository implements IMembershipRepository {
     take: number,
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findMany({
         where,
         orderBy,
@@ -35,7 +32,7 @@ export default class MembershipRepository implements IMembershipRepository {
   }
 
   async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({
         where,
         include: membershipInclude,

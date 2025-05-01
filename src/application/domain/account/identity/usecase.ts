@@ -7,7 +7,6 @@ import {
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityPresenter from "@/application/domain/account/identity/presenter";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
@@ -16,7 +15,6 @@ import { injectable, inject } from "tsyringe";
 @injectable()
 export default class IdentityUseCase {
   constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("IdentityService") private readonly identityService: IdentityService,
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
@@ -48,7 +46,7 @@ export default class IdentityUseCase {
       ctx.platform,
     );
 
-    const res = await this.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.public(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, user.id, args.input.communityId, tx);
       await this.walletService.createMemberWalletIfNeeded(ctx, user.id, args.input.communityId, tx);
       return user;

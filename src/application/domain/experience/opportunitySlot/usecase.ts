@@ -11,7 +11,6 @@ import {
 import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { clampFirst } from "@/application/domain/utils";
 import { OpportunitySlotHostingStatus } from "@prisma/client";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
@@ -24,7 +23,6 @@ import ParticipationService from "@/application/domain/experience/participation/
 export default class OpportunitySlotUseCase {
   constructor(
     @inject("OpportunitySlotService") private readonly service: OpportunitySlotService,
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("ParticipationService") private readonly participationService: ParticipationService,
     @inject("ParticipationStatusHistoryService")
     private readonly participationStatusHistoryService: ParticipationStatusHistoryService,
@@ -59,7 +57,7 @@ export default class OpportunitySlotUseCase {
   ): Promise<GqlOpportunitySlotSetHostingStatusPayload> {
     let cancelledSlot: PrismaOpportunitySlotWithParticipation | null = null;
 
-    const res = await this.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.public(ctx, async (tx) => {
       const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input.status, tx);
 
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
@@ -96,7 +94,7 @@ export default class OpportunitySlotUseCase {
     { input }: GqlMutationOpportunitySlotsBulkUpdateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       await this.service.bulkCreateOpportunitySlots(
         ctx,
         input.opportunityId,

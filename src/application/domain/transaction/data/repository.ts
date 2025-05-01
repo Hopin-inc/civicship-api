@@ -1,15 +1,12 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITransactionRepository } from "@/application/domain/transaction/data/interface";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
-import { injectable, inject } from "tsyringe";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class TransactionRepository implements ITransactionRepository {
-  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) { }
-
   async query(
     ctx: IContext,
     where: Prisma.TransactionWhereInput,
@@ -17,7 +14,7 @@ export default class TransactionRepository implements ITransactionRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.transaction.findMany({
         where,
         orderBy,
@@ -30,7 +27,7 @@ export default class TransactionRepository implements ITransactionRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.transaction.findUnique({
         where: { id },
         include: transactionInclude,

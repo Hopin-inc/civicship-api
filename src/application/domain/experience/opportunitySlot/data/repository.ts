@@ -1,19 +1,14 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   opportunitySlotInclude,
   opportunitySlotWithParticipationInclude,
 } from "@/application/domain/experience/opportunitySlot/data/type";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 import { IOpportunitySlotRepository } from "./interface";
 
 @injectable()
 export default class OpportunitySlotRepository implements IOpportunitySlotRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
-
   async query(
     ctx: IContext,
     where: Prisma.OpportunitySlotWhereInput,
@@ -21,7 +16,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findMany({
         where,
         orderBy,
@@ -34,7 +29,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findUnique({
         where: { id },
         include: opportunitySlotInclude,
@@ -42,11 +37,8 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     });
   }
 
-  async findByOpportunityId(
-    ctx: IContext,
-    opportunityId: string,
-  ) {
-    return this.issuer.public(ctx, (tx) => {
+  async findByOpportunityId(ctx: IContext, opportunityId: string) {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findMany({
         where: { opportunityId },
         include: opportunitySlotInclude,

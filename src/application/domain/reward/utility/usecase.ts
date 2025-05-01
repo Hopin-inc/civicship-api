@@ -17,14 +17,10 @@ import { PublishStatus } from "@prisma/client";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { IUtilityService } from "./data/interface";
 import UtilityPresenter from "./presenter";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class UtilityUseCase {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("UtilityService") private readonly service: IUtilityService,
-  ) {}
+  constructor(@inject("UtilityService") private readonly service: IUtilityService) {}
 
   async anyoneBrowseUtilities(
     ctx: IContext,
@@ -91,7 +87,7 @@ export default class UtilityUseCase {
     ctx: IContext,
     { input }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const res = await this.service.createUtility(ctx, input, tx);
       return UtilityPresenter.create(res);
     });
@@ -101,7 +97,7 @@ export default class UtilityUseCase {
     ctx: IContext,
     { id }: GqlMutationUtilityDeleteArgs,
   ): Promise<GqlUtilityDeletePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const res = await this.service.deleteUtility(ctx, id, tx);
       return UtilityPresenter.delete(res);
     });
@@ -111,7 +107,7 @@ export default class UtilityUseCase {
     ctx: IContext,
     args: GqlMutationUtilityUpdateInfoArgs,
   ): Promise<GqlUtilityUpdateInfoPayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const res = await this.service.updateUtilityInfo(ctx, args, tx);
       return UtilityPresenter.updateInfo(res);
     });

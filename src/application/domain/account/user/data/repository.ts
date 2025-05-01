@@ -1,4 +1,4 @@
-import { PrismaClientIssuer, prismaClient } from "@/infrastructure/prisma/client";
+import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
@@ -7,10 +7,7 @@ import { inject, injectable } from "tsyringe";
 
 @injectable()
 export default class UserRepository implements IUserRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("prismaClient") private readonly db: typeof prismaClient,
-  ) {}
+  constructor(@inject("prismaClient") private readonly db: typeof prismaClient) {}
 
   async query(
     ctx: IContext,
@@ -19,7 +16,7 @@ export default class UserRepository implements IUserRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.user.findMany({
         where,
         orderBy,
@@ -32,7 +29,7 @@ export default class UserRepository implements IUserRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.user.findUnique({
         where: { id },
         include: userInclude,

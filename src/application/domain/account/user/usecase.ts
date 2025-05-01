@@ -10,15 +10,11 @@ import UserService from "@/application/domain/account/user/service";
 import UserPresenter from "@/application/domain/account/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
 export default class UserUseCase {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("UserService") private readonly service: UserService,
-  ) {}
+  constructor(@inject("UserService") private readonly service: UserService) {}
 
   async visitorBrowseCommunityMembers(
     ctx: IContext,
@@ -41,7 +37,7 @@ export default class UserUseCase {
     ctx: IContext,
     args: GqlMutationUserUpdateMyProfileArgs,
   ): Promise<GqlUserUpdateProfilePayload> {
-    const user = await this.issuer.public(ctx, async (tx) => {
+    const user = await ctx.issuer.public(ctx, async (tx) => {
       return await this.service.updateProfile(ctx, args, tx);
     });
 

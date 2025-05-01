@@ -1,16 +1,11 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { placeInclude } from "@/application/domain/location/place/data/type";
 import { IContext } from "@/types/server";
-import { injectable, inject } from "tsyringe";
+import { injectable } from "tsyringe";
 import { IPlaceRepository } from "@/application/domain/location/place/data/interface";
 
 @injectable()
 export default class PlaceRepository implements IPlaceRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
-
   async query(
     ctx: IContext,
     where: Prisma.PlaceWhereInput,
@@ -18,7 +13,7 @@ export default class PlaceRepository implements IPlaceRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.place.findMany({
         where,
         orderBy,
@@ -31,7 +26,7 @@ export default class PlaceRepository implements IPlaceRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.place.findUnique({
         where: { id },
         include: placeInclude,
@@ -53,7 +48,12 @@ export default class PlaceRepository implements IPlaceRepository {
     });
   }
 
-  async update(ctx: IContext, id: string, data: Prisma.PlaceUpdateInput, tx: Prisma.TransactionClient) {
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.PlaceUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
     return tx.place.update({
       where: { id },
       data,

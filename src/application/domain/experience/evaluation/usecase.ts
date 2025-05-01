@@ -12,7 +12,6 @@ import { EvaluationStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
@@ -21,7 +20,6 @@ import { ITransactionService } from "@/application/domain/transaction/data/inter
 @injectable()
 export default class EvaluationUseCase {
   constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("EvaluationService") private readonly evaluationService: EvaluationService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
@@ -58,7 +56,7 @@ export default class EvaluationUseCase {
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const evaluation = await this.issuer.public(ctx, async (tx) => {
+    const evaluation = await ctx.issuer.public(ctx, async (tx) => {
       const evaluation = await this.evaluationService.createEvaluation(
         ctx,
         input,
