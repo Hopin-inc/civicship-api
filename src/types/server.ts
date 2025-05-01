@@ -4,14 +4,14 @@ import { PrismaAuthUser, PrismaUserPermission } from "@/application/domain/accou
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export type LoggedInUserInfo = {
-  uid: string;
-  tenantId: string;
-  platform: IdentityPlatform;
-  currentUser: PrismaAuthUser | null;
-  hasPermissions: PrismaUserPermission | null;
-  // TODO: add DID authentication info
-  loaders: Loaders;
   issuer: PrismaClientIssuer;
+  uid?: string;
+  tenantId?: string;
+  platform?: IdentityPlatform;
+  currentUser?: PrismaAuthUser | null;
+  hasPermissions?: PrismaUserPermission | null;
+  loaders?: Loaders;
+  // TODO: add DID authentication info
 };
 
 export type IContext = Record<string, never> | LoggedInUserInfo;

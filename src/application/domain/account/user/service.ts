@@ -39,6 +39,9 @@ export default class UserService {
     { input }: GqlMutationUserUpdateMyProfileArgs,
     tx: Prisma.TransactionClient,
   ) {
+    if (!ctx.uid) {
+      throw new Error("Authentication required (uid or platform missing)");
+    }
     const { data, image } = this.converter.update(input);
 
     let uploadedImageData: Prisma.ImageCreateWithoutUsersInput | undefined = undefined;
