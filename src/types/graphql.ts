@@ -1540,6 +1540,7 @@ export type GqlQuery = {
   reservations: GqlReservationsConnection;
   states: Array<GqlState>;
   ticket?: Maybe<GqlTicket>;
+  ticketClaimLink?: Maybe<GqlTicketClaimLink>;
   ticketStatusHistories: GqlTicketStatusHistoriesConnection;
   ticketStatusHistory?: Maybe<GqlTicketStatusHistory>;
   tickets: GqlTicketsConnection;
@@ -1745,6 +1746,11 @@ export type GqlQueryStatesArgs = {
 
 
 export type GqlQueryTicketArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlQueryTicketClaimLinkArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -3258,13 +3264,6 @@ export type GqlAuthzDirectiveArgs = {
 
 export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = any, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
-export type GqlComplexityDirectiveArgs = {
-  multipliers?: Maybe<Array<Scalars['String']['input']>>;
-  value: Scalars['Int']['input'];
-};
-
-export type GqlComplexityDirectiveResolver<Result, Parent, ContextType = any, Args = GqlComplexityDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
-
 export type GqlRequireRoleDirectiveArgs = {
   role: GqlRole;
 };
@@ -3970,6 +3969,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   reservations?: Resolver<GqlResolversTypes['ReservationsConnection'], ParentType, ContextType, Partial<GqlQueryReservationsArgs>>;
   states?: Resolver<Array<GqlResolversTypes['State']>, ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
+  ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;
   ticketStatusHistories?: Resolver<GqlResolversTypes['TicketStatusHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryTicketStatusHistoriesArgs>>;
   ticketStatusHistory?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistory']>, ParentType, ContextType, RequireFields<GqlQueryTicketStatusHistoryArgs, 'id'>>;
   tickets?: Resolver<GqlResolversTypes['TicketsConnection'], ParentType, ContextType, Partial<GqlQueryTicketsArgs>>;
@@ -4548,6 +4548,5 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
 
 export type GqlDirectiveResolvers<ContextType = any> = ResolversObject<{
   authz?: GqlAuthzDirectiveResolver<any, any, ContextType>;
-  complexity?: GqlComplexityDirectiveResolver<any, any, ContextType>;
   requireRole?: GqlRequireRoleDirectiveResolver<any, any, ContextType>;
 }>;
