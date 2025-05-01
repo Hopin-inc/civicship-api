@@ -26,6 +26,9 @@ jobs:
       # application settings
       ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
       APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
+      # batch settings
+      BATCH_ARTIFACT_REGISTRY: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}
+      BATCH_NAME: ${{ secrets.BATCH_NAME }}
       # Jumpbox settings
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
@@ -105,6 +108,14 @@ jobs:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
+
+    - name: Build Docker image for batch job
+      run: |
+        docker build -t ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest -f Dockerfile.batch .
+
+    - name: Push Docker image for batch job to Artifact Registry
+      run: |
+        docker push ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
 
     - name: Cleanup SSH Key
       if: always()

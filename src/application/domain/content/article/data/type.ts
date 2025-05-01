@@ -8,6 +8,7 @@ export const articleInclude = Prisma.validator<Prisma.ArticleInclude>()({
   authors: { include: userInclude },
   relatedUsers: { include: userInclude },
   opportunities: { include: opportunityInclude },
+  thumbnail: true,
 });
 
 export const articleForPortfolioInclude = Prisma.validator<Prisma.ArticleInclude>()({
