@@ -1,14 +1,11 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
 
 @injectable()
 export default class CommunityRepository implements ICommunityRepository {
-  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
-
   async query(
     ctx: IContext,
     where: Prisma.CommunityWhereInput,
@@ -16,7 +13,7 @@ export default class CommunityRepository implements ICommunityRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.community.findMany({
         where,
         orderBy,
@@ -29,7 +26,7 @@ export default class CommunityRepository implements ICommunityRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.community.findUnique({
         where: { id },
         include: communityInclude,

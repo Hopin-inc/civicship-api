@@ -1,17 +1,14 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import {
   participationInclude,
   PrismaParticipation,
 } from "@/application/domain/experience/participation/data/type";
 import { IContext } from "@/types/server";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 import { IParticipationRepository } from "./interface";
 
 @injectable()
 export default class ParticipationRepository implements IParticipationRepository {
-  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
-
   async query<T extends Prisma.ParticipationInclude>(
     ctx: IContext,
     where: Prisma.ParticipationWhereInput,
@@ -22,7 +19,7 @@ export default class ParticipationRepository implements IParticipationRepository
   ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]> {
     const finalInclude = (include ?? participationInclude) as unknown as T;
 
-    return this.issuer.public(ctx, (tx) =>
+    return ctx.issuer.public(ctx, (tx) =>
       tx.participation.findMany({
         where,
         orderBy,
@@ -35,7 +32,7 @@ export default class ParticipationRepository implements IParticipationRepository
   }
 
   async queryByReservationId(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findMany({
         where: { reservationId: id },
         include: participationInclude,
@@ -44,7 +41,7 @@ export default class ParticipationRepository implements IParticipationRepository
   }
 
   async count(ctx: IContext, where: Prisma.ParticipationWhereInput) {
-    return this.issuer.public(ctx, (dbTx) => {
+    return ctx.issuer.public(ctx, (dbTx) => {
       return dbTx.participation.count({
         where,
       });
@@ -52,7 +49,7 @@ export default class ParticipationRepository implements IParticipationRepository
   }
 
   async find(ctx: IContext, id: string): Promise<PrismaParticipation | null> {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
         include: participationInclude,

@@ -25,7 +25,6 @@ import TicketClaimLinkService from "@/application/domain/reward/ticketClaimLink/
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import MembershipService from "@/application/domain/account/membership/service";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 
@@ -40,7 +39,6 @@ export default class TicketUseCase {
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
   ) {}
 
   async visitorBrowseTickets(
@@ -85,7 +83,7 @@ export default class TicketUseCase {
     const { communityId, pointsRequired } = utility;
     const transferPoints = pointsRequired * qtyToBeIssued;
 
-    const tickets = await this.issuer.public(ctx, async (tx) => {
+    const tickets = await ctx.issuer.public(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       const [ownerWallet, claimerWallet] = await Promise.all([
         this.walletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId),
@@ -140,7 +138,7 @@ export default class TicketUseCase {
       input.communityId,
     );
 
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
         input.pointsRequired,
         memberWallet,
@@ -170,7 +168,7 @@ export default class TicketUseCase {
     ctx: IContext,
     { id }: GqlMutationTicketUseArgs,
   ): Promise<GqlTicketUsePayload> {
-    const result = await this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    const result = await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       return await this.ticketService.useTicket(ctx, id, tx);
     });
     return TicketPresenter.use(result);
@@ -186,7 +184,7 @@ export default class TicketUseCase {
       input.communityId,
     );
 
-    return this.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
         input.pointsRequired,
         communityWallet,

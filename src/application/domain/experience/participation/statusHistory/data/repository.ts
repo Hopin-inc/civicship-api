@@ -1,6 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { inject, injectable } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { participationStatusHistoryInclude } from "@/application/domain/experience/participation/statusHistory/data/type";
 import { IParticipationStatusHistoryRepository } from "@/application/domain/experience/participation/statusHistory/data/interface";
@@ -9,8 +8,6 @@ import { IParticipationStatusHistoryRepository } from "@/application/domain/expe
 export default class ParticipationStatusHistoryRepository
   implements IParticipationStatusHistoryRepository
 {
-  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
-
   async query(
     ctx: IContext,
     where: Prisma.ParticipationStatusHistoryWhereInput,
@@ -18,7 +15,7 @@ export default class ParticipationStatusHistoryRepository
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.findMany({
         where,
         orderBy,
@@ -31,7 +28,7 @@ export default class ParticipationStatusHistoryRepository
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.findUnique({
         where: { id },
         include: participationStatusHistoryInclude,

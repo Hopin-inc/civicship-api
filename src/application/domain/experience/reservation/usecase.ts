@@ -34,7 +34,6 @@ import { inject, injectable } from "tsyringe";
 import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
 import { IReservationService } from "@/application/domain/experience/reservation/data/interface";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { groupBy } from "graphql/jsutils/groupBy";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
@@ -49,7 +48,6 @@ import TicketService from "@/application/domain/reward/ticket/service";
 @injectable()
 export default class ReservationUseCase {
   constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("ReservationService") private readonly reservationService: IReservationService,
     @inject("ReservationValidator") private readonly reservationValidator: ReservationValidator,
     @inject("MembershipService") private readonly membershipService: MembershipService,
@@ -108,7 +106,7 @@ export default class ReservationUseCase {
     const { communityId, requiredUtilities } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
-    const reservation = await this.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.public(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
@@ -148,7 +146,7 @@ export default class ReservationUseCase {
     const reservation = await this.reservationService.findReservationOrThrow(ctx, id);
     this.reservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
 
-    await this.issuer.public(ctx, async (tx) => {
+    await ctx.issuer.public(ctx, async (tx) => {
       await this.reservationService.setStatus(
         ctx,
         reservation.id,
@@ -178,7 +176,7 @@ export default class ReservationUseCase {
   ): Promise<GqlReservationSetStatusPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const reservation = await this.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.public(ctx, async (tx) => {
       const res = await this.reservationService.findReservationOrThrow(ctx, id);
 
       const { availableParticipationId } = this.reservationValidator.validateJoinable(
@@ -209,7 +207,7 @@ export default class ReservationUseCase {
 
     let acceptedReservation: PrismaReservation | null = null;
 
-    const reservation = await this.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.public(ctx, async (tx) => {
       const res = await this.reservationService.setStatus(
         ctx,
         id,
@@ -247,7 +245,7 @@ export default class ReservationUseCase {
   ): Promise<GqlReservationSetStatusPayload> {
     const currentUserId = getCurrentUserId(ctx);
 
-    const reservation = await this.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.public(ctx, async (tx) => {
       const res = await this.reservationService.setStatus(
         ctx,
         id,

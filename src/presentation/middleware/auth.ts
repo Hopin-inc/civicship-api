@@ -53,6 +53,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     currentUser,
     hasPermissions,
     loaders,
+    issuer,
   };
 }
 

@@ -1,17 +1,11 @@
 import { Prisma } from "@prisma/client";
-import { inject, injectable } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
 @injectable()
 export default class EvaluationRepository implements IEvaluationRepository {
-  constructor(
-    @inject("PrismaClientIssuer")
-    private readonly issuer: PrismaClientIssuer,
-  ) {}
-
   async query(
     ctx: IContext,
     where: Prisma.EvaluationWhereInput,
@@ -19,7 +13,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.evaluation.findMany({
         where,
         orderBy,
@@ -32,7 +26,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.evaluation.findUnique({
         where: { id },
         include: evaluationInclude,

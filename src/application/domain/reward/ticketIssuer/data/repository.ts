@@ -1,7 +1,6 @@
-import { injectable, inject } from "tsyringe";
+import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import {
   PrismaTicketIssuer,
   ticketIssuerInclude,
@@ -10,10 +9,6 @@ import { ITicketIssuerRepository } from "./interface";
 
 @injectable()
 export default class TicketIssuerRepository implements ITicketIssuerRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
-
   async query(
     ctx: IContext,
     where: Prisma.TicketIssuerWhereInput,
@@ -21,7 +16,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
     take: number,
     cursor?: string,
   ): Promise<PrismaTicketIssuer[]> {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketIssuer.findMany({
         where,
         orderBy,
@@ -34,7 +29,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
   }
 
   find(ctx: IContext, id: string): Promise<PrismaTicketIssuer | null> {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketIssuer.findUnique({
         where: { id },
         include: ticketIssuerInclude,

@@ -12,16 +12,14 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import CommunityService from "@/application/domain/account/community/service";
-import CommunityPresenter from "@/application/domain/account/community/presenter"; // ✅ ここはそのままimport
+import CommunityPresenter from "@/application/domain/account/community/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
 export default class CommunityUseCase {
   constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
     @inject("CommunityService") private readonly communityService: CommunityService,
     @inject("WalletService")
     private readonly walletService: WalletService,
@@ -50,7 +48,7 @@ export default class CommunityUseCase {
     { input }: GqlMutationCommunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlCommunityCreatePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const userId = getCurrentUserId(ctx);
       const community = await this.communityService.createCommunityAndJoinAsOwner(ctx, input, tx);
 
@@ -65,7 +63,7 @@ export default class CommunityUseCase {
     { id }: GqlMutationCommunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlCommunityDeletePayload> {
-    const res = await this.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.public(ctx, async (tx) => {
       return await this.communityService.deleteCommunity(ctx, id, tx);
     });
     return CommunityPresenter.delete(res);
@@ -75,7 +73,7 @@ export default class CommunityUseCase {
     { id, input }: GqlMutationCommunityUpdateProfileArgs,
     ctx: IContext,
   ): Promise<GqlCommunityUpdateProfilePayload> {
-    const res = await this.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.public(ctx, async (tx) => {
       return await this.communityService.updateCommunityProfile(ctx, id, input, tx);
     });
     return CommunityPresenter.update(res);

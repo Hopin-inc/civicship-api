@@ -19,14 +19,10 @@ import { PublishStatus, TicketStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class OpportunityUseCase {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-    @inject("OpportunityService") private readonly service: OpportunityService,
-  ) {}
+  constructor(@inject("OpportunityService") private readonly service: OpportunityService) {}
 
   async anyoneBrowseOpportunities(
     { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
@@ -93,7 +89,7 @@ export default class OpportunityUseCase {
     { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const record = await this.service.createOpportunity(ctx, input, tx);
       return OpportunityPresenter.create(record);
     });
@@ -103,7 +99,7 @@ export default class OpportunityUseCase {
     { id }: GqlMutationOpportunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityDeletePayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const record = await this.service.deleteOpportunity(ctx, id, tx);
       return OpportunityPresenter.delete(record);
     });
@@ -113,7 +109,7 @@ export default class OpportunityUseCase {
     { id, input }: GqlMutationOpportunityUpdateContentArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityUpdateContentPayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const record = await this.service.updateOpportunityContent(ctx, id, input, tx);
       return OpportunityPresenter.update(record);
     });
@@ -123,7 +119,7 @@ export default class OpportunityUseCase {
     { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    return this.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.public(ctx, async (tx) => {
       const record = await this.service.setOpportunityPublishStatus(
         ctx,
         id,

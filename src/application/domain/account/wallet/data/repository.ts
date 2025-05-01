@@ -1,16 +1,11 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { Prisma, WalletType } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
+import { Prisma, WalletType } from "@prisma/client";
 
 @injectable()
 export default class WalletRepository implements IWalletRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
-
   async query(
     ctx: IContext,
     where: Prisma.WalletWhereInput,
@@ -18,7 +13,7 @@ export default class WalletRepository implements IWalletRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findMany({
         where,
         orderBy,
@@ -31,7 +26,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findUnique({
         where: { id },
         include: walletInclude,
@@ -40,7 +35,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async findCommunityWallet(ctx: IContext, communityId: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, type: WalletType.COMMUNITY },
         include: walletInclude,
@@ -49,7 +44,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async findFirstExistingMemberWallet(ctx: IContext, communityId: string, userId: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, userId, type: WalletType.MEMBER },
         include: walletInclude,

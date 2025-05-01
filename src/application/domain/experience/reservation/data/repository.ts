@@ -1,14 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { reservationInclude } from "@/application/domain/experience/reservation/data/type";
 import { IReservationRepository } from "@/application/domain/experience/reservation/data/interface";
-import { inject, injectable } from "tsyringe";
+import { injectable } from "tsyringe";
 
 @injectable()
 export default class ReservationRepository implements IReservationRepository {
-  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
-
   async query(
     ctx: IContext,
     where: Prisma.ReservationWhereInput,
@@ -16,7 +13,7 @@ export default class ReservationRepository implements IReservationRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findMany({
         where,
         orderBy,
@@ -35,7 +32,7 @@ export default class ReservationRepository implements IReservationRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findUnique({
         where: { id },
         include: reservationInclude,
@@ -44,7 +41,7 @@ export default class ReservationRepository implements IReservationRepository {
   }
 
   async checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findMany({
         where,
         include: reservationInclude,

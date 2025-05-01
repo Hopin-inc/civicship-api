@@ -1,5 +1,4 @@
-import { injectable, inject } from "tsyringe";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { injectable } from "tsyringe";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { utilityInclude } from "@/application/domain/reward/utility/data/type";
@@ -7,10 +6,6 @@ import { IUtilityRepository } from "./interface";
 
 @injectable()
 export default class UtilityRepository implements IUtilityRepository {
-  constructor(
-    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
-  ) { }
-
   async query(
     ctx: IContext,
     where: Prisma.UtilityWhereInput,
@@ -18,7 +13,7 @@ export default class UtilityRepository implements IUtilityRepository {
     take: number,
     cursor?: string,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findMany({
         where,
         orderBy,
@@ -31,7 +26,7 @@ export default class UtilityRepository implements IUtilityRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where: { id },
         include: utilityInclude,
@@ -43,7 +38,7 @@ export default class UtilityRepository implements IUtilityRepository {
     ctx: IContext,
     where: Prisma.UtilityWhereUniqueInput & Prisma.UtilityWhereInput,
   ) {
-    return this.issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where,
         include: utilityInclude,
@@ -65,7 +60,12 @@ export default class UtilityRepository implements IUtilityRepository {
     });
   }
 
-  async update(ctx: IContext, id: string, data: Prisma.UtilityUpdateInput, tx: Prisma.TransactionClient) {
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.UtilityUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
     return tx.utility.update({
       where: { id },
       data,
