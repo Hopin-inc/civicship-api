@@ -2,46 +2,52 @@ import {
   GqlQueryWalletsArgs,
   GqlQueryWalletArgs,
   GqlWallet,
-  GqlTransactionsConnection,
   GqlWalletTransactionsArgs,
+  GqlTransactionsConnection,
 } from "@/types/graphql";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import { IContext } from "@/types/server";
-import TransactionUseCase from "@/application/domain/transaction/usecase";
+import { injectable, inject } from "tsyringe";
+
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
 
-const walletResolver = {
-  Query: {
-    wallets: async (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) =>
-      WalletUseCase.visitorBrowseWallets(args, ctx),
-    wallet: async (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
-      if (!ctx.loaders?.wallet) {
-        return WalletUseCase.userViewWallet(args, ctx);
-      }
-      return await ctx.loaders.wallet.load(args.id);
+@injectable()
+export default class WalletResolver {
+  constructor(
+    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
+    @inject("TicketUseCase") private readonly ticketUseCase: TicketUseCase,
+    @inject("TransactionUseCase") private readonly transactionUseCase: TransactionUseCase,
+  ) {}
+
+  Query = {
+    wallets: (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) => {
+      return this.walletUseCase.visitorBrowseWallets(args, ctx);
     },
-  },
+    wallet: (_: unknown, args: GqlQueryWalletArgs, ctx: IContext) => {
+      return this.walletUseCase.userViewWallet(args, ctx);
+    },
+  };
 
-  Wallet: {
-    tickets: async (parent: GqlWallet, args: GqlQueryWalletArgs, ctx: IContext) => {
-      return TicketUseCase.visitorBrowseTickets(ctx, {
+  Wallet = {
+    tickets: (parent: GqlWallet, args: GqlQueryWalletArgs, ctx: IContext) => {
+      return this.ticketUseCase.visitorBrowseTickets(ctx, {
         filter: { walletId: parent.id },
         ...args,
       });
     },
-    transactions: async (
+    transactions: (
       parent: GqlWallet,
       args: GqlWalletTransactionsArgs,
       ctx: IContext,
     ): Promise<GqlTransactionsConnection> => {
-      return TransactionUseCase.visitorBrowseTransactions(
+      return this.transactionUseCase.visitorBrowseTransactions(
         {
-          filter: { fromWalletId: parent.id, toWalletId: parent.id, ...args },
+          filter: { fromWalletId: parent.id, toWalletId: parent.id, ...args.filter },
+          ...args,
         },
         ctx,
       );
     },
-  },
-};
-
-export default walletResolver;
+  };
+}

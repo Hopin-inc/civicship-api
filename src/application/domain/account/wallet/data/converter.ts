@@ -1,8 +1,10 @@
 import { GqlWalletFilterInput, GqlWalletSortInput } from "@/types/graphql";
 import { Prisma, WalletType } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class WalletConverter {
-  static filter(filter?: GqlWalletFilterInput): Prisma.WalletWhereInput {
+  filter(filter?: GqlWalletFilterInput): Prisma.WalletWhereInput {
     return {
       AND: [
         filter?.communityId ? { communityId: filter?.communityId } : {},
@@ -12,18 +14,18 @@ export default class WalletConverter {
     };
   }
 
-  static sort(sort?: GqlWalletSortInput): Prisma.WalletOrderByWithRelationInput[] {
+  sort(sort?: GqlWalletSortInput): Prisma.WalletOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static createCommunityWallet(params: CommunityWalletCreationParams): Prisma.WalletCreateInput {
+  createCommunityWallet(params: CommunityWalletCreationParams): Prisma.WalletCreateInput {
     return {
       type: WalletType.COMMUNITY,
       community: { connect: { id: params.communityId } },
     };
   }
 
-  static createMemberWallet(params: MemberWalletCreationParams): Prisma.WalletCreateInput {
+  createMemberWallet(params: MemberWalletCreationParams): Prisma.WalletCreateInput {
     return {
       type: WalletType.MEMBER,
       community: { connect: { id: params.communityId } },

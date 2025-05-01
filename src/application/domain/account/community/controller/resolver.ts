@@ -5,68 +5,64 @@ import {
   GqlMutationCommunityDeleteArgs,
   GqlMutationCommunityUpdateProfileArgs,
   GqlCommunity,
-  GqlMembershipsConnection,
-  GqlOpportunitiesConnection,
-  GqlParticipationsConnection,
-  GqlWalletsConnection,
-  GqlUtilitiesConnection,
   GqlCommunityMembershipsArgs,
   GqlCommunityOpportunitiesArgs,
   GqlCommunityParticipationsArgs,
   GqlCommunityWalletsArgs,
   GqlCommunityUtilitiesArgs,
   GqlCommunityArticlesArgs,
-  GqlArticlesConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
+import { inject, injectable } from "tsyringe";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
 import MembershipUseCase from "@/application/domain/account/membership/usecase";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
+import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
+import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import UtilityUseCase from "@/application/domain/reward/utility/usecase";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
-import logger from "@/infrastructure/logging";
 
-const communityResolver = {
-  Query: {
+@injectable()
+export default class CommunityResolver {
+  constructor(
+    @inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase,
+    @inject("MembershipUseCase") private readonly membershipUseCase: MembershipUseCase,
+    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
+    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
+    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
+    @inject("UtilityUseCase") private readonly utilityUseCase: UtilityUseCase,
+    @inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase,
+  ) {}
+
+  Query = {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) => {
-      try {
-        return CommunityUseCase.userBrowseCommunities(args, ctx);
-      } catch (e) {
-        logger.error(e);
-        return;
-      }
+      return this.communityUseCase.userBrowseCommunities(args, ctx);
     },
     community: async (_: unknown, args: GqlQueryCommunityArgs, ctx: IContext) => {
-      if (!ctx.loaders?.community) {
-        return CommunityUseCase.userViewCommunity(args, ctx);
-      }
-      return await ctx.loaders.community.load(args.id);
+      return this.communityUseCase.userViewCommunity(args, ctx);
     },
-  },
-  Mutation: {
-    communityCreate: async (_: unknown, args: GqlMutationCommunityCreateArgs, ctx: IContext) =>
-      CommunityUseCase.userCreateCommunityAndJoin(args, ctx),
-    communityDelete: async (_: unknown, args: GqlMutationCommunityDeleteArgs, ctx: IContext) =>
-      CommunityUseCase.managerDeleteCommunity(args, ctx),
+  };
+
+  Mutation = {
+    communityCreate: async (_: unknown, args: GqlMutationCommunityCreateArgs, ctx: IContext) => {
+      return this.communityUseCase.userCreateCommunityAndJoin(args, ctx);
+    },
+    communityDelete: async (_: unknown, args: GqlMutationCommunityDeleteArgs, ctx: IContext) => {
+      return this.communityUseCase.ownerDeleteCommunity(args, ctx);
+    },
     communityUpdateProfile: async (
       _: unknown,
       args: GqlMutationCommunityUpdateProfileArgs,
       ctx: IContext,
-    ) => CommunityUseCase.managerUpdateCommunityProfile(args, ctx),
-  },
-  Community: {
-    memberships: async (
-      parent: GqlCommunity,
-      args: GqlCommunityMembershipsArgs,
-      ctx: IContext,
-    ): Promise<GqlMembershipsConnection> => {
-      return MembershipUseCase.visitorBrowseMemberships(
-        {
-          ...args,
-          filter: { ...args.filter, communityId: parent.id },
-        },
+    ) => {
+      return this.communityUseCase.managerUpdateCommunityProfile(args, ctx);
+    },
+  };
+
+  Community = {
+    memberships: async (parent: GqlCommunity, args: GqlCommunityMembershipsArgs, ctx: IContext) => {
+      return this.membershipUseCase.visitorBrowseMemberships(
+        { ...args, filter: { ...args.filter, communityId: parent.id } },
         ctx,
       );
     },
@@ -75,12 +71,9 @@ const communityResolver = {
       parent: GqlCommunity,
       args: GqlCommunityOpportunitiesArgs,
       ctx: IContext,
-    ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(
-        {
-          ...args,
-          filter: { ...args.filter, communityIds: [parent.id] },
-        },
+    ) => {
+      return this.opportunityUseCase.anyoneBrowseOpportunities(
+        { ...args, filter: { ...args.filter, communityIds: [parent.id] } },
         ctx,
       );
     },
@@ -89,52 +82,32 @@ const communityResolver = {
       parent: GqlCommunity,
       args: GqlCommunityParticipationsArgs,
       ctx: IContext,
-    ): Promise<GqlParticipationsConnection> => {
-      return ParticipationUseCase.visitorBrowseParticipations(
-        {
-          filter: { communityId: parent.id },
-          ...args,
-        },
+    ) => {
+      return this.participationUseCase.visitorBrowseParticipations(
+        { ...args, filter: { communityId: parent.id } },
         ctx,
       );
     },
 
-    wallets: async (
-      parent: GqlCommunity,
-      args: GqlCommunityWalletsArgs,
-      ctx: IContext,
-    ): Promise<GqlWalletsConnection> => {
-      return WalletUseCase.visitorBrowseWallets(
-        {
-          ...args,
-          filter: { ...args.filter, communityId: parent.id },
-        },
+    wallets: async (parent: GqlCommunity, args: GqlCommunityWalletsArgs, ctx: IContext) => {
+      return this.walletUseCase.visitorBrowseWallets(
+        { ...args, filter: { ...args.filter, communityId: parent.id } },
         ctx,
       );
     },
 
-    utilities: async (
-      parent: GqlCommunity,
-      args: GqlCommunityUtilitiesArgs,
-      ctx: IContext,
-    ): Promise<GqlUtilitiesConnection> => {
-      return UtilityUseCase.anyoneBrowseUtilities(ctx, {
+    utilities: async (parent: GqlCommunity, args: GqlCommunityUtilitiesArgs, ctx: IContext) => {
+      return this.utilityUseCase.anyoneBrowseUtilities(ctx, {
         ...args,
         filter: { ...args.filter, communityId: parent.id },
       });
     },
 
-    articles: async (
-      parent: GqlCommunity,
-      args: GqlCommunityArticlesArgs,
-      ctx: IContext,
-    ): Promise<GqlArticlesConnection> => {
-      return ArticleUseCase.anyoneBrowseArticles(ctx, {
+    articles: async (parent: GqlCommunity, args: GqlCommunityArticlesArgs, ctx: IContext) => {
+      return this.articleUseCase.anyoneBrowseArticles(ctx, {
         ...args,
         filter: { ...args.filter, communityId: parent.id },
       });
     },
-  },
-};
-
-export default communityResolver;
+  };
+}

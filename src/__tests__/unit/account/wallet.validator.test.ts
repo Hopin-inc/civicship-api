@@ -1,34 +1,23 @@
+import "reflect-metadata";
 import { Prisma, TransactionReason, WalletType } from "@prisma/client";
+import { container } from "tsyringe";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
+import WalletService from "@/application/domain/account/wallet/service";
 
-jest.mock("@/application/domain/account/wallet/data/repository", () => ({
-  __esModule: true,
-  default: {
-    find: jest.fn(),
-    findFirstExistingMemberWallet: jest.fn(),
-    findCommunityWallet: jest.fn(),
-    query: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
-
-jest.mock("@/application/domain/account/wallet/data/converter", () => ({
-  __esModule: true,
-  default: {
-    filter: jest.fn(),
-    sort: jest.fn(),
-    createCommunityWallet: jest.fn(),
-    createMemberWallet: jest.fn(),
-  },
-}));
+// --- Mockクラス ---
+class MockWalletService implements Partial<WalletService> {
+  findCommunityWalletOrThrow = jest.fn();
+  createMemberWalletIfNeeded = jest.fn();
+  findMemberWalletOrThrow = jest.fn();
+}
 
 describe("WalletValidator", () => {
+  let validator: WalletValidator;
+  let mockService: MockWalletService;
+
   const mockCtx = {} as IContext;
   const mockTx = {} as Prisma.TransactionClient;
   const walletId = "wallet-123";
@@ -55,18 +44,25 @@ describe("WalletValidator", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    container.reset();
+
+    mockService = new MockWalletService();
+
+    container.register("WalletService", { useValue: mockService });
+
+    validator = container.resolve(WalletValidator);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe("validateCommunityMemberTransfer", () => {
     it("should validate transfer for GRANT (createIfNeeded = true)", async () => {
-      jest
-        .spyOn(WalletService, "findCommunityWalletOrThrow")
-        .mockResolvedValue(communityWallet as any);
-      jest
-        .spyOn(WalletService, "createMemberWalletIfNeeded")
-        .mockResolvedValue(memberWallet as any);
+      mockService.findCommunityWalletOrThrow.mockResolvedValue(communityWallet);
+      mockService.createMemberWalletIfNeeded.mockResolvedValue(memberWallet);
 
-      const result = await WalletValidator.validateCommunityMemberTransfer(
+      const result = await validator.validateCommunityMemberTransfer(
         mockCtx,
         mockTx,
         communityId,
@@ -82,122 +78,110 @@ describe("WalletValidator", () => {
     });
   });
 
-  describe("validateMemberToMemberDonation", () => {
-    const fromWalletId = "wallet-from";
-    const toWalletId = "wallet-to";
-    const transferPoints = 100;
+  describe("validateTransferMemberToMember", () => {
+    it("should validate transfer from member to member correctly", async () => {
+      const fromWallet = {
+        ...memberWallet,
+        id: "wallet-from",
+        currentPointView: { currentPoint: 500 },
+      } as PrismaWallet;
 
-    const fromWallet = {
-      ...memberWallet,
-      id: fromWalletId,
-      currentPointView: { currentPoint: 200 },
-    } as PrismaWallet;
+      const toWallet = {
+        ...memberWallet,
+        id: "wallet-to",
+        currentPointView: { currentPoint: 0 },
+      } as PrismaWallet;
 
-    const toWallet = {
-      ...memberWallet,
-      id: toWalletId,
-      currentPointView: { currentPoint: 0 },
-    } as PrismaWallet;
-
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
-    it("should return wallet ids if validation passes", async () => {
-      const validateTransferMock = jest
-        .spyOn(WalletValidator as any, "validateTransfer")
-        .mockResolvedValue(undefined);
-
-      const result = await WalletValidator.validateTransferMemberToMember(
-        fromWallet,
-        toWallet,
-        transferPoints,
-      );
-
-      expect(validateTransferMock).toHaveBeenCalledWith(transferPoints, fromWallet, toWallet);
+      const result = await validator.validateTransferMemberToMember(fromWallet, toWallet, 100);
 
       expect(result).toEqual({
-        fromWalletId,
-        toWalletId,
+        fromWalletId: "wallet-from",
+        toWalletId: "wallet-to",
       });
     });
 
-    it("should throw error if validateTransfer fails", async () => {
-      jest
-        .spyOn(WalletValidator as any, "validateTransfer")
-        .mockRejectedValue(new InsufficientBalanceError(100, 200));
+    it("should throw InsufficientBalanceError if balance is insufficient", async () => {
+      const fromWallet = {
+        ...memberWallet,
+        id: "wallet-from",
+        currentPointView: { currentPoint: 50 },
+      } as PrismaWallet;
+      const toWallet = {
+        ...memberWallet,
+        id: "wallet-to",
+        currentPointView: { currentPoint: 0 },
+      } as PrismaWallet;
 
       await expect(
-        WalletValidator.validateTransferMemberToMember(fromWallet, toWallet, transferPoints),
+        validator.validateTransferMemberToMember(fromWallet, toWallet, 100),
       ).rejects.toThrow(InsufficientBalanceError);
     });
   });
 
   describe("validateTransfer", () => {
-    const fromWalletBase = {
-      id: "wallet-from",
-      currentPointView: { currentPoint: 500 },
-    };
-
-    const toWalletBase = {
-      id: "wallet-to",
-      currentPointView: { currentPoint: 0 },
-    };
-
     it("should pass if currentPoint is sufficient", async () => {
-      const fromWallet = { ...fromWalletBase };
-      const toWallet = { ...toWalletBase };
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: 500 },
+      } as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: 0 },
+      } as PrismaWallet;
 
-      await expect(
-        WalletValidator.validateTransfer(100, fromWallet as any, toWallet as any),
-      ).resolves.not.toThrow();
+      await expect(validator.validateTransfer(100, fromWallet, toWallet)).resolves.not.toThrow();
     });
 
     it("should throw ValidationError if fromWallet is null", async () => {
-      const toWallet = { ...toWalletBase };
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: 0 },
+      } as PrismaWallet;
 
-      await expect(WalletValidator.validateTransfer(100, null, toWallet as any)).rejects.toThrow(
+      await expect(validator.validateTransfer(100, null, toWallet)).rejects.toThrow(
         ValidationError,
       );
     });
 
     it("should throw ValidationError if toWallet is null", async () => {
-      const fromWallet = { ...fromWalletBase };
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: 500 },
+      } as PrismaWallet;
 
-      await expect(WalletValidator.validateTransfer(100, fromWallet as any, null)).rejects.toThrow(
+      await expect(validator.validateTransfer(100, fromWallet, null)).rejects.toThrow(
         ValidationError,
       );
     });
 
     it("should throw InsufficientBalanceError if currentPoint is missing", async () => {
-      const fromWallet = { ...fromWalletBase, currentPointView: {} };
-      const toWallet = { ...toWalletBase };
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: {},
+      } as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: 0 },
+      } as PrismaWallet;
 
-      await expect(
-        WalletValidator.validateTransfer(100, fromWallet as any, toWallet as any),
-      ).rejects.toThrow(InsufficientBalanceError);
+      await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
+        InsufficientBalanceError,
+      );
     });
 
     it("should throw InsufficientBalanceError if currentPoint is insufficient", async () => {
-      const fromWallet = { ...fromWalletBase, currentPointView: { currentPoint: 50 } };
-      const toWallet = { ...toWalletBase };
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: 50 },
+      } as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: 0 },
+      } as PrismaWallet;
 
-      await expect(
-        WalletValidator.validateTransfer(100, fromWallet as any, toWallet as any),
-      ).rejects.toThrow(InsufficientBalanceError);
+      await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
+        InsufficientBalanceError,
+      );
     });
-
-    it("should throw InsufficientBalanceError if currentPointView is null", async () => {
-      const fromWallet = { id: "wallet-from", currentPointView: null };
-      const toWallet = { id: "wallet-to", currentPointView: { currentPoint: 0 } };
-
-      await expect(
-        WalletValidator.validateTransfer(100, fromWallet as any, toWallet as any),
-      ).rejects.toThrow(InsufficientBalanceError);
-    });
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
   });
 });

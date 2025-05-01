@@ -6,9 +6,11 @@ import {
   GqlImageInput,
 } from "@/types/graphql";
 import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class CommunityConverter {
-  static filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
+  filter(filter?: GqlCommunityFilterInput): Prisma.CommunityWhereInput {
     return {
       AND: [
         filter?.keyword
@@ -30,11 +32,11 @@ export default class CommunityConverter {
     };
   }
 
-  static sort(sort?: GqlCommunitySortInput): Prisma.CommunityOrderByWithRelationInput[] {
+  sort(sort?: GqlCommunitySortInput): Prisma.CommunityOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static create(
+  create(
     input: GqlCommunityCreateInput,
     currentUserId: string,
   ): {
@@ -77,7 +79,7 @@ export default class CommunityConverter {
     };
   }
 
-  static update(input: GqlCommunityUpdateProfileInput): {
+  update(input: GqlCommunityUpdateProfileInput): {
     data: Prisma.CommunityUpdateInput;
     image?: GqlImageInput;
   } {

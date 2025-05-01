@@ -1,9 +1,11 @@
 import { GqlTicketFilterInput, GqlTicketSortInput } from "@/types/graphql";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { PrismaTicketClaimLink } from "@/application/domain/reward/ticketClaimLink/data/type";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class TicketConverter {
-  static filter(filter: GqlTicketFilterInput): Prisma.TicketWhereInput {
+  filter(filter: GqlTicketFilterInput): Prisma.TicketWhereInput {
     return {
       AND: [
         filter?.walletId ? { walletId: filter.walletId } : {},
@@ -13,14 +15,14 @@ export default class TicketConverter {
     };
   }
 
-  static sort(sort: GqlTicketSortInput): Prisma.TicketOrderByWithRelationInput {
+  sort(sort: GqlTicketSortInput): Prisma.TicketOrderByWithRelationInput {
     return {
       createdAt: sort?.createdAt ?? Prisma.SortOrder.desc,
       status: sort?.status,
     };
   }
 
-  static claim(
+  claim(
     currentUserId: string,
     claimLinkId: string,
     issuedTicket: PrismaTicketClaimLink["issuer"],
@@ -44,7 +46,7 @@ export default class TicketConverter {
     };
   }
 
-  static purchase(
+  purchase(
     currentUserId: string,
     walletId: string,
     utilityId: string,
@@ -68,7 +70,7 @@ export default class TicketConverter {
     };
   }
 
-  static reserve(currentUserId: string, participationId?: string): Prisma.TicketUpdateInput {
+  reserve(currentUserId: string, participationId?: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
       reason: TicketStatusReason.RESERVED,
@@ -83,7 +85,7 @@ export default class TicketConverter {
     };
   }
 
-  static cancelReserved(currentUserId: string): Prisma.TicketUpdateInput {
+  cancelReserved(currentUserId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.AVAILABLE,
       reason: TicketStatusReason.CANCELED,
@@ -97,7 +99,7 @@ export default class TicketConverter {
     };
   }
 
-  static use(currentUserId: string): Prisma.TicketUpdateInput {
+  use(currentUserId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
       reason: TicketStatusReason.USED,
@@ -111,7 +113,7 @@ export default class TicketConverter {
     };
   }
 
-  static refund(currentUserId: string, transactionId: string): Prisma.TicketUpdateInput {
+  refund(currentUserId: string, transactionId: string): Prisma.TicketUpdateInput {
     return {
       status: TicketStatus.DISABLED,
       reason: TicketStatusReason.REFUNDED,

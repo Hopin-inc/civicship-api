@@ -9,51 +9,60 @@ import {
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
 
-const participationResolver = {
-  Query: {
-    participations: async (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) =>
-      ParticipationUseCase.visitorBrowseParticipations(args, ctx),
+@injectable()
+export default class ParticipationResolver {
+  constructor(
+    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
+    @inject("ParticipationStatusHistoryUseCase")
+    private readonly statusHistoryUseCase: ParticipationStatusHistoryUseCase,
+  ) {}
 
-    participation: async (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
-      if (!ctx.loaders?.participation) {
-        return ParticipationUseCase.visitorViewParticipation(args, ctx);
-      }
-      return await ctx.loaders.participation.load(args.id);
+  Query = {
+    participations: (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) => {
+      return this.participationUseCase.visitorBrowseParticipations(args, ctx);
     },
-  },
-  Mutation: {
-    participationCreatePersonalRecord: async (
+
+    participation: (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
+      if (!ctx.loaders?.participation) {
+        return this.participationUseCase.visitorViewParticipation(args, ctx);
+      }
+      return ctx.loaders.participation.load(args.id);
+    },
+  };
+
+  Mutation = {
+    participationCreatePersonalRecord: (
       _: unknown,
       args: GqlMutationParticipationCreatePersonalRecordArgs,
       ctx: IContext,
     ): Promise<GqlParticipationCreatePersonalRecordPayload> => {
-      return ParticipationUseCase.userCreatePersonalParticipationRecord(args, ctx);
+      return this.participationUseCase.userCreatePersonalParticipationRecord(args, ctx);
     },
 
-    participationDeletePersonalRecord: async (
+    participationDeletePersonalRecord: (
       _: unknown,
       args: GqlMutationParticipationDeletePersonalRecordArgs,
       ctx: IContext,
     ): Promise<GqlParticipationDeletePayload> => {
-      return ParticipationUseCase.userDeletePersonalParticipationRecord(args, ctx);
+      return this.participationUseCase.userDeletePersonalParticipationRecord(args, ctx);
     },
-  },
-  Participation: {
-    statusHistories: async (
+  };
+
+  Participation = {
+    statusHistories: (
       parent: GqlParticipation,
       args: GqlParticipationStatusHistoriesArgs,
       ctx: IContext,
     ) => {
-      return ParticipationStatusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
+      return this.statusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
         parent,
         args,
         ctx,
       );
     },
-  },
-};
-
-export default participationResolver;
+  };
+}

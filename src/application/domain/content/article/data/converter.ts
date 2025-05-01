@@ -1,8 +1,10 @@
 import { GqlArticleCategory, GqlArticleFilterInput, GqlArticleSortInput } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ArticleConverter {
-  static filter(filter?: GqlArticleFilterInput): Prisma.ArticleWhereInput {
+  filter(filter?: GqlArticleFilterInput): Prisma.ArticleWhereInput {
     if (!filter) return {};
 
     const conditions: Prisma.ArticleWhereInput[] = [];
@@ -72,14 +74,14 @@ export default class ArticleConverter {
       });
     }
 
-    if (filter.and?.length) conditions.push({ AND: filter.and.map(ArticleConverter.filter) });
-    if (filter.or?.length) conditions.push({ OR: filter.or.map(ArticleConverter.filter) });
-    if (filter.not) conditions.push({ NOT: ArticleConverter.filter(filter.not) });
+    if (filter.and?.length) conditions.push({ AND: filter.and.map(this.filter) });
+    if (filter.or?.length) conditions.push({ OR: filter.or.map(this.filter) });
+    if (filter.not) conditions.push({ NOT: this.filter(filter.not) });
 
     return conditions.length ? { AND: conditions } : {};
   }
 
-  static sort(sort?: GqlArticleSortInput): Prisma.ArticleOrderByWithRelationInput[] {
+  sort(sort?: GqlArticleSortInput): Prisma.ArticleOrderByWithRelationInput[] {
     const orderBy = [
       ...(sort?.publishedAt !== undefined ? [{ publishedAt: sort.publishedAt }] : []),
       ...(sort?.createdAt !== undefined ? [{ createdAt: sort.createdAt }] : []),
@@ -87,7 +89,7 @@ export default class ArticleConverter {
     return orderBy.length ? orderBy : [{ createdAt: Prisma.SortOrder.desc }];
   }
 
-  static findAccessible(
+  findAccessible(
     id: string,
     filter?: GqlArticleFilterInput,
   ): Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput {

@@ -1,51 +1,58 @@
+import { injectable, inject } from "tsyringe";
 import {
   GqlMutationUtilityUpdateInfoArgs,
   GqlUtilityCreateInput,
-  GqlUtility,
   GqlUtilityFilterInput,
   GqlQueryUtilitiesArgs,
 } from "@/types/graphql";
-import UtilityRepository from "@/application/domain/reward/utility/data/repository";
 import { IContext } from "@/types/server";
-import UtilityConverter from "@/application/domain/reward/utility/data/converter";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import ImageService from "@/application/domain/content/image/service";
+import { IImageService } from "../../content/image/interface";
+import UtilityConverter from "./data/converter";
+import { IUtilityService, IUtilityRepository } from "./data/interface";
 
-export default class UtilityService {
-  static async fetchUtilities(
+@injectable()
+export default class UtilityService implements IUtilityService {
+  constructor(
+    @inject("UtilityRepository") private readonly repository: IUtilityRepository,
+    @inject("UtilityConverter") private readonly converter: UtilityConverter,
+    @inject("ImageService") private readonly imageService: IImageService,
+  ) {}
+
+  async fetchUtilities(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryUtilitiesArgs,
     take: number,
   ) {
-    const where = UtilityConverter.filter(filter ?? {});
-    const orderBy = UtilityConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    return await UtilityRepository.query(ctx, where, orderBy, take, cursor);
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findUtility(ctx: IContext, id: string, filter: GqlUtilityFilterInput) {
-    const where = UtilityConverter.findAccessible(id, filter ?? {});
-    const utility = await UtilityRepository.findAccessible(ctx, where);
+  async findUtility(ctx: IContext, id: string, filter: GqlUtilityFilterInput) {
+    const where = this.converter.findAccessible(id, filter ?? {});
+    const utility = await this.repository.findAccessible(ctx, where);
     if (!utility) {
       return null;
     }
     return utility;
   }
 
-  static async findUtilityOrThrow(ctx: IContext, id: string): Promise<GqlUtility> {
-    const utility = await UtilityRepository.find(ctx, id);
+  async findUtilityOrThrow(ctx: IContext, id: string) {
+    const utility = await this.repository.find(ctx, id);
     if (!utility) {
       throw new NotFoundError("Utility", { id });
     }
     return utility;
   }
 
-  static async createUtility(ctx: IContext, input: GqlUtilityCreateInput) {
-    const { data, images } = UtilityConverter.create(input);
+  async createUtility(ctx: IContext, input: GqlUtilityCreateInput, tx: Prisma.TransactionClient) {
+    const { data, images } = this.converter.create(input);
 
     const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
-      images.map((img) => ImageService.uploadPublicImage(img, "utilities")),
+      images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
     );
 
     const createInput: Prisma.UtilityCreateInput = {
@@ -55,21 +62,25 @@ export default class UtilityService {
       },
     };
 
-    return await UtilityRepository.create(ctx, createInput);
+    return await this.repository.create(ctx, createInput, tx);
   }
 
-  static async deleteUtility(ctx: IContext, id: string) {
+  async deleteUtility(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     await this.findUtilityOrThrow(ctx, id);
-    return UtilityRepository.delete(ctx, id);
+    return this.repository.delete(ctx, id, tx);
   }
 
-  static async updateUtilityInfo(ctx: IContext, { id, input }: GqlMutationUtilityUpdateInfoArgs) {
+  async updateUtilityInfo(
+    ctx: IContext,
+    { id, input }: GqlMutationUtilityUpdateInfoArgs,
+    tx: Prisma.TransactionClient,
+  ) {
     await this.findUtilityOrThrow(ctx, id);
 
-    const { data, images } = UtilityConverter.updateInfo(input);
+    const { data, images } = this.converter.updateInfo(input);
 
     const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
-      images.map((img) => ImageService.uploadPublicImage(img, "utilities")),
+      images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
     );
 
     const updateInput: Prisma.UtilityUpdateInput = {
@@ -79,13 +90,10 @@ export default class UtilityService {
       },
     };
 
-    return await UtilityRepository.update(ctx, id, updateInput);
+    return await this.repository.update(ctx, id, updateInput, tx);
   }
 
-  static async validatePublishStatus(
-    allowedStatuses: PublishStatus[],
-    filter?: GqlUtilityFilterInput,
-  ) {
+  validatePublishStatus(allowedStatuses: PublishStatus[], filter?: GqlUtilityFilterInput) {
     if (
       filter?.publishStatus &&
       !filter.publishStatus.every((publishStatus) => allowedStatuses.includes(publishStatus))

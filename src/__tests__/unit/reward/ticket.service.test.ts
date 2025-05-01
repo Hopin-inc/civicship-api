@@ -1,196 +1,198 @@
+import "reflect-metadata";
+import { container } from "tsyringe";
 import TicketService from "@/application/domain/reward/ticket/service";
-import TicketConverter from "@/application/domain/reward/ticket/data/converter";
-import TicketRepository from "@/application/domain/reward/ticket/data/repository";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
+import { Prisma } from "@prisma/client";
+import { ValidationError, NotFoundError } from "@/errors/graphql";
 
-jest.mock("@/application/domain/reward/ticket/data/converter", () => ({
-  __esModule: true,
-  default: {
-    purchase: jest.fn(),
-    reserve: jest.fn(),
-    cancelReserved: jest.fn(),
-    refund: jest.fn(),
-    use: jest.fn(),
-  },
-}));
+class MockTicketRepository {
+  create = jest.fn();
+  update = jest.fn();
+  find = jest.fn();
+}
 
-jest.mock("@/application/domain/reward/ticket/data/repository", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    update: jest.fn(),
-    find: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
-
-jest.mock("@/application/domain/utils", () => ({
-  __esModule: true,
-  getCurrentUserId: jest.fn(),
-}));
+class MockTicketConverter {
+  claim = jest.fn();
+  reserve = jest.fn();
+  cancelReserved = jest.fn();
+  refund = jest.fn();
+  purchase = jest.fn();
+  use = jest.fn();
+}
 
 describe("TicketService", () => {
-  const ctx = {} as IContext;
-  const tx = {} as Prisma.TransactionClient;
-  const currentUserId = "user-123";
+  let service: TicketService;
+  let mockRepository: MockTicketRepository;
+  let mockConverter: MockTicketConverter;
+  const mockCtx = {
+    currentUser: { id: "test-user-id" },
+  } as unknown as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (getCurrentUserId as jest.Mock).mockReturnValue(currentUserId);
+    container.reset();
+
+    mockRepository = new MockTicketRepository();
+    mockConverter = new MockTicketConverter();
+
+    container.register("TicketRepository", { useValue: mockRepository });
+    container.register("TicketConverter", { useValue: mockConverter });
+
+    service = container.resolve(TicketService);
+  });
+
+  describe("claimTicketsByIssuerId", () => {
+    it("should create multiple tickets", async () => {
+      const issuedTicket = { qtyToBeIssued: 3 } as any;
+      mockConverter.claim.mockReturnValue({ created: true });
+      mockRepository.create.mockResolvedValue({ id: "ticket" });
+
+      const result = await service.claimTicketsByIssuerId(
+        mockCtx,
+        "user-id",
+        "claim-link-id",
+        issuedTicket,
+        "wallet-id",
+        mockTx,
+      );
+
+      expect(mockConverter.claim).toHaveBeenCalledTimes(3);
+      expect(mockRepository.create).toHaveBeenCalledTimes(3);
+      expect(result.length).toBe(3);
+    });
   });
 
   describe("reserveManyTickets", () => {
-    const tickets = [{ id: "t1" }, { id: "t2" }];
-    const participations = [{ id: "p1" }, { id: "p2" }];
-    const updateInput = { status: TicketStatus.DISABLED };
-
-    it("should reserve tickets with correct inputs", async () => {
-      (TicketConverter.reserve as jest.Mock).mockReturnValue(updateInput);
-      (TicketRepository.update as jest.Mock).mockResolvedValue({});
-
-      await TicketService.reserveManyTickets(
-        ctx,
-        participations.map((p) => p.id), // 🔥 participationIds を string[] に変換
-        tickets.map((t) => t.id),
-        tx,
+    it("should throw ValidationError if ticketIds not provided", async () => {
+      await expect(service.reserveManyTickets(mockCtx, ["pid1"], mockTx)).rejects.toThrow(
+        ValidationError,
       );
+    });
 
-      expect(TicketConverter.reserve).toHaveBeenCalledTimes(2);
-      expect(TicketConverter.reserve).toHaveBeenCalledWith(getCurrentUserId(ctx), "p1");
-      expect(TicketConverter.reserve).toHaveBeenCalledWith(getCurrentUserId(ctx), "p2");
+    it("should throw ValidationError if ticketIds and participationIds mismatch", async () => {
+      await expect(
+        service.reserveManyTickets(mockCtx, ["pid1", "pid2"], mockTx, ["tid1"]),
+      ).rejects.toThrow(ValidationError);
+    });
 
-      expect(TicketRepository.update).toHaveBeenCalledTimes(2);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, "t1", updateInput, tx);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, "t2", updateInput, tx);
+    it("should reserve tickets properly", async () => {
+      mockConverter.reserve.mockReturnValue({ reserved: true });
+      mockRepository.update.mockResolvedValue({ id: "ticket" });
+
+      await service.reserveManyTickets(mockCtx, ["pid1"], mockTx, ["tid1"]);
+
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        mockCtx,
+        "tid1",
+        { reserved: true },
+        mockTx,
+      );
     });
   });
 
   describe("cancelReservedTicketsIfAvailable", () => {
-    const tickets: PrismaTicket[] = [
-      {
-        id: "t1",
-        status: TicketStatus.DISABLED,
-        reason: TicketStatusReason.RESERVED,
-      },
-      {
-        id: "t2",
-        status: TicketStatus.DISABLED,
-        reason: TicketStatusReason.RESERVED,
-      },
-      {
-        id: "t3",
-        status: TicketStatus.AVAILABLE,
-        reason: TicketStatusReason.PURCHASED,
-      },
-    ] as any;
+    it("should update only cancellable tickets", async () => {
+      const tickets = [
+        { id: "1", status: "DISABLED", reason: "RESERVED" },
+        { id: "2", status: "ACTIVE", reason: "USED" },
+      ] as any[];
 
-    it("should update only reserved+disabled tickets", async () => {
-      const cancelInput = { dummy: true };
-      (TicketConverter.cancelReserved as jest.Mock).mockReturnValue(cancelInput);
-      (TicketRepository.update as jest.Mock).mockResolvedValue({});
+      mockConverter.cancelReserved.mockReturnValue({ cancelled: true });
 
-      await TicketService.cancelReservedTicketsIfAvailable(ctx, tickets, currentUserId, tx);
+      await service.cancelReservedTicketsIfAvailable(mockCtx, tickets, "user-id", mockTx);
 
-      expect(TicketRepository.update).toHaveBeenCalledTimes(2);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, "t1", cancelInput, tx);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, "t2", cancelInput, tx);
+      expect(mockRepository.update).toHaveBeenCalledTimes(1);
+      expect(mockRepository.update).toHaveBeenCalledWith(mockCtx, "1", { cancelled: true }, mockTx);
     });
   });
 
-  describe("TicketService.refundTickets", () => {
-    const tickets: PrismaTicket[] = [{ id: "t1" } as any, { id: "t2" } as any];
-    const transactionId = "txn-123";
+  describe("refundTickets", () => {
+    it("should refund multiple tickets", async () => {
+      mockConverter.refund.mockReturnValue({ refunded: true });
+      mockRepository.update.mockResolvedValue({ id: "ticket" });
 
-    it("should update all tickets with refund converter", async () => {
-      const updateInput = { dummy: true };
-      (TicketConverter.refund as jest.Mock).mockReturnValue(updateInput);
-      (TicketRepository.update as jest.Mock).mockResolvedValue({});
-
-      await TicketService.refundTickets(ctx, tickets, currentUserId, transactionId, tx);
-
-      expect(TicketConverter.refund).toHaveBeenCalledTimes(2);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, "t1", updateInput, tx);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, "t2", updateInput, tx);
-    });
-  });
-
-  describe("TicketService.purchaseTicket", () => {
-    const walletId = "wallet-123";
-    const utilityId = "utility-123";
-    const transactionId = "txn-456";
-
-    it("should create ticket using converter and repository", async () => {
-      const createInput = { dummy: true };
-      const resultTicket = { id: "t1" };
-
-      (TicketConverter.purchase as jest.Mock).mockReturnValue(createInput);
-      (TicketRepository.create as jest.Mock).mockResolvedValue(resultTicket);
-
-      const result = await TicketService.purchaseTicket(
-        ctx,
-        walletId,
-        utilityId,
-        transactionId,
-        tx,
+      await service.refundTickets(
+        mockCtx,
+        [{ id: "t1" }, { id: "t2" }] as any[],
+        "user-id",
+        "tx-id",
+        mockTx,
       );
 
-      expect(TicketConverter.purchase).toHaveBeenCalledWith(
-        currentUserId,
-        walletId,
-        utilityId,
-        transactionId,
+      expect(mockRepository.update).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("purchaseTicket", () => {
+    it("should create a purchased ticket", async () => {
+      mockConverter.purchase.mockReturnValue({ purchased: true });
+      mockRepository.create.mockResolvedValue({ id: "ticket" });
+
+      const result = await service.purchaseTicket(
+        mockCtx,
+        "wallet-id",
+        "utility-id",
+        "tx-id",
+        mockTx,
       );
-      expect(TicketRepository.create).toHaveBeenCalledWith(ctx, createInput, tx);
-      expect(result).toBe(resultTicket);
+
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, { purchased: true }, mockTx);
+      expect(result).toEqual({ id: "ticket" });
     });
   });
 
-  describe("TicketService.refundTicket", () => {
-    const ticketId = "t1";
-    const transactionId = "txn-789";
+  describe("refundTicket", () => {
+    it("should refund a ticket", async () => {
+      mockRepository.find.mockResolvedValue({ id: "ticket" });
+      mockConverter.refund.mockReturnValue({ refunded: true });
+      mockRepository.update.mockResolvedValue({ id: "ticket" });
 
-    it("should call findOrThrow and update with refund input", async () => {
-      const refundInput = { status: TicketStatus.DISABLED };
-      const mockTicket = { id: ticketId };
+      const result = await service.refundTicket(mockCtx, "ticket-id", "tx-id", mockTx);
 
-      jest.spyOn(TicketService, "findTicketOrThrow").mockResolvedValue(mockTicket as any);
-      (TicketConverter.refund as jest.Mock).mockReturnValue(refundInput);
-      (TicketRepository.update as jest.Mock).mockResolvedValue(mockTicket);
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        mockCtx,
+        "ticket-id",
+        { refunded: true },
+        mockTx,
+      );
+      expect(result).toEqual({ id: "ticket" });
+    });
 
-      const result = await TicketService.refundTicket(ctx, ticketId, transactionId, tx);
+    it("should throw NotFoundError if ticket not found", async () => {
+      mockRepository.find.mockResolvedValue(null);
 
-      expect(TicketService.findTicketOrThrow).toHaveBeenCalledWith(ctx, ticketId);
-      expect(TicketConverter.refund).toHaveBeenCalledWith(currentUserId, transactionId);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, ticketId, refundInput, tx);
-      expect(result).toBe(mockTicket);
+      await expect(service.refundTicket(mockCtx, "ticket-id", "tx-id", mockTx)).rejects.toThrow(
+        NotFoundError,
+      );
     });
   });
 
-  describe("TicketService.useTicket", () => {
-    const ticketId = "t2";
+  describe("useTicket", () => {
+    it("should use a ticket", async () => {
+      mockRepository.find.mockResolvedValue({ id: "ticket" });
+      mockConverter.use.mockReturnValue({ used: true });
+      mockRepository.update.mockResolvedValue({ id: "ticket" });
 
-    it("should call findOrThrow and update with use input", async () => {
-      const useInput = { status: TicketStatus.DISABLED };
-      const mockTicket = { id: ticketId };
+      const result = await service.useTicket(mockCtx, "ticket-id", mockTx);
 
-      jest.spyOn(TicketService, "findTicketOrThrow").mockResolvedValue(mockTicket as any);
-      (TicketConverter.use as jest.Mock).mockReturnValue(useInput);
-      (TicketRepository.update as jest.Mock).mockResolvedValue(mockTicket);
+      expect(mockRepository.update).toHaveBeenCalledWith(
+        mockCtx,
+        "ticket-id",
+        { used: true },
+        mockTx,
+      );
+      expect(result).toEqual({ id: "ticket" });
+    });
 
-      const result = await TicketService.useTicket(ctx, ticketId, tx);
+    it("should throw NotFoundError if ticket not found", async () => {
+      mockRepository.find.mockResolvedValue(null);
 
-      expect(TicketService.findTicketOrThrow).toHaveBeenCalledWith(ctx, ticketId);
-      expect(TicketConverter.use).toHaveBeenCalledWith(currentUserId);
-      expect(TicketRepository.update).toHaveBeenCalledWith(ctx, ticketId, useInput, tx);
-      expect(result).toBe(mockTicket);
+      await expect(service.useTicket(mockCtx, "ticket-id", mockTx)).rejects.toThrow(NotFoundError);
     });
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
-    jest.clearAllMocks();
   });
 });

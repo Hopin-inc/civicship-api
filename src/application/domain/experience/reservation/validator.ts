@@ -2,9 +2,11 @@ import { ValidationError } from "@/errors/graphql";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 import { PrismaOpportunitySlot } from "@/application/domain/experience/opportunitySlot/data/type";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ReservationValidator {
-  static validateReservable(
+  validateReservable(
     slot: PrismaOpportunitySlot,
     participantCount: number,
     remainingCapacity: number | undefined,
@@ -21,7 +23,7 @@ export default class ReservationValidator {
     }
   }
 
-  static validateJoinable(
+  validateJoinable(
     reservation: PrismaReservation,
     userId: string,
   ): { availableParticipationId: string } {
@@ -43,7 +45,7 @@ export default class ReservationValidator {
     return { availableParticipationId: target.id };
   }
 
-  static validateCancellable(slotStartAt: Date) {
+  validateCancellable(slotStartAt: Date) {
     const now = new Date();
     const cancelLimit = new Date(slotStartAt);
     cancelLimit.setHours(cancelLimit.getHours() - 24);
@@ -55,13 +57,13 @@ export default class ReservationValidator {
     }
   }
 
-  private static validateNoConflicts(conflicts: PrismaReservation[]) {
+  private validateNoConflicts(conflicts: PrismaReservation[]) {
     if (conflicts.length > 0) {
       throw new ValidationError("You already have a conflicting reservation.");
     }
   }
 
-  private static validateSlotScheduledAndNotStarted(slot: PrismaOpportunitySlot) {
+  private validateSlotScheduledAndNotStarted(slot: PrismaOpportunitySlot) {
     if (slot.hostingStatus !== OpportunitySlotHostingStatus.SCHEDULED) {
       throw new ValidationError("This slot is not scheduled.");
     }

@@ -1,80 +1,156 @@
+import "reflect-metadata";
+import { container } from "tsyringe";
 import UtilityService from "@/application/domain/reward/utility/service";
-import UtilityRepository from "@/application/domain/reward/utility/data/repository";
-import UtilityConverter from "@/application/domain/reward/utility/data/converter";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { Prisma } from "@prisma/client";
+import {
+  GqlUtilityCreateInput,
+  GqlMutationUtilityUpdateInfoArgs,
+  GqlUtilityUpdateInfoInput,
+  GqlCheckCommunityPermissionInput,
+} from "@/types/graphql";
+import { IUtilityRepository } from "@/application/domain/reward/utility/data/interface";
+import UtilityConverter from "@/application/domain/reward/utility/data/converter";
+import ImageService from "@/application/domain/content/image/service";
 
-jest.mock("@/application/domain/reward/utility/data/converter", () => ({
-  __esModule: true,
-  default: {
-    findAccessible: jest.fn(),
-    create: jest.fn(),
-    updateInfo: jest.fn(),
-  },
-}));
+// --- Mockクラス ---
+class MockUtilityRepository implements IUtilityRepository {
+  findAccessible = jest.fn();
+  find = jest.fn();
+  create = jest.fn();
+  update = jest.fn();
+  delete = jest.fn();
+  query = jest.fn();
+}
 
-jest.mock("@/application/domain/reward/utility/data/repository", () => ({
-  __esModule: true,
-  default: {
-    findAccessible: jest.fn(),
-    find: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
+class MockUtilityConverter extends UtilityConverter {
+  findAccessible = jest.fn();
+  create = jest.fn();
+  updateInfo = jest.fn();
+  filter = jest.fn();
+  sort = jest.fn();
+}
+
+class MockImageService implements ImageService {
+  uploadPublicImage = jest.fn();
+}
+
+// --- テスト用変数 ---
+let service: UtilityService;
+let mockRepository: MockUtilityRepository;
+let mockConverter: MockUtilityConverter;
+let mockImageService: MockImageService;
+
+const mockCtx = {} as IContext;
+const mockTx = {} as Prisma.TransactionClient;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  container.reset();
+
+  mockRepository = new MockUtilityRepository();
+  mockConverter = new MockUtilityConverter();
+  mockImageService = new MockImageService();
+
+  container.register("UtilityRepository", { useValue: mockRepository });
+  container.register("UtilityConverter", { useValue: mockConverter });
+  container.register("ImageService", { useValue: mockImageService });
+
+  service = container.resolve(UtilityService);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 describe("UtilityService", () => {
-  const ctx = {} as IContext;
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe("findUtility", () => {
     it("should return utility if found", async () => {
       const filter = { communityId: "c1" };
       const where = { id: "u1", AND: [{ communityId: "c1" }] };
-      const mockUtility = { id: "u1" };
+      const mockUtility = {
+        id: "u1",
+        name: "Test Utility",
+        publishStatus: PublishStatus.PUBLIC,
+        description: "Test Description",
+        pointsRequired: 100,
+        communityId: "c1",
+        createdAt: new Date(),
+        updatedAt: null,
+        community: {
+          id: "c1",
+          name: "Test Community",
+          createdAt: new Date(),
+          updatedAt: null,
+          pointName: "Points",
+          bio: null,
+          establishedAt: null,
+          website: null,
+          imageId: null,
+        },
+      };
 
-      (UtilityConverter.findAccessible as jest.Mock).mockReturnValue(where);
-      (UtilityRepository.findAccessible as jest.Mock).mockResolvedValue(mockUtility);
+      mockConverter.findAccessible.mockReturnValue(where);
+      mockRepository.findAccessible.mockResolvedValue(mockUtility);
 
-      const result = await UtilityService.findUtility(ctx, "u1", filter);
+      const result = await service.findUtility(mockCtx, "u1", filter);
       expect(result).toBe(mockUtility);
     });
 
     it("should return null if not found", async () => {
-      (UtilityConverter.findAccessible as jest.Mock).mockReturnValue({});
-      (UtilityRepository.findAccessible as jest.Mock).mockResolvedValue(null);
+      mockConverter.findAccessible.mockReturnValue({});
+      mockRepository.findAccessible.mockResolvedValue(null);
 
-      const result = await UtilityService.findUtility(ctx, "unknown", {});
+      const result = await service.findUtility(mockCtx, "unknown", {});
       expect(result).toBeNull();
     });
   });
 
   describe("findUtilityOrThrow", () => {
     it("should return utility if exists", async () => {
-      const mockUtility = { id: "u1" };
+      const mockUtility = {
+        id: "u1",
+        name: "Test Utility",
+        publishStatus: PublishStatus.PUBLIC,
+        description: "Test Description",
+        pointsRequired: 100,
+        communityId: "c1",
+        createdAt: new Date(),
+        updatedAt: null,
+        community: {
+          id: "c1",
+          name: "Test Community",
+          createdAt: new Date(),
+          updatedAt: null,
+          pointName: "Points",
+          bio: null,
+          establishedAt: null,
+          website: null,
+          imageId: null,
+        },
+      };
 
-      (UtilityRepository.find as jest.Mock).mockResolvedValue(mockUtility);
+      mockRepository.find.mockResolvedValue(mockUtility);
 
-      const result = await UtilityService.findUtilityOrThrow(ctx, "u1");
+      const result = await service.findUtilityOrThrow(mockCtx, "u1");
       expect(result).toBe(mockUtility);
     });
 
     it("should throw NotFoundError if not found", async () => {
-      (UtilityRepository.find as jest.Mock).mockResolvedValue(null);
+      mockRepository.find.mockResolvedValue(null);
 
-      await expect(UtilityService.findUtilityOrThrow(ctx, "nope")).rejects.toThrow(NotFoundError);
+      await expect(service.findUtilityOrThrow(mockCtx, "nope")).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("createUtility", () => {
     it("should convert input and call repository.create", async () => {
-      const input = {
+      const input: GqlUtilityCreateInput = {
         communityId: "c1",
+        name: "Test Utility",
+        pointsRequired: 100,
         images: [],
       };
 
@@ -85,16 +161,17 @@ describe("UtilityService", () => {
 
       const created = { id: "u1" };
 
-      (UtilityConverter.create as jest.Mock).mockReturnValue(converted);
-      (UtilityRepository.create as jest.Mock).mockResolvedValue(created);
+      mockConverter.create.mockReturnValue(converted);
+      mockRepository.create.mockResolvedValue(created);
 
-      const result = await UtilityService.createUtility(ctx, input as any);
+      const result = await service.createUtility(mockCtx, input, mockTx);
 
       expect(result).toBe(created);
-      expect(UtilityConverter.create).toHaveBeenCalledWith(input);
-      expect(UtilityRepository.create).toHaveBeenCalledWith(
-        ctx,
+      expect(mockConverter.create).toHaveBeenCalledWith(input);
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        mockCtx,
         expect.objectContaining({ dummy: true }),
+        mockTx,
       );
     });
   });
@@ -102,40 +179,69 @@ describe("UtilityService", () => {
   describe("deleteUtility", () => {
     it("should call findOrThrow and then delete", async () => {
       const id = "u1";
-      const mockUtility = { id };
+      const mockUtility = {
+        id,
+        name: "Test Utility",
+        publishStatus: PublishStatus.PUBLIC,
+        description: "Test Description",
+        pointsRequired: 100,
+        communityId: "c1",
+        createdAt: new Date(),
+        updatedAt: null,
+        community: {
+          id: "c1",
+          name: "Test Community",
+          createdAt: new Date(),
+          updatedAt: null,
+          pointName: "Points",
+          bio: null,
+          establishedAt: null,
+          website: null,
+          imageId: null,
+        },
+      };
 
-      jest.spyOn(UtilityService, "findUtilityOrThrow").mockResolvedValue(mockUtility as any);
+      jest.spyOn(service, "findUtilityOrThrow").mockResolvedValue(mockUtility);
 
-      (UtilityRepository.delete as jest.Mock).mockResolvedValue({ id });
+      mockRepository.delete.mockResolvedValue({ id });
 
-      const result = await UtilityService.deleteUtility(ctx, id);
+      const result = await service.deleteUtility(mockCtx, id, mockTx);
 
-      expect(UtilityService.findUtilityOrThrow).toHaveBeenCalledWith(ctx, id);
-      expect(UtilityRepository.delete).toHaveBeenCalledWith(ctx, id);
+      expect(service.findUtilityOrThrow).toHaveBeenCalledWith(mockCtx, id);
+      expect(mockRepository.delete).toHaveBeenCalledWith(mockCtx, id, mockTx);
       expect(result).toEqual({ id });
     });
   });
 
   describe("updateUtilityInfo", () => {
     it("should find utility, convert input and update", async () => {
-      const args = {
-        id: "u1",
-        input: {
-          name: "Updated",
-          images: [], // ✅ 修正ポイント
-        },
+      const input: GqlUtilityUpdateInfoInput = {
+        name: "Updated",
+        pointsRequired: 100,
+        images: [],
       };
+
+      const permission: GqlCheckCommunityPermissionInput = {
+        communityId: "c1",
+      };
+
+      const args: GqlMutationUtilityUpdateInfoArgs = {
+        id: "u1",
+        input,
+        permission,
+      };
+
       const converted = { name: "Updated", image: "new-img" };
       const updated = { id: "u1", ...converted };
 
-      (UtilityRepository.find as jest.Mock).mockResolvedValue({ id: "u1" });
-      (UtilityConverter.updateInfo as jest.Mock).mockReturnValue({
+      mockRepository.find.mockResolvedValue({ id: "u1" });
+      mockConverter.updateInfo.mockReturnValue({
         data: { name: "Updated", image: "new-img" },
-        images: [], // ✅ これがないと map で死ぬ
+        images: [],
       });
-      (UtilityRepository.update as jest.Mock).mockResolvedValue(updated);
+      mockRepository.update.mockResolvedValue(updated);
 
-      const result = await UtilityService.updateUtilityInfo(ctx, args as any);
+      const result = await service.updateUtilityInfo(mockCtx, args, mockTx);
       expect(result).toBe(updated);
     });
   });
@@ -143,7 +249,7 @@ describe("UtilityService", () => {
   describe("validatePublishStatus", () => {
     it("should pass if all statuses are allowed", () => {
       expect(() =>
-        UtilityService.validatePublishStatus([PublishStatus.PUBLIC], {
+        service.validatePublishStatus([PublishStatus.PUBLIC], {
           publishStatus: [PublishStatus.PUBLIC],
         }),
       ).not.toThrow();
@@ -151,7 +257,7 @@ describe("UtilityService", () => {
 
     it("should throw if disallowed status is present", async () => {
       try {
-        await UtilityService.validatePublishStatus([PublishStatus.PUBLIC], {
+        await service.validatePublishStatus([PublishStatus.PUBLIC], {
           publishStatus: [PublishStatus.PRIVATE],
         });
         fail("Expected ValidationError to be thrown");

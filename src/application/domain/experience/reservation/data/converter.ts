@@ -7,9 +7,11 @@ import {
   ReservationStatus,
 } from "@prisma/client";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ReservationConverter {
-  static filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
+  filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
     const conditions: Prisma.ReservationWhereInput[] = [];
     if (!filter) return {};
 
@@ -27,7 +29,7 @@ export default class ReservationConverter {
     return conditions.length ? { AND: conditions } : {};
   }
 
-  static countByUserAndOpportunityCategory(
+  countByUserAndOpportunityCategory(
     userId: string,
     category: OpportunityCategory,
   ): Prisma.ReservationWhereInput {
@@ -41,14 +43,14 @@ export default class ReservationConverter {
     };
   }
 
-  static sort(sort?: GqlReservationSortInput): Prisma.ReservationOrderByWithRelationInput[] {
+  sort(sort?: GqlReservationSortInput): Prisma.ReservationOrderByWithRelationInput[] {
     return [
       { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
       ...(sort?.updatedAt ? [{ updatedAt: sort.updatedAt }] : []),
     ];
   }
 
-  static checkConflict(userId: string, slotId: string): Prisma.ReservationWhereInput {
+  checkConflict(userId: string, slotId: string): Prisma.ReservationWhereInput {
     return {
       createdBy: userId,
       status: {
@@ -60,7 +62,7 @@ export default class ReservationConverter {
     };
   }
 
-  static create(
+  create(
     opportunitySlotId: string,
     currentUserId: string,
     participantCount: number,
@@ -91,10 +93,7 @@ export default class ReservationConverter {
     };
   }
 
-  static setStatus(
-    currentUserId: string,
-    status: ReservationStatus,
-  ): Prisma.ReservationUpdateInput {
+  setStatus(currentUserId: string, status: ReservationStatus): Prisma.ReservationUpdateInput {
     return {
       status,
       histories: {

@@ -11,9 +11,13 @@ import ArticlePresenter from "@/application/domain/content/article/presenter";
 import { PublishStatus } from "@prisma/client";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { articleInclude } from "@/application/domain/content/article/data/type";
+import { injectable, inject } from "tsyringe";
 
+@injectable()
 export default class ArticleUseCase {
-  static async anyoneBrowseArticles(
+  constructor(@inject("ArticleService") private service: ArticleService) { }
+
+  async anyoneBrowseArticles(
     ctx: IContext,
     { filter, sort, cursor, first }: GqlQueryArticlesArgs,
   ): Promise<GqlArticlesConnection> {
@@ -29,7 +33,7 @@ export default class ArticleUseCase {
         ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
         : [PublishStatus.PUBLIC];
 
-    await ArticleService.validatePublishStatus(allowedPublishStatuses, filter);
+    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
 
     const validatedFilter: GqlArticleFilterInput = validateByMembershipRoles(
       communityIds,
@@ -39,7 +43,7 @@ export default class ArticleUseCase {
       filter,
     );
 
-    const records = await ArticleService.fetchArticles(
+    const records = await this.service.fetchArticles(
       ctx,
       {
         cursor,
@@ -55,7 +59,7 @@ export default class ArticleUseCase {
     return ArticlePresenter.query(data, hasNextPage);
   }
 
-  static async visitorViewArticle(
+  async visitorViewArticle(
     ctx: IContext,
     { id, permission }: GqlQueryArticleArgs,
   ): Promise<GqlArticle | null> {
@@ -70,7 +74,7 @@ export default class ArticleUseCase {
       currentUserId,
     );
 
-    const record = await ArticleService.findArticle(ctx, id, validatedFilter);
+    const record = await this.service.findArticle(ctx, id, validatedFilter);
     return record ? ArticlePresenter.get(record) : null;
   }
 }

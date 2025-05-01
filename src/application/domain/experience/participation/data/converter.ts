@@ -10,66 +10,68 @@ import {
   ParticipationStatusReason,
   Prisma,
 } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ParticipationConverter {
-  static filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
+  filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
     return {
       AND: [
         filter?.userIds ? { userId: { in: filter.userIds } } : {},
         filter?.categories && filter.categories.length
           ? {
-              reservation: {
-                opportunitySlot: {
-                  opportunity: {
-                    category: { in: filter.categories.filter(isOpportunityCategory) },
-                  },
+            reservation: {
+              opportunitySlot: {
+                opportunity: {
+                  category: { in: filter.categories.filter(isOpportunityCategory) },
                 },
               },
-            }
+            },
+          }
           : {},
         filter?.dateFrom || filter?.dateTo
           ? {
-              reservation: {
-                opportunitySlot: {
-                  startsAt: {
-                    ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
-                    ...(filter.dateTo ? { lte: filter.dateTo } : {}),
-                  },
+            reservation: {
+              opportunitySlot: {
+                startsAt: {
+                  ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
+                  ...(filter.dateTo ? { lte: filter.dateTo } : {}),
                 },
               },
-            }
+            },
+          }
           : {},
         filter?.cityCodes
           ? {
-              reservation: {
-                opportunitySlot: {
-                  opportunity: {
-                    place: {
-                      city: {
-                        code: { in: filter.cityCodes },
-                      },
+            reservation: {
+              opportunitySlot: {
+                opportunity: {
+                  place: {
+                    city: {
+                      code: { in: filter.cityCodes },
                     },
                   },
                 },
               },
-            }
+            },
+          }
           : {},
         filter?.stateCodes
           ? {
-              reservation: {
-                opportunitySlot: {
-                  opportunity: {
-                    place: {
-                      city: {
-                        state: {
-                          code: { in: filter.stateCodes },
-                        },
+            reservation: {
+              opportunitySlot: {
+                opportunity: {
+                  place: {
+                    city: {
+                      state: {
+                        code: { in: filter.stateCodes },
                       },
                     },
                   },
                 },
               },
-            }
+            },
+          }
           : {},
         filter?.status ? { status: filter.status } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
@@ -84,14 +86,14 @@ export default class ParticipationConverter {
     };
   }
 
-  static sort(sort?: GqlParticipationSortInput): Prisma.ParticipationOrderByWithRelationInput[] {
+  sort(sort?: GqlParticipationSortInput): Prisma.ParticipationOrderByWithRelationInput[] {
     return [
       { reservation: { opportunitySlot: { startsAt: sort?.startsAt ?? "desc" } } },
       { createdAt: "desc" },
     ];
   }
 
-  static create(
+  create(
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
   ): {
@@ -118,7 +120,7 @@ export default class ParticipationConverter {
     };
   }
 
-  static setStatus(
+  setStatus(
     currentUserId: string,
     status: ParticipationStatus,
     reason: ParticipationStatusReason,

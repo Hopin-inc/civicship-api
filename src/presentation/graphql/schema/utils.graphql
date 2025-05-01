@@ -128,7 +128,6 @@ enum AuthZRules {
     IsCommunityManager,
     IsCommunityMember,
     IsOpportunityOwner,
-    VerifySanitizeInput,
     CanReadPhoneNumber
 }
 

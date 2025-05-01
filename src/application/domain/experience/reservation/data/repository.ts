@@ -1,12 +1,15 @@
 import { Prisma } from "@prisma/client";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { reservationInclude } from "@/application/domain/experience/reservation/data/type";
+import { IReservationRepository } from "@/application/domain/experience/reservation/data/interface";
+import { inject, injectable } from "tsyringe";
 
-export default class ReservationRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class ReservationRepository implements IReservationRepository {
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.ReservationWhereInput,
     orderBy: Prisma.ReservationOrderByWithRelationInput[],
@@ -25,17 +28,13 @@ export default class ReservationRepository {
     });
   }
 
-  static async count(
-    ctx: IContext,
-    where: Prisma.ReservationWhereInput,
-    tx: Prisma.TransactionClient,
-  ) {
+  async count(ctx: IContext, where: Prisma.ReservationWhereInput, tx: Prisma.TransactionClient) {
     return tx.reservation.count({
       where,
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.reservation.findUnique({
         where: { id },
@@ -44,7 +43,7 @@ export default class ReservationRepository {
     });
   }
 
-  static async checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput) {
+  async checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput) {
     return this.issuer.public(ctx, (tx) => {
       return tx.reservation.findMany({
         where,
@@ -53,37 +52,23 @@ export default class ReservationRepository {
     });
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.ReservationCreateInput,
-    tx: Prisma.TransactionClient,
-  ) {
+  async create(ctx: IContext, data: Prisma.ReservationCreateInput, tx: Prisma.TransactionClient) {
     return tx.reservation.create({
       data,
       include: reservationInclude,
     });
   }
 
-  static async setStatus(
+  async setStatus(
     ctx: IContext,
     id: string,
     data: Prisma.ReservationUpdateInput,
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.reservation.update({
-        where: { id },
-        data,
-        include: reservationInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) =>
-        dbTx.reservation.update({
-          where: { id },
-          data,
-          include: reservationInclude,
-        }),
-      );
-    }
+    return tx.reservation.update({
+      where: { id },
+      data,
+      include: reservationInclude,
+    });
   }
 }

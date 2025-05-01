@@ -1,103 +1,89 @@
 import { Prisma } from "@prisma/client";
-import WalletConverter from "@/application/domain/account/wallet/data/converter";
-import WalletRepository from "@/application/domain/account/wallet/data/repository";
 import { IContext } from "@/types/server";
 import { GqlQueryWalletsArgs } from "@/types/graphql";
 import { NotFoundError } from "@/errors/graphql";
+import WalletConverter from "@/application/domain/account/wallet/data/converter";
+import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class WalletService {
-  static async fetchWallets(
-    ctx: IContext,
-    { filter, sort, cursor }: GqlQueryWalletsArgs,
-    take: number,
-  ) {
-    const where = WalletConverter.filter(filter ?? {});
-    const orderBy = WalletConverter.sort(sort ?? {});
+  constructor(
+    @inject("WalletRepository") private readonly repository: IWalletRepository,
+    @inject("WalletConverter") private readonly converter: WalletConverter,
+  ) {}
 
-    return WalletRepository.query(ctx, where, orderBy, take, cursor);
+  async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+
+    return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findWallet(ctx: IContext, id: string) {
-    return WalletRepository.find(ctx, id);
+  async findWallet(ctx: IContext, id: string) {
+    return this.repository.find(ctx, id);
   }
 
-  static async findMemberWalletOrThrow(
-    ctx: IContext,
-    userId: string,
-    communityId: string,
-    tx?: Prisma.TransactionClient,
-  ) {
-    const wallet = await WalletRepository.findFirstExistingMemberWallet(
-      ctx,
-      communityId,
-      userId,
-      tx,
-    );
+  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string) {
+    const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
     if (!wallet) {
-      throw new NotFoundError("Member wallet" + `userId:${userId}, communityId:${communityId}`);
+      throw new NotFoundError("Member wallet", { userId, communityId });
     }
-
     return wallet;
   }
 
-  static async findCommunityWalletOrThrow(ctx: IContext, communityId: string) {
-    const wallet = await WalletRepository.findCommunityWallet(ctx, communityId);
+  async findCommunityWalletOrThrow(ctx: IContext, communityId: string) {
+    const wallet = await this.repository.findCommunityWallet(ctx, communityId);
     if (!wallet?.id) {
       throw new NotFoundError("Community wallet", { communityId });
     }
     return wallet;
   }
 
-  static async checkIfMemberWalletExists(ctx: IContext, memberWalletId: string) {
-    const wallet = await WalletRepository.find(ctx, memberWalletId);
+  async checkIfMemberWalletExists(ctx: IContext, memberWalletId: string) {
+    const wallet = await this.repository.find(ctx, memberWalletId);
     if (!wallet) {
       throw new NotFoundError("Member wallet", { memberWalletId });
     }
-
     return wallet;
   }
 
-  static async createCommunityWallet(
-    ctx: IContext,
-    communityId: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    const data: Prisma.WalletCreateInput = WalletConverter.createCommunityWallet({
+  async createCommunityWallet(ctx: IContext, communityId: string, tx: Prisma.TransactionClient) {
+    const data: Prisma.WalletCreateInput = this.converter.createCommunityWallet({
       communityId,
     });
-    return WalletRepository.create(ctx, data, tx);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static async createMemberWalletIfNeeded(
+  async createMemberWalletIfNeeded(
     ctx: IContext,
     userId: string,
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const existingWallet = await WalletRepository.findFirstExistingMemberWallet(
+    const existingWallet = await this.repository.findFirstExistingMemberWallet(
       ctx,
       communityId,
       userId,
-      tx,
     );
     if (existingWallet) {
       return existingWallet;
     }
 
-    const data: Prisma.WalletCreateInput = WalletConverter.createMemberWallet({
+    const data: Prisma.WalletCreateInput = this.converter.createMemberWallet({
       userId,
       communityId,
     });
-    return WalletRepository.create(ctx, data, tx);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static async deleteMemberWallet(
+  async deleteMemberWallet(
     ctx: IContext,
     userId: string,
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId, tx);
-    return WalletRepository.delete(ctx, memberWallet.id);
+    const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId);
+    return this.repository.delete(ctx, memberWallet.id, tx);
   }
 }

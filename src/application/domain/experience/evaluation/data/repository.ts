@@ -1,12 +1,18 @@
 import { Prisma } from "@prisma/client";
+import { inject, injectable } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
 import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
+import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
-export default class EvaluationRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class EvaluationRepository implements IEvaluationRepository {
+  constructor(
+    @inject("PrismaClientIssuer")
+    private readonly issuer: PrismaClientIssuer,
+  ) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.EvaluationWhereInput,
     orderBy: Prisma.EvaluationOrderByWithRelationInput[],
@@ -25,7 +31,7 @@ export default class EvaluationRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.evaluation.findUnique({
         where: { id },
@@ -34,23 +40,10 @@ export default class EvaluationRepository {
     });
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.EvaluationCreateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.evaluation.create({
-        data,
-        include: evaluationInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.evaluation.create({
-          data,
-          include: evaluationInclude,
-        });
-      });
-    }
+  async create(ctx: IContext, data: Prisma.EvaluationCreateInput, tx: Prisma.TransactionClient) {
+    return tx.evaluation.create({
+      data,
+      include: evaluationInclude,
+    });
   }
 }

@@ -3,20 +3,20 @@
 # ------------------------------
 extend type Mutation {
     communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
-    @authz(rules: [IsUser, VerifySanitizeInput])
+    @authz(rules: [IsUser])
 
     communityDelete(
         id: ID!,
         permission:CheckCommunityPermissionInput!
     ): CommunityDeletePayload
-    @authz(rules: [IsCommunityOwner, VerifySanitizeInput])
+    @authz(rules: [IsCommunityOwner])
 
     communityUpdateProfile(
         id: ID!,
         input: CommunityUpdateProfileInput!,
         permission:CheckCommunityPermissionInput!
     ): CommunityUpdateProfilePayload
-    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+    @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------

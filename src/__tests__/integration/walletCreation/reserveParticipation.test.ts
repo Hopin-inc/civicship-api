@@ -1,12 +1,16 @@
+import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, OpportunityCategory, PublishStatus, WalletType } from "@prisma/client";
-import reservationResolver from "@/application/domain/experience/reservation/controller/resolver";
 import { GqlReservationCreateInput, GqlReservationPaymentMethod } from "@/types/graphql";
+import ReservationUseCase from "@/application/domain/experience/reservation/usecase";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
 
 describe("Reservation Integration Tests", () => {
   jest.setTimeout(30_000);
 
+  let useCase: ReservationUseCase;
   let startsAt: Date;
   let endsAt: Date;
 
@@ -15,6 +19,11 @@ describe("Reservation Integration Tests", () => {
     const now = new Date();
     startsAt = new Date(now.getTime() + 60 * 60 * 1000);
     endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(ReservationUseCase);
   });
 
   afterAll(async () => {
@@ -83,7 +92,7 @@ describe("Reservation Integration Tests", () => {
         paymentMethod: GqlReservationPaymentMethod.Ticket,
       };
 
-      await reservationResolver.Mutation.reservationCreate({}, { input }, ctx);
+      await useCase.userReserveParticipation({ input }, ctx);
 
       //////////////////////////////////////////////////
       // 3. assert
@@ -170,7 +179,7 @@ describe("Reservation Integration Tests", () => {
         paymentMethod: GqlReservationPaymentMethod.Ticket,
       };
 
-      await reservationResolver.Mutation.reservationCreate({}, { input }, ctx);
+      await useCase.userReserveParticipation({ input }, ctx);
 
       //////////////////////////////////////////////////
       // 3. assert

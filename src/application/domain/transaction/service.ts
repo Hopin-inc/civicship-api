@@ -1,65 +1,76 @@
-import TransactionRepository from "@/application/domain/transaction/data/repository";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
+import {
+  ITransactionRepository,
+  ITransactionService,
+} from "@/application/domain/transaction/data/interface";
+import TransactionConverter from "@/application/domain/transaction/data/converter";
 import {
   GqlQueryTransactionsArgs,
   GqlTransactionGrantCommunityPointInput,
   GqlTransactionIssueCommunityPointInput,
 } from "@/types/graphql";
-import { Prisma } from "@prisma/client";
-import { IContext } from "@/types/server";
-import TransactionConverter from "@/application/domain/transaction/data/converter";
+import { inject, injectable } from "tsyringe";
 
-export default class TransactionService {
-  static async fetchTransactions(
+@injectable()
+export default class TransactionService implements ITransactionService {
+  constructor(
+    @inject("TransactionRepository") private readonly repository: ITransactionRepository,
+    @inject("TransactionConverter") private readonly converter: TransactionConverter,
+  ) {}
+
+  async fetchTransactions(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryTransactionsArgs,
     take: number,
   ) {
-    const where = TransactionConverter.filter(filter ?? {});
-    const orderBy = TransactionConverter.sort(sort ?? {});
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
 
-    return await TransactionRepository.query(ctx, where, orderBy, take, cursor);
+    return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findTransaction(ctx: IContext, id: string) {
-    return await TransactionRepository.find(ctx, id);
+  async findTransaction(ctx: IContext, id: string) {
+    return this.repository.find(ctx, id);
   }
 
-  static async issueCommunityPoint(ctx: IContext, input: GqlTransactionIssueCommunityPointInput) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.issueCommunityPoint(input);
-
-    const res = await TransactionRepository.create(ctx, data);
-    await TransactionRepository.refreshCurrentPoints(ctx);
+  async issueCommunityPoint(
+    ctx: IContext,
+    input: GqlTransactionIssueCommunityPointInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    const data = this.converter.issueCommunityPoint(input);
+    const res = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
-  static async grantCommunityPoint(
+  async grantCommunityPoint(
     ctx: IContext,
     input: GqlTransactionGrantCommunityPointInput,
     memberWalletId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const data = TransactionConverter.grantCommunityPoint(input, memberWalletId);
-
-    const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    const data = this.converter.grantCommunityPoint(input, memberWalletId);
+    const res = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
-  static async donateSelfPoint(
+  async donateSelfPoint(
     ctx: IContext,
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
     tx: Prisma.TransactionClient,
   ) {
-    const data = TransactionConverter.donateSelfPoint(fromWalletId, toWalletId, transferPoints);
-
-    const transaction = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints);
+    const transaction = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
     return transaction;
   }
 
-  static async giveRewardPoint(
+  async giveRewardPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     participationId: string,
@@ -67,51 +78,40 @@ export default class TransactionService {
     fromWalletId: string,
     toWalletId: string,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.giveRewardPoint(
+    const data = this.converter.giveRewardPoint(
       fromWalletId,
       toWalletId,
       participationId,
       transferPoints,
     );
-
-    const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    const res = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
-  static async purchaseTicket(
+  async purchaseTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.purchaseTicket(
-      fromWalletId,
-      toWalletId,
-      transferPoints,
-    );
-
-    const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    const data = this.converter.purchaseTicket(fromWalletId, toWalletId, transferPoints);
+    const res = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 
-  static async refundTicket(
+  async refundTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
   ) {
-    const data: Prisma.TransactionCreateInput = TransactionConverter.refundTicket(
-      fromWalletId,
-      toWalletId,
-      transferPoints,
-    );
-
-    const res = await TransactionRepository.create(ctx, data, tx);
-    await TransactionRepository.refreshCurrentPoints(ctx, tx);
+    const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints);
+    const res = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
 }

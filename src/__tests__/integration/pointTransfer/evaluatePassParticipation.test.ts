@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import {
@@ -12,7 +13,9 @@ import {
   TransactionReason,
   WalletType,
 } from "@prisma/client";
-import evaluationResolver from "@/application/domain/experience/evaluation/controller/resolver";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
+import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
 
 describe("Point Reward Tests", () => {
   const testSetup = {
@@ -26,6 +29,7 @@ describe("Point Reward Tests", () => {
   };
 
   let ctx: IContext;
+  let useCase: EvaluationUseCase;
   let opportunityOwnerUserId: string;
   let communityId: string;
   let communityWalletId: string;
@@ -36,6 +40,12 @@ describe("Point Reward Tests", () => {
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(EvaluationUseCase);
 
     const opportunityOwnerUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
@@ -146,8 +156,7 @@ describe("Point Reward Tests", () => {
   });
 
   it("creates POINT_REWARD transaction on evaluation", async () => {
-    await evaluationResolver.Mutation.evaluationPass(
-      {},
+    await useCase.managerPassEvaluation(
       {
         input: {
           participationId,
@@ -166,8 +175,7 @@ describe("Point Reward Tests", () => {
   });
 
   it("transfers points from opportunityOwner to participation wallet", async () => {
-    await evaluationResolver.Mutation.evaluationPass(
-      {},
+    await useCase.managerPassEvaluation(
       {
         input: { participationId, comment: testSetup.comment },
         permission: { communityId },
@@ -186,8 +194,7 @@ describe("Point Reward Tests", () => {
   });
 
   it("updates currentPointView after evaluation", async () => {
-    await evaluationResolver.Mutation.evaluationPass(
-      {},
+    await useCase.managerPassEvaluation(
       {
         input: { participationId, comment: testSetup.comment },
         permission: { communityId },

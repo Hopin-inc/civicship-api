@@ -1,3 +1,4 @@
+import { injectable, inject } from "tsyringe";
 import {
   GqlQueryUtilitiesArgs,
   GqlQueryUtilityArgs,
@@ -11,14 +12,21 @@ import {
   GqlUtilityUpdateInfoPayload,
   GqlUtilityFilterInput,
 } from "@/types/graphql";
-import UtilityService from "@/application/domain/reward/utility/service";
-import UtilityPresenter from "@/application/domain/reward/utility/presenter";
 import { IContext } from "@/types/server";
 import { PublishStatus } from "@prisma/client";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { IUtilityService } from "./data/interface";
+import UtilityPresenter from "./presenter";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
+@injectable()
 export default class UtilityUseCase {
-  static async anyoneBrowseUtilities(
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("UtilityService") private readonly service: IUtilityService,
+  ) {}
+
+  async anyoneBrowseUtilities(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryUtilitiesArgs,
   ): Promise<GqlUtilitiesConnection> {
@@ -34,7 +42,7 @@ export default class UtilityUseCase {
         ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
         : [PublishStatus.PUBLIC];
 
-    await UtilityService.validatePublishStatus(allowedPublishStatuses, filter);
+    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
 
     const validatedFilter = validateByMembershipRoles(
       communityIds,
@@ -44,7 +52,7 @@ export default class UtilityUseCase {
       filter,
     );
 
-    const records = await UtilityService.fetchUtilities(
+    const records = await this.service.fetchUtilities(
       ctx,
       {
         cursor,
@@ -60,7 +68,7 @@ export default class UtilityUseCase {
     return UtilityPresenter.query(data, hasNextPage);
   }
 
-  static async visitorViewUtility(
+  async visitorViewUtility(
     ctx: IContext,
     { id, permission }: GqlQueryUtilityArgs,
   ): Promise<GqlUtility | null> {
@@ -75,32 +83,38 @@ export default class UtilityUseCase {
       currentUserId,
     );
 
-    const record = await UtilityService.findUtility(ctx, id, validatedFilter);
+    const record = await this.service.findUtility(ctx, id, validatedFilter);
     return record ? UtilityPresenter.get(record) : null;
   }
 
-  static async managerCreateUtility(
+  async managerCreateUtility(
     ctx: IContext,
     { input }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
-    const res = await UtilityService.createUtility(ctx, input);
-    return UtilityPresenter.create(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const res = await this.service.createUtility(ctx, input, tx);
+      return UtilityPresenter.create(res);
+    });
   }
 
-  static async managerDeleteUtility(
+  async managerDeleteUtility(
     ctx: IContext,
     { id }: GqlMutationUtilityDeleteArgs,
   ): Promise<GqlUtilityDeletePayload> {
-    const res = await UtilityService.deleteUtility(ctx, id);
-    return UtilityPresenter.delete(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const res = await this.service.deleteUtility(ctx, id, tx);
+      return UtilityPresenter.delete(res);
+    });
   }
 
-  static async managerUpdateUtilityInfo(
+  async managerUpdateUtilityInfo(
     ctx: IContext,
     args: GqlMutationUtilityUpdateInfoArgs,
   ): Promise<GqlUtilityUpdateInfoPayload> {
-    const res = await UtilityService.updateUtilityInfo(ctx, args);
-    return UtilityPresenter.updateInfo(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const res = await this.service.updateUtilityInfo(ctx, args, tx);
+      return UtilityPresenter.updateInfo(res);
+    });
   }
 }
 

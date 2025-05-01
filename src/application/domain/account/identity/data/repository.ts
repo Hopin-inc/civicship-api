@@ -1,9 +1,12 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
+import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
+import { injectable, inject } from "tsyringe";
 
-export default class IdentityRepository {
-  private static db = prismaClient;
+@injectable()
+export default class IdentityRepository implements IIdentityRepository {
+  constructor(@inject("prismaClient") private readonly db: typeof prismaClient) { }
 
-  static async find(uid: string) {
+  async find(uid: string) {
     return this.db.identity.findUnique({
       where: { uid },
     });

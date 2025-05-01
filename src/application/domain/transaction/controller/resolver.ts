@@ -6,36 +6,43 @@ import {
   GqlMutationTransactionDonateSelfPointArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { inject, injectable } from "tsyringe";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 
-const transactionResolver = {
-  Query: {
-    transactions: async (_: unknown, args: GqlQueryTransactionsArgs, ctx: IContext) =>
-      TransactionUseCase.visitorBrowseTransactions(args, ctx),
-    transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
-      if (!ctx.loaders?.transaction) {
-        return TransactionUseCase.visitorViewTransaction(args, ctx);
-      }
-      return await ctx.loaders.transaction.load(args.id);
+@injectable()
+export default class TransactionResolver {
+  constructor(@inject("TransactionUseCase") private readonly useCase: TransactionUseCase) {}
+
+  Query = {
+    transactions: async (_: unknown, args: GqlQueryTransactionsArgs, ctx: IContext) => {
+      return this.useCase.visitorBrowseTransactions(args, ctx);
     },
-  },
-  Mutation: {
+    transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
+      return this.useCase.visitorViewTransaction(args, ctx);
+    },
+  };
+
+  Mutation = {
     transactionIssueCommunityPoint: async (
       _: unknown,
       args: GqlMutationTransactionIssueCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.ownerIssueCommunityPoint(args, ctx),
+    ) => {
+      return this.useCase.ownerIssueCommunityPoint(args, ctx);
+    },
     transactionGrantCommunityPoint: async (
       _: unknown,
       { input }: GqlMutationTransactionGrantCommunityPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.managerGrantCommunityPoint(ctx, input),
+    ) => {
+      return this.useCase.ownerGrantCommunityPoint(ctx, input);
+    },
     transactionDonateSelfPoint: async (
       _: unknown,
       { input }: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
-    ) => TransactionUseCase.userDonateSelfPointToAnother(ctx, input),
-  },
-};
-
-export default transactionResolver;
+    ) => {
+      return this.useCase.userDonateSelfPointToAnother(ctx, input);
+    },
+  };
+}

@@ -2,11 +2,16 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { opportunityInclude } from "@/application/domain/experience/opportunity/data/type";
 import { IContext } from "@/types/server";
+import { inject, injectable } from "tsyringe";
+import { IOpportunityRepository } from "./interface";
 
-export default class OpportunityRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class OpportunityRepository implements IOpportunityRepository {
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+  ) { }
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.OpportunityWhereInput,
     orderBy: Prisma.OpportunityOrderByWithRelationInput[],
@@ -25,77 +30,63 @@ export default class OpportunityRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string, tx?: Prisma.TransactionClient) {
-    if (tx) {
+  async find(ctx: IContext, id: string) {
+    return this.issuer.public(ctx, (tx) => {
       return tx.opportunity.findUnique({
         where: { id },
         include: opportunityInclude,
       });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.opportunity.findUnique({
-          where: { id },
-          include: opportunityInclude,
-        });
-      });
-    }
+    });
   }
 
-  static async findAccessible(
+  async findAccessible(
     ctx: IContext,
     where: Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput,
-    tx?: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.opportunity.findUnique({
+    return this.issuer.public(ctx, (dbTx) => {
+      return dbTx.opportunity.findUnique({
         where,
         include: opportunityInclude,
       });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.opportunity.findUnique({
-          where,
-          include: opportunityInclude,
-        });
-      });
-    }
-  }
-
-  static async create(ctx: IContext, data: Prisma.OpportunityCreateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.opportunity.create({
-        data,
-        include: opportunityInclude,
-      });
     });
   }
 
-  static async delete(ctx: IContext, id: string) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.opportunity.delete({
-        where: { id },
-        include: opportunityInclude,
-      });
+  async create(
+    ctx: IContext,
+    data: Prisma.OpportunityCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.opportunity.create({
+      data,
+      include: opportunityInclude,
     });
   }
 
-  static async update(ctx: IContext, id: string, data: Prisma.OpportunityUpdateInput) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.opportunity.update({
-        where: { id },
-        data,
-        include: opportunityInclude,
-      });
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+    return tx.opportunity.delete({
+      where: { id },
+      include: opportunityInclude,
     });
   }
 
-  static async setPublishStatus(ctx: IContext, id: string, publishStatus: PublishStatus) {
-    return this.issuer.public(ctx, (tx) => {
-      return tx.opportunity.update({
-        where: { id },
-        data: { publishStatus },
-        include: opportunityInclude,
-      });
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.OpportunityUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.opportunity.update({
+      where: { id },
+      data,
+      include: opportunityInclude,
+    });
+  }
+
+  async setPublishStatus(ctx: IContext, id: string, publishStatus: PublishStatus, tx: Prisma.TransactionClient) {
+    return tx.opportunity.update({
+      where: { id },
+      data: { publishStatus },
+      include: opportunityInclude,
     });
   }
 }

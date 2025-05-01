@@ -8,36 +8,33 @@ import WalletService from "@/application/domain/account/wallet/service";
 import WalletPresenter from "@/application/domain/account/wallet/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class WalletUseCase {
-  static async visitorBrowseWallets(
+  constructor(
+    @inject("WalletService")
+    private readonly service: Pick<WalletService, "fetchWallets" | "findWallet">,
+  ) {}
+
+  async visitorBrowseWallets(
     { filter, sort, cursor, first }: GqlQueryWalletsArgs,
     ctx: IContext,
   ): Promise<GqlWalletsConnection> {
     const take = clampFirst(first);
 
-    const records = await WalletService.fetchWallets(
-      ctx,
-      {
-        cursor,
-        filter,
-        sort,
-      },
-      take,
-    );
+    const records = await this.service.fetchWallets(ctx, { cursor, filter, sort }, take);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => {
       return WalletPresenter.get(record);
     });
+
     return WalletPresenter.query(data, hasNextPage);
   }
 
-  static async userViewWallet(
-    { id }: GqlQueryWalletArgs,
-    ctx: IContext,
-  ): Promise<GqlWallet | null> {
-    const wallet = await WalletService.findWallet(ctx, id);
+  async userViewWallet({ id }: GqlQueryWalletArgs, ctx: IContext): Promise<GqlWallet | null> {
+    const wallet = await this.service.findWallet(ctx, id);
     return wallet ? WalletPresenter.get(wallet) : null;
   }
 }

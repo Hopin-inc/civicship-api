@@ -1,9 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { userInclude } from "@/application/domain/account/user/data/type";
 import { opportunityInclude } from "@/application/domain/experience/opportunity/data/type";
+import { communityInclude } from "@/application/domain/account/community/data/type";
 
 export const articleInclude = Prisma.validator<Prisma.ArticleInclude>()({
-  community: true,
+  community: { include: communityInclude },
   authors: { include: userInclude },
   relatedUsers: { include: userInclude },
   opportunities: { include: opportunityInclude },

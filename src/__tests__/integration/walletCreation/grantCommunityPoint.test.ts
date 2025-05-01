@@ -1,14 +1,24 @@
+import "reflect-metadata";
 import { GqlTransactionGrantCommunityPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
-import transactionResolver from "@/application/domain/transaction/controller/resolver";
+import TransactionUseCase from "@/application/domain/transaction/usecase";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
 
 describe("Transaction GrantCommunityPoint Integration Tests", () => {
   jest.setTimeout(30_000);
+  let useCase: TransactionUseCase;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(TransactionUseCase);
   });
 
   afterAll(async () => {
@@ -81,11 +91,7 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     //////////////////////////////////////////////////
     // execute
     //////////////////////////////////////////////////
-    await transactionResolver.Mutation.transactionGrantCommunityPoint(
-      {},
-      { input: input, permission: { communityId } },
-      ctx,
-    );
+    await useCase.ownerGrantCommunityPoint(ctx, input);
 
     //////////////////////////////////////////////////
     // assert result

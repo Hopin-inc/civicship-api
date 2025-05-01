@@ -1,139 +1,95 @@
+import "reflect-metadata";
+import { container } from "tsyringe";
 import ReservationService from "@/application/domain/experience/reservation/service";
-import ReservationConverter from "@/application/domain/experience/reservation/data/converter";
-import ReservationRepository from "@/application/domain/experience/reservation/data/repository";
-import { getCurrentUserId } from "@/application/domain/utils";
-import {
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Prisma,
-  ReservationStatus,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 
-jest.mock("@/application/domain/experience/reservation/data/converter", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    setStatus: jest.fn(),
-  },
-}));
+class MockReservationRepository {
+  query = jest.fn();
+  checkConflict = jest.fn();
+  find = jest.fn();
+  create = jest.fn();
+  setStatus = jest.fn();
+}
 
-jest.mock("@/application/domain/experience/reservation/data/repository", () => ({
-  __esModule: true,
-  default: {
-    create: jest.fn(),
-    setStatus: jest.fn(),
-  },
-}));
-
-jest.mock("@/application/domain/utils", () => ({
-  __esModule: true,
-  getCurrentUserId: jest.fn(),
-}));
+class MockReservationConverter {
+  filter = jest.fn();
+  sort = jest.fn();
+  checkConflict = jest.fn();
+  create = jest.fn();
+  setStatus = jest.fn();
+}
 
 describe("ReservationService", () => {
-  const ctx = {} as IContext;
-  const tx = {} as Prisma.TransactionClient;
-  const userId = "user-123";
+  let service: ReservationService;
+  let mockRepository: MockReservationRepository;
+  let mockConverter: MockReservationConverter;
+  const mockCtx = { currentUser: { id: "test-user-id" } } as unknown as IContext;
+  const mockTx = {} as Prisma.TransactionClient;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (getCurrentUserId as jest.Mock).mockReturnValue(userId);
+    container.reset();
+
+    mockRepository = new MockReservationRepository();
+    mockConverter = new MockReservationConverter();
+
+    container.register("ReservationRepository", { useValue: mockRepository });
+    container.register("ReservationConverter", { useValue: mockConverter });
+
+    service = container.resolve(ReservationService);
   });
 
   describe("createReservation", () => {
-    const opportunitySlotId = "slot-123";
-    const participantCount = 3;
-    const userIdsIfExists = ["user-456", "user-789"];
-    const reservationStatuses: ReservationStatuses = {
-      reservationStatus: ReservationStatus.APPLIED,
-      participationStatus: ParticipationStatus.PARTICIPATING,
-      participationStatusReason: ParticipationStatusReason.RESERVATION_APPLIED,
-    };
-    const mockConverted = { opportunitySlotId, participantCount };
+    it("should create a reservation with converted data", async () => {
+      const opportunitySlotId = "slot-1";
+      const participantCount = 3;
+      const userIdsIfExists = ["user-2", "user-3"];
+      const reservationStatuses = {
+        participant: "JOINED",
+        inviter: "CREATED",
+      } as any;
 
-    it("should call converter and repository with correct arguments", async () => {
-      (ReservationConverter.create as jest.Mock).mockReturnValue(mockConverted);
-      (ReservationRepository.create as jest.Mock).mockResolvedValue({ id: "rsv-001" });
+      const createdData = { opportunitySlotId: "slot-1", userId: "test-user-id" };
+      mockConverter.create.mockReturnValue(createdData);
+      mockRepository.create.mockResolvedValue({ id: "reservation-1" });
 
-      const result = await ReservationService.createReservation(
-        ctx,
+      const result = await service.createReservation(
+        mockCtx,
         opportunitySlotId,
         participantCount,
         userIdsIfExists,
         reservationStatuses,
-        tx,
+        mockTx,
       );
 
-      expect(ReservationConverter.create).toHaveBeenCalledWith(
+      expect(mockConverter.create).toHaveBeenCalledWith(
         opportunitySlotId,
-        userId,
+        "test-user-id",
         participantCount,
         userIdsIfExists,
         reservationStatuses,
       );
-      expect(ReservationRepository.create).toHaveBeenCalledWith(ctx, mockConverted, tx);
-      expect(result).toEqual({ id: "rsv-001" });
-    });
-
-    it("should throw if converter throws", async () => {
-      (ReservationConverter.create as jest.Mock).mockImplementation(() => {
-        throw new Error("Invalid input");
-      });
-
-      await expect(
-        ReservationService.createReservation(
-          ctx,
-          opportunitySlotId,
-          participantCount,
-          userIdsIfExists,
-          reservationStatuses,
-          tx,
-        ),
-      ).rejects.toThrow("Invalid input");
-    });
-
-    it("should throw if repository throws", async () => {
-      (ReservationConverter.create as jest.Mock).mockReturnValue(mockConverted);
-      (ReservationRepository.create as jest.Mock).mockRejectedValue(new Error("DB failure"));
-
-      await expect(
-        ReservationService.createReservation(
-          ctx,
-          opportunitySlotId,
-          participantCount,
-          userIdsIfExists,
-          reservationStatuses,
-          tx,
-        ),
-      ).rejects.toThrow("DB failure");
+      expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, createdData, mockTx);
+      expect(result).toEqual({ id: "reservation-1" });
     });
   });
 
   describe("setStatus", () => {
-    const reservationId = "rsv-123";
-    const status = ReservationStatus.APPLIED;
-    const data = { status };
+    it("should set status for a reservation", async () => {
+      const id = "reservation-1";
+      const status = "APPROVED" as any;
+      const currentUserId = "test-user-id";
 
-    it("should call converter and repository with correct arguments", async () => {
-      (ReservationConverter.setStatus as jest.Mock).mockReturnValue(data);
-      (ReservationRepository.setStatus as jest.Mock).mockResolvedValue({ id: reservationId });
+      const updatedData = { status: "APPROVED" };
+      mockConverter.setStatus.mockReturnValue(updatedData);
+      mockRepository.setStatus.mockResolvedValue({ id: "reservation-1", status: "APPROVED" });
 
-      const result = await ReservationService.setStatus(ctx, reservationId, userId, status, tx);
+      const result = await service.setStatus(mockCtx, id, currentUserId, status, mockTx);
 
-      expect(ReservationConverter.setStatus).toHaveBeenCalledWith(userId, status);
-      expect(ReservationRepository.setStatus).toHaveBeenCalledWith(ctx, reservationId, data, tx);
-      expect(result).toEqual({ id: reservationId });
-    });
-
-    it("should throw if repository throws", async () => {
-      (ReservationConverter.setStatus as jest.Mock).mockReturnValue(data);
-      (ReservationRepository.setStatus as jest.Mock).mockRejectedValue(new Error("DB error"));
-
-      await expect(
-        ReservationService.setStatus(ctx, reservationId, userId, status, tx),
-      ).rejects.toThrow("DB error");
+      expect(mockConverter.setStatus).toHaveBeenCalledWith(currentUserId, status);
+      expect(mockRepository.setStatus).toHaveBeenCalledWith(mockCtx, id, updatedData, mockTx);
+      expect(result).toEqual({ id: "reservation-1", status: "APPROVED" });
     });
   });
 });

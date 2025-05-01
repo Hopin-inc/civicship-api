@@ -10,6 +10,8 @@
     "noImplicitAny": false,
     "noUnusedLocals": true,
     "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node", "@types/jest", "@quramy/jest-prisma"],

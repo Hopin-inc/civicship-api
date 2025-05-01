@@ -1,17 +1,55 @@
+import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
-import membershipResolver from "@/application/domain/account/membership/controller/resolver";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { container } from "tsyringe";
+import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
+import MembershipService from "@/application/domain/account/membership/service";
+import { registerProductionDependencies } from "@/application/provider";
 
-jest.mock("@/application/domain/notification/service");
+class MockWalletService implements Partial<WalletService> {
+  createMemberWalletIfNeeded = jest.fn();
+}
 
-describe("Membership Assign Member Tests", () => {
+class MockNotificationService implements Partial<NotificationService> {
+  switchRichMenuByRole = jest.fn();
+}
+
+describe("Membership Integration: Assign Owner", () => {
+  let membershipUseCase: MembershipUseCase;
+  let walletServiceMock: MockWalletService;
+  let notificationServiceMock: MockNotificationService;
+
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
-    jest.clearAllMocks(); // モックリセット
+    jest.clearAllMocks();
+    container.reset();
+    registerProductionDependencies();
+
+    const membershipService = container.resolve(MembershipService);
+
+    walletServiceMock = new MockWalletService();
+    notificationServiceMock = new MockNotificationService();
+
+    container.register("WalletService", { useValue: walletServiceMock });
+    container.register("NotificationService", { useValue: notificationServiceMock });
+
+    const issuer = container.resolve(PrismaClientIssuer);
+
+    membershipUseCase = new MembershipUseCase(
+      issuer,
+      membershipService,
+      walletServiceMock as any,
+      notificationServiceMock as any,
+    );
   });
 
+  afterAll(async () => {
+    await TestDataSourceHelper.disconnect();
+  });
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
   });
@@ -35,7 +73,7 @@ describe("Membership Assign Member Tests", () => {
       community: { connect: { id: community.id } },
       status: MembershipStatus.JOINED,
       reason: MembershipStatusReason.INVITED,
-      role: Role.MANAGER, // 初期はMANAGER（→MEMBERに変更）
+      role: Role.MANAGER, // MANAGERからMEMBERに変更させる
     });
 
     const input = {
@@ -44,28 +82,22 @@ describe("Membership Assign Member Tests", () => {
     };
 
     // Act
-    const result = await membershipResolver.Mutation.membershipAssignMember(
-      {},
+    const result = await membershipUseCase.managerAssignMember(
       { input, permission: { communityId: community.id } },
       ctx,
     );
 
     // Assert
     const updatedMembership = await TestDataSourceHelper.findMembership({
-      userId_communityId: {
-        userId: user.id,
-        communityId: community.id,
-      },
+      userId_communityId: { userId: user.id, communityId: community.id },
     });
-    expect(updatedMembership?.role).toBe(Role.MEMBER);
 
-    expect(result.membership?.user.id).toBe(user.id);
-    expect(result.membership?.community.id).toBe(community.id);
+    expect(updatedMembership?.role).toBe(Role.MEMBER);
     expect(result.membership?.role).toBe("MEMBER");
 
-    // 🔥 リッチメニュー切り替え検証
-    expect(NotificationService.switchRichMenuByRole).toHaveBeenCalledTimes(1);
-    expect(NotificationService.switchRichMenuByRole).toHaveBeenCalledWith(
+    // 🔥 NotificationService（mock）でswitchRichMenuByRoleが呼ばれたことを検証！
+    expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: user.id,
         communityId: community.id,

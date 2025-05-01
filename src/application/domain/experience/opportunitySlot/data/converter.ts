@@ -5,19 +5,21 @@ import {
   GqlOpportunitySlotFilterInput,
   GqlOpportunitySlotUpdateInput,
 } from "@/types/graphql";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class OpportunitySlotConverter {
-  static filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
+  filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
     return {
       AND: [filter?.opportunityId ? { opportunityId: filter.opportunityId } : {}],
     };
   }
 
-  static sort(sort?: GqlCommunitySortInput): Prisma.OpportunitySlotOrderByWithRelationInput[] {
+  sort(sort?: GqlCommunitySortInput): Prisma.OpportunitySlotOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static createMany(
+  createMany(
     opportunityId: string,
     inputs: GqlOpportunitySlotCreateInput[],
   ): Prisma.OpportunitySlotCreateManyInput[] {
@@ -28,7 +30,7 @@ export default class OpportunitySlotConverter {
     }));
   }
 
-  static setStatus(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
+  setStatus(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
     const { startsAt, endsAt } = input;
     return {
       startsAt: startsAt,
@@ -36,7 +38,7 @@ export default class OpportunitySlotConverter {
     };
   }
 
-  static update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
+  update(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
     const { startsAt, endsAt } = input;
     return {
       startsAt: startsAt,

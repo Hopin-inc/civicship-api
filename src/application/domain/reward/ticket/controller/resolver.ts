@@ -8,37 +8,45 @@ import {
   GqlQueryTicketsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
 
-const ticketResolver = {
-  Query: {
-    tickets: async (_: unknown, args: GqlQueryTicketsArgs, ctx: IContext) => {
-      return TicketUseCase.visitorBrowseTickets(ctx, args);
-    },
-    ticket: async (_: unknown, args: GqlQueryTicketArgs, ctx: IContext) => {
-      if (!ctx.loaders?.ticket) {
-        return TicketUseCase.visitorViewTicket(ctx, args);
-      }
-      return await ctx.loaders.ticket.load(args.id);
-    },
-  },
+@injectable()
+export default class TicketResolver {
+  constructor(@inject("TicketUseCase") private readonly ticketUseCase: TicketUseCase) {}
 
-  Mutation: {
-    ticketIssue: async (_: unknown, args: GqlMutationTicketIssueArgs, ctx: IContext) => {
-      return TicketUseCase.managerIssueTicket(ctx, args);
+  Query = {
+    tickets: (_: unknown, args: GqlQueryTicketsArgs, ctx: IContext) => {
+      return this.ticketUseCase.visitorBrowseTickets(ctx, args);
     },
-    ticketClaim: async (_: unknown, args: GqlMutationTicketClaimArgs, ctx: IContext) => {
-      return TicketUseCase.userClaimTicket(ctx, args.input);
+
+    ticket: (_: unknown, args: GqlQueryTicketArgs, ctx: IContext) => {
+      if (!ctx.loaders?.ticket) {
+        return this.ticketUseCase.visitorViewTicket(ctx, args);
+      }
+      return ctx.loaders.ticket.load(args.id);
     },
-    ticketPurchase: async (_: unknown, args: GqlMutationTicketPurchaseArgs, ctx: IContext) => {
-      return TicketUseCase.memberPurchaseTicket(ctx, args);
+  };
+
+  Mutation = {
+    ticketIssue: (_: unknown, args: GqlMutationTicketIssueArgs, ctx: IContext) => {
+      return this.ticketUseCase.managerIssueTicket(ctx, args);
     },
-    ticketUse: async (_: unknown, args: GqlMutationTicketUseArgs, ctx: IContext) => {
-      return TicketUseCase.memberUseTicket(ctx, args);
+
+    ticketClaim: (_: unknown, args: GqlMutationTicketClaimArgs, ctx: IContext) => {
+      return this.ticketUseCase.userClaimTicket(ctx, args.input);
     },
-    ticketRefund: async (_: unknown, args: GqlMutationTicketRefundArgs, ctx: IContext) => {
-      return TicketUseCase.memberRefundTicket(ctx, args);
+
+    ticketPurchase: (_: unknown, args: GqlMutationTicketPurchaseArgs, ctx: IContext) => {
+      return this.ticketUseCase.memberPurchaseTicket(ctx, args);
     },
-  },
-};
-export default ticketResolver;
+
+    ticketUse: (_: unknown, args: GqlMutationTicketUseArgs, ctx: IContext) => {
+      return this.ticketUseCase.memberUseTicket(ctx, args);
+    },
+
+    ticketRefund: (_: unknown, args: GqlMutationTicketRefundArgs, ctx: IContext) => {
+      return this.ticketUseCase.memberRefundTicket(ctx, args);
+    },
+  };
+}

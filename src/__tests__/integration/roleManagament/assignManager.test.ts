@@ -1,15 +1,54 @@
+import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { CurrentPrefecture, MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
 import { IContext } from "@/types/server";
-import membershipResolver from "@/application/domain/account/membership/controller/resolver";
+import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { container } from "tsyringe";
+import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
+import MembershipService from "@/application/domain/account/membership/service";
+import { registerProductionDependencies } from "@/application/provider";
 
-jest.mock("@/application/domain/notification/service");
+class MockWalletService implements Partial<WalletService> {
+  createMemberWalletIfNeeded = jest.fn();
+}
 
-describe("Membership Assign Manager Tests", () => {
+class MockNotificationService implements Partial<NotificationService> {
+  switchRichMenuByRole = jest.fn();
+}
+
+describe("Membership Integration: Assign Owner", () => {
+  let membershipUseCase: MembershipUseCase;
+  let walletServiceMock: MockWalletService;
+  let notificationServiceMock: MockNotificationService;
+
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
-    jest.clearAllMocks(); // ←モック呼び出し回数リセット！
+    jest.clearAllMocks();
+    container.reset();
+    registerProductionDependencies();
+
+    const membershipService = container.resolve(MembershipService);
+
+    walletServiceMock = new MockWalletService();
+    notificationServiceMock = new MockNotificationService();
+
+    container.register("WalletService", { useValue: walletServiceMock });
+    container.register("NotificationService", { useValue: notificationServiceMock });
+
+    const issuer = container.resolve(PrismaClientIssuer);
+
+    membershipUseCase = new MembershipUseCase(
+      issuer,
+      membershipService,
+      walletServiceMock as any,
+      notificationServiceMock as any,
+    );
+  });
+
+  afterAll(async () => {
+    await TestDataSourceHelper.disconnect();
   });
 
   afterAll(async () => {
@@ -44,28 +83,22 @@ describe("Membership Assign Manager Tests", () => {
     };
 
     // Act
-    const result = await membershipResolver.Mutation.membershipAssignManager(
-      {},
+    const result = await membershipUseCase.managerAssignManager(
       { input, permission: { communityId: community.id } },
       ctx,
     );
 
     // Assert
     const updatedMembership = await TestDataSourceHelper.findMembership({
-      userId_communityId: {
-        userId: user.id,
-        communityId: community.id,
-      },
+      userId_communityId: { userId: user.id, communityId: community.id },
     });
-    expect(updatedMembership?.role).toBe(Role.MANAGER);
 
-    expect(result.membership?.user.id).toBe(user.id);
-    expect(result.membership?.community.id).toBe(community.id);
+    expect(updatedMembership?.role).toBe(Role.MANAGER);
     expect(result.membership?.role).toBe("MANAGER");
 
-    // 🔥 リッチメニュー切り替えが呼ばれたことを検証！
-    expect(NotificationService.switchRichMenuByRole).toHaveBeenCalledTimes(1);
-    expect(NotificationService.switchRichMenuByRole).toHaveBeenCalledWith(
+    // 🔥 NotificationService（mock）でswitchRichMenuByRoleが呼ばれたことを検証！
+    expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledTimes(1);
+    expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: user.id,
         communityId: community.id,

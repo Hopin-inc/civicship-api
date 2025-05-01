@@ -1,60 +1,62 @@
 import {
   GqlQueryOpportunitySlotsArgs,
   GqlQueryOpportunitySlotArgs,
+  GqlMutationOpportunitySlotSetHostingStatusArgs,
+  GqlMutationOpportunitySlotsBulkUpdateArgs,
   GqlOpportunitySlot,
   GqlOpportunitySlotParticipationsArgs,
-  GqlMutationOpportunitySlotsBulkUpdateArgs,
-  GqlMutationOpportunitySlotSetHostingStatusArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
 import OpportunitySlotUseCase from "@/application/domain/experience/opportunitySlot/usecase";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 
-const opportunitySlotResolver = {
-  Query: {
-    opportunitySlots: async (_: unknown, args: GqlQueryOpportunitySlotsArgs, ctx: IContext) => {
-      return OpportunitySlotUseCase.visitorBrowseOpportunitySlots(args, ctx);
-    },
-    opportunitySlot: async (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
-      if (!ctx.loaders?.opportunitySlot) {
-        return OpportunitySlotUseCase.visitorViewOpportunitySlot(args, ctx);
-      }
-      return ctx.loaders.opportunitySlot.load(args.id);
-    },
-  },
+@injectable()
+export default class OpportunitySlotResolver {
+  constructor(
+    @inject("OpportunitySlotUseCase") private readonly slotUseCase: OpportunitySlotUseCase,
+    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
+  ) {}
 
-  Mutation: {
-    opportunitySlotSetHostingStatus: async (
+  Query = {
+    opportunitySlots: (_: unknown, args: GqlQueryOpportunitySlotsArgs, ctx: IContext) => {
+      return this.slotUseCase.visitorBrowseOpportunitySlots(args, ctx);
+    },
+    opportunitySlot: (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
+      return this.slotUseCase.visitorViewOpportunitySlot(args, ctx);
+    },
+  };
+
+  Mutation = {
+    opportunitySlotSetHostingStatus: (
       _: unknown,
       args: GqlMutationOpportunitySlotSetHostingStatusArgs,
       ctx: IContext,
     ) => {
-      return OpportunitySlotUseCase.managerSetOpportunitySlotHostingStatus(args, ctx);
+      return this.slotUseCase.managerSetOpportunitySlotHostingStatus(args, ctx);
     },
-    opportunitySlotsBulkUpdate: async (
+    opportunitySlotsBulkUpdate: (
       _: unknown,
       args: GqlMutationOpportunitySlotsBulkUpdateArgs,
       ctx: IContext,
     ) => {
-      return OpportunitySlotUseCase.managerBulkUpdateOpportunitySlots(args, ctx);
+      return this.slotUseCase.managerBulkUpdateOpportunitySlots(args, ctx);
     },
-  },
+  };
 
-  OpportunitySlot: {
-    participations: async (
+  OpportunitySlot = {
+    participations: (
       parent: GqlOpportunitySlot,
       args: GqlOpportunitySlotParticipationsArgs,
       ctx: IContext,
     ) => {
-      return ParticipationUseCase.visitorBrowseParticipations(
+      return this.participationUseCase.visitorBrowseParticipations(
         {
-          filter: { opportunitySlotId: parent.id },
           ...args,
+          filter: { ...args.filter, opportunitySlotId: parent.id },
         },
         ctx,
       );
     },
-  },
-};
-
-export default opportunitySlotResolver;
+  };
+}

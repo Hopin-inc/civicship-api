@@ -1,43 +1,53 @@
-import { GqlReservationsConnection, GqlQueryReservationsArgs } from "@/types/graphql";
-import { IContext } from "@/types/server";
-import ReservationRepository from "@/application/domain/experience/reservation/data/repository";
-import ReservationConverter from "@/application/domain/experience/reservation/data/converter";
-import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
-import { Prisma, ReservationStatus } from "@prisma/client";
+import { ReservationStatus, Prisma } from "@prisma/client";
+import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
+import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
-import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
-import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
+import { inject, injectable } from "tsyringe";
+import {
+  IReservationRepository,
+  IReservationService,
+} from "@/application/domain/experience/reservation/data/interface";
+import { IContext } from "@/types/server";
+import ReservationConverter from "@/application/domain/experience/reservation/data/converter";
+import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
+import { GqlQueryReservationsArgs, GqlReservationsConnection } from "@/types/graphql";
 
-export default class ReservationService {
-  static async fetchReservations(
+@injectable()
+export default class ReservationService implements IReservationService {
+  constructor(
+    @inject("ReservationRepository") private readonly repository: IReservationRepository,
+    @inject("ReservationConverter") private readonly converter: ReservationConverter,
+  ) {}
+
+  async fetchReservations(
     ctx: IContext,
     { cursor, filter, sort, first }: GqlQueryReservationsArgs,
   ): Promise<GqlReservationsConnection> {
     const take = clampFirst(first);
-    const where = ReservationConverter.filter(filter);
-    const orderBy = ReservationConverter.sort(sort);
-    const results = await ReservationRepository.query(ctx, where, orderBy, take, cursor);
+    const where = this.converter.filter(filter);
+    const orderBy = this.converter.sort(sort);
+    const results = await this.repository.query(ctx, where, orderBy, take, cursor);
     const hasNextPage = results.length > take;
     const sliced = results.slice(0, take).map(ReservationPresenter.get);
     return ReservationPresenter.query(sliced, hasNextPage);
   }
 
-  static async fetchConflictingReservations(
+  async fetchConflictingReservations(
     ctx: IContext,
     userId: string,
     slotId: string,
   ): Promise<PrismaReservation[]> {
-    const where = ReservationConverter.checkConflict(userId, slotId);
-    return ReservationRepository.checkConflict(ctx, where);
+    const where = this.converter.checkConflict(userId, slotId);
+    return this.repository.checkConflict(ctx, where);
   }
 
-  static async findReservation(ctx: IContext, id: string) {
-    return ReservationRepository.find(ctx, id);
+  async findReservation(ctx: IContext, id: string): Promise<PrismaReservation | null> {
+    return this.repository.find(ctx, id);
   }
 
-  static async findReservationOrThrow(ctx: IContext, id: string) {
-    const reservation = await ReservationRepository.find(ctx, id);
+  async findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservation> {
+    const reservation = await this.repository.find(ctx, id);
 
     if (!reservation) {
       throw new NotFoundError("Reservation not found", { id });
@@ -46,34 +56,34 @@ export default class ReservationService {
     return reservation;
   }
 
-  static async createReservation(
+  async createReservation(
     ctx: IContext,
     opportunitySlotId: string,
     participantCount: number,
-    userIdsIfExists: string[] = [],
+    userIdsIfExists: string[],
     reservationStatuses: ReservationStatuses,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaReservation> {
     const currentUserId = getCurrentUserId(ctx);
-    const data = ReservationConverter.create(
+    const data = this.converter.create(
       opportunitySlotId,
       currentUserId,
       participantCount,
       userIdsIfExists,
       reservationStatuses,
     );
-    return ReservationRepository.create(ctx, data, tx);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static async setStatus(
+  async setStatus(
     ctx: IContext,
     id: string,
     currentUserId: string,
     status: ReservationStatus,
     tx: Prisma.TransactionClient,
-  ) {
-    const data = ReservationConverter.setStatus(currentUserId, status);
+  ): Promise<PrismaReservation> {
+    const data = this.converter.setStatus(currentUserId, status);
 
-    return ReservationRepository.setStatus(ctx, id, data, tx);
+    return this.repository.setStatus(ctx, id, data, tx);
   }
 }

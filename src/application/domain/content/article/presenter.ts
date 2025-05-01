@@ -2,6 +2,7 @@ import { GqlArticlesConnection, GqlArticle } from "@/types/graphql";
 import { PrismaArticle } from "@/application/domain/content/article/data/type";
 import UserPresenter from "@/application/domain/account/user/presenter";
 import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
+import CommunityPresenter from "@/application/domain/account/community/presenter";
 
 export default class ArticlePresenter {
   static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {
@@ -26,7 +27,7 @@ export default class ArticlePresenter {
     return {
       ...prop,
       thumbnail: thumbnail?.url,
-      community,
+      community: CommunityPresenter.get(community),
       authors: authors.map(UserPresenter.get),
       relatedUsers: relatedUsers.map(UserPresenter.get),
       opportunities: opportunities.map(OpportunityPresenter.get),

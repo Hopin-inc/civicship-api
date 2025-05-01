@@ -1,12 +1,17 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
+import { inject, injectable } from "tsyringe";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
 import { participationStatusHistoryInclude } from "@/application/domain/experience/participation/statusHistory/data/type";
+import { IParticipationStatusHistoryRepository } from "@/application/domain/experience/participation/statusHistory/data/interface";
 
-export default class ParticipationStatusHistoryRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class ParticipationStatusHistoryRepository
+  implements IParticipationStatusHistoryRepository
+{
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.ParticipationStatusHistoryWhereInput,
     orderBy: Prisma.ParticipationStatusHistoryOrderByWithRelationInput[],
@@ -25,7 +30,7 @@ export default class ParticipationStatusHistoryRepository {
     });
   }
 
-  static async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string) {
     return this.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.findUnique({
         where: { id },
@@ -34,7 +39,7 @@ export default class ParticipationStatusHistoryRepository {
     });
   }
 
-  static async create(
+  async create(
     ctx: IContext,
     data: Prisma.ParticipationStatusHistoryCreateInput,
     tx: Prisma.TransactionClient,
@@ -45,21 +50,13 @@ export default class ParticipationStatusHistoryRepository {
     });
   }
 
-  static async createMany(
+  async createMany(
     ctx: IContext,
     data: Prisma.ParticipationStatusHistoryCreateManyInput[],
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.participationStatusHistory.createMany({
-        data,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) =>
-        dbTx.participationStatusHistory.createMany({
-          data,
-        }),
-      );
-    }
+    return tx.participationStatusHistory.createMany({
+      data,
+    });
   }
 }

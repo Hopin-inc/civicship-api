@@ -6,9 +6,11 @@ import {
   GqlImageInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class UtilityConverter {
-  static filter(filter?: GqlUtilityFilterInput): Prisma.UtilityWhereInput {
+  filter(filter?: GqlUtilityFilterInput): Prisma.UtilityWhereInput {
     if (!filter) return {};
 
     const conditions: Prisma.UtilityWhereInput[] = [];
@@ -23,14 +25,14 @@ export default class UtilityConverter {
     return conditions.length ? { AND: conditions } : {};
   }
 
-  static sort(sort: GqlUtilitySortInput): Prisma.UtilityOrderByWithRelationInput {
+  sort(sort: GqlUtilitySortInput): Prisma.UtilityOrderByWithRelationInput {
     return {
       createdAt: sort?.createdAt ?? Prisma.SortOrder.desc,
       pointsRequired: sort?.pointsRequired,
     };
   }
 
-  static findAccessible(
+  findAccessible(
     id: string,
     filter?: GqlUtilityFilterInput,
   ): Prisma.UtilityWhereUniqueInput & Prisma.UtilityWhereInput {
@@ -41,7 +43,7 @@ export default class UtilityConverter {
     };
   }
 
-  static create(input: GqlUtilityCreateInput): {
+  create(input: GqlUtilityCreateInput): {
     data: Omit<Prisma.UtilityCreateInput, "images">;
     images: GqlImageInput[];
   } {
@@ -55,7 +57,7 @@ export default class UtilityConverter {
     };
   }
 
-  static updateInfo(input: GqlUtilityUpdateInfoInput): {
+  updateInfo(input: GqlUtilityUpdateInfoInput): {
     data: Omit<Prisma.UtilityUpdateInput, "images">;
     images: GqlImageInput[];
   } {

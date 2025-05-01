@@ -1,18 +1,18 @@
-import ArticleUseCase from "@/application/domain/content/article/usecase";
-import { GqlQueryArticleArgs, GqlQueryArticlesArgs } from "@/types/graphql";
+import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
+import { GqlQueryArticlesArgs, GqlQueryArticleArgs } from "@/types/graphql";
+import ArticleUseCase from "@/application/domain/content/article/usecase";
 
-const articleResolver = {
-  Query: {
-    articles: async (_: unknown, args: GqlQueryArticlesArgs, ctx: IContext) =>
-      ArticleUseCase.anyoneBrowseArticles(ctx, args),
-    article: async (_: unknown, args: GqlQueryArticleArgs, ctx: IContext) => {
-      if (!ctx.loaders?.article) {
-        return ArticleUseCase.visitorViewArticle(ctx, args);
-      }
-      return ctx.loaders.article.load(args.id);
+@injectable()
+export default class ArticleResolver {
+  constructor(@inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase) {}
+
+  Query = {
+    articles: (_: unknown, args: GqlQueryArticlesArgs, ctx: IContext) => {
+      return this.articleUseCase.anyoneBrowseArticles(ctx, args);
     },
-  },
-};
-
-export default articleResolver;
+    article: (_: unknown, args: GqlQueryArticleArgs, ctx: IContext) => {
+      return this.articleUseCase.visitorViewArticle(ctx, args);
+    },
+  };
+}

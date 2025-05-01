@@ -5,10 +5,9 @@ extend type Mutation {
     userSignUp(input: UserSignUpInput!): CurrentUserPayload
 
     userDeleteMe(
-        input: UserDeleteInput!
         permission: CheckIsSelfPermissionInput!
     ): UserDeletePayload
-    @authz(rules: [IsSelf, VerifySanitizeInput])
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
@@ -24,11 +23,6 @@ input UserSignUpInput {
     currentPrefecture: CurrentPrefecture!
 }
 
-input UserDeleteInput {
-    """Used for permission checking."""
-    userId: ID!
-}
-
 # ------------------------------
 # User Account Type Definitions
 # ------------------------------
@@ -37,5 +31,5 @@ type CurrentUserPayload {
 }
 
 type UserDeletePayload {
-    userId: ID!
+    userId: ID
 }

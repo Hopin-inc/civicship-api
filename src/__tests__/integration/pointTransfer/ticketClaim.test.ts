@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import {
@@ -8,7 +9,9 @@ import {
   TransactionReason,
   WalletType,
 } from "@prisma/client";
-import ticketResolver from "@/application/domain/reward/ticket/controller/resolver";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
+import TicketUseCase from "@/application/domain/reward/ticket/usecase";
 
 describe("Ticket Claim Tests", () => {
   const testSetup = {
@@ -24,6 +27,7 @@ describe("Ticket Claim Tests", () => {
   const transferPoints = testSetup.pointsRequired * testSetup.qtyToBeIssued;
 
   let ctx: IContext;
+  let useCase: TicketUseCase;
   let userId: string;
   let communityId: string;
   let ownerWalletId: string;
@@ -32,6 +36,12 @@ describe("Ticket Claim Tests", () => {
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(TicketUseCase);
 
     const user = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
@@ -116,11 +126,7 @@ describe("Ticket Claim Tests", () => {
   });
 
   it("should claim ticket successfully", async () => {
-    const result = await ticketResolver.Mutation.ticketClaim(
-      {},
-      { input: { ticketClaimLinkId } },
-      ctx,
-    );
+    const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
     expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
 
@@ -133,7 +139,7 @@ describe("Ticket Claim Tests", () => {
   });
 
   it("should transfer points correctly between owner and claimer", async () => {
-    await ticketResolver.Mutation.ticketClaim({}, { input: { ticketClaimLinkId } }, ctx);
+    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
       (t) => t.reason === TransactionReason.DONATION,
@@ -146,7 +152,7 @@ describe("Ticket Claim Tests", () => {
   });
 
   it("should refresh currentPointView after claim", async () => {
-    await ticketResolver.Mutation.ticketClaim({}, { input: { ticketClaimLinkId } }, ctx);
+    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
@@ -230,25 +236,25 @@ describe("Ticket Claim Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    await expect(
-      ticketResolver.Mutation.ticketClaim({}, { input: { ticketClaimLinkId } }, ctx),
-    ).rejects.toThrow(/insufficient/i);
+    await expect(useCase.userClaimTicket(ctx, { ticketClaimLinkId })).rejects.toThrow(
+      /insufficient/i,
+    );
   });
 
   it("should not allow claiming the same ticket twice", async () => {
-    await ticketResolver.Mutation.ticketClaim({}, { input: { ticketClaimLinkId } }, ctx);
+    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
-    await expect(
-      ticketResolver.Mutation.ticketClaim({}, { input: { ticketClaimLinkId } }, ctx),
-    ).rejects.toThrow(/already been used/i);
+    await expect(useCase.userClaimTicket(ctx, { ticketClaimLinkId })).rejects.toThrow(
+      /already been used/i,
+    );
   });
 
   it("should fail when claimLinkId is invalid", async () => {
     const invalidId = "non-existent-id";
 
-    await expect(
-      ticketResolver.Mutation.ticketClaim({}, { input: { ticketClaimLinkId: invalidId } }, ctx),
-    ).rejects.toThrow(/not found/i);
+    await expect(useCase.userClaimTicket(ctx, { ticketClaimLinkId: invalidId })).rejects.toThrow(
+      /not found/i,
+    );
   });
 
   it("should auto-join community if not a member", async () => {
@@ -322,11 +328,7 @@ describe("Ticket Claim Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const result = await ticketResolver.Mutation.ticketClaim(
-      {},
-      { input: { ticketClaimLinkId } },
-      ctx,
-    );
+    const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
     expect(result.tickets.length).toBe(2);
   });

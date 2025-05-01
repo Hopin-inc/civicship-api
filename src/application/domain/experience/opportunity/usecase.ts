@@ -18,9 +18,17 @@ import OpportunityPresenter from "@/application/domain/experience/opportunity/pr
 import { PublishStatus, TicketStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { inject, injectable } from "tsyringe";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
+@injectable()
 export default class OpportunityUseCase {
-  static async anyoneBrowseOpportunities(
+  constructor(
+    @inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer,
+    @inject("OpportunityService") private readonly service: OpportunityService,
+  ) {}
+
+  async anyoneBrowseOpportunities(
     { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitiesConnection> {
@@ -36,7 +44,7 @@ export default class OpportunityUseCase {
         ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
         : [PublishStatus.PUBLIC];
 
-    await OpportunityService.validatePublishStatus(allowedPublishStatuses, filter);
+    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
 
     const validatedFilter: GqlOpportunityFilterInput = validateByMembershipRoles(
       communityIds,
@@ -46,7 +54,7 @@ export default class OpportunityUseCase {
       filter,
     );
 
-    const records = await OpportunityService.fetchOpportunities(
+    const records = await this.service.fetchOpportunities(
       ctx,
       {
         cursor,
@@ -62,7 +70,7 @@ export default class OpportunityUseCase {
     return OpportunityPresenter.query(data, hasNextPage);
   }
 
-  static async visitorViewOpportunity(
+  async visitorViewOpportunity(
     { id, permission }: GqlQueryOpportunityArgs,
     ctx: IContext,
   ): Promise<GqlOpportunity | null> {
@@ -77,43 +85,56 @@ export default class OpportunityUseCase {
       currentUserId,
     );
 
-    const record = await OpportunityService.findOpportunityAccessible(ctx, id, validatedFilter);
+    const record = await this.service.findOpportunityAccessible(ctx, id, validatedFilter);
     return record ? OpportunityPresenter.get(record) : null;
   }
 
-  static async managerCreateOpportunity(
+  async managerCreateOpportunity(
     { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
-    const res = await OpportunityService.createOpportunity(ctx, input);
-    return OpportunityPresenter.create(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const record = await this.service.createOpportunity(ctx, input, tx);
+      return OpportunityPresenter.create(record);
+    });
   }
 
-  static async managerDeleteOpportunity(
+  async managerDeleteOpportunity(
     { id }: GqlMutationOpportunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityDeletePayload> {
-    const res = await OpportunityService.deleteOpportunity(ctx, id);
-    return OpportunityPresenter.delete(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const record = await this.service.deleteOpportunity(ctx, id, tx);
+      return OpportunityPresenter.delete(record);
+    });
   }
 
-  static async managerUpdateOpportunityContent(
+  async managerUpdateOpportunityContent(
     { id, input }: GqlMutationOpportunityUpdateContentArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityUpdateContentPayload> {
-    const res = await OpportunityService.updateOpportunityContent(ctx, id, input);
-    return OpportunityPresenter.update(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const record = await this.service.updateOpportunityContent(ctx, id, input, tx);
+      return OpportunityPresenter.update(record);
+    });
   }
 
-  static async managerSetOpportunityPublishStatus(
+  async managerSetOpportunityPublishStatus(
     { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    const res = await OpportunityService.setOpportunityPublishStatus(ctx, id, input.publishStatus);
-    return OpportunityPresenter.setPublishStatus(res);
+    return this.issuer.public(ctx, async (tx) => {
+      const record = await this.service.setOpportunityPublishStatus(
+        ctx,
+        id,
+        input.publishStatus,
+        tx,
+      );
+      return OpportunityPresenter.setPublishStatus(record);
+    });
   }
 
-  static async checkUserHasValidTicketForOpportunity(
+  async checkUserHasValidTicketForOpportunity(
     ctx: IContext,
     opportunityId: string,
   ): Promise<boolean> {

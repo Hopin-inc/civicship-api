@@ -3,9 +3,11 @@ import {
   GqlParticipationStatusHistorySortInput,
 } from "@/types/graphql";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class ParticipationStatusHistoryConverter {
-  static filter(
+  filter(
     filter?: GqlParticipationStatusHistoryFilterInput,
   ): Prisma.ParticipationStatusHistoryWhereInput {
     return {
@@ -17,13 +19,13 @@ export default class ParticipationStatusHistoryConverter {
     };
   }
 
-  static sort(
+  sort(
     sort?: GqlParticipationStatusHistorySortInput,
   ): Prisma.ParticipationStatusHistoryOrderByWithRelationInput[] {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  static createMany(
+  createMany(
     participationIds: string[],
     currentUserId: string,
     status: ParticipationStatus,

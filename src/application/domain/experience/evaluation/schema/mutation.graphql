@@ -6,13 +6,13 @@ extend type Mutation {
         input: EvaluationCreateInput!
         permission: CheckCommunityPermissionInput!
     ): EvaluationCreatePayload
-    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+    @authz(rules: [IsCommunityManager])
 
     evaluationFail(
         input: EvaluationCreateInput!
         permission: CheckCommunityPermissionInput!
     ): EvaluationCreatePayload
-    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+    @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------

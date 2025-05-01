@@ -1,8 +1,10 @@
 import { GqlEvaluationFilterInput, GqlEvaluationSortInput } from "@/types/graphql";
 import { EvaluationStatus, Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
 
+@injectable()
 export default class EvaluationConverter {
-  static filter(filter?: GqlEvaluationFilterInput): Prisma.EvaluationWhereInput {
+  filter(filter?: GqlEvaluationFilterInput): Prisma.EvaluationWhereInput {
     const conditions: Prisma.EvaluationWhereInput[] = [];
 
     if (!filter) return {};
@@ -14,14 +16,14 @@ export default class EvaluationConverter {
     return conditions.length ? { AND: conditions } : {};
   }
 
-  static sort(sort?: GqlEvaluationSortInput): Prisma.EvaluationOrderByWithRelationInput[] {
+  sort(sort?: GqlEvaluationSortInput): Prisma.EvaluationOrderByWithRelationInput[] {
     return [
       { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
       ...(sort?.updatedAt ? [{ updatedAt: sort.updatedAt }] : []),
     ];
   }
 
-  static create(
+  create(
     participationId: string,
     currentUserId: string,
     status: EvaluationStatus,

@@ -67,11 +67,13 @@
     "prisma-dbml-generator": "^0.12.0",
     "prisma-erd-generator": "^2.0.4",
     "prisma-json-types-generator": "^3.3.0",
+    "reflect-metadata": "^0.2.2",
     "supertest": "^7.1.0",
     "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.15",
     "tsx": "^4.19.3",
+    "tsyringe": "^4.10.0",
     "typedoc-plugin-merge-modules": "^6.1.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.0"

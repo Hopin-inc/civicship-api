@@ -1,193 +1,99 @@
 import { postExecRule, preExecRule } from "@graphql-authz/core";
-import { AuthenticationError, AuthorizationError, ValidationError } from "@/errors/graphql";
+import { AuthenticationError, AuthorizationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
 import { Role } from "@prisma/client";
-import sanitize from "sanitize-html";
 import { GqlUser } from "@/types/graphql";
 
 // 🔐 ログイン済みか
 const IsUser = preExecRule({
-  error: "User must be logged in",
+  error: new AuthenticationError("User must be logged in"),
 })((context: IContext) => {
-  if (!context.currentUser) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  return true;
+  return !!context.currentUser;
 });
 
 // 🔐 システム管理者か
 const IsAdmin = preExecRule({
-  error: "User is not admin",
+  error: new AuthorizationError("User must be admin"),
 })((context: IContext) => {
   const user = context.currentUser;
-  if (!user) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (user.sysRole !== "SYS_ADMIN") {
-    throw new AuthorizationError("User must be admin");
-  }
-  return true;
+  return !!user && user.sysRole === "SYS_ADMIN";
 });
 
 // 🔐 自分自身の操作か
 const IsSelf = preExecRule({
-  error: "User is not self",
+  error: new AuthorizationError("User is not self"),
 })((context: IContext, args: any) => {
   const user = context.currentUser;
   const permission = args.permission;
-  if (!user) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (user.id !== permission?.userId) {
-    throw new AuthorizationError("User is not self");
-  }
-  return true;
+  return !!user && user.id === permission?.userId;
 });
 
 // 🔐 コミュニティのオーナーか
 const IsCommunityOwner = preExecRule({
-  error: "User must be community owner",
+  error: new AuthorizationError("User must be community owner"),
 })((context: IContext, args: any) => {
   const user = context.currentUser;
   const permission = args.permission;
-  if (!user) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (!permission?.communityId) {
-    throw new ValidationError("Community ID is required");
-  }
+
+  if (!user) return false;
+  if (!permission?.communityId) return false;
 
   const membership = context.hasPermissions?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
 
-  if (!membership) {
-    throw new AuthorizationError("User is not a member of the community");
-  }
-
-  if (membership.role !== Role.OWNER) {
-    throw new AuthorizationError("User must be community owner");
-  }
-  return true;
+  return membership?.role === Role.OWNER;
 });
 
 // 🔐 コミュニティマネージャー（OWNER または MANAGER）
 const IsCommunityManager = preExecRule({
-  error: "User must be community manager",
+  error: new AuthorizationError("User must be community manager or owner."),
 })((context: IContext, args: any) => {
   const user = context.currentUser;
   const permission = args.permission;
-  if (!user) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (!permission?.communityId) {
-    throw new ValidationError("Community ID is required");
-  }
+
+  if (!user || !permission?.communityId) return false;
 
   const membership = context.hasPermissions?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
-  if (!membership) {
-    throw new AuthorizationError("User is not a member of the community");
-  }
-
-  if (!(membership.role === Role.OWNER || membership.role === Role.MANAGER)) {
-    throw new AuthorizationError("User must be community manager");
-  }
-  return true;
+  return membership?.role === Role.OWNER || membership?.role === Role.MANAGER;
 });
 
 // 🔐 コミュニティメンバー（OWNER / MANAGER / MEMBER）
 const IsCommunityMember = preExecRule({
-  error: "User must be a community member",
+  error: new AuthorizationError("User must be a community member"),
 })((context: IContext, args: any) => {
   const user = context.currentUser;
   const permission = args.permission;
-  if (!user) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (!permission?.communityId) {
-    throw new ValidationError("Community ID is required");
-  }
+
+  if (!user || !permission?.communityId) return false;
 
   const membership = context.hasPermissions?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
-  if (!membership) {
-    throw new AuthorizationError("User is not a member of the community");
-  }
-
-  if (![Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership.role)) {
-    throw new AuthorizationError("User must be a community member");
-  }
-  return true;
+  return [Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership?.role as Role);
 });
 
 // 🔐 Opportunity 作成者
 const IsOpportunityOwner = preExecRule({
-  error: "User must be opportunity owner",
+  error: new AuthorizationError("User must be opportunity owner"),
 })((context: IContext, args: any) => {
   const user = context.currentUser;
   const opportunityId = args?.permission?.opportunityId;
-  if (!user) {
-    throw new AuthenticationError("User must be logged in");
-  }
-  if (!opportunityId) {
-    throw new ValidationError("Opportunity ID is required");
-  }
 
-  const found = context.hasPermissions?.opportunitiesCreatedByMe?.some(
-    (op) => op.id === opportunityId,
+  if (!user || !opportunityId) return false;
+
+  return (
+    context.hasPermissions?.opportunitiesCreatedByMe?.some((op) => op.id === opportunityId) ?? false
   );
-  if (!found) {
-    throw new AuthorizationError("User is not the opportunity owner");
-  }
-  return true;
 });
-
-// 🔐 入力サニタイズ検証
-const VerifySanitizeInput = preExecRule({
-  error: "Invalid input: disallowed HTML tags detected",
-})((_context: IContext, args: any) => {
-  recursiveSanitize(args.input);
-  return true;
-});
-
-// 🔄 再帰的なサニタイズ処理
-type Sanitizable =
-  | string
-  | number
-  | boolean
-  | null
-  | Sanitizable[]
-  | { [key: string]: Sanitizable };
-
-function recursiveSanitize(input: Sanitizable): Sanitizable {
-  if (typeof input === "string") {
-    const sanitized = sanitize(input, { allowedTags: [] });
-    if (input !== sanitized) {
-      throw new ValidationError("Invalid input: disallowed HTML tags detected", [`${input}`]);
-    }
-    return sanitized;
-  } else if (Array.isArray(input)) {
-    return input.map(recursiveSanitize);
-  } else if (input !== null && typeof input === "object") {
-    const result: { [key: string]: Sanitizable } = {};
-    for (const key in input) {
-      if (Object.prototype.hasOwnProperty.call(input, key)) {
-        result[key] = recursiveSanitize(input[key]);
-      }
-    }
-    return result;
-  }
-  return input;
-}
 
 const CanReadPhoneNumber = postExecRule({
-  error: "Not authorized to read phone number",
+  error: new AuthorizationError("Not authorized to read phone number"),
 })((context: IContext, _args: any, result: GqlUser) => {
   const viewer = context.currentUser;
-  if (!viewer) throw new AuthenticationError("User must be logged in");
+  if (!viewer) return false;
 
   const isSelf = viewer.id === result.id;
   const isAdmin = viewer.sysRole === "SYS_ADMIN";
@@ -203,8 +109,7 @@ const CanReadPhoneNumber = postExecRule({
     ),
   );
 
-  if (isSelf || isAdmin || isCommunityManager) return true;
-  throw new AuthorizationError("Not authorized to read phone number");
+  return isSelf || isAdmin || isCommunityManager;
 });
 
 export const rules = {
@@ -215,6 +120,5 @@ export const rules = {
   IsCommunityManager,
   IsCommunityMember,
   IsOpportunityOwner,
-  VerifySanitizeInput,
   CanReadPhoneNumber,
 } as const;

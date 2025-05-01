@@ -1,51 +1,58 @@
 import { GqlMutationUserUpdateMyProfileArgs, GqlQueryUsersArgs } from "@/types/graphql";
-import UserRepository from "@/application/domain/account/user/data/repository";
 import { IContext } from "@/types/server";
-import UserConverter from "@/application/domain/account/user/data/converter";
 import { Prisma } from "@prisma/client";
+import UserConverter from "@/application/domain/account/user/data/converter";
 import ImageService from "@/application/domain/content/image/service";
+import { IUserRepository } from "@/application/domain/account/user/data/interface";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class UserService {
-  static async fetchUsers(
+  constructor(
+    @inject("UserRepository") private readonly repository: IUserRepository,
+    @inject("UserConverter") private readonly converter: UserConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
+  ) {}
+
+  async fetchUsers(ctx: IContext, { cursor, filter, sort }: GqlQueryUsersArgs, take: number) {
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+    return this.repository.query(ctx, where, orderBy, take, cursor);
+  }
+
+  async fetchCommunityMembers(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryUsersArgs,
     take: number,
   ) {
-    const where = UserConverter.filter(filter ?? {});
-    const orderBy = UserConverter.sort(sort ?? {});
-    return UserRepository.query(ctx, where, orderBy, take, cursor);
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+    return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async fetchCommunityMembers(
-    ctx: IContext,
-    { cursor, filter, sort }: GqlQueryUsersArgs,
-    take: number,
-  ) {
-    const where = UserConverter.filter(filter ?? {});
-    const orderBy = UserConverter.sort(sort ?? {});
-    return UserRepository.query(ctx, where, orderBy, take, cursor);
+  async findUser(ctx: IContext, id: string) {
+    return await this.repository.find(ctx, id);
   }
 
-  static async findUser(ctx: IContext, id: string) {
-    return await UserRepository.find(ctx, id);
-  }
-
-  static async updateProfile(
+  async updateProfile(
     ctx: IContext,
     { input }: GqlMutationUserUpdateMyProfileArgs,
     tx: Prisma.TransactionClient,
   ) {
-    const { data, image } = UserConverter.update(input);
+    const { data, image } = this.converter.update(input);
+
     let uploadedImageData: Prisma.ImageCreateWithoutUsersInput | undefined = undefined;
     if (image) {
-      uploadedImageData = await ImageService.uploadPublicImage(image, "users");
+      uploadedImageData = await this.imageService.uploadPublicImage(image, "users");
     }
-    const userUpdateInput = {
+
+    const userUpdateInput: Prisma.UserUpdateInput = {
       ...data,
       image: {
         create: uploadedImageData,
       },
-    } satisfies Prisma.UserUpdateInput;
-    return UserRepository.updateProfile(ctx, ctx.uid, userUpdateInput, tx);
+    };
+
+    return this.repository.update(ctx, ctx.uid, userUpdateInput, tx);
   }
 }

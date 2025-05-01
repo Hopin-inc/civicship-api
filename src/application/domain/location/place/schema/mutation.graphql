@@ -6,20 +6,20 @@ extend type Mutation {
         input: PlaceCreateInput!
         permission: CheckCommunityPermissionInput!
     ): PlaceCreatePayload
-    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+    @authz(rules: [IsCommunityManager])
 
     placeDelete(
         id: ID!
         permission: CheckCommunityPermissionInput!
     ): PlaceDeletePayload
-    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+    @authz(rules: [IsCommunityManager])
 
     placeUpdate(
         id: ID!
         input: PlaceUpdateInput!
         permission: CheckCommunityPermissionInput!
     ): PlaceUpdatePayload
-    @authz(rules: [IsCommunityManager, VerifySanitizeInput])
+    @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------

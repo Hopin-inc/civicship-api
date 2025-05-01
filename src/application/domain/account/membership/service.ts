@@ -1,151 +1,133 @@
+import { IContext } from "@/types/server";
+import { Prisma } from "@prisma/client";
 import {
   GqlMembershipInviteInput,
   GqlMembershipSetInvitationStatusInput,
   GqlMembershipSetRoleInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
-import MembershipConverter from "@/application/domain/account/membership/data/converter";
-import MembershipRepository from "@/application/domain/account/membership/data/repository";
-import { IContext } from "@/types/server";
-import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
+
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
+import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
+import MembershipConverter from "@/application/domain/account/membership/data/converter";
+import { inject, injectable } from "tsyringe";
 
+@injectable()
 export default class MembershipService {
-  static async fetchMemberships(
+  constructor(
+    @inject("MembershipRepository") private readonly repository: IMembershipRepository,
+    @inject("MembershipConverter") private readonly converter: MembershipConverter,
+    @inject("getCurrentUserId") private readonly currentUserId: typeof getCurrentUserId,
+  ) {}
+
+  async fetchMemberships(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryMembershipsArgs,
     take: number,
   ): Promise<PrismaMembership[]> {
-    const where = MembershipConverter.filter(filter ?? {});
-    const orderBy = MembershipConverter.sort(sort ?? {});
-
-    return await MembershipRepository.query(ctx, where, orderBy, take, cursor);
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+    return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  static async findMembership(ctx: IContext, userId: string, communityId: string) {
-    return MembershipRepository.find(ctx, { userId_communityId: { userId, communityId } });
+  async findMembership(ctx: IContext, userId: string, communityId: string) {
+    return this.repository.find(ctx, { userId_communityId: { userId, communityId } });
   }
 
-  static async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string) {
-    const membership = await MembershipRepository.find(ctx, {
-      userId_communityId: { userId, communityId },
-    });
+  async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string) {
+    const membership = await this.findMembership(ctx, userId, communityId);
     if (!membership) {
       throw new NotFoundError("Membership", { userId, communityId });
     }
     return membership;
   }
 
-  static async inviteMember(ctx: IContext, input: GqlMembershipInviteInput) {
-    const currentUserId = getCurrentUserId(ctx);
-
-    const data: Prisma.MembershipCreateInput = MembershipConverter.invite(
-      input.userId,
-      input.communityId,
-      currentUserId,
-      input.role,
-    );
-    return MembershipRepository.create(ctx, data);
+  async inviteMember(ctx: IContext, input: GqlMembershipInviteInput, tx: Prisma.TransactionClient) {
+    const currentUserId = this.currentUserId(ctx);
+    const data = this.converter.invite(input.userId, input.communityId, currentUserId, input.role);
+    return this.repository.create(ctx, data, tx);
   }
 
-  static async joinIfNeeded(
+  async joinIfNeeded(
     ctx: IContext,
     currentUserId: string,
     communityId: string,
     tx: Prisma.TransactionClient,
     joinedUserId?: string,
   ) {
-    let membership = await MembershipRepository.find(
-      ctx,
-      { userId_communityId: { userId: joinedUserId ?? currentUserId, communityId } },
-      tx,
-    );
+    let membership = await this.repository.find(ctx, {
+      userId_communityId: { userId: joinedUserId ?? currentUserId, communityId },
+    });
 
     if (!membership) {
-      const data: Prisma.MembershipCreateInput = MembershipConverter.join(
+      const data = this.converter.join(currentUserId, communityId, joinedUserId);
+      membership = await this.repository.create(ctx, data, tx);
+    } else if (membership.status !== MembershipStatus.JOINED) {
+      const data = this.converter.update(
+        MembershipStatus.JOINED,
+        MembershipStatusReason.ACCEPTED_INVITATION,
+        membership.role,
         currentUserId,
-        communityId,
-        joinedUserId,
       );
-      membership = await MembershipRepository.create(ctx, data, tx);
-    } else {
-      if (membership.status !== MembershipStatus.JOINED) {
-        const data = MembershipConverter.update(
-          MembershipStatus.JOINED,
-          MembershipStatusReason.ACCEPTED_INVITATION,
-          membership.role,
-          currentUserId,
-        );
-        membership = await MembershipRepository.update(
-          ctx,
-          { userId_communityId: { userId: joinedUserId ?? currentUserId, communityId } },
-          data,
-          tx,
-        );
-      }
+      membership = await this.repository.update(
+        ctx,
+        { userId_communityId: { userId: joinedUserId ?? currentUserId, communityId } },
+        data,
+        tx,
+      );
     }
 
     return membership;
   }
 
-  static async setStatus(
+  async setStatus(
     ctx: IContext,
     { userId, communityId }: GqlMembershipSetInvitationStatusInput,
     status: MembershipStatus,
     reason: MembershipStatusReason,
+    tx: Prisma.TransactionClient,
   ) {
-    const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = this.currentUserId(ctx);
     const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
 
-    const data: Prisma.MembershipUpdateInput = MembershipConverter.update(
-      status,
-      reason,
-      membership.role,
-      currentUserId,
-    );
-    return MembershipRepository.update(ctx, { userId_communityId: { userId, communityId } }, data);
+    const data = this.converter.update(status, reason, membership.role, currentUserId);
+    return this.repository.update(ctx, { userId_communityId: { userId, communityId } }, data, tx);
   }
 
-  static async setRole(
+  async setRole(
     ctx: IContext,
     { userId, communityId }: GqlMembershipSetRoleInput,
     role: Role,
+    tx: Prisma.TransactionClient,
   ) {
-    const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = this.currentUserId(ctx);
     const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
 
-    const data: Prisma.MembershipUpdateInput = MembershipConverter.update(
+    const data = this.converter.update(
       membership.status,
       MembershipStatusReason.ASSIGNED,
       role,
       currentUserId,
     );
-    return await MembershipRepository.update(
-      ctx,
-      { userId_communityId: { userId, communityId } },
-      data,
-    );
+    return this.repository.update(ctx, { userId_communityId: { userId, communityId } }, data, tx);
   }
 
-  static async deleteMembership(
+  async deleteMembership(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     userId: string,
     communityId: string,
   ) {
-    const membership = await MembershipRepository.find(
-      ctx,
-      { userId_communityId: { userId, communityId } },
-      tx,
-    );
+    const membership = await this.repository.find(ctx, {
+      userId_communityId: { userId, communityId },
+    });
     if (!membership) {
       throw new NotFoundError("Membership", { userId, communityId });
     }
-
-    await MembershipRepository.delete(ctx, { userId_communityId: { userId, communityId } }, tx);
-
+    await this.repository.delete(ctx, { userId_communityId: { userId, communityId } }, tx);
     return membership;
   }
 }

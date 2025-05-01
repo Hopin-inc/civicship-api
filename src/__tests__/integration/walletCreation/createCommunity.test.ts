@@ -1,14 +1,24 @@
+import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { GqlCommunityCreateInput } from "@/types/graphql";
-import communityResolver from "@/application/domain/account/community/controller/resolver";
 import { CurrentPrefecture } from "@prisma/client";
+import { container } from "tsyringe";
+import { registerProductionDependencies } from "@/application/provider";
+import CommunityUseCase from "@/application/domain/account/community/usecase";
 
 describe("Community Integration Tests", () => {
   jest.setTimeout(30_000);
+  let useCase: CommunityUseCase;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
+    jest.clearAllMocks();
+
+    container.reset();
+    registerProductionDependencies();
+
+    useCase = container.resolve(CommunityUseCase);
   });
 
   afterAll(async () => {
@@ -51,8 +61,7 @@ describe("Community Integration Tests", () => {
       //////////////////////////////////////////////////
       // execute
       //////////////////////////////////////////////////
-      await communityResolver.Mutation.communityCreate(
-        {},
+      await useCase.userCreateCommunityAndJoin(
         {
           input: createCommunityInput,
         },

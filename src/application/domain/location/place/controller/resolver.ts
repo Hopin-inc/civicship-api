@@ -5,58 +5,66 @@ import {
   GqlPlaceOpportunitiesArgs,
   GqlOpportunitiesConnection,
   GqlMutationPlaceCreateArgs,
-  GqlMutationPlaceUpdateArgs,
   GqlMutationPlaceDeleteArgs,
+  GqlMutationPlaceUpdateArgs,
   GqlPlaceCreatePayload,
   GqlPlaceDeletePayload,
   GqlPlaceUpdatePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
+import { injectable, inject } from "tsyringe";
 import PlaceUseCase from "@/application/domain/location/place/usecase";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 
-const placeResolver = {
-  Query: {
-    places: async (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
-      return PlaceUseCase.userBrowsePlaces(args, ctx);
+@injectable()
+export default class PlaceResolver {
+  constructor(
+    @inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase,
+    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
+  ) {}
+
+  Query = {
+    places: (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
+      return this.placeUseCase.userBrowsePlaces(args, ctx);
     },
-    place: async (_: unknown, args: GqlQueryPlaceArgs, ctx: IContext) => {
-      if (!ctx.loaders?.place) {
-        return PlaceUseCase.userViewPlace(args, ctx);
-      }
-      return await ctx.loaders.place.load(args.id);
+    place: (_: unknown, args: GqlQueryPlaceArgs, ctx: IContext) => {
+      return this.placeUseCase.userViewPlace(args, ctx);
     },
-  },
-  Mutation: {
-    placeCreate: async (
+  };
+
+  Mutation = {
+    placeCreate: (
       _: unknown,
       args: GqlMutationPlaceCreateArgs,
       ctx: IContext,
     ): Promise<GqlPlaceCreatePayload> => {
-      return PlaceUseCase.managerCreatePlace(args, ctx);
+      return this.placeUseCase.managerCreatePlace(args, ctx);
     },
-    placeDelete: async (
+
+    placeDelete: (
       _: unknown,
       args: GqlMutationPlaceDeleteArgs,
       ctx: IContext,
     ): Promise<GqlPlaceDeletePayload> => {
-      return PlaceUseCase.managerDeletePlace(args, ctx);
+      return this.placeUseCase.managerDeletePlace(args, ctx);
     },
-    placeUpdate: async (
+
+    placeUpdate: (
       _: unknown,
       args: GqlMutationPlaceUpdateArgs,
       ctx: IContext,
     ): Promise<GqlPlaceUpdatePayload> => {
-      return PlaceUseCase.managerUpdatePlace(args, ctx);
+      return this.placeUseCase.managerUpdatePlace(args, ctx);
     },
-  },
-  Place: {
-    opportunities: async (
+  };
+
+  Place = {
+    opportunities: (
       parent: GqlPlace,
       args: GqlPlaceOpportunitiesArgs,
       ctx: IContext,
     ): Promise<GqlOpportunitiesConnection> => {
-      return OpportunityUseCase.anyoneBrowseOpportunities(
+      return this.opportunityUseCase.anyoneBrowseOpportunities(
         {
           ...args,
           filter: { ...args.filter, placeIds: [parent.id] },
@@ -64,7 +72,5 @@ const placeResolver = {
         ctx,
       );
     },
-  },
-};
-
-export default placeResolver;
+  };
+}

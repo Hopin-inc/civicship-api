@@ -1,12 +1,15 @@
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { membershipInclude } from "@/application/domain/account/membership/data/type";
+import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
+import { inject, injectable } from "tsyringe";
 
-export default class MembershipRepository {
-  private static issuer = new PrismaClientIssuer();
+@injectable()
+export default class MembershipRepository implements IMembershipRepository {
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
-  static async query(
+  async query(
     ctx: IContext,
     where: Prisma.MembershipWhereInput,
     orderBy: Prisma.MembershipOrderByWithRelationInput[],
@@ -31,86 +34,43 @@ export default class MembershipRepository {
     });
   }
 
-  static async find(
-    ctx: IContext,
-    where: Prisma.MembershipWhereUniqueInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
+  async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
+    return this.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({
         where,
         include: membershipInclude,
       });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.membership.findUnique({
-          where,
-          include: membershipInclude,
-        });
-      });
-    }
+    });
   }
 
-  static async create(
-    ctx: IContext,
-    data: Prisma.MembershipCreateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return tx.membership.create({
-        data,
-        include: membershipInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.membership.create({
-          data,
-          include: membershipInclude,
-        });
-      });
-    }
+  async create(ctx: IContext, data: Prisma.MembershipCreateInput, tx: Prisma.TransactionClient) {
+    return tx.membership.create({
+      data,
+      include: membershipInclude,
+    });
   }
 
-  static async update(
+  async update(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
     data: Prisma.MembershipUpdateInput,
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.membership.update({
-        where,
-        data,
-        include: membershipInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.membership.update({
-          where,
-          data,
-          include: membershipInclude,
-        });
-      });
-    }
+    return tx.membership.update({
+      where,
+      data,
+      include: membershipInclude,
+    });
   }
 
-  static async delete(
+  async delete(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.membership.delete({
-        where,
-        include: membershipInclude,
-      });
-    } else {
-      return this.issuer.public(ctx, (dbTx) => {
-        return dbTx.membership.delete({
-          where,
-          include: membershipInclude,
-        });
-      });
-    }
+    return tx.membership.delete({
+      where,
+      include: membershipInclude,
+    });
   }
 }
