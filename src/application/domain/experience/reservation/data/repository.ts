@@ -3,11 +3,11 @@ import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { reservationInclude } from "@/application/domain/experience/reservation/data/type";
 import { IReservationRepository } from "@/application/domain/experience/reservation/data/interface";
-import { injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 
 @injectable()
 export default class ReservationRepository implements IReservationRepository {
-  constructor(private readonly issuer: PrismaClientIssuer) {}
+  constructor(@inject("PrismaClientIssuer") private readonly issuer: PrismaClientIssuer) {}
 
   async query(
     ctx: IContext,
