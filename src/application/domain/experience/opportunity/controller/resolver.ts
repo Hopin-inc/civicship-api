@@ -3,7 +3,6 @@ import {
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
-  GqlOpportunity,
   GqlOpportunitySlotsArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
@@ -12,6 +11,7 @@ import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 import OpportunitySlotUseCase from "@/application/domain/experience/opportunitySlot/usecase";
+import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 
 @injectable()
 export default class OpportunityResolver {
@@ -25,6 +25,9 @@ export default class OpportunityResolver {
       return this.opportunityUseCase.anyoneBrowseOpportunities(args, ctx);
     },
     opportunity: (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
+      if (ctx.loaders.opportunity) {
+        return ctx.loaders.opportunity.load(args.id);
+      }
       return this.opportunityUseCase.visitorViewOpportunity(args, ctx);
     },
   };
@@ -53,10 +56,27 @@ export default class OpportunityResolver {
   };
 
   Opportunity = {
-    isReservableWithTicket: (parent: GqlOpportunity, _: unknown, ctx: IContext) => {
+    community: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
+    },
+    
+    place: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+      return parent.placeId ? ctx.loaders.place.load(parent.placeId) : null;
+    },
+    
+    createdByUser: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+      return parent.createdByUserId ? ctx.loaders.user.load(parent.createdByUserId) : null;
+    },
+    
+    requiredUtilities: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+      return parent.requiredUtilities ? ctx.loaders.utility.loadMany(parent.requiredUtilities.map(u => u.id)) : [];
+    },
+    
+    isReservableWithTicket: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
       return this.opportunityUseCase.checkUserHasValidTicketForOpportunity(ctx, parent.id);
     },
-    slots: (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
+    
+    slots: (parent: PrismaOpportunityDetail, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
       return this.slotUseCase.visitorBrowseOpportunitySlots(
         {
           ...args,
@@ -64,6 +84,10 @@ export default class OpportunityResolver {
         },
         ctx,
       );
+    },
+    
+    articles: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+      return null;
     },
   };
 }

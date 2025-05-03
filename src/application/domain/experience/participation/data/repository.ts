@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import {
-  participationInclude,
-  PrismaParticipation,
+  participationSelectDetail,
+  PrismaParticipationDetail,
 } from "@/application/domain/experience/participation/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
@@ -9,16 +9,13 @@ import { IParticipationRepository } from "./interface";
 
 @injectable()
 export default class ParticipationRepository implements IParticipationRepository {
-  async query<T extends Prisma.ParticipationInclude>(
+  async query(
     ctx: IContext,
     where: Prisma.ParticipationWhereInput,
     orderBy: Prisma.ParticipationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-    include?: T,
-  ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]> {
-    const finalInclude = (include ?? participationInclude) as unknown as T;
-
+  ): Promise<PrismaParticipationDetail[]> {
     return ctx.issuer.public(ctx, (tx) =>
       tx.participation.findMany({
         where,
@@ -26,16 +23,16 @@ export default class ParticipationRepository implements IParticipationRepository
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        include: finalInclude,
+        select: participationSelectDetail,
       }),
     );
   }
 
-  async queryByReservationId(ctx: IContext, id: string) {
+  async queryByReservationId(ctx: IContext, id: string): Promise<PrismaParticipationDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findMany({
         where: { reservationId: id },
-        include: participationInclude,
+        select: participationSelectDetail,
       });
     });
   }
@@ -48,11 +45,11 @@ export default class ParticipationRepository implements IParticipationRepository
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaParticipation | null> {
+  async find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
-        include: participationInclude,
+        select: participationSelectDetail,
       });
     });
   }
@@ -61,10 +58,10 @@ export default class ParticipationRepository implements IParticipationRepository
     ctx: IContext,
     data: Prisma.ParticipationCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation> {
+  ): Promise<PrismaParticipationDetail> {
     return tx.participation.create({
       data,
-      include: participationInclude,
+      select: participationSelectDetail,
     });
   }
 
@@ -73,11 +70,11 @@ export default class ParticipationRepository implements IParticipationRepository
     id: string,
     data: Prisma.ParticipationUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation> {
+  ): Promise<PrismaParticipationDetail> {
     return tx.participation.update({
       where: { id },
       data,
-      include: participationInclude,
+      select: participationSelectDetail,
     });
   }
 
@@ -85,18 +82,18 @@ export default class ParticipationRepository implements IParticipationRepository
     ctx: IContext,
     id: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation> {
+  ): Promise<PrismaParticipationDetail> {
     return tx.participation.delete({
       where: { id },
-      include: participationInclude,
+      select: participationSelectDetail,
     });
   }
 
   async bulkSetStatusByReservation(
     ctx: IContext,
     participationIds: string[],
-    status: PrismaParticipation["status"],
-    reason: PrismaParticipation["reason"],
+    status: PrismaParticipationDetail["status"],
+    reason: PrismaParticipationDetail["reason"],
     tx: Prisma.TransactionClient,
   ): Promise<Prisma.BatchPayload> {
     return tx.participation.updateMany({

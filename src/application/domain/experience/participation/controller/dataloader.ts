@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlParticipation } from "@/types/graphql";
-import { participationInclude } from "@/application/domain/experience/participation/data/type";
+import { participationSelectDetail } from "@/application/domain/experience/participation/data/type";
 import ParticipationOutputFormat from "@/application/domain/experience/participation/presenter";
 
 async function batchParticipationsById(
@@ -11,11 +11,11 @@ async function batchParticipationsById(
   const records = await issuer.internal(async (tx) => {
     return tx.participation.findMany({
       where: { id: { in: [...participationIds] } },
-      include: participationInclude,
+      select: participationSelectDetail,
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, ParticipationOutputFormat.get(record)]));
+  const map = new Map(records.map((record) => [record.id, ParticipationOutputFormat.get(record)])) as Map<string, GqlParticipation | null>;
 
   return participationIds.map((id) => map.get(id) ?? null);
 }

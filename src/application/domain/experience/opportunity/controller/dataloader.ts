@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlOpportunity } from "@/types/graphql";
 import OpportunityOutputFormat from "@/application/domain/experience/opportunity/presenter";
-import { opportunityInclude } from "@/application/domain/experience/opportunity/data/type";
+import { opportunitySelectDetail } from "@/application/domain/experience/opportunity/data/type";
 
 async function batchOpportunitiesById(
   issuer: PrismaClientIssuer,
@@ -11,11 +11,11 @@ async function batchOpportunitiesById(
   const records = await issuer.internal(async (tx) => {
     return tx.opportunity.findMany({
       where: { id: { in: [...opportunityIds] } },
-      include: opportunityInclude,
+      select: opportunitySelectDetail,
     });
   });
 
-  const oppMap = new Map(records.map((record) => [record.id, OpportunityOutputFormat.get(record)]));
+  const oppMap = new Map(records.map((record) => [record.id, OpportunityOutputFormat.get(record)])) as Map<string, GqlOpportunity | null>;
 
   return opportunityIds.map((id) => oppMap.get(id) ?? null);
 }
