@@ -5,7 +5,7 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { PrismaCommunity, PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
+import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 
 export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
@@ -26,10 +26,7 @@ export default class CommunityPresenter {
 
   static get(r: PrismaCommunityDetail): GqlCommunity {
     return {
-      id: r.id,
-      name: r.name,
-      bio: r.bio,
-      createdAt: r.createdAt,
+      ...r,
       image: null,
       places: null,
       memberships: null,
@@ -41,21 +38,21 @@ export default class CommunityPresenter {
     };
   }
 
-  static create(r: PrismaCommunity): GqlCommunityCreateSuccess {
+  static create(r: PrismaCommunityDetail): GqlCommunityCreateSuccess {
     return {
       __typename: "CommunityCreateSuccess",
       community: this.get(r),
     };
   }
 
-  static delete(r: PrismaCommunity): GqlCommunityDeleteSuccess {
+  static delete(r: PrismaCommunityDetail): GqlCommunityDeleteSuccess {
     return {
       __typename: "CommunityDeleteSuccess",
       communityId: r.id,
     };
   }
 
-  static update(r: PrismaCommunity): GqlCommunityUpdateProfileSuccess {
+  static update(r: PrismaCommunityDetail): GqlCommunityUpdateProfileSuccess {
     return {
       __typename: "CommunityUpdateProfileSuccess",
       community: this.get(r),

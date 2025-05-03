@@ -5,7 +5,7 @@ import {
   GqlPlaceUpdateSuccess,
   GqlPlaceDeleteSuccess,
 } from "@/types/graphql";
-import { PrismaPlace, PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
+import { PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
 
 export default class PlacePresenter {
   static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {
@@ -25,40 +25,29 @@ export default class PlacePresenter {
   }
 
   static get(r: PrismaPlaceDetail): GqlPlace {
+    const { latitude, longitude, ...prop } = r;
+
     return {
-      id: r.id,
-      name: r.name,
-      address: r.address,
-      latitude: r.latitude.toString(),
-      longitude: r.longitude.toString(),
-      isManual: r.isManual,
-      googlePlaceId: r.googlePlaceId,
-      mapLocation: r.mapLocation,
-      createdAt: r.createdAt,
-      image: null,
-      city: { code: "", name: "", state: { code: "", name: "", countryCode: "" } }, // Placeholder to satisfy non-null constraint
-      community: null,
-      opportunities: null,
+      ...prop,
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
     };
   }
 
   static create(r: PrismaPlaceDetail): GqlPlaceCreateSuccess {
     return {
-      __typename: "PlaceCreateSuccess",
       place: this.get(r),
     };
   }
 
   static update(r: PrismaPlaceDetail): GqlPlaceUpdateSuccess {
     return {
-      __typename: "PlaceUpdateSuccess",
       place: this.get(r),
     };
   }
 
   static delete(r: PrismaPlaceDetail): GqlPlaceDeleteSuccess {
     return {
-      __typename: "PlaceDeleteSuccess",
       id: r.id,
     };
   }

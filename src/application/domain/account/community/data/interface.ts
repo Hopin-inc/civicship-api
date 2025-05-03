@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { PrismaCommunity } from "@/application/domain/account/community/data/type";
+import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 
 export default interface ICommunityRepository {
@@ -9,22 +9,22 @@ export default interface ICommunityRepository {
     orderBy: Prisma.CommunityOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaCommunity[]>;
+  ): Promise<PrismaCommunityDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaCommunity | null>;
+  find(ctx: IContext, id: string): Promise<PrismaCommunityDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.CommunityCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaCommunity>;
+  ): Promise<PrismaCommunityDetail>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.CommunityUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaCommunity>;
+  ): Promise<PrismaCommunityDetail>;
 
-  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaCommunity>;
+  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaCommunityDetail>;
 }

@@ -13,15 +13,13 @@ export const placeSelectDetail = Prisma.validator<Prisma.PlaceSelect>()({
   latitude: true,
   longitude: true,
   communityId: true,
-  cityId: true,
+  cityCode: true,
   imageId: true,
   isManual: true,
   googlePlaceId: true,
   mapLocation: true,
   createdAt: true,
   updatedAt: true,
-  community: { select: { id: true } },
-  city: { select: { id: true } },
 });
 
 export type PrismaPlace = Prisma.PlaceGetPayload<{
