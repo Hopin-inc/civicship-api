@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlEvaluation } from "@/types/graphql";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
-import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
+import { evaluationSelectDetail } from "@/application/domain/experience/evaluation/data/type";
 
 async function batchEvaluationsById(
   issuer: PrismaClientIssuer,
@@ -11,11 +11,11 @@ async function batchEvaluationsById(
   const records = await issuer.internal(async (tx) => {
     return tx.evaluation.findMany({
       where: { id: { in: [...ids] } },
-      include: evaluationInclude,
+      select: evaluationSelectDetail,
     });
   });
 
-  const map = new Map(records.map((r) => [r.id, EvaluationPresenter.get(r)]));
+  const map = new Map(records.map((r) => [r.id, EvaluationPresenter.get(r)])) as Map<string, GqlEvaluation | null>;
   return ids.map((id) => map.get(id) ?? null);
 }
 

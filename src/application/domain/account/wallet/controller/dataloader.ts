@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlWallet } from "@/types/graphql";
 import WalletOutputFormat from "@/application/domain/account/wallet/presenter";
-import { walletInclude } from "@/application/domain/account/wallet/data/type";
+import { walletSelectDetail, PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
 
 async function batchWalletsById(
   issuer: PrismaClientIssuer,
@@ -11,9 +11,9 @@ async function batchWalletsById(
   const records = await issuer.internal(async (tx) => {
     return tx.wallet.findMany({
       where: { id: { in: [...walletIds] } },
-      include: walletInclude, // ウォレットに関連するjoinが必要なら
+      select: walletSelectDetail,
     });
-  });
+  }) as PrismaWalletDetail[];
 
   const map = new Map(records.map((record) => [record.id, WalletOutputFormat.get(record)]));
   return walletIds.map((id) => map.get(id) ?? null);

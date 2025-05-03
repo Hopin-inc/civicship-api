@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlUtility } from "@/types/graphql";
 import UtilityPresenter from "@/application/domain/reward/utility/presenter";
-import { utilityInclude } from "@/application/domain/reward/utility/data/type";
+import { utilitySelectDetail } from "@/application/domain/reward/utility/data/type";
 
 async function batchUtilitiesById(
   issuer: PrismaClientIssuer,
@@ -11,11 +11,11 @@ async function batchUtilitiesById(
   const records = await issuer.internal(async (tx) => {
     return tx.utility.findMany({
       where: { id: { in: [...utilityIds] } },
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, UtilityPresenter.get(record)]));
+  const map = new Map(records.map((record) => [record.id, UtilityPresenter.get(record)])) as Map<string, GqlUtility | null>;
 
   return utilityIds.map((id) => map.get(id) ?? null);
 }

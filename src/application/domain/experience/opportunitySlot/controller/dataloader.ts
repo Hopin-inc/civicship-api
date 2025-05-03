@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlOpportunitySlot } from "@/types/graphql";
-import { opportunitySlotInclude } from "@/application/domain/experience/opportunitySlot/data/type";
+import { opportunitySlotSelectDetail, PrismaOpportunitySlotDetail } from "@/application/domain/experience/opportunitySlot/data/type";
 import OpportunitySlotOutputFormat from "@/application/domain/experience/opportunitySlot/presenter";
 
 async function batchOpportunitySlotsById(
@@ -11,13 +11,13 @@ async function batchOpportunitySlotsById(
   const records = await issuer.internal((tx) =>
     tx.opportunitySlot.findMany({
       where: { id: { in: [...slotIds] } },
-      include: opportunitySlotInclude,
+      select: opportunitySlotSelectDetail,
     }),
-  );
+  ) as PrismaOpportunitySlotDetail[];
 
   const map = new Map(
     records.map((record) => [record.id, OpportunitySlotOutputFormat.get(record)]),
-  );
+  ) as Map<string, GqlOpportunitySlot | null>;
 
   return slotIds.map((id) => map.get(id) ?? null);
 }

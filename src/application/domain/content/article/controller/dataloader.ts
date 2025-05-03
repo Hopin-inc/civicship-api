@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlArticle } from "@/types/graphql";
-import { articleInclude } from "@/application/domain/content/article/data/type";
+import { articleSelectDetail, PrismaArticleDetail } from "@/application/domain/content/article/data/type";
 import ArticlePresenter from "@/application/domain/content/article/presenter";
 
 async function batchArticlesById(
@@ -11,9 +11,9 @@ async function batchArticlesById(
   const records = await issuer.internal(async (tx) =>
     tx.article.findMany({
       where: { id: { in: [...articleIds] } },
-      include: articleInclude,
+      select: articleSelectDetail,
     }),
-  );
+  ) as PrismaArticleDetail[];
   const map = new Map(records.map((record) => [record.id, ArticlePresenter.get(record)]));
   return articleIds.map((id) => map.get(id) ?? null);
 }

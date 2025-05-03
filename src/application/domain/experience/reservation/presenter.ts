@@ -4,9 +4,7 @@ import {
   GqlReservationCreateSuccess,
   GqlReservationSetStatusSuccess,
 } from "@/types/graphql";
-import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
-import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
-import ParticipationPresenter from "@/application/domain/experience/participation/presenter";
+import { PrismaReservation, PrismaReservationDetail } from "@/application/domain/experience/reservation/data/type";
 
 export default class ReservationPresenter {
   static query(records: GqlReservation[], hasNextPage: boolean): GqlReservationsConnection {
@@ -25,25 +23,26 @@ export default class ReservationPresenter {
     };
   }
 
-  static get(record: PrismaReservation): GqlReservation {
-    const { opportunitySlot, participations, createdByUser, ...prop } = record;
-
+  static get(record: PrismaReservation | PrismaReservationDetail): GqlReservation {
     return {
-      ...prop,
-      opportunitySlot: OpportunitySlotPresenter.get(opportunitySlot),
-      createdByUser,
-      participations: participations.map(ParticipationPresenter.get),
+      id: record.id,
+      status: record.status,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      opportunitySlot: null,
+      createdByUser: null,
+      participations: null,
     };
   }
 
-  static create(record: PrismaReservation): GqlReservationCreateSuccess {
+  static create(record: PrismaReservation | PrismaReservationDetail): GqlReservationCreateSuccess {
     return {
       __typename: "ReservationCreateSuccess",
       reservation: this.get(record),
     };
   }
 
-  static setStatus(record: PrismaReservation): GqlReservationSetStatusSuccess {
+  static setStatus(record: PrismaReservation | PrismaReservationDetail): GqlReservationSetStatusSuccess {
     return {
       __typename: "ReservationSetStatusSuccess",
       reservation: this.get(record),

@@ -1,8 +1,10 @@
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
-  opportunitySlotInclude,
-  opportunitySlotWithParticipationInclude,
+  opportunitySlotSelectDetail,
+  opportunitySlotWithParticipationSelectDetail,
+  PrismaOpportunitySlotDetail,
+  PrismaOpportunitySlotWithParticipationDetail
 } from "@/application/domain/experience/opportunitySlot/data/type";
 import { injectable } from "tsyringe";
 import { IOpportunitySlotRepository } from "./interface";
@@ -15,12 +17,12 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     orderBy: Prisma.OpportunitySlotOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ) {
+  ): Promise<PrismaOpportunitySlotDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findMany({
         where,
         orderBy,
-        include: opportunitySlotInclude,
+        select: opportunitySlotSelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -28,20 +30,20 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     });
   }
 
-  async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string): Promise<PrismaOpportunitySlotDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findUnique({
         where: { id },
-        include: opportunitySlotInclude,
+        select: opportunitySlotSelectDetail,
       });
     });
   }
 
-  async findByOpportunityId(ctx: IContext, opportunityId: string) {
+  async findByOpportunityId(ctx: IContext, opportunityId: string): Promise<PrismaOpportunitySlotDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findMany({
         where: { opportunityId },
-        include: opportunitySlotInclude,
+        select: opportunitySlotSelectDetail,
       });
     });
   }
@@ -59,11 +61,11 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     id: string,
     data: Prisma.OpportunitySlotUpdateInput,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaOpportunitySlotDetail> {
     return tx.opportunitySlot.update({
       where: { id },
       data,
-      include: opportunitySlotInclude,
+      select: opportunitySlotSelectDetail,
     });
   }
 
@@ -72,11 +74,11 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     id: string,
     hostingStatus: OpportunitySlotHostingStatus,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaOpportunitySlotWithParticipationDetail> {
     return tx.opportunitySlot.update({
       where: { id },
       data: { hostingStatus },
-      include: opportunitySlotWithParticipationInclude,
+      select: opportunitySlotWithParticipationSelectDetail,
     });
   }
 

@@ -1,19 +1,50 @@
 import { Prisma } from "@prisma/client";
-import { userInclude } from "@/application/domain/account/user/data/type";
-import { opportunityInclude } from "@/application/domain/experience/opportunity/data/type";
-import { communityInclude } from "@/application/domain/account/community/data/type";
 
 export const articleInclude = Prisma.validator<Prisma.ArticleInclude>()({
-  community: { include: communityInclude },
-  authors: { include: userInclude },
-  relatedUsers: { include: userInclude },
-  opportunities: { include: opportunityInclude },
+  community: true,
+  authors: true,
+  relatedUsers: true,
+  opportunities: true,
   thumbnail: true,
 });
 
 export const articleForPortfolioInclude = Prisma.validator<Prisma.ArticleInclude>()({
-  authors: { include: userInclude },
-  relatedUsers: { include: userInclude },
+  authors: true,
+  relatedUsers: true,
+  thumbnail: true,
+});
+
+export const articleSelectDetail = Prisma.validator<Prisma.ArticleSelect>()({
+  id: true,
+  title: true,
+  content: true,
+  status: true,
+  slug: true,
+  thumbnailId: true,
+  communityId: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+  community: { select: { id: true } },
+  authors: { select: { id: true } },
+  relatedUsers: { select: { id: true } },
+  opportunities: { select: { id: true } },
+  thumbnail: true,
+});
+
+export const articleForPortfolioSelectDetail = Prisma.validator<Prisma.ArticleSelect>()({
+  id: true,
+  title: true,
+  content: true,
+  status: true,
+  slug: true,
+  thumbnailId: true,
+  communityId: true,
+  createdAt: true,
+  updatedAt: true,
+  publishedAt: true,
+  authors: { select: { id: true } },
+  relatedUsers: { select: { id: true } },
   thumbnail: true,
 });
 
@@ -23,4 +54,12 @@ export type PrismaArticle = Prisma.ArticleGetPayload<{
 
 export type PrismaArticleForPortfolio = Prisma.ArticleGetPayload<{
   include: typeof articleForPortfolioInclude;
+}>;
+
+export type PrismaArticleDetail = Prisma.ArticleGetPayload<{
+  select: typeof articleSelectDetail;
+}>;
+
+export type PrismaArticleForPortfolioDetail = Prisma.ArticleGetPayload<{
+  select: typeof articleForPortfolioSelectDetail;
 }>;

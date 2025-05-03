@@ -14,6 +14,7 @@ import {
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import MembershipUseCase from "@/application/domain/account/membership/usecase";
+import { PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
 
 @injectable()
 export default class MembershipResolver {
@@ -22,8 +23,20 @@ export default class MembershipResolver {
   Query = {
     memberships: (_: unknown, args: GqlQueryMembershipsArgs, ctx: IContext) =>
       this.useCase.visitorBrowseMemberships(args, ctx),
-    membership: (_: unknown, args: GqlQueryMembershipArgs, ctx: IContext) =>
-      this.useCase.visitorViewMembership(args, ctx),
+    membership: (_: unknown, args: GqlQueryMembershipArgs, ctx: IContext) => {
+      const key = `${args.userId}:${args.communityId}`;
+      return ctx.loaders.membership.load(key);
+    },
+  };
+  
+  Membership = {
+    user: (parent: PrismaMembershipDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.user.load(parent.userId);
+    },
+    
+    community: (parent: PrismaMembershipDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.community.load(parent.communityId);
+    },
   };
 
   Mutation = {

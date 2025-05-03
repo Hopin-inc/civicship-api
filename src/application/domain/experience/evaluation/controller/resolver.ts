@@ -7,6 +7,7 @@ import {
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
+import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
 export default class EvaluationResolver {
@@ -18,7 +19,17 @@ export default class EvaluationResolver {
     },
 
     evaluation: (_: unknown, args: GqlQueryEvaluationArgs, ctx: IContext) => {
-      return this.evaluationUseCase.visitorViewEvaluation(ctx, args);
+      return ctx.loaders.evaluation.load(args.id);
+    },
+  };
+  
+  Evaluation = {
+    evaluator: (parent: PrismaEvaluationDetail, _: unknown, ctx: IContext) => {
+      return parent.evaluatorId ? ctx.loaders.user.load(parent.evaluatorId) : null;
+    },
+    
+    participation: (parent: PrismaEvaluationDetail, _: unknown, ctx: IContext) => {
+      return parent.participationId ? ctx.loaders.participation.load(parent.participationId) : null;
     },
   };
 

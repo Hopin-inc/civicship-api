@@ -6,11 +6,7 @@ import {
   GqlOpportunitySetPublishStatusSuccess,
   GqlOpportunityUpdateContentSuccess,
 } from "@/types/graphql";
-import { PrismaOpportunity } from "@/application/domain/experience/opportunity/data/type";
-import PlacePresenter from "@/application/domain/location/place/presenter";
-import UtilityPresenter from "@/application/domain/reward/utility/presenter";
-import CommunityPresenter from "@/application/domain/account/community/presenter";
-import UserPresenter from "@/application/domain/account/user/presenter";
+import { PrismaOpportunity, PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 
 export default class OpportunityPresenter {
   static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
@@ -29,25 +25,35 @@ export default class OpportunityPresenter {
     };
   }
 
-  static get(r: PrismaOpportunity): GqlOpportunity {
-    const {
-      createdByUser,
-      community,
-      place,
-      requiredUtilities,
+  static get(r: PrismaOpportunity | PrismaOpportunityDetail): GqlOpportunity {
+    const images = 'images' in r && r.images ? 
+      (Array.isArray(r.images) ? r.images.map(img => typeof img === 'object' && 'url' in img ? img.url : '') : []) : 
+      [];
+    
+    const earliestReservableSlotView = 'earliestReservableSlotView' in r ? r.earliestReservableSlotView : null;
+    
+    return {
+      id: r.id,
+      title: r.name,
+      description: r.description,
+      publishStatus: r.publishStatus,
+      category: "ACTIVITY", // Default category
+      requireApproval: false, // Default value
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      capacity: r.capacity,
+      community: null,
+      place: null,
+      createdByUser: null,
+      requiredUtilities: [],
       earliestReservableSlotView,
       images,
-      ...prop
-    } = r;
-
-    return {
-      ...prop,
-      community: community ? CommunityPresenter.get(community) : null,
-      place: place ? PlacePresenter.get(place) : null,
-      createdByUser: createdByUser ? UserPresenter.get(createdByUser) : null,
-      requiredUtilities: requiredUtilities.map(UtilityPresenter.get),
-      earliestReservableSlotView,
-      images: images.map((image) => image.url),
+      articles: null,
+      body: null,
+      feeRequired: null,
+      isReservableWithTicket: null,
+      pointsToEarn: null,
+      slots: null
     };
   }
 

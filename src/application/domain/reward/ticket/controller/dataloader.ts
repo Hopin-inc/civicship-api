@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlTicket } from "@/types/graphql";
 import TicketPresenter from "@/application/domain/reward/ticket/presenter";
-import { ticketInclude } from "@/application/domain/reward/ticket/data/type";
+import { ticketSelectDetail } from "@/application/domain/reward/ticket/data/type";
 
 async function batchTicketsById(
   issuer: PrismaClientIssuer,
@@ -11,11 +11,11 @@ async function batchTicketsById(
   const records = await issuer.internal(async (tx) => {
     return tx.ticket.findMany({
       where: { id: { in: [...ticketIds] } },
-      include: ticketInclude,
+      select: ticketSelectDetail,
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, TicketPresenter.get(record)]));
+  const map = new Map(records.map((record) => [record.id, TicketPresenter.get(record)])) as Map<string, GqlTicket | null>;
 
   return ticketIds.map((id) => map.get(id) ?? null);
 }

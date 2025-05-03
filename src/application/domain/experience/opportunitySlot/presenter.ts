@@ -7,6 +7,8 @@ import {
 import {
   PrismaOpportunitySlot,
   PrismaOpportunitySlotWithParticipation,
+  PrismaOpportunitySlotDetail,
+  PrismaOpportunitySlotWithParticipationDetail
 } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
@@ -26,19 +28,21 @@ export default class OpportunitySlotPresenter {
     };
   }
 
-  static get(r: PrismaOpportunitySlot): GqlOpportunitySlot {
-    const { opportunity, remainingCapacityView, ...prop } = r;
-
+  static get(r: PrismaOpportunitySlot | PrismaOpportunitySlotDetail): GqlOpportunitySlot {
     return {
-      ...prop,
-      opportunity: opportunity ? opportunity : null,
+      ...r,
+      startsAt: r.startAt,
+      endsAt: r.endAt,
+      opportunity: null,
+      participations: null,
+      reservations: null,
       remainingCapacityView:
-        OpportunitySlotPresenter.formatRemainingCapacityView(remainingCapacityView),
+        OpportunitySlotPresenter.formatRemainingCapacityView(r.remainingCapacityView),
     };
   }
 
   static setHostingStatus(
-    r: PrismaOpportunitySlotWithParticipation,
+    r: PrismaOpportunitySlotWithParticipation | PrismaOpportunitySlotWithParticipationDetail,
   ): GqlOpportunitySlotSetHostingStatusSuccess {
     return {
       __typename: "OpportunitySlotSetHostingStatusSuccess",

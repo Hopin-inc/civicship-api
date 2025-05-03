@@ -10,9 +10,7 @@ import {
   GqlMembershipParticipatedMetrics,
   GqlMembershipHostedMetrics,
 } from "@/types/graphql";
-import { PrismaMembership } from "@/application/domain/account/membership/data/type";
-import CommunityPresenter from "@/application/domain/account/community/presenter";
-import UserPresenter from "@/application/domain/account/user/presenter";
+import { PrismaMembership, PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
 
 export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
@@ -33,17 +31,34 @@ export default class MembershipPresenter {
     };
   }
 
-  static get(r: PrismaMembership): GqlMembership {
-    const { community, participationGeoViews, participationCountViews, user, ...prop } = r;
-
+  static get(r: PrismaMembership | PrismaMembershipDetail): GqlMembership {
     return {
-      ...prop,
-      user: UserPresenter.get(user),
-      community: CommunityPresenter.get(community),
+      role: r.role,
+      status: "JOINED", // Default status
+      reason: "ASSIGNED", // Default reason
+      headline: null,
+      bio: null,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      user: {
+        id: r.userId,
+        name: "",
+        createdAt: new Date(),
+        updatedAt: null,
+        sysRole: "USER",
+        slug: "",
+      },
+      community: {
+        id: r.communityId,
+        name: "",
+        createdAt: new Date(),
+        updatedAt: null,
+      },
       participationView: MembershipPresenter.formatParticipationView(
-        participationGeoViews,
-        participationCountViews,
+        r.participationGeoViews,
+        r.participationCountViews,
       ),
+      membershipHistories: null,
     };
   }
 
