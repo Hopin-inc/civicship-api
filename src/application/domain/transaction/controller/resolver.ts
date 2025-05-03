@@ -8,6 +8,7 @@ import {
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
+import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 
 @injectable()
 export default class TransactionResolver {
@@ -18,7 +19,21 @@ export default class TransactionResolver {
       return this.useCase.visitorBrowseTransactions(args, ctx);
     },
     transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
-      return this.useCase.visitorViewTransaction(args, ctx);
+      return ctx.loaders.transaction.load(args.id);
+    },
+  };
+  
+  Transaction = {
+    fromWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return parent.fromWalletId ? ctx.loaders.wallet.load(parent.fromWalletId) : null;
+    },
+    
+    toWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return parent.toWalletId ? ctx.loaders.wallet.load(parent.toWalletId) : null;
+    },
+    
+    participation: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return parent.participationId ? ctx.loaders.participation.load(parent.participationId) : null;
     },
   };
 
