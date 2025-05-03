@@ -8,6 +8,7 @@ import { createCommunityLoader } from "@/application/domain/account/community/co
 import { createMembershipLoader } from "@/application/domain/account/membership/controller/dataloader";
 import { createUtilityLoader } from "@/application/domain/reward/utility/controller/dataloader";
 import { createPlaceLoader } from "@/application/domain/location/place/controller/dataloader";
+import { createCityLoader } from "@/application/domain/location/master/controller/dataloader";
 import { createOpportunitySlotLoader } from "@/application/domain/experience/opportunitySlot/controller/dataloader";
 import { createParticipationStatusHistoryLoader } from "@/application/domain/experience/participation/statusHistory/controller/dataloader";
 import { createArticleLoader } from "@/application/domain/content/article/controller/dataloader";
@@ -41,6 +42,7 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     ticketStatusHistory: createTicketStatusHistoryLoader(issuer),
 
     place: createPlaceLoader(issuer),
+    city: createCityLoader(issuer),
     article: createArticleLoader(issuer),
 
     transaction: createTransactionLoader(issuer),

@@ -59,12 +59,10 @@ export default class PlaceResolver {
       return parent.id && ctx.loaders?.opportunity ? ctx.loaders.opportunity.loadMany([parent.id]) : [];
     },
     
-    city: (parent: PrismaPlaceDetail, _: unknown, _ctx: IContext) => {
-      return parent.city ? { 
-        code: "", 
-        name: "", 
-        state: { code: "", name: "", countryCode: "" } 
-      } : null;
+    city: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.cityId && ctx.loaders?.city ? 
+        ctx.loaders.city.load(parent.cityId) : 
+        null;
     },
     
     community: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
