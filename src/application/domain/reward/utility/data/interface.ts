@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma, PublishStatus } from "@prisma/client";
-import { PrismaUtility } from "./type";
+import { PrismaUtilityDetail } from "./type";
 import {
   GqlQueryUtilitiesArgs,
   GqlUtilityFilterInput,
@@ -13,29 +13,29 @@ export interface IUtilityService {
     ctx: IContext,
     args: GqlQueryUtilitiesArgs,
     take: number,
-  ): Promise<PrismaUtility[]>;
+  ): Promise<PrismaUtilityDetail[]>;
 
   findUtility(
     ctx: IContext,
     id: string,
     filter: GqlUtilityFilterInput,
-  ): Promise<PrismaUtility | null>;
+  ): Promise<PrismaUtilityDetail | null>;
 
-  findUtilityOrThrow(ctx: IContext, id: string): Promise<PrismaUtility>;
+  findUtilityOrThrow(ctx: IContext, id: string): Promise<PrismaUtilityDetail>;
 
   createUtility(
     ctx: IContext,
     input: GqlUtilityCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaUtility>;
+  ): Promise<PrismaUtilityDetail>;
 
-  deleteUtility(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaUtility>;
+  deleteUtility(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaUtilityDetail>;
 
   updateUtilityInfo(
     ctx: IContext,
     args: GqlMutationUtilityUpdateInfoArgs,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaUtility>;
+  ): Promise<PrismaUtilityDetail>;
 
   validatePublishStatus(allowedStatuses: PublishStatus[], filter?: GqlUtilityFilterInput): void;
 }
@@ -47,27 +47,27 @@ export interface IUtilityRepository {
     orderBy: Prisma.UtilityOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaUtility[]>;
+  ): Promise<PrismaUtilityDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaUtility | null>;
+  find(ctx: IContext, id: string): Promise<PrismaUtilityDetail | null>;
 
   findAccessible(
     ctx: IContext,
     where: Prisma.UtilityWhereUniqueInput & Prisma.UtilityWhereInput,
-  ): Promise<PrismaUtility | null>;
+  ): Promise<PrismaUtilityDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.UtilityCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaUtility>;
+  ): Promise<PrismaUtilityDetail>;
 
-  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaUtility>;
+  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaUtilityDetail>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.UtilityUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaUtility>;
+  ): Promise<PrismaUtilityDetail>;
 }

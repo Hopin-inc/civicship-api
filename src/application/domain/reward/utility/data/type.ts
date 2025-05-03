@@ -13,7 +13,6 @@ export const utilitySelectDetail = Prisma.validator<Prisma.UtilitySelect>()({
   communityId: true,
   createdAt: true,
   updatedAt: true,
-  community: { select: { id: true } },
 });
 
 export type PrismaUtility = Prisma.UtilityGetPayload<{
