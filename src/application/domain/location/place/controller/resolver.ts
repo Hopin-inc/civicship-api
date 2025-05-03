@@ -1,9 +1,6 @@
 import {
   GqlQueryPlacesArgs,
   GqlQueryPlaceArgs,
-  GqlPlace,
-  GqlPlaceOpportunitiesArgs,
-  GqlOpportunitiesConnection,
   GqlMutationPlaceCreateArgs,
   GqlMutationPlaceDeleteArgs,
   GqlMutationPlaceUpdateArgs,
@@ -11,16 +8,15 @@ import {
   GqlPlaceDeletePayload,
   GqlPlaceUpdatePayload,
 } from "@/types/graphql";
+import { PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import PlaceUseCase from "@/application/domain/location/place/usecase";
-import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 
 @injectable()
 export default class PlaceResolver {
   constructor(
     @inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase,
-    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
   ) {}
 
   Query = {
@@ -59,18 +55,22 @@ export default class PlaceResolver {
   };
 
   Place = {
-    opportunities: (
-      parent: GqlPlace,
-      args: GqlPlaceOpportunitiesArgs,
-      ctx: IContext,
-    ): Promise<GqlOpportunitiesConnection> => {
-      return this.opportunityUseCase.anyoneBrowseOpportunities(
-        {
-          ...args,
-          filter: { ...args.filter, placeIds: [parent.id] },
-        },
-        ctx,
-      );
+    opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.id && ctx.loaders?.opportunity ? ctx.loaders.opportunity.loadMany([parent.id]) : [];
+    },
+    
+    city: (parent: PrismaPlaceDetail, _: unknown, _ctx: IContext) => {
+      return parent.city ? { 
+        code: "", 
+        name: "", 
+        state: { code: "", name: "", countryCode: "" } 
+      } : null;
+    },
+    
+    community: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.communityId && ctx.loaders?.community ? 
+        ctx.loaders.community.load(parent.communityId) : 
+        null;
     },
   };
 }

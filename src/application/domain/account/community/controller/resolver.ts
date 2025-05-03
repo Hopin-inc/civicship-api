@@ -4,34 +4,16 @@ import {
   GqlMutationCommunityCreateArgs,
   GqlMutationCommunityDeleteArgs,
   GqlMutationCommunityUpdateProfileArgs,
-  GqlCommunity,
-  GqlCommunityMembershipsArgs,
-  GqlCommunityOpportunitiesArgs,
-  GqlCommunityParticipationsArgs,
-  GqlCommunityWalletsArgs,
-  GqlCommunityUtilitiesArgs,
-  GqlCommunityArticlesArgs,
 } from "@/types/graphql";
+import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
-import MembershipUseCase from "@/application/domain/account/membership/usecase";
-import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
-import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
-import UtilityUseCase from "@/application/domain/reward/utility/usecase";
-import ArticleUseCase from "@/application/domain/content/article/usecase";
 
 @injectable()
 export default class CommunityResolver {
   constructor(
     @inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase,
-    @inject("MembershipUseCase") private readonly membershipUseCase: MembershipUseCase,
-    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
-    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
-    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
-    @inject("UtilityUseCase") private readonly utilityUseCase: UtilityUseCase,
-    @inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase,
   ) {}
 
   Query = {
@@ -60,54 +42,48 @@ export default class CommunityResolver {
   };
 
   Community = {
-    memberships: async (parent: GqlCommunity, args: GqlCommunityMembershipsArgs, ctx: IContext) => {
-      return this.membershipUseCase.visitorBrowseMemberships(
-        { ...args, filter: { ...args.filter, communityId: parent.id } },
-        ctx,
-      );
+    places: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return parent.places && ctx.loaders?.place ? ctx.loaders.place.loadMany(parent.places.map((p) => p.id)) : null;
     },
 
-    opportunities: async (
-      parent: GqlCommunity,
-      args: GqlCommunityOpportunitiesArgs,
-      ctx: IContext,
-    ) => {
-      return this.opportunityUseCase.anyoneBrowseOpportunities(
-        { ...args, filter: { ...args.filter, communityIds: [parent.id] } },
-        ctx,
-      );
+    image: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return parent.imageId ? parent.imageId : null;
     },
 
-    participations: async (
-      parent: GqlCommunity,
-      args: GqlCommunityParticipationsArgs,
-      ctx: IContext,
-    ) => {
-      return this.participationUseCase.visitorBrowseParticipations(
-        { ...args, filter: { communityId: parent.id } },
-        ctx,
-      );
+    memberships: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return parent.memberships && ctx.loaders?.membership ? 
+        ctx.loaders.membership.loadMany(parent.memberships.map((m) => m.userId + ":" + m.communityId)) : 
+        null;
     },
 
-    wallets: async (parent: GqlCommunity, args: GqlCommunityWalletsArgs, ctx: IContext) => {
-      return this.walletUseCase.visitorBrowseWallets(
-        { ...args, filter: { ...args.filter, communityId: parent.id } },
-        ctx,
-      );
+    opportunities: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders?.opportunity ? 
+        ctx.loaders.opportunity.loadMany(parent.id) : 
+        null;
     },
 
-    utilities: async (parent: GqlCommunity, args: GqlCommunityUtilitiesArgs, ctx: IContext) => {
-      return this.utilityUseCase.anyoneBrowseUtilities(ctx, {
-        ...args,
-        filter: { ...args.filter, communityId: parent.id },
-      });
+    participations: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders?.participation ? 
+        ctx.loaders.participation.loadMany(parent.id) : 
+        null;
     },
 
-    articles: async (parent: GqlCommunity, args: GqlCommunityArticlesArgs, ctx: IContext) => {
-      return this.articleUseCase.anyoneBrowseArticles(ctx, {
-        ...args,
-        filter: { ...args.filter, communityId: parent.id },
-      });
+    wallets: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders?.wallet ? 
+        ctx.loaders.wallet.loadMany(parent.id) : 
+        null;
+    },
+
+    utilities: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders?.utility ? 
+        ctx.loaders.utility.loadMany(parent.id) : 
+        null;
+    },
+
+    articles: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders?.article ? 
+        ctx.loaders.article.loadMany(parent.id) : 
+        null;
     },
   };
 }

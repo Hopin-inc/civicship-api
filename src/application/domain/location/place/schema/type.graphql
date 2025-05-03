@@ -14,15 +14,10 @@ type Place {
     googlePlaceId: String
     mapLocation: JSON
 
-    city: City!
+    city: City
     community: Community
 
-    opportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
+    opportunities: [Opportunity!]
 
     createdAt: Datetime!
     updatedAt: Datetime

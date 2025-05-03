@@ -5,8 +5,7 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { PrismaCommunity } from "@/application/domain/account/community/data/type";
-import PlacePresenter from "@/application/domain/location/place/presenter";
+import { PrismaCommunity, PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 
 export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
@@ -25,13 +24,20 @@ export default class CommunityPresenter {
     };
   }
 
-  static get(r: PrismaCommunity): GqlCommunity {
-    const { places, image, ...prop } = r;
-
+  static get(r: PrismaCommunityDetail): GqlCommunity {
     return {
-      ...prop,
-      image: image ? image.url : null,
-      places: places?.map(PlacePresenter.get) ?? [],
+      id: r.id,
+      name: r.name,
+      bio: r.bio,
+      createdAt: r.createdAt,
+      image: null,
+      places: null,
+      memberships: null,
+      opportunities: null,
+      participations: null,
+      articles: null,
+      utilities: null,
+      wallets: null,
     };
   }
 

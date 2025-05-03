@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { placeInclude } from "@/application/domain/location/place/data/type";
+import { placeSelectDetail } from "@/application/domain/location/place/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import { IPlaceRepository } from "@/application/domain/location/place/data/interface";
@@ -17,7 +17,7 @@ export default class PlaceRepository implements IPlaceRepository {
       return tx.place.findMany({
         where,
         orderBy,
-        include: placeInclude,
+        select: placeSelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -29,7 +29,7 @@ export default class PlaceRepository implements IPlaceRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.place.findUnique({
         where: { id },
-        include: placeInclude,
+        select: placeSelectDetail,
       });
     });
   }
@@ -37,14 +37,14 @@ export default class PlaceRepository implements IPlaceRepository {
   async create(ctx: IContext, data: Prisma.PlaceCreateInput, tx: Prisma.TransactionClient) {
     return tx.place.create({
       data,
-      include: placeInclude,
+      select: placeSelectDetail,
     });
   }
 
   async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.place.delete({
       where: { id },
-      include: placeInclude,
+      select: placeSelectDetail,
     });
   }
 
@@ -57,7 +57,7 @@ export default class PlaceRepository implements IPlaceRepository {
     return tx.place.update({
       where: { id },
       data,
-      include: placeInclude,
+      select: placeSelectDetail,
     });
   }
 }

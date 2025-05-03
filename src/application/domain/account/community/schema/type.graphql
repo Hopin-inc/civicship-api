@@ -12,42 +12,12 @@ type Community {
 
     places: [Place!]
 
-    memberships(
-        filter: MembershipFilterInput
-        sort: MembershipSortInput
-        cursor: MembershipCursorInput
-        first: Int
-    ): MembershipsConnection
-    wallets(
-        filter: WalletFilterInput
-        sort: WalletSortInput
-        cursor: String
-        first: Int
-    ): WalletsConnection
-    opportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection
-    utilities(
-        filter: UtilityFilterInput
-        sort: UtilitySortInput
-        cursor: String
-        first: Int
-    ): UtilitiesConnection
-    articles(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection
+    memberships: [Membership!]
+    wallets: [Wallet!]
+    opportunities: [Opportunity!]
+    participations: [Participation!]
+    utilities: [Utility!]
+    articles: [Article!]
 
     createdAt: Datetime!
     updatedAt: Datetime

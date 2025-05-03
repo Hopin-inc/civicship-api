@@ -148,70 +148,22 @@ export type GqlCommunitiesConnection = {
 
 export type GqlCommunity = {
   __typename?: 'Community';
-  articles?: Maybe<GqlArticlesConnection>;
+  articles?: Maybe<Array<GqlArticle>>;
   bio?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Datetime']['output'];
   establishedAt?: Maybe<Scalars['Datetime']['output']>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
-  memberships?: Maybe<GqlMembershipsConnection>;
+  memberships?: Maybe<Array<GqlMembership>>;
   name?: Maybe<Scalars['String']['output']>;
-  opportunities?: Maybe<GqlOpportunitiesConnection>;
-  participations?: Maybe<GqlParticipationsConnection>;
+  opportunities?: Maybe<Array<GqlOpportunity>>;
+  participations?: Maybe<Array<GqlParticipation>>;
   places?: Maybe<Array<GqlPlace>>;
   pointName?: Maybe<Scalars['String']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-  utilities?: Maybe<GqlUtilitiesConnection>;
-  wallets?: Maybe<GqlWalletsConnection>;
+  utilities?: Maybe<Array<GqlUtility>>;
+  wallets?: Maybe<Array<GqlWallet>>;
   website?: Maybe<Scalars['String']['output']>;
-};
-
-
-export type GqlCommunityArticlesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlArticleFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlArticleSortInput>;
-};
-
-
-export type GqlCommunityMembershipsArgs = {
-  cursor?: InputMaybe<GqlMembershipCursorInput>;
-  filter?: InputMaybe<GqlMembershipFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlMembershipSortInput>;
-};
-
-
-export type GqlCommunityOpportunitiesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySortInput>;
-};
-
-
-export type GqlCommunityParticipationsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlParticipationFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlParticipationSortInput>;
-};
-
-
-export type GqlCommunityUtilitiesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlUtilityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlUtilitySortInput>;
-};
-
-
-export type GqlCommunityWalletsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlWalletFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlWalletSortInput>;
 };
 
 export type GqlCommunityCreateInput = {
@@ -1359,7 +1311,7 @@ export type GqlParticipationsConnection = {
 export type GqlPlace = {
   __typename?: 'Place';
   address: Scalars['String']['output'];
-  city: GqlCity;
+  city?: Maybe<GqlCity>;
   community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   googlePlaceId?: Maybe<Scalars['String']['output']>;
@@ -1370,16 +1322,8 @@ export type GqlPlace = {
   longitude: Scalars['Decimal']['output'];
   mapLocation?: Maybe<Scalars['JSON']['output']>;
   name: Scalars['String']['output'];
-  opportunities?: Maybe<GqlOpportunitiesConnection>;
+  opportunities?: Maybe<Array<GqlOpportunity>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-
-export type GqlPlaceOpportunitiesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySortInput>;
 };
 
 export type GqlPlaceCreateInput = {
@@ -3313,21 +3257,21 @@ export type GqlCommunitiesConnectionResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlCommunityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Community'] = GqlResolversParentTypes['Community']> = ResolversObject<{
-  articles?: Resolver<Maybe<GqlResolversTypes['ArticlesConnection']>, ParentType, ContextType, Partial<GqlCommunityArticlesArgs>>;
+  articles?: Resolver<Maybe<Array<GqlResolversTypes['Article']>>, ParentType, ContextType>;
   bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   establishedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  memberships?: Resolver<Maybe<GqlResolversTypes['MembershipsConnection']>, ParentType, ContextType, Partial<GqlCommunityMembershipsArgs>>;
+  memberships?: Resolver<Maybe<Array<GqlResolversTypes['Membership']>>, ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  opportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlCommunityOpportunitiesArgs>>;
-  participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlCommunityParticipationsArgs>>;
+  opportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
+  participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   places?: Resolver<Maybe<Array<GqlResolversTypes['Place']>>, ParentType, ContextType>;
   pointName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  utilities?: Resolver<Maybe<GqlResolversTypes['UtilitiesConnection']>, ParentType, ContextType, Partial<GqlCommunityUtilitiesArgs>>;
-  wallets?: Resolver<Maybe<GqlResolversTypes['WalletsConnection']>, ParentType, ContextType, Partial<GqlCommunityWalletsArgs>>;
+  utilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
+  wallets?: Resolver<Maybe<Array<GqlResolversTypes['Wallet']>>, ParentType, ContextType>;
   website?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3845,7 +3789,7 @@ export type GqlParticipationsConnectionResolvers<ContextType = any, ParentType e
 
 export type GqlPlaceResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Place'] = GqlResolversParentTypes['Place']> = ResolversObject<{
   address?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  city?: Resolver<GqlResolversTypes['City'], ParentType, ContextType>;
+  city?: Resolver<Maybe<GqlResolversTypes['City']>, ParentType, ContextType>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   googlePlaceId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -3856,7 +3800,7 @@ export type GqlPlaceResolvers<ContextType = any, ParentType extends GqlResolvers
   longitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
   mapLocation?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  opportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlPlaceOpportunitiesArgs>>;
+  opportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

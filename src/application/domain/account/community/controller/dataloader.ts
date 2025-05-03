@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlCommunity } from "@/types/graphql";
-import CommunityOutputFormat from "@/application/domain/account/community/presenter";
-import { communityInclude } from "@/application/domain/account/community/data/type";
+import CommunityPresenter from "@/application/domain/account/community/presenter";
+import { communitySelectDetail } from "@/application/domain/account/community/data/type";
 
 async function batchCommunitiesById(
   issuer: PrismaClientIssuer,
@@ -11,11 +11,11 @@ async function batchCommunitiesById(
   const records = await issuer.internal(async (tx) => {
     return tx.community.findMany({
       where: { id: { in: [...communityIds] } },
-      include: communityInclude,
+      select: communitySelectDetail,
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, CommunityOutputFormat.get(record)]));
+  const map = new Map(records.map((record) => [record.id, CommunityPresenter.get(record)]));
 
   return communityIds.map((id) => map.get(id) ?? null);
 }

@@ -1,8 +1,8 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlPlace } from "@/types/graphql";
-import PlaceOutputFormat from "@/application/domain/location/place/presenter";
-import { placeInclude } from "@/application/domain/location/place/data/type";
+import PlacePresenter from "@/application/domain/location/place/presenter";
+import { placeSelectDetail } from "@/application/domain/location/place/data/type";
 
 async function batchPlacesById(
   issuer: PrismaClientIssuer,
@@ -11,11 +11,11 @@ async function batchPlacesById(
   const records = await issuer.internal(async (tx) => {
     return tx.place.findMany({
       where: { id: { in: [...placeIds] } },
-      include: placeInclude,
+      select: placeSelectDetail,
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, PlaceOutputFormat.get(record)]));
+  const map = new Map(records.map((record) => [record.id, PlacePresenter.get(record)]));
 
   return placeIds.map((id) => map.get(id) ?? null);
 }
