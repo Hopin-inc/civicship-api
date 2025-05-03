@@ -4,22 +4,6 @@ import { GqlCity, GqlState } from "@/types/graphql";
 import MasterPresenter from "@/application/domain/location/master/presenter";
 import { citySelectDetail } from "@/application/domain/location/master/data/type";
 
-async function batchCitiesById(
-  issuer: PrismaClientIssuer,
-  cityIds: readonly string[],
-): Promise<(GqlCity | null)[]> {
-  const records = await issuer.internal(async (tx) => {
-    return tx.city.findMany({
-      where: { id: { in: [...cityIds] } },
-      select: citySelectDetail,
-    });
-  });
-
-  const map = new Map(records.map((record) => [record.id, MasterPresenter.get(record)]));
-
-  return cityIds.map((id) => map.get(id) ?? null) as (GqlCity | null)[];
-}
-
 async function batchCitiesByCode(
   issuer: PrismaClientIssuer,
   cityCodes: readonly string[],
@@ -51,17 +35,18 @@ async function batchStatesByCode(
     });
   });
 
-  const map = new Map(records.map((record) => [record.code, {
-    code: record.code,
-    name: record.name,
-    countryCode: record.countryCode,
-  }]));
+  const map = new Map(
+    records.map((record) => [
+      record.code,
+      {
+        code: record.code,
+        name: record.name,
+        countryCode: record.countryCode,
+      },
+    ]),
+  );
 
   return stateCodes.map((code) => map.get(code) ?? null) as (GqlState | null)[];
-}
-
-export function createCityLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlCity | null>((keys) => batchCitiesById(issuer, keys));
 }
 
 export function createCityByCodeLoader(issuer: PrismaClientIssuer) {

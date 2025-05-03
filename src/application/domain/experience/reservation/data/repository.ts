@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { reservationInclude, reservationSelectDetail, PrismaReservationDetail } from "@/application/domain/experience/reservation/data/type";
+import {
+  reservationInclude,
+  reservationSelectDetail,
+} from "@/application/domain/experience/reservation/data/type";
 import { IReservationRepository } from "@/application/domain/experience/reservation/data/interface";
 import { injectable } from "tsyringe";
 
@@ -12,7 +15,7 @@ export default class ReservationRepository implements IReservationRepository {
     orderBy: Prisma.ReservationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaReservationDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findMany({
         where,
@@ -31,7 +34,7 @@ export default class ReservationRepository implements IReservationRepository {
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaReservationDetail | null> {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findUnique({
         where: { id },
@@ -40,16 +43,16 @@ export default class ReservationRepository implements IReservationRepository {
     });
   }
 
-  async checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput): Promise<PrismaReservationDetail[]> {
+  async checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findMany({
         where,
-        select: reservationSelectDetail,
+        include: reservationInclude,
       });
     });
   }
 
-  async create(ctx: IContext, data: Prisma.ReservationCreateInput, tx: Prisma.TransactionClient): Promise<PrismaReservationDetail> {
+  async create(ctx: IContext, data: Prisma.ReservationCreateInput, tx: Prisma.TransactionClient) {
     return tx.reservation.create({
       data,
       select: reservationSelectDetail,
@@ -61,7 +64,7 @@ export default class ReservationRepository implements IReservationRepository {
     id: string,
     data: Prisma.ReservationUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaReservationDetail> {
+  ) {
     return tx.reservation.update({
       where: { id },
       data,

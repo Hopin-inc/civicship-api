@@ -27,29 +27,10 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
 export const reservationSelectDetail = Prisma.validator<Prisma.ReservationSelect>()({
   id: true,
   opportunitySlotId: true,
-  createdByUserId: true,
+  createdBy: true,
   status: true,
   createdAt: true,
   updatedAt: true,
-  opportunitySlot: { 
-    select: { 
-      id: true,
-      opportunityId: true,
-      startAt: true,
-      endAt: true,
-      capacity: true,
-      opportunity: { 
-        select: { 
-          id: true,
-          name: true,
-          images: { select: { id: true, url: true } }
-        } 
-      },
-      remainingCapacityView: { select: { id: true, remainingCapacity: true } }
-    } 
-  },
-  createdByUser: { select: { id: true } },
-  participations: { select: { id: true } },
 });
 
 export type PrismaReservation = Prisma.ReservationGetPayload<{

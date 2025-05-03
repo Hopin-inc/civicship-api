@@ -1,6 +1,9 @@
 import { GqlQueryReservationsArgs, GqlReservationsConnection } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
+import {
+  PrismaReservation,
+  PrismaReservationDetail,
+} from "@/application/domain/experience/reservation/data/type";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 import { Prisma, ReservationStatus } from "@prisma/client";
 
@@ -14,11 +17,11 @@ export interface IReservationService {
     ctx: IContext,
     userId: string,
     slotId: string,
-  ): Promise<PrismaReservation[]>;
+  ): Promise<PrismaReservationDetail[]>;
 
-  findReservation(ctx: IContext, id: string): Promise<PrismaReservation | null>;
+  findReservation(ctx: IContext, id: string): Promise<PrismaReservationDetail | null>;
 
-  findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservation>;
+  findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservationDetail>;
 
   createReservation(
     ctx: IContext,
@@ -27,7 +30,7 @@ export interface IReservationService {
     userIdsIfExists: string[],
     reservationStatuses: ReservationStatuses,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaReservation>;
+  ): Promise<PrismaReservationDetail>;
 
   setStatus(
     ctx: IContext,
@@ -35,7 +38,7 @@ export interface IReservationService {
     currentUserId: string,
     status: ReservationStatus,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaReservation>;
+  ): Promise<PrismaReservationDetail>;
 }
 
 export interface IReservationRepository {
@@ -45,7 +48,7 @@ export interface IReservationRepository {
     orderBy: Prisma.ReservationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaReservation[]>;
+  ): Promise<PrismaReservationDetail[]>;
 
   count(
     ctx: IContext,
@@ -53,7 +56,7 @@ export interface IReservationRepository {
     tx: Prisma.TransactionClient,
   ): Promise<number>;
 
-  find(ctx: IContext, id: string): Promise<PrismaReservation | null>;
+  find(ctx: IContext, id: string): Promise<PrismaReservationDetail | null>;
 
   checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput): Promise<PrismaReservation[]>;
 
@@ -61,12 +64,12 @@ export interface IReservationRepository {
     ctx: IContext,
     data: Prisma.ReservationCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaReservation>;
+  ): Promise<PrismaReservationDetail>;
 
   setStatus(
     ctx: IContext,
     id: string,
     data: Prisma.ReservationUpdateInput,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReservation>;
+  ): Promise<PrismaReservationDetail>;
 }
