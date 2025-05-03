@@ -33,15 +33,10 @@ export default class OpportunityPresenter {
     const earliestReservableSlotView = 'earliestReservableSlotView' in r ? r.earliestReservableSlotView : null;
     
     return {
-      id: r.id,
-      title: r.name,
-      description: r.description,
-      publishStatus: r.publishStatus,
+      ...r,
+      title: 'title' in r ? r.title : '',
       category: "ACTIVITY", // Default category
-      requireApproval: false, // Default value
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-      capacity: r.capacity,
+      requireApproval: 'requireApproval' in r ? r.requireApproval : false,
       community: null,
       place: null,
       createdByUser: null,
@@ -49,10 +44,10 @@ export default class OpportunityPresenter {
       earliestReservableSlotView,
       images,
       articles: null,
-      body: null,
-      feeRequired: null,
+      body: 'body' in r ? r.body : null,
+      feeRequired: 'feeRequired' in r ? r.feeRequired : null,
       isReservableWithTicket: null,
-      pointsToEarn: null,
+      pointsToEarn: 'pointsToEarn' in r ? r.pointsToEarn : null,
       slots: null
     };
   }

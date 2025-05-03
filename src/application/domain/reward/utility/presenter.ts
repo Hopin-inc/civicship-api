@@ -28,13 +28,7 @@ export default class UtilityPresenter {
     const communityId = 'community' in r && r.community ? r.community.id : r.communityId;
     
     return {
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      pointsRequired: r.pointsRequired,
-      publishStatus: r.publishStatus,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+      ...r,
       community: {
         id: communityId || "",
         name: "",
