@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { membershipInclude } from "@/application/domain/account/membership/data/type";
+import { membershipSelectDetail, PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import { injectable } from "tsyringe";
 
@@ -12,7 +12,7 @@ export default class MembershipRepository implements IMembershipRepository {
     orderBy: Prisma.MembershipOrderByWithRelationInput[],
     take: number,
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
-  ) {
+  ): Promise<PrismaMembershipDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findMany({
         where,
@@ -26,24 +26,24 @@ export default class MembershipRepository implements IMembershipRepository {
               },
             }
           : {}),
-        include: membershipInclude,
+        select: membershipSelectDetail,
       });
     });
   }
 
-  async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
+  async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput): Promise<PrismaMembershipDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({
         where,
-        include: membershipInclude,
+        select: membershipSelectDetail,
       });
     });
   }
 
-  async create(ctx: IContext, data: Prisma.MembershipCreateInput, tx: Prisma.TransactionClient) {
+  async create(ctx: IContext, data: Prisma.MembershipCreateInput, tx: Prisma.TransactionClient): Promise<PrismaMembershipDetail> {
     return tx.membership.create({
       data,
-      include: membershipInclude,
+      select: membershipSelectDetail,
     });
   }
 
@@ -52,11 +52,11 @@ export default class MembershipRepository implements IMembershipRepository {
     where: Prisma.MembershipWhereUniqueInput,
     data: Prisma.MembershipUpdateInput,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaMembershipDetail> {
     return tx.membership.update({
       where,
       data,
-      include: membershipInclude,
+      select: membershipSelectDetail,
     });
   }
 
@@ -64,10 +64,10 @@ export default class MembershipRepository implements IMembershipRepository {
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaMembershipDetail> {
     return tx.membership.delete({
       where,
-      include: membershipInclude,
+      select: membershipSelectDetail,
     });
   }
 }
