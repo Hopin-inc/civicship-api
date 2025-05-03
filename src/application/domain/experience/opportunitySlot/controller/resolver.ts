@@ -3,19 +3,16 @@ import {
   GqlQueryOpportunitySlotArgs,
   GqlMutationOpportunitySlotSetHostingStatusArgs,
   GqlMutationOpportunitySlotsBulkUpdateArgs,
-  GqlOpportunitySlot,
-  GqlOpportunitySlotParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import OpportunitySlotUseCase from "@/application/domain/experience/opportunitySlot/usecase";
-import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
+import { PrismaOpportunitySlotDetail } from "@/application/domain/experience/opportunitySlot/data/type";
 
 @injectable()
 export default class OpportunitySlotResolver {
   constructor(
     @inject("OpportunitySlotUseCase") private readonly slotUseCase: OpportunitySlotUseCase,
-    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
   ) {}
 
   Query = {
@@ -23,7 +20,7 @@ export default class OpportunitySlotResolver {
       return this.slotUseCase.visitorBrowseOpportunitySlots(args, ctx);
     },
     opportunitySlot: (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
-      return this.slotUseCase.visitorViewOpportunitySlot(args, ctx);
+      return ctx.loaders.opportunitySlot.load(args.id);
     },
   };
 
@@ -45,18 +42,22 @@ export default class OpportunitySlotResolver {
   };
 
   OpportunitySlot = {
-    participations: (
-      parent: GqlOpportunitySlot,
-      args: GqlOpportunitySlotParticipationsArgs,
-      ctx: IContext,
-    ) => {
-      return this.participationUseCase.visitorBrowseParticipations(
-        {
-          ...args,
-          filter: { ...args.filter, opportunitySlotId: parent.id },
-        },
-        ctx,
-      );
+    opportunity: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
+      return parent.opportunityId ? ctx.loaders.opportunity.load(parent.opportunityId) : null;
+    },
+    
+    participations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
+      return parent.reservations ? 
+        ctx.loaders.participation.loadMany(
+          parent.reservations.flatMap(r => r.participations?.map(p => p.id) || [])
+        ) : 
+        [];
+    },
+    
+    reservations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
+      return parent.reservations ? 
+        ctx.loaders.reservation.loadMany(parent.reservations.map(r => r.id)) : 
+        [];
     },
   };
 }
