@@ -14,12 +14,7 @@ type Membership {
 
     participationView: MembershipParticipationView
 
-    membershipHistories(
-        filter: MembershipHistoryFilterInput
-        sort: MembershipHistorySortInput
-        cursor: String
-        first: Int
-    ):MembershipHistoriesConnection
+    membershipHistories: [MembershipHistory!]
 
     createdAt: Datetime!
     updatedAt: Datetime

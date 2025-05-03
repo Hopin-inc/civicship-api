@@ -11,19 +11,9 @@ type Wallet {
     currentPointView: CurrentPointView
     accumulatedPointView: AccumulatedPointView
 
-    tickets(
-        filter: TicketFilterInput
-        sort: TicketSortInput
-        cursor: String
-        first: Int
-    ): TicketsConnection
+    tickets: [Ticket!]
 
-    transactions(
-        filter: TransactionFilterInput
-        sort: TransactionSortInput
-        cursor: String
-        first: Int
-    ): TransactionsConnection
+    transactions: [Transaction!]
 
     createdAt: Datetime!
     updatedAt: Datetime

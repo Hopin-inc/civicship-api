@@ -25,11 +25,11 @@ export default class TransactionResolver {
   
   Transaction = {
     fromWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
-      return parent.fromWalletId ? ctx.loaders.wallet.load(parent.fromWalletId) : null;
+      return parent.from ? ctx.loaders.wallet.load(parent.from) : null;
     },
     
     toWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
-      return parent.toWalletId ? ctx.loaders.wallet.load(parent.toWalletId) : null;
+      return parent.to ? ctx.loaders.wallet.load(parent.to) : null;
     },
     
     participation: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaParticipationStatusHistory } from "@/application/domain/experience/participation/statusHistory/data/type";
+import { PrismaParticipationStatusHistoryDetail } from "@/application/domain/experience/participation/statusHistory/data/type";
 
 export interface IParticipationStatusHistoryRepository {
   query(
@@ -9,15 +9,15 @@ export interface IParticipationStatusHistoryRepository {
     orderBy: Prisma.ParticipationStatusHistoryOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaParticipationStatusHistory[]>;
+  ): Promise<PrismaParticipationStatusHistoryDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaParticipationStatusHistory | null>;
+  find(ctx: IContext, id: string): Promise<PrismaParticipationStatusHistoryDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.ParticipationStatusHistoryCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipationStatusHistory>;
+  ): Promise<PrismaParticipationStatusHistoryDetail>;
 
   createMany(
     ctx: IContext,

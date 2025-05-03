@@ -25,6 +25,8 @@ export default class UtilityPresenter {
   }
 
   static get(r: PrismaUtility | PrismaUtilityDetail): GqlUtility {
+    const communityId = 'community' in r && r.community ? r.community.id : r.communityId;
+    
     return {
       id: r.id,
       name: r.name,
@@ -34,8 +36,8 @@ export default class UtilityPresenter {
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       community: {
-        id: r.community?.id || r.communityId || "",
-        name: null,
+        id: communityId || "",
+        name: "",
         bio: null,
         createdAt: new Date(),
         updatedAt: null,
@@ -48,7 +50,7 @@ export default class UtilityPresenter {
         utilities: null,
         wallets: null,
         establishedAt: null,
-        pointName: null,
+        pointName: "",
         website: null
       },
       images: null,
@@ -58,7 +60,7 @@ export default class UtilityPresenter {
     };
   }
 
-  static create(r: PrismaUtility): GqlUtilityCreateSuccess {
+  static create(r: PrismaUtility | PrismaUtilityDetail): GqlUtilityCreateSuccess {
     return {
       __typename: "UtilityCreateSuccess",
       utility: this.get(r),
@@ -72,7 +74,7 @@ export default class UtilityPresenter {
     };
   }
 
-  static updateInfo(r: PrismaUtility): GqlUtilityUpdateInfoSuccess {
+  static updateInfo(r: PrismaUtility | PrismaUtilityDetail): GqlUtilityUpdateInfoSuccess {
     return {
       __typename: "UtilityUpdateInfoSuccess",
       utility: this.get(r),

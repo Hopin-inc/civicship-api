@@ -2,9 +2,9 @@ import {
   GqlParticipationStatusHistoriesConnection,
   GqlParticipationStatusHistory,
 } from "@/types/graphql";
-import { PrismaParticipationStatusHistory } from "@/application/domain/experience/participation/statusHistory/data/type";
+import { PrismaParticipationStatusHistoryDetail } from "@/application/domain/experience/participation/statusHistory/data/type";
 
-export default class ParticipationStatusHistoryOutputFormat {
+export default class ParticipationStatusHistoryPresenter {
   static query(
     r: GqlParticipationStatusHistory[],
     hasNextPage: boolean,
@@ -24,13 +24,11 @@ export default class ParticipationStatusHistoryOutputFormat {
     };
   }
 
-  static get(r: PrismaParticipationStatusHistory): GqlParticipationStatusHistory {
-    const { createdByUser, participation } = r;
-
+  static get(r: PrismaParticipationStatusHistoryDetail): GqlParticipationStatusHistory {
     return {
       ...r,
-      participation,
-      createdByUser,
+      participation: null,
+      createdByUser: null,
     };
   }
 }

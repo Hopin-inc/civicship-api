@@ -23,103 +23,33 @@ type User {
     createdAt: Datetime!
     updatedAt: Datetime
 
-    portfolios(
-        filter: PortfolioFilterInput
-        sort: PortfolioSortInput
-        cursor: String
-        first: Int
-    ): PortfoliosConnection
+    portfolios: [Portfolio!]
 
-    memberships(
-        filter: MembershipFilterInput
-        sort: MembershipSortInput
-        cursor: MembershipCursorInput
-        first: Int
-    ): MembershipsConnection
+    memberships: [Membership!]
 
-    membershipChangedByMe(
-        filter: MembershipHistoryFilterInput
-        sort: MembershipHistorySortInput
-        cursor: String
-        first: Int
-    ): MembershipHistoriesConnection
+    membershipChangedByMe: [MembershipHistory!]
 
-    wallets(
-        filter: WalletFilterInput
-        sort: WalletSortInput
-        cursor: String
-        first: Int
-    ): WalletsConnection
+    wallets: [Wallet!]
 
-    opportunitiesCreatedByMe(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
+    opportunitiesCreatedByMe: [Opportunity!]
 
-    reservations(
-        filter: ReservationFilterInput
-        sort: ReservationSortInput
-        cursor: String
-        first: Int
-    ): ReservationsConnection
+    reservations: [Reservation!]
 
-    reservationStatusChangedByMe(
-        filter: ReservationHistoryFilterInput
-        sort: ReservationHistorySortInput
-        cursor: String
-        first: Int
-    ): ReservationHistoriesConnection
+    reservationStatusChangedByMe: [ReservationHistory!]
 
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection
+    participations: [Participation!]
 
-    participationStatusChangedByMe(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): ParticipationStatusHistoriesConnection
+    participationStatusChangedByMe: [ParticipationStatusHistory!]
 
-    evaluations(
-        filter: EvaluationFilterInput
-        sort: EvaluationSortInput
-        cursor: String
-        first: Int
-    ): EvaluationsConnection
+    evaluations: [Evaluation!]
 
-    evaluationCreatedByMe(
-        filter: EvaluationHistoryFilterInput
-        sort: EvaluationHistorySortInput
-        cursor: String
-        first: Int
-    ): EvaluationHistoriesConnection
+    evaluationCreatedByMe: [EvaluationHistory!]
 
-    articlesWrittenByMe(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection
+    articlesWrittenByMe: [Article!]
 
-    articlesAboutMe(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection
+    articlesAboutMe: [Article!]
 
-    ticketStatusChangedByMe(
-        filter: TicketStatusHistoryFilterInput
-        sort: TicketStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): TicketStatusHistoriesConnection
+    ticketStatusChangedByMe: [TicketStatusHistory!]
 }
 
 # ------------------------------

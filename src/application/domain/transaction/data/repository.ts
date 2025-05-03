@@ -35,11 +35,18 @@ export default class TransactionRepository implements ITransactionRepository {
     });
   }
 
-  async refreshCurrentPoints(ctx: IContext, tx: Prisma.TransactionClient) {
+  async refreshCurrentPoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<refreshMaterializedViewCurrentPoints.Result[]> {
     return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
-  async create(ctx: IContext, data: Prisma.TransactionCreateInput, tx: Prisma.TransactionClient): Promise<PrismaTransactionDetail> {
+  async create(
+    ctx: IContext,
+    data: Prisma.TransactionCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail> {
     return tx.transaction.create({
       data,
       select: transactionSelectDetail,
