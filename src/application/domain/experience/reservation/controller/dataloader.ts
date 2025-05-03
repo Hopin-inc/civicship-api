@@ -1,6 +1,6 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { reservationInclude } from "@/application/domain/experience/reservation/data/type";
+import { reservationSelectDetail } from "@/application/domain/experience/reservation/data/type";
 import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
 import { GqlReservation } from "@/types/graphql";
 
@@ -11,11 +11,11 @@ async function batchReservationsById(
   const records = await issuer.internal((tx) =>
     tx.reservation.findMany({
       where: { id: { in: [...ids] } },
-      include: reservationInclude,
+      select: reservationSelectDetail,
     }),
   );
 
-  const map = new Map(records.map((r) => [r.id, ReservationPresenter.get(r)]));
+  const map = new Map(records.map((r) => [r.id, ReservationPresenter.get(r)])) as Map<string, GqlReservation | null>;
   return ids.map((id) => map.get(id) ?? null);
 }
 
