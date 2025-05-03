@@ -12,19 +12,9 @@ type Utility {
     community: Community!
 
     ticketIssuers: [TicketIssuer!]
-    tickets(
-        filter: TicketFilterInput
-        sort: TicketSortInput
-        cursor: String
-        first: Int
-    ): TicketsConnection
+    tickets: [Ticket!]
 
-    requiredForOpportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
+    requiredForOpportunities: [Opportunity!]
 
     createdAt: Datetime!
     updatedAt: Datetime

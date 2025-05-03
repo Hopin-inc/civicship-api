@@ -26,12 +26,7 @@ type Opportunity {
     requiredUtilities: [Utility!]
     articles: [Article!]
 
-    slots(
-        filter: OpportunitySlotFilterInput
-        sort: OpportunitySlotSortInput
-        cursor: String
-        first: Int
-    ): OpportunitySlotsConnection
+    slots: [OpportunitySlot!]
     earliestReservableSlotView: EarliestReservableSlotView
 
     createdAt: Datetime!
