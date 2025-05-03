@@ -15,9 +15,6 @@ export const ticketSelectDetail = Prisma.validator<Prisma.TicketSelect>()({
   status: true,
   createdAt: true,
   updatedAt: true,
-  wallet: { select: { id: true, communityId: true } },
-  utility: { select: { id: true, communityId: true } },
-  claimLink: { select: { id: true } },
 });
 
 export type PrismaTicket = Prisma.TicketGetPayload<{

@@ -24,24 +24,19 @@ export const opportunitySetHostingStatusInclude = Prisma.validator<Prisma.Opport
 
 export const opportunitySelectDetail = Prisma.validator<Prisma.OpportunitySelect>()({
   id: true,
-  name: true,
+  title: true,
   description: true,
   publishStatus: true,
-  hostingStatus: true,
-  startAt: true,
-  endAt: true,
-  capacity: true,
+  requireApproval: true,
+  category: true,
+  body: true,
+  pointsToEarn: true,
+  feeRequired: true,
   communityId: true,
-  createdByUserId: true,
   placeId: true,
+  createdBy: true,
   createdAt: true,
   updatedAt: true,
-  community: { select: { id: true } },
-  createdByUser: { select: { id: true } },
-  place: { select: { id: true } },
-  images: { select: { id: true, url: true } },
-  requiredUtilities: { select: { id: true } },
-  earliestReservableSlotView: { select: { id: true, opportunityId: true, startAt: true } },
 });
 
 export type PrismaOpportunity = Prisma.OpportunityGetPayload<{
