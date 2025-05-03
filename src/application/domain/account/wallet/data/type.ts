@@ -7,6 +7,22 @@ export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
   accumulatedPointView: true,
 });
 
+export const walletSelectDetail = Prisma.validator<Prisma.WalletSelect>()({
+  id: true,
+  userId: true,
+  communityId: true,
+  createdAt: true,
+  updatedAt: true,
+  community: { select: { id: true } },
+  user: { select: { id: true } },
+  currentPointView: true,
+  accumulatedPointView: true,
+});
+
 export type PrismaWallet = Prisma.WalletGetPayload<{
   include: typeof walletInclude;
+}>;
+
+export type PrismaWalletDetail = Prisma.WalletGetPayload<{
+  select: typeof walletSelectDetail;
 }>;

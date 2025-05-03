@@ -1,5 +1,5 @@
 import { GqlWallet, GqlWalletsConnection } from "@/types/graphql";
-import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
+import { PrismaWallet, PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
 
 export default class WalletPresenter {
   static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {
@@ -18,14 +18,13 @@ export default class WalletPresenter {
     };
   }
 
-  static get(r: PrismaWallet): GqlWallet {
-    const { community, user, currentPointView, ...prop } = r;
-
+  static get(r: PrismaWallet | PrismaWalletDetail): GqlWallet {
     return {
-      ...prop,
-      community,
-      user,
-      currentPointView,
+      ...r,
+      community: null,
+      user: null,
+      currentPointView: r.currentPointView,
+      accumulatedPointView: r.accumulatedPointView,
     };
   }
 }
