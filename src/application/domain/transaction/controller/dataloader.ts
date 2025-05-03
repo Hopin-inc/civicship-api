@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlTransaction } from "@/types/graphql";
-import { transactionInclude } from "@/application/domain/transaction/data/type";
+import { transactionSelectDetail, PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import TransactionOutputFormat from "@/application/domain/transaction/presenter";
 
 async function batchTransactionsById(
@@ -11,9 +11,9 @@ async function batchTransactionsById(
   const records = await issuer.internal(async (tx) => {
     return tx.transaction.findMany({
       where: { id: { in: [...transactionIds] } },
-      include: transactionInclude,
+      select: transactionSelectDetail,
     });
-  });
+  }) as PrismaTransactionDetail[];
 
   const map = new Map(records.map((record) => [record.id, TransactionOutputFormat.get(record)]));
   return transactionIds.map((id) => map.get(id) ?? null);
