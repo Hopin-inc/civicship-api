@@ -7,6 +7,7 @@ import {
   GqlQueryTicketArgs,
   GqlQueryTicketsArgs,
 } from "@/types/graphql";
+import { PrismaTicketDetail } from "@/application/domain/reward/ticket/data/type";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
@@ -25,6 +26,24 @@ export default class TicketResolver {
         return this.ticketUseCase.visitorViewTicket(ctx, args);
       }
       return ctx.loaders.ticket.load(args.id);
+    },
+  };
+  
+  Ticket = {
+    utility: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
+      return parent.utilityId && ctx.loaders?.utility ? ctx.loaders.utility.load(parent.utilityId) : null;
+    },
+    
+    wallet: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
+      return parent.walletId && ctx.loaders?.wallet ? ctx.loaders.wallet.load(parent.walletId) : null;
+    },
+    
+    claimLink: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
+      return parent.claimLinkId && ctx.loaders?.ticketClaimLink ? ctx.loaders.ticketClaimLink.load(parent.claimLinkId) : null;
+    },
+    
+    ticketStatusHistories: (parent: PrismaTicketDetail, args: any, ctx: IContext) => {
+      return null;
     },
   };
 

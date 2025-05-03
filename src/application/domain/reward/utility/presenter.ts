@@ -5,8 +5,7 @@ import {
   GqlUtilityDeleteSuccess,
   GqlUtilityUpdateInfoSuccess,
 } from "@/types/graphql";
-import { PrismaUtility } from "@/application/domain/reward/utility/data/type";
-import { Utility } from "@prisma/client";
+import { PrismaUtility, PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 
 export default class UtilityPresenter {
   static query(utilities: GqlUtility[], hasNextPage: boolean): GqlUtilitiesConnection {
@@ -25,8 +24,38 @@ export default class UtilityPresenter {
     };
   }
 
-  static get(r: PrismaUtility): GqlUtility {
-    return r;
+  static get(r: PrismaUtility | PrismaUtilityDetail): GqlUtility {
+    return {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      pointsRequired: r.pointsRequired,
+      publishStatus: r.publishStatus,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+      community: {
+        id: r.community?.id || r.communityId || "",
+        name: null,
+        bio: null,
+        createdAt: new Date(),
+        updatedAt: null,
+        image: null,
+        places: null,
+        memberships: null,
+        opportunities: null,
+        participations: null,
+        articles: null,
+        utilities: null,
+        wallets: null,
+        establishedAt: null,
+        pointName: null,
+        website: null
+      },
+      images: null,
+      requiredForOpportunities: null,
+      ticketIssuers: null,
+      tickets: null,
+    };
   }
 
   static create(r: PrismaUtility): GqlUtilityCreateSuccess {
@@ -36,7 +65,7 @@ export default class UtilityPresenter {
     };
   }
 
-  static delete(r: Utility): GqlUtilityDeleteSuccess {
+  static delete(r: PrismaUtilityDetail | { id: string }): GqlUtilityDeleteSuccess {
     return {
       __typename: "UtilityDeleteSuccess",
       utilityId: r.id,

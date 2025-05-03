@@ -1,7 +1,7 @@
 import { injectable } from "tsyringe";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { utilityInclude } from "@/application/domain/reward/utility/data/type";
+import { utilitySelectDetail } from "@/application/domain/reward/utility/data/type";
 import { IUtilityRepository } from "./interface";
 
 @injectable()
@@ -17,7 +17,7 @@ export default class UtilityRepository implements IUtilityRepository {
       return tx.utility.findMany({
         where,
         orderBy,
-        include: utilityInclude,
+        select: utilitySelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -29,7 +29,7 @@ export default class UtilityRepository implements IUtilityRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where: { id },
-        include: utilityInclude,
+        select: utilitySelectDetail,
       });
     });
   }
@@ -41,7 +41,7 @@ export default class UtilityRepository implements IUtilityRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where,
-        include: utilityInclude,
+        select: utilitySelectDetail,
       });
     });
   }
@@ -49,14 +49,14 @@ export default class UtilityRepository implements IUtilityRepository {
   async create(ctx: IContext, data: Prisma.UtilityCreateInput, tx: Prisma.TransactionClient) {
     return tx.utility.create({
       data,
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   }
 
   async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.utility.delete({
       where: { id },
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   }
 
@@ -69,7 +69,7 @@ export default class UtilityRepository implements IUtilityRepository {
     return tx.utility.update({
       where: { id },
       data,
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   }
 }

@@ -60,8 +60,16 @@ export default class PlaceResolver {
     },
     
     city: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return parent.cityId && ctx.loaders?.city ? 
-        ctx.loaders.city.load(parent.cityId) : 
+      return parent.city ? 
+        { 
+          code: parent.city.code, 
+          name: parent.city.name, 
+          state: parent.city.state ? {
+            code: parent.city.state.code,
+            name: parent.city.state.name,
+            countryCode: parent.city.state.countryCode
+          } : { code: "", name: "", countryCode: "" }
+        } : 
         null;
     },
     

@@ -8,6 +8,7 @@ import {
   GqlUtilityTicketsArgs,
   GqlUtilityRequiredForOpportunitiesArgs,
 } from "@/types/graphql";
+import { PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import UtilityUseCase from "@/application/domain/reward/utility/usecase";
@@ -48,7 +49,11 @@ export default class UtilityResolver {
   };
 
   Utility = {
-    tickets: (parent: GqlUtility, args: GqlUtilityTicketsArgs, ctx: IContext) => {
+    community: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return parent.communityId && ctx.loaders?.community ? ctx.loaders.community.load(parent.communityId) : null;
+    },
+    
+    tickets: (parent: PrismaUtilityDetail, args: GqlUtilityTicketsArgs, ctx: IContext) => {
       return this.ticketUseCase.visitorBrowseTickets(ctx, {
         ...args,
         filter: { ...args.filter, utilityId: parent.id },
@@ -56,7 +61,7 @@ export default class UtilityResolver {
     },
 
     requiredForOpportunities: (
-      parent: GqlUtility,
+      parent: PrismaUtilityDetail,
       args: GqlUtilityRequiredForOpportunitiesArgs,
       ctx: IContext,
     ) => {

@@ -7,6 +7,23 @@ export const ticketInclude = Prisma.validator<Prisma.TicketInclude>()({
   claimLink: { include: ticketClaimLinkInclude },
 });
 
+export const ticketSelectDetail = Prisma.validator<Prisma.TicketSelect>()({
+  id: true,
+  walletId: true,
+  utilityId: true,
+  claimLinkId: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+  wallet: { select: { id: true, communityId: true } },
+  utility: { select: { id: true, communityId: true } },
+  claimLink: { select: { id: true } },
+});
+
 export type PrismaTicket = Prisma.TicketGetPayload<{
   include: typeof ticketInclude;
+}>;
+
+export type PrismaTicketDetail = Prisma.TicketGetPayload<{
+  select: typeof ticketSelectDetail;
 }>;
