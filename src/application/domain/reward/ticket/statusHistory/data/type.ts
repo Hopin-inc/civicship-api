@@ -6,6 +6,20 @@ export const ticketStatusHistoryInclude = Prisma.validator<Prisma.TicketStatusHi
   transaction: true,
 });
 
+export const ticketStatusHistorySelectDetail = Prisma.validator<Prisma.TicketStatusHistorySelect>()({
+  id: true,
+  ticketId: true,
+  status: true,
+  createdByUser: true,
+  transactionId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type PrismaTicketStatusHistory = Prisma.TicketStatusHistoryGetPayload<{
   include: typeof ticketStatusHistoryInclude;
+}>;
+
+export type PrismaTicketStatusHistoryDetail = Prisma.TicketStatusHistoryGetPayload<{
+  select: typeof ticketStatusHistorySelectDetail;
 }>;

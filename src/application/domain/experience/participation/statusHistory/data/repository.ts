@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { participationStatusHistoryInclude } from "@/application/domain/experience/participation/statusHistory/data/type";
+import { 
+  participationStatusHistorySelectDetail,
+  PrismaParticipationStatusHistoryDetail
+} from "@/application/domain/experience/participation/statusHistory/data/type";
 import { IParticipationStatusHistoryRepository } from "@/application/domain/experience/participation/statusHistory/data/interface";
 
 @injectable()
@@ -14,12 +17,12 @@ export default class ParticipationStatusHistoryRepository
     orderBy: Prisma.ParticipationStatusHistoryOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ) {
+  ): Promise<PrismaParticipationStatusHistoryDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.findMany({
         where,
         orderBy,
-        include: participationStatusHistoryInclude,
+        select: participationStatusHistorySelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -27,11 +30,11 @@ export default class ParticipationStatusHistoryRepository
     });
   }
 
-  async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string): Promise<PrismaParticipationStatusHistoryDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participationStatusHistory.findUnique({
         where: { id },
-        include: participationStatusHistoryInclude,
+        select: participationStatusHistorySelectDetail,
       });
     });
   }
@@ -40,10 +43,10 @@ export default class ParticipationStatusHistoryRepository
     ctx: IContext,
     data: Prisma.ParticipationStatusHistoryCreateInput,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaParticipationStatusHistoryDetail> {
     return tx.participationStatusHistory.create({
       data,
-      include: participationStatusHistoryInclude,
+      select: participationStatusHistorySelectDetail,
     });
   }
 

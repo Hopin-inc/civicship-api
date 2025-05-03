@@ -1,8 +1,11 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlParticipationStatusHistory } from "@/types/graphql";
-import { participationStatusHistoryInclude } from "@/application/domain/experience/participation/statusHistory/data/type";
-import ParticipationStatusHistoryOutputFormat from "@/application/domain/experience/participation/statusHistory/presenter";
+import { 
+  participationStatusHistorySelectDetail,
+  PrismaParticipationStatusHistoryDetail
+} from "@/application/domain/experience/participation/statusHistory/data/type";
+import ParticipationStatusHistoryPresenter from "@/application/domain/experience/participation/statusHistory/presenter";
 
 async function batchParticipationStatusHistoriesById(
   issuer: PrismaClientIssuer,
@@ -11,12 +14,12 @@ async function batchParticipationStatusHistoriesById(
   const records = await issuer.internal(async (tx) => {
     return tx.participationStatusHistory.findMany({
       where: { id: { in: [...ids] } },
-      include: participationStatusHistoryInclude,
+      select: participationStatusHistorySelectDetail,
     });
-  });
+  }) as PrismaParticipationStatusHistoryDetail[];
 
   const map = new Map(
-    records.map((record) => [record.id, ParticipationStatusHistoryOutputFormat.get(record)]),
+    records.map((record) => [record.id, ParticipationStatusHistoryPresenter.get(record)]),
   );
 
   return ids.map((id) => map.get(id) ?? null);

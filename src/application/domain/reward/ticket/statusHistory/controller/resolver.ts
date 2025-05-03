@@ -4,6 +4,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import TicketStatusHistoryUseCase from "@/application/domain/reward/ticket/statusHistory/usecase";
+import { PrismaTicketStatusHistoryDetail } from "@/application/domain/reward/ticket/statusHistory/data/type";
 
 const ticketStatusHistoryResolver = {
   Query: {
@@ -24,6 +25,20 @@ const ticketStatusHistoryResolver = {
         return TicketStatusHistoryUseCase.visitorViewTicketStatusHistory(ctx, args);
       }
       return ctx.loaders.ticketStatusHistory.load(args.id);
+    },
+  },
+  
+  TicketStatusHistory: {
+    ticket: (parent: PrismaTicketStatusHistoryDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.ticket.load(parent.ticketId);
+    },
+    
+    createdByUser: (parent: PrismaTicketStatusHistoryDetail, _: unknown, ctx: IContext) => {
+      return parent.createdByUser ? ctx.loaders.user.load(parent.createdByUser.id) : null;
+    },
+    
+    transaction: (parent: PrismaTicketStatusHistoryDetail, _: unknown, ctx: IContext) => {
+      return parent.transactionId ? ctx.loaders.transaction.load(parent.transactionId) : null;
     },
   },
 };

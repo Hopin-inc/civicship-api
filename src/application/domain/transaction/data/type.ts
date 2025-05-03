@@ -8,17 +8,14 @@ export const transactionInclude = Prisma.validator<Prisma.TransactionInclude>()(
 
 export const transactionSelectDetail = Prisma.validator<Prisma.TransactionSelect>()({
   id: true,
-  amount: true,
-  type: true,
-  status: true,
-  fromWalletId: true,
-  toWalletId: true,
+  reason: true,
+  fromPointChange: true,
+  toPointChange: true,
+  from: true,
+  to: true,
   participationId: true,
   createdAt: true,
   updatedAt: true,
-  fromWallet: { select: { id: true, userId: true, communityId: true } },
-  toWallet: { select: { id: true, userId: true, communityId: true } },
-  participation: { select: { id: true } },
 });
 
 export type PrismaTransaction = Prisma.TransactionGetPayload<{
@@ -28,3 +25,5 @@ export type PrismaTransaction = Prisma.TransactionGetPayload<{
 export type PrismaTransactionDetail = Prisma.TransactionGetPayload<{
   select: typeof transactionSelectDetail;
 }>;
+
+export type PrismaTransactionUnified = PrismaTransaction | PrismaTransactionDetail;

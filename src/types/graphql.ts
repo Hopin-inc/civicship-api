@@ -370,21 +370,13 @@ export type GqlMembership = {
   community: GqlCommunity;
   createdAt: Scalars['Datetime']['output'];
   headline?: Maybe<Scalars['String']['output']>;
-  membershipHistories?: Maybe<GqlMembershipHistoriesConnection>;
+  membershipHistories?: Maybe<Array<GqlMembershipHistory>>;
   participationView?: Maybe<GqlMembershipParticipationView>;
   reason: GqlMembershipStatusReason;
   role: GqlRole;
   status: GqlMembershipStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user: GqlUser;
-};
-
-
-export type GqlMembershipMembershipHistoriesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlMembershipHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlMembershipHistorySortInput>;
 };
 
 export type GqlMembershipCursorInput = {
@@ -935,17 +927,9 @@ export type GqlOpportunity = {
   publishStatus: GqlPublishStatus;
   requireApproval: Scalars['Boolean']['output'];
   requiredUtilities?: Maybe<Array<GqlUtility>>;
-  slots?: Maybe<GqlOpportunitySlotsConnection>;
+  slots?: Maybe<Array<GqlOpportunitySlot>>;
   title: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-
-export type GqlOpportunitySlotsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunitySlotFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySlotSortInput>;
 };
 
 export const GqlOpportunityCategory = {
@@ -1925,18 +1909,10 @@ export type GqlTicket = {
   id: Scalars['ID']['output'];
   reason: GqlTicketStatusReason;
   status: GqlTicketStatus;
-  ticketStatusHistories?: Maybe<GqlTicketStatusHistoriesConnection>;
+  ticketStatusHistories?: Maybe<Array<GqlTicketStatusHistory>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   utility?: Maybe<GqlUtility>;
   wallet?: Maybe<GqlWallet>;
-};
-
-
-export type GqlTicketTicketStatusHistoriesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlTicketStatusHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlTicketStatusHistorySortInput>;
 };
 
 export type GqlTicketClaimInput = {
@@ -2105,18 +2081,10 @@ export type GqlTransaction = {
   id: Scalars['ID']['output'];
   participation?: Maybe<GqlParticipation>;
   reason: GqlTransactionReason;
-  ticketStatusHistories?: Maybe<GqlTicketStatusHistoriesConnection>;
+  ticketStatusHistories?: Maybe<Array<GqlTicketStatusHistory>>;
   toPointChange?: Maybe<Scalars['Int']['output']>;
   toWallet?: Maybe<GqlWallet>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-
-export type GqlTransactionTicketStatusHistoriesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlTicketStatusHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlTicketStatusHistorySortInput>;
 };
 
 export type GqlTransactionDonateSelfPointInput = {
@@ -2195,28 +2163,28 @@ export type GqlTransactionsConnection = {
 
 export type GqlUser = {
   __typename?: 'User';
-  articlesAboutMe?: Maybe<GqlArticlesConnection>;
-  articlesWrittenByMe?: Maybe<GqlArticlesConnection>;
+  articlesAboutMe?: Maybe<Array<GqlArticle>>;
+  articlesWrittenByMe?: Maybe<Array<GqlArticle>>;
   bio?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['Datetime']['output'];
   currentPrefecture?: Maybe<GqlCurrentPrefecture>;
-  evaluationCreatedByMe?: Maybe<GqlEvaluationHistoriesConnection>;
-  evaluations?: Maybe<GqlEvaluationsConnection>;
+  evaluationCreatedByMe?: Maybe<Array<GqlEvaluationHistory>>;
+  evaluations?: Maybe<Array<GqlEvaluation>>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
-  membershipChangedByMe?: Maybe<GqlMembershipHistoriesConnection>;
-  memberships?: Maybe<GqlMembershipsConnection>;
+  membershipChangedByMe?: Maybe<Array<GqlMembershipHistory>>;
+  memberships?: Maybe<Array<GqlMembership>>;
   name: Scalars['String']['output'];
-  opportunitiesCreatedByMe?: Maybe<GqlOpportunitiesConnection>;
-  participationStatusChangedByMe?: Maybe<GqlParticipationStatusHistoriesConnection>;
-  participations?: Maybe<GqlParticipationsConnection>;
+  opportunitiesCreatedByMe?: Maybe<Array<GqlOpportunity>>;
+  participationStatusChangedByMe?: Maybe<Array<GqlParticipationStatusHistory>>;
+  participations?: Maybe<Array<GqlParticipation>>;
   phoneNumber?: Maybe<Scalars['String']['output']>;
-  portfolios?: Maybe<GqlPortfoliosConnection>;
-  reservationStatusChangedByMe?: Maybe<GqlReservationHistoriesConnection>;
-  reservations?: Maybe<GqlReservationsConnection>;
+  portfolios?: Maybe<Array<GqlPortfolio>>;
+  reservationStatusChangedByMe?: Maybe<Array<GqlReservationHistory>>;
+  reservations?: Maybe<Array<GqlReservation>>;
   slug: Scalars['String']['output'];
   sysRole: GqlSysRole;
-  ticketStatusChangedByMe?: Maybe<GqlTicketStatusHistoriesConnection>;
+  ticketStatusChangedByMe?: Maybe<Array<GqlTicketStatusHistory>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   urlFacebook?: Maybe<Scalars['String']['output']>;
   urlInstagram?: Maybe<Scalars['String']['output']>;
@@ -2224,119 +2192,7 @@ export type GqlUser = {
   urlWebsite?: Maybe<Scalars['String']['output']>;
   urlX?: Maybe<Scalars['String']['output']>;
   urlYoutube?: Maybe<Scalars['String']['output']>;
-  wallets?: Maybe<GqlWalletsConnection>;
-};
-
-
-export type GqlUserArticlesAboutMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlArticleFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlArticleSortInput>;
-};
-
-
-export type GqlUserArticlesWrittenByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlArticleFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlArticleSortInput>;
-};
-
-
-export type GqlUserEvaluationCreatedByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlEvaluationHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlEvaluationHistorySortInput>;
-};
-
-
-export type GqlUserEvaluationsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlEvaluationFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlEvaluationSortInput>;
-};
-
-
-export type GqlUserMembershipChangedByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlMembershipHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlMembershipHistorySortInput>;
-};
-
-
-export type GqlUserMembershipsArgs = {
-  cursor?: InputMaybe<GqlMembershipCursorInput>;
-  filter?: InputMaybe<GqlMembershipFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlMembershipSortInput>;
-};
-
-
-export type GqlUserOpportunitiesCreatedByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySortInput>;
-};
-
-
-export type GqlUserParticipationStatusChangedByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlParticipationStatusHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlParticipationStatusHistorySortInput>;
-};
-
-
-export type GqlUserParticipationsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlParticipationFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlParticipationSortInput>;
-};
-
-
-export type GqlUserPortfoliosArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlPortfolioFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlPortfolioSortInput>;
-};
-
-
-export type GqlUserReservationStatusChangedByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlReservationHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlReservationHistorySortInput>;
-};
-
-
-export type GqlUserReservationsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlReservationFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlReservationSortInput>;
-};
-
-
-export type GqlUserTicketStatusChangedByMeArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlTicketStatusHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlTicketStatusHistorySortInput>;
-};
-
-
-export type GqlUserWalletsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlWalletFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlWalletSortInput>;
+  wallets?: Maybe<Array<GqlWallet>>;
 };
 
 export type GqlUserDeletePayload = {
@@ -2412,26 +2268,10 @@ export type GqlUtility = {
   name: Scalars['String']['output'];
   pointsRequired: Scalars['Int']['output'];
   publishStatus: GqlPublishStatus;
-  requiredForOpportunities?: Maybe<GqlOpportunitiesConnection>;
+  requiredForOpportunities?: Maybe<Array<GqlOpportunity>>;
   ticketIssuers?: Maybe<Array<GqlTicketIssuer>>;
-  tickets?: Maybe<GqlTicketsConnection>;
+  tickets?: Maybe<Array<GqlTicket>>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-
-export type GqlUtilityRequiredForOpportunitiesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlOpportunityFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlOpportunitySortInput>;
-};
-
-
-export type GqlUtilityTicketsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlTicketFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlTicketSortInput>;
 };
 
 export type GqlUtilityCreateInput = {
@@ -2513,27 +2353,11 @@ export type GqlWallet = {
   createdAt: Scalars['Datetime']['output'];
   currentPointView?: Maybe<GqlCurrentPointView>;
   id: Scalars['ID']['output'];
-  tickets?: Maybe<GqlTicketsConnection>;
-  transactions?: Maybe<GqlTransactionsConnection>;
+  tickets?: Maybe<Array<GqlTicket>>;
+  transactions?: Maybe<Array<GqlTransaction>>;
   type: GqlWalletType;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user?: Maybe<GqlUser>;
-};
-
-
-export type GqlWalletTicketsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlTicketFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlTicketSortInput>;
-};
-
-
-export type GqlWalletTransactionsArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlTransactionFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlTransactionSortInput>;
 };
 
 export type GqlWalletEdge = GqlEdge & {
@@ -3407,7 +3231,7 @@ export type GqlMembershipResolvers<ContextType = any, ParentType extends GqlReso
   community?: Resolver<GqlResolversTypes['Community'], ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   headline?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  membershipHistories?: Resolver<Maybe<GqlResolversTypes['MembershipHistoriesConnection']>, ParentType, ContextType, Partial<GqlMembershipMembershipHistoriesArgs>>;
+  membershipHistories?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHistory']>>, ParentType, ContextType>;
   participationView?: Resolver<Maybe<GqlResolversTypes['MembershipParticipationView']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['MembershipStatusReason'], ParentType, ContextType>;
   role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
@@ -3605,7 +3429,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
-  slots?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsConnection']>, ParentType, ContextType, Partial<GqlOpportunitySlotsArgs>>;
+  slots?: Resolver<Maybe<Array<GqlResolversTypes['OpportunitySlot']>>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4002,7 +3826,7 @@ export type GqlTicketResolvers<ContextType = any, ParentType extends GqlResolver
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['TicketStatusReason'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['TicketStatus'], ParentType, ContextType>;
-  ticketStatusHistories?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlTicketTicketStatusHistoriesArgs>>;
+  ticketStatusHistories?: Resolver<Maybe<Array<GqlResolversTypes['TicketStatusHistory']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utility?: Resolver<Maybe<GqlResolversTypes['Utility']>, ParentType, ContextType>;
   wallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
@@ -4121,7 +3945,7 @@ export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlRes
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participation?: Resolver<Maybe<GqlResolversTypes['Participation']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['TransactionReason'], ParentType, ContextType>;
-  ticketStatusHistories?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlTransactionTicketStatusHistoriesArgs>>;
+  ticketStatusHistories?: Resolver<Maybe<Array<GqlResolversTypes['TicketStatusHistory']>>, ParentType, ContextType>;
   toPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   toWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -4173,28 +3997,28 @@ export interface GqlUploadScalarConfig extends GraphQLScalarTypeConfig<GqlResolv
 }
 
 export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['User'] = GqlResolversParentTypes['User']> = ResolversObject<{
-  articlesAboutMe?: Resolver<Maybe<GqlResolversTypes['ArticlesConnection']>, ParentType, ContextType, Partial<GqlUserArticlesAboutMeArgs>>;
-  articlesWrittenByMe?: Resolver<Maybe<GqlResolversTypes['ArticlesConnection']>, ParentType, ContextType, Partial<GqlUserArticlesWrittenByMeArgs>>;
+  articlesAboutMe?: Resolver<Maybe<Array<GqlResolversTypes['Article']>>, ParentType, ContextType>;
+  articlesWrittenByMe?: Resolver<Maybe<Array<GqlResolversTypes['Article']>>, ParentType, ContextType>;
   bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   currentPrefecture?: Resolver<Maybe<GqlResolversTypes['CurrentPrefecture']>, ParentType, ContextType>;
-  evaluationCreatedByMe?: Resolver<Maybe<GqlResolversTypes['EvaluationHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserEvaluationCreatedByMeArgs>>;
-  evaluations?: Resolver<Maybe<GqlResolversTypes['EvaluationsConnection']>, ParentType, ContextType, Partial<GqlUserEvaluationsArgs>>;
+  evaluationCreatedByMe?: Resolver<Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, ParentType, ContextType>;
+  evaluations?: Resolver<Maybe<Array<GqlResolversTypes['Evaluation']>>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  membershipChangedByMe?: Resolver<Maybe<GqlResolversTypes['MembershipHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserMembershipChangedByMeArgs>>;
-  memberships?: Resolver<Maybe<GqlResolversTypes['MembershipsConnection']>, ParentType, ContextType, Partial<GqlUserMembershipsArgs>>;
+  membershipChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHistory']>>, ParentType, ContextType>;
+  memberships?: Resolver<Maybe<Array<GqlResolversTypes['Membership']>>, ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  opportunitiesCreatedByMe?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUserOpportunitiesCreatedByMeArgs>>;
-  participationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ParticipationStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserParticipationStatusChangedByMeArgs>>;
-  participations?: Resolver<Maybe<GqlResolversTypes['ParticipationsConnection']>, ParentType, ContextType, Partial<GqlUserParticipationsArgs>>;
+  opportunitiesCreatedByMe?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
+  participationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ParticipationStatusHistory']>>, ParentType, ContextType>;
+  participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   phoneNumber?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  portfolios?: Resolver<Maybe<GqlResolversTypes['PortfoliosConnection']>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
-  reservationStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['ReservationHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserReservationStatusChangedByMeArgs>>;
-  reservations?: Resolver<Maybe<GqlResolversTypes['ReservationsConnection']>, ParentType, ContextType, Partial<GqlUserReservationsArgs>>;
+  portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType>;
+  reservationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
+  reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
   slug?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   sysRole?: Resolver<GqlResolversTypes['SysRole'], ParentType, ContextType>;
-  ticketStatusChangedByMe?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistoriesConnection']>, ParentType, ContextType, Partial<GqlUserTicketStatusChangedByMeArgs>>;
+  ticketStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['TicketStatusHistory']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   urlFacebook?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   urlInstagram?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -4202,7 +4026,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   urlWebsite?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   urlX?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   urlYoutube?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  wallets?: Resolver<Maybe<GqlResolversTypes['WalletsConnection']>, ParentType, ContextType, Partial<GqlUserWalletsArgs>>;
+  wallets?: Resolver<Maybe<Array<GqlResolversTypes['Wallet']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4249,9 +4073,9 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
-  requiredForOpportunities?: Resolver<Maybe<GqlResolversTypes['OpportunitiesConnection']>, ParentType, ContextType, Partial<GqlUtilityRequiredForOpportunitiesArgs>>;
+  requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;
   ticketIssuers?: Resolver<Maybe<Array<GqlResolversTypes['TicketIssuer']>>, ParentType, ContextType>;
-  tickets?: Resolver<Maybe<GqlResolversTypes['TicketsConnection']>, ParentType, ContextType, Partial<GqlUtilityTicketsArgs>>;
+  tickets?: Resolver<Maybe<Array<GqlResolversTypes['Ticket']>>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4304,8 +4128,8 @@ export type GqlWalletResolvers<ContextType = any, ParentType extends GqlResolver
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   currentPointView?: Resolver<Maybe<GqlResolversTypes['CurrentPointView']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  tickets?: Resolver<Maybe<GqlResolversTypes['TicketsConnection']>, ParentType, ContextType, Partial<GqlWalletTicketsArgs>>;
-  transactions?: Resolver<Maybe<GqlResolversTypes['TransactionsConnection']>, ParentType, ContextType, Partial<GqlWalletTransactionsArgs>>;
+  tickets?: Resolver<Maybe<Array<GqlResolversTypes['Ticket']>>, ParentType, ContextType>;
+  transactions?: Resolver<Maybe<Array<GqlResolversTypes['Transaction']>>, ParentType, ContextType>;
   type?: Resolver<GqlResolversTypes['WalletType'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;

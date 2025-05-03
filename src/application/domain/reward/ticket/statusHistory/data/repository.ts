@@ -2,8 +2,8 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import {
-  PrismaTicketStatusHistory,
-  ticketStatusHistoryInclude,
+  PrismaTicketStatusHistoryDetail,
+  ticketStatusHistorySelectDetail,
 } from "@/application/domain/reward/ticket/statusHistory/data/type";
 
 export default class TicketStatusHistoryRepository {
@@ -15,23 +15,23 @@ export default class TicketStatusHistoryRepository {
     orderBy: Prisma.TicketStatusHistoryOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaTicketStatusHistory[]> {
+  ): Promise<PrismaTicketStatusHistoryDetail[]> {
     return this.issuer.internal(async (tx) => {
       return tx.ticketStatusHistory.findMany({
         where,
         orderBy,
         take: take + 1,
         cursor: cursor ? { id: cursor } : undefined,
-        include: ticketStatusHistoryInclude,
+        select: ticketStatusHistorySelectDetail,
       });
     });
   }
 
-  static async find(ctx: IContext, id: string): Promise<PrismaTicketStatusHistory | null> {
+  static async find(ctx: IContext, id: string): Promise<PrismaTicketStatusHistoryDetail | null> {
     return this.issuer.internal(async (tx) => {
       return tx.ticketStatusHistory.findUnique({
         where: { id },
-        include: ticketStatusHistoryInclude,
+        select: ticketStatusHistorySelectDetail,
       });
     });
   }
