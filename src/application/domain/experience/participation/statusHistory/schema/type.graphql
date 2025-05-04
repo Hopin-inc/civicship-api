@@ -6,9 +6,9 @@ type ParticipationStatusHistory {
     status: ParticipationStatus!
     reason: ParticipationStatusReason!
 
-    participation: Participation!
+    participation: Participation
     createdByUser: User
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

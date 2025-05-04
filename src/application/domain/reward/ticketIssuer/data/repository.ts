@@ -1,12 +1,7 @@
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import {
-  PrismaTicketIssuer,
-  PrismaTicketIssuerDetail,
-  ticketIssuerInclude,
-  ticketIssuerSelectDetail,
-} from "@/application/domain/reward/ticketIssuer/data/type";
+import { ticketIssuerSelectDetail } from "@/application/domain/reward/ticketIssuer/data/type";
 import { ITicketIssuerRepository } from "./interface";
 
 @injectable()
@@ -17,7 +12,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
     orderBy: Prisma.TicketIssuerOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaTicketIssuerDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketIssuer.findMany({
         where,
@@ -30,7 +25,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
     });
   }
 
-  find(ctx: IContext, id: string): Promise<PrismaTicketIssuerDetail | null> {
+  find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketIssuer.findUnique({
         where: { id },
@@ -39,11 +34,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
     });
   }
 
-  create(
-    ctx: IContext,
-    data: Prisma.TicketIssuerCreateInput,
-    tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicketIssuerDetail> {
+  create(ctx: IContext, data: Prisma.TicketIssuerCreateInput, tx: Prisma.TransactionClient) {
     return tx.ticketIssuer.create({
       data,
       select: ticketIssuerSelectDetail,

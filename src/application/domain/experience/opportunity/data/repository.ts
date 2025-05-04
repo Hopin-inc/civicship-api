@@ -1,5 +1,5 @@
 import { Prisma, PublishStatus } from "@prisma/client";
-import { opportunityInclude, opportunitySelectDetail } from "@/application/domain/experience/opportunity/data/type";
+import { opportunitySelectDetail } from "@/application/domain/experience/opportunity/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import { IOpportunityRepository } from "./interface";

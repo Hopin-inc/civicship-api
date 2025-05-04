@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaMembership } from "@/application/domain/account/membership/data/type";
+import { PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
 
 export interface IMembershipRepository {
   query(
@@ -9,26 +9,29 @@ export interface IMembershipRepository {
     orderBy: Prisma.MembershipOrderByWithRelationInput[],
     take: number,
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
-  ): Promise<PrismaMembership[]>;
+  ): Promise<PrismaMembershipDetail[]>;
 
-  find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput): Promise<PrismaMembership | null>;
+  find(
+    ctx: IContext,
+    where: Prisma.MembershipWhereUniqueInput,
+  ): Promise<PrismaMembershipDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.MembershipCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaMembership>;
+  ): Promise<PrismaMembershipDetail>;
 
   update(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
     data: Prisma.MembershipUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaMembership>;
+  ): Promise<PrismaMembershipDetail>;
 
   delete(
     ctx: IContext,
     where: Prisma.MembershipWhereUniqueInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaMembership>;
+  ): Promise<PrismaMembershipDetail>;
 }

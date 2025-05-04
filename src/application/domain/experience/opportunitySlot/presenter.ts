@@ -5,14 +5,15 @@ import {
   GqlOpportunitySlotSetHostingStatusSuccess,
 } from "@/types/graphql";
 import {
-  PrismaOpportunitySlot,
-  PrismaOpportunitySlotWithParticipation,
   PrismaOpportunitySlotDetail,
-  PrismaOpportunitySlotWithParticipationDetail
+  PrismaOpportunitySlotWithParticipationDetail,
 } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
-  static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
+  static query(
+    r: PrismaOpportunitySlotDetail[],
+    hasNextPage: boolean,
+  ): GqlOpportunitySlotsConnection {
     return {
       totalCount: r.length,
       pageInfo: {
@@ -28,43 +29,26 @@ export default class OpportunitySlotPresenter {
     };
   }
 
-  static get(r: PrismaOpportunitySlot | PrismaOpportunitySlotDetail): GqlOpportunitySlot {
+  static get(r: PrismaOpportunitySlotDetail): GqlOpportunitySlot {
+    const { remainingCapacityView, ...prop } = r;
     return {
-      ...r,
-      startsAt: r.startAt,
-      endsAt: r.endAt,
-      opportunity: null,
-      participations: null,
-      reservations: null,
-      remainingCapacityView:
-        OpportunitySlotPresenter.formatRemainingCapacityView(r.remainingCapacityView),
+      ...prop,
+      remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
+      reservations: [],
     };
   }
 
   static setHostingStatus(
-    r: PrismaOpportunitySlotWithParticipation | PrismaOpportunitySlotWithParticipationDetail,
+    r: PrismaOpportunitySlotWithParticipationDetail,
   ): GqlOpportunitySlotSetHostingStatusSuccess {
     return {
-      __typename: "OpportunitySlotSetHostingStatusSuccess",
       slot: this.get(r),
     };
   }
 
-  static bulkUpdate(slots: GqlOpportunitySlot[]): GqlOpportunitySlotsBulkUpdateSuccess {
+  static bulkUpdate(slots: PrismaOpportunitySlotDetail[]): GqlOpportunitySlotsBulkUpdateSuccess {
     return {
-      __typename: "OpportunitySlotsBulkUpdateSuccess",
       slots,
     };
-  }
-
-  private static formatRemainingCapacityView(
-    view?: PrismaOpportunitySlot["remainingCapacityView"],
-  ): GqlOpportunitySlot["remainingCapacityView"] {
-    return view
-      ? {
-          opportunitySlotId: view.slotId,
-          remainingCapacity: view.remainingCapacity,
-        }
-      : null;
   }
 }

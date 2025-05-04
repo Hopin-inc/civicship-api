@@ -1,4 +1,4 @@
-import { PrismaParticipation } from "./type";
+import { PrismaParticipationDetail } from "./type";
 import { IContext } from "@/types/server";
 import {
   GqlParticipationCreatePersonalRecordInput,
@@ -14,22 +14,22 @@ export interface IParticipationService {
     include?: T,
   ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]>;
 
-  findParticipation(ctx: IContext, id: string): Promise<PrismaParticipation | null>;
+  findParticipation(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
 
-  findParticipationOrThrow(ctx: IContext, id: string): Promise<PrismaParticipation>;
+  findParticipationOrThrow(ctx: IContext, id: string): Promise<PrismaParticipationDetail>;
 
   createParticipation(
     ctx: IContext,
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation>;
+  ): Promise<PrismaParticipationDetail>;
 
   deleteParticipation(
     ctx: IContext,
     id: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation>;
+  ): Promise<PrismaParticipationDetail>;
 
   setStatus(
     ctx: IContext,
@@ -38,7 +38,7 @@ export interface IParticipationService {
     reason: ParticipationStatusReason,
     tx: Prisma.TransactionClient,
     currentUserId?: string,
-  ): Promise<PrismaParticipation>;
+  ): Promise<PrismaParticipationDetail>;
 
   bulkSetStatusByReservation(
     ctx: IContext,
@@ -54,41 +54,44 @@ export interface IParticipationService {
     tx: Prisma.TransactionClient,
   ): Promise<Prisma.BatchPayload>;
 
-  validateDeletable(participation: PrismaParticipation): void;
+  validateDeletable(participation: PrismaParticipationDetail): void;
 }
 
 export interface IParticipationRepository {
-  query<T extends Prisma.ParticipationInclude>(
+  query(
     ctx: IContext,
     where: Prisma.ParticipationWhereInput,
     orderBy: Prisma.ParticipationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-    include?: T,
-  ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]>;
+  ): Promise<PrismaParticipationDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaParticipation | null>;
+  find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.ParticipationCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation>;
+  ): Promise<PrismaParticipationDetail>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.ParticipationUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation>;
+  ): Promise<PrismaParticipationDetail>;
 
-  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaParticipation>;
+  delete(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaParticipationDetail>;
 
   bulkSetStatusByReservation(
     ctx: IContext,
     participationIds: string[],
-    status: PrismaParticipation["status"],
-    reason: PrismaParticipation["reason"],
+    status: PrismaParticipationDetail["status"],
+    reason: PrismaParticipationDetail["reason"],
     tx: Prisma.TransactionClient,
   ): Promise<Prisma.BatchPayload>;
 }

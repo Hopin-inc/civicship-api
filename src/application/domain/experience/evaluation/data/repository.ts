@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { evaluationSelectDetail, PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
+import { evaluationSelectDetail } from "@/application/domain/experience/evaluation/data/type";
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
 @injectable()
@@ -12,7 +12,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
     orderBy: Prisma.EvaluationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaEvaluationDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.evaluation.findMany({
         where,
@@ -25,7 +25,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaEvaluationDetail | null> {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.evaluation.findUnique({
         where: { id },
@@ -34,7 +34,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
     });
   }
 
-  async create(ctx: IContext, data: Prisma.EvaluationCreateInput, tx: Prisma.TransactionClient): Promise<PrismaEvaluationDetail> {
+  async create(ctx: IContext, data: Prisma.EvaluationCreateInput, tx: Prisma.TransactionClient) {
     return tx.evaluation.create({
       data,
       select: evaluationSelectDetail,

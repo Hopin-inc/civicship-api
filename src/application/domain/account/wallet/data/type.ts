@@ -9,12 +9,11 @@ export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
 
 export const walletSelectDetail = Prisma.validator<Prisma.WalletSelect>()({
   id: true,
+  type: true,
   userId: true,
   communityId: true,
   createdAt: true,
   updatedAt: true,
-  community: { select: { id: true } },
-  user: { select: { id: true } },
   currentPointView: true,
   accumulatedPointView: true,
 });

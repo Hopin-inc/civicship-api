@@ -42,68 +42,29 @@ export const opportunitySlotWithParticipationInclude =
 
 export const opportunitySlotSelectDetail = Prisma.validator<Prisma.OpportunitySlotSelect>()({
   id: true,
+  hostingStatus: true,
   opportunityId: true,
-  startAt: true,
-  endAt: true,
+  startsAt: true,
+  endsAt: true,
   capacity: true,
   createdAt: true,
   updatedAt: true,
-  opportunity: { 
-    select: { 
-      id: true,
-      name: true,
-      description: true,
-      requiredUtilities: { 
-        select: { 
-          id: true,
-          communityId: true,
-          community: { select: { id: true } }
-        } 
-      }
-    } 
-  },
-  remainingCapacityView: { select: { id: true, remainingCapacity: true } },
-  reservations: { select: { id: true } }
+  remainingCapacityView: { select: { remainingCapacity: true } },
+  reservations: { select: { id: true } },
 });
 
-export const opportunitySlotWithParticipationSelectDetail = 
+export const opportunitySlotWithParticipationSelectDetail =
   Prisma.validator<Prisma.OpportunitySlotSelect>()({
     id: true,
-    opportunityId: true,
-    startAt: true,
-    endAt: true,
+    hostingStatus: true,
+    startsAt: true,
+    endsAt: true,
     capacity: true,
+    remainingCapacityView: { select: { remainingCapacity: true } },
+    opportunityId: true,
+    reservations: { select: { id: true } },
     createdAt: true,
     updatedAt: true,
-    opportunity: { 
-      select: { 
-        id: true,
-        name: true,
-        description: true,
-        requiredUtilities: { 
-          select: { 
-            id: true,
-            communityId: true,
-            community: { select: { id: true } }
-          } 
-        },
-        createdByUserId: true,
-        createdByUser: { select: { id: true } }
-      } 
-    },
-    remainingCapacityView: { select: { id: true, remainingCapacity: true } },
-    reservations: { 
-      select: { 
-        id: true,
-        participations: { 
-          select: { 
-            id: true,
-            userId: true,
-            user: { select: { id: true, identities: { select: { id: true } } } }
-          } 
-        }
-      } 
-    }
   });
 
 export type PrismaOpportunitySlot = Prisma.OpportunitySlotGetPayload<{

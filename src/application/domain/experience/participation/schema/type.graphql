@@ -17,19 +17,8 @@ type Participation {
 
     ticketStatusHistories: [TicketStatusHistory!]
 
-    statusHistories(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): ParticipationStatusHistoriesConnection
-
-    transactions(
-        filter: TransactionFilterInput
-        sort: TransactionSortInput
-        cursor: String
-        first: Int
-    ): TransactionsConnection
+    statusHistories: [ParticipationStatusHistory!]
+    transactions: [Transaction!]
 
     createdAt: Datetime!
     updatedAt: Datetime

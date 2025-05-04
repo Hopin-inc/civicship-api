@@ -1,24 +1,29 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaPlace } from "./type";
+import { PrismaPlaceDetail } from "./type";
 import { GqlQueryPlacesArgs, GqlPlaceCreateInput, GqlPlaceUpdateInput } from "@/types/graphql";
 
 export interface IPlaceService {
-  fetchPlaces(
+  fetchPlaces(ctx: IContext, args: GqlQueryPlacesArgs, take: number): Promise<PrismaPlaceDetail[]>;
+
+  findPlace(ctx: IContext, id: string): Promise<PrismaPlaceDetail | null>;
+
+  findPlaceOrThrow(ctx: IContext, id: string): Promise<PrismaPlaceDetail>;
+
+  createPlace(
     ctx: IContext,
-    args: GqlQueryPlacesArgs,
-    take: number,
-  ): Promise<PrismaPlace[]>;
+    input: GqlPlaceCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaPlaceDetail>;
 
-  findPlace(ctx: IContext, id: string): Promise<PrismaPlace | null>;
+  deletePlace(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaPlaceDetail>;
 
-  findPlaceOrThrow(ctx: IContext, id: string): Promise<PrismaPlace>;
-
-  createPlace(ctx: IContext, input: GqlPlaceCreateInput, tx: Prisma.TransactionClient): Promise<PrismaPlace>;
-
-  deletePlace(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaPlace>;
-
-  updatePlace(ctx: IContext, id: string, input: GqlPlaceUpdateInput, tx: Prisma.TransactionClient): Promise<PrismaPlace>;
+  updatePlace(
+    ctx: IContext,
+    id: string,
+    input: GqlPlaceUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaPlaceDetail>;
 }
 
 export interface IPlaceRepository {
@@ -28,13 +33,22 @@ export interface IPlaceRepository {
     orderBy: Prisma.PlaceOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaPlace[]>;
+  ): Promise<PrismaPlaceDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaPlace | null>;
+  find(ctx: IContext, id: string): Promise<PrismaPlaceDetail | null>;
 
-  create(ctx: IContext, data: Prisma.PlaceCreateInput, tx: Prisma.TransactionClient): Promise<PrismaPlace>;
+  create(
+    ctx: IContext,
+    data: Prisma.PlaceCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaPlaceDetail>;
 
-  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaPlace>;
+  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaPlaceDetail>;
 
-  update(ctx: IContext, id: string, data: Prisma.PlaceUpdateInput, tx: Prisma.TransactionClient): Promise<PrismaPlace>;
+  update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.PlaceUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaPlaceDetail>;
 }

@@ -1,14 +1,14 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaTicketIssuer } from "./type";
+import { PrismaTicketIssuerDetail } from "./type";
 
 export interface ITicketIssuerRepository {
-  find(ctx: IContext, id: string): Promise<PrismaTicketIssuer | null>;
+  find(ctx: IContext, id: string): Promise<PrismaTicketIssuerDetail | null>;
   create(
     ctx: IContext,
     data: Prisma.TicketIssuerCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicketIssuer>;
+  ): Promise<PrismaTicketIssuerDetail>;
 }
 
 export interface ITicketIssuerService {
@@ -17,5 +17,5 @@ export interface ITicketIssuerService {
     userId: string,
     utilityId: string,
     qtyToBeIssued: number,
-  ): Promise<PrismaTicketIssuer>;
-} 
+  ): Promise<PrismaTicketIssuerDetail>;
+}

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
+import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
 
 export interface IEvaluationRepository {
   query(
@@ -9,13 +9,13 @@ export interface IEvaluationRepository {
     orderBy: Prisma.EvaluationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaEvaluation[]>;
+  ): Promise<PrismaEvaluationDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaEvaluation | null>;
+  find(ctx: IContext, id: string): Promise<PrismaEvaluationDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.EvaluationCreateInput,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaEvaluation>;
+  ): Promise<PrismaEvaluationDetail>;
 }

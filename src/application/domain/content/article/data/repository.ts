@@ -1,9 +1,7 @@
 import { Prisma } from "@prisma/client";
-import { 
-  articleSelectDetail, 
+import {
+  articleSelectDetail,
   articleForPortfolioSelectDetail,
-  PrismaArticleDetail,
-  PrismaArticleForPortfolioDetail
 } from "@/application/domain/content/article/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
@@ -17,7 +15,7 @@ export default class ArticleRepository {
     take: number,
     cursor?: string,
     isForPortfolio: boolean = false,
-  ): Promise<PrismaArticleDetail[] | PrismaArticleForPortfolioDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) =>
       tx.article.findMany({
         where,
@@ -34,7 +32,7 @@ export default class ArticleRepository {
     ctx: IContext,
     where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
     isForPortfolio: boolean = false,
-  ): Promise<PrismaArticleDetail | PrismaArticleForPortfolioDetail | null> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.article.findUnique({
         where,

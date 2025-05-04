@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaTicketClaimLink } from "./type";
+import { PrismaTicketClaimLinkDetail } from "./type";
 
 export interface ITicketClaimLinkRepository {
   query(
@@ -9,26 +9,26 @@ export interface ITicketClaimLinkRepository {
     orderBy: Prisma.TicketClaimLinkOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaTicketClaimLink[]>;
+  ): Promise<PrismaTicketClaimLinkDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaTicketClaimLink | null>;
+  find(ctx: IContext, id: string): Promise<PrismaTicketClaimLinkDetail | null>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.TicketClaimLinkUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicketClaimLink>;
+  ): Promise<PrismaTicketClaimLinkDetail>;
 }
 
 export interface ITicketClaimLinkService {
-  findTicketClaimLink(ctx: IContext, id: string): Promise<PrismaTicketClaimLink | null>;
-  findTicketClaimLinkOrThrow(ctx: IContext, id: string): Promise<PrismaTicketClaimLink>;
-  validateBeforeClaim(ctx: IContext, id: string): Promise<PrismaTicketClaimLink>;
+  findTicketClaimLink(ctx: IContext, id: string): Promise<PrismaTicketClaimLinkDetail | null>;
+  findTicketClaimLinkOrThrow(ctx: IContext, id: string): Promise<PrismaTicketClaimLinkDetail>;
+  validateBeforeClaim(ctx: IContext, id: string): Promise<PrismaTicketClaimLinkDetail>;
   markAsClaimed(
     ctx: IContext,
     claimLinkId: string,
     qty: number,
     tx: Prisma.TransactionClient,
   ): Promise<void>;
-} 
+}

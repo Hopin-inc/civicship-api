@@ -7,7 +7,6 @@ import {
   GqlQueryParticipationStatusHistoriesArgs,
   GqlQueryParticipationStatusHistoryArgs,
   GqlUser,
-  GqlUserParticipationStatusChangedByMeArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ParticipationStatusHistoryOutputFormat from "@/application/domain/experience/participation/statusHistory/presenter";

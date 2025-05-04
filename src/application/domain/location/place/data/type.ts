@@ -20,8 +20,6 @@ export const placeSelectDetail = Prisma.validator<Prisma.PlaceSelect>()({
   mapLocation: true,
   createdAt: true,
   updatedAt: true,
-  community: { select: { id: true } },
-  city: { select: { code: true, name: true, state: { select: { code: true, name: true, countryCode: true } } } },
 });
 
 export type PrismaPlace = Prisma.PlaceGetPayload<{

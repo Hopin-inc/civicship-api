@@ -19,22 +19,16 @@ export type PrismaParticipation = Prisma.ParticipationGetPayload<{
 
 export const participationSelectDetail = Prisma.validator<Prisma.ParticipationSelect>()({
   id: true,
+  status: true,
+  reason: true,
+  source: true,
   userId: true,
   reservationId: true,
   communityId: true,
-  status: true,
+  images: { select: { id: true } },
+  statusHistories: { select: { id: true } },
   createdAt: true,
   updatedAt: true,
-  user: { select: { id: true } },
-  reservation: { 
-    select: { 
-      id: true,
-      opportunitySlotId: true,
-      opportunitySlot: { select: { id: true, opportunityId: true } }
-    } 
-  },
-  community: { select: { id: true } },
-  images: { select: { id: true, url: true } },
 });
 
 export type PrismaParticipationDetail = Prisma.ParticipationGetPayload<{

@@ -6,33 +6,18 @@ type OpportunitySlot {
 
     hostingStatus: OpportunitySlotHostingStatus!
     capacity: Int
-    remainingCapacityView: RemainingCapacityView
+    remainingCapacity: Int
 
     startsAt: Datetime!
     endsAt: Datetime!
 
     opportunity: Opportunity
 
-    reservations(
-        filter: ReservationFilterInput
-        sort: ReservationSortInput
-        cursor: String
-        first: Int
-    ): ReservationsConnection
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection
+    reservations: [Reservation!]
+    participations: [Participation!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
-}
-
-type RemainingCapacityView {
-    opportunitySlotId: String!
-    remainingCapacity: Int
 }
 
 enum OpportunitySlotHostingStatus {

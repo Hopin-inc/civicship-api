@@ -17,27 +17,27 @@ export const articleForPortfolioInclude = Prisma.validator<Prisma.ArticleInclude
 export const articleSelectDetail = Prisma.validator<Prisma.ArticleSelect>()({
   id: true,
   title: true,
-  content: true,
-  status: true,
-  slug: true,
+  category: true,
+  introduction: true,
+  body: true,
+  publishStatus: true,
   thumbnailId: true,
   communityId: true,
   createdAt: true,
   updatedAt: true,
   publishedAt: true,
-  community: { select: { id: true } },
   authors: { select: { id: true } },
   relatedUsers: { select: { id: true } },
   opportunities: { select: { id: true } },
-  thumbnail: true,
 });
 
 export const articleForPortfolioSelectDetail = Prisma.validator<Prisma.ArticleSelect>()({
   id: true,
   title: true,
-  content: true,
-  status: true,
-  slug: true,
+  introduction: true,
+  category: true,
+  body: true,
+  publishStatus: true,
   thumbnailId: true,
   communityId: true,
   createdAt: true,
@@ -45,7 +45,7 @@ export const articleForPortfolioSelectDetail = Prisma.validator<Prisma.ArticleSe
   publishedAt: true,
   authors: { select: { id: true } },
   relatedUsers: { select: { id: true } },
-  thumbnail: true,
+  opportunities: { select: { id: true } },
 });
 
 export type PrismaArticle = Prisma.ArticleGetPayload<{

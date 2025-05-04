@@ -11,20 +11,12 @@ export const ticketClaimLinkInclude = Prisma.validator<Prisma.TicketClaimLinkInc
 
 export const ticketClaimLinkSelectDetail = Prisma.validator<Prisma.TicketClaimLinkSelect>()({
   id: true,
-  issuerId: true,
-  code: true,
+  qty: true,
   status: true,
+  issuerId: true,
+  claimedAt: true,
+  tickets: { select: { id: true } },
   createdAt: true,
-  updatedAt: true,
-  issuer: { 
-    select: { 
-      id: true,
-      utilityId: true,
-      ownerId: true,
-      utility: { select: { id: true, communityId: true } },
-      owner: { select: { id: true } }
-    } 
-  },
 });
 
 export type PrismaTicketClaimLink = Prisma.TicketClaimLinkGetPayload<{

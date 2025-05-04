@@ -22,11 +22,6 @@ export default class TicketStatusHistoryPresenter {
   }
 
   static get(r: PrismaTicketStatusHistoryDetail): GqlTicketStatusHistory {
-    return {
-      ...r,
-      ticket: null,
-      createdByUser: null,
-      transaction: null,
-    };
+    return r;
   }
 }

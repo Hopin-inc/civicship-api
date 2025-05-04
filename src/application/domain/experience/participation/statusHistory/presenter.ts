@@ -25,10 +25,6 @@ export default class ParticipationStatusHistoryPresenter {
   }
 
   static get(r: PrismaParticipationStatusHistoryDetail): GqlParticipationStatusHistory {
-    return {
-      ...r,
-      participation: null,
-      createdByUser: null,
-    };
+    return r;
   }
 }

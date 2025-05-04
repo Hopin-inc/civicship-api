@@ -20,34 +20,12 @@ export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
 
 export const evaluationSelectDetail = Prisma.validator<Prisma.EvaluationSelect>()({
   id: true,
+  status: true,
   evaluatorId: true,
   participationId: true,
-  score: true,
   comment: true,
   createdAt: true,
   updatedAt: true,
-  evaluator: { select: { id: true } },
-  participation: { 
-    select: { 
-      id: true,
-      userId: true,
-      reservationId: true,
-      user: { select: { id: true } },
-      reservation: { 
-        select: { 
-          id: true,
-          opportunitySlotId: true,
-          opportunitySlot: { 
-            select: { 
-              id: true,
-              opportunityId: true,
-              opportunity: { select: { id: true, name: true } }
-            } 
-          }
-        } 
-      }
-    } 
-  },
 });
 
 export type PrismaEvaluation = Prisma.EvaluationGetPayload<{

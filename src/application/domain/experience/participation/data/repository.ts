@@ -15,7 +15,7 @@ export default class ParticipationRepository implements IParticipationRepository
     orderBy: Prisma.ParticipationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaParticipationDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) =>
       tx.participation.findMany({
         where,
@@ -28,7 +28,7 @@ export default class ParticipationRepository implements IParticipationRepository
     );
   }
 
-  async queryByReservationId(ctx: IContext, id: string): Promise<PrismaParticipationDetail[]> {
+  async queryByReservationId(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findMany({
         where: { reservationId: id },
@@ -45,7 +45,7 @@ export default class ParticipationRepository implements IParticipationRepository
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null> {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
@@ -54,11 +54,7 @@ export default class ParticipationRepository implements IParticipationRepository
     });
   }
 
-  async create(
-    ctx: IContext,
-    data: Prisma.ParticipationCreateInput,
-    tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipationDetail> {
+  async create(ctx: IContext, data: Prisma.ParticipationCreateInput, tx: Prisma.TransactionClient) {
     return tx.participation.create({
       data,
       select: participationSelectDetail,
@@ -70,7 +66,7 @@ export default class ParticipationRepository implements IParticipationRepository
     id: string,
     data: Prisma.ParticipationUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipationDetail> {
+  ) {
     return tx.participation.update({
       where: { id },
       data,
@@ -78,11 +74,7 @@ export default class ParticipationRepository implements IParticipationRepository
     });
   }
 
-  async delete(
-    ctx: IContext,
-    id: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipationDetail> {
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.participation.delete({
       where: { id },
       select: participationSelectDetail,

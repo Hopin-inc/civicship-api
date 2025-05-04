@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { walletSelectDetail, PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
+import { walletSelectDetail } from "@/application/domain/account/wallet/data/type";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { injectable } from "tsyringe";
 import { Prisma, WalletType } from "@prisma/client";
@@ -12,7 +12,7 @@ export default class WalletRepository implements IWalletRepository {
     orderBy: Prisma.WalletOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaWalletDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findMany({
         where,
@@ -25,7 +25,7 @@ export default class WalletRepository implements IWalletRepository {
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaWalletDetail | null> {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findUnique({
         where: { id },
@@ -34,7 +34,7 @@ export default class WalletRepository implements IWalletRepository {
     });
   }
 
-  async findCommunityWallet(ctx: IContext, communityId: string): Promise<PrismaWalletDetail | null> {
+  async findCommunityWallet(ctx: IContext, communityId: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, type: WalletType.COMMUNITY },
@@ -43,7 +43,7 @@ export default class WalletRepository implements IWalletRepository {
     });
   }
 
-  async findFirstExistingMemberWallet(ctx: IContext, communityId: string, userId: string): Promise<PrismaWalletDetail | null> {
+  async findFirstExistingMemberWallet(ctx: IContext, communityId: string, userId: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, userId, type: WalletType.MEMBER },
@@ -52,14 +52,14 @@ export default class WalletRepository implements IWalletRepository {
     });
   }
 
-  async create(ctx: IContext, data: Prisma.WalletCreateInput, tx: Prisma.TransactionClient): Promise<PrismaWalletDetail> {
+  async create(ctx: IContext, data: Prisma.WalletCreateInput, tx: Prisma.TransactionClient) {
     return tx.wallet.create({
       data,
       select: walletSelectDetail,
     });
   }
 
-  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaWalletDetail> {
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.wallet.delete({
       where: { id },
       select: walletSelectDetail,

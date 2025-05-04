@@ -13,7 +13,7 @@ type Ticket {
 
     ticketStatusHistories: [TicketStatusHistory!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 

@@ -5,11 +5,9 @@ export const cityInclude = Prisma.validator<Prisma.CityInclude>()({
 });
 
 export const citySelectDetail = Prisma.validator<Prisma.CitySelect>()({
-  id: true,
   name: true,
   code: true,
-  stateId: true,
-  state: { select: { id: true, name: true, code: true, countryCode: true } },
+  stateCode: true,
 });
 
 export type PrismaCity = Prisma.CityGetPayload<{
