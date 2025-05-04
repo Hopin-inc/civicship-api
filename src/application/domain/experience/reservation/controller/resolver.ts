@@ -34,11 +34,17 @@ export default class ReservationResolver {
     },
     
     createdByUser: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
-      return parent.createdByUserId ? ctx.loaders.user.load(parent.createdByUserId) : null;
+      return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
     },
     
     participations: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
-      return parent.participations ? ctx.loaders.participation.loadMany(parent.participations.map(p => p.id)) : [];
+      return ctx.issuer.internal(async (tx) => {
+        const participations = await tx.participation.findMany({
+          where: { reservationId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.participation.loadMany(participations.map(p => p.id));
+      });
     },
   };
 

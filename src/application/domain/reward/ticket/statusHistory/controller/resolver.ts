@@ -21,9 +21,6 @@ const ticketStatusHistoryResolver = {
       args: GqlQueryTicketStatusHistoryArgs,
       ctx: IContext,
     ) => {
-      if (!ctx.loaders?.ticketStatusHistory) {
-        return TicketStatusHistoryUseCase.visitorViewTicketStatusHistory(ctx, args);
-      }
       return ctx.loaders.ticketStatusHistory.load(args.id);
     },
   },
@@ -34,7 +31,7 @@ const ticketStatusHistoryResolver = {
     },
     
     createdByUser: (parent: PrismaTicketStatusHistoryDetail, _: unknown, ctx: IContext) => {
-      return parent.createdByUser ? ctx.loaders.user.load(parent.createdByUser.id) : null;
+      return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
     },
     
     transaction: (parent: PrismaTicketStatusHistoryDetail, _: unknown, ctx: IContext) => {

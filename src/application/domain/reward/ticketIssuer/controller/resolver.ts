@@ -1,18 +1,17 @@
-import { GqlQueryTicketIssuerArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { injectable, inject } from "tsyringe";
-import TicketIssuerUseCase from "@/application/domain/reward/ticketIssuer/usecase";
+import { injectable } from "tsyringe";
 import { PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssuer/data/type";
+
+interface QueryTicketIssuerArgs {
+  id: string;
+}
 
 @injectable()
 export default class TicketIssuerResolver {
-  constructor(@inject("TicketIssuerUseCase") private readonly usecase: TicketIssuerUseCase) {}
+  constructor() {}
 
   Query = {
-    ticketIssuer: (_: unknown, args: GqlQueryTicketIssuerArgs, ctx: IContext) => {
-      if (!ctx.loaders?.ticketIssuer) {
-        return this.usecase.findTicketIssuer(ctx, args.id);
-      }
+    ticketIssuer: (_: unknown, args: QueryTicketIssuerArgs, ctx: IContext) => {
       return ctx.loaders.ticketIssuer.load(args.id);
     },
   };

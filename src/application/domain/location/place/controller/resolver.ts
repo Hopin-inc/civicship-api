@@ -24,7 +24,7 @@ export default class PlaceResolver {
       return this.placeUseCase.userBrowsePlaces(args, ctx);
     },
     place: (_: unknown, args: GqlQueryPlaceArgs, ctx: IContext) => {
-      return this.placeUseCase.userViewPlace(args, ctx);
+      return ctx.loaders.place.load(args.id);
     },
   };
 
@@ -56,21 +56,17 @@ export default class PlaceResolver {
 
   Place = {
     opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return parent.id && ctx.loaders?.opportunity ? ctx.loaders.opportunity.loadMany([parent.id]) : [];
+      return ctx.issuer.internal(async (tx) => {
+        const opportunities = await tx.opportunity.findMany({
+          where: { placeId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.opportunity.loadMany(opportunities.map(opp => opp.id));
+      });
     },
     
     city: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return parent.city ? 
-        { 
-          code: parent.city.code, 
-          name: parent.city.name, 
-          state: parent.city.state ? {
-            code: parent.city.state.code,
-            name: parent.city.state.name,
-            countryCode: parent.city.state.countryCode
-          } : { code: "", name: "", countryCode: "" }
-        } : 
-        null;
+      return parent.cityCode ? ctx.loaders.city.load(parent.cityCode) : null;
     },
     
     community: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
