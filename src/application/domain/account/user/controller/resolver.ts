@@ -3,38 +3,17 @@ import {
   GqlQueryUserArgs,
   GqlMutationUserUpdateMyProfileArgs,
   GqlUser,
-  GqlPortfoliosConnection,
-  GqlArticlesConnection,
-  GqlMembershipsConnection,
-  GqlWalletsConnection,
-  GqlOpportunitiesConnection,
-  GqlParticipationsConnection,
-  GqlParticipationStatusHistoriesConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 
 import UserUseCase from "@/application/domain/account/user/usecase";
-import ViewUseCase from "@/application/view/usecase";
-import ArticleUseCase from "@/application/domain/content/article/usecase";
-import MembershipUseCase from "@/application/domain/account/membership/usecase";
-import WalletUseCase from "@/application/domain/account/wallet/usecase";
-import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
-import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
+import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 
 @injectable()
 export default class UserResolver {
   constructor(
     @inject("UserUseCase") private readonly userUseCase: UserUseCase,
-    @inject("ViewUseCase") private readonly viewUseCase: ViewUseCase,
-    @inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase,
-    @inject("MembershipUseCase") private readonly membershipUseCase: MembershipUseCase,
-    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
-    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
-    @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
-    @inject("ParticipationStatusHistoryUseCase")
-    private readonly participationStatusHistoryUseCase: ParticipationStatusHistoryUseCase,
   ) {}
 
   Query = {
@@ -51,90 +30,146 @@ export default class UserResolver {
   };
 
   User = {
-    portfolios: (
-      parent: GqlUser,
-      args: GqlUserPortfoliosArgs,
-      ctx: IContext,
-    ): Promise<GqlPortfoliosConnection> =>
-      this.viewUseCase.visitorBrowsePortfolios(
-        {
-          ...args,
-          filter: { ...args.filter, userIds: [parent.id] },
-        },
-        ctx,
-      ),
+    portfolios: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const portfolios = await tx.portfolio.findMany({
+          where: { userId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.portfolio.loadMany(portfolios.map(p => p.id));
+      });
+    },
 
-    articlesAboutMe: (
-      parent: GqlUser,
-      args: GqlUserArticlesAboutMeArgs,
-      ctx: IContext,
-    ): Promise<GqlArticlesConnection> =>
-      this.articleUseCase.anyoneBrowseArticles(ctx, {
-        ...args,
-        filter: { ...args.filter, authors: [parent.id] },
-      }),
+    articlesAboutMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const articles = await tx.article.findMany({
+          where: { authors: { some: { id: parent.id } } },
+          select: { id: true },
+        });
+        return ctx.loaders.article.loadMany(articles.map(a => a.id));
+      });
+    },
 
-    memberships: (
-      parent: GqlUser,
-      args: GqlUserMembershipsArgs,
-      ctx: IContext,
-    ): Promise<GqlMembershipsConnection> =>
-      this.membershipUseCase.visitorBrowseMemberships(
-        {
-          ...args,
-          filter: { ...args.filter, userId: parent.id },
-        },
-        ctx,
-      ),
+    memberships: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const memberships = await tx.membership.findMany({
+          where: { userId: parent.id },
+          select: { userId: true, communityId: true },
+        });
+        return ctx.loaders.membership.loadMany(
+          memberships.map(m => `${m.userId}:${m.communityId}`)
+        );
+      });
+    },
 
-    wallets: (
-      parent: GqlUser,
-      args: GqlUserWalletsArgs,
-      ctx: IContext,
-    ): Promise<GqlWalletsConnection> =>
-      this.walletUseCase.visitorBrowseWallets(
-        {
-          ...args,
-          filter: { ...args.filter, userId: parent.id },
-        },
-        ctx,
-      ),
+    wallets: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const wallets = await tx.wallet.findMany({
+          where: { userId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.wallet.loadMany(wallets.map(w => w.id));
+      });
+    },
 
-    opportunitiesCreatedByMe: (
-      parent: GqlUser,
-      args: GqlUserOpportunitiesCreatedByMeArgs,
-      ctx: IContext,
-    ): Promise<GqlOpportunitiesConnection> =>
-      this.opportunityUseCase.anyoneBrowseOpportunities(
-        {
-          ...args,
-          filter: { ...args.filter, createdByUserIds: [parent.id] },
-        },
-        ctx,
-      ),
+    opportunitiesCreatedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const opportunities = await tx.opportunity.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.opportunity.loadMany(opportunities.map(o => o.id));
+      });
+    },
 
-    participations: (
-      parent: GqlUser,
-      args: GqlUserParticipationsArgs,
-      ctx: IContext,
-    ): Promise<GqlParticipationsConnection> =>
-      this.participationUseCase.visitorBrowseParticipations(
-        {
-          ...args,
-          filter: { userIds: [parent.id], ...(args.filter || {}) },
-        },
-        ctx,
-      ),
+    participations: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const participations = await tx.participation.findMany({
+          where: { userId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.participation.loadMany(participations.map(p => p.id));
+      });
+    },
 
-    participationStatusChangedByMe: (
-      parent: GqlUser,
-      args: GqlUserParticipationStatusChangedByMeArgs,
-      ctx: IContext,
-    ): Promise<GqlParticipationStatusHistoriesConnection> =>
-      this.participationStatusHistoryUseCase.visitorBrowseParticipationStatusChangedByUser(
-        parent,
-        args,
-        ctx,
-      ),
+    participationStatusChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const statusHistories = await tx.participationStatusHistory.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.participationStatusHistory.loadMany(statusHistories.map(h => h.id));
+      });
+    },
+    
+    membershipChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const membershipHistories = await tx.membershipHistory.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.membershipHistory.loadMany(membershipHistories.map(h => h.id));
+      });
+    },
+    
+    reservations: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const reservations = await tx.reservation.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.reservation.loadMany(reservations.map(r => r.id));
+      });
+    },
+    
+    reservationStatusChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const reservationHistories = await tx.reservationHistory.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.reservationHistory.loadMany(reservationHistories.map(h => h.id));
+      });
+    },
+    
+    evaluations: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const evaluations = await tx.evaluation.findMany({
+          where: { evaluatorId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.evaluation.loadMany(evaluations.map(e => e.id));
+      });
+    },
+    
+    evaluationCreatedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const evaluationHistories = await tx.evaluationHistory.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.evaluationHistory.loadMany(evaluationHistories.map(h => h.id));
+      });
+    },
+    
+    articlesWrittenByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const articles = await tx.article.findMany({
+          where: { authorId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.article.loadMany(articles.map(a => a.id));
+      });
+    },
+    
+    ticketStatusChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const ticketStatusHistories = await tx.ticketStatusHistory.findMany({
+          where: { createdBy: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.ticketStatusHistory.loadMany(ticketStatusHistories.map(h => h.id));
+      });
+    },
   };
 }
