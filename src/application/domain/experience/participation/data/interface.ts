@@ -12,7 +12,7 @@ export interface IParticipationService {
     args: GqlQueryParticipationsArgs,
     take: number,
     include?: T,
-  ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]>;
+  ): Promise<PrismaParticipationDetail[]>;
 
   findParticipation(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
 

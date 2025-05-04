@@ -7,11 +7,9 @@ import {
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
 import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
-
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
-import { PrismaMembership } from "@/application/domain/account/membership/data/type";
 import MembershipConverter from "@/application/domain/account/membership/data/converter";
 import { inject, injectable } from "tsyringe";
 
@@ -27,7 +25,7 @@ export default class MembershipService {
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryMembershipsArgs,
     take: number,
-  ): Promise<PrismaMembership[]> {
+  ) {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
     return this.repository.query(ctx, where, orderBy, take, cursor);
