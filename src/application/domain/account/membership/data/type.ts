@@ -10,9 +10,12 @@ export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
 });
 
 export const membershipSelectDetail = Prisma.validator<Prisma.MembershipSelect>()({
-  id: true,
   userId: true,
   communityId: true,
+  headline: true,
+  bio: true,
+  status: true,
+  reason: true,
   role: true,
   createdAt: true,
   updatedAt: true,
