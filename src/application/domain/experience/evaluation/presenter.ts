@@ -24,13 +24,42 @@ export default class EvaluationPresenter {
 
   static get(record: PrismaEvaluation | PrismaEvaluationDetail): GqlEvaluation {
     return {
-      id: record.id,
-      score: record.score,
-      comment: record.comment,
-      createdAt: record.createdAt,
-      updatedAt: record.updatedAt,
-      evaluator: null,
-      participation: null,
+      ...record,
+      status: "PENDING",
+      evaluator: {
+        id: record.evaluatorId || "",
+        name: "",
+        createdAt: new Date(),
+        updatedAt: null,
+        bio: null,
+        image: null,
+        slug: "",
+        sysRole: "USER",
+        currentPrefecture: "UNKNOWN",
+        urlFacebook: null,
+        urlInstagram: null,
+        urlX: null,
+        urlWebsite: null,
+        urlTiktok: null,
+        urlYoutube: null
+      },
+      participation: {
+        id: record.participationId || "",
+        status: "PENDING",
+        reason: "PERSONAL_RECORD",
+        source: "INTERNAL",
+        createdAt: new Date(),
+        updatedAt: null,
+        description: null,
+        user: null,
+        reservation: null,
+        community: null,
+        images: [],
+        evaluation: null,
+        statusHistories: null,
+        ticketStatusHistories: null,
+        transactions: null
+      }
     };
   }
 
