@@ -42,11 +42,7 @@ export default class OpportunitySlotService {
     return record;
   }
 
-  async fetchAllSlotByOpportunityId(
-    ctx: IContext,
-    opportunityId: string,
-    tx: Prisma.TransactionClient,
-  ) {
+  async fetchAllSlotByOpportunityId(ctx: IContext, opportunityId: string) {
     return this.repository.findByOpportunityId(ctx, opportunityId);
   }
 

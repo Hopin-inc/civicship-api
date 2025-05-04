@@ -1,5 +1,5 @@
 import { GqlUser, GqlUsersConnection, GqlUserUpdateProfileSuccess } from "@/types/graphql";
-import { PrismaUser } from "@/application/domain/account/user/data/type";
+import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 
 export default class UserPresenter {
   static query(users: GqlUser[], hasNextPage: boolean): GqlUsersConnection {
@@ -18,15 +18,28 @@ export default class UserPresenter {
     };
   }
 
-  static get(r: PrismaUser): GqlUser {
-    const { image, ...prop } = r;
+  static get(r: PrismaUserDetail): GqlUser {
     return {
-      ...prop,
-      image: image?.url ?? null,
+      ...r,
+      identities: [],
+      articlesAboutMe: [],
+      articlesWrittenByMe: [],
+      evaluationCreatedByMe: [],
+      evaluations: [],
+      memberships: [],
+      membershipChangedByMe: [],
+      opportunitiesCreatedByMe: [],
+      participationStatusChangedByMe: [],
+      participations: [],
+      reservationStatusChangedByMe: [],
+      reservations: [],
+      ticketStatusChangedByMe: [],
+      wallets: [],
+      portfolios: [],
     };
   }
 
-  static updateProfile(r: PrismaUser): GqlUserUpdateProfileSuccess {
+  static updateProfile(r: PrismaUserDetail): GqlUserUpdateProfileSuccess {
     return {
       __typename: "UserUpdateProfileSuccess",
       user: this.get(r),

@@ -1,0 +1,13 @@
+# ------------------------------
+# Identity Object Type Definitions
+# ------------------------------
+
+type Identity {
+    uid: String!
+
+    platform: IdentityPlatform
+    user: User
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}

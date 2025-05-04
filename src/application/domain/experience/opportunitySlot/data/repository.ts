@@ -1,10 +1,9 @@
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
+  opportunitySlotReserveInclude,
   opportunitySlotSelectDetail,
-  opportunitySlotWithParticipationSelectDetail,
-  PrismaOpportunitySlotDetail,
-  PrismaOpportunitySlotWithParticipationDetail
+  opportunitySlotSetHostingStatusInclude,
 } from "@/application/domain/experience/opportunitySlot/data/type";
 import { injectable } from "tsyringe";
 import { IOpportunitySlotRepository } from "./interface";
@@ -17,7 +16,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     orderBy: Prisma.OpportunitySlotOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaOpportunitySlotDetail[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findMany({
         where,
@@ -30,16 +29,16 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaOpportunitySlotDetail | null> {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findUnique({
         where: { id },
-        select: opportunitySlotSelectDetail,
+        include: opportunitySlotReserveInclude,
       });
     });
   }
 
-  async findByOpportunityId(ctx: IContext, opportunityId: string): Promise<PrismaOpportunitySlotDetail[]> {
+  async findByOpportunityId(ctx: IContext, opportunityId: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findMany({
         where: { opportunityId },
@@ -61,7 +60,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     id: string,
     data: Prisma.OpportunitySlotUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaOpportunitySlotDetail> {
+  ) {
     return tx.opportunitySlot.update({
       where: { id },
       data,
@@ -74,11 +73,11 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     id: string,
     hostingStatus: OpportunitySlotHostingStatus,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaOpportunitySlotWithParticipationDetail> {
+  ) {
     return tx.opportunitySlot.update({
       where: { id },
       data: { hostingStatus },
-      select: opportunitySlotWithParticipationSelectDetail,
+      include: opportunitySlotSetHostingStatusInclude,
     });
   }
 

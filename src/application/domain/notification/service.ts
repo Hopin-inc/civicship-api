@@ -1,4 +1,4 @@
-import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/experience/opportunitySlot/data/type";
+import { PrismaOpportunitySlot } from "@/application/domain/experience/opportunitySlot/data/type";
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
 import "dayjs/locale/ja.js";
@@ -24,10 +24,7 @@ dayjs.locale("ja");
 
 @injectable()
 export default class NotificationService {
-  async pushCancelOpportunitySlotMessage(
-    ctx: IContext,
-    slot: PrismaOpportunitySlotWithParticipation,
-  ) {
+  async pushCancelOpportunitySlotMessage(ctx: IContext, slot: PrismaOpportunitySlot) {
     const lineId =
       process.env.ENV === "LOCAL"
         ? LOCAL_UID

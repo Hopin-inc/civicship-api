@@ -1,7 +1,5 @@
 import {
   GqlQueryOpportunitySlotsArgs,
-  GqlQueryOpportunitySlotArgs,
-  GqlOpportunitySlot,
   GqlOpportunitySlotsConnection,
   GqlMutationOpportunitySlotsBulkUpdateArgs,
   GqlOpportunitySlotsBulkUpdatePayload,
@@ -14,10 +12,10 @@ import OpportunitySlotPresenter from "@/application/domain/experience/opportunit
 import { clampFirst } from "@/application/domain/utils";
 import { OpportunitySlotHostingStatus } from "@prisma/client";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
-import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/experience/opportunitySlot/data/type";
 import NotificationService from "@/application/domain/notification/service";
 import { inject, injectable } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
+import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 
 @injectable()
 export default class OpportunitySlotUseCase {
@@ -42,20 +40,20 @@ export default class OpportunitySlotUseCase {
     return OpportunitySlotPresenter.query(data, hasNextPage);
   }
 
-  async visitorViewOpportunitySlot(
-    { id }: GqlQueryOpportunitySlotArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySlot | null> {
-    const slot = await this.service.findOpportunitySlot(ctx, id);
-    if (!slot) return null;
-    return OpportunitySlotPresenter.get(slot);
-  }
+  // async visitorViewOpportunitySlot(
+  //   { id }: GqlQueryOpportunitySlotArgs,
+  //   ctx: IContext,
+  // ): Promise<GqlOpportunitySlot | null> {
+  //   const slot = await this.service.findOpportunitySlot(ctx, id);
+  //   if (!slot) return null;
+  //   return OpportunitySlotPresenter.get(slot);
+  // }
 
   async managerSetOpportunitySlotHostingStatus(
     { id, input }: GqlMutationOpportunitySlotSetHostingStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotSetHostingStatusPayload> {
-    let cancelledSlot: PrismaOpportunitySlotWithParticipation | null = null;
+    let cancelledSlot: PrismaOpportunitySlotSetHostingStatus | null = null;
 
     const res = await ctx.issuer.public(ctx, async (tx) => {
       const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input.status, tx);
@@ -104,7 +102,7 @@ export default class OpportunitySlotUseCase {
       await this.service.bulkUpdateOpportunitySlots(ctx, input.update ?? [], tx);
       await this.service.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
 
-      const rows = await this.service.fetchAllSlotByOpportunityId(ctx, input.opportunityId, tx);
+      const rows = await this.service.fetchAllSlotByOpportunityId(ctx, input.opportunityId);
       return OpportunitySlotPresenter.bulkUpdate(rows.map((r) => OpportunitySlotPresenter.get(r)));
     });
   }

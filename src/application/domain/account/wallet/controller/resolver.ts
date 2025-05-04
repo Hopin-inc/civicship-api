@@ -1,8 +1,6 @@
 import {
   GqlQueryWalletsArgs,
   GqlQueryWalletArgs,
-  GqlWallet,
-  GqlWalletTransactionsArgs,
   GqlTransactionsConnection,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
@@ -34,18 +32,18 @@ export default class WalletResolver {
     community: (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
       return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
-    
+
     user: (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
       return parent.userId ? ctx.loaders.user.load(parent.userId) : null;
     },
-    
+
     tickets: (parent: PrismaWalletDetail, args: GqlQueryWalletArgs, ctx: IContext) => {
       return this.ticketUseCase.visitorBrowseTickets(ctx, {
         filter: { walletId: parent.id },
         ...args,
       });
     },
-    
+
     transactions: (
       parent: PrismaWalletDetail,
       args: GqlWalletTransactionsArgs,

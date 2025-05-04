@@ -4,7 +4,7 @@
 type User {
     id: ID!
 
-    sysRole: SysRole!
+    sysRole: SysRole
     name: String!
     slug: String!
     image: String
@@ -20,36 +20,28 @@ type User {
 
     currentPrefecture: CurrentPrefecture
 
-    createdAt: Datetime!
-    updatedAt: Datetime
-
+    identities: [Identity!]
     portfolios: [Portfolio!]
 
     memberships: [Membership!]
-
     membershipChangedByMe: [MembershipHistory!]
-
     wallets: [Wallet!]
 
     opportunitiesCreatedByMe: [Opportunity!]
-
     reservations: [Reservation!]
-
     reservationStatusChangedByMe: [ReservationHistory!]
-
     participations: [Participation!]
-
     participationStatusChangedByMe: [ParticipationStatusHistory!]
-
     evaluations: [Evaluation!]
-
     evaluationCreatedByMe: [EvaluationHistory!]
 
     articlesWrittenByMe: [Article!]
-
     articlesAboutMe: [Article!]
 
     ticketStatusChangedByMe: [TicketStatusHistory!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
 }
 
 # ------------------------------

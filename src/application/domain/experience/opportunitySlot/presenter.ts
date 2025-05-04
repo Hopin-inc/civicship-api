@@ -6,14 +6,11 @@ import {
 } from "@/types/graphql";
 import {
   PrismaOpportunitySlotDetail,
-  PrismaOpportunitySlotWithParticipationDetail,
+  PrismaOpportunitySlotSetHostingStatus,
 } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
-  static query(
-    r: PrismaOpportunitySlotDetail[],
-    hasNextPage: boolean,
-  ): GqlOpportunitySlotsConnection {
+  static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
     return {
       totalCount: r.length,
       pageInfo: {
@@ -39,16 +36,12 @@ export default class OpportunitySlotPresenter {
   }
 
   static setHostingStatus(
-    r: PrismaOpportunitySlotWithParticipationDetail,
+    r: Omit<PrismaOpportunitySlotSetHostingStatus, "reservations" | "opportunity">,
   ): GqlOpportunitySlotSetHostingStatusSuccess {
-    return {
-      slot: this.get(r),
-    };
+    return { slot: { ...r } };
   }
 
-  static bulkUpdate(slots: PrismaOpportunitySlotDetail[]): GqlOpportunitySlotsBulkUpdateSuccess {
-    return {
-      slots,
-    };
+  static bulkUpdate(slots: GqlOpportunitySlot[]): GqlOpportunitySlotsBulkUpdateSuccess {
+    return { slots };
   }
 }

@@ -14,7 +14,7 @@ type Portfolio {
     place: Place
 
     thumbnailUrl: String
-    participants: [User!]!
+    participants: [User!]
 }
 
 enum PortfolioSource {

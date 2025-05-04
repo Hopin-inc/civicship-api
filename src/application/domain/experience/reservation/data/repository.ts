@@ -55,7 +55,7 @@ export default class ReservationRepository implements IReservationRepository {
   async create(ctx: IContext, data: Prisma.ReservationCreateInput, tx: Prisma.TransactionClient) {
     return tx.reservation.create({
       data,
-      select: reservationSelectDetail,
+      include: reservationInclude,
     });
   }
 

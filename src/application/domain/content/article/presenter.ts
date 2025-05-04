@@ -2,7 +2,7 @@ import { GqlArticlesConnection, GqlArticle } from "@/types/graphql";
 import { PrismaArticleDetail } from "@/application/domain/content/article/data/type";
 
 export default class ArticlePresenter {
-  static query(r: PrismaArticleDetail[], hasNextPage: boolean): GqlArticlesConnection {
+  static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {
     return {
       totalCount: r.length,
       pageInfo: {

@@ -1,6 +1,10 @@
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaOpportunitySlotDetail } from "./type";
+import {
+  PrismaOpportunitySlotDetail,
+  PrismaOpportunitySlotReserve,
+  PrismaOpportunitySlotSetHostingStatus,
+} from "./type";
 
 export interface IOpportunitySlotRepository {
   query(
@@ -11,7 +15,7 @@ export interface IOpportunitySlotRepository {
     cursor?: string,
   ): Promise<PrismaOpportunitySlotDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaOpportunitySlotDetail | null>;
+  find(ctx: IContext, id: string): Promise<PrismaOpportunitySlotReserve | null>;
 
   findByOpportunityId(
     ctx: IContext,
@@ -37,7 +41,7 @@ export interface IOpportunitySlotRepository {
     id: string,
     hostingStatus: OpportunitySlotHostingStatus,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaOpportunitySlotDetail>;
+  ): Promise<PrismaOpportunitySlotSetHostingStatus>;
 
   deleteMany(
     ctx: IContext,
