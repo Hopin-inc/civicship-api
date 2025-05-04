@@ -21,7 +21,7 @@ export interface IReservationService {
 
   findReservation(ctx: IContext, id: string): Promise<PrismaReservationDetail | null>;
 
-  findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservationDetail>;
+  findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservation>;
 
   createReservation(
     ctx: IContext,
@@ -38,7 +38,7 @@ export interface IReservationService {
     currentUserId: string,
     status: ReservationStatus,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaReservationDetail>;
+  ): Promise<PrismaReservation>;
 }
 
 export interface IReservationRepository {
@@ -56,7 +56,7 @@ export interface IReservationRepository {
     tx: Prisma.TransactionClient,
   ): Promise<number>;
 
-  find(ctx: IContext, id: string): Promise<PrismaReservationDetail | null>;
+  find(ctx: IContext, id: string): Promise<PrismaReservation | null>;
 
   checkConflict(ctx: IContext, where: Prisma.ReservationWhereInput): Promise<PrismaReservation[]>;
 
@@ -71,5 +71,5 @@ export interface IReservationRepository {
     id: string,
     data: Prisma.ReservationUpdateInput,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaReservationDetail>;
+  ): Promise<PrismaReservation>;
 }

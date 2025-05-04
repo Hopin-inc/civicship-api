@@ -1,8 +1,6 @@
 import {
   GqlQueryMembershipsArgs,
-  GqlQueryMembershipArgs,
   GqlMembershipsConnection,
-  GqlMembership,
   GqlMutationMembershipInviteArgs,
   GqlMutationMembershipCancelInvitationArgs,
   GqlMutationMembershipAcceptMyInvitationArgs,
@@ -43,17 +41,17 @@ export default class MembershipUseCase {
     return MembershipPresenter.query(data, hasNextPage);
   }
 
-  async visitorViewMembership(
-    args: GqlQueryMembershipArgs,
-    ctx: IContext,
-  ): Promise<GqlMembership | null> {
-    const membership = await this.membershipService.findMembership(
-      ctx,
-      args.userId,
-      args.communityId,
-    );
-    return membership ? MembershipPresenter.get(membership) : null;
-  }
+  // async visitorViewMembership(
+  //   args: GqlQueryMembershipArgs,
+  //   ctx: IContext,
+  // ): Promise<GqlMembership | null> {
+  //   const membership = await this.membershipService.findMembership(
+  //     ctx,
+  //     args.userId,
+  //     args.communityId,
+  //   );
+  //   return membership ? MembershipPresenter.get(membership) : null;
+  // }
 
   async ownerInviteMember(args: GqlMutationMembershipInviteArgs, ctx: IContext) {
     const membership = await ctx.issuer.public(ctx, async (tx) => {

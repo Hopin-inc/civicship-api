@@ -4,7 +4,6 @@ export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
   community: true,
   user: true,
   currentPointView: true,
-  accumulatedPointView: true,
 });
 
 export const walletSelectDetail = Prisma.validator<Prisma.WalletSelect>()({
@@ -15,7 +14,6 @@ export const walletSelectDetail = Prisma.validator<Prisma.WalletSelect>()({
   createdAt: true,
   updatedAt: true,
   currentPointView: true,
-  accumulatedPointView: true,
 });
 
 export type PrismaWallet = Prisma.WalletGetPayload<{

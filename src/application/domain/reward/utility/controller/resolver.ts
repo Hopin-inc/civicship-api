@@ -4,22 +4,16 @@ import {
   GqlMutationUtilityCreateArgs,
   GqlMutationUtilityDeleteArgs,
   GqlMutationUtilityUpdateInfoArgs,
-  GqlQueryTicketsArgs,
-  GqlQueryOpportunitiesArgs,
 } from "@/types/graphql";
 import { PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import UtilityUseCase from "@/application/domain/reward/utility/usecase";
-import TicketUseCase from "@/application/domain/reward/ticket/usecase";
-import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 
 @injectable()
 export default class UtilityResolver {
   constructor(
     @inject("UtilityUseCase") private readonly utilityUseCase: UtilityUseCase,
-    @inject("TicketUseCase") private readonly ticketUseCase: TicketUseCase,
-    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
   ) {}
 
   Query = {
@@ -28,9 +22,6 @@ export default class UtilityResolver {
     },
 
     utility: (_: unknown, args: GqlQueryUtilityArgs, ctx: IContext) => {
-      if (!ctx.loaders?.utility) {
-        return this.utilityUseCase.visitorViewUtility(ctx, args);
-      }
       return ctx.loaders.utility.load(args.id);
     },
   };
@@ -52,25 +43,34 @@ export default class UtilityResolver {
       return ctx.loaders.community.load(parent.communityId);
     },
     
-    tickets: (parent: PrismaUtilityDetail, args: GqlQueryTicketsArgs, ctx: IContext) => {
-      return this.ticketUseCase.visitorBrowseTickets(ctx, {
-        ...args,
-        filter: { ...args.filter, utilityId: parent.id },
+    tickets: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const tickets = await tx.ticket.findMany({
+          where: { utilityId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.ticket.loadMany(tickets.map(ticket => ticket.id));
       });
     },
 
     requiredForOpportunities: (
       parent: PrismaUtilityDetail,
-      args: GqlQueryOpportunitiesArgs,
+      _: unknown,
       ctx: IContext,
     ) => {
-      return this.opportunityUseCase.anyoneBrowseOpportunities(
-        {
-          ...args,
-          filter: { ...args.filter, requiredUtilityIds: [parent.id] },
-        },
-        ctx,
-      );
+      return ctx.issuer.internal(async (tx) => {
+        const opportunities = await tx.opportunity.findMany({
+          where: {
+            requiredUtilities: {
+              some: {
+                id: parent.id
+              }
+            }
+          },
+          select: { id: true },
+        });
+        return ctx.loaders.opportunity.loadMany(opportunities.map(opp => opp.id));
+      });
     },
   };
 }

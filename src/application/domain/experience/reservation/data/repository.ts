@@ -38,7 +38,7 @@ export default class ReservationRepository implements IReservationRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.reservation.findUnique({
         where: { id },
-        select: reservationSelectDetail,
+        include: reservationInclude,
       });
     });
   }
@@ -68,7 +68,7 @@ export default class ReservationRepository implements IReservationRepository {
     return tx.reservation.update({
       where: { id },
       data,
-      select: reservationSelectDetail,
+      include: reservationInclude,
     });
   }
 }

@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { evaluationSelectDetail } from "@/application/domain/experience/evaluation/data/type";
+import {
+  evaluationInclude,
+  evaluationSelectDetail,
+} from "@/application/domain/experience/evaluation/data/type";
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
 @injectable()
@@ -37,7 +40,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
   async create(ctx: IContext, data: Prisma.EvaluationCreateInput, tx: Prisma.TransactionClient) {
     return tx.evaluation.create({
       data,
-      select: evaluationSelectDetail,
+      include: evaluationInclude,
     });
   }
 }

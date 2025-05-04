@@ -27,20 +27,6 @@ export default class ReservationResolver {
       return ctx.loaders.reservation.load(args.id);
     },
   };
-  
-  Reservation = {
-    opportunitySlot: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
-      return parent.opportunitySlotId ? ctx.loaders.opportunitySlot.load(parent.opportunitySlotId) : null;
-    },
-    
-    createdByUser: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
-      return parent.createdByUserId ? ctx.loaders.user.load(parent.createdByUserId) : null;
-    },
-    
-    participations: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
-      return parent.participations ? ctx.loaders.participation.loadMany(parent.participations.map(p => p.id)) : [];
-    },
-  };
 
   Mutation = {
     reservationCreate: (_: unknown, args: GqlMutationReservationCreateArgs, ctx: IContext) => {
@@ -57,6 +43,22 @@ export default class ReservationResolver {
     },
     reservationJoin: (_: unknown, args: GqlMutationReservationJoinArgs, ctx: IContext) => {
       return this.reservationUseCase.userJoinReservation(args, ctx);
+    },
+  };
+
+  Reservation = {
+    opportunitySlot: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
+      return parent.opportunitySlotId
+        ? ctx.loaders.opportunitySlot.load(parent.opportunitySlotId)
+        : null;
+    },
+
+    createdByUser: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
+      return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
+    },
+
+    participations: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id));
     },
   };
 }

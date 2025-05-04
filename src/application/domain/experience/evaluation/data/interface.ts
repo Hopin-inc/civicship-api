@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
+import {
+  PrismaEvaluation,
+  PrismaEvaluationDetail,
+} from "@/application/domain/experience/evaluation/data/type";
 
 export interface IEvaluationRepository {
   query(
@@ -17,5 +20,5 @@ export interface IEvaluationRepository {
     ctx: IContext,
     data: Prisma.EvaluationCreateInput,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaEvaluationDetail>;
+  ): Promise<PrismaEvaluation>;
 }

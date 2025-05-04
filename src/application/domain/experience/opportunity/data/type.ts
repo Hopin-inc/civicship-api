@@ -32,9 +32,15 @@ export const opportunitySelectDetail = Prisma.validator<Prisma.OpportunitySelect
   body: true,
   pointsToEarn: true,
   feeRequired: true,
+
   communityId: true,
   placeId: true,
   createdBy: true,
+
+  images: { select: { id: true } },
+  requiredUtilities: { select: { id: true } },
+  slots: { select: { id: true } },
+
   createdAt: true,
   updatedAt: true,
 });

@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { membershipSelectDetail } from "@/application/domain/account/membership/data/type";
+import {
+  membershipInclude,
+  membershipSelectDetail,
+} from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import { injectable } from "tsyringe";
 
@@ -35,7 +38,7 @@ export default class MembershipRepository implements IMembershipRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({
         where,
-        select: membershipSelectDetail,
+        include: membershipInclude,
       });
     });
   }
@@ -43,7 +46,7 @@ export default class MembershipRepository implements IMembershipRepository {
   async create(ctx: IContext, data: Prisma.MembershipCreateInput, tx: Prisma.TransactionClient) {
     return tx.membership.create({
       data,
-      select: membershipSelectDetail,
+      include: membershipInclude,
     });
   }
 
@@ -56,7 +59,7 @@ export default class MembershipRepository implements IMembershipRepository {
     return tx.membership.update({
       where,
       data,
-      select: membershipSelectDetail,
+      include: membershipInclude,
     });
   }
 
@@ -67,7 +70,7 @@ export default class MembershipRepository implements IMembershipRepository {
   ) {
     return tx.membership.delete({
       where,
-      select: membershipSelectDetail,
+      include: membershipInclude,
     });
   }
 }

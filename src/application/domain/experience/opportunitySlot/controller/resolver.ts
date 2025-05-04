@@ -45,19 +45,11 @@ export default class OpportunitySlotResolver {
     opportunity: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
       return parent.opportunityId ? ctx.loaders.opportunity.load(parent.opportunityId) : null;
     },
-    
-    participations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      return parent.reservations ? 
-        ctx.loaders.participation.loadMany(
-          parent.reservations.flatMap(r => r.participations?.map(p => p.id) || [])
-        ) : 
-        [];
-    },
-    
+
     reservations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      return parent.reservations ? 
-        ctx.loaders.reservation.loadMany(parent.reservations.map(r => r.id)) : 
-        [];
+      return parent.reservations
+        ? ctx.loaders.reservation.loadMany(parent.reservations.map((r) => r.id))
+        : [];
     },
   };
 }

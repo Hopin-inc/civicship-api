@@ -24,7 +24,10 @@ export default class ReservationPresenter {
   }
 
   static get(record: PrismaReservationDetail): GqlReservation {
-    return record;
+    return {
+      ...record,
+      participations: [],
+    };
   }
 
   static create(record: PrismaReservationDetail): GqlReservationCreateSuccess {

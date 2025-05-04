@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { walletSelectDetail } from "@/application/domain/account/wallet/data/type";
+import { walletInclude, walletSelectDetail } from "@/application/domain/account/wallet/data/type";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { injectable } from "tsyringe";
 import { Prisma, WalletType } from "@prisma/client";
@@ -29,7 +29,7 @@ export default class WalletRepository implements IWalletRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findUnique({
         where: { id },
-        select: walletSelectDetail,
+        include: walletInclude,
       });
     });
   }
@@ -47,7 +47,7 @@ export default class WalletRepository implements IWalletRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, userId, type: WalletType.MEMBER },
-        select: walletSelectDetail,
+        include: walletInclude,
       });
     });
   }
@@ -55,7 +55,7 @@ export default class WalletRepository implements IWalletRepository {
   async create(ctx: IContext, data: Prisma.WalletCreateInput, tx: Prisma.TransactionClient) {
     return tx.wallet.create({
       data,
-      select: walletSelectDetail,
+      include: walletInclude,
     });
   }
 

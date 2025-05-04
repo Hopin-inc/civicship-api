@@ -14,7 +14,6 @@ type OpportunitySlot {
     opportunity: Opportunity
 
     reservations: [Reservation!]
-    participations: [Participation!]
 
     createdAt: Datetime
     updatedAt: Datetime

@@ -18,32 +18,53 @@ export default class TicketResolver {
 
   Query = {
     tickets: (_: unknown, args: GqlQueryTicketsArgs, ctx: IContext) => {
-      return this.ticketUseCase.visitorBrowseTickets(ctx, args);
+      return ctx.issuer.internal(async (tx) => {
+        const filter = args.filter || {};
+        const where: any = {};
+        
+        if (filter.walletId) {
+          where.walletId = filter.walletId;
+        }
+        
+        if (filter.utilityId) {
+          where.utilityId = filter.utilityId;
+        }
+        
+        const tickets = await tx.ticket.findMany({
+          where,
+          select: { id: true },
+        });
+        
+        return ctx.loaders.ticket.loadMany(tickets.map(t => t.id));
+      });
     },
 
     ticket: (_: unknown, args: GqlQueryTicketArgs, ctx: IContext) => {
-      if (!ctx.loaders?.ticket) {
-        return this.ticketUseCase.visitorViewTicket(ctx, args);
-      }
       return ctx.loaders.ticket.load(args.id);
     },
   };
   
   Ticket = {
     utility: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
-      return parent.utilityId && ctx.loaders?.utility ? ctx.loaders.utility.load(parent.utilityId) : null;
+      return parent.utilityId ? ctx.loaders.utility.load(parent.utilityId) : null;
     },
     
     wallet: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
-      return parent.walletId && ctx.loaders?.wallet ? ctx.loaders.wallet.load(parent.walletId) : null;
+      return parent.walletId ? ctx.loaders.wallet.load(parent.walletId) : null;
     },
     
     claimLink: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
-      return parent.claimLinkId && ctx.loaders?.ticketClaimLink ? ctx.loaders.ticketClaimLink.load(parent.claimLinkId) : null;
+      return parent.claimLinkId ? ctx.loaders.ticketClaimLink.load(parent.claimLinkId) : null;
     },
     
-    ticketStatusHistories: (parent: PrismaTicketDetail, args: any, ctx: IContext) => {
-      return null;
+    ticketStatusHistories: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
+      return ctx.issuer.internal(async (tx) => {
+        const statusHistories = await tx.ticketStatusHistory.findMany({
+          where: { ticketId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.ticketStatusHistory.loadMany(statusHistories.map(h => h.id));
+      });
     },
   };
 

@@ -1,7 +1,13 @@
 import { Prisma } from "@prisma/client";
 
 export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()({
-  opportunitySlot: true,
+  opportunitySlot: {
+    include: {
+      opportunity: {
+        include: { place: true, images: true, createdByUser: { include: { image: true } } },
+      },
+    },
+  },
   participations: { include: { user: true } },
 });
 
@@ -9,6 +15,7 @@ export const reservationSelectDetail = Prisma.validator<Prisma.ReservationSelect
   id: true,
   opportunitySlotId: true,
   createdBy: true,
+  participations: { select: { id: true } },
   status: true,
   createdAt: true,
   updatedAt: true,

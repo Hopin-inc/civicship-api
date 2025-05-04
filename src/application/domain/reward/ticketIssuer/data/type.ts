@@ -17,15 +17,14 @@ export const ticketIssuerInclude = Prisma.validator<Prisma.TicketIssuerInclude>(
 
 export const ticketIssuerSelectDetail = Prisma.validator<Prisma.TicketIssuerSelect>()({
   id: true,
+  qtyToBeIssued: true,
+
+  claimLinkId: true,
   utilityId: true,
   ownerId: true,
-  qtyToBeIssued: true,
+
   createdAt: true,
   updatedAt: true,
-  claimLinkId: true,
-  utility: { select: { id: true, communityId: true } },
-  owner: { select: { id: true } },
-  claimLink: { select: { id: true } },
 });
 
 export type PrismaTicketIssuer = Prisma.TicketIssuerGetPayload<{

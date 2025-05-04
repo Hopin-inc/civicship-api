@@ -9,7 +9,7 @@ type Utility {
     pointsRequired: Int!
     publishStatus: PublishStatus!
 
-    community: Community!
+    community: Community
 
     ticketIssuers: [TicketIssuer!]
     tickets: [Ticket!]

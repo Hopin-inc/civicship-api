@@ -2,38 +2,5 @@
 # ParticipationStatusHistory Query Definitions
 # ------------------------------
 extend type Query {
-    participationStatusHistories(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): ParticipationStatusHistoriesConnection!
     participationStatusHistory(id: ID!): ParticipationStatusHistory
-}
-
-# ------------------------------
-# ParticipationStatusHistory Connection Type Definitions
-# ------------------------------
-type ParticipationStatusHistoriesConnection {
-    edges: [ParticipationStatusHistoryEdge!]!
-    pageInfo: PageInfo!
-    totalCount: Int!
-}
-
-type ParticipationStatusHistoryEdge implements Edge {
-    cursor: String!
-    node: ParticipationStatusHistory
-}
-
-# ------------------------------
-# ParticipationStatusHistory Query Input Definitions
-# ------------------------------
-input ParticipationStatusHistoryFilterInput {
-    status: ParticipationStatus
-    participationId: ID
-    createdById: ID
-}
-
-input ParticipationStatusHistorySortInput {
-    createdAt: SortDirection
 }

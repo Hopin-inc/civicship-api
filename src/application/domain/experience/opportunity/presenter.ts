@@ -6,7 +6,7 @@ import {
   GqlOpportunitySetPublishStatusSuccess,
   GqlOpportunityUpdateContentSuccess,
 } from "@/types/graphql";
-import { PrismaOpportunity, PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
+import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 
 export default class OpportunityPresenter {
   static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
@@ -25,57 +25,37 @@ export default class OpportunityPresenter {
     };
   }
 
-  static get(r: PrismaOpportunity | PrismaOpportunityDetail): GqlOpportunity {
-    const images = 'images' in r && r.images ? 
-      (Array.isArray(r.images) ? r.images.map(img => typeof img === 'object' && 'url' in img ? img.url : '') : []) : 
-      [];
-    
-    const earliestReservableSlotView = 'earliestReservableSlotView' in r ? r.earliestReservableSlotView : null;
-    
+  static get(r: PrismaOpportunityDetail): GqlOpportunity {
     return {
       ...r,
-      title: 'title' in r ? r.title : '',
-      category: "ACTIVITY", // Default category
-      requireApproval: 'requireApproval' in r ? r.requireApproval : false,
-      community: null,
-      place: null,
-      createdByUser: null,
+
+      images: [],
+      slots: [],
       requiredUtilities: [],
-      earliestReservableSlotView,
-      images,
-      articles: null,
-      body: 'body' in r ? r.body : null,
-      feeRequired: 'feeRequired' in r ? r.feeRequired : null,
-      isReservableWithTicket: null,
-      pointsToEarn: 'pointsToEarn' in r ? r.pointsToEarn : null,
-      slots: null
+      articles: [],
     };
   }
 
-  static create(r: PrismaOpportunity): GqlOpportunityCreateSuccess {
+  static create(r: PrismaOpportunityDetail): GqlOpportunityCreateSuccess {
     return {
-      __typename: "OpportunityCreateSuccess",
       opportunity: this.get(r),
     };
   }
 
-  static delete(r: PrismaOpportunity): GqlOpportunityDeleteSuccess {
+  static delete(r: PrismaOpportunityDetail): GqlOpportunityDeleteSuccess {
     return {
-      __typename: "OpportunityDeleteSuccess",
       opportunityId: r.id,
     };
   }
 
-  static update(r: PrismaOpportunity): GqlOpportunityUpdateContentSuccess {
+  static update(r: PrismaOpportunityDetail): GqlOpportunityUpdateContentSuccess {
     return {
-      __typename: "OpportunityUpdateContentSuccess",
       opportunity: this.get(r),
     };
   }
 
-  static setPublishStatus(r: PrismaOpportunity): GqlOpportunitySetPublishStatusSuccess {
+  static setPublishStatus(r: PrismaOpportunityDetail): GqlOpportunitySetPublishStatusSuccess {
     return {
-      __typename: "OpportunitySetPublishStatusSuccess",
       opportunity: this.get(r),
     };
   }

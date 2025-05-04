@@ -1,7 +1,10 @@
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { ticketClaimLinkSelectDetail } from "@/application/domain/reward/ticketClaimLink/data/type";
+import {
+  ticketClaimLinkInclude,
+  ticketClaimLinkSelectDetail,
+} from "@/application/domain/reward/ticketClaimLink/data/type";
 import { ITicketClaimLinkRepository } from "./interface";
 
 @injectable()
@@ -29,7 +32,7 @@ export default class TicketClaimLinkRepository implements ITicketClaimLinkReposi
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketClaimLink.findUnique({
         where: { id },
-        select: ticketClaimLinkSelectDetail,
+        include: ticketClaimLinkInclude,
       });
     });
   }

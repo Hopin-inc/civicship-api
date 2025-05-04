@@ -2,8 +2,8 @@
 # Membership Object Type Definitions
 # ------------------------------
 type Membership {
-    user: User!
-    community: Community!
+    user: User
+    community: Community
 
     headline: String
     bio: String
