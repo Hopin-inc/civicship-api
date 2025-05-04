@@ -21,7 +21,7 @@ export default class CommunityResolver {
       return this.communityUseCase.userBrowseCommunities(args, ctx);
     },
     community: async (_: unknown, args: GqlQueryCommunityArgs, ctx: IContext) => {
-      return this.communityUseCase.userViewCommunity(args, ctx);
+      return ctx.loaders.community.load(args.id);
     },
   };
 
@@ -47,7 +47,7 @@ export default class CommunityResolver {
     },
 
     image: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return parent.imageId ? parent.imageId : null;
+      return parent.imageId ? null : null; // No image loader available in context
     },
 
     memberships: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
@@ -55,23 +55,53 @@ export default class CommunityResolver {
     },
 
     opportunities: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.opportunity.loadMany(parent.id);
+      return ctx.issuer.internal(async (tx) => {
+        const opportunities = await tx.opportunity.findMany({
+          where: { communityId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.opportunity.loadMany(opportunities.map(o => o.id));
+      });
     },
 
     participations: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.participation.loadMany(parent.id);
+      return ctx.issuer.internal(async (tx) => {
+        const participations = await tx.participation.findMany({
+          where: { communityId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.participation.loadMany(participations.map(p => p.id));
+      });
     },
 
     wallets: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.wallet.loadMany(parent.id);
+      return ctx.issuer.internal(async (tx) => {
+        const wallets = await tx.wallet.findMany({
+          where: { communityId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.wallet.loadMany(wallets.map(w => w.id));
+      });
     },
 
     utilities: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.utility.loadMany(parent.id);
+      return ctx.issuer.internal(async (tx) => {
+        const utilities = await tx.utility.findMany({
+          where: { communityId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.utility.loadMany(utilities.map(u => u.id));
+      });
     },
 
     articles: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.article.loadMany(parent.id);
+      return ctx.issuer.internal(async (tx) => {
+        const articles = await tx.article.findMany({
+          where: { communityId: parent.id },
+          select: { id: true },
+        });
+        return ctx.loaders.article.loadMany(articles.map(a => a.id));
+      });
     },
   };
 }

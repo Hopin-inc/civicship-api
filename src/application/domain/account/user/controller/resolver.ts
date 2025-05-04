@@ -8,7 +8,6 @@ import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 
 import UserUseCase from "@/application/domain/account/user/usecase";
-import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 
 @injectable()
 export default class UserResolver {
@@ -30,17 +29,11 @@ export default class UserResolver {
   };
 
   User = {
-    portfolios: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const portfolios = await tx.portfolio.findMany({
-          where: { userId: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.portfolio.loadMany(portfolios.map(p => p.id));
-      });
+    portfolios: (parent: GqlUser, _: unknown, ctx: IContext) => {
+      return [];
     },
 
-    articlesAboutMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    articlesAboutMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const articles = await tx.article.findMany({
           where: { authors: { some: { id: parent.id } } },
@@ -50,7 +43,7 @@ export default class UserResolver {
       });
     },
 
-    memberships: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    memberships: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const memberships = await tx.membership.findMany({
           where: { userId: parent.id },
@@ -62,7 +55,7 @@ export default class UserResolver {
       });
     },
 
-    wallets: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    wallets: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const wallets = await tx.wallet.findMany({
           where: { userId: parent.id },
@@ -72,7 +65,7 @@ export default class UserResolver {
       });
     },
 
-    opportunitiesCreatedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    opportunitiesCreatedByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const opportunities = await tx.opportunity.findMany({
           where: { createdBy: parent.id },
@@ -82,7 +75,7 @@ export default class UserResolver {
       });
     },
 
-    participations: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    participations: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const participations = await tx.participation.findMany({
           where: { userId: parent.id },
@@ -92,7 +85,7 @@ export default class UserResolver {
       });
     },
 
-    participationStatusChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    participationStatusChangedByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const statusHistories = await tx.participationStatusHistory.findMany({
           where: { createdBy: parent.id },
@@ -102,17 +95,11 @@ export default class UserResolver {
       });
     },
     
-    membershipChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const membershipHistories = await tx.membershipHistory.findMany({
-          where: { createdBy: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.membershipHistory.loadMany(membershipHistories.map(h => h.id));
-      });
+    membershipChangedByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
+      return [];
     },
     
-    reservations: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    reservations: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const reservations = await tx.reservation.findMany({
           where: { createdBy: parent.id },
@@ -122,17 +109,11 @@ export default class UserResolver {
       });
     },
     
-    reservationStatusChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const reservationHistories = await tx.reservationHistory.findMany({
-          where: { createdBy: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.reservationHistory.loadMany(reservationHistories.map(h => h.id));
-      });
+    reservationStatusChangedByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
+      return [];
     },
     
-    evaluations: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    evaluations: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const evaluations = await tx.evaluation.findMany({
           where: { evaluatorId: parent.id },
@@ -142,7 +123,7 @@ export default class UserResolver {
       });
     },
     
-    evaluationCreatedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    evaluationCreatedByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const evaluationHistories = await tx.evaluationHistory.findMany({
           where: { createdBy: parent.id },
@@ -152,17 +133,17 @@ export default class UserResolver {
       });
     },
     
-    articlesWrittenByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    articlesWrittenByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const articles = await tx.article.findMany({
-          where: { authorId: parent.id },
+          where: { authors: { some: { id: parent.id } } },
           select: { id: true },
         });
         return ctx.loaders.article.loadMany(articles.map(a => a.id));
       });
     },
     
-    ticketStatusChangedByMe: (parent: PrismaUserDetail | GqlUser, _: unknown, ctx: IContext) => {
+    ticketStatusChangedByMe: (parent: GqlUser, _: unknown, ctx: IContext) => {
       return ctx.issuer.internal(async (tx) => {
         const ticketStatusHistories = await tx.ticketStatusHistory.findMany({
           where: { createdBy: parent.id },

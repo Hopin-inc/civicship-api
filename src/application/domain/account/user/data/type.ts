@@ -59,3 +59,25 @@ export type PrismaAuthUser = Prisma.UserGetPayload<{
 export type PrismaUser = Prisma.UserGetPayload<{
   include: typeof userInclude;
 }>;
+
+export const userSelectDetail = Prisma.validator<Prisma.UserSelect>()({
+  id: true,
+  name: true,
+  bio: true,
+  imageId: true,
+  slug: true,
+  sysRole: true,
+  currentPrefecture: true,
+  createdAt: true,
+  updatedAt: true,
+  urlWebsite: true,
+  urlX: true,
+  urlFacebook: true,
+  urlInstagram: true,
+  urlYoutube: true,
+  urlTiktok: true,
+});
+
+export type PrismaUserDetail = Prisma.UserGetPayload<{
+  select: typeof userSelectDetail;
+}>;

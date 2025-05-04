@@ -47,11 +47,23 @@ export default class OpportunitySlotResolver {
     },
     
     participations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      return parent.reservations ? 
-        ctx.loaders.participation.loadMany(
-          parent.reservations.flatMap(r => r.participations?.map(p => p.id) || [])
-        ) : 
-        [];
+      return ctx.issuer.internal(async (tx) => {
+        const reservations = await tx.reservation.findMany({
+          where: { opportunitySlotId: parent.id },
+          select: { id: true },
+        });
+        
+        const participations = await tx.participation.findMany({
+          where: { 
+            reservationId: { 
+              in: reservations.map(r => r.id) 
+            } 
+          },
+          select: { id: true },
+        });
+        
+        return ctx.loaders.participation.loadMany(participations.map(p => p.id));
+      });
     },
     
     reservations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
