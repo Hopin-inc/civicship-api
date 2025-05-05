@@ -21,27 +21,31 @@ export default class UserPresenter {
   static get(r: PrismaUserDetail): GqlUser {
     return {
       ...r,
+
       identities: [],
-      articlesAboutMe: [],
-      articlesWrittenByMe: [],
-      evaluationCreatedByMe: [],
-      evaluations: [],
+
       memberships: [],
       membershipChangedByMe: [],
-      opportunitiesCreatedByMe: [],
-      participationStatusChangedByMe: [],
-      participations: [],
-      reservationStatusChangedByMe: [],
-      reservations: [],
-      ticketStatusChangedByMe: [],
       wallets: [],
+      ticketStatusChangedByMe: [],
+
+      opportunitiesCreatedByMe: [],
+      participations: [],
+      participationStatusChangedByMe: [],
+      reservations: [],
+      reservationStatusChangedByMe: [],
+      evaluations: [],
+      evaluationCreatedByMe: [],
+
       portfolios: [],
+
+      articlesAboutMe: [],
+      articlesWrittenByMe: [],
     };
   }
 
   static updateProfile(r: PrismaUserDetail): GqlUserUpdateProfileSuccess {
     return {
-      __typename: "UserUpdateProfileSuccess",
       user: this.get(r),
     };
   }

@@ -27,34 +27,32 @@ export default class CommunityPresenter {
   static get(r: PrismaCommunityDetail): GqlCommunity {
     return {
       ...r,
-      image: null,
-      places: null,
-      memberships: null,
-      opportunities: null,
-      participations: null,
-      articles: null,
-      utilities: null,
-      wallets: null,
+      memberships: [],
+      wallets: [],
+
+      opportunities: [],
+      places: [],
+      participations: [],
+      utilities: [],
+
+      articles: [],
     };
   }
 
   static create(r: PrismaCommunityDetail): GqlCommunityCreateSuccess {
     return {
-      __typename: "CommunityCreateSuccess",
       community: this.get(r),
     };
   }
 
   static delete(r: PrismaCommunityDetail): GqlCommunityDeleteSuccess {
     return {
-      __typename: "CommunityDeleteSuccess",
       communityId: r.id,
     };
   }
 
   static update(r: PrismaCommunityDetail): GqlCommunityUpdateProfileSuccess {
     return {
-      __typename: "CommunityUpdateProfileSuccess",
       community: this.get(r),
     };
   }

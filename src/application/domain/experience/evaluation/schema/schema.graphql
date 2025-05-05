@@ -6,8 +6,8 @@ type Evaluation {
     status: EvaluationStatus!
     comment: String
 
-    participation: Participation!
-    evaluator: User!
+    participation: Participation
+    evaluator: User
 
     credentialUrl: String
     issuedAt: Datetime

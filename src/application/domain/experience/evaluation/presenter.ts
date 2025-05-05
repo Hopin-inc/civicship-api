@@ -3,7 +3,7 @@ import {
   GqlEvaluationCreateSuccess,
   GqlEvaluationsConnection,
 } from "@/types/graphql";
-import { PrismaEvaluation, PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
+import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
 
 export default class EvaluationPresenter {
   static query(records: GqlEvaluation[], hasNextPage: boolean): GqlEvaluationsConnection {
@@ -22,50 +22,12 @@ export default class EvaluationPresenter {
     };
   }
 
-  static get(record: PrismaEvaluation | PrismaEvaluationDetail): GqlEvaluation {
-    return {
-      ...record,
-      status: "PENDING",
-      evaluator: {
-        id: record.evaluatorId || "",
-        name: "",
-        createdAt: new Date(),
-        updatedAt: null,
-        bio: null,
-        image: null,
-        slug: "",
-        sysRole: "USER",
-        currentPrefecture: "UNKNOWN",
-        urlFacebook: null,
-        urlInstagram: null,
-        urlX: null,
-        urlWebsite: null,
-        urlTiktok: null,
-        urlYoutube: null
-      },
-      participation: {
-        id: record.participationId || "",
-        status: "PENDING",
-        reason: "PERSONAL_RECORD",
-        source: "INTERNAL",
-        createdAt: new Date(),
-        updatedAt: null,
-        description: null,
-        user: null,
-        reservation: null,
-        community: null,
-        images: [],
-        evaluation: null,
-        statusHistories: null,
-        ticketStatusHistories: null,
-        transactions: null
-      }
-    };
+  static get(record: PrismaEvaluationDetail): GqlEvaluation {
+    return record;
   }
 
-  static create(record: PrismaEvaluation | PrismaEvaluationDetail): GqlEvaluationCreateSuccess {
+  static create(record: PrismaEvaluationDetail): GqlEvaluationCreateSuccess {
     return {
-      __typename: "EvaluationCreateSuccess",
       evaluation: this.get(record),
     };
   }

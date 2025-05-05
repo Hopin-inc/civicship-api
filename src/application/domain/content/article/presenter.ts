@@ -21,8 +21,10 @@ export default class ArticlePresenter {
   static get(r: PrismaArticleDetail): GqlArticle {
     return {
       ...r,
+
       authors: [],
       relatedUsers: [],
+
       opportunities: [],
     };
   }
