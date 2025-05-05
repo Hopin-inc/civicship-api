@@ -27,78 +27,34 @@ export default class UserResolver {
   };
 
   User = {
-    portfolios: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return [];
-    },
-
-    articlesAboutMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const articles = await tx.article.findMany({
-          where: { authors: { some: { id: parent.id } } },
-          select: { id: true },
-        });
-        return ctx.loaders.article.loadMany(articles.map((a) => a.id));
-      });
-    },
+    portfolios: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {},
 
     memberships: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const memberships = await tx.membership.findMany({
-          where: { userId: parent.id },
-          select: { userId: true, communityId: true },
-        });
-        return ctx.loaders.membership.loadMany(
-          memberships.map((m) => `${m.userId}:${m.communityId}`),
-        );
-      });
+      return ctx.loaders.membership.loadMany(
+        parent.memberships.map((m) => `${m.userId}:${m.communityId}`),
+      );
     },
 
     wallets: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const wallets = await tx.wallet.findMany({
-          where: { userId: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.wallet.loadMany(wallets.map((w) => w.id));
-      });
+      return ctx.loaders.wallet.loadMany(parent.wallets.map((w) => w.id));
+    },
+
+    ticketStatusChangedByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.ticketStatusHistory.loadMany(
+        parent.ticketStatusChangedByMe.map((h) => h.id),
+      );
     },
 
     opportunitiesCreatedByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const opportunities = await tx.opportunity.findMany({
-          where: { createdBy: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.opportunity.loadMany(opportunities.map((o) => o.id));
-      });
-    },
-
-    participations: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const participations = await tx.participation.findMany({
-          where: { userId: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.participation.loadMany(participations.map((p) => p.id));
-      });
-    },
-
-    participationStatusChangedByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const statusHistories = await tx.participationStatusHistory.findMany({
-          where: { createdBy: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.participationStatusHistory.loadMany(statusHistories.map((h) => h.id));
-      });
-    },
-
-    membershipChangedByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return [];
+      return ctx.loaders.opportunity.loadMany(parent.opportunitiesCreatedByMe.map((o) => o.id));
     },
 
     reservations: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.reservation.loadMany(parent.reservationsAppliedByMe.map((e) => e.id));
+    },
+
+    participations: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id));
     },
 
     evaluations: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
@@ -113,10 +69,8 @@ export default class UserResolver {
       return ctx.loaders.article.loadMany(parent.articlesWrittenByMe.map((a) => a.id));
     },
 
-    ticketStatusChangedByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.ticketStatusHistory.loadMany(
-        parent.ticketStatusChangedByMe.map((h) => h.id),
-      );
+    articlesAboutMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.article.loadMany(parent.articlesAboutMe.map((a) => a.id));
     },
   };
 }
