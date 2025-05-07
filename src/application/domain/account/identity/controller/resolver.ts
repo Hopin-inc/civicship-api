@@ -21,4 +21,8 @@ export default class IdentityResolver {
       return this.usecase.userDeleteAccount(ctx);
     },
   };
+
+  Identity = {
+    // user,
+  };
 }

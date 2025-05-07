@@ -22,6 +22,7 @@ import { createTicketStatusHistoryLoader } from "@/application/domain/reward/tic
 import { createEvaluationLoader } from "@/application/domain/experience/evaluation/controller/dataloader";
 import { createEvaluationHistoryLoader } from "@/application/domain/experience/evaluation/evaluationHistory/controller/dataloader";
 import { createReservationLoader } from "@/application/domain/experience/reservation/controller/dataloader";
+import { createImageLoader } from "@/application/domain/content/image/controller/dataloader";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -51,7 +52,9 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     place: createPlaceLoader(issuer),
     city: createCityByCodeLoader(issuer),
     state: createStateByCodeLoader(issuer),
+
     article: createArticleLoader(issuer),
+    image: createImageLoader(issuer),
 
     transaction: createTransactionLoader(issuer),
   };

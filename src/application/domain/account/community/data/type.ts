@@ -13,8 +13,17 @@ export const communitySelectDetail = Prisma.validator<Prisma.CommunitySelect>()(
   imageId: true,
   createdAt: true,
   updatedAt: true,
-  places: { select: { id: true } },
+
   memberships: { select: { userId: true, communityId: true } },
+  wallets: { select: { id: true } },
+
+  opportunities: { select: { id: true } },
+  participations: { select: { id: true } },
+  places: { select: { id: true } },
+
+  utilities: { select: { id: true } },
+
+  articles: { select: { id: true } },
 });
 
 export type PrismaCommunity = Prisma.CommunityGetPayload<{
