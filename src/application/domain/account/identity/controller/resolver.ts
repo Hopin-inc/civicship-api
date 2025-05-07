@@ -23,6 +23,8 @@ export default class IdentityResolver {
   };
 
   Identity = {
-    // user,
+    user: (parent: any, _: unknown, ctx: IContext) => {
+      return parent.userId ? ctx.loaders.user.load(parent.userId) : null;
+    },
   };
 }
