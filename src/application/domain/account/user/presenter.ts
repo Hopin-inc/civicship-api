@@ -30,7 +30,7 @@ export default class UserPresenter {
       ticketStatusChangedByMe: [],
 
       opportunitiesCreatedByMe: [],
-      participations: undefined,
+      participations: [],
       participationStatusChangedByMe: [],
       reservations: [],
       reservationStatusChangedByMe: [],

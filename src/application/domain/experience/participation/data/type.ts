@@ -46,9 +46,6 @@ export const participationSelectDetail = Prisma.validator<Prisma.ParticipationSe
   reservationId: true,
   communityId: true,
 
-  images: { select: { id: true } },
-  statusHistories: { select: { id: true } },
-
   createdAt: true,
   updatedAt: true,
 });

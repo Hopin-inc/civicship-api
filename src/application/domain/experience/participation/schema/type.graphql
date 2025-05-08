@@ -13,13 +13,22 @@ type Participation {
     user: User
     community: Community
     reservation: Reservation
-
     evaluation: Evaluation
 
-    ticketStatusHistories: [TicketStatusHistory!]
+    ticketStatusHistories(
+        filter: TicketStatusHistoryFilterInput
+        sort: TicketStatusHistorySortInput
+    ): [TicketStatusHistory!]
 
-    statusHistories: [ParticipationStatusHistory!]
-    transactions: [Transaction!]
+    statusHistories(
+        filter: ParticipationStatusHistoryFilterInput
+        sort: ParticipationSortInput
+    ): [ParticipationStatusHistory!]
+
+    transactions(
+        filter: TransactionFilterInput
+        sort: TransactionSortInput
+    ): [Transaction!]
 
     createdAt: Datetime!
     updatedAt: Datetime
