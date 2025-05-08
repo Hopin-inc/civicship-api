@@ -6,6 +6,8 @@ type Participation {
     status: ParticipationStatus!
     reason: ParticipationStatusReason!
     source: Source!
+    description: String
+
     images: [String!]
 
     user: User
@@ -13,7 +15,6 @@ type Participation {
     reservation: Reservation
 
     evaluation: Evaluation
-    description: String
 
     ticketStatusHistories: [TicketStatusHistory!]
 

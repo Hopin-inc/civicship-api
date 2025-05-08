@@ -28,6 +28,7 @@ import {
   createPortfolioArticleLoader,
   createPortfolioParticipationLoader,
 } from "@/application/view/controller/dataloader";
+
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
     identity: createIdentityLoader(issuer),
