@@ -10,7 +10,12 @@ export const utilitySelectDetail = Prisma.validator<Prisma.UtilitySelect>()({
   description: true,
   pointsRequired: true,
   publishStatus: true,
+
   communityId: true,
+  images: { select: { id: true } },
+  tickets: { select: { id: true } },
+  requiredForOpportunities: { select: { id: true } },
+
   createdAt: true,
   updatedAt: true,
 });

@@ -9,11 +9,17 @@ export const walletInclude = Prisma.validator<Prisma.WalletInclude>()({
 export const walletSelectDetail = Prisma.validator<Prisma.WalletSelect>()({
   id: true,
   type: true,
+
+  currentPointView: true,
+
   userId: true,
   communityId: true,
+
+  tickets: { select: { id: true } },
+  fromTransactions: { select: { id: true } },
+  toTransactions: { select: { id: true } },
   createdAt: true,
   updatedAt: true,
-  currentPointView: true,
 });
 
 export type PrismaWallet = Prisma.WalletGetPayload<{

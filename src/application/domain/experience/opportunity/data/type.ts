@@ -40,6 +40,7 @@ export const opportunitySelectDetail = Prisma.validator<Prisma.OpportunitySelect
   images: { select: { id: true } },
   requiredUtilities: { select: { id: true } },
   slots: { select: { id: true } },
+  articles: { select: { id: true } },
 
   createdAt: true,
   updatedAt: true,

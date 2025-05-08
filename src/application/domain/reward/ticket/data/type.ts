@@ -9,10 +9,14 @@ export const ticketInclude = Prisma.validator<Prisma.TicketInclude>()({
 
 export const ticketSelectDetail = Prisma.validator<Prisma.TicketSelect>()({
   id: true,
+  status: true,
+  reason: true,
+
   walletId: true,
   utilityId: true,
   claimLinkId: true,
-  status: true,
+  ticketStatusHistories: { select: { id: true } },
+
   createdAt: true,
   updatedAt: true,
 });

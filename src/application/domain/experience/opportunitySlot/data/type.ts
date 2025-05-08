@@ -15,14 +15,17 @@ export const opportunitySlotReserveInclude = Prisma.validator<Prisma.Opportunity
 export const opportunitySlotSelectDetail = Prisma.validator<Prisma.OpportunitySlotSelect>()({
   id: true,
   hostingStatus: true,
-  opportunityId: true,
   startsAt: true,
   endsAt: true,
   capacity: true,
+
+  remainingCapacityView: { select: { remainingCapacity: true } },
+
+  opportunityId: true,
+  reservations: { select: { id: true } },
+
   createdAt: true,
   updatedAt: true,
-  remainingCapacityView: { select: { remainingCapacity: true } },
-  reservations: { select: { id: true } },
 });
 
 export type PrismaOpportunitySlotSetHostingStatus = Prisma.OpportunitySlotGetPayload<{
