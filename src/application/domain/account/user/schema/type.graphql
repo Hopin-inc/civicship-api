@@ -9,7 +9,7 @@ type User {
     slug: String!
     image: String
     bio: String
-    phoneNumber: String @authz(rules: [CanReadPhoneNumber])
+    phoneNumber: String! @authz(rules: [CanReadPhoneNumber])
 
     urlWebsite: String
     urlX: String
@@ -18,7 +18,7 @@ type User {
     urlYoutube: String
     urlTiktok: String
 
-    currentPrefecture: CurrentPrefecture
+    currentPrefecture: CurrentPrefecture!
 
     identities: [Identity!]
     portfolios: [Portfolio!]

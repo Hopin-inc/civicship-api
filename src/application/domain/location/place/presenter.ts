@@ -5,7 +5,7 @@ import {
   GqlPlaceUpdateSuccess,
   GqlPlaceDeleteSuccess,
 } from "@/types/graphql";
-import { PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
+import { PrismaPlace, PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
 
 export default class PlacePresenter {
   static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {
@@ -29,6 +29,7 @@ export default class PlacePresenter {
 
     return {
       ...prop,
+      opportunities: [],
       latitude: latitude.toString(),
       longitude: longitude.toString(),
     };
@@ -49,6 +50,16 @@ export default class PlacePresenter {
   static delete(r: PrismaPlaceDetail): GqlPlaceDeleteSuccess {
     return {
       id: r.id,
+    };
+  }
+
+  static formatPortfolio(r: PrismaPlace): GqlPlace {
+    const { latitude, longitude, ...prop } = r;
+
+    return {
+      ...prop,
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
     };
   }
 }

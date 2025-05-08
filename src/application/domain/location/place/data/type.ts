@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { cityInclude } from "@/application/domain/location/master/data/type";
 
 export const placeInclude = Prisma.validator<Prisma.PlaceInclude>()({
-  community: true,
+  // community: true,
   city: { include: cityInclude },
 });
 

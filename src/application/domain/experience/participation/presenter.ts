@@ -24,9 +24,11 @@ export default class ParticipationPresenter {
   }
 
   static get(r: PrismaParticipationDetail): GqlParticipation {
+    const { images, ...prop } = r;
+
     return {
-      ...r,
-      images: [],
+      ...prop,
+      images: images.map((i) => i.id),
       statusHistories: [],
     };
   }

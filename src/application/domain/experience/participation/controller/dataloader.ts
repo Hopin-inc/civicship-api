@@ -15,7 +15,7 @@ async function batchParticipationsById(
     });
   });
 
-  const map = new Map(records.map((record) => [record.id, ParticipationOutputFormat.get(record)])) as Map<string, GqlParticipation | null>;
+  const map = new Map(records.map((record) => [record.id, ParticipationOutputFormat.get(record)]));
 
   return participationIds.map((id) => map.get(id) ?? null);
 }

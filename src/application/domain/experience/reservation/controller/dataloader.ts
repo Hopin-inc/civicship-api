@@ -15,7 +15,7 @@ async function batchReservationsById(
     }),
   );
 
-  const map = new Map(records.map((r) => [r.id, ReservationPresenter.get(r)])) as Map<string, GqlReservation | null>;
+  const map = new Map(records.map((r) => [r.id, ReservationPresenter.get(r)]));
   return ids.map((id) => map.get(id) ?? null);
 }
 

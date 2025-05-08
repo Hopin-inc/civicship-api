@@ -2,16 +2,20 @@ import {
   GqlQueryUsersArgs,
   GqlQueryUserArgs,
   GqlMutationUserUpdateMyProfileArgs,
+  GqlUser,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
-
 import UserUseCase from "@/application/domain/account/user/usecase";
 import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
+import ViewUseCase from "@/application/view/usecase";
 
 @injectable()
 export default class UserResolver {
-  constructor(@inject("UserUseCase") private readonly userUseCase: UserUseCase) { }
+  constructor(
+    @inject("UserUseCase") private readonly userUseCase: UserUseCase,
+    @inject("ViewUseCase") private readonly viewUseCase: ViewUseCase,
+  ) { }
 
   Query = {
     users: (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
@@ -27,15 +31,17 @@ export default class UserResolver {
   };
 
   User = {
-    image: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
+    image: async (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return parent.imageId ? await ctx.loaders.image.load(parent.imageId) : null;
     },
 
     identities: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.identity.loadMany(parent.identities.map((i) => i.uid));
     },
 
-    portfolios: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => { },
+    portfolios: async (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return await this.viewUseCase.visitorBrowsePortfolios(parent, ctx);
+    },
 
     memberships: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.membership.loadMany(
@@ -43,8 +49,8 @@ export default class UserResolver {
       );
     },
 
-    wallets: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.wallet.loadMany(parent.wallets.map((w) => w.id));
+    wallets: async (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return await ctx.loaders.wallet.loadMany(parent.wallets.map((w) => w.id));
     },
 
     ticketStatusChangedByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
@@ -61,8 +67,11 @@ export default class UserResolver {
       return ctx.loaders.reservation.loadMany(parent.reservationsAppliedByMe.map((e) => e.id));
     },
 
-    participations: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id));
+    participations: (parent: GqlUser, _: unknown, ctx: IContext) => {
+      console.log(parent);
+      return parent.participations?.length
+        ? ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id))
+        : [];
     },
 
     evaluations: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
@@ -73,12 +82,12 @@ export default class UserResolver {
       return ctx.loaders.evaluationHistory.loadMany(parent.evaluationCreatedByMe.map((h) => h.id));
     },
 
-    articlesWrittenByMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.article.loadMany(parent.articlesWrittenByMe.map((a) => a.id));
+    articlesWrittenByMe: async (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return await ctx.loaders.article.loadMany(parent.articlesWrittenByMe.map((a) => a.id));
     },
 
-    articlesAboutMe: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.article.loadMany(parent.articlesAboutMe.map((a) => a.id));
+    articlesAboutMe: async (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return await ctx.loaders.article.loadMany(parent.articlesAboutMe.map((a) => a.id));
     },
   };
 }

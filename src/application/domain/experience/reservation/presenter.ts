@@ -24,8 +24,10 @@ export default class ReservationPresenter {
   }
 
   static get(record: PrismaReservationDetail): GqlReservation {
+    const { ...prop } = record;
+
     return {
-      ...record,
+      ...prop,
       participations: [],
     };
   }

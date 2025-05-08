@@ -15,7 +15,7 @@ async function batchEvaluationsById(
     });
   });
 
-  const map = new Map(records.map((r) => [r.id, EvaluationPresenter.get(r)])) as Map<string, GqlEvaluation | null>;
+  const map = new Map(records.map((r) => [r.id, EvaluationPresenter.get(r)]));
   return ids.map((id) => map.get(id) ?? null);
 }
 

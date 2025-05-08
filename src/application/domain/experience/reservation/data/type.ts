@@ -13,10 +13,12 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
 
 export const reservationSelectDetail = Prisma.validator<Prisma.ReservationSelect>()({
   id: true,
+  status: true,
+
   opportunitySlotId: true,
   createdBy: true,
   participations: { select: { id: true } },
-  status: true,
+
   createdAt: true,
   updatedAt: true,
 });

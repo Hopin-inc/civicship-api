@@ -13,6 +13,25 @@ export const participationInclude = Prisma.validator<Prisma.ParticipationInclude
   images: true,
 });
 
+export const portfolioFromParticipationInclude = Prisma.validator<Prisma.ParticipationInclude>()({
+  reservation: {
+    include: {
+      opportunitySlot: {
+        include: {
+          opportunity: {
+            include: {
+              images: true,
+              place: true,
+            },
+          },
+        },
+      },
+      participations: { include: { user: true } },
+    },
+  },
+  images: true,
+});
+
 export type PrismaParticipation = Prisma.ParticipationGetPayload<{
   include: typeof participationInclude;
 }>;
@@ -22,11 +41,14 @@ export const participationSelectDetail = Prisma.validator<Prisma.ParticipationSe
   status: true,
   reason: true,
   source: true,
+
   userId: true,
   reservationId: true,
   communityId: true,
+
   images: { select: { id: true } },
   statusHistories: { select: { id: true } },
+
   createdAt: true,
   updatedAt: true,
 });
@@ -40,7 +62,12 @@ export const participationForPortfolioInclude = Prisma.validator<Prisma.Particip
     include: {
       opportunitySlot: {
         include: {
-          opportunity: { include: { place: { include: placeInclude }, images: true } },
+          opportunity: {
+            include: {
+              place: { include: placeInclude },
+              images: true,
+            },
+          },
         },
       },
       participations: { include: { user: { include: userInclude } } },

@@ -24,6 +24,10 @@ import { createEvaluationHistoryLoader } from "@/application/domain/experience/e
 import { createReservationLoader } from "@/application/domain/experience/reservation/controller/dataloader";
 import { createImageLoader } from "@/application/domain/content/image/controller/dataloader";
 import { createIdentityLoader } from "@/application/domain/account/identity/controller/dataloader";
+import {
+  createPortfolioArticleLoader,
+  createPortfolioParticipationLoader,
+} from "@/application/view/controller/dataloader";
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
     identity: createIdentityLoader(issuer),
@@ -56,6 +60,9 @@ export function createLoaders(issuer: PrismaClientIssuer) {
 
     article: createArticleLoader(issuer),
     image: createImageLoader(issuer),
+
+    portfolioArticle: createPortfolioArticleLoader(issuer),
+    portfolioParticipation: createPortfolioParticipationLoader(issuer),
 
     transaction: createTransactionLoader(issuer),
   };

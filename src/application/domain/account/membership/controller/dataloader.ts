@@ -2,7 +2,7 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlMembership } from "@/types/graphql";
 import MembershipOutputFormat from "@/application/domain/account/membership/presenter";
-import { membershipSelectDetail, PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
+import { membershipSelectDetail } from "@/application/domain/account/membership/data/type";
 
 async function batchMembershipsByCompositeKey(
   issuer: PrismaClientIssuer,
@@ -23,7 +23,7 @@ async function batchMembershipsByCompositeKey(
       },
       select: membershipSelectDetail,
     });
-  }) as PrismaMembershipDetail[];
+  });
 
   const map = new Map<string, GqlMembership>();
   for (const record of records) {
