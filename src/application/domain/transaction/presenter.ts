@@ -25,12 +25,7 @@ export default class TransactionPresenter {
   }
 
   static get(r: PrismaTransactionDetail): GqlTransaction {
-    return {
-      ...r,
-      fromWallet: null,
-      toWallet: null,
-      participation: null,
-    };
+    return r;
   }
 
   static issueCommunityPoint(r: PrismaTransactionDetail): GqlTransactionIssueCommunityPointSuccess {

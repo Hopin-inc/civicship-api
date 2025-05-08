@@ -19,6 +19,11 @@ export default class WalletPresenter {
   }
 
   static get(r: PrismaWalletDetail): GqlWallet {
-    return r;
+    return {
+      ...r,
+
+      tickets: [],
+      transactions: [],
+    };
   }
 }

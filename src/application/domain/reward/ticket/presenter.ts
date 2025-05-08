@@ -28,11 +28,7 @@ export default class TicketPresenter {
   static get(r: PrismaTicketDetail): GqlTicket {
     return {
       ...r,
-      reason: "PURCHASED",
-      utility: null,
-      wallet: null,
-      claimLink: null,
-      ticketStatusHistories: null,
+      ticketStatusHistories: [],
     };
   }
 
