@@ -13,7 +13,7 @@ import { PrismaOpportunitySlotDetail } from "@/application/domain/experience/opp
 export default class OpportunitySlotResolver {
   constructor(
     @inject("OpportunitySlotUseCase") private readonly slotUseCase: OpportunitySlotUseCase,
-  ) {}
+  ) { }
 
   Query = {
     opportunitySlots: (_: unknown, args: GqlQueryOpportunitySlotsArgs, ctx: IContext) => {
@@ -47,9 +47,7 @@ export default class OpportunitySlotResolver {
     },
 
     reservations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      return parent.reservations
-        ? ctx.loaders.reservation.loadMany(parent.reservations.map((r) => r.id))
-        : [];
+      return ctx.loaders.reservation.loadMany(parent.reservations.map((r) => r.id))
     },
   };
 }

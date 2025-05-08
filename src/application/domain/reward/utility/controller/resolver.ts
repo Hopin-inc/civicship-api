@@ -14,7 +14,7 @@ import UtilityUseCase from "@/application/domain/reward/utility/usecase";
 export default class UtilityResolver {
   constructor(
     @inject("UtilityUseCase") private readonly utilityUseCase: UtilityUseCase,
-  ) {}
+  ) { }
 
   Query = {
     utilities: (_: unknown, args: GqlQueryUtilitiesArgs, ctx: IContext) => {
@@ -39,38 +39,20 @@ export default class UtilityResolver {
   };
 
   Utility = {
+    images: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.image.loadMany(parent.images.map(i => i.id));
+    },
+
     community: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.community.load(parent.communityId);
     },
-    
+
     tickets: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const tickets = await tx.ticket.findMany({
-          where: { utilityId: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.ticket.loadMany(tickets.map(ticket => ticket.id));
-      });
+      return ctx.loaders.ticket.loadMany(parent.tickets.map(t => t.id));
     },
 
-    requiredForOpportunities: (
-      parent: PrismaUtilityDetail,
-      _: unknown,
-      ctx: IContext,
-    ) => {
-      return ctx.issuer.internal(async (tx) => {
-        const opportunities = await tx.opportunity.findMany({
-          where: {
-            requiredUtilities: {
-              some: {
-                id: parent.id
-              }
-            }
-          },
-          select: { id: true },
-        });
-        return ctx.loaders.opportunity.loadMany(opportunities.map(opp => opp.id));
-      });
+    requiredForOpportunities: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext,) => {
+      return ctx.loaders.opportunity.loadMany(parent.requiredForOpportunities.map(o => o.id));
     },
   };
 }

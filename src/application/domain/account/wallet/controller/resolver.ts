@@ -1,7 +1,6 @@
 import {
   GqlQueryWalletsArgs,
   GqlQueryWalletArgs,
-  GqlQueryTransactionsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
@@ -13,7 +12,7 @@ import { PrismaWalletDetail } from "@/application/domain/account/wallet/data/typ
 export default class WalletResolver {
   constructor(
     @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
-  ) {}
+  ) { }
 
   Query = {
     wallets: (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) => {
@@ -28,38 +27,20 @@ export default class WalletResolver {
     community: (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
       return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
-    
+
     user: (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
       return parent.userId ? ctx.loaders.user.load(parent.userId) : null;
     },
-    
+
     tickets: (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const tickets = await tx.ticket.findMany({
-          where: { walletId: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.ticket.loadMany(tickets.map(t => t.id));
-      });
+      return ctx.loaders.ticket.loadMany(parent.tickets.map(t => t.id));
     },
-    
-    transactions: (
-      parent: PrismaWalletDetail,
-      args: GqlQueryTransactionsArgs,
-      ctx: IContext,
-    ) => {
-      return ctx.issuer.internal(async (tx) => {
-        const transactions = await tx.transaction.findMany({
-          where: {
-            OR: [
-              { fromWallet: { id: parent.id } },
-              { toWallet: { id: parent.id } }
-            ]
-          },
-          select: { id: true },
-        });
-        return ctx.loaders.transaction.loadMany(transactions.map(t => t.id));
-      });
+
+    // TODO: これで問題ないかをチェックする
+    transactions: async (parent: PrismaWalletDetail, _: unknown, ctx: IContext,) => {
+      const from = ctx.loaders.transaction.loadMany(parent.fromTransactions.map(t => t.id));
+      const to = ctx.loaders.transaction.loadMany(parent.toTransactions.map(t => t.id));
+      return [...(await from), ...(await to)];
     },
   };
 }

@@ -6,7 +6,7 @@ import { PrismaArticleDetail } from "@/application/domain/content/article/data/t
 
 @injectable()
 export default class ArticleResolver {
-  constructor(@inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase) {}
+  constructor(@inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase) { }
 
   Query = {
     articles: (_: unknown, args: GqlQueryArticlesArgs, ctx: IContext) => {
@@ -16,20 +16,24 @@ export default class ArticleResolver {
       return ctx.loaders.article.load(args.id);
     },
   };
-  
+
   Article = {
+    thumbnail: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
+      return parent.thumbnailId ? ctx.loaders.image.load(parent.thumbnailId) : null;
+    },
+
     community: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
       return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
-    
+
     authors: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
       return parent.authors ? ctx.loaders.user.loadMany(parent.authors.map(a => a.id)) : [];
     },
-    
+
     relatedUsers: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
       return parent.relatedUsers ? ctx.loaders.user.loadMany(parent.relatedUsers.map(u => u.id)) : [];
     },
-    
+
     opportunities: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
       return parent.opportunities ? ctx.loaders.opportunity.loadMany(parent.opportunities.map(o => o.id)) : [];
     },

@@ -12,7 +12,7 @@ import CommunityUseCase from "@/application/domain/account/community/usecase";
 
 @injectable()
 export default class CommunityResolver {
-  constructor(@inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase) {}
+  constructor(@inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase) { }
 
   Query = {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) => {
@@ -40,12 +40,16 @@ export default class CommunityResolver {
   };
 
   Community = {
+    image: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
+    },
+
     places: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.place.loadMany(parent.places.map((p) => p.id));
     },
 
     image: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return parent.imageId ? null : null; // No image loader available in context
+      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
     },
 
     memberships: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {

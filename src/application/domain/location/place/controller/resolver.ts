@@ -17,7 +17,7 @@ import PlaceUseCase from "@/application/domain/location/place/usecase";
 export default class PlaceResolver {
   constructor(
     @inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase,
-  ) {}
+  ) { }
 
   Query = {
     places: (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
@@ -55,24 +55,22 @@ export default class PlaceResolver {
   };
 
   Place = {
-    opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return ctx.issuer.internal(async (tx) => {
-        const opportunities = await tx.opportunity.findMany({
-          where: { placeId: parent.id },
-          select: { id: true },
-        });
-        return ctx.loaders.opportunity.loadMany(opportunities.map(opp => opp.id));
-      });
+    image: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
     },
-    
+
+    opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunity.loadMany(parent.opportunities.map(opp => opp.id));
+    },
+
     city: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
       return parent.cityCode ? ctx.loaders.city.load(parent.cityCode) : null;
     },
-    
+
     community: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return parent.communityId && ctx.loaders?.community ? 
-        ctx.loaders.community.load(parent.communityId) : 
-        null;
+      return parent.communityId
+        ? ctx.loaders.community.load(parent.communityId)
+        : null;
     },
   };
 }

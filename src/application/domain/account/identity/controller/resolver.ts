@@ -2,6 +2,7 @@ import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlMutationUserSignUpArgs } from "@/types/graphql";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
+import { PrismaIdentityDetail } from "@/application/domain/account/identity/data/type";
 
 @injectable()
 export default class IdentityResolver {
@@ -23,7 +24,7 @@ export default class IdentityResolver {
   };
 
   Identity = {
-    user: (parent: any, _: unknown, ctx: IContext) => {
+    user: (parent: PrismaIdentityDetail, _: unknown, ctx: IContext) => {
       return parent.userId ? ctx.loaders.user.load(parent.userId) : null;
     },
   };

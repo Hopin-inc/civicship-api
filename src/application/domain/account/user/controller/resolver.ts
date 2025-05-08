@@ -11,7 +11,7 @@ import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 
 @injectable()
 export default class UserResolver {
-  constructor(@inject("UserUseCase") private readonly userUseCase: UserUseCase) {}
+  constructor(@inject("UserUseCase") private readonly userUseCase: UserUseCase) { }
 
   Query = {
     users: (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
@@ -27,7 +27,15 @@ export default class UserResolver {
   };
 
   User = {
-    portfolios: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {},
+    image: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
+    },
+
+    identities: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.identity.loadMany(parent.identities.map((i) => i.uid));
+    },
+
+    portfolios: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => { },
 
     memberships: (parent: PrismaUserDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.membership.loadMany(

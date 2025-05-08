@@ -15,7 +15,7 @@ import { PrismaParticipationDetail } from "@/application/domain/experience/parti
 export default class ParticipationResolver {
   constructor(
     @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
-  ) {}
+  ) { }
 
   Query = {
     participations: (_: unknown, args: GqlQueryParticipationsArgs, ctx: IContext) => {
@@ -49,6 +49,10 @@ export default class ParticipationResolver {
   };
 
   Participation = {
+    images: (parent: PrismaParticipationDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.image.loadMany(parent.images.map(i => i.id));
+    },
+
     user: (parent: PrismaParticipationDetail, _: unknown, ctx: IContext) => {
       return parent.userId ? ctx.loaders.user.load(parent.userId) : null;
     },
@@ -62,9 +66,7 @@ export default class ParticipationResolver {
     },
 
     statusHistories: (parent: PrismaParticipationDetail, _: unknown, ctx: IContext) => {
-      return parent.reservationId
-        ? ctx.loaders.participationStatusHistory.loadMany(parent.statusHistories.map((p) => p.id))
-        : null;
+      return ctx.loaders.participationStatusHistory.loadMany(parent.statusHistories.map((p) => p.id))
     },
   };
 }

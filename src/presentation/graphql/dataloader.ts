@@ -23,9 +23,10 @@ import { createEvaluationLoader } from "@/application/domain/experience/evaluati
 import { createEvaluationHistoryLoader } from "@/application/domain/experience/evaluation/evaluationHistory/controller/dataloader";
 import { createReservationLoader } from "@/application/domain/experience/reservation/controller/dataloader";
 import { createImageLoader } from "@/application/domain/content/image/controller/dataloader";
-
+import { createIdentityLoader } from "@/application/domain/account/identity/controller/dataloader";
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
+    identity: createIdentityLoader(issuer),
     user: createUserLoader(issuer),
     community: createCommunityLoader(issuer),
 
