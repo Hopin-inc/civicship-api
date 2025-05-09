@@ -450,13 +450,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Evaluation",
                 relationName: "EvaluationToParticipation"
             }, {
-                name: "statusHistories",
-                type: "ParticipationStatusHistory",
-                relationName: "ParticipationToParticipationStatusHistory"
-            }, {
                 name: "transactions",
                 type: "Transaction",
                 relationName: "ParticipationToTransaction"
+            }, {
+                name: "statusHistories",
+                type: "ParticipationStatusHistory",
+                relationName: "ParticipationToParticipationStatusHistory"
             }]
     }, {
         name: "ParticipationStatusHistory",
@@ -3300,6 +3300,7 @@ type ParticipationFactoryDefineInput = {
     status?: ParticipationStatus;
     reason?: ParticipationStatusReason;
     description?: string | null;
+    evaluationId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutParticipationsInput;
@@ -3308,8 +3309,8 @@ type ParticipationFactoryDefineInput = {
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
     evaluation?: ParticipationevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutParticipationInput;
-    statusHistories?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutParticipationInput;
     transactions?: Prisma.TransactionCreateNestedManyWithoutParticipationInput;
+    statusHistories?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutParticipationInput;
 };
 
 type ParticipationTransientFields = Record<string, unknown> & Partial<Record<keyof ParticipationFactoryDefineInput, never>>;
