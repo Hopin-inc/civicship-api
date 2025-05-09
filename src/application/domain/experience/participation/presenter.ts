@@ -24,13 +24,7 @@ export default class ParticipationPresenter {
   }
 
   static get(r: PrismaParticipationDetail): GqlParticipation {
-    const { images, ...prop } = r;
-
-    return {
-      ...prop,
-      images: images.map((i) => i.id),
-      statusHistories: [],
-    };
+    return r;
   }
 
   static create(r: PrismaParticipationDetail): GqlParticipationCreatePersonalRecordSuccess {

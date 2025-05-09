@@ -14,6 +14,7 @@ async function batchEvaluationsById(
       select: evaluationSelectDetail,
     });
   });
+  console.log(records);
 
   const map = new Map(records.map((r) => [r.id, EvaluationPresenter.get(r)]));
   return ids.map((id) => map.get(id) ?? null);

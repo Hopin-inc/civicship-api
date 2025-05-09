@@ -9,7 +9,6 @@ import {
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
-import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 
 @injectable()
 export default class ParticipationResolver {
@@ -23,9 +22,6 @@ export default class ParticipationResolver {
     },
 
     participation: (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
-      if (ctx.loaders?.participation) {
-        return ctx.loaders.participation.load(args.id);
-      }
       return this.participationUseCase.visitorViewParticipation(args, ctx);
     },
   };
@@ -61,12 +57,21 @@ export default class ParticipationResolver {
       return parent.reservationId ? ctx.loaders.reservation.load(parent.reservationId) : null;
     },
 
+    evaluation: (parent, _: unknown, ctx: IContext) => {
+      console.log(parent);
+      return parent.evaluationId ? ctx.loaders.evaluation.load(parent.evaluationId) : null;
+    },
+
     images: (parent, _: unknown, ctx: IContext) => {
-      return ctx.loaders.image.load(parent.id);
+      return ctx.loaders.imagesByParticipation.load(parent.id);
+    },
+
+    transactions: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.transactionsByParticipation.load(parent.id);
     },
 
     statusHistories: (parent, _: unknown, ctx: IContext) => {
-      return ctx.loaders.participationStatusHistory.load(parent.id);
+      return ctx.loaders.participationStatusHistoryByParticipation.load(parent.id);
     },
   };
 }

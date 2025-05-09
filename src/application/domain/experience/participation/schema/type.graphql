@@ -15,20 +15,9 @@ type Participation {
     reservation: Reservation
     evaluation: Evaluation
 
-    ticketStatusHistories(
-        filter: TicketStatusHistoryFilterInput
-        sort: TicketStatusHistorySortInput
-    ): [TicketStatusHistory!]
-
-    statusHistories(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationSortInput
-    ): [ParticipationStatusHistory!]
-
-    transactions(
-        filter: TransactionFilterInput
-        sort: TransactionSortInput
-    ): [Transaction!]
+    ticketStatusHistories: [TicketStatusHistory!]
+    statusHistories: [ParticipationStatusHistory!]
+    transactions: [Transaction!]
 
     createdAt: Datetime!
     updatedAt: Datetime

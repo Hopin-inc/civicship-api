@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
 import stringify from "json-stable-stringify";
 
-type RecordWithKey<K extends string> = Record<K, string>;
+type RecordWithKey<K extends string> = Record<K, string | null>; // nullableの外部キーに対応（e.g. transaction.participation.id）
 type RequestWithFilterAndSort<F, S> = { key: string; filter: F; sort: S };
 
 //
@@ -85,8 +85,37 @@ export function createHasManyLoaderByKey<K extends string, R extends RecordWithK
 
     for (const record of records) {
       const keyValue = record[key];
+      if (!keyValue) {
+        console.warn("[HasManyLoader] record with missing key:", record);
+        continue;
+      }
       if (!grouped.has(keyValue)) grouped.set(keyValue, []);
       grouped.get(keyValue)!.push(format(record));
+    }
+
+    return keys.map((k) => grouped.get(k) ?? []);
+  });
+}
+
+//
+// N:Nリレーションにおける中間テーブル経由の汎用HasMany用DataLoader
+// 例）participationId → Image[]（中間：_t_images_on_participations）
+//
+export function createHasManyLoaderViaJoin<K extends string, R, G>(
+  keyField: K,
+  fetch: (keys: readonly string[]) => Promise<Array<{ [key in K]: string } & { record: R }>>,
+  format: (record: R) => G,
+): DataLoader<string, G[]> {
+  return new DataLoader<string, G[]>(async (keys) => {
+    const joinedRecords = await fetch(keys);
+    const grouped = new Map<string, G[]>();
+
+    for (const item of joinedRecords) {
+      const keyValue = item[keyField];
+      if (!keyValue) continue;
+
+      if (!grouped.has(keyValue)) grouped.set(keyValue, []);
+      grouped.get(keyValue)!.push(format(item.record));
     }
 
     return keys.map((k) => grouped.get(k) ?? []);

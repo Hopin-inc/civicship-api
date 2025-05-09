@@ -18,3 +18,25 @@ async function batchImagesById(
 export function createImageLoader(issuer: PrismaClientIssuer) {
   return new DataLoader<string, string | null>((keys) => batchImagesById(issuer, keys));
 }
+
+export function createImagesByParticipationLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, string[]>(async (participationIds) => {
+    const participations = await issuer.internal((tx) =>
+      tx.participation.findMany({
+        where: { id: { in: [...participationIds] } },
+        include: { images: true },
+      }),
+    );
+
+    const map = new Map<string, string[]>();
+
+    for (const p of participations) {
+      map.set(
+        p.id,
+        p.images.map((img) => img.url),
+      );
+    }
+
+    return participationIds.map((id) => map.get(id) ?? []);
+  });
+}

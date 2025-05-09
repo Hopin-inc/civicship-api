@@ -43,8 +43,9 @@ export const participationSelectDetail = Prisma.validator<Prisma.ParticipationSe
   source: true,
 
   userId: true,
-  reservationId: true,
   communityId: true,
+  reservationId: true,
+  evaluationId: true,
 
   createdAt: true,
   updatedAt: true,

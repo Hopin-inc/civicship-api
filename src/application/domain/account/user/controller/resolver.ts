@@ -15,7 +15,7 @@ export default class UserResolver {
   constructor(
     @inject("UserUseCase") private readonly userUseCase: UserUseCase,
     @inject("ViewUseCase") private readonly viewUseCase: ViewUseCase,
-  ) { }
+  ) {}
 
   Query = {
     users: (_: unknown, args: GqlQueryUsersArgs, ctx: IContext) =>
@@ -68,7 +68,6 @@ export default class UserResolver {
     },
 
     participations: (parent: GqlUser, _: unknown, ctx: IContext) => {
-      console.log(parent);
       return parent.participations?.length
         ? ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id))
         : [];
