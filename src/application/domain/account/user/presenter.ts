@@ -19,29 +19,7 @@ export default class UserPresenter {
   }
 
   static get(r: PrismaUserDetail): GqlUser {
-    return {
-      ...r,
-
-      identities: [],
-
-      memberships: [],
-      membershipChangedByMe: [],
-      wallets: [],
-      ticketStatusChangedByMe: [],
-
-      opportunitiesCreatedByMe: [],
-      participations: [],
-      participationStatusChangedByMe: [],
-      reservations: [],
-      reservationStatusChangedByMe: [],
-      evaluations: [],
-      evaluationCreatedByMe: [],
-
-      portfolios: [],
-
-      articlesAboutMe: [],
-      articlesWrittenByMe: [],
-    };
+    return r;
   }
 
   static updateProfile(r: PrismaUserDetail): GqlUserUpdateProfileSuccess {

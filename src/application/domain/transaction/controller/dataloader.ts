@@ -46,3 +46,43 @@ export function createTransactionsByParticipationLoader(issuer: PrismaClientIssu
     TransactionPresenter.get,
   );
 }
+
+export function createTransactionsByWalletLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<
+    "walletId",
+    { walletId: string } & PrismaTransactionDetail,
+    GqlTransaction
+  >(
+    "walletId",
+    async (walletIds) => {
+      const transactions = await issuer.internal((tx) =>
+        tx.transaction.findMany({
+          where: {
+            OR: [{ from: { in: [...walletIds] } }, { to: { in: [...walletIds] } }],
+          },
+        }),
+      );
+
+      const deduped: Array<{ walletId: string } & (typeof transactions)[number]> = [];
+      const seen = new Map<string, Set<string>>();
+
+      for (const tx of transactions) {
+        for (const field of ["from", "to"] as const) {
+          const walletId = tx[field];
+          if (!walletId) continue;
+
+          if (!seen.has(walletId)) seen.set(walletId, new Set());
+          const set = seen.get(walletId)!;
+
+          if (!set.has(tx.id)) {
+            set.add(tx.id);
+            deduped.push({ ...tx, walletId });
+          }
+        }
+      }
+
+      return deduped;
+    },
+    TransactionPresenter.get,
+  );
+}

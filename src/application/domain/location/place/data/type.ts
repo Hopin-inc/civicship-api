@@ -19,7 +19,6 @@ export const placeSelectDetail = Prisma.validator<Prisma.PlaceSelect>()({
   communityId: true,
   cityCode: true,
   imageId: true,
-  opportunities: { select: { id: true } },
 
   createdAt: true,
   updatedAt: true,

@@ -12,12 +12,7 @@ type Evaluation {
     credentialUrl: String
     issuedAt: Datetime
 
-    histories(
-        filter: EvaluationHistoryFilterInput
-        sort: EvaluationHistorySortInput
-        cursor: String
-        first: Int
-    ): EvaluationHistoriesConnection
+    histories: [EvaluationHistory!]
 
     createdAt: Datetime!
     updatedAt: Datetime

@@ -34,8 +34,7 @@ export async function createApolloServer(httpServer: http.Server) {
       }
       return { message, locations, path, code };
     },
-    // introspection: !isProduction,
-    introspection: false,
+    introspection: !isProduction,
   });
 
   await server.start();

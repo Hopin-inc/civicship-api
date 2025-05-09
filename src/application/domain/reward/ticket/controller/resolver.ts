@@ -14,7 +14,7 @@ import TicketUseCase from "@/application/domain/reward/ticket/usecase";
 
 @injectable()
 export default class TicketResolver {
-  constructor(@inject("TicketUseCase") private readonly ticketUseCase: TicketUseCase) { }
+  constructor(@inject("TicketUseCase") private readonly ticketUseCase: TicketUseCase) {}
 
   Query = {
     tickets: (_: unknown, args: GqlQueryTicketsArgs, ctx: IContext) => {
@@ -62,7 +62,7 @@ export default class TicketResolver {
     },
 
     ticketStatusHistories: (parent: PrismaTicketDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.ticketStatusHistory.loadMany(parent.ticketStatusHistories.map(h => h.id));
+      return ctx.loaders.ticketStatusHistoriesByTicket.load(parent.id);
     },
   };
 }

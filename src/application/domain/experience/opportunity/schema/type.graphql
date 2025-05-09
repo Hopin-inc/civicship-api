@@ -26,16 +26,14 @@ type Opportunity {
     requiredUtilities: [Utility!]
     articles: [Article!]
 
-    slots: [OpportunitySlot!]
-    earliestReservableSlotView: EarliestReservableSlotView
+    slots(
+        filter: OpportunitySlotFilterInput
+        sort: OpportunitySlotSortInput
+    ): [OpportunitySlot!]
+    earliestReservableAt: Datetime
 
     createdAt: Datetime!
     updatedAt: Datetime
-}
-
-type EarliestReservableSlotView{
-    opportunityId: ID!
-    earliestReservableAt: Datetime
 }
 
 # ------------------------------

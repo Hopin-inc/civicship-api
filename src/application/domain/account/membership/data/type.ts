@@ -5,17 +5,20 @@ export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
 });
 
 export const membershipSelectDetail = Prisma.validator<Prisma.MembershipSelect>()({
-  userId: true,
-  communityId: true,
   headline: true,
   bio: true,
   status: true,
   reason: true,
   role: true,
-  createdAt: true,
-  updatedAt: true,
+
   participationGeoViews: true,
   participationCountViews: true,
+
+  userId: true,
+  communityId: true,
+
+  createdAt: true,
+  updatedAt: true,
 });
 
 export type PrismaMembership = Prisma.MembershipGetPayload<{

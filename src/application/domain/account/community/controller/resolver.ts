@@ -5,14 +5,13 @@ import {
   GqlMutationCommunityDeleteArgs,
   GqlMutationCommunityUpdateProfileArgs,
 } from "@/types/graphql";
-import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
 
 @injectable()
 export default class CommunityResolver {
-  constructor(@inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase) { }
+  constructor(@inject("CommunityUseCase") private readonly communityUseCase: CommunityUseCase) {}
 
   Query = {
     communities: async (_: unknown, args: GqlQueryCommunitiesArgs, ctx: IContext) => {
@@ -40,42 +39,36 @@ export default class CommunityResolver {
   };
 
   Community = {
-    image: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
+    image: (parent, _: unknown, ctx: IContext) => {
       return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
     },
 
-    places: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.place.loadMany(parent.places.map((p) => p.id));
+    places: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.placesByCommunity.load(parent.id);
     },
 
-    image: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
+    memberships: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.membershipsByCommunity.load(parent.id);
     },
 
-    memberships: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.membership.loadMany(
-        parent.memberships.map((m) => m.userId + ":" + m.communityId),
-      );
+    wallets: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.walletsByCommunity.load(parent.id);
     },
 
-    wallets: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.wallet.loadMany(parent.wallets.map((w) => w.id));
+    opportunities: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitiesByCommunity.load(parent.id);
     },
 
-    opportunities: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.opportunity.loadMany(parent.opportunities.map((o) => o.id));
+    participations: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.participationsByCommunity.load(parent.id);
     },
 
-    participations: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id));
+    utilities: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.utilitiesByCommunity.load(parent.id);
     },
 
-    utilities: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.utility.loadMany(parent.utilities.map((u) => u.id));
-    },
-
-    articles: (parent: PrismaCommunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.article.loadMany(parent.articles.map((a) => a.id));
+    articles: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.articlesByCommunity.load(parent.id);
     },
   };
 }

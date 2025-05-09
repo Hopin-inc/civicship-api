@@ -2,7 +2,12 @@ import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlMembership } from "@/types/graphql";
 import MembershipOutputFormat from "@/application/domain/account/membership/presenter";
-import { membershipSelectDetail } from "@/application/domain/account/membership/data/type";
+import {
+  membershipSelectDetail,
+  PrismaMembershipDetail,
+} from "@/application/domain/account/membership/data/type";
+import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
+import MembershipPresenter from "@/application/domain/account/membership/presenter";
 
 async function batchMembershipsByCompositeKey(
   issuer: PrismaClientIssuer,
@@ -37,5 +42,43 @@ async function batchMembershipsByCompositeKey(
 export function createMembershipLoader(issuer: PrismaClientIssuer) {
   return new DataLoader<string, GqlMembership | null>((keys) =>
     batchMembershipsByCompositeKey(issuer, keys),
+  );
+}
+
+export function createMembershipsByUserLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"userId", PrismaMembershipDetail, GqlMembership>(
+    "userId",
+    async (userIds) => {
+      return issuer.internal((tx) =>
+        tx.membership.findMany({
+          where: {
+            userId: { in: [...userIds] },
+          },
+          include: {
+            participationGeoViews: true,
+            participationCountViews: true,
+          },
+        }),
+      );
+    },
+    MembershipPresenter.get,
+  );
+}
+
+export function createMembershipsByCommunityLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"communityId", PrismaMembershipDetail, GqlMembership>(
+    "communityId",
+    async (communityIds) => {
+      return issuer.internal((tx) =>
+        tx.membership.findMany({
+          where: { communityId: { in: [...communityIds] } },
+          include: {
+            participationGeoViews: true,
+            participationCountViews: true,
+          },
+        }),
+      );
+    },
+    MembershipPresenter.get,
   );
 }

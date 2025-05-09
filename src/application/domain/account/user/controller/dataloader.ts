@@ -22,3 +22,39 @@ async function batchUsersById(
 export function createUserLoader(issuer: PrismaClientIssuer) {
   return new DataLoader<string, GqlUser | null>((keys) => batchUsersById(issuer, keys));
 }
+
+export function createAuthorsByArticleLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlUser[]>(async (articleIds) => {
+    const articles = await issuer.internal((tx) =>
+      tx.article.findMany({
+        where: { id: { in: [...articleIds] } },
+        include: { authors: true },
+      }),
+    );
+
+    const map = new Map<string, GqlUser[]>();
+    for (const article of articles) {
+      map.set(article.id, article.authors.map(UserPresenter.get));
+    }
+
+    return articleIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createRelatedUsersByArticleLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlUser[]>(async (articleIds) => {
+    const articles = await issuer.internal((tx) =>
+      tx.article.findMany({
+        where: { id: { in: [...articleIds] } },
+        include: { relatedUsers: true },
+      }),
+    );
+
+    const map = new Map<string, GqlUser[]>();
+    for (const article of articles) {
+      map.set(article.id, article.relatedUsers.map(UserPresenter.get));
+    }
+
+    return articleIds.map((id) => map.get(id) ?? []);
+  });
+}

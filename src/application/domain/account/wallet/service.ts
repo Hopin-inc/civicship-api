@@ -11,7 +11,7 @@ export default class WalletService {
   constructor(
     @inject("WalletRepository") private readonly repository: IWalletRepository,
     @inject("WalletConverter") private readonly converter: WalletConverter,
-  ) {}
+  ) { }
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
     const where = this.converter.filter(filter ?? {});
@@ -22,6 +22,10 @@ export default class WalletService {
 
   async findWallet(ctx: IContext, id: string) {
     return this.repository.find(ctx, id);
+  }
+
+  async findMemberWallet(ctx: IContext, userId: string, communityId: string) {
+    return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
   }
 
   async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string) {

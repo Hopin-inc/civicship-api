@@ -11,9 +11,11 @@ export const transactionSelectDetail = Prisma.validator<Prisma.TransactionSelect
   reason: true,
   fromPointChange: true,
   toPointChange: true,
+
   from: true,
   to: true,
   participationId: true,
+
   createdAt: true,
   updatedAt: true,
 });

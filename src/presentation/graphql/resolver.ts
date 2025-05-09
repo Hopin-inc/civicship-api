@@ -78,6 +78,7 @@ const resolvers = {
   Place: place.Place,
   Utility: utility.Utility,
   Wallet: wallet.Wallet,
+  Evaluation: evaluation.Evaluation,
 };
 
 export default resolvers;

@@ -26,14 +26,7 @@ export default class OpportunityPresenter {
   }
 
   static get(r: PrismaOpportunityDetail): GqlOpportunity {
-    return {
-      ...r,
-
-      images: [],
-      slots: [],
-      requiredUtilities: [],
-      articles: [],
-    };
+    return r;
   }
 
   static create(r: PrismaOpportunityDetail): GqlOpportunityCreateSuccess {

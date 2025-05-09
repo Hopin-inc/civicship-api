@@ -31,7 +31,6 @@ export default class OpportunitySlotPresenter {
     return {
       ...prop,
       remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
-      reservations: [],
     };
   }
 

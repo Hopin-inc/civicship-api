@@ -5,7 +5,7 @@ import {
   GqlUtilityDeleteSuccess,
   GqlUtilityUpdateInfoSuccess,
 } from "@/types/graphql";
-import { PrismaUtility, PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
+import { PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 
 export default class UtilityPresenter {
   static query(utilities: GqlUtility[], hasNextPage: boolean): GqlUtilitiesConnection {
@@ -24,53 +24,24 @@ export default class UtilityPresenter {
     };
   }
 
-  static get(r: PrismaUtility | PrismaUtilityDetail): GqlUtility {
-    const communityId = 'community' in r && r.community ? r.community.id : r.communityId;
-    
-    return {
-      ...r,
-      community: {
-        id: communityId || "",
-        name: "",
-        bio: null,
-        createdAt: new Date(),
-        updatedAt: null,
-        image: null,
-        places: null,
-        memberships: null,
-        opportunities: null,
-        participations: null,
-        articles: null,
-        utilities: null,
-        wallets: null,
-        establishedAt: null,
-        pointName: "",
-        website: null
-      },
-      images: null,
-      requiredForOpportunities: null,
-      ticketIssuers: null,
-      tickets: null,
-    };
+  static get(r: PrismaUtilityDetail): GqlUtility {
+    return r;
   }
 
-  static create(r: PrismaUtility | PrismaUtilityDetail): GqlUtilityCreateSuccess {
+  static create(r: PrismaUtilityDetail): GqlUtilityCreateSuccess {
     return {
-      __typename: "UtilityCreateSuccess",
       utility: this.get(r),
     };
   }
 
-  static delete(r: PrismaUtilityDetail | { id: string }): GqlUtilityDeleteSuccess {
+  static delete(r: PrismaUtilityDetail): GqlUtilityDeleteSuccess {
     return {
-      __typename: "UtilityDeleteSuccess",
       utilityId: r.id,
     };
   }
 
-  static updateInfo(r: PrismaUtility | PrismaUtilityDetail): GqlUtilityUpdateInfoSuccess {
+  static updateInfo(r: PrismaUtilityDetail): GqlUtilityUpdateInfoSuccess {
     return {
-      __typename: "UtilityUpdateInfoSuccess",
       utility: this.get(r),
     };
   }

@@ -244,12 +244,6 @@ export type GqlCurrentUserPayload = {
   user?: Maybe<GqlUser>;
 };
 
-export type GqlEarliestReservableSlotView = {
-  __typename?: 'EarliestReservableSlotView';
-  earliestReservableAt?: Maybe<Scalars['Datetime']['output']>;
-  opportunityId: Scalars['ID']['output'];
-};
-
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -260,20 +254,12 @@ export type GqlEvaluation = {
   createdAt: Scalars['Datetime']['output'];
   credentialUrl?: Maybe<Scalars['String']['output']>;
   evaluator?: Maybe<GqlUser>;
-  histories?: Maybe<GqlEvaluationHistoriesConnection>;
+  histories?: Maybe<Array<GqlEvaluationHistory>>;
   id: Scalars['ID']['output'];
   issuedAt?: Maybe<Scalars['Datetime']['output']>;
   participation?: Maybe<GqlParticipation>;
   status: GqlEvaluationStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-
-export type GqlEvaluationHistoriesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlEvaluationHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlEvaluationHistorySortInput>;
 };
 
 export type GqlEvaluationCreateInput = {
@@ -926,7 +912,7 @@ export type GqlOpportunity = {
   createdAt: Scalars['Datetime']['output'];
   createdByUser?: Maybe<GqlUser>;
   description: Scalars['String']['output'];
-  earliestReservableSlotView?: Maybe<GqlEarliestReservableSlotView>;
+  earliestReservableAt?: Maybe<Scalars['Datetime']['output']>;
   feeRequired?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   images?: Maybe<Array<Scalars['String']['output']>>;
@@ -939,6 +925,12 @@ export type GqlOpportunity = {
   slots?: Maybe<Array<GqlOpportunitySlot>>;
   title: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
+
+export type GqlOpportunitySlotsArgs = {
+  filter?: InputMaybe<GqlOpportunitySlotFilterInput>;
+  sort?: InputMaybe<GqlOpportunitySlotSortInput>;
 };
 
 export const GqlOpportunityCategory = {
@@ -2472,9 +2464,8 @@ export type GqlResolversTypes = ResolversObject<{
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
-  EarliestReservableSlotView: ResolverTypeWrapper<GqlEarliestReservableSlotView>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
-  Evaluation: ResolverTypeWrapper<Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<GqlResolversTypes['EvaluationHistoriesConnection']>, participation?: Maybe<GqlResolversTypes['Participation']> }>;
+  Evaluation: ResolverTypeWrapper<Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversTypes['Participation']> }>;
   EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EvaluationCreatePayload']>;
   EvaluationCreateSuccess: ResolverTypeWrapper<Omit<GqlEvaluationCreateSuccess, 'evaluation'> & { evaluation: GqlResolversTypes['Evaluation'] }>;
@@ -2734,9 +2725,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   Datetime: Scalars['Datetime']['output'];
   Decimal: Scalars['Decimal']['output'];
-  EarliestReservableSlotView: GqlEarliestReservableSlotView;
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
-  Evaluation: Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<GqlResolversParentTypes['EvaluationHistoriesConnection']>, participation?: Maybe<GqlResolversParentTypes['Participation']> };
+  Evaluation: Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<Array<GqlResolversParentTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversParentTypes['Participation']> };
   EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EvaluationCreatePayload'];
   EvaluationCreateSuccess: Omit<GqlEvaluationCreateSuccess, 'evaluation'> & { evaluation: GqlResolversParentTypes['Evaluation'] };
@@ -3079,12 +3069,6 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
   name: 'Decimal';
 }
 
-export type GqlEarliestReservableSlotViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['EarliestReservableSlotView'] = GqlResolversParentTypes['EarliestReservableSlotView']> = ResolversObject<{
-  earliestReservableAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  opportunityId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
   __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'MembershipHistoryEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
@@ -3095,7 +3079,7 @@ export type GqlEvaluationResolvers<ContextType = any, ParentType extends GqlReso
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   credentialUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   evaluator?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
-  histories?: Resolver<Maybe<GqlResolversTypes['EvaluationHistoriesConnection']>, ParentType, ContextType, Partial<GqlEvaluationHistoriesArgs>>;
+  histories?: Resolver<Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   issuedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   participation?: Resolver<Maybe<GqlResolversTypes['Participation']>, ParentType, ContextType>;
@@ -3355,7 +3339,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   description?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  earliestReservableSlotView?: Resolver<Maybe<GqlResolversTypes['EarliestReservableSlotView']>, ParentType, ContextType>;
+  earliestReservableAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   feeRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   images?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
@@ -3365,7 +3349,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
-  slots?: Resolver<Maybe<Array<GqlResolversTypes['OpportunitySlot']>>, ParentType, ContextType>;
+  slots?: Resolver<Maybe<Array<GqlResolversTypes['OpportunitySlot']>>, ParentType, ContextType, Partial<GqlOpportunitySlotsArgs>>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -4084,7 +4068,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CurrentUserPayload?: GqlCurrentUserPayloadResolvers<ContextType>;
   Datetime?: GraphQLScalarType;
   Decimal?: GraphQLScalarType;
-  EarliestReservableSlotView?: GqlEarliestReservableSlotViewResolvers<ContextType>;
   Edge?: GqlEdgeResolvers<ContextType>;
   Evaluation?: GqlEvaluationResolvers<ContextType>;
   EvaluationCreatePayload?: GqlEvaluationCreatePayloadResolvers<ContextType>;

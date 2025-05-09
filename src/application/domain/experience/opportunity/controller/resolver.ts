@@ -9,20 +9,19 @@ import {
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
-import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 
 @injectable()
 export default class OpportunityResolver {
   constructor(
     @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
-  ) { }
+  ) {}
 
   Query = {
     opportunities: (_: unknown, args: GqlQueryOpportunitiesArgs, ctx: IContext) => {
       return this.opportunityUseCase.anyoneBrowseOpportunities(args, ctx);
     },
     opportunity: (_: unknown, args: GqlQueryOpportunityArgs, ctx: IContext) => {
-      return ctx.loaders.opportunity.load(args.id);
+      return this.opportunityUseCase.visitorViewOpportunity(args, ctx);
     },
   };
 
@@ -50,28 +49,20 @@ export default class OpportunityResolver {
   };
 
   Opportunity = {
-    images: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.image.loadMany(parent.images.map(i => i.id));
-    },
-
-    community: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+    community: (parent, _: unknown, ctx: IContext) => {
       return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
 
-    place: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+    place: (parent, _: unknown, ctx: IContext) => {
       return parent.placeId ? ctx.loaders.place.load(parent.placeId) : null;
     },
 
-    createdByUser: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+    createdByUser: (parent, _: unknown, ctx: IContext) => {
       return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
     },
 
-    requiredUtilities: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.utility.loadMany(parent.requiredUtilities.map(utility => utility.id));
-    },
-
     // TODO: これで問題ないかをチェックする
-    isReservableWithTicket: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
+    isReservableWithTicket: (parent, _: unknown, ctx: IContext) => {
       if (!ctx.currentUser) return false;
 
       return ctx.issuer.internal(async (tx) => {
@@ -79,9 +70,9 @@ export default class OpportunityResolver {
           where: {
             requiredForOpportunities: {
               some: {
-                id: parent.id
-              }
-            }
+                id: parent.id,
+              },
+            },
           },
           select: { id: true },
         });
@@ -101,7 +92,7 @@ export default class OpportunityResolver {
         const tickets = await tx.ticket.findMany({
           where: {
             walletId: wallet.id,
-            utilityId: { in: utilities.map(u => u.id) },
+            utilityId: { in: utilities.map((u) => u.id) },
             status: "AVAILABLE",
           },
           select: { id: true },
@@ -111,12 +102,20 @@ export default class OpportunityResolver {
       });
     },
 
-    slots: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.opportunitySlot.loadMany(parent.slots.map(slot => slot.id));
+    images: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.imagesByOpportunity.load(parent.id);
     },
 
-    articles: (parent: PrismaOpportunityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.article.loadMany(parent.articles.map(article => article.id));
+    requiredUtilities: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.utilitiesByOpportunity.load(parent.id);
+    },
+
+    slots: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitySlotByOpportunity.load(parent.id);
+    },
+
+    articles: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.articlesByOpportunity.load(parent.id);
     },
   };
 }

@@ -1,7 +1,4 @@
-import {
-  GqlQueryWalletsArgs,
-  GqlQueryWalletArgs,
-} from "@/types/graphql";
+import { GqlQueryWalletsArgs, GqlQueryWalletArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 
@@ -10,9 +7,7 @@ import { PrismaWalletDetail } from "@/application/domain/account/wallet/data/typ
 
 @injectable()
 export default class WalletResolver {
-  constructor(
-    @inject("WalletUseCase") private readonly walletUseCase: WalletUseCase,
-  ) { }
+  constructor(@inject("WalletUseCase") private readonly walletUseCase: WalletUseCase) {}
 
   Query = {
     wallets: (_: unknown, args: GqlQueryWalletsArgs, ctx: IContext) => {
@@ -33,14 +28,11 @@ export default class WalletResolver {
     },
 
     tickets: (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.ticket.loadMany(parent.tickets.map(t => t.id));
+      return ctx.loaders.ticketsByWallet.load(parent.id);
     },
 
-    // TODO: これで問題ないかをチェックする
-    transactions: async (parent: PrismaWalletDetail, _: unknown, ctx: IContext,) => {
-      const from = ctx.loaders.transaction.loadMany(parent.fromTransactions.map(t => t.id));
-      const to = ctx.loaders.transaction.loadMany(parent.toTransactions.map(t => t.id));
-      return [...(await from), ...(await to)];
+    transactions: async (parent: PrismaWalletDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.transactionsByWallet.load(parent.id);
     },
   };
 }

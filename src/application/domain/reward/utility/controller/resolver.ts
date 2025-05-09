@@ -12,9 +12,7 @@ import UtilityUseCase from "@/application/domain/reward/utility/usecase";
 
 @injectable()
 export default class UtilityResolver {
-  constructor(
-    @inject("UtilityUseCase") private readonly utilityUseCase: UtilityUseCase,
-  ) { }
+  constructor(@inject("UtilityUseCase") private readonly utilityUseCase: UtilityUseCase) {}
 
   Query = {
     utilities: (_: unknown, args: GqlQueryUtilitiesArgs, ctx: IContext) => {
@@ -39,20 +37,20 @@ export default class UtilityResolver {
   };
 
   Utility = {
-    images: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.image.loadMany(parent.images.map(i => i.id));
-    },
-
     community: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.community.load(parent.communityId);
     },
 
-    tickets: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.ticket.loadMany(parent.tickets.map(t => t.id));
+    images: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.imagesByUtility.load(parent.id);
     },
 
-    requiredForOpportunities: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext,) => {
-      return ctx.loaders.opportunity.loadMany(parent.requiredForOpportunities.map(o => o.id));
+    tickets: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.ticketsByUtility.load(parent.id);
+    },
+
+    requiredForOpportunities: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitiesByUtility.load(parent.id);
     },
   };
 }

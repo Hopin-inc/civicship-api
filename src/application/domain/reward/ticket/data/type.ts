@@ -15,7 +15,6 @@ export const ticketSelectDetail = Prisma.validator<Prisma.TicketSelect>()({
   walletId: true,
   utilityId: true,
   claimLinkId: true,
-  ticketStatusHistories: { select: { id: true } },
 
   createdAt: true,
   updatedAt: true,

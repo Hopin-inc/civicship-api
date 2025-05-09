@@ -67,24 +67,6 @@ export const userSelectDetail = Prisma.validator<Prisma.UserSelect>()({
   urlTiktok: true,
 
   imageId: true,
-  identities: { select: { uid: true } },
-
-  memberships: { select: { communityId: true, userId: true } },
-  membershipChangedByMe: { select: { id: true } },
-  wallets: { select: { id: true } },
-  ticketIssuedByMe: { select: { id: true } },
-  ticketStatusChangedByMe: { select: { id: true } },
-
-  opportunitiesCreatedByMe: { select: { id: true } },
-  reservationsAppliedByMe: { select: { id: true } },
-  reservationStatusChangedByMe: { select: { id: true } },
-  participations: { select: { id: true } },
-  participationStatusChangedByMe: { select: { id: true } },
-  evaluationsEvaluatedByMe: { select: { id: true } },
-  evaluationCreatedByMe: { select: { id: true } },
-
-  articlesWrittenByMe: { select: { id: true } },
-  articlesAboutMe: { select: { id: true } },
 
   createdAt: true,
   updatedAt: true,

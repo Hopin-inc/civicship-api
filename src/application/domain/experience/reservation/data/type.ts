@@ -17,7 +17,6 @@ export const reservationSelectDetail = Prisma.validator<Prisma.ReservationSelect
 
   opportunitySlotId: true,
   createdBy: true,
-  participations: { select: { id: true } },
 
   createdAt: true,
   updatedAt: true,

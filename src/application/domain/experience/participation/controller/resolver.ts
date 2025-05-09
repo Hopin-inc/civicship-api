@@ -58,7 +58,6 @@ export default class ParticipationResolver {
     },
 
     evaluation: (parent, _: unknown, ctx: IContext) => {
-      console.log(parent);
       return parent.evaluationId ? ctx.loaders.evaluation.load(parent.evaluationId) : null;
     },
 
@@ -71,7 +70,7 @@ export default class ParticipationResolver {
     },
 
     statusHistories: (parent, _: unknown, ctx: IContext) => {
-      return ctx.loaders.participationStatusHistoryByParticipation.load(parent.id);
+      return ctx.loaders.participationStatusHistoriesByParticipation.load(parent.id);
     },
   };
 }

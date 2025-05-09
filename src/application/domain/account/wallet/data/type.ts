@@ -15,9 +15,6 @@ export const walletSelectDetail = Prisma.validator<Prisma.WalletSelect>()({
   userId: true,
   communityId: true,
 
-  tickets: { select: { id: true } },
-  fromTransactions: { select: { id: true } },
-  toTransactions: { select: { id: true } },
   createdAt: true,
   updatedAt: true,
 });

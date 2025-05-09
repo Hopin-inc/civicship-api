@@ -58,7 +58,7 @@ export default class ReservationResolver {
     },
 
     participations: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.participation.loadMany(parent.participations.map((p) => p.id));
+      return ctx.loaders.participationsByReservation.load(parent.id);
     },
   };
 }

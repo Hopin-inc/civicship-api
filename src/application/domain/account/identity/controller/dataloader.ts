@@ -1,8 +1,12 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import IdentityPresenter from "@/application/domain/account/identity/presenter";
-import { identitySelectDetail } from "@/application/domain/account/identity/data/type";
+import {
+  identitySelectDetail,
+  PrismaIdentityDetail,
+} from "@/application/domain/account/identity/data/type";
 import { GqlIdentity } from "@/types/graphql";
+import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
 
 async function batchIdentitiesByUid(
   issuer: PrismaClientIssuer,
@@ -22,4 +26,18 @@ async function batchIdentitiesByUid(
 
 export function createIdentityLoader(issuer: PrismaClientIssuer) {
   return new DataLoader<string, GqlIdentity | null>((keys) => batchIdentitiesByUid(issuer, keys));
+}
+
+export function createIdentitiesByUserLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"userId", PrismaIdentityDetail, GqlIdentity>(
+    "userId",
+    async (userIds) => {
+      return issuer.internal((tx) =>
+        tx.identity.findMany({
+          where: { userId: { in: [...userIds] } },
+        }),
+      );
+    },
+    IdentityPresenter.get,
+  );
 }

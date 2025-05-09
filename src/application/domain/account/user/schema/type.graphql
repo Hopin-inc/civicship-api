@@ -25,6 +25,7 @@ type User {
 
     memberships: [Membership!]
     membershipChangedByMe: [MembershipHistory!]
+
     wallets: [Wallet!]
 
     opportunitiesCreatedByMe: [Opportunity!]

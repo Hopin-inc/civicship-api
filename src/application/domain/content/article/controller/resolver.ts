@@ -2,11 +2,10 @@ import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlQueryArticlesArgs, GqlQueryArticleArgs } from "@/types/graphql";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
-import { PrismaArticleDetail } from "@/application/domain/content/article/data/type";
 
 @injectable()
 export default class ArticleResolver {
-  constructor(@inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase) { }
+  constructor(@inject("ArticleUseCase") private readonly articleUseCase: ArticleUseCase) {}
 
   Query = {
     articles: (_: unknown, args: GqlQueryArticlesArgs, ctx: IContext) => {
@@ -18,24 +17,24 @@ export default class ArticleResolver {
   };
 
   Article = {
-    thumbnail: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
+    thumbnail: (parent, _: unknown, ctx: IContext) => {
       return parent.thumbnailId ? ctx.loaders.image.load(parent.thumbnailId) : null;
     },
 
-    community: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
+    community: (parent, _: unknown, ctx: IContext) => {
       return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
 
-    authors: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
-      return parent.authors ? ctx.loaders.user.loadMany(parent.authors.map(a => a.id)) : [];
+    authors: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.authorsByArticle.load(parent.id);
     },
 
-    relatedUsers: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
-      return parent.relatedUsers ? ctx.loaders.user.loadMany(parent.relatedUsers.map(u => u.id)) : [];
+    relatedUsers: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.relatedUsersByArticle.load(parent.id);
     },
 
-    opportunities: (parent: PrismaArticleDetail, _: unknown, ctx: IContext) => {
-      return parent.opportunities ? ctx.loaders.opportunity.loadMany(parent.opportunities.map(o => o.id)) : [];
+    opportunities: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitiesByArticle.load(parent.id);
     },
   };
 }

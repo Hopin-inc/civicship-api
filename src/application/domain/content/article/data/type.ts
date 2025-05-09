@@ -22,14 +22,14 @@ export const articleSelectDetail = Prisma.validator<Prisma.ArticleSelect>()({
   introduction: true,
   body: true,
   publishStatus: true,
+
   thumbnailId: true,
   communityId: true,
+
+  publishedAt: true,
+
   createdAt: true,
   updatedAt: true,
-  publishedAt: true,
-  authors: { select: { id: true } },
-  relatedUsers: { select: { id: true } },
-  opportunities: { select: { id: true } },
 });
 
 export const articleForPortfolioSelectDetail = Prisma.validator<Prisma.ArticleSelect>()({

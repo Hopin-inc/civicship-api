@@ -40,3 +40,46 @@ export function createImagesByParticipationLoader(issuer: PrismaClientIssuer) {
     return participationIds.map((id) => map.get(id) ?? []);
   });
 }
+
+export function createImagesByOpportunityLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, string[]>(async (opportunityIds) => {
+    const opportunities = await issuer.internal((tx) =>
+      tx.opportunity.findMany({
+        where: { id: { in: [...opportunityIds] } },
+        include: { images: true },
+      }),
+    );
+
+    const map = new Map<string, string[]>();
+
+    for (const o of opportunities) {
+      map.set(
+        o.id,
+        o.images.map((img) => img.url),
+      );
+    }
+
+    return opportunityIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createImagesByUtilityLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, string[]>(async (utilityIds) => {
+    const utilities = await issuer.internal((tx) =>
+      tx.utility.findMany({
+        where: { id: { in: [...utilityIds] } },
+        include: { images: true },
+      }),
+    );
+
+    const map = new Map<string, string[]>();
+    for (const u of utilities) {
+      map.set(
+        u.id,
+        u.images.map((img) => img.url),
+      );
+    }
+
+    return utilityIds.map((id) => map.get(id) ?? []);
+  });
+}
