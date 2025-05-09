@@ -14,7 +14,7 @@ type Membership {
 
     participationView: MembershipParticipationView
 
-    membershipHistories: [MembershipHistory!]
+    histories: [MembershipHistory!]
 
     createdAt: Datetime!
     updatedAt: Datetime

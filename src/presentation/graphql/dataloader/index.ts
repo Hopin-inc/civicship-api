@@ -12,6 +12,7 @@ import {
 import {
   createOpportunitiesByArticleLoader,
   createOpportunitiesByCommunityLoader,
+  createOpportunitiesByPlaceLoader,
   createOpportunitiesByUtilityLoader,
   createOpportunitiesCreatedByUserLoader,
   createOpportunityLoader,
@@ -63,6 +64,7 @@ import {
 } from "@/application/domain/content/article/controller/dataloader";
 import {
   createTicketLoader,
+  createTicketsByTicketClaimLinkLoader,
   createTicketsByUtilityLoader,
   createTicketsByWalletLoader,
 } from "@/application/domain/reward/ticket/controller/dataloader";
@@ -70,6 +72,7 @@ import { createTicketIssuerLoader } from "@/application/domain/reward/ticketIssu
 import { createTicketClaimLinkLoader } from "@/application/domain/reward/ticketClaimLink/controller/dataloader";
 import {
   createTicketStatusHistoriesByTicketLoader,
+  createTicketStatusHistoriesByTransactionLoader,
   createTicketStatusHistoryLoader,
 } from "@/application/domain/reward/ticket/statusHistory/controller/dataloader";
 import {
@@ -100,7 +103,10 @@ import {
   createPortfolioArticleLoader,
   createPortfolioParticipationLoader,
 } from "@/application/view/controller/dataloader";
-import { createMembershipHistoriesCreatedByUserLoader } from "@/application/domain/account/membership/history/controller/dataloader";
+import {
+  createMembershipHistoriesCreatedByUserLoader,
+  createMembershipStatusHistoriesByMembershipLoader,
+} from "@/application/domain/account/membership/history/controller/dataloader";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -118,6 +124,7 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     membershipsByCommunity: createMembershipsByCommunityLoader(issuer),
 
     membershipHistoriesByUser: createMembershipHistoriesCreatedByUserLoader(issuer),
+    membershipHistoriesByMembership: createMembershipStatusHistoriesByMembershipLoader(issuer),
 
     wallet: createWalletLoader(issuer),
     walletsByUser: createWalletsByUserLoader(issuer),
@@ -128,6 +135,7 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     opportunitiesByUtility: createOpportunitiesByUtilityLoader(issuer),
     opportunitiesByUser: createOpportunitiesCreatedByUserLoader(issuer),
     opportunitiesByCommunity: createOpportunitiesByCommunityLoader(issuer),
+    opportunitiesByPlace: createOpportunitiesByPlaceLoader(issuer),
 
     opportunitySlot: createOpportunitySlotLoader(issuer),
     opportunitySlotByOpportunity: createSlotsByOpportunityLoader(issuer),
@@ -159,12 +167,14 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     ticket: createTicketLoader(issuer),
     ticketsByUtility: createTicketsByUtilityLoader(issuer),
     ticketsByWallet: createTicketsByWalletLoader(issuer),
+    ticketsByClaimLink: createTicketsByTicketClaimLinkLoader(issuer),
 
     ticketIssuer: createTicketIssuerLoader(issuer),
     ticketClaimLink: createTicketClaimLinkLoader(issuer),
 
     ticketStatusHistory: createTicketStatusHistoryLoader(issuer),
     ticketStatusHistoriesByTicket: createTicketStatusHistoriesByTicketLoader(issuer),
+    ticketStatusHistoriesByTransaction: createTicketStatusHistoriesByTransactionLoader(issuer),
 
     place: createPlaceLoader(issuer),
     placesByCommunity: createPlacesByCommunityLoader(issuer),

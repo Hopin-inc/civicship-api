@@ -365,7 +365,7 @@ export type GqlMembership = {
   community?: Maybe<GqlCommunity>;
   createdAt: Scalars['Datetime']['output'];
   headline?: Maybe<Scalars['String']['output']>;
-  membershipHistories?: Maybe<Array<GqlMembershipHistory>>;
+  histories?: Maybe<Array<GqlMembershipHistory>>;
   participationView?: Maybe<GqlMembershipParticipationView>;
   reason: GqlMembershipStatusReason;
   role: GqlRole;
@@ -392,13 +392,6 @@ export type GqlMembershipFilterInput = {
   userId?: InputMaybe<Scalars['ID']['input']>;
 };
 
-export type GqlMembershipHistoriesConnection = {
-  __typename?: 'MembershipHistoriesConnection';
-  edges?: Maybe<Array<Maybe<GqlMembershipHistoryEdge>>>;
-  pageInfo: GqlPageInfo;
-  totalCount: Scalars['Int']['output'];
-};
-
 export type GqlMembershipHistory = {
   __typename?: 'MembershipHistory';
   createdAt: Scalars['Datetime']['output'];
@@ -409,21 +402,6 @@ export type GqlMembershipHistory = {
   role: GqlRole;
   status: GqlMembershipStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-export type GqlMembershipHistoryEdge = GqlEdge & {
-  __typename?: 'MembershipHistoryEdge';
-  cursor: Scalars['String']['output'];
-  node?: Maybe<GqlMembershipHistory>;
-};
-
-export type GqlMembershipHistoryFilterInput = {
-  createdById?: InputMaybe<Scalars['ID']['input']>;
-  membershipId?: InputMaybe<Scalars['ID']['input']>;
-};
-
-export type GqlMembershipHistorySortInput = {
-  createdAt?: InputMaybe<GqlSortDirection>;
 };
 
 export type GqlMembershipHostedMetrics = {
@@ -1387,8 +1365,6 @@ export type GqlQuery = {
   evaluationHistory?: Maybe<GqlEvaluationHistory>;
   evaluations: GqlEvaluationsConnection;
   membership?: Maybe<GqlMembership>;
-  membershipHistories: GqlMembershipHistoriesConnection;
-  membershipHistory?: Maybe<GqlMembershipHistory>;
   memberships: GqlMembershipsConnection;
   opportunities: GqlOpportunitiesConnection;
   opportunity?: Maybe<GqlOpportunity>;
@@ -1482,19 +1458,6 @@ export type GqlQueryEvaluationsArgs = {
 export type GqlQueryMembershipArgs = {
   communityId: Scalars['ID']['input'];
   userId: Scalars['ID']['input'];
-};
-
-
-export type GqlQueryMembershipHistoriesArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
-  filter?: InputMaybe<GqlMembershipHistoryFilterInput>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  sort?: InputMaybe<GqlMembershipHistorySortInput>;
-};
-
-
-export type GqlQueryMembershipHistoryArgs = {
-  id: Scalars['ID']['input'];
 };
 
 
@@ -2425,7 +2388,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<_RefType['MembershipHistory']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -2489,11 +2452,7 @@ export type GqlResolversTypes = ResolversObject<{
   MembershipCursorInput: GqlMembershipCursorInput;
   MembershipEdge: ResolverTypeWrapper<Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Membership']> }>;
   MembershipFilterInput: GqlMembershipFilterInput;
-  MembershipHistoriesConnection: ResolverTypeWrapper<Omit<GqlMembershipHistoriesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['MembershipHistoryEdge']>>> }>;
   MembershipHistory: ResolverTypeWrapper<MembershipHistory>;
-  MembershipHistoryEdge: ResolverTypeWrapper<Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<GqlResolversTypes['MembershipHistory']> }>;
-  MembershipHistoryFilterInput: GqlMembershipHistoryFilterInput;
-  MembershipHistorySortInput: GqlMembershipHistorySortInput;
   MembershipHostedMetrics: ResolverTypeWrapper<GqlMembershipHostedMetrics>;
   MembershipInviteInput: GqlMembershipInviteInput;
   MembershipInvitePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['MembershipInvitePayload']>;
@@ -2748,11 +2707,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   MembershipCursorInput: GqlMembershipCursorInput;
   MembershipEdge: Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Membership']> };
   MembershipFilterInput: GqlMembershipFilterInput;
-  MembershipHistoriesConnection: Omit<GqlMembershipHistoriesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['MembershipHistoryEdge']>>> };
   MembershipHistory: MembershipHistory;
-  MembershipHistoryEdge: Omit<GqlMembershipHistoryEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['MembershipHistory']> };
-  MembershipHistoryFilterInput: GqlMembershipHistoryFilterInput;
-  MembershipHistorySortInput: GqlMembershipHistorySortInput;
   MembershipHostedMetrics: GqlMembershipHostedMetrics;
   MembershipInviteInput: GqlMembershipInviteInput;
   MembershipInvitePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['MembershipInvitePayload'];
@@ -3070,7 +3025,7 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
 }
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'MembershipHistoryEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -3151,7 +3106,7 @@ export type GqlMembershipResolvers<ContextType = any, ParentType extends GqlReso
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   headline?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  membershipHistories?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHistory']>>, ParentType, ContextType>;
+  histories?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHistory']>>, ParentType, ContextType>;
   participationView?: Resolver<Maybe<GqlResolversTypes['MembershipParticipationView']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['MembershipStatusReason'], ParentType, ContextType>;
   role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
@@ -3167,13 +3122,6 @@ export type GqlMembershipEdgeResolvers<ContextType = any, ParentType extends Gql
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlMembershipHistoriesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipHistoriesConnection'] = GqlResolversParentTypes['MembershipHistoriesConnection']> = ResolversObject<{
-  edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['MembershipHistoryEdge']>>>, ParentType, ContextType>;
-  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
-  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlMembershipHistoryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipHistory'] = GqlResolversParentTypes['MembershipHistory']> = ResolversObject<{
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
@@ -3183,12 +3131,6 @@ export type GqlMembershipHistoryResolvers<ContextType = any, ParentType extends 
   role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['MembershipStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlMembershipHistoryEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MembershipHistoryEdge'] = GqlResolversParentTypes['MembershipHistoryEdge']> = ResolversObject<{
-  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  node?: Resolver<Maybe<GqlResolversTypes['MembershipHistory']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3614,8 +3556,6 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   evaluationHistory?: Resolver<Maybe<GqlResolversTypes['EvaluationHistory']>, ParentType, ContextType, RequireFields<GqlQueryEvaluationHistoryArgs, 'id'>>;
   evaluations?: Resolver<GqlResolversTypes['EvaluationsConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationsArgs>>;
   membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType, RequireFields<GqlQueryMembershipArgs, 'communityId' | 'userId'>>;
-  membershipHistories?: Resolver<GqlResolversTypes['MembershipHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryMembershipHistoriesArgs>>;
-  membershipHistory?: Resolver<Maybe<GqlResolversTypes['MembershipHistory']>, ParentType, ContextType, RequireFields<GqlQueryMembershipHistoryArgs, 'id'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
   opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id' | 'permission'>>;
@@ -4081,9 +4021,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   JSON?: GraphQLScalarType;
   Membership?: GqlMembershipResolvers<ContextType>;
   MembershipEdge?: GqlMembershipEdgeResolvers<ContextType>;
-  MembershipHistoriesConnection?: GqlMembershipHistoriesConnectionResolvers<ContextType>;
   MembershipHistory?: GqlMembershipHistoryResolvers<ContextType>;
-  MembershipHistoryEdge?: GqlMembershipHistoryEdgeResolvers<ContextType>;
   MembershipHostedMetrics?: GqlMembershipHostedMetricsResolvers<ContextType>;
   MembershipInvitePayload?: GqlMembershipInvitePayloadResolvers<ContextType>;
   MembershipInviteSuccess?: GqlMembershipInviteSuccessResolvers<ContextType>;

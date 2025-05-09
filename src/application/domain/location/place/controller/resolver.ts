@@ -15,9 +15,7 @@ import PlaceUseCase from "@/application/domain/location/place/usecase";
 
 @injectable()
 export default class PlaceResolver {
-  constructor(
-    @inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase,
-  ) { }
+  constructor(@inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase) {}
 
   Query = {
     places: (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
@@ -59,18 +57,16 @@ export default class PlaceResolver {
       return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
     },
 
-    opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.opportunity.loadMany(parent.opportunities.map(opp => opp.id));
-    },
-
     city: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
       return parent.cityCode ? ctx.loaders.city.load(parent.cityCode) : null;
     },
 
     community: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
-      return parent.communityId
-        ? ctx.loaders.community.load(parent.communityId)
-        : null;
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
+    },
+
+    opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitiesByPlace.load(parent.id);
     },
   };
 }

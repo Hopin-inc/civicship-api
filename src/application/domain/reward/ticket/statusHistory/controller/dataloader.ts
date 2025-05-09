@@ -49,3 +49,23 @@ export function createTicketStatusHistoriesByTicketLoader(issuer: PrismaClientIs
     TicketStatusHistoryPresenter.get,
   );
 }
+
+export function createTicketStatusHistoriesByTransactionLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<
+    "transactionId",
+    PrismaTicketStatusHistoryDetail,
+    GqlTicketStatusHistory
+  >(
+    "transactionId",
+    async (transactionIds) => {
+      return issuer.internal((tx) =>
+        tx.ticketStatusHistory.findMany({
+          where: {
+            transactionId: { in: [...transactionIds] },
+          },
+        }),
+      );
+    },
+    TicketStatusHistoryPresenter.get,
+  );
+}

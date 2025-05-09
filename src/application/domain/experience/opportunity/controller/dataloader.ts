@@ -97,3 +97,17 @@ export function createOpportunitiesByCommunityLoader(issuer: PrismaClientIssuer)
     OpportunityPresenter.get,
   );
 }
+
+export function createOpportunitiesByPlaceLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"placeId", PrismaOpportunityDetail, GqlOpportunity>(
+    "placeId",
+    async (placeIds) => {
+      return issuer.internal((tx) =>
+        tx.opportunity.findMany({
+          where: { placeId: { in: [...placeIds] } },
+        }),
+      );
+    },
+    OpportunityPresenter.get,
+  );
+}

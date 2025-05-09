@@ -60,3 +60,19 @@ export function createTicketsByWalletLoader(issuer: PrismaClientIssuer) {
     TicketPresenter.get,
   );
 }
+
+export function createTicketsByTicketClaimLinkLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"claimLinkId", PrismaTicketDetail, GqlTicket>(
+    "claimLinkId",
+    async (ticketClaimLinkIds) => {
+      return issuer.internal((tx) =>
+        tx.ticket.findMany({
+          where: {
+            claimLinkId: { in: [...ticketClaimLinkIds] },
+          },
+        }),
+      );
+    },
+    TicketPresenter.get,
+  );
+}

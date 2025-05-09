@@ -6,7 +6,7 @@ import { PrismaTicketClaimLinkDetail } from "@/application/domain/reward/ticketC
 
 @injectable()
 export default class TicketClaimLinkResolver {
-  constructor(@inject("TicketClaimLinkUseCase") private readonly usecase: TicketClaimLinkUseCase) { }
+  constructor(@inject("TicketClaimLinkUseCase") private readonly usecase: TicketClaimLinkUseCase) {}
 
   Query = {
     ticketClaimLink: async (_: unknown, args: GqlQueryTicketClaimLinkArgs, ctx: IContext) => {
@@ -20,6 +20,10 @@ export default class TicketClaimLinkResolver {
   TicketClaimLink = {
     issuer: (parent: PrismaTicketClaimLinkDetail, _: unknown, ctx: IContext) => {
       return parent.issuerId ? ctx.loaders.ticketIssuer.load(parent.issuerId) : null;
+    },
+
+    tickets: (parent: PrismaTicketClaimLinkDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.ticketsByClaimLink.load(parent.id);
     },
   };
 }

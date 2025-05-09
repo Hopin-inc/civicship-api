@@ -1,4 +1,7 @@
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
+import {
+  createHasManyLoaderByKey,
+  createLoaderByCompositeKey,
+} from "@/presentation/graphql/dataloader/utils";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import MembershipHistoryPresenter from "@/application/domain/account/membership/history/persenter";
 import { GqlMembershipHistory } from "@/types/graphql";
@@ -20,6 +23,30 @@ export function createMembershipHistoriesCreatedByUserLoader(issuer: PrismaClien
         }),
       );
     },
+    MembershipHistoryPresenter.get,
+  );
+}
+
+export function createMembershipStatusHistoriesByMembershipLoader(issuer: PrismaClientIssuer) {
+  return createLoaderByCompositeKey<
+    { userId: string; communityId: string },
+    PrismaMembershipHistory,
+    GqlMembershipHistory
+  >(
+    async (keys) => {
+      return issuer.internal((tx) =>
+        tx.membershipHistory.findMany({
+          where: {
+            OR: keys.map((key) => ({
+              userId: key.userId,
+              communityId: key.communityId,
+            })),
+          },
+          include: membershipHistoryInclude,
+        }),
+      );
+    },
+    (record) => ({ userId: record.userId, communityId: record.communityId }),
     MembershipHistoryPresenter.get,
   );
 }

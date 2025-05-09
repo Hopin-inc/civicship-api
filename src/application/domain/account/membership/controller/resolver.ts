@@ -28,16 +28,6 @@ export default class MembershipResolver {
       return ctx.loaders.membership.load(key);
     },
   };
-  
-  Membership = {
-    user: (parent: PrismaMembershipDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.user.load(parent.userId);
-    },
-    
-    community: (parent: PrismaMembershipDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.community.load(parent.communityId);
-    },
-  };
 
   Mutation = {
     membershipInvite: (_: unknown, args: GqlMutationMembershipInviteArgs, ctx: IContext) =>
@@ -76,5 +66,22 @@ export default class MembershipResolver {
     ) => this.useCase.managerAssignMember(args, ctx),
     membershipRemove: (_: unknown, args: GqlMutationMembershipRemoveArgs, ctx: IContext) =>
       this.useCase.ownerRemoveMember(args, ctx),
+  };
+
+  Membership = {
+    user: (parent: PrismaMembershipDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.user.load(parent.userId);
+    },
+
+    community: (parent: PrismaMembershipDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.community.load(parent.communityId);
+    },
+
+    histories: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.membershipHistoriesByMembership.load({
+        userId: parent.userId,
+        communityId: parent.communityId,
+      });
+    },
   };
 }
