@@ -1,4 +1,3 @@
-import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlParticipation } from "@/types/graphql";
 import {
@@ -6,28 +5,22 @@ import {
   PrismaParticipationDetail,
 } from "@/application/domain/experience/participation/data/type";
 import ParticipationOutputFormat from "@/application/domain/experience/participation/presenter";
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 import ParticipationPresenter from "@/application/domain/experience/participation/presenter";
 
-async function batchParticipationsById(
-  issuer: PrismaClientIssuer,
-  participationIds: readonly string[],
-): Promise<(GqlParticipation | null)[]> {
-  const records = await issuer.internal(async (tx) => {
-    return tx.participation.findMany({
-      where: { id: { in: [...participationIds] } },
-      select: participationSelectDetail,
-    });
-  });
-
-  const map = new Map(records.map((record) => [record.id, ParticipationOutputFormat.get(record)]));
-
-  return participationIds.map((id) => map.get(id) ?? null);
-}
-
 export function createParticipationLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlParticipation | null>((keys) =>
-    batchParticipationsById(issuer, keys),
+  return createLoaderById<PrismaParticipationDetail, GqlParticipation>(
+    async (ids) =>
+      issuer.internal((tx) =>
+        tx.participation.findMany({
+          where: { id: { in: [...ids] } },
+          select: participationSelectDetail,
+        }),
+      ),
+    ParticipationOutputFormat.get,
   );
 }
 

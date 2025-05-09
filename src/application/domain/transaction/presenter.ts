@@ -30,21 +30,18 @@ export default class TransactionPresenter {
 
   static issueCommunityPoint(r: PrismaTransactionDetail): GqlTransactionIssueCommunityPointSuccess {
     return {
-      __typename: "TransactionIssueCommunityPointSuccess",
       transaction: this.get(r),
     };
   }
 
   static grantCommunityPoint(r: PrismaTransactionDetail): GqlTransactionGrantCommunityPointSuccess {
     return {
-      __typename: "TransactionGrantCommunityPointSuccess",
       transaction: this.get(r),
     };
   }
 
   static giveUserPoint(r: PrismaTransactionDetail): GqlTransactionDonateSelfPointSuccess {
     return {
-      __typename: "TransactionDonateSelfPointSuccess",
       transaction: this.get(r),
     };
   }

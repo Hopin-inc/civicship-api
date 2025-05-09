@@ -6,29 +6,22 @@ import {
   PrismaUtilityDetail,
   utilitySelectDetail,
 } from "@/application/domain/reward/utility/data/type";
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
-
-async function batchUtilitiesById(
-  issuer: PrismaClientIssuer,
-  utilityIds: readonly string[],
-): Promise<(GqlUtility | null)[]> {
-  const records = await issuer.internal(async (tx) => {
-    return tx.utility.findMany({
-      where: { id: { in: [...utilityIds] } },
-      select: utilitySelectDetail,
-    });
-  });
-
-  const map = new Map(records.map((record) => [record.id, UtilityPresenter.get(record)])) as Map<
-    string,
-    GqlUtility | null
-  >;
-
-  return utilityIds.map((id) => map.get(id) ?? null);
-}
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 
 export function createUtilityLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlUtility | null>((keys) => batchUtilitiesById(issuer, keys));
+  return createLoaderById<PrismaUtilityDetail, GqlUtility>(
+    async (ids) =>
+      issuer.internal((tx) =>
+        tx.utility.findMany({
+          where: { id: { in: [...ids] } },
+          select: utilitySelectDetail,
+        }),
+      ),
+    UtilityPresenter.get,
+  );
 }
 
 export function createRequiredUtilitiesByOpportunityLoader(issuer: PrismaClientIssuer) {

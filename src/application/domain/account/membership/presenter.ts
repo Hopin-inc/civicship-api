@@ -7,10 +7,7 @@ import {
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
 } from "@/types/graphql";
-import {
-  PrismaMembership,
-  PrismaMembershipDetail,
-} from "@/application/domain/account/membership/data/type";
+import { PrismaMembership } from "@/application/domain/account/membership/data/type";
 
 export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
@@ -31,7 +28,7 @@ export default class MembershipPresenter {
     };
   }
 
-  static get(r: PrismaMembershipDetail): GqlMembership {
+  static get(r: Omit<PrismaMembership, "user">): GqlMembership {
     return r;
   }
 

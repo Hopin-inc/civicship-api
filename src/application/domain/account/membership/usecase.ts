@@ -10,6 +10,8 @@ import {
   GqlMutationMembershipAssignOwnerArgs,
   GqlMutationMembershipAssignManagerArgs,
   GqlMutationMembershipAssignMemberArgs,
+  GqlMembership,
+  GqlQueryMembershipArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
@@ -41,17 +43,17 @@ export default class MembershipUseCase {
     return MembershipPresenter.query(data, hasNextPage);
   }
 
-  // async visitorViewMembership(
-  //   args: GqlQueryMembershipArgs,
-  //   ctx: IContext,
-  // ): Promise<GqlMembership | null> {
-  //   const membership = await this.membershipService.findMembership(
-  //     ctx,
-  //     args.userId,
-  //     args.communityId,
-  //   );
-  //   return membership ? MembershipPresenter.get(membership) : null;
-  // }
+  async visitorViewMembership(
+    args: GqlQueryMembershipArgs,
+    ctx: IContext,
+  ): Promise<GqlMembership | null> {
+    const membership = await this.membershipService.findMembership(
+      ctx,
+      args.userId,
+      args.communityId,
+    );
+    return membership ? MembershipPresenter.get(membership) : null;
+  }
 
   async ownerInviteMember(args: GqlMutationMembershipInviteArgs, ctx: IContext) {
     const membership = await ctx.issuer.public(ctx, async (tx) => {

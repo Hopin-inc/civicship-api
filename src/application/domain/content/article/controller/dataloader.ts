@@ -6,24 +6,20 @@ import {
   PrismaArticleDetail,
 } from "@/application/domain/content/article/data/type";
 import ArticlePresenter from "@/application/domain/content/article/presenter";
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
-
-async function batchArticlesById(
-  issuer: PrismaClientIssuer,
-  articleIds: readonly string[],
-): Promise<(GqlArticle | null)[]> {
-  const records = await issuer.internal(async (tx) =>
-    tx.article.findMany({
-      where: { id: { in: [...articleIds] } },
-      select: articleSelectDetail,
-    }),
-  );
-  const map = new Map(records.map((record) => [record.id, ArticlePresenter.get(record)]));
-  return articleIds.map((id) => map.get(id) ?? null);
-}
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 
 export function createArticleLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlArticle | null>((keys) => batchArticlesById(issuer, keys));
+  return createLoaderById<PrismaArticleDetail, GqlArticle>(async (ids) => {
+    return issuer.internal((tx) =>
+      tx.article.findMany({
+        where: { id: { in: [...ids] } },
+        select: articleSelectDetail,
+      }),
+    );
+  }, ArticlePresenter.get);
 }
 
 export function createArticlesByOpportunityLoader(issuer: PrismaClientIssuer) {

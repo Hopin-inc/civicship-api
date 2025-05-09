@@ -1,4 +1,3 @@
-import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import {
   PrismaReservationDetail,
@@ -6,26 +5,21 @@ import {
 } from "@/application/domain/experience/reservation/data/type";
 import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
 import { GqlReservation } from "@/types/graphql";
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
-
-async function batchReservationsById(
-  issuer: PrismaClientIssuer,
-  ids: readonly string[],
-): Promise<(GqlReservation | null)[]> {
-  const records = await issuer.internal((tx) =>
-    tx.reservation.findMany({
-      where: { id: { in: [...ids] } },
-      select: reservationSelectDetail,
-    }),
-  );
-
-  const map = new Map(records.map((r) => [r.id, ReservationPresenter.get(r)]));
-  return ids.map((id) => map.get(id) ?? null);
-}
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 
 export function createReservationLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlReservation | null>((keys) =>
-    batchReservationsById(issuer, keys),
+  return createLoaderById<PrismaReservationDetail, GqlReservation>(
+    async (ids) =>
+      issuer.internal((tx) =>
+        tx.reservation.findMany({
+          where: { id: { in: [...ids] } },
+          select: reservationSelectDetail,
+        }),
+      ),
+    ReservationPresenter.get,
   );
 }
 

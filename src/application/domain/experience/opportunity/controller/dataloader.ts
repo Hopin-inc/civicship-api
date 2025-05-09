@@ -6,29 +6,21 @@ import {
   PrismaOpportunityDetail,
 } from "@/application/domain/experience/opportunity/data/type";
 import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
-
-async function batchOpportunitiesById(
-  issuer: PrismaClientIssuer,
-  opportunityIds: readonly string[],
-): Promise<(GqlOpportunity | null)[]> {
-  const records = await issuer.internal(async (tx) => {
-    return tx.opportunity.findMany({
-      where: { id: { in: [...opportunityIds] } },
-      select: opportunitySelectDetail,
-    });
-  });
-
-  const oppMap = new Map(
-    records.map((record) => [record.id, OpportunityPresenter.get(record)]),
-  ) as Map<string, GqlOpportunity | null>;
-
-  return opportunityIds.map((id) => oppMap.get(id) ?? null);
-}
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 
 export function createOpportunityLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlOpportunity | null>((keys) =>
-    batchOpportunitiesById(issuer, keys),
+  return createLoaderById<PrismaOpportunityDetail, GqlOpportunity>(
+    async (ids) =>
+      issuer.internal((tx) =>
+        tx.opportunity.findMany({
+          where: { id: { in: [...ids] } },
+          select: opportunitySelectDetail,
+        }),
+      ),
+    OpportunityPresenter.get,
   );
 }
 

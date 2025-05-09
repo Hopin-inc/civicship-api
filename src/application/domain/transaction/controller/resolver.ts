@@ -19,25 +19,7 @@ export default class TransactionResolver {
       return this.useCase.visitorBrowseTransactions(args, ctx);
     },
     transaction: async (_: unknown, args: GqlQueryTransactionArgs, ctx: IContext) => {
-      return ctx.loaders.transaction.load(args.id);
-    },
-  };
-
-  Transaction = {
-    fromWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
-      return parent.from ? ctx.loaders.wallet.load(parent.from) : null;
-    },
-
-    toWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
-      return parent.to ? ctx.loaders.wallet.load(parent.to) : null;
-    },
-
-    participation: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
-      return parent.participationId ? ctx.loaders.participation.load(parent.participationId) : null;
-    },
-
-    ticketStatusHistories: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
-      return ctx.loaders.ticketStatusHistoriesByTransaction.load(parent.id);
+      return this.useCase.visitorViewTransaction(args, ctx);
     },
   };
 
@@ -62,6 +44,24 @@ export default class TransactionResolver {
       ctx: IContext,
     ) => {
       return this.useCase.userDonateSelfPointToAnother(ctx, input);
+    },
+  };
+
+  Transaction = {
+    fromWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return parent.from ? ctx.loaders.wallet.load(parent.from) : null;
+    },
+
+    toWallet: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return parent.to ? ctx.loaders.wallet.load(parent.to) : null;
+    },
+
+    participation: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return parent.participationId ? ctx.loaders.participation.load(parent.participationId) : null;
+    },
+
+    ticketStatusHistories: (parent: PrismaTransactionDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.ticketStatusHistoriesByTransaction.load(parent.id);
     },
   };
 }

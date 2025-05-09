@@ -1,4 +1,3 @@
-import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlTransaction } from "@/types/graphql";
 import {
@@ -6,27 +5,22 @@ import {
   PrismaTransactionDetail,
 } from "@/application/domain/transaction/data/type";
 import TransactionPresenter from "@/application/domain/transaction/presenter";
-import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 import { Transaction } from "@prisma/client";
 
-async function batchTransactionsById(
-  issuer: PrismaClientIssuer,
-  transactionIds: readonly string[],
-): Promise<(GqlTransaction | null)[]> {
-  const records = (await issuer.internal(async (tx) => {
-    return tx.transaction.findMany({
-      where: { id: { in: [...transactionIds] } },
-      select: transactionSelectDetail,
-    });
-  })) as PrismaTransactionDetail[];
-
-  const map = new Map(records.map((record) => [record.id, TransactionPresenter.get(record)]));
-  return transactionIds.map((id) => map.get(id) ?? null);
-}
-
 export function createTransactionLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlTransaction | null>((keys) =>
-    batchTransactionsById(issuer, keys),
+  return createLoaderById<PrismaTransactionDetail, GqlTransaction>(
+    async (ids) =>
+      issuer.internal((tx) =>
+        tx.transaction.findMany({
+          where: { id: { in: [...ids] } },
+          select: transactionSelectDetail,
+        }),
+      ),
+    TransactionPresenter.get,
   );
 }
 

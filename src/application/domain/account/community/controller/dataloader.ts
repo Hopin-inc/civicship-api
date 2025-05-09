@@ -1,25 +1,15 @@
-import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { GqlCommunity } from "@/types/graphql";
 import CommunityPresenter from "@/application/domain/account/community/presenter";
 import { communitySelectDetail } from "@/application/domain/account/community/data/type";
-
-async function batchCommunitiesById(
-  issuer: PrismaClientIssuer,
-  communityIds: readonly string[],
-): Promise<(GqlCommunity | null)[]> {
-  const records = await issuer.internal(async (tx) => {
-    return tx.community.findMany({
-      where: { id: { in: [...communityIds] } },
-      select: communitySelectDetail,
-    });
-  });
-
-  const map = new Map(records.map((record) => [record.id, CommunityPresenter.get(record)]));
-
-  return communityIds.map((id) => map.get(id) ?? null);
-}
+import { createLoaderById } from "@/presentation/graphql/dataloader/utils";
 
 export function createCommunityLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlCommunity | null>((keys) => batchCommunitiesById(issuer, keys));
+  return createLoaderById(async (ids) => {
+    return issuer.internal((tx) =>
+      tx.community.findMany({
+        where: { id: { in: [...ids] } },
+        select: communitySelectDetail,
+      }),
+    );
+  }, CommunityPresenter.get);
 }

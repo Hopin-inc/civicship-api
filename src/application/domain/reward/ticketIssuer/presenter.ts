@@ -8,7 +8,6 @@ export default class TicketIssuerPresenter {
 
   static issue(r: PrismaTicketIssuerDetail): GqlTicketIssuePayload {
     return {
-      __typename: "TicketIssueSuccess",
       issue: this.get(r),
     };
   }
