@@ -10,7 +10,7 @@ type Place {
     latitude: Decimal!
     longitude: Decimal!
 
-    isManual: Boolean!
+    isManual: Boolean
     googlePlaceId: String
     mapLocation: JSON
 
@@ -19,6 +19,6 @@ type Place {
 
     opportunities: [Opportunity!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

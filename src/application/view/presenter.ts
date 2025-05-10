@@ -1,11 +1,21 @@
 import { GqlPortfolio, GqlPortfolioSource } from "@/types/graphql";
 import PlacePresenter from "@/application/domain/location/place/presenter";
 import UserPresenter from "@/application/domain/account/user/presenter";
-import { PrismaArticleForPortfolio } from "@/application/domain/content/article/data/type";
-import { PrismaParticipationForPortfolio } from "@/application/domain/experience/participation/data/type";
+import {
+  PrismaUserArticlePortfolio,
+  PrismaUserParticipationPortfolio,
+} from "@/application/domain/account/user/data/type";
 
 export default class ViewPresenter {
-  static getFromParticipation(p: PrismaParticipationForPortfolio): GqlPortfolio | null {
+  static getFromParticipations(user: PrismaUserParticipationPortfolio): GqlPortfolio[] {
+    return (user.participations ?? [])
+      .map((p) => ViewPresenter.getFromParticipation(p))
+      .filter((portfolio): portfolio is GqlPortfolio => portfolio !== null);
+  }
+
+  static getFromParticipation(
+    p: PrismaUserParticipationPortfolio["participations"][number],
+  ): GqlPortfolio | null {
     const { reservation, images } = p;
 
     if (!reservation || !reservation.opportunitySlot) {
@@ -33,28 +43,34 @@ export default class ViewPresenter {
     };
   }
 
-  static getFromArticle(article: PrismaArticleForPortfolio): GqlPortfolio {
-    const { relatedUsers, authors } = article;
-    const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
+  static getFromArticles(user: PrismaUserArticlePortfolio): GqlPortfolio[] {
+    const { articlesAboutMe, articlesWrittenByMe } = user;
 
-    const thumbnailUrl = article.thumbnail
-      ? Array.isArray(article.thumbnail) && article.thumbnail.length > 0 && article.thumbnail[0].url
-        ? article.thumbnail[0].url
-        : null
-      : null;
+    const allArticles = [...(articlesAboutMe ?? []), ...(articlesWrittenByMe ?? [])];
 
-    return {
-      id: article.id,
-      title: article.title,
-      source: GqlPortfolioSource.Article,
-      category: article.category,
-      date: article.publishedAt,
-      thumbnailUrl,
-      participants: participations
-        ? participations
-            .filter((user): user is NonNullable<typeof user> => user !== null)
-            .map((user) => UserPresenter.formatPortfolio(user))
-        : [],
-    };
+    return allArticles.map((article): GqlPortfolio => {
+      const { relatedUsers, authors } = article;
+      const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
+
+      const thumbnailUrl = article.thumbnail
+        ? Array.isArray(article.thumbnail) &&
+          article.thumbnail.length > 0 &&
+          article.thumbnail[0].url
+          ? article.thumbnail[0].url
+          : null
+        : null;
+
+      return {
+        id: article.id,
+        title: article.title,
+        source: GqlPortfolioSource.Article,
+        category: article.category,
+        date: article.publishedAt,
+        thumbnailUrl,
+        participants: participations
+          .filter((user): user is NonNullable<typeof user> => user !== null)
+          .map((user) => UserPresenter.formatPortfolio(user)),
+      };
+    });
   }
 }

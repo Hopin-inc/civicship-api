@@ -32,7 +32,7 @@ type Opportunity {
     ): [OpportunitySlot!]
     earliestReservableAt: Datetime
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 

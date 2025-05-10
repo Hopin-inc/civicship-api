@@ -12,6 +12,9 @@ export function createAccountLoaders(issuer: PrismaClientIssuer) {
     authorsByArticle: UserLoaders.createAuthorsByArticleLoader(issuer),
     relatedUsersByArticle: UserLoaders.createRelatedUsersByArticleLoader(issuer),
 
+    participationPortfolioByUser: UserLoaders.createParticipationsForPortfolioLoader(issuer),
+    articlePortfolioByUser: UserLoaders.createArticlesForPortfolioLoader(issuer),
+
     identity: IdentityLoaders.createIdentityLoader(issuer),
     identitiesByUser: IdentityLoaders.createIdentitiesByUserLoader(issuer),
 

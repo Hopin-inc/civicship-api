@@ -19,6 +19,6 @@ type Community {
     utilities: [Utility!]
     articles: [Article!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

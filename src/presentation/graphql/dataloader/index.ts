@@ -5,7 +5,6 @@ import { createRewardLoaders } from "@/presentation/graphql/dataloader/domain/re
 import { createContentLoaders } from "@/presentation/graphql/dataloader/domain/content";
 import { createTransactionLoaders } from "@/presentation/graphql/dataloader/domain/transaction";
 import { createLocationLoaders } from "@/presentation/graphql/dataloader/domain/location";
-import { createViewLoaders } from "@/presentation/graphql/dataloader/domain/view";
 
 export function createLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -15,7 +14,6 @@ export function createLoaders(issuer: PrismaClientIssuer) {
     ...createContentLoaders(issuer),
     ...createTransactionLoaders(issuer),
     ...createLocationLoaders(issuer),
-    ...createViewLoaders(issuer),
   };
 }
 

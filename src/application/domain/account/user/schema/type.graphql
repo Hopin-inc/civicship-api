@@ -6,7 +6,7 @@ type User {
 
     sysRole: SysRole
     name: String!
-    slug: String!
+    slug: String
     image: String
     bio: String
     phoneNumber: String @authz(rules: [CanReadPhoneNumber])

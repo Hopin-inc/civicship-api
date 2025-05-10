@@ -21,3 +21,12 @@ enum PortfolioSource {
     OPPORTUNITY
     ARTICLE
 }
+
+enum PortfolioCategory {
+    QUEST
+    EVENT
+    ACTIVITY
+
+    ACTIVITY_REPORT
+    INTERVIEW
+}

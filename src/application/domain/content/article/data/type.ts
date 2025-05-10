@@ -1,17 +1,10 @@
 import { Prisma } from "@prisma/client";
-import { userInclude } from "@/application/domain/account/user/data/type";
 
 export const articleInclude = Prisma.validator<Prisma.ArticleInclude>()({
   community: true,
   authors: true,
   relatedUsers: true,
   opportunities: true,
-  thumbnail: true,
-});
-
-export const portfolioFromArticleInclude = Prisma.validator<Prisma.ArticleInclude>()({
-  authors: { include: userInclude },
-  relatedUsers: { include: userInclude },
   thumbnail: true,
 });
 
@@ -51,10 +44,6 @@ export const articleForPortfolioSelectDetail = Prisma.validator<Prisma.ArticleSe
 
 export type PrismaArticle = Prisma.ArticleGetPayload<{
   include: typeof articleInclude;
-}>;
-
-export type PrismaArticleForPortfolio = Prisma.ArticleGetPayload<{
-  include: typeof portfolioFromArticleInclude;
 }>;
 
 export type PrismaArticleDetail = Prisma.ArticleGetPayload<{

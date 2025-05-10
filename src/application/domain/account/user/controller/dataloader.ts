@@ -1,9 +1,14 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { GqlUser } from "@/types/graphql";
+import { GqlPortfolio, GqlUser } from "@/types/graphql";
 import UserPresenter from "@/application/domain/account/user/presenter";
-import { userSelectDetail } from "@/application/domain/account/user/data/type";
+import {
+  userArticlePortfolioInclude,
+  userParticipationPortfolioInclude,
+  userSelectDetail,
+} from "@/application/domain/account/user/data/type";
 import { createLoaderById } from "@/presentation/graphql/dataloader/utils";
+import ViewPresenter from "@/application/view/presenter";
 
 export function createUserLoader(issuer: PrismaClientIssuer) {
   return createLoaderById(async (ids) => {
@@ -49,5 +54,38 @@ export function createRelatedUsersByArticleLoader(issuer: PrismaClientIssuer) {
     }
 
     return articleIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createParticipationsForPortfolioLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlPortfolio[]>(async (userIds) => {
+    const users = await issuer.internal((tx) =>
+      tx.user.findMany({
+        where: { id: { in: [...userIds] } },
+        include: userParticipationPortfolioInclude,
+      }),
+    );
+
+    const map = new Map<string, GqlPortfolio[]>(
+      users.map((record) => [record.id, ViewPresenter.getFromParticipations(record)]),
+    );
+
+    return userIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createArticlesForPortfolioLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlPortfolio[]>(async (userIds) => {
+    const users = await issuer.internal((tx) =>
+      tx.user.findMany({
+        where: { id: { in: [...userIds] } },
+        include: userArticlePortfolioInclude,
+      }),
+    );
+
+    const map = new Map<string, GqlPortfolio[]>(
+      users.map((record) => [record.id, ViewPresenter.getFromArticles(record)]),
+    );
+    return userIds.map((id) => map.get(id) ?? []);
   });
 }

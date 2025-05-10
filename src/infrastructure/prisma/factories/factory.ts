@@ -361,7 +361,8 @@ export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
 
     return {
       title: randCatchPhrase(),
-      description: randParagraph({ length: 10 }).join("\n\n"),
+      description: randParagraph({ length: 1 }).join("\n\n"),
+      body: randParagraph({ length: 10 }).join("\n\n"),
       publishStatus:
         transientStatus ??
         rand([
@@ -410,8 +411,8 @@ export const OpportunitySlotFactory = defineOpportunitySlotFactory.withTransient
       opportunity: { connect: { id: opportunity.id } },
       hostingStatus: transientStatus ?? randomEnum(OpportunitySlotHostingStatus),
       capacity: randNumber({ min: 1, max: 30 }),
-      startsAt: new Date(),
-      endsAt: new Date(Date.now() + 60 * 60 * 1000),
+      startsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1週間後の現在時刻
+      endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 1時間後
     };
   },
 });
@@ -569,6 +570,7 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
     return {
       title: randCatchPhrase(),
       introduction: randParagraph(),
+      body: randParagraph({ length: 10 }).join("\n\n"),
       category: transientCategory ?? randomEnum(ArticleCategory),
       publishStatus:
         transientStatus ??
@@ -579,7 +581,6 @@ export const ArticleFactory = defineArticleFactory.withTransientFields<{
           PublishStatus.COMMUNITY_INTERNAL,
           PublishStatus.PRIVATE,
         ]),
-      body: randParagraph(),
       thumbnail: { connect: { id: thumbnail.id } },
       publishedAt: new Date(),
       community: { connect: { id: community.id } },
