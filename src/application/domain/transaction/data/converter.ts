@@ -15,6 +15,8 @@ export default class TransactionConverter {
         filter?.reason ? { reason: filter?.reason } : {},
         filter?.fromWalletId ? { from: filter?.fromWalletId } : {},
         filter?.toWalletId ? { to: filter?.toWalletId } : {},
+        filter?.fromUserId ? { fromWallet: { user: { id: filter.fromUserId } } } : {},
+        filter?.toUserId ? { toWallet: { user: { id: filter.toUserId } } } : {},
       ],
     };
   }

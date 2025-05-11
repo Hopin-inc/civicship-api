@@ -6,7 +6,7 @@ type Portfolio {
 
     title: String!
     source: PortfolioSource!
-    category: String!
+    category: PortfolioCategory!
 
     reservationStatus: ReservationStatus
 
