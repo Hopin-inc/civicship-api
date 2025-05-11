@@ -73,14 +73,21 @@ const resolvers = {
     ...ticket.Mutation,
     ...transaction.Mutation,
   },
+  Identity: identity.Identity,
   User: user.User,
+  Wallet: wallet.Wallet,
+  Membership: membership.Membership,
   Community: community.Community,
+  Article: article.Article,
   Opportunity: opportunity.Opportunity,
   OpportunitySlot: opportunitySlot.OpportunitySlot,
+  Reservation: reservation.Reservation,
   Participation: participation.Participation,
+  Evaluation: evaluation.Evaluation,
   Place: place.Place,
+  Ticket: ticket.Ticket,
   Utility: utility.Utility,
-  Wallet: wallet.Wallet,
+  Transaction: transaction.Transaction,
 };
 
 export default resolvers;

@@ -14,10 +14,11 @@ function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
 
 export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const issuer = new PrismaClientIssuer();
+  const loaders: Loaders = createLoaders(issuer);
   const idToken = getIdTokenFromRequest(req);
 
   if (!idToken) {
-    return { issuer };
+    return { issuer, loaders };
   }
 
   const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
@@ -43,8 +44,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       }),
     ),
   ]);
-
-  const loaders: Loaders = createLoaders(issuer);
 
   return {
     uid,

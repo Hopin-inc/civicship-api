@@ -36,7 +36,6 @@ import ReservationService from "@/application/domain/experience/reservation/serv
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import ParticipationRepository from "@/application/domain/experience/participation/data/repository";
-import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import ParticipationStatusHistoryRepository from "@/application/domain/experience/participation/statusHistory/data/repository";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
@@ -167,9 +166,6 @@ export function registerProductionDependencies() {
   container.register("ParticipationRepository", { useClass: ParticipationRepository });
 
   // 🔄 ParticipationStatusHistory
-  container.register("ParticipationStatusHistoryUseCase", {
-    useClass: ParticipationStatusHistoryUseCase,
-  });
   container.register("ParticipationStatusHistoryService", {
     useClass: ParticipationStatusHistoryService,
   });

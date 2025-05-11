@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { PrismaUser } from "@/application/domain/account/user/data/type";
+import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 import { Prisma } from "@prisma/client";
 
 export interface IUserRepository {
@@ -9,18 +9,18 @@ export interface IUserRepository {
     orderBy: Prisma.UserOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaUser[]>;
+  ): Promise<PrismaUserDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaUser | null>;
+  find(ctx: IContext, id: string): Promise<PrismaUserDetail | null>;
 
-  create(data: Prisma.UserCreateInput): Promise<PrismaUser>;
+  create(data: Prisma.UserCreateInput): Promise<PrismaUserDetail>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.UserUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaUser>;
+  ): Promise<PrismaUserDetail>;
 
-  delete(id: string): Promise<PrismaUser>;
+  delete(id: string): Promise<PrismaUserDetail>;
 }

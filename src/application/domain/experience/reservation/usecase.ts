@@ -24,7 +24,6 @@ import {
   TicketStatusReason,
 } from "@prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { PrismaOpportunitySlot } from "@/application/domain/experience/opportunitySlot/data/type";
 import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
 import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
@@ -44,6 +43,7 @@ import NotificationService from "@/application/domain/notification/service";
 import { IParticipationService } from "@/application/domain/experience/participation/data/interface";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import TicketService from "@/application/domain/reward/ticket/service";
+import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
 
 @injectable()
 export default class ReservationUseCase {
@@ -276,7 +276,7 @@ export default class ReservationUseCase {
     ctx: IContext,
     tx: Prisma.TransactionClient,
     paymentMethod: GqlReservationPaymentMethod,
-    requiredUtilities: PrismaOpportunitySlot["opportunity"]["requiredUtilities"],
+    requiredUtilities: PrismaOpportunitySlotReserve["opportunity"]["requiredUtilities"],
     participationIds: string[],
     ticketIds?: string[],
   ): Promise<void> {
@@ -342,7 +342,7 @@ export default class ReservationUseCase {
 
   private async updateManyParticipationByReservationStatusChanged(
     ctx: IContext,
-    participations: PrismaParticipation[],
+    participations: Pick<PrismaParticipation, "id">[],
     participationStatus: ParticipationStatus,
     participationStatusReason: ParticipationStatusReason,
     tx: Prisma.TransactionClient,

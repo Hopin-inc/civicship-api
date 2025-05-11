@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaOpportunity } from "./type";
+import { PrismaOpportunityDetail } from "./type";
 
 export interface IOpportunityRepository {
   query(
@@ -9,22 +9,22 @@ export interface IOpportunityRepository {
     orderBy: Prisma.OpportunityOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaOpportunity[]>;
+  ): Promise<PrismaOpportunityDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaOpportunity | null>;
+  find(ctx: IContext, id: string): Promise<PrismaOpportunityDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.OpportunityCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaOpportunity>;
+  ): Promise<PrismaOpportunityDetail>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.OpportunityUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaOpportunity>;
+  ): Promise<PrismaOpportunityDetail>;
 
-  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaOpportunity>;
+  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaOpportunityDetail>;
 }

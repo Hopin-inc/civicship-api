@@ -7,7 +7,7 @@ type Article {
 
     title: String!
     introduction: String!
-    body: String!
+    body: String
     thumbnail: JSON
 
     publishStatus: PublishStatus!
@@ -20,7 +20,7 @@ type Article {
 
     opportunities: [Opportunity!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 

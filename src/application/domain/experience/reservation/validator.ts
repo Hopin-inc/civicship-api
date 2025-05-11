@@ -1,19 +1,19 @@
 import { ValidationError } from "@/errors/graphql";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
-import { PrismaOpportunitySlot } from "@/application/domain/experience/opportunitySlot/data/type";
 import { injectable } from "tsyringe";
+import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
 
 @injectable()
 export default class ReservationValidator {
   validateReservable(
-    slot: PrismaOpportunitySlot,
+    slot: PrismaOpportunitySlotReserve,
     participantCount: number,
     remainingCapacity: number | undefined,
     reservations: PrismaReservation[],
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
-    this.validateNoConflicts(reservations);
+    this.validateNoConflicts(reservations.length);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
       throw new ValidationError("Capacity exceeded for this opportunity slot.", [
@@ -24,7 +24,7 @@ export default class ReservationValidator {
   }
 
   validateJoinable(
-    reservation: PrismaReservation,
+    reservation: Pick<PrismaReservation, "status" | "participations" | "opportunitySlot">,
     userId: string,
   ): { availableParticipationId: string } {
     if (reservation.status !== ReservationStatus.ACCEPTED) {
@@ -57,13 +57,15 @@ export default class ReservationValidator {
     }
   }
 
-  private validateNoConflicts(conflicts: PrismaReservation[]) {
-    if (conflicts.length > 0) {
+  private validateNoConflicts(length: number) {
+    if (length > 0) {
       throw new ValidationError("You already have a conflicting reservation.");
     }
   }
 
-  private validateSlotScheduledAndNotStarted(slot: PrismaOpportunitySlot) {
+  private validateSlotScheduledAndNotStarted(
+    slot: Pick<PrismaOpportunitySlotReserve, "hostingStatus" | "startsAt">,
+  ) {
     if (slot.hostingStatus !== OpportunitySlotHostingStatus.SCHEDULED) {
       throw new ValidationError("This slot is not scheduled.");
     }

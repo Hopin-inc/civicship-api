@@ -44,6 +44,7 @@ export default class TransactionUseCase {
     const data: GqlTransaction[] = records.slice(0, take).map((record) => {
       return TransactionPresenter.get(record);
     });
+    console.log(data);
     return TransactionPresenter.query(data, hasNextPage);
   }
 

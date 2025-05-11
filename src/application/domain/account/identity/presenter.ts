@@ -1,5 +1,6 @@
 import { User } from "@prisma/client";
-import { GqlCurrentUserPayload, GqlUserDeletePayload } from "@/types/graphql";
+import { GqlCurrentUserPayload, GqlIdentity, GqlUserDeletePayload } from "@/types/graphql";
+import { PrismaIdentityDetail } from "@/application/domain/account/identity/data/type";
 
 export default class IdentityPresenter {
   static create(user: User): GqlCurrentUserPayload {
@@ -8,5 +9,9 @@ export default class IdentityPresenter {
 
   static delete(user: User | null): GqlUserDeletePayload {
     return { userId: user?.id };
+  }
+
+  static get(r: PrismaIdentityDetail): GqlIdentity {
+    return r;
   }
 }

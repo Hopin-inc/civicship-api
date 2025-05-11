@@ -11,6 +11,7 @@ import {
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import ReservationUseCase from "@/application/domain/experience/reservation/usecase";
+import { PrismaReservationDetail } from "@/application/domain/experience/reservation/data/type";
 
 @injectable()
 export default class ReservationResolver {
@@ -23,7 +24,7 @@ export default class ReservationResolver {
       return this.reservationUseCase.visitorBrowseReservations(ctx, args);
     },
     reservation: (_: unknown, args: GqlQueryReservationArgs, ctx: IContext) => {
-      return this.reservationUseCase.visitorViewReservation(ctx, args);
+      return ctx.loaders.reservation.load(args.id);
     },
   };
 
@@ -42,6 +43,22 @@ export default class ReservationResolver {
     },
     reservationJoin: (_: unknown, args: GqlMutationReservationJoinArgs, ctx: IContext) => {
       return this.reservationUseCase.userJoinReservation(args, ctx);
+    },
+  };
+
+  Reservation = {
+    opportunitySlot: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
+      return parent.opportunitySlotId
+        ? ctx.loaders.opportunitySlot.load(parent.opportunitySlotId)
+        : null;
+    },
+
+    createdByUser: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
+      return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
+    },
+
+    participations: (parent: PrismaReservationDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.participationsByReservation.load(parent.id);
     },
   };
 }

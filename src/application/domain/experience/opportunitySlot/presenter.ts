@@ -5,8 +5,8 @@ import {
   GqlOpportunitySlotSetHostingStatusSuccess,
 } from "@/types/graphql";
 import {
-  PrismaOpportunitySlot,
-  PrismaOpportunitySlotWithParticipation,
+  PrismaOpportunitySlotDetail,
+  PrismaOpportunitySlotSetHostingStatus,
 } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
@@ -26,41 +26,21 @@ export default class OpportunitySlotPresenter {
     };
   }
 
-  static get(r: PrismaOpportunitySlot): GqlOpportunitySlot {
-    const { opportunity, remainingCapacityView, ...prop } = r;
-
+  static get(r: PrismaOpportunitySlotDetail): GqlOpportunitySlot {
+    const { remainingCapacityView, ...prop } = r;
     return {
       ...prop,
-      opportunity: opportunity ? opportunity : null,
-      remainingCapacityView:
-        OpportunitySlotPresenter.formatRemainingCapacityView(remainingCapacityView),
+      remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
     };
   }
 
   static setHostingStatus(
-    r: PrismaOpportunitySlotWithParticipation,
+    r: Omit<PrismaOpportunitySlotSetHostingStatus, "reservations" | "opportunity">,
   ): GqlOpportunitySlotSetHostingStatusSuccess {
-    return {
-      __typename: "OpportunitySlotSetHostingStatusSuccess",
-      slot: this.get(r),
-    };
+    return { slot: { ...r } };
   }
 
   static bulkUpdate(slots: GqlOpportunitySlot[]): GqlOpportunitySlotsBulkUpdateSuccess {
-    return {
-      __typename: "OpportunitySlotsBulkUpdateSuccess",
-      slots,
-    };
-  }
-
-  private static formatRemainingCapacityView(
-    view?: PrismaOpportunitySlot["remainingCapacityView"],
-  ): GqlOpportunitySlot["remainingCapacityView"] {
-    return view
-      ? {
-          opportunitySlotId: view.slotId,
-          remainingCapacity: view.remainingCapacity,
-        }
-      : null;
+    return { slots };
   }
 }

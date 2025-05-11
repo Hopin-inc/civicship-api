@@ -2,6 +2,8 @@ import { IContext } from "@/types/server";
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import {
   GqlOpportunitySlotCreateInput,
+  GqlOpportunitySlotFilterInput,
+  GqlOpportunitySlotSortInput,
   GqlOpportunitySlotUpdateInput,
   GqlQueryOpportunitySlotsArgs,
 } from "@/types/graphql";
@@ -28,8 +30,14 @@ export default class OpportunitySlotService {
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  async findOpportunitySlot(ctx: IContext, id: string) {
-    return this.repository.find(ctx, id);
+  async fetchAllSlotByOpportunityId(
+    ctx: IContext,
+    filter: GqlOpportunitySlotFilterInput,
+    sort?: GqlOpportunitySlotSortInput,
+  ) {
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+    return this.repository.queryByOpportunityId(ctx, where, orderBy);
   }
 
   async findOpportunitySlotOrThrow(ctx: IContext, id: string) {
@@ -40,14 +48,6 @@ export default class OpportunitySlotService {
     }
 
     return record;
-  }
-
-  async fetchAllSlotByOpportunityId(
-    ctx: IContext,
-    opportunityId: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    return this.repository.findByOpportunityId(ctx, opportunityId);
   }
 
   async setOpportunitySlotHostingStatus(

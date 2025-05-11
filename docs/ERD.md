@@ -383,6 +383,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String user_id "❓"
     String reservation_id "❓"
     String community_id "❓"
+    String evaluation_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -645,8 +646,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
     "t_participations" o{--}o "t_evaluations" : "evaluation"
-    "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participations" o{--}o "t_transactions" : "transactions"
+    "t_participations" o{--}o "t_participation_status_histories" : "statusHistories"
     "t_participation_status_histories" o|--|| "t_participations" : "participation"
     "t_participation_status_histories" o|--|| "ParticipationStatus" : "enum:status"
     "t_participation_status_histories" o|--|| "ParticipationStatusReason" : "enum:reason"

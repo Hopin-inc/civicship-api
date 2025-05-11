@@ -1,0 +1,32 @@
+# ------------------------------
+# Portfolio Object Type Definitions
+# ------------------------------
+type Portfolio {
+    id: ID!
+
+    title: String!
+    source: PortfolioSource!
+    category: String!
+
+    reservationStatus: ReservationStatus
+
+    date: Datetime!
+    place: Place
+
+    thumbnailUrl: String
+    participants: [User!]
+}
+
+enum PortfolioSource {
+    OPPORTUNITY
+    ARTICLE
+}
+
+enum PortfolioCategory {
+    QUEST
+    EVENT
+    ACTIVITY
+
+    ACTIVITY_REPORT
+    INTERVIEW
+}

@@ -5,8 +5,7 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { PrismaCommunity } from "@/application/domain/account/community/data/type";
-import PlacePresenter from "@/application/domain/location/place/presenter";
+import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 
 export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
@@ -25,33 +24,35 @@ export default class CommunityPresenter {
     };
   }
 
-  static get(r: PrismaCommunity): GqlCommunity {
-    const { places, image, ...prop } = r;
-
+  static get(r: PrismaCommunityDetail): GqlCommunity {
     return {
-      ...prop,
-      image: image ? image.url : null,
-      places: places?.map(PlacePresenter.get) ?? [],
+      ...r,
+      memberships: [],
+      wallets: [],
+
+      opportunities: [],
+      places: [],
+      participations: [],
+      utilities: [],
+
+      articles: [],
     };
   }
 
-  static create(r: PrismaCommunity): GqlCommunityCreateSuccess {
+  static create(r: PrismaCommunityDetail): GqlCommunityCreateSuccess {
     return {
-      __typename: "CommunityCreateSuccess",
       community: this.get(r),
     };
   }
 
-  static delete(r: PrismaCommunity): GqlCommunityDeleteSuccess {
+  static delete(r: PrismaCommunityDetail): GqlCommunityDeleteSuccess {
     return {
-      __typename: "CommunityDeleteSuccess",
       communityId: r.id,
     };
   }
 
-  static update(r: PrismaCommunity): GqlCommunityUpdateProfileSuccess {
+  static update(r: PrismaCommunityDetail): GqlCommunityUpdateProfileSuccess {
     return {
-      __typename: "CommunityUpdateProfileSuccess",
       community: this.get(r),
     };
   }

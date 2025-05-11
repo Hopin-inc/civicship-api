@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
+import { PrismaWallet, PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
 
 export interface IWalletRepository {
   query(
@@ -9,11 +9,11 @@ export interface IWalletRepository {
     orderBy: Prisma.WalletOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaWallet[]>;
+  ): Promise<PrismaWalletDetail[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaWallet | null>;
 
-  findCommunityWallet(ctx: IContext, communityId: string): Promise<PrismaWallet | null>;
+  findCommunityWallet(ctx: IContext, communityId: string): Promise<PrismaWalletDetail | null>;
 
   findFirstExistingMemberWallet(
     ctx: IContext,
@@ -27,5 +27,5 @@ export interface IWalletRepository {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaWallet>;
 
-  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaWallet>;
+  delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaWalletDetail>;
 }

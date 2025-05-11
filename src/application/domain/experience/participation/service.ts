@@ -6,7 +6,7 @@ import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
+import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 import { inject, injectable } from "tsyringe";
 import {
   IParticipationRepository,
@@ -23,22 +23,21 @@ export default class ParticipationService implements IParticipationService {
     @inject("ImageService") private readonly imageService: ImageService,
   ) {}
 
-  async fetchParticipations<T extends Prisma.ParticipationInclude>(
+  async fetchParticipations(
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryParticipationsArgs,
     take: number,
-    include?: T,
-  ): Promise<Prisma.ParticipationGetPayload<{ include: T }>[]> {
+  ) {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
-    return await this.repository.query(ctx, where, orderBy, take, cursor, include);
+    return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  async findParticipation(ctx: IContext, id: string): Promise<PrismaParticipation | null> {
+  async findParticipation(ctx: IContext, id: string) {
     return await this.repository.find(ctx, id);
   }
 
-  async findParticipationOrThrow(ctx: IContext, id: string): Promise<PrismaParticipation> {
+  async findParticipationOrThrow(ctx: IContext, id: string) {
     const participation = await this.repository.find(ctx, id);
     if (!participation) {
       throw new NotFoundError(`ParticipationNotFound: ID=${id}`);
@@ -51,7 +50,7 @@ export default class ParticipationService implements IParticipationService {
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation> {
+  ) {
     const { data, images } = this.converter.create(input, currentUserId);
 
     const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = await Promise.all(
@@ -68,11 +67,7 @@ export default class ParticipationService implements IParticipationService {
     return this.repository.create(ctx, createInput, tx);
   }
 
-  async deleteParticipation(
-    ctx: IContext,
-    id: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<PrismaParticipation> {
+  async deleteParticipation(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     await this.findParticipationOrThrow(ctx, id);
     return this.repository.delete(ctx, id, tx);
   }
@@ -84,7 +79,7 @@ export default class ParticipationService implements IParticipationService {
     reason: ParticipationStatusReason,
     tx: Prisma.TransactionClient,
     currentUserId?: string,
-  ): Promise<PrismaParticipation> {
+  ) {
     const userId = currentUserId ?? getCurrentUserId(ctx);
 
     const data: Prisma.ParticipationUpdateInput = this.converter.setStatus(userId, status, reason);
@@ -97,7 +92,7 @@ export default class ParticipationService implements IParticipationService {
     status: ParticipationStatus,
     reason: ParticipationStatusReason,
     tx: Prisma.TransactionClient,
-  ): Promise<Prisma.BatchPayload> {
+  ) {
     return this.repository.bulkSetStatusByReservation(ctx, ids, status, reason, tx);
   }
 
@@ -105,7 +100,7 @@ export default class ParticipationService implements IParticipationService {
     ctx: IContext,
     ids: string[],
     tx: Prisma.TransactionClient,
-  ): Promise<Prisma.BatchPayload> {
+  ) {
     return this.repository.bulkSetStatusByReservation(
       ctx,
       ids,
@@ -115,7 +110,7 @@ export default class ParticipationService implements IParticipationService {
     );
   }
 
-  validateDeletable(participation: PrismaParticipation): void {
+  validateDeletable(participation: PrismaParticipationDetail) {
     if (participation.reason !== ParticipationStatusReason.PERSONAL_RECORD) {
       throw new ValidationError("Only personal participation records can be deleted.", [
         `participation.reason: ${participation.reason}`,

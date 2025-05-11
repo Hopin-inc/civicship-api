@@ -2,7 +2,6 @@ import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { PrismaTicketClaimLink } from "./data/type";
 import { ClaimLinkStatus } from "@prisma/client";
 import { ITicketClaimLinkRepository, ITicketClaimLinkService } from "./data/interface";
 
@@ -12,11 +11,11 @@ export default class TicketClaimLinkService implements ITicketClaimLinkService {
     @inject("TicketClaimLinkRepository") private readonly repository: ITicketClaimLinkRepository,
   ) {}
 
-  async findTicketClaimLink(ctx: IContext, id: string): Promise<PrismaTicketClaimLink | null> {
+  async findTicketClaimLink(ctx: IContext, id: string) {
     return await this.repository.find(ctx, id);
   }
 
-  async findTicketClaimLinkOrThrow(ctx: IContext, id: string): Promise<PrismaTicketClaimLink> {
+  async findTicketClaimLinkOrThrow(ctx: IContext, id: string) {
     const link = await this.repository.find(ctx, id);
     if (!link) {
       throw new NotFoundError("TicketClaimLink", { id });
@@ -24,7 +23,7 @@ export default class TicketClaimLinkService implements ITicketClaimLinkService {
     return link;
   }
 
-  async validateBeforeClaim(ctx: IContext, id: string): Promise<PrismaTicketClaimLink> {
+  async validateBeforeClaim(ctx: IContext, id: string) {
     const link = await this.repository.find(ctx, id);
 
     if (!link) {

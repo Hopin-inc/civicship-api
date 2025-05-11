@@ -4,9 +4,9 @@
 type User {
     id: ID!
 
-    sysRole: SysRole!
+    sysRole: SysRole
     name: String!
-    slug: String!
+    slug: String
     image: String
     bio: String
     phoneNumber: String @authz(rules: [CanReadPhoneNumber])
@@ -20,106 +20,29 @@ type User {
 
     currentPrefecture: CurrentPrefecture
 
-    createdAt: Datetime!
+    identities: [Identity!]
+    portfolios: [Portfolio!]
+
+    memberships: [Membership!]
+    membershipChangedByMe: [MembershipHistory!]
+
+    wallets: [Wallet!]
+
+    opportunitiesCreatedByMe: [Opportunity!]
+    reservations: [Reservation!]
+    reservationStatusChangedByMe: [ReservationHistory!]
+    participations: [Participation!]
+    participationStatusChangedByMe: [ParticipationStatusHistory!]
+    evaluations: [Evaluation!]
+    evaluationCreatedByMe: [EvaluationHistory!]
+
+    articlesWrittenByMe: [Article!]
+    articlesAboutMe: [Article!]
+
+    ticketStatusChangedByMe: [TicketStatusHistory!]
+
+    createdAt: Datetime
     updatedAt: Datetime
-
-    portfolios(
-        filter: PortfolioFilterInput
-        sort: PortfolioSortInput
-        cursor: String
-        first: Int
-    ): PortfoliosConnection
-
-    memberships(
-        filter: MembershipFilterInput
-        sort: MembershipSortInput
-        cursor: MembershipCursorInput
-        first: Int
-    ): MembershipsConnection
-
-    membershipChangedByMe(
-        filter: MembershipHistoryFilterInput
-        sort: MembershipHistorySortInput
-        cursor: String
-        first: Int
-    ): MembershipHistoriesConnection
-
-    wallets(
-        filter: WalletFilterInput
-        sort: WalletSortInput
-        cursor: String
-        first: Int
-    ): WalletsConnection
-
-    opportunitiesCreatedByMe(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
-
-    reservations(
-        filter: ReservationFilterInput
-        sort: ReservationSortInput
-        cursor: String
-        first: Int
-    ): ReservationsConnection
-
-    reservationStatusChangedByMe(
-        filter: ReservationHistoryFilterInput
-        sort: ReservationHistorySortInput
-        cursor: String
-        first: Int
-    ): ReservationHistoriesConnection
-
-    participations(
-        filter: ParticipationFilterInput
-        sort: ParticipationSortInput
-        cursor: String
-        first: Int
-    ): ParticipationsConnection
-
-    participationStatusChangedByMe(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): ParticipationStatusHistoriesConnection
-
-    evaluations(
-        filter: EvaluationFilterInput
-        sort: EvaluationSortInput
-        cursor: String
-        first: Int
-    ): EvaluationsConnection
-
-    evaluationCreatedByMe(
-        filter: EvaluationHistoryFilterInput
-        sort: EvaluationHistorySortInput
-        cursor: String
-        first: Int
-    ): EvaluationHistoriesConnection
-
-    articlesWrittenByMe(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection
-
-    articlesAboutMe(
-        filter: ArticleFilterInput
-        sort: ArticleSortInput
-        cursor: String
-        first: Int
-    ): ArticlesConnection
-
-    ticketStatusChangedByMe(
-        filter: TicketStatusHistoryFilterInput
-        sort: TicketStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): TicketStatusHistoriesConnection
 }
 
 # ------------------------------

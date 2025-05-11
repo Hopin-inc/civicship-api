@@ -74,8 +74,10 @@ export default class ArticleConverter {
       });
     }
 
-    if (filter.and?.length) conditions.push({ AND: filter.and.map(this.filter) });
-    if (filter.or?.length) conditions.push({ OR: filter.or.map(this.filter) });
+    if (Array.isArray(filter.and) && filter.and.length)
+      conditions.push({ AND: filter.and.map((f) => this.filter(f)) });
+    if (Array.isArray(filter.or) && filter.or.length)
+      conditions.push({ OR: filter.or.map((f) => this.filter(f)) });
     if (filter.not) conditions.push({ NOT: this.filter(filter.not) });
 
     return conditions.length ? { AND: conditions } : {};

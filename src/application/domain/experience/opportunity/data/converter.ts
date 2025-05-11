@@ -18,13 +18,13 @@ export default class OpportunityConverter {
       ...this.opportunitySlotFilter(filter),
     ];
 
-    if (filter.and?.length) {
+    if (Array.isArray(filter.and) && filter.and.length) {
       conditions.push({
         AND: filter.and.map((sub) => this.filter(sub)),
       });
     }
 
-    if (filter.or?.length) {
+    if (Array.isArray(filter.or) && filter.or.length) {
       conditions.push({
         OR: filter.or.map((sub) => this.filter(sub)),
       });
@@ -80,15 +80,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-          const { cityCode, communityId, ...restCreate } = place.create!;
-          return {
-            create: {
-              ...restCreate,
-              city: { connect: { code: cityCode } },
-              community: { connect: { id: communityId } },
-            },
-          };
-        })();
+            const { cityCode, communityId, ...restCreate } = place.create!;
+            return {
+              create: {
+                ...restCreate,
+                city: { connect: { code: cityCode } },
+                community: { connect: { id: communityId } },
+              },
+            };
+          })();
     }
 
     return {
@@ -114,15 +114,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-          const { cityCode, communityId, ...restCreate } = place.create!;
-          return {
-            create: {
-              ...restCreate,
-              city: { connect: { code: cityCode } },
-              community: { connect: { id: communityId } },
-            },
-          };
-        })();
+            const { cityCode, communityId, ...restCreate } = place.create!;
+            return {
+              create: {
+                ...restCreate,
+                city: { connect: { code: cityCode } },
+                community: { connect: { id: communityId } },
+              },
+            };
+          })();
     }
 
     return {
@@ -134,9 +134,7 @@ export default class OpportunityConverter {
     };
   }
 
-  private opportunityFilter(
-    filter: GqlOpportunityFilterInput,
-  ): Prisma.OpportunityWhereInput[] {
+  private opportunityFilter(filter: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput[] {
     const conditions: Prisma.OpportunityWhereInput[] = [];
 
     if (filter.category) conditions.push({ category: filter.category });
@@ -156,9 +154,7 @@ export default class OpportunityConverter {
     return conditions;
   }
 
-  private opportunitySlotFilter(
-    filter: GqlOpportunityFilterInput,
-  ): Prisma.OpportunityWhereInput[] {
+  private opportunitySlotFilter(filter: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput[] {
     const slotConditions: Prisma.OpportunitySlotWhereInput[] = [];
 
     if (filter.slotHostingStatus?.length)

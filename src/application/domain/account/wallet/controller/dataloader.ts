@@ -1,24 +1,54 @@
-import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlWallet } from "@/types/graphql";
-import WalletOutputFormat from "@/application/domain/account/wallet/presenter";
-import { walletInclude } from "@/application/domain/account/wallet/data/type";
-
-async function batchWalletsById(
-  issuer: PrismaClientIssuer,
-  walletIds: readonly string[],
-): Promise<(GqlWallet | null)[]> {
-  const records = await issuer.internal(async (tx) => {
-    return tx.wallet.findMany({
-      where: { id: { in: [...walletIds] } },
-      include: walletInclude, // ウォレットに関連するjoinが必要なら
-    });
-  });
-
-  const map = new Map(records.map((record) => [record.id, WalletOutputFormat.get(record)]));
-  return walletIds.map((id) => map.get(id) ?? null);
-}
+import {
+  walletSelectDetail,
+  PrismaWalletDetail,
+} from "@/application/domain/account/wallet/data/type";
+import WalletPresenter from "@/application/domain/account/wallet/presenter";
+import {
+  createHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 
 export function createWalletLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlWallet | null>((keys) => batchWalletsById(issuer, keys));
+  return createLoaderById<PrismaWalletDetail, GqlWallet>(async (ids) => {
+    return issuer.internal((tx) =>
+      tx.wallet.findMany({
+        where: { id: { in: [...ids] } },
+        select: walletSelectDetail,
+      }),
+    );
+  }, WalletPresenter.get);
+}
+
+export function createWalletsByUserLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"userId", PrismaWalletDetail, GqlWallet>(
+    "userId",
+    async (userIds) => {
+      return issuer.internal((tx) =>
+        tx.wallet.findMany({
+          where: {
+            userId: { in: [...userIds] },
+          },
+          include: { currentPointView: true },
+        }),
+      );
+    },
+    WalletPresenter.get,
+  );
+}
+
+export function createWalletsByCommunityLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<"communityId", PrismaWalletDetail, GqlWallet>(
+    "communityId",
+    async (communityIds) => {
+      return issuer.internal((tx) =>
+        tx.wallet.findMany({
+          where: { communityId: { in: [...communityIds] } },
+          include: { currentPointView: true },
+        }),
+      );
+    },
+    WalletPresenter.get,
+  );
 }

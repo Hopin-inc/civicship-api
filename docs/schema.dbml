@@ -277,9 +277,10 @@ Table t_participations {
   ticketStatusHistories t_ticket_status_histories [not null]
   communityId String
   community t_communities
+  evaluationId String
   evaluation t_evaluations
-  statusHistories t_participation_status_histories [not null]
   transactions t_transactions [not null]
+  statusHistories t_participation_status_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }

@@ -6,10 +6,10 @@ type TicketStatusHistory {
     status: TicketStatus!
     reason: TicketStatusReason!
 
-    ticket: Ticket!
+    ticket: Ticket
     createdByUser: User
     transaction: Transaction
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

@@ -2,7 +2,7 @@ import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
-import { userInclude } from "@/application/domain/account/user/data/type";
+import { userSelectDetail } from "@/application/domain/account/user/data/type";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -23,7 +23,7 @@ export default class UserRepository implements IUserRepository {
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        include: userInclude,
+        select: userSelectDetail,
       });
     });
   }
@@ -32,7 +32,7 @@ export default class UserRepository implements IUserRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.user.findUnique({
         where: { id },
-        include: userInclude,
+        select: userSelectDetail,
       });
     });
   }
@@ -40,7 +40,7 @@ export default class UserRepository implements IUserRepository {
   async create(data: Prisma.UserCreateInput) {
     return this.db.user.create({
       data,
-      include: userInclude,
+      select: userSelectDetail,
     });
   }
 
@@ -53,14 +53,14 @@ export default class UserRepository implements IUserRepository {
     return tx.user.update({
       where: { id },
       data,
-      include: userInclude,
+      select: userSelectDetail,
     });
   }
 
   async delete(id: string) {
     return this.db.user.delete({
       where: { id },
-      include: userInclude,
+      select: userSelectDetail,
     });
   }
 }

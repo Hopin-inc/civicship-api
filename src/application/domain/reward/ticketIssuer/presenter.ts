@@ -1,22 +1,13 @@
 import { GqlTicketIssuePayload, GqlTicketIssuer } from "@/types/graphql";
-import { PrismaTicketIssuer } from "@/application/domain/reward/ticketIssuer/data/type";
-import TicketClaimLinkPresenter from "@/application/domain/reward/ticketClaimLink/presenter";
+import { PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssuer/data/type";
 
 export default class TicketIssuerPresenter {
-  static get(r: PrismaTicketIssuer): GqlTicketIssuer {
-    const { claimLink, utility, owner, ...prop } = r;
-
-    return {
-      ...prop,
-      claimLink: claimLink ? TicketClaimLinkPresenter.get(claimLink) : null,
-      utility,
-      owner,
-    };
+  static get(r: PrismaTicketIssuerDetail): GqlTicketIssuer {
+    return r;
   }
 
-  static issue(r: PrismaTicketIssuer): GqlTicketIssuePayload {
+  static issue(r: PrismaTicketIssuerDetail): GqlTicketIssuePayload {
     return {
-      __typename: "TicketIssueSuccess",
       issue: this.get(r),
     };
   }

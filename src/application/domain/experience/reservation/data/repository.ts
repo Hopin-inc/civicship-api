@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { reservationInclude } from "@/application/domain/experience/reservation/data/type";
+import {
+  reservationInclude,
+  reservationSelectDetail,
+} from "@/application/domain/experience/reservation/data/type";
 import { IReservationRepository } from "@/application/domain/experience/reservation/data/interface";
 import { injectable } from "tsyringe";
 
@@ -20,7 +23,7 @@ export default class ReservationRepository implements IReservationRepository {
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        include: reservationInclude,
+        select: reservationSelectDetail,
       });
     });
   }

@@ -4,8 +4,7 @@ import {
   GqlParticipationCreatePersonalRecordSuccess,
   GqlParticipationDeleteSuccess,
 } from "@/types/graphql";
-import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
-import UserPresenter from "@/application/domain/account/user/presenter";
+import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 
 export default class ParticipationPresenter {
   static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
@@ -24,27 +23,18 @@ export default class ParticipationPresenter {
     };
   }
 
-  static get(r: PrismaParticipation): GqlParticipation {
-    const { user, community, images, ...prop } = r;
-
-    return {
-      ...prop,
-      user: user ? UserPresenter.get(user) : null,
-      community,
-      images: images.map((image) => image.url),
-    };
+  static get(r: PrismaParticipationDetail): GqlParticipation {
+    return r;
   }
 
-  static create(r: PrismaParticipation): GqlParticipationCreatePersonalRecordSuccess {
+  static create(r: PrismaParticipationDetail): GqlParticipationCreatePersonalRecordSuccess {
     return {
-      __typename: "ParticipationCreatePersonalRecordSuccess",
       participation: this.get(r),
     };
   }
 
-  static delete(r: PrismaParticipation): GqlParticipationDeleteSuccess {
+  static delete(r: PrismaParticipationDetail): GqlParticipationDeleteSuccess {
     return {
-      __typename: "ParticipationDeleteSuccess",
       participationId: r.id,
     };
   }

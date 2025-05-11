@@ -1,8 +1,9 @@
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
-  opportunitySlotInclude,
-  opportunitySlotWithParticipationInclude,
+  opportunitySlotReserveInclude,
+  opportunitySlotSelectDetail,
+  opportunitySlotSetHostingStatusInclude,
 } from "@/application/domain/experience/opportunitySlot/data/type";
 import { injectable } from "tsyringe";
 import { IOpportunitySlotRepository } from "./interface";
@@ -20,10 +21,24 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
       return tx.opportunitySlot.findMany({
         where,
         orderBy,
-        include: opportunitySlotInclude,
+        select: opportunitySlotSelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
+      });
+    });
+  }
+
+  async queryByOpportunityId(
+    ctx: IContext,
+    where: Prisma.OpportunitySlotWhereInput,
+    orderBy?: Prisma.OpportunitySlotOrderByWithRelationInput[],
+  ) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.opportunitySlot.findMany({
+        where,
+        orderBy,
+        select: opportunitySlotSelectDetail,
       });
     });
   }
@@ -32,16 +47,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findUnique({
         where: { id },
-        include: opportunitySlotInclude,
-      });
-    });
-  }
-
-  async findByOpportunityId(ctx: IContext, opportunityId: string) {
-    return ctx.issuer.public(ctx, (tx) => {
-      return tx.opportunitySlot.findMany({
-        where: { opportunityId },
-        include: opportunitySlotInclude,
+        include: opportunitySlotReserveInclude,
       });
     });
   }
@@ -63,7 +69,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     return tx.opportunitySlot.update({
       where: { id },
       data,
-      include: opportunitySlotInclude,
+      select: opportunitySlotSelectDetail,
     });
   }
 
@@ -76,7 +82,7 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     return tx.opportunitySlot.update({
       where: { id },
       data: { hostingStatus },
-      include: opportunitySlotWithParticipationInclude,
+      include: opportunitySlotSetHostingStatusInclude,
     });
   }
 

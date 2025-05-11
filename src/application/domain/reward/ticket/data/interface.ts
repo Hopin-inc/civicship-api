@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
+import { PrismaTicketDetail } from "@/application/domain/reward/ticket/data/type";
 
 export interface ITicketRepository {
   query(
@@ -9,24 +9,24 @@ export interface ITicketRepository {
     orderBy: Prisma.TicketOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaTicket[]>;
+  ): Promise<PrismaTicketDetail[]>;
 
-  queryByIds(ctx: IContext, ids: string[]): Promise<PrismaTicket[]>;
+  queryByIds(ctx: IContext, ids: string[]): Promise<PrismaTicketDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaTicket | null>;
+  find(ctx: IContext, id: string): Promise<PrismaTicketDetail | null>;
 
   create(
     ctx: IContext,
     data: Prisma.TicketCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicket>;
+  ): Promise<PrismaTicketDetail>;
 
-  delete(ctx: IContext, id: string): Promise<PrismaTicket>;
+  delete(ctx: IContext, id: string): Promise<PrismaTicketDetail>;
 
   update(
     ctx: IContext,
     id: string,
     data: Prisma.TicketUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicket>;
+  ): Promise<PrismaTicketDetail>;
 }

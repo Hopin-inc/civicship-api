@@ -1,6 +1,9 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { membershipInclude } from "@/application/domain/account/membership/data/type";
+import {
+  membershipInclude,
+  membershipSelectDetail,
+} from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import { injectable } from "tsyringe";
 
@@ -26,7 +29,7 @@ export default class MembershipRepository implements IMembershipRepository {
               },
             }
           : {}),
-        include: membershipInclude,
+        select: membershipSelectDetail,
       });
     });
   }

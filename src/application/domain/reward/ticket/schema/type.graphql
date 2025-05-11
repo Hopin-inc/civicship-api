@@ -11,14 +11,9 @@ type Ticket {
     utility: Utility
     wallet: Wallet
 
-    ticketStatusHistories(
-        filter: TicketStatusHistoryFilterInput
-        sort: TicketStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): TicketStatusHistoriesConnection
+    ticketStatusHistories: [TicketStatusHistory!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 

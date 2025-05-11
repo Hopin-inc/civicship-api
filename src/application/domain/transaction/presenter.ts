@@ -5,7 +5,7 @@ import {
   GqlTransactionGrantCommunityPointSuccess,
   GqlTransactionDonateSelfPointSuccess,
 } from "@/types/graphql";
-import { PrismaTransaction } from "@/application/domain/transaction/data/type";
+import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 
 export default class TransactionPresenter {
   static query(r: GqlTransaction[], hasNextPage: boolean): GqlTransactionsConnection {
@@ -24,34 +24,24 @@ export default class TransactionPresenter {
     };
   }
 
-  static get(r: PrismaTransaction): GqlTransaction {
-    const { fromWallet, toWallet, participation, ...prop } = r;
-
-    return {
-      ...prop,
-      fromWallet,
-      toWallet,
-      participation,
-    };
+  static get(r: PrismaTransactionDetail): GqlTransaction {
+    return r;
   }
 
-  static issueCommunityPoint(r: PrismaTransaction): GqlTransactionIssueCommunityPointSuccess {
+  static issueCommunityPoint(r: PrismaTransactionDetail): GqlTransactionIssueCommunityPointSuccess {
     return {
-      __typename: "TransactionIssueCommunityPointSuccess",
       transaction: this.get(r),
     };
   }
 
-  static grantCommunityPoint(r: PrismaTransaction): GqlTransactionGrantCommunityPointSuccess {
+  static grantCommunityPoint(r: PrismaTransactionDetail): GqlTransactionGrantCommunityPointSuccess {
     return {
-      __typename: "TransactionGrantCommunityPointSuccess",
       transaction: this.get(r),
     };
   }
 
-  static giveUserPoint(r: PrismaTransaction): GqlTransactionDonateSelfPointSuccess {
+  static giveUserPoint(r: PrismaTransactionDetail): GqlTransactionDonateSelfPointSuccess {
     return {
-      __typename: "TransactionDonateSelfPointSuccess",
       transaction: this.get(r),
     };
   }

@@ -15,7 +15,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
-import { PublishStatus, TicketStatus } from "@prisma/client";
+import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
@@ -128,32 +128,6 @@ export default class OpportunityUseCase {
       );
       return OpportunityPresenter.setPublishStatus(record);
     });
-  }
-
-  async checkUserHasValidTicketForOpportunity(
-    ctx: IContext,
-    opportunityId: string,
-  ): Promise<boolean> {
-    if (!ctx.currentUser) return false;
-
-    const opportunity = await this.service.findOpportunity(ctx, opportunityId);
-    if (!opportunity) return false;
-
-    const requiredUtilityIds = opportunity.requiredUtilities?.map((u) => u.id) ?? [];
-    if (requiredUtilityIds.length === 0) return false;
-
-    const userTickets =
-      ctx.hasPermissions?.participations?.flatMap(
-        (participation) =>
-          participation.ticketStatusHistories
-            ?.map((h) => h.ticket)
-            .filter(
-              (ticket) => ticket.status === TicketStatus.AVAILABLE && ticket.utilityId != null,
-            ) ?? [],
-      ) ?? [];
-
-    const utilityIdSet = new Set(userTickets.map((t) => t.utilityId));
-    return requiredUtilityIds.some((id) => utilityIdSet.has(id));
   }
 }
 

@@ -1,7 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
+import {
+  evaluationInclude,
+  evaluationSelectDetail,
+} from "@/application/domain/experience/evaluation/data/type";
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
 @injectable()
@@ -20,7 +23,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        include: evaluationInclude,
+        select: evaluationSelectDetail,
       });
     });
   }
@@ -29,7 +32,7 @@ export default class EvaluationRepository implements IEvaluationRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.evaluation.findUnique({
         where: { id },
-        include: evaluationInclude,
+        select: evaluationSelectDetail,
       });
     });
   }

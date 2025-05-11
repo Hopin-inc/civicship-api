@@ -606,9 +606,11 @@ model Participation {
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
 
-  evaluation      Evaluation?
+  evaluationId String?       @map("evaluation_id")
+  evaluation   Evaluation?
+  transactions Transaction[]
+
   statusHistories ParticipationStatusHistory[]
-  transactions    Transaction[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

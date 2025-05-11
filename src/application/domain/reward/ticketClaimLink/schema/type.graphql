@@ -8,11 +8,11 @@ type TicketClaimLink {
     """Max number of tickets a user can claim using this link"""
     qty: Int!
 
-    issuer: TicketIssuer!
+    issuer: TicketIssuer
     tickets: [Ticket!]
 
     claimedAt: Datetime
-    createdAt: Datetime!
+    createdAt: Datetime
 }
 
 # ------------------------------

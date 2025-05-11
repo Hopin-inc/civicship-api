@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { lineClient } from "../src/infrastructure/libs/line";
 import { buildCancelOpportunitySlotMessage } from "../src/application/domain/notification/presenter/message/cancelOpportunitySlotMessage";
 import { buildReservationAppliedMessage } from "../src/application/domain/notification/presenter/message/applyReservationMessage";
@@ -13,7 +14,7 @@ import {
 // ===================================
 // 🚀 実行コマンド（ローカルテスト送信用）
 //
-// npx tsx --env-file=.env scripts/pushTestMessage.ts
+// npx tsx --env-file=.env debugScripts/pushTestMessage.ts
 
 // 🚨 LOCAL_UIDは自分のIDに変更して下さい、今のままなら阪田に届きます
 // ===================================

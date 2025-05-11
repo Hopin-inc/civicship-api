@@ -6,30 +6,18 @@ type Participation {
     status: ParticipationStatus!
     reason: ParticipationStatusReason!
     source: Source!
+    description: String
+
     images: [String!]
 
     user: User
     community: Community
     reservation: Reservation
-
     evaluation: Evaluation
-    description: String
 
     ticketStatusHistories: [TicketStatusHistory!]
-
-    statusHistories(
-        filter: ParticipationStatusHistoryFilterInput
-        sort: ParticipationStatusHistorySortInput
-        cursor: String
-        first: Int
-    ): ParticipationStatusHistoriesConnection
-
-    transactions(
-        filter: TransactionFilterInput
-        sort: TransactionSortInput
-        cursor: String
-        first: Int
-    ): TransactionsConnection
+    statusHistories: [ParticipationStatusHistory!]
+    transactions: [Transaction!]
 
     createdAt: Datetime!
     updatedAt: Datetime

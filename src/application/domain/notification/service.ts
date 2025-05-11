@@ -1,4 +1,3 @@
-import { PrismaOpportunitySlotWithParticipation } from "@/application/domain/experience/opportunitySlot/data/type";
 import { IContext } from "@/types/server";
 import dayjs from "dayjs";
 import "dayjs/locale/ja.js";
@@ -12,6 +11,7 @@ import { LINE_RICHMENU } from "@/application/domain/notification/presenter/richm
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
 import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
+import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
@@ -26,7 +26,7 @@ dayjs.locale("ja");
 export default class NotificationService {
   async pushCancelOpportunitySlotMessage(
     ctx: IContext,
-    slot: PrismaOpportunitySlotWithParticipation,
+    slot: PrismaOpportunitySlotSetHostingStatus,
   ) {
     const lineId =
       process.env.ENV === "LOCAL"

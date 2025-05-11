@@ -29,18 +29,11 @@ type Opportunity {
     slots(
         filter: OpportunitySlotFilterInput
         sort: OpportunitySlotSortInput
-        cursor: String
-        first: Int
-    ): OpportunitySlotsConnection
-    earliestReservableSlotView: EarliestReservableSlotView
-
-    createdAt: Datetime!
-    updatedAt: Datetime
-}
-
-type EarliestReservableSlotView{
-    opportunityId: ID!
+    ): [OpportunitySlot!]
     earliestReservableAt: Datetime
+
+    createdAt: Datetime
+    updatedAt: Datetime
 }
 
 # ------------------------------

@@ -6,7 +6,7 @@ import {
   GqlTicketsConnection,
   GqlTicketUseSuccess,
 } from "@/types/graphql";
-import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
+import { PrismaTicketDetail } from "@/application/domain/reward/ticket/data/type";
 
 export default class TicketPresenter {
   static query(tickets: GqlTicket[], hasNextPage: boolean): GqlTicketsConnection {
@@ -25,41 +25,30 @@ export default class TicketPresenter {
     };
   }
 
-  static get(r: PrismaTicket): GqlTicket {
-    const { utility, wallet, claimLink, ...prop } = r;
-
-    return {
-      ...prop,
-      utility,
-      wallet,
-      claimLink,
-    };
+  static get(r: PrismaTicketDetail): GqlTicket {
+    return r;
   }
 
-  static claim(tickets: PrismaTicket[]): GqlTicketClaimSuccess {
+  static claim(tickets: PrismaTicketDetail[]): GqlTicketClaimSuccess {
     return {
-      __typename: "TicketClaimSuccess",
       tickets: tickets.map(this.get),
     };
   }
 
-  static purchase(r: PrismaTicket): GqlTicketPurchaseSuccess {
+  static purchase(r: PrismaTicketDetail): GqlTicketPurchaseSuccess {
     return {
-      __typename: "TicketPurchaseSuccess",
       ticket: this.get(r),
     };
   }
 
-  static use(r: PrismaTicket): GqlTicketUseSuccess {
+  static use(r: PrismaTicketDetail): GqlTicketUseSuccess {
     return {
-      __typename: "TicketUseSuccess",
       ticket: this.get(r),
     };
   }
 
-  static refund(r: PrismaTicket): GqlTicketRefundSuccess {
+  static refund(r: PrismaTicketDetail): GqlTicketRefundSuccess {
     return {
-      __typename: "TicketRefundSuccess",
       ticket: this.get(r),
     };
   }

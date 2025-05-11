@@ -2,8 +2,8 @@ import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import {
-  PrismaTicketClaimLink,
   ticketClaimLinkInclude,
+  ticketClaimLinkSelectDetail,
 } from "@/application/domain/reward/ticketClaimLink/data/type";
 import { ITicketClaimLinkRepository } from "./interface";
 
@@ -15,7 +15,7 @@ export default class TicketClaimLinkRepository implements ITicketClaimLinkReposi
     orderBy: Prisma.TicketClaimLinkOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaTicketClaimLink[]> {
+  ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketClaimLink.findMany({
         where,
@@ -23,12 +23,12 @@ export default class TicketClaimLinkRepository implements ITicketClaimLinkReposi
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        include: ticketClaimLinkInclude,
+        select: ticketClaimLinkSelectDetail,
       });
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaTicketClaimLink | null> {
+  async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketClaimLink.findUnique({
         where: { id },
@@ -42,11 +42,11 @@ export default class TicketClaimLinkRepository implements ITicketClaimLinkReposi
     id: string,
     data: Prisma.TicketClaimLinkUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicketClaimLink> {
+  ) {
     return tx.ticketClaimLink.update({
       where: { id },
       data,
-      include: ticketClaimLinkInclude,
+      select: ticketClaimLinkSelectDetail,
     });
   }
 }
