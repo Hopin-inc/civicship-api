@@ -13,6 +13,7 @@ type Membership {
     role: Role!
 
     participationView: MembershipParticipationView
+    hostOpportunityCount: Int
 
     histories: [MembershipHistory!]
 

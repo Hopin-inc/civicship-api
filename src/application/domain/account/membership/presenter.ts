@@ -6,8 +6,13 @@ import {
   GqlMembershipWithdrawSuccess,
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
+  GqlMembershipParticipationLocation,
 } from "@/types/graphql";
-import { PrismaMembership } from "@/application/domain/account/membership/data/type";
+import {
+  PrismaMembership,
+  PrismaMembershipDetail,
+} from "@/application/domain/account/membership/data/type";
+import { ParticipationType } from "@prisma/client";
 
 export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
@@ -25,6 +30,44 @@ export default class MembershipPresenter {
         cursor: edge.user?.id + "_" + edge.community?.id,
         node: edge,
       })),
+    };
+  }
+
+  static getWithGeo(r: PrismaMembershipDetail): GqlMembership {
+    const { participationGeoViews, participationCountViews, opportunityHostedCountView, ...prop } =
+      r;
+
+    const hostedGeoMap = new Map<string, GqlMembershipParticipationLocation>();
+
+    participationGeoViews
+      .filter((v) => v.type === ParticipationType.HOSTED)
+      .forEach((v) => {
+        if (!hostedGeoMap.has(v.placeId)) {
+          hostedGeoMap.set(v.placeId, {
+            placeId: v.placeId,
+            placeName: v.placeName,
+            placeImage: v.placeImage,
+            address: v.address,
+            latitude: v.latitude.toString(),
+            longitude: v.longitude.toString(),
+          });
+        }
+      });
+
+    const hostedGeo = Array.from(hostedGeoMap.values());
+
+    const hostedCount =
+      participationCountViews.find((v) => v.type === ParticipationType.HOSTED)?.totalCount ?? 0;
+
+    return {
+      ...prop,
+      participationView: {
+        hosted: {
+          totalParticipantCount: hostedCount,
+          geo: hostedGeo,
+        },
+      },
+      hostOpportunityCount: opportunityHostedCountView?.totalCount,
     };
   }
 

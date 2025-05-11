@@ -366,6 +366,7 @@ export type GqlMembership = {
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   headline?: Maybe<Scalars['String']['output']>;
   histories?: Maybe<Array<GqlMembershipHistory>>;
+  hostOpportunityCount?: Maybe<Scalars['Int']['output']>;
   participationView?: Maybe<GqlMembershipParticipationView>;
   reason: GqlMembershipStatusReason;
   role: GqlRole;
@@ -3118,6 +3119,7 @@ export type GqlMembershipResolvers<ContextType = any, ParentType extends GqlReso
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   headline?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   histories?: Resolver<Maybe<Array<GqlResolversTypes['MembershipHistory']>>, ParentType, ContextType>;
+  hostOpportunityCount?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   participationView?: Resolver<Maybe<GqlResolversTypes['MembershipParticipationView']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['MembershipStatusReason'], ParentType, ContextType>;
   role?: Resolver<GqlResolversTypes['Role'], ParentType, ContextType>;
