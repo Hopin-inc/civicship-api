@@ -5,7 +5,7 @@ type Participation {
     id: ID!
     status: ParticipationStatus!
     reason: ParticipationStatusReason!
-    source: Source!
+    source: Source
     description: String
 
     images: [String!]
@@ -19,7 +19,7 @@ type Participation {
     statusHistories: [ParticipationStatusHistory!]
     transactions: [Transaction!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 

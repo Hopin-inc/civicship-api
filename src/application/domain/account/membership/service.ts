@@ -31,6 +31,10 @@ export default class MembershipService {
     return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
+  async findMembershipDetail(ctx: IContext, userId: string, communityId: string) {
+    return this.repository.findDetail(ctx, { userId_communityId: { userId, communityId } });
+  }
+
   async findMembership(ctx: IContext, userId: string, communityId: string) {
     return this.repository.find(ctx, { userId_communityId: { userId, communityId } });
   }
