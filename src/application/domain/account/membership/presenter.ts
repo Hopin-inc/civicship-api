@@ -33,7 +33,7 @@ export default class MembershipPresenter {
     };
   }
 
-  static getWithGeo(r: PrismaMembershipDetail): GqlMembership {
+  static get(r: PrismaMembershipDetail): GqlMembership {
     const { participationGeoViews, participationCountViews, opportunityHostedCountView, ...prop } =
       r;
 
@@ -69,10 +69,6 @@ export default class MembershipPresenter {
       },
       hostOpportunityCount: opportunityHostedCountView?.totalCount,
     };
-  }
-
-  static get(r: Omit<PrismaMembership, "user">): GqlMembership {
-    return r;
   }
 
   static invite(r: Omit<PrismaMembership, "user">): GqlMembershipInviteSuccess {

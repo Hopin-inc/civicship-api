@@ -39,7 +39,7 @@ export default class MembershipUseCase {
     const records = await this.membershipService.fetchMemberships(ctx, args, take);
 
     const hasNextPage = records.length > take;
-    const data = records.slice(0, take).map(MembershipPresenter.getWithGeo);
+    const data = records.slice(0, take).map(MembershipPresenter.get);
     return MembershipPresenter.query(data, hasNextPage);
   }
 
@@ -47,7 +47,7 @@ export default class MembershipUseCase {
     args: GqlQueryMembershipArgs,
     ctx: IContext,
   ): Promise<GqlMembership | null> {
-    const membership = await this.membershipService.findMembership(
+    const membership = await this.membershipService.findMembershipDetail(
       ctx,
       args.userId,
       args.communityId,

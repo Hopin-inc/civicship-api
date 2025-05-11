@@ -24,7 +24,7 @@ export default class MembershipResolver {
     memberships: (_: unknown, args: GqlQueryMembershipsArgs, ctx: IContext) =>
       this.useCase.visitorBrowseMemberships(args, ctx),
     membership: (_: unknown, args: GqlQueryMembershipArgs, ctx: IContext) => {
-      this.useCase.visitorViewMembership(args, ctx);
+      return this.useCase.visitorViewMembership(args, ctx);
     },
   };
 

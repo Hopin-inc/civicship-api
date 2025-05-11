@@ -44,10 +44,7 @@ export function createMembershipsByUserLoader(issuer: PrismaClientIssuer) {
           where: {
             userId: { in: [...userIds] },
           },
-          include: {
-            participationGeoViews: true,
-            participationCountViews: true,
-          },
+          select: membershipSelectDetail,
         }),
       );
     },
@@ -62,10 +59,7 @@ export function createMembershipsByCommunityLoader(issuer: PrismaClientIssuer) {
       return issuer.internal((tx) =>
         tx.membership.findMany({
           where: { communityId: { in: [...communityIds] } },
-          include: {
-            participationGeoViews: true,
-            participationCountViews: true,
-          },
+          select: membershipSelectDetail,
         }),
       );
     },

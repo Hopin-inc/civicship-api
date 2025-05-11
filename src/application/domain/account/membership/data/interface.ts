@@ -16,6 +16,11 @@ export interface IMembershipRepository {
 
   find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput): Promise<PrismaMembership | null>;
 
+  findDetail(
+    ctx: IContext,
+    where: Prisma.MembershipWhereUniqueInput,
+  ): Promise<PrismaMembershipDetail | null>;
+
   create(
     ctx: IContext,
     data: Prisma.MembershipCreateInput,
