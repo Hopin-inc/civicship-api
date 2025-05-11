@@ -2,8 +2,8 @@
 # Membership Object Type Definitions
 # ------------------------------
 type Membership {
-    user: User!
-    community: Community!
+    user: User
+    community: Community
 
     headline: String
     bio: String
@@ -14,12 +14,7 @@ type Membership {
 
     participationView: MembershipParticipationView
 
-    membershipHistories(
-        filter: MembershipHistoryFilterInput
-        sort: MembershipHistorySortInput
-        cursor: String
-        first: Int
-    ):MembershipHistoriesConnection
+    histories: [MembershipHistory!]
 
     createdAt: Datetime!
     updatedAt: Datetime

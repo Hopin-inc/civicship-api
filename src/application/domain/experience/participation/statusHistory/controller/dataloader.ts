@@ -1,22 +1,27 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlParticipationStatusHistory } from "@/types/graphql";
-import { participationStatusHistoryInclude } from "@/application/domain/experience/participation/statusHistory/data/type";
-import ParticipationStatusHistoryOutputFormat from "@/application/domain/experience/participation/statusHistory/presenter";
+import {
+  participationStatusHistorySelectDetail,
+  PrismaParticipationStatusHistoryDetail,
+} from "@/application/domain/experience/participation/statusHistory/data/type";
+import ParticipationStatusHistoryPresenter from "@/application/domain/experience/participation/statusHistory/presenter";
+import { createHasManyLoaderByKey } from "@/presentation/graphql/dataloader/utils";
+import { ParticipationStatusHistory } from "@prisma/client";
 
 async function batchParticipationStatusHistoriesById(
   issuer: PrismaClientIssuer,
   ids: readonly string[],
 ): Promise<(GqlParticipationStatusHistory | null)[]> {
-  const records = await issuer.internal(async (tx) => {
+  const records = (await issuer.internal(async (tx) => {
     return tx.participationStatusHistory.findMany({
       where: { id: { in: [...ids] } },
-      include: participationStatusHistoryInclude,
+      select: participationStatusHistorySelectDetail,
     });
-  });
+  })) as PrismaParticipationStatusHistoryDetail[];
 
   const map = new Map(
-    records.map((record) => [record.id, ParticipationStatusHistoryOutputFormat.get(record)]),
+    records.map((record) => [record.id, ParticipationStatusHistoryPresenter.get(record)]),
   );
 
   return ids.map((id) => map.get(id) ?? null);
@@ -25,5 +30,27 @@ async function batchParticipationStatusHistoriesById(
 export function createParticipationStatusHistoryLoader(issuer: PrismaClientIssuer) {
   return new DataLoader<string, GqlParticipationStatusHistory | null>((keys) =>
     batchParticipationStatusHistoriesById(issuer, keys),
+  );
+}
+
+export function createParticipationStatusHistoriesByParticipationLoader(
+  issuer: PrismaClientIssuer,
+) {
+  return createHasManyLoaderByKey<
+    "participationId",
+    ParticipationStatusHistory,
+    GqlParticipationStatusHistory
+  >(
+    "participationId",
+    async (participationIds) => {
+      return issuer.internal((tx) =>
+        tx.participationStatusHistory.findMany({
+          where: {
+            participationId: { in: [...participationIds] },
+          },
+        }),
+      );
+    },
+    ParticipationStatusHistoryPresenter.get,
   );
 }

@@ -22,10 +22,33 @@ export const opportunitySetHostingStatusInclude = Prisma.validator<Prisma.Opport
   images: true,
 });
 
+export const opportunitySelectDetail = Prisma.validator<Prisma.OpportunitySelect>()({
+  id: true,
+  title: true,
+  description: true,
+  publishStatus: true,
+  requireApproval: true,
+  category: true,
+  body: true,
+  pointsToEarn: true,
+  feeRequired: true,
+
+  communityId: true,
+  placeId: true,
+  createdBy: true,
+
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type PrismaOpportunity = Prisma.OpportunityGetPayload<{
   include: typeof opportunityInclude;
 }>;
 
 export type PrismaOpportunitySetHostingStatus = Prisma.OpportunityGetPayload<{
   include: typeof opportunitySetHostingStatusInclude;
+}>;
+
+export type PrismaOpportunityDetail = Prisma.OpportunityGetPayload<{
+  select: typeof opportunitySelectDetail;
 }>;

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITransactionRepository } from "@/application/domain/transaction/data/interface";
-import { transactionInclude } from "@/application/domain/transaction/data/type";
+import { transactionSelectDetail, PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { injectable } from "tsyringe";
 
@@ -13,12 +13,12 @@ export default class TransactionRepository implements ITransactionRepository {
     orderBy: Prisma.TransactionOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ) {
+  ): Promise<PrismaTransactionDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.transaction.findMany({
         where,
         orderBy,
-        include: transactionInclude,
+        select: transactionSelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -26,23 +26,30 @@ export default class TransactionRepository implements ITransactionRepository {
     });
   }
 
-  async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string): Promise<PrismaTransactionDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.transaction.findUnique({
         where: { id },
-        include: transactionInclude,
+        select: transactionSelectDetail,
       });
     });
   }
 
-  async refreshCurrentPoints(ctx: IContext, tx: Prisma.TransactionClient) {
+  async refreshCurrentPoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+  ): Promise<refreshMaterializedViewCurrentPoints.Result[]> {
     return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
-  async create(ctx: IContext, data: Prisma.TransactionCreateInput, tx: Prisma.TransactionClient) {
+  async create(
+    ctx: IContext,
+    data: Prisma.TransactionCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaTransactionDetail> {
     return tx.transaction.create({
       data,
-      include: transactionInclude,
+      select: transactionSelectDetail,
     });
   }
 }

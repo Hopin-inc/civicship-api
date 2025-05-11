@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { ticketInclude } from "@/application/domain/reward/ticket/data/type";
+import { ticketSelectDetail } from "@/application/domain/reward/ticket/data/type";
 import { injectable } from "tsyringe";
 import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
 
@@ -17,7 +17,7 @@ export default class TicketRepository implements ITicketRepository {
       return tx.ticket.findMany({
         where,
         orderBy,
-        include: ticketInclude,
+        select: ticketSelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -29,7 +29,7 @@ export default class TicketRepository implements ITicketRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.findMany({
         where: { id: { in: ids } },
-        include: ticketInclude,
+        select: ticketSelectDetail,
       });
     });
   }
@@ -38,7 +38,7 @@ export default class TicketRepository implements ITicketRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.findUnique({
         where: { id },
-        include: ticketInclude,
+        select: ticketSelectDetail,
       });
     });
   }
@@ -46,7 +46,7 @@ export default class TicketRepository implements ITicketRepository {
   async create(ctx: IContext, data: Prisma.TicketCreateInput, tx: Prisma.TransactionClient) {
     return tx.ticket.create({
       data,
-      include: ticketInclude,
+      select: ticketSelectDetail,
     });
   }
 
@@ -54,7 +54,7 @@ export default class TicketRepository implements ITicketRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticket.delete({
         where: { id },
-        include: ticketInclude,
+        select: ticketSelectDetail,
       });
     });
   }
@@ -68,7 +68,7 @@ export default class TicketRepository implements ITicketRepository {
     return tx.ticket.update({
       where: { id },
       data,
-      include: ticketInclude,
+      select: ticketSelectDetail,
     });
   }
 }

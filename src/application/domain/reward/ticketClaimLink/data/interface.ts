@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaTicketClaimLink } from "./type";
+import { PrismaTicketClaimLink, PrismaTicketClaimLinkDetail } from "./type";
 
 export interface ITicketClaimLinkRepository {
   query(
@@ -9,7 +9,7 @@ export interface ITicketClaimLinkRepository {
     orderBy: Prisma.TicketClaimLinkOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ): Promise<PrismaTicketClaimLink[]>;
+  ): Promise<PrismaTicketClaimLinkDetail[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaTicketClaimLink | null>;
 
@@ -18,7 +18,7 @@ export interface ITicketClaimLinkRepository {
     id: string,
     data: Prisma.TicketClaimLinkUpdateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicketClaimLink>;
+  ): Promise<PrismaTicketClaimLinkDetail>;
 }
 
 export interface ITicketClaimLinkService {
@@ -31,4 +31,4 @@ export interface ITicketClaimLinkService {
     qty: number,
     tx: Prisma.TransactionClient,
   ): Promise<void>;
-} 
+}

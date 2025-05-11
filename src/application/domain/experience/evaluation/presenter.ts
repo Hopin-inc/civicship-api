@@ -3,7 +3,7 @@ import {
   GqlEvaluationCreateSuccess,
   GqlEvaluationsConnection,
 } from "@/types/graphql";
-import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
+import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
 
 export default class EvaluationPresenter {
   static query(records: GqlEvaluation[], hasNextPage: boolean): GqlEvaluationsConnection {
@@ -22,19 +22,12 @@ export default class EvaluationPresenter {
     };
   }
 
-  static get(record: PrismaEvaluation): GqlEvaluation {
-    const { evaluator, participation, ...rest } = record;
-
-    return {
-      ...rest,
-      evaluator,
-      participation,
-    };
+  static get(record: PrismaEvaluationDetail): GqlEvaluation {
+    return record;
   }
 
-  static create(record: PrismaEvaluation): GqlEvaluationCreateSuccess {
+  static create(record: PrismaEvaluationDetail): GqlEvaluationCreateSuccess {
     return {
-      __typename: "EvaluationCreateSuccess",
       evaluation: this.get(record),
     };
   }

@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaTransaction } from "@/application/domain/transaction/data/type";
+import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import {
   GqlQueryTransactionsArgs,
@@ -13,26 +13,31 @@ export interface ITransactionService {
     ctx: IContext,
     args: GqlQueryTransactionsArgs,
     take: number,
-  ): Promise<PrismaTransaction[]>;
-  findTransaction(ctx: IContext, id: string): Promise<PrismaTransaction | null>;
+  ): Promise<PrismaTransactionDetail[]>;
+  
+  findTransaction(ctx: IContext, id: string): Promise<PrismaTransactionDetail | null>;
+  
   issueCommunityPoint(
     ctx: IContext,
     input: GqlTransactionIssueCommunityPointInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
+  
   grantCommunityPoint(
     ctx: IContext,
     input: GqlTransactionGrantCommunityPointInput,
     memberWalletId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
+  
   donateSelfPoint(
     ctx: IContext,
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
+  
   giveRewardPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
@@ -40,21 +45,23 @@ export interface ITransactionService {
     transferPoints: number,
     fromWalletId: string,
     toWalletId: string,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
+  
   purchaseTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
+  
   refundTicket(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     fromWalletId: string,
     toWalletId: string,
     transferPoints: number,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
 }
 
 export interface ITransactionRepository {
@@ -64,9 +71,9 @@ export interface ITransactionRepository {
     orderBy: Prisma.TransactionOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaTransaction[]>;
+  ): Promise<PrismaTransactionDetail[]>;
 
-  find(ctx: IContext, id: string): Promise<PrismaTransaction | null>;
+  find(ctx: IContext, id: string): Promise<PrismaTransactionDetail | null>;
 
   refreshCurrentPoints(
     ctx: IContext,
@@ -77,5 +84,5 @@ export interface ITransactionRepository {
     ctx: IContext,
     data: Prisma.TransactionCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTransaction>;
+  ): Promise<PrismaTransactionDetail>;
 }

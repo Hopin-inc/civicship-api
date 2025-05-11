@@ -1,6 +1,9 @@
 import { GqlQueryReservationsArgs, GqlReservationsConnection } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
+import {
+  PrismaReservation,
+  PrismaReservationDetail,
+} from "@/application/domain/experience/reservation/data/type";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 import { Prisma, ReservationStatus } from "@prisma/client";
 
@@ -16,7 +19,7 @@ export interface IReservationService {
     slotId: string,
   ): Promise<PrismaReservation[]>;
 
-  findReservation(ctx: IContext, id: string): Promise<PrismaReservation | null>;
+  findReservation(ctx: IContext, id: string): Promise<PrismaReservationDetail | null>;
 
   findReservationOrThrow(ctx: IContext, id: string): Promise<PrismaReservation>;
 
@@ -45,7 +48,7 @@ export interface IReservationRepository {
     orderBy: Prisma.ReservationOrderByWithRelationInput[],
     take: number,
     cursor?: string,
-  ): Promise<PrismaReservation[]>;
+  ): Promise<PrismaReservationDetail[]>;
 
   count(
     ctx: IContext,

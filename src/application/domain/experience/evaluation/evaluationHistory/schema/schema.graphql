@@ -6,7 +6,7 @@ type EvaluationHistory {
     status: EvaluationStatus!
     comment: String
 
-    evaluation: Evaluation!
+    evaluation: Evaluation
     createdByUser: User
 
     createdAt: Datetime!

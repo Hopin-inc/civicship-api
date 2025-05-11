@@ -3,29 +3,21 @@
 # ------------------------------
 type Utility {
     id: ID!
-    name: String!
+    name: String
+
+    publishStatus: PublishStatus!
+    pointsRequired: Int!
+
     description: String
     images: [String!]
-    pointsRequired: Int!
-    publishStatus: PublishStatus!
 
-    community: Community!
+    community: Community
 
     ticketIssuers: [TicketIssuer!]
-    tickets(
-        filter: TicketFilterInput
-        sort: TicketSortInput
-        cursor: String
-        first: Int
-    ): TicketsConnection
+    tickets: [Ticket!]
 
-    requiredForOpportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
+    requiredForOpportunities: [Opportunity!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

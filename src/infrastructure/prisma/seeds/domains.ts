@@ -83,8 +83,11 @@ async function createBaseEntitiesForUsers() {
   const users = await UserFactory.createList(10);
 
   const membershipsAndWallets = await processInBatches(users, BATCH_SIZE, async (user) => {
-    const wallet = await WalletFactory.create({ transientUser: user, transientCommunity: community });
-    await MembershipFactory.create({ transientUser: user, transientCommunity: community })
+    const wallet = await WalletFactory.create({
+      transientUser: user,
+      transientCommunity: community,
+    });
+    await MembershipFactory.create({ transientUser: user, transientCommunity: community });
     return { user, wallet };
   });
 
@@ -116,9 +119,11 @@ async function createUtilitiesAndTickets(users: User[], community: Community, wa
 async function createPlaces(community: Community) {
   const results: Place[] = [];
   for (let i = 0; i < 20 / BATCH_SIZE; i++) {
-    results.push(...await PlaceFactory.createList(BATCH_SIZE, {
-      transientCommunity: community,
-    }));
+    results.push(
+      ...(await PlaceFactory.createList(BATCH_SIZE, {
+        transientCommunity: community,
+      })),
+    );
   }
   return results;
 }
@@ -138,23 +143,31 @@ async function createOpportunities(users: User[], community: Community, places: 
 }
 
 // STEP 4
-async function createNestedEntities(users: User[], community: Community, opportunities: Opportunity[]) {
+async function createNestedEntities(
+  users: User[],
+  community: Community,
+  opportunities: Opportunity[],
+) {
   await processInBatches(opportunities, BATCH_SIZE, async (opportunity) => {
     const user = users[opportunities.indexOf(opportunity) % users.length];
     const slots: OpportunitySlot[] = [];
     for (let i = 0; i < NUM_SLOTS_PER_OPPORTUNITY; i++) {
-      slots.push(...await OpportunitySlotFactory.createList(1, {
-        transientOpportunity: opportunity,
-      }));
+      slots.push(
+        ...(await OpportunitySlotFactory.createList(1, {
+          transientOpportunity: opportunity,
+        })),
+      );
     }
 
     for (const slot of slots) {
       const reservations: Reservation[] = [];
       for (let i = 0; i < NUM_RESERVATIONS_PER_SLOT; i++) {
-        reservations.push(...await ReservationFactory.createList(1, {
-          transientUser: user,
-          transientSlot: slot,
-        }))
+        reservations.push(
+          ...(await ReservationFactory.createList(1, {
+            transientUser: user,
+            transientSlot: slot,
+          })),
+        );
       }
 
       const participations = await processInBatches(reservations, 1, async (reservation) => {
@@ -166,10 +179,17 @@ async function createNestedEntities(users: User[], community: Community, opportu
       });
 
       await processInBatches(participations, 1, async (participation) => {
-        return EvaluationFactory.create({
+        const evaluation = await EvaluationFactory.create({
           transientParticipation: participation,
           transientUser: user,
         });
+
+        await prismaClient.participation.update({
+          where: { id: participation.id },
+          data: { evaluationId: evaluation.id },
+        });
+
+        return evaluation;
       });
     }
 
@@ -184,10 +204,14 @@ async function createNestedEntities(users: User[], community: Community, opportu
 
 // STEP 5
 async function createTransactions(wallets: Wallet[]) {
-  await processInBatches([...Array(NUM_TRANSACTIONS)].map((_, i) => i), BATCH_SIZE, async (i) => {
-    return TransactionFactory.create({
-      transientFromWallet: wallets[i % wallets.length],
-      transientToWallet: wallets[(i + 1) % wallets.length],
-    });
-  });
+  await processInBatches(
+    [...Array(NUM_TRANSACTIONS)].map((_, i) => i),
+    BATCH_SIZE,
+    async (i) => {
+      return TransactionFactory.create({
+        transientFromWallet: wallets[i % wallets.length],
+        transientToWallet: wallets[(i + 1) % wallets.length],
+      });
+    },
+  );
 }

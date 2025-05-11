@@ -19,14 +19,14 @@ export default class EvaluationService {
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryEvaluationsArgs,
     take: number,
-  ): Promise<PrismaEvaluation[]> {
+  ) {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
 
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  async findEvaluation(ctx: IContext, id: string): Promise<PrismaEvaluation | null> {
+  async findEvaluation(ctx: IContext, id: string) {
     return await this.repository.find(ctx, id);
   }
 
@@ -35,7 +35,7 @@ export default class EvaluationService {
     input: GqlEvaluationCreateInput,
     status: EvaluationStatus,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaEvaluation> {
+  ) {
     const isValidFinalStatus =
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 

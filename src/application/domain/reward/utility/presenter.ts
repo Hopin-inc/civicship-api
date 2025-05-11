@@ -5,8 +5,7 @@ import {
   GqlUtilityDeleteSuccess,
   GqlUtilityUpdateInfoSuccess,
 } from "@/types/graphql";
-import { PrismaUtility } from "@/application/domain/reward/utility/data/type";
-import { Utility } from "@prisma/client";
+import { PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 
 export default class UtilityPresenter {
   static query(utilities: GqlUtility[], hasNextPage: boolean): GqlUtilitiesConnection {
@@ -25,27 +24,24 @@ export default class UtilityPresenter {
     };
   }
 
-  static get(r: PrismaUtility): GqlUtility {
+  static get(r: PrismaUtilityDetail): GqlUtility {
     return r;
   }
 
-  static create(r: PrismaUtility): GqlUtilityCreateSuccess {
+  static create(r: PrismaUtilityDetail): GqlUtilityCreateSuccess {
     return {
-      __typename: "UtilityCreateSuccess",
       utility: this.get(r),
     };
   }
 
-  static delete(r: Utility): GqlUtilityDeleteSuccess {
+  static delete(r: PrismaUtilityDetail): GqlUtilityDeleteSuccess {
     return {
-      __typename: "UtilityDeleteSuccess",
       utilityId: r.id,
     };
   }
 
-  static updateInfo(r: PrismaUtility): GqlUtilityUpdateInfoSuccess {
+  static updateInfo(r: PrismaUtilityDetail): GqlUtilityUpdateInfoSuccess {
     return {
-      __typename: "UtilityUpdateInfoSuccess",
       utility: this.get(r),
     };
   }

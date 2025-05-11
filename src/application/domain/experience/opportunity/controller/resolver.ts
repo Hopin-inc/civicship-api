@@ -3,21 +3,17 @@ import {
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
-  GqlOpportunity,
-  GqlOpportunitySlotsArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
-import OpportunitySlotUseCase from "@/application/domain/experience/opportunitySlot/usecase";
 
 @injectable()
 export default class OpportunityResolver {
   constructor(
     @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
-    @inject("OpportunitySlotUseCase") private readonly slotUseCase: OpportunitySlotUseCase,
   ) {}
 
   Query = {
@@ -53,17 +49,73 @@ export default class OpportunityResolver {
   };
 
   Opportunity = {
-    isReservableWithTicket: (parent: GqlOpportunity, _: unknown, ctx: IContext) => {
-      return this.opportunityUseCase.checkUserHasValidTicketForOpportunity(ctx, parent.id);
+    community: (parent, _: unknown, ctx: IContext) => {
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
     },
-    slots: (parent: GqlOpportunity, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
-      return this.slotUseCase.visitorBrowseOpportunitySlots(
-        {
-          ...args,
-          filter: { ...args.filter, opportunityId: parent.id },
-        },
-        ctx,
-      );
+
+    place: (parent, _: unknown, ctx: IContext) => {
+      return parent.placeId ? ctx.loaders.place.load(parent.placeId) : null;
+    },
+
+    createdByUser: (parent, _: unknown, ctx: IContext) => {
+      return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
+    },
+
+    // TODO: これで問題ないかをチェックする
+    isReservableWithTicket: (parent, _: unknown, ctx: IContext) => {
+      if (!ctx.currentUser) return false;
+
+      return ctx.issuer.internal(async (tx) => {
+        const utilities = await tx.utility.findMany({
+          where: {
+            requiredForOpportunities: {
+              some: {
+                id: parent.id,
+              },
+            },
+          },
+          select: { id: true },
+        });
+
+        if (utilities.length === 0) return false;
+
+        const wallet = await tx.wallet.findFirst({
+          where: {
+            userId: ctx.currentUser?.id,
+            communityId: parent.communityId || "",
+          },
+          select: { id: true },
+        });
+
+        if (!wallet) return false;
+
+        const tickets = await tx.ticket.findMany({
+          where: {
+            walletId: wallet.id,
+            utilityId: { in: utilities.map((u) => u.id) },
+            status: "AVAILABLE",
+          },
+          select: { id: true },
+        });
+
+        return tickets.length > 0;
+      });
+    },
+
+    images: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.imagesByOpportunity.load(parent.id);
+    },
+
+    requiredUtilities: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.utilitiesByOpportunity.load(parent.id);
+    },
+
+    slots: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitySlotByOpportunity.load(parent.id);
+    },
+
+    articles: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.articlesByOpportunity.load(parent.id);
     },
   };
 }

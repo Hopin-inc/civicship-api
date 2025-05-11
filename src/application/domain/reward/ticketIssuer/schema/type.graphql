@@ -7,11 +7,11 @@ type TicketIssuer {
     """Maximum number of tickets claimable from this link"""
     qtyToBeIssued: Int!
 
-    utility: Utility!
-    owner: User!
+    utility: Utility
+    owner: User
 
     claimLink: TicketClaimLink
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

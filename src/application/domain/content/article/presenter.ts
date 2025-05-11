@@ -1,8 +1,5 @@
 import { GqlArticlesConnection, GqlArticle } from "@/types/graphql";
-import { PrismaArticle } from "@/application/domain/content/article/data/type";
-import UserPresenter from "@/application/domain/account/user/presenter";
-import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
-import CommunityPresenter from "@/application/domain/account/community/presenter";
+import { PrismaArticleDetail } from "@/application/domain/content/article/data/type";
 
 export default class ArticlePresenter {
   static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {
@@ -21,16 +18,7 @@ export default class ArticlePresenter {
     };
   }
 
-  static get(r: PrismaArticle): GqlArticle {
-    const { community, opportunities, authors, relatedUsers, thumbnail, ...prop } = r;
-
-    return {
-      ...prop,
-      thumbnail: thumbnail?.url,
-      community: CommunityPresenter.get(community),
-      authors: authors.map(UserPresenter.get),
-      relatedUsers: relatedUsers.map(UserPresenter.get),
-      opportunities: opportunities.map(OpportunityPresenter.get),
-    };
+  static get(r: PrismaArticleDetail): GqlArticle {
+    return r;
   }
 }

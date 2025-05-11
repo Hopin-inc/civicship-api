@@ -1,5 +1,5 @@
 import { Prisma, PublishStatus } from "@prisma/client";
-import { opportunityInclude } from "@/application/domain/experience/opportunity/data/type";
+import { opportunitySelectDetail } from "@/application/domain/experience/opportunity/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import { IOpportunityRepository } from "./interface";
@@ -17,7 +17,7 @@ export default class OpportunityRepository implements IOpportunityRepository {
       return tx.opportunity.findMany({
         where,
         orderBy,
-        include: opportunityInclude,
+        select: opportunitySelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -29,7 +29,7 @@ export default class OpportunityRepository implements IOpportunityRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunity.findUnique({
         where: { id },
-        include: opportunityInclude,
+        select: opportunitySelectDetail,
       });
     });
   }
@@ -41,7 +41,7 @@ export default class OpportunityRepository implements IOpportunityRepository {
     return ctx.issuer.public(ctx, (dbTx) => {
       return dbTx.opportunity.findUnique({
         where,
-        include: opportunityInclude,
+        select: opportunitySelectDetail,
       });
     });
   }
@@ -49,14 +49,14 @@ export default class OpportunityRepository implements IOpportunityRepository {
   async create(ctx: IContext, data: Prisma.OpportunityCreateInput, tx: Prisma.TransactionClient) {
     return tx.opportunity.create({
       data,
-      include: opportunityInclude,
+      select: opportunitySelectDetail,
     });
   }
 
   async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.opportunity.delete({
       where: { id },
-      include: opportunityInclude,
+      select: opportunitySelectDetail,
     });
   }
 
@@ -69,7 +69,7 @@ export default class OpportunityRepository implements IOpportunityRepository {
     return tx.opportunity.update({
       where: { id },
       data,
-      include: opportunityInclude,
+      select: opportunitySelectDetail,
     });
   }
 
@@ -82,7 +82,7 @@ export default class OpportunityRepository implements IOpportunityRepository {
     return tx.opportunity.update({
       where: { id },
       data: { publishStatus },
-      include: opportunityInclude,
+      select: opportunitySelectDetail,
     });
   }
 }

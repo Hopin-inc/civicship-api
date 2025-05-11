@@ -99,9 +99,7 @@ const CanReadPhoneNumber = postExecRule({
   const isAdmin = viewer.sysRole === "SYS_ADMIN";
 
   const targetCommunityIds =
-    result.memberships?.edges?.flatMap((e) =>
-      e?.node?.community?.id ? [e.node.community.id] : [],
-    ) ?? [];
+    result.memberships?.flatMap((m) => (m?.community?.id ? [m.community.id] : [])) ?? [];
 
   const isCommunityManager = targetCommunityIds.some((cid) =>
     context.hasPermissions?.memberships?.some(

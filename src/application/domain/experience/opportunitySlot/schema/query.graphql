@@ -30,6 +30,7 @@ type OpportunitySlotEdge implements Edge {
 # ------------------------------
 input OpportunitySlotFilterInput {
     opportunityId: ID
+    hostingStatus: OpportunitySlotHostingStatus
 }
 
 input OpportunitySlotSortInput {

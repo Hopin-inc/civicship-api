@@ -10,7 +10,7 @@ export type LoggedInUserInfo = {
   platform?: IdentityPlatform;
   currentUser?: PrismaAuthUser | null;
   hasPermissions?: PrismaUserPermission | null;
-  loaders?: Loaders;
+  loaders: Loaders;
   // TODO: add DID authentication info
 };
 

@@ -1,7 +1,7 @@
 import { injectable } from "tsyringe";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { utilityInclude } from "@/application/domain/reward/utility/data/type";
+import { utilitySelectDetail, PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 import { IUtilityRepository } from "./interface";
 
 @injectable()
@@ -12,12 +12,12 @@ export default class UtilityRepository implements IUtilityRepository {
     orderBy: Prisma.UtilityOrderByWithRelationInput,
     take: number,
     cursor?: string,
-  ) {
+  ): Promise<PrismaUtilityDetail[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findMany({
         where,
         orderBy,
-        include: utilityInclude,
+        select: utilitySelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -25,11 +25,11 @@ export default class UtilityRepository implements IUtilityRepository {
     });
   }
 
-  async find(ctx: IContext, id: string) {
+  async find(ctx: IContext, id: string): Promise<PrismaUtilityDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where: { id },
-        include: utilityInclude,
+        select: utilitySelectDetail,
       });
     });
   }
@@ -37,26 +37,26 @@ export default class UtilityRepository implements IUtilityRepository {
   async findAccessible(
     ctx: IContext,
     where: Prisma.UtilityWhereUniqueInput & Prisma.UtilityWhereInput,
-  ) {
+  ): Promise<PrismaUtilityDetail | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.utility.findUnique({
         where,
-        include: utilityInclude,
+        select: utilitySelectDetail,
       });
     });
   }
 
-  async create(ctx: IContext, data: Prisma.UtilityCreateInput, tx: Prisma.TransactionClient) {
+  async create(ctx: IContext, data: Prisma.UtilityCreateInput, tx: Prisma.TransactionClient): Promise<PrismaUtilityDetail> {
     return tx.utility.create({
       data,
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   }
 
-  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaUtilityDetail> {
     return tx.utility.delete({
       where: { id },
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   }
 
@@ -65,11 +65,11 @@ export default class UtilityRepository implements IUtilityRepository {
     id: string,
     data: Prisma.UtilityUpdateInput,
     tx: Prisma.TransactionClient,
-  ) {
+  ): Promise<PrismaUtilityDetail> {
     return tx.utility.update({
       where: { id },
       data,
-      include: utilityInclude,
+      select: utilitySelectDetail,
     });
   }
 }

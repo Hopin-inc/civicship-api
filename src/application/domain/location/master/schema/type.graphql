@@ -7,5 +7,5 @@ type State {
 type City {
     code: ID!
     name: String!
-    state: State!
+    state: State
 }

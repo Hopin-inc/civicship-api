@@ -1,9 +1,6 @@
 import {
   GqlQueryPlacesArgs,
   GqlQueryPlaceArgs,
-  GqlPlace,
-  GqlPlaceOpportunitiesArgs,
-  GqlOpportunitiesConnection,
   GqlMutationPlaceCreateArgs,
   GqlMutationPlaceDeleteArgs,
   GqlMutationPlaceUpdateArgs,
@@ -11,24 +8,21 @@ import {
   GqlPlaceDeletePayload,
   GqlPlaceUpdatePayload,
 } from "@/types/graphql";
+import { PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import PlaceUseCase from "@/application/domain/location/place/usecase";
-import OpportunityUseCase from "@/application/domain/experience/opportunity/usecase";
 
 @injectable()
 export default class PlaceResolver {
-  constructor(
-    @inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase,
-    @inject("OpportunityUseCase") private readonly opportunityUseCase: OpportunityUseCase,
-  ) {}
+  constructor(@inject("PlaceUseCase") private readonly placeUseCase: PlaceUseCase) {}
 
   Query = {
     places: (_: unknown, args: GqlQueryPlacesArgs, ctx: IContext) => {
       return this.placeUseCase.userBrowsePlaces(args, ctx);
     },
     place: (_: unknown, args: GqlQueryPlaceArgs, ctx: IContext) => {
-      return this.placeUseCase.userViewPlace(args, ctx);
+      return ctx.loaders.place.load(args.id);
     },
   };
 
@@ -59,18 +53,20 @@ export default class PlaceResolver {
   };
 
   Place = {
-    opportunities: (
-      parent: GqlPlace,
-      args: GqlPlaceOpportunitiesArgs,
-      ctx: IContext,
-    ): Promise<GqlOpportunitiesConnection> => {
-      return this.opportunityUseCase.anyoneBrowseOpportunities(
-        {
-          ...args,
-          filter: { ...args.filter, placeIds: [parent.id] },
-        },
-        ctx,
-      );
+    image: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
+    },
+
+    city: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.cityCode ? ctx.loaders.city.load(parent.cityCode) : null;
+    },
+
+    community: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
+    },
+
+    opportunities: (parent: PrismaPlaceDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.opportunitiesByPlace.load(parent.id);
     },
   };
 }

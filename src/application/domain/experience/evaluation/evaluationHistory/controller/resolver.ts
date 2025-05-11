@@ -9,9 +9,6 @@ const evaluationHistoryResolver = {
     },
 
     evaluationHistory: async (_: unknown, args: GqlQueryEvaluationHistoryArgs, ctx: IContext) => {
-      if (ctx.loaders?.evaluationHistory) {
-        return ctx.loaders.evaluationHistory.load(args.id);
-      }
       return EvaluationHistoryUseCase.visitorViewEvaluationHistory(ctx, args);
     },
   },

@@ -1,5 +1,5 @@
 import { GqlTicketStatusHistory, GqlTicketStatusHistoriesConnection } from "@/types/graphql";
-import { PrismaTicketStatusHistory } from "@/application/domain/reward/ticket/statusHistory/data/type";
+import { PrismaTicketStatusHistoryDetail } from "@/application/domain/reward/ticket/statusHistory/data/type";
 
 export default class TicketStatusHistoryPresenter {
   static query(
@@ -21,14 +21,7 @@ export default class TicketStatusHistoryPresenter {
     };
   }
 
-  static get(r: PrismaTicketStatusHistory): GqlTicketStatusHistory {
-    const { ticket, createdByUser, transaction, ...prop } = r;
-
-    return {
-      ...prop,
-      ticket,
-      createdByUser,
-      transaction,
-    };
+  static get(r: PrismaTicketStatusHistoryDetail): GqlTicketStatusHistory {
+    return r;
   }
 }

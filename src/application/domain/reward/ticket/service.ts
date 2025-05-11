@@ -1,5 +1,5 @@
 import { inject, injectable } from "tsyringe";
-import { GqlQueryTicketsArgs, GqlTicketsConnection } from "@/types/graphql";
+import { GqlQueryTicketsArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
 import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
@@ -15,12 +15,9 @@ export default class TicketService {
   constructor(
     @inject("TicketRepository") private readonly repository: ITicketRepository,
     @inject("TicketConverter") private readonly converter: TicketConverter,
-  ) { }
+  ) {}
 
-  async fetchTickets(
-    ctx: IContext,
-    { first, sort, filter, cursor }: GqlQueryTicketsArgs,
-  ): Promise<GqlTicketsConnection> {
+  async fetchTickets(ctx: IContext, { first, sort, filter, cursor }: GqlQueryTicketsArgs) {
     const take = clampFirst(first);
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
@@ -39,7 +36,7 @@ export default class TicketService {
     return this.repository.find(ctx, id);
   }
 
-  async findTicketOrThrow(ctx: IContext, id: string): Promise<PrismaTicket> {
+  async findTicketOrThrow(ctx: IContext, id: string) {
     const ticket = await this.repository.find(ctx, id);
     if (!ticket) {
       throw new NotFoundError("Ticket", { id });
@@ -54,7 +51,7 @@ export default class TicketService {
     issuedTicket: PrismaTicketClaimLink["issuer"],
     walletId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicket[]> {
+  ) {
     const dataList: Prisma.TicketCreateInput[] = Array.from({
       length: issuedTicket.qtyToBeIssued,
     }).map(() => this.converter.claim(currentUserId, claimLinkId, issuedTicket, walletId));
@@ -90,7 +87,7 @@ export default class TicketService {
     tickets: PrismaTicket[],
     currentUserId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  ) {
     const cancellableTickets = tickets.filter(
       (ticket) =>
         ticket.status === TicketStatus.DISABLED && ticket.reason === TicketStatusReason.RESERVED,
@@ -109,7 +106,7 @@ export default class TicketService {
     currentUserId: string,
     transactionId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<void> {
+  ) {
     await Promise.all(
       tickets.map((ticket) =>
         this.repository.update(
@@ -128,7 +125,7 @@ export default class TicketService {
     utilityId: string,
     transactionId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicket> {
+  ) {
     const currentUserId = getCurrentUserId(ctx);
 
     const data = this.converter.purchase(currentUserId, walletId, utilityId, transactionId);
@@ -140,7 +137,7 @@ export default class TicketService {
     id: string,
     transactionId: string,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicket> {
+  ) {
     const currentUserId = getCurrentUserId(ctx);
     await this.findTicketOrThrow(ctx, id);
 
@@ -148,7 +145,7 @@ export default class TicketService {
     return this.repository.update(ctx, id, data, tx);
   }
 
-  async useTicket(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaTicket> {
+  async useTicket(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     const currentUserId = getCurrentUserId(ctx);
     await this.findTicketOrThrow(ctx, id);
 

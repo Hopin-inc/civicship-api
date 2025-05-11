@@ -1,24 +1,19 @@
 import {
   GqlMutationParticipationCreatePersonalRecordArgs,
   GqlMutationParticipationDeletePersonalRecordArgs,
-  GqlParticipation,
   GqlParticipationCreatePersonalRecordPayload,
   GqlParticipationDeletePayload,
-  GqlParticipationStatusHistoriesArgs,
   GqlQueryParticipationArgs,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
-import ParticipationStatusHistoryUseCase from "@/application/domain/experience/participation/statusHistory/usecase";
 
 @injectable()
 export default class ParticipationResolver {
   constructor(
     @inject("ParticipationUseCase") private readonly participationUseCase: ParticipationUseCase,
-    @inject("ParticipationStatusHistoryUseCase")
-    private readonly statusHistoryUseCase: ParticipationStatusHistoryUseCase,
   ) {}
 
   Query = {
@@ -27,10 +22,7 @@ export default class ParticipationResolver {
     },
 
     participation: (_: unknown, args: GqlQueryParticipationArgs, ctx: IContext) => {
-      if (!ctx.loaders?.participation) {
-        return this.participationUseCase.visitorViewParticipation(args, ctx);
-      }
-      return ctx.loaders.participation.load(args.id);
+      return this.participationUseCase.visitorViewParticipation(args, ctx);
     },
   };
 
@@ -53,16 +45,32 @@ export default class ParticipationResolver {
   };
 
   Participation = {
-    statusHistories: (
-      parent: GqlParticipation,
-      args: GqlParticipationStatusHistoriesArgs,
-      ctx: IContext,
-    ) => {
-      return this.statusHistoryUseCase.visitorBrowseStatusHistoriesByParticipation(
-        parent,
-        args,
-        ctx,
-      );
+    user: (parent, _: unknown, ctx: IContext) => {
+      return parent.userId ? ctx.loaders.user.load(parent.userId) : null;
+    },
+
+    community: (parent, _: unknown, ctx: IContext) => {
+      return parent.communityId ? ctx.loaders.community.load(parent.communityId) : null;
+    },
+
+    reservation: (parent, _: unknown, ctx: IContext) => {
+      return parent.reservationId ? ctx.loaders.reservation.load(parent.reservationId) : null;
+    },
+
+    evaluation: (parent, _: unknown, ctx: IContext) => {
+      return parent.evaluationId ? ctx.loaders.evaluation.load(parent.evaluationId) : null;
+    },
+
+    images: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.imagesByParticipation.load(parent.id);
+    },
+
+    transactions: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.transactionsByParticipation.load(parent.id);
+    },
+
+    statusHistories: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.participationStatusHistoriesByParticipation.load(parent.id);
     },
   };
 }

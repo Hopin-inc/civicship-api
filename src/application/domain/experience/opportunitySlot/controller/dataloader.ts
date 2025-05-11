@@ -1,29 +1,40 @@
 import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { GqlOpportunitySlot } from "@/types/graphql";
-import { opportunitySlotInclude } from "@/application/domain/experience/opportunitySlot/data/type";
-import OpportunitySlotOutputFormat from "@/application/domain/experience/opportunitySlot/presenter";
-
-async function batchOpportunitySlotsById(
-  issuer: PrismaClientIssuer,
-  slotIds: readonly string[],
-): Promise<(GqlOpportunitySlot | null)[]> {
-  const records = await issuer.internal((tx) =>
-    tx.opportunitySlot.findMany({
-      where: { id: { in: [...slotIds] } },
-      include: opportunitySlotInclude,
-    }),
-  );
-
-  const map = new Map(
-    records.map((record) => [record.id, OpportunitySlotOutputFormat.get(record)]),
-  );
-
-  return slotIds.map((id) => map.get(id) ?? null);
-}
+import {
+  opportunitySlotSelectDetail,
+  PrismaOpportunitySlotDetail,
+} from "@/application/domain/experience/opportunitySlot/data/type";
+import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
+import { createLoaderById } from "@/presentation/graphql/dataloader/utils";
 
 export function createOpportunitySlotLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlOpportunitySlot | null>((keys) =>
-    batchOpportunitySlotsById(issuer, keys),
+  return createLoaderById<PrismaOpportunitySlotDetail, GqlOpportunitySlot>(
+    async (ids) =>
+      issuer.internal((tx) =>
+        tx.opportunitySlot.findMany({
+          where: { id: { in: [...ids] } },
+          select: opportunitySlotSelectDetail,
+        }),
+      ),
+    OpportunitySlotPresenter.get,
   );
+}
+
+export function createSlotsByOpportunityLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlOpportunitySlot[]>(async (opportunityIds) => {
+    const opportunities = await issuer.internal((tx) =>
+      tx.opportunity.findMany({
+        where: { id: { in: [...opportunityIds] } },
+        include: { slots: { include: { remainingCapacityView: true } } },
+      }),
+    );
+
+    const map = new Map<string, GqlOpportunitySlot[]>();
+    for (const o of opportunities) {
+      map.set(o.id, o.slots.map(OpportunitySlotPresenter.get));
+    }
+
+    return opportunityIds.map((id) => map.get(id) ?? []);
+  });
 }

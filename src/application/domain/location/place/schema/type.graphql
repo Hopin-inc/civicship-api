@@ -10,20 +10,15 @@ type Place {
     latitude: Decimal!
     longitude: Decimal!
 
-    isManual: Boolean!
+    isManual: Boolean
     googlePlaceId: String
     mapLocation: JSON
 
-    city: City!
+    city: City
     community: Community
 
-    opportunities(
-        filter: OpportunityFilterInput
-        sort: OpportunitySortInput
-        cursor: String
-        first: Int
-    ): OpportunitiesConnection
+    opportunities: [Opportunity!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

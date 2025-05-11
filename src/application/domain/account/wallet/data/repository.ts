@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { walletInclude } from "@/application/domain/account/wallet/data/type";
+import { walletInclude, walletSelectDetail } from "@/application/domain/account/wallet/data/type";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { injectable } from "tsyringe";
 import { Prisma, WalletType } from "@prisma/client";
@@ -17,7 +17,7 @@ export default class WalletRepository implements IWalletRepository {
       return tx.wallet.findMany({
         where,
         orderBy,
-        include: walletInclude,
+        select: walletSelectDetail,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
@@ -38,7 +38,7 @@ export default class WalletRepository implements IWalletRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, type: WalletType.COMMUNITY },
-        include: walletInclude,
+        select: walletSelectDetail,
       });
     });
   }
@@ -62,7 +62,7 @@ export default class WalletRepository implements IWalletRepository {
   async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.wallet.delete({
       where: { id },
-      include: walletInclude,
+      select: walletSelectDetail,
     });
   }
 }

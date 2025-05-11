@@ -1,8 +1,6 @@
 import {
   GqlQueryMembershipsArgs,
-  GqlQueryMembershipArgs,
   GqlMembershipsConnection,
-  GqlMembership,
   GqlMutationMembershipInviteArgs,
   GqlMutationMembershipCancelInvitationArgs,
   GqlMutationMembershipAcceptMyInvitationArgs,
@@ -12,6 +10,8 @@ import {
   GqlMutationMembershipAssignOwnerArgs,
   GqlMutationMembershipAssignManagerArgs,
   GqlMutationMembershipAssignMemberArgs,
+  GqlMembership,
+  GqlQueryMembershipArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
