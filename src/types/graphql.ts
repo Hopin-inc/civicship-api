@@ -25,7 +25,7 @@ export type Scalars = {
 export type GqlAccumulatedPointView = {
   __typename?: 'AccumulatedPointView';
   accumulatedPoint: Scalars['Int']['output'];
-  walletId: Scalars['String']['output'];
+  walletId?: Maybe<Scalars['String']['output']>;
 };
 
 export type GqlArticle = {
@@ -226,7 +226,7 @@ export type GqlCommunityUpdateProfileSuccess = {
 export type GqlCurrentPointView = {
   __typename?: 'CurrentPointView';
   currentPoint: Scalars['Int']['output'];
-  walletId: Scalars['String']['output'];
+  walletId?: Maybe<Scalars['String']['output']>;
 };
 
 export const GqlCurrentPrefecture = {
@@ -1329,7 +1329,7 @@ export type GqlPlacesConnection = {
 
 export type GqlPortfolio = {
   __typename?: 'Portfolio';
-  category: Scalars['String']['output'];
+  category: GqlPortfolioCategory;
   date: Scalars['Datetime']['output'];
   id: Scalars['ID']['output'];
   participants?: Maybe<Array<GqlUser>>;
@@ -2008,8 +2008,10 @@ export type GqlTransactionEdge = GqlEdge & {
 };
 
 export type GqlTransactionFilterInput = {
+  fromUserId?: InputMaybe<Scalars['ID']['input']>;
   fromWalletId?: InputMaybe<Scalars['ID']['input']>;
   reason?: InputMaybe<GqlTransactionReason>;
+  toUserId?: InputMaybe<Scalars['ID']['input']>;
   toWalletId?: InputMaybe<Scalars['ID']['input']>;
 };
 
@@ -2915,7 +2917,7 @@ export type GqlRequireRoleDirectiveResolver<Result, Parent, ContextType = any, A
 
 export type GqlAccumulatedPointViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['AccumulatedPointView'] = GqlResolversParentTypes['AccumulatedPointView']> = ResolversObject<{
   accumulatedPoint?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  walletId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  walletId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3019,7 +3021,7 @@ export type GqlCommunityUpdateProfileSuccessResolvers<ContextType = any, ParentT
 
 export type GqlCurrentPointViewResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CurrentPointView'] = GqlResolversParentTypes['CurrentPointView']> = ResolversObject<{
   currentPoint?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  walletId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  walletId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3544,7 +3546,7 @@ export type GqlPlacesConnectionResolvers<ContextType = any, ParentType extends G
 }>;
 
 export type GqlPortfolioResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Portfolio'] = GqlResolversParentTypes['Portfolio']> = ResolversObject<{
-  category?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  category?: Resolver<GqlResolversTypes['PortfolioCategory'], ParentType, ContextType>;
   date?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participants?: Resolver<Maybe<Array<GqlResolversTypes['User']>>, ParentType, ContextType>;

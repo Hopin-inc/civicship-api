@@ -32,6 +32,8 @@ input TransactionFilterInput {
     reason: TransactionReason
     fromWalletId: ID
     toWalletId: ID
+    fromUserId: ID
+    toUserId: ID
 }
 
 input TransactionSortInput {

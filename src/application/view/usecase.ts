@@ -9,8 +9,8 @@ export default class ViewUseCase {
     const participations = await ctx.loaders.participationPortfolioByUser.load(parent.id);
     const articles = await ctx.loaders.articlePortfolioByUser.load(parent.id);
 
-    return [...participations, ...articles].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
+    const merged = [...participations, ...articles];
+    const uniqueById = Array.from(new Map(merged.map((item) => [item.id, item])).values());
+    return uniqueById.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 }
