@@ -18,7 +18,7 @@ type User {
     urlYoutube: String
     urlTiktok: String
 
-    currentPrefecture: CurrentPrefecture!
+    currentPrefecture: CurrentPrefecture
 
     identities: [Identity!]
     portfolios: [Portfolio!]

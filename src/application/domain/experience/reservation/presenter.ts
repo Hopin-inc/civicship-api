@@ -29,13 +29,13 @@ export default class ReservationPresenter {
 
   static create(record: PrismaReservationDetail): GqlReservationCreateSuccess {
     return {
-      reservation: this.get(record),
+      reservation: record,
     };
   }
 
   static setStatus(record: PrismaReservationDetail): GqlReservationSetStatusSuccess {
     return {
-      reservation: this.get(record),
+      reservation: record,
     };
   }
 }

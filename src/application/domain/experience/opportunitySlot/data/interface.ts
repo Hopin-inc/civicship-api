@@ -17,10 +17,10 @@ export interface IOpportunitySlotRepository {
 
   find(ctx: IContext, id: string): Promise<PrismaOpportunitySlotReserve | null>;
 
-  findByOpportunityId(
+  queryByOpportunityId(
     ctx: IContext,
-    opportunityId: string,
-    tx: Prisma.TransactionClient,
+    where: Prisma.OpportunitySlotWhereInput,
+    orderBy?: Prisma.OpportunitySlotOrderByWithRelationInput[],
   ): Promise<PrismaOpportunitySlotDetail[]>;
 
   createMany(

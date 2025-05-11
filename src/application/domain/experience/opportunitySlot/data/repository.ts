@@ -29,20 +29,25 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     });
   }
 
+  async queryByOpportunityId(
+    ctx: IContext,
+    where: Prisma.OpportunitySlotWhereInput,
+    orderBy?: Prisma.OpportunitySlotOrderByWithRelationInput[],
+  ) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.opportunitySlot.findMany({
+        where,
+        orderBy,
+        select: opportunitySlotSelectDetail,
+      });
+    });
+  }
+
   async find(ctx: IContext, id: string) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.opportunitySlot.findUnique({
         where: { id },
         include: opportunitySlotReserveInclude,
-      });
-    });
-  }
-
-  async findByOpportunityId(ctx: IContext, opportunityId: string) {
-    return ctx.issuer.public(ctx, (tx) => {
-      return tx.opportunitySlot.findMany({
-        where: { opportunityId },
-        select: opportunitySlotSelectDetail,
       });
     });
   }

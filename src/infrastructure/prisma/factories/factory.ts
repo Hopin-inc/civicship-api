@@ -406,13 +406,16 @@ export const OpportunitySlotFactory = defineOpportunitySlotFactory.withTransient
 })({
   defaultData: async ({ transientOpportunity, transientStatus }) => {
     const opportunity = transientOpportunity ?? (await OpportunityFactory.create());
+    const startOffsetDays = randNumber({ min: 7, max: 14 }); // 1〜2週間後
+    const startsAt = new Date(Date.now() + startOffsetDays * 24 * 60 * 60 * 1000);
+    const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000); // +1時間
 
     return {
       opportunity: { connect: { id: opportunity.id } },
-      hostingStatus: transientStatus ?? randomEnum(OpportunitySlotHostingStatus),
+      hostingStatus: transientStatus ?? OpportunitySlotHostingStatus.SCHEDULED,
       capacity: randNumber({ min: 1, max: 30 }),
-      startsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1週間後の現在時刻
-      endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 1時間後
+      startsAt,
+      endsAt,
     };
   },
 });

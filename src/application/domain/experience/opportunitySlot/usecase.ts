@@ -102,7 +102,9 @@ export default class OpportunitySlotUseCase {
       await this.service.bulkUpdateOpportunitySlots(ctx, input.update ?? [], tx);
       await this.service.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
 
-      const rows = await this.service.fetchAllSlotByOpportunityId(ctx, input.opportunityId);
+      const rows = await this.service.fetchAllSlotByOpportunityId(ctx, {
+        opportunityId: input.opportunityId,
+      });
       return OpportunitySlotPresenter.bulkUpdate(rows.map((r) => OpportunitySlotPresenter.get(r)));
     });
   }

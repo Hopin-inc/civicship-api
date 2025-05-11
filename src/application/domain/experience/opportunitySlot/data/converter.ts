@@ -1,8 +1,8 @@
 import { Prisma } from "@prisma/client";
 import {
-  GqlCommunitySortInput,
   GqlOpportunitySlotCreateInput,
   GqlOpportunitySlotFilterInput,
+  GqlOpportunitySlotSortInput,
   GqlOpportunitySlotUpdateInput,
 } from "@/types/graphql";
 import { injectable } from "tsyringe";
@@ -11,12 +11,15 @@ import { injectable } from "tsyringe";
 export default class OpportunitySlotConverter {
   filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
     return {
-      AND: [filter?.opportunityId ? { opportunityId: filter.opportunityId } : {}],
+      AND: [
+        filter?.opportunityId ? { opportunityId: filter.opportunityId } : {},
+        filter?.hostingStatus ? { hostingStatus: filter.hostingStatus } : {},
+      ],
     };
   }
 
-  sort(sort?: GqlCommunitySortInput): Prisma.OpportunitySlotOrderByWithRelationInput[] {
-    return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
+  sort(sort?: GqlOpportunitySlotSortInput): Prisma.OpportunitySlotOrderByWithRelationInput[] {
+    return [{ startsAt: sort?.startsAt ?? Prisma.SortOrder.desc }];
   }
 
   createMany(
