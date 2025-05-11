@@ -15,6 +15,7 @@ import PlaceResolver from "@/application/domain/location/place/controller/resolv
 import TicketResolver from "@/application/domain/reward/ticket/controller/resolver";
 import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
+import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -33,6 +34,7 @@ const evaluation = container.resolve(EvaluationResolver);
 const place = container.resolve(PlaceResolver);
 
 const ticket = container.resolve(TicketResolver);
+const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
 
 const transaction = container.resolve(TransactionResolver);
@@ -53,6 +55,7 @@ const resolvers = {
     ...place.Query,
     ...utility.Query,
     ...ticket.Query,
+    ...ticketClaimLink.Query,
     ...transaction.Query,
   },
   Mutation: {
