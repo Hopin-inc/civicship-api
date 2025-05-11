@@ -14,7 +14,7 @@ type Transaction {
 
     ticketStatusHistories: [TicketStatusHistory!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 

@@ -12,6 +12,6 @@ type MembershipHistory {
 
     createdByUser: User
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }

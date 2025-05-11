@@ -16,13 +16,13 @@ type Membership {
 
     histories: [MembershipHistory!]
 
-    createdAt: Datetime!
+    createdAt: Datetime
     updatedAt: Datetime
 }
 
 type MembershipParticipationView {
     hosted: MembershipHostedMetrics!
-    participated: MembershipParticipatedMetrics!
+    participated: MembershipParticipatedMetrics
 }
 
 type MembershipHostedMetrics {
@@ -31,7 +31,7 @@ type MembershipHostedMetrics {
 }
 
 type MembershipParticipatedMetrics {
-    geo: [MembershipParticipationLocation!]!
+    geo: [MembershipParticipationLocation!]
     totalParticipatedCount: Int! # ← 自分が参加した回数
 }
 

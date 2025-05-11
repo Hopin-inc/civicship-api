@@ -9,5 +9,5 @@ type EvaluationHistory {
     evaluation: Evaluation
     createdByUser: User
 
-    createdAt: Datetime!
+    createdAt: Datetime
 }
