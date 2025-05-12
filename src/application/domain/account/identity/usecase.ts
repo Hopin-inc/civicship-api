@@ -3,6 +3,7 @@ import {
   GqlCurrentUserPayload,
   GqlMutationUserSignUpArgs,
   GqlUserDeletePayload,
+  GqlLinkPhoneAuthPayload,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -11,6 +12,7 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
+import { IdentityPlatform } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -56,6 +58,29 @@ export default class IdentityUseCase {
     });
 
     return IdentityPresenter.create(res);
+  }
+
+  async linkPhoneAuth(
+    ctx: IContext,
+    phoneUid: string,
+  ): Promise<GqlLinkPhoneAuthPayload> {
+    if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.LINE) {
+      throw new Error("LINE authentication required");
+    }
+
+    const lineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+    if (!lineIdentity) {
+      throw new Error("User not found with LINE identity");
+    }
+
+    const user = await ctx.issuer.public(ctx, async (tx) => {
+      return this.identityService.linkPhoneIdentity(ctx, lineIdentity.id, phoneUid, tx);
+    });
+
+    return {
+      success: true,
+      user: user,
+    };
   }
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {

@@ -8,6 +8,9 @@ extend type Mutation {
         permission: CheckIsSelfPermissionInput!
     ): UserDeletePayload
     @authz(rules: [IsSelf])
+    
+    linkPhoneAuth(input: LinkPhoneAuthInput!): LinkPhoneAuthPayload
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
@@ -21,6 +24,10 @@ input UserSignUpInput {
     communityId: ID!
 
     currentPrefecture: CurrentPrefecture!
+}
+
+input LinkPhoneAuthInput {
+    phoneUid: String!
 }
 
 # ------------------------------

@@ -1,6 +1,6 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlMutationUserSignUpArgs } from "@/types/graphql";
+import { GqlMutationUserSignUpArgs, GqlMutationLinkPhoneAuthArgs } from "@/types/graphql";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { PrismaIdentityDetail } from "@/application/domain/account/identity/data/type";
 
@@ -20,6 +20,9 @@ export default class IdentityResolver {
     },
     userDeleteMe: (_: unknown, __: unknown, ctx: IContext) => {
       return this.usecase.userDeleteAccount(ctx);
+    },
+    linkPhoneAuth: (_: unknown, args: GqlMutationLinkPhoneAuthArgs, ctx: IContext) => {
+      return this.usecase.linkPhoneAuth(ctx, args.input.phoneUid);
     },
   };
 
