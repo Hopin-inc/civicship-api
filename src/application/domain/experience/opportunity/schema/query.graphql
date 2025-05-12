@@ -36,6 +36,7 @@ input OpportunityFilterInput {
     createdByUserIds: [ID!]
     placeIds: [ID!]
     cityCodes: [ID!]
+    stateCodes: [ID!]
     articleIds: [ID!]
     requiredUtilityIds: [ID!]
 
