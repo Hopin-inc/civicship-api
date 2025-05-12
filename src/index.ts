@@ -33,7 +33,8 @@ async function startServer() {
 
   const apolloServer = await createApolloServer(server);
 
-  app.use(express.json({ limit: "50mb" }), corsHandler, requestLogger);
+  app.use(corsHandler);
+  app.use(express.json({ limit: "50mb" }), requestLogger);
   app.use((err, _req, res, _next) => {
     logger.error("Unhandled Express Error:", {
       message: err.message,
