@@ -1,0 +1,6 @@
+# ------------------------------
+# User Account Query Definitions
+# ------------------------------
+extend type Query {
+    currentUser: CurrentUserPayload
+}

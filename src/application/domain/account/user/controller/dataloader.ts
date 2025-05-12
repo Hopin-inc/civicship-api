@@ -1,0 +1,91 @@
+import DataLoader from "dataloader";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { GqlPortfolio, GqlUser } from "@/types/graphql";
+import UserPresenter from "@/application/domain/account/user/presenter";
+import {
+  userArticlePortfolioInclude,
+  userParticipationPortfolioInclude,
+  userSelectDetail,
+} from "@/application/domain/account/user/data/type";
+import { createLoaderById } from "@/presentation/graphql/dataloader/utils";
+import ViewPresenter from "@/application/view/presenter";
+
+export function createUserLoader(issuer: PrismaClientIssuer) {
+  return createLoaderById(async (ids) => {
+    return issuer.internal((tx) =>
+      tx.user.findMany({
+        where: { id: { in: [...ids] } },
+        select: userSelectDetail,
+      }),
+    );
+  }, UserPresenter.get);
+}
+
+export function createAuthorsByArticleLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlUser[]>(async (articleIds) => {
+    const articles = await issuer.internal((tx) =>
+      tx.article.findMany({
+        where: { id: { in: [...articleIds] } },
+        include: { authors: true },
+      }),
+    );
+
+    const map = new Map<string, GqlUser[]>();
+    for (const article of articles) {
+      map.set(article.id, article.authors.map(UserPresenter.get));
+    }
+
+    return articleIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createRelatedUsersByArticleLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlUser[]>(async (articleIds) => {
+    const articles = await issuer.internal((tx) =>
+      tx.article.findMany({
+        where: { id: { in: [...articleIds] } },
+        include: { relatedUsers: true },
+      }),
+    );
+
+    const map = new Map<string, GqlUser[]>();
+    for (const article of articles) {
+      map.set(article.id, article.relatedUsers.map(UserPresenter.get));
+    }
+
+    return articleIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createParticipationsForPortfolioLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlPortfolio[]>(async (userIds) => {
+    const users = await issuer.internal((tx) =>
+      tx.user.findMany({
+        where: { id: { in: [...userIds] } },
+        include: userParticipationPortfolioInclude,
+      }),
+    );
+
+    const map = new Map<string, GqlPortfolio[]>(
+      users.map((record) => [record.id, ViewPresenter.getFromParticipations(record)]),
+    );
+
+    return userIds.map((id) => map.get(id) ?? []);
+  });
+}
+
+export function createArticlesForPortfolioLoader(issuer: PrismaClientIssuer) {
+  return new DataLoader<string, GqlPortfolio[]>(async (userIds) => {
+    const users = await issuer.internal((tx) =>
+      tx.user.findMany({
+        where: { id: { in: [...userIds] } },
+        include: userArticlePortfolioInclude,
+      }),
+    );
+
+    const map = new Map<string, GqlPortfolio[]>(
+      users.map((record) => [record.id, ViewPresenter.getFromArticles(record)]),
+    );
+    return userIds.map((id) => map.get(id) ?? []);
+  });
+}

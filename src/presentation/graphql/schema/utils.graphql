@@ -1,0 +1,154 @@
+# ------------------------------------------------
+# Schema Entry Points
+# ------------------------------------------------
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+# ------------------------------------------------
+# Root Query Type
+# ------------------------------------------------
+type Query {
+    echo: String!
+}
+
+# ------------------------------------------------
+# Root Mutation Type
+# ------------------------------------------------
+type Mutation {
+    mutationEcho: String!
+}
+
+# ------------------------------------------------
+# Pagination Types
+# ------------------------------------------------
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String
+    endCursor: String
+}
+
+type Paging {
+    take: Int!
+    skip: Int!
+}
+
+# ------------------------------------------------
+# Pagination Interface
+# ------------------------------------------------
+interface Edge {
+    cursor: String!
+}
+
+# ------------------------------------------------
+# Query Extensions
+# ------------------------------------------------
+extend type Query {
+    cities(name: String): [City!]!
+    states(name: String): [State!]!
+}
+
+# ------------------------------------------------
+# Directives
+# ------------------------------------------------
+directive @requireRole(
+    role: Role!
+) on FIELD_DEFINITION
+
+# ------------------------------------------------
+# Scalars
+# ------------------------------------------------
+scalar Datetime
+scalar JSON
+scalar Decimal
+scalar Upload
+
+# ------------------------------------------------
+# Input Types
+# ------------------------------------------------
+input CheckCommunityPermissionInput {
+    communityId: ID!
+}
+
+input CheckOpportunityPermissionInput {
+    opportunityId: ID!
+    communityId: ID!
+}
+
+input CheckIsSelfPermissionInput {
+    userId: ID!
+}
+
+input ImageInput {
+    file: Upload!
+    alt: String
+    caption: String
+}
+
+# ------------------------------------------------
+# Enums
+# ------------------------------------------------
+enum IdentityPlatform {
+    LINE
+    FACEBOOK
+}
+
+enum PublishStatus {
+    PUBLIC
+    COMMUNITY_INTERNAL
+    PRIVATE
+}
+
+enum Source {
+    INTERNAL
+    EXTERNAL
+}
+
+enum ValueType {
+    INT
+    FLOAT
+}
+
+enum SortDirection {
+    asc
+    desc
+}
+
+# ------------------------------------------------
+# AuthZ
+# ------------------------------------------------
+# authz rules enum
+enum AuthZRules {
+    IsUser,
+    IsAdmin,
+    IsSelf,
+    IsCommunityOwner,
+    IsCommunityManager,
+    IsCommunityMember,
+    IsOpportunityOwner,
+    CanReadPhoneNumber
+}
+
+# this is a common boilerplate
+input AuthZDirectiveCompositeRulesInput {
+    and: [AuthZRules]
+    or: [AuthZRules]
+    not: AuthZRules
+}
+
+# this is a common boilerplate
+input AuthZDirectiveDeepCompositeRulesInput {
+    id: AuthZRules
+    and: [AuthZDirectiveDeepCompositeRulesInput]
+    or: [AuthZDirectiveDeepCompositeRulesInput]
+    not: AuthZDirectiveDeepCompositeRulesInput
+}
+
+# this is a common boilerplate
+directive @authz(
+    rules: [AuthZRules]
+    compositeRules: [AuthZDirectiveCompositeRulesInput]
+    deepCompositeRules: [AuthZDirectiveDeepCompositeRulesInput]
+) on FIELD_DEFINITION | OBJECT | INTERFACE

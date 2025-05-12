@@ -1,0 +1,33 @@
+# ------------------------------
+# Article Object Type Definitions
+# ------------------------------
+type Article {
+    id: ID!
+    category: ArticleCategory!
+
+    title: String!
+    introduction: String!
+    body: String
+    thumbnail: JSON
+
+    publishStatus: PublishStatus!
+    publishedAt: Datetime
+
+    community: Community
+
+    authors: [User!]
+    relatedUsers: [User!]
+
+    opportunities: [Opportunity!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Article Enum Definitions
+# ------------------------------
+enum ArticleCategory {
+    ACTIVITY_REPORT
+    INTERVIEW
+}

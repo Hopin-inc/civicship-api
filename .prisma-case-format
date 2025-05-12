@@ -1,0 +1,1 @@
+default: 'field=camel; mapField=snake'

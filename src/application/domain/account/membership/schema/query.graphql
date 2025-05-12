@@ -1,0 +1,45 @@
+# ------------------------------
+# Membership Query Definitions
+# ------------------------------
+extend type Query {
+    memberships(
+        filter: MembershipFilterInput
+        sort: MembershipSortInput
+        cursor: MembershipCursorInput
+        first: Int
+    ): MembershipsConnection!
+    membership(userId: ID!, communityId: ID!): Membership
+}
+
+# ------------------------------
+# Membership Connection Type Definitions
+# ------------------------------
+type MembershipsConnection {
+    edges: [MembershipEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type MembershipEdge implements Edge {
+    cursor: String!
+    node: Membership
+}
+
+# ------------------------------
+# Membership Query Input Definitions
+# ------------------------------
+input MembershipFilterInput {
+    userId: ID
+    communityId: ID
+    status: MembershipStatus
+    role: Role
+}
+
+input MembershipSortInput {
+    createdAt: SortDirection
+}
+
+input MembershipCursorInput {
+    userId: ID!
+    communityId: ID!
+}

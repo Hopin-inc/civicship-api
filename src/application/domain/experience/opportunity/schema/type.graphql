@@ -1,0 +1,46 @@
+# ------------------------------
+# Opportunity Object Type Definitions
+# ------------------------------
+type Opportunity {
+    id: ID!
+
+    title: String!
+    description: String!
+    body: String
+    images: [String!]
+
+    category: OpportunityCategory!
+    publishStatus: PublishStatus!
+    requireApproval: Boolean!
+    isReservableWithTicket: Boolean
+
+    capacity: Int
+    pointsToEarn: Int
+    feeRequired: Int
+
+    place: Place
+
+    community: Community
+    createdByUser: User
+
+    requiredUtilities: [Utility!]
+    articles: [Article!]
+
+    slots(
+        filter: OpportunitySlotFilterInput
+        sort: OpportunitySlotSortInput
+    ): [OpportunitySlot!]
+    earliestReservableAt: Datetime
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Opportunity Enum Definitions
+# ------------------------------
+enum OpportunityCategory {
+    QUEST
+    EVENT
+    ACTIVITY
+}

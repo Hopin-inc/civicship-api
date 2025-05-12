@@ -1,0 +1,14 @@
+# ------------------------------
+# ParticipationStatusHistory Object Type Definitions
+# ------------------------------
+type ParticipationStatusHistory {
+    id: ID!
+    status: ParticipationStatus!
+    reason: ParticipationStatusReason!
+
+    participation: Participation
+    createdByUser: User
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}

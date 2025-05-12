@@ -1,0 +1,26 @@
+# ------------------------------
+# Opportunity Slot Object Type Definitions
+# ------------------------------
+type OpportunitySlot {
+    id: ID!
+
+    hostingStatus: OpportunitySlotHostingStatus!
+    capacity: Int
+    remainingCapacity: Int
+
+    startsAt: Datetime!
+    endsAt: Datetime!
+
+    opportunity: Opportunity
+
+    reservations: [Reservation!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+enum OpportunitySlotHostingStatus {
+    SCHEDULED
+    CANCELLED
+    COMPLETED
+}

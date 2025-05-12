@@ -1,0 +1,56 @@
+# ------------------------------
+# Article Query Definitions
+# ------------------------------
+extend type Query {
+    articles(
+        filter: ArticleFilterInput
+        sort: ArticleSortInput
+        cursor: String
+        first: Int
+    ): ArticlesConnection!
+    article(id: ID!, permission: CheckCommunityPermissionInput!): Article
+}
+
+# ------------------------------
+# Article Connection Type Definitions
+# ------------------------------
+type ArticlesConnection {
+    edges: [ArticleEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ArticleEdge implements Edge {
+    cursor: String!
+    node: Article
+}
+
+# ------------------------------
+# Article Query Input Definitions
+# ------------------------------
+input ArticleFilterInput {
+    keyword: String
+    categories: [String!]
+    publishStatus: [PublishStatus!]
+
+    authors: [ID!]
+    relatedUserIds: [ID!]
+
+    dateFrom: Datetime
+    dateTo: Datetime
+
+    cityCodes: [ID!]
+    stateCodes: [ID!]
+
+    communityId: ID
+
+    and: [ArticleFilterInput!]
+    or: [ArticleFilterInput!]
+    not: ArticleFilterInput
+}
+
+input ArticleSortInput {
+    createdAt: SortDirection
+    publishedAt: SortDirection
+    startsAt: SortDirection
+}

@@ -1,0 +1,63 @@
+# ------------------------------
+# Opportunity Slot Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    opportunitySlotSetHostingStatus(
+        id: ID!
+        input: OpportunitySlotSetHostingStatusInput!
+        permission: CheckOpportunityPermissionInput!
+    ): OpportunitySlotSetHostingStatusPayload
+    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+
+    opportunitySlotsBulkUpdate(
+        input: OpportunitySlotsBulkUpdateInput!
+        permission: CheckOpportunityPermissionInput!
+    ): OpportunitySlotsBulkUpdatePayload
+    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Input Definitions
+# ------------------------------
+input OpportunitySlotSetHostingStatusInput{
+    status: OpportunitySlotHostingStatus!
+}
+
+input OpportunitySlotsBulkUpdateInput {
+    opportunityId: ID!
+
+    create: [OpportunitySlotCreateInput!]
+    update: [OpportunitySlotUpdateInput!]
+    delete: [ID!]
+}
+
+input OpportunitySlotCreateInput {
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+input OpportunitySlotUpdateInput {
+    id: ID!
+    startsAt: Datetime!
+    endsAt: Datetime!
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Success Type Definitions
+# ------------------------------
+type OpportunitySlotsBulkUpdateSuccess {
+    slots: [OpportunitySlot!]!
+}
+
+type OpportunitySlotSetHostingStatusSuccess{
+    slot: OpportunitySlot!
+}
+
+# ------------------------------
+# Opportunity Slot Mutation Union (Payload) Definitions
+# ------------------------------
+union OpportunitySlotsBulkUpdatePayload =
+    OpportunitySlotsBulkUpdateSuccess
+
+union OpportunitySlotSetHostingStatusPayload =
+    OpportunitySlotSetHostingStatusSuccess

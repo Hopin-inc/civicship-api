@@ -1,0 +1,43 @@
+# ------------------------------
+# EvaluationHistory Query Definitions
+# ------------------------------
+
+extend type Query {
+    evaluationHistories(
+        filter: EvaluationHistoryFilterInput
+        sort: EvaluationHistorySortInput
+        cursor: String
+        first: Int
+    ): EvaluationHistoriesConnection!
+
+    evaluationHistory(id: ID!): EvaluationHistory
+}
+
+# ------------------------------
+# EvaluationHistory Connection Type Definitions
+# ------------------------------
+
+type EvaluationHistoriesConnection {
+    edges: [EvaluationHistoryEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type EvaluationHistoryEdge implements Edge {
+    cursor: String!
+    node: EvaluationHistory
+}
+
+# ------------------------------
+# EvaluationHistory Query Input Definitions
+# ------------------------------
+
+input EvaluationHistoryFilterInput {
+    evaluationId: ID
+    status: EvaluationStatus
+    createdByUserId: ID
+}
+
+input EvaluationHistorySortInput {
+    createdAt: SortDirection
+}

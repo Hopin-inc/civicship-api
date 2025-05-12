@@ -1,0 +1,13 @@
+# ------------------------------
+# EvaluationHistory Object Type Definitions
+# ------------------------------
+type EvaluationHistory {
+    id: ID!
+    status: EvaluationStatus!
+    comment: String
+
+    evaluation: Evaluation
+    createdByUser: User
+
+    createdAt: Datetime
+}

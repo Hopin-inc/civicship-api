@@ -1,0 +1,83 @@
+# ------------------------------
+# Reservation Mutation Definitions
+# ------------------------------
+
+extend type Mutation {
+    reservationCreate(
+        input: ReservationCreateInput!
+    ): ReservationCreatePayload
+    @authz(rules: [IsUser])
+
+    reservationJoin(
+        id: ID!
+    ): ReservationSetStatusPayload
+    @authz(rules: [IsUser])
+
+    reservationCancel(
+        id: ID!
+        input: ReservationCancelInput!
+        permission: CheckIsSelfPermissionInput!
+    ): ReservationSetStatusPayload
+    @authz(rules: [IsSelf])
+
+    reservationAccept(
+        id: ID!
+        permission: CheckOpportunityPermissionInput!
+    ): ReservationSetStatusPayload
+    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+
+    reservationReject(
+        id: ID!
+        permission: CheckOpportunityPermissionInput!
+    ): ReservationSetStatusPayload
+    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
+}
+
+# ------------------------------
+# Reservation Mutation Input Definitions
+# ------------------------------
+
+input ReservationCreateInput {
+    opportunitySlotId: ID!
+    totalParticipantCount: Int!
+    otherUserIds: [ID!]
+
+    paymentMethod: ReservationPaymentMethod!
+    ticketIdsIfNeed: [ID!]
+}
+
+input ReservationCancelInput {
+    paymentMethod: ReservationPaymentMethod!
+    ticketIdsIfExists: [ID!]
+}
+
+# ------------------------------
+# Reservation Mutation Enum Definitions
+# ------------------------------
+
+enum ReservationPaymentMethod {
+    FEE
+    TICKET
+}
+
+# ------------------------------
+# Reservation Mutation Success Type Definitions
+# ------------------------------
+
+type ReservationCreateSuccess {
+    reservation: Reservation!
+}
+
+type ReservationSetStatusSuccess {
+    reservation: Reservation!
+}
+
+# ------------------------------
+# Reservation Mutation Union (Payload) Definitions
+# ------------------------------
+
+union ReservationCreatePayload =
+    ReservationCreateSuccess
+
+union ReservationSetStatusPayload =
+    ReservationSetStatusSuccess

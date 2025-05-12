@@ -1,0 +1,17 @@
+# ------------------------------
+# TicketIssuer Object Type Definitions
+# ------------------------------
+type TicketIssuer {
+    id: ID!
+
+    """Maximum number of tickets claimable from this link"""
+    qtyToBeIssued: Int!
+
+    utility: Utility
+    owner: User
+
+    claimLink: TicketClaimLink
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}

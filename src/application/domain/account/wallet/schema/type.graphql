@@ -1,0 +1,38 @@
+# ------------------------------
+# Wallet Object Type Definitions
+# ------------------------------
+type Wallet {
+    id: ID!
+    type: WalletType!
+
+    community: Community
+    user: User
+
+    currentPointView: CurrentPointView
+    accumulatedPointView: AccumulatedPointView
+
+    tickets: [Ticket!]
+
+    transactions: [Transaction!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+type CurrentPointView {
+    walletId: String
+    currentPoint: Int!
+}
+
+type AccumulatedPointView {
+    walletId: String
+    accumulatedPoint: Int!
+}
+
+# ------------------------------
+# Wallet Object Enum Definitions
+# ------------------------------
+enum WalletType {
+    COMMUNITY
+    MEMBER
+}

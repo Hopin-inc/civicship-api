@@ -1,0 +1,43 @@
+# ------------------------------
+# ReservationHistory Query Definitions
+# ------------------------------
+
+extend type Query {
+    reservationHistories(
+        filter: ReservationHistoryFilterInput
+        sort: ReservationHistorySortInput
+        cursor: String
+        first: Int
+    ): ReservationHistoriesConnection!
+
+    reservationHistory(id: ID!): ReservationHistory
+}
+
+# ------------------------------
+# ReservationHistory Connection Type Definitions
+# ------------------------------
+
+type ReservationHistoriesConnection {
+    edges: [ReservationHistoryEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ReservationHistoryEdge implements Edge {
+    cursor: String!
+    node: ReservationHistory
+}
+
+# ------------------------------
+# ReservationHistory Query Input Definitions
+# ------------------------------
+
+input ReservationHistoryFilterInput {
+    reservationId: ID
+    status: ReservationStatus
+    createdByUserId: ID
+}
+
+input ReservationHistorySortInput {
+    createdAt: SortDirection
+}

@@ -1,0 +1,40 @@
+# ------------------------------
+# Ticket Query Definitions
+# ------------------------------
+extend type Query {
+    tickets(
+        filter: TicketFilterInput
+        sort: TicketSortInput
+        cursor: String
+        first: Int
+    ): TicketsConnection!
+    ticket(id: ID!): Ticket
+}
+
+# ------------------------------
+# Ticket Connection Type Definitions
+# ------------------------------
+type TicketsConnection {
+    edges: [TicketEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TicketEdge implements Edge {
+    cursor: String!
+    node: Ticket
+}
+
+# ------------------------------
+# Ticket Query Input Definitions
+# ------------------------------
+input TicketFilterInput {
+    walletId: ID
+    utilityId: ID
+    status: TicketStatus
+}
+
+input TicketSortInput {
+    createdAt: SortDirection
+    status: SortDirection
+}

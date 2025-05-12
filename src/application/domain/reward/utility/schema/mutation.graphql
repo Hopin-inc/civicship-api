@@ -1,0 +1,87 @@
+# ------------------------------
+# Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    utilityCreate(
+        input: UtilityCreateInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityCreatePayload
+    @authz(rules: [IsCommunityManager])
+
+    utilityDelete(
+        id: ID!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityDeletePayload
+    @authz(rules: [IsCommunityManager])
+
+    utilityUpdateInfo(
+        id: ID!
+        input: UtilityUpdateInfoInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilityUpdateInfoPayload
+    @authz(rules: [IsCommunityManager])
+
+    utilitySetPublishStatus(
+        id: ID!
+        input: UtilitySetPublishStatusInput!
+        permission:CheckCommunityPermissionInput!
+    ): UtilitySetPublishStatusPayload
+    @authz(rules: [IsCommunityManager])
+}
+
+# ------------------------------
+# Input Definitions
+# ------------------------------
+input UtilityCreateInput {
+    name: String!
+    description: String
+    images: [ImageInput!]
+    pointsRequired: Int!
+
+    communityId: ID!
+}
+
+input UtilityUpdateInfoInput {
+    name: String!
+    description: String
+    images: [ImageInput!]
+    pointsRequired: Int!
+}
+
+input UtilitySetPublishStatusInput {
+    publishStatus: PublishStatus!
+}
+
+# ------------------------------
+# Success Type Definitions
+# ------------------------------
+type UtilityCreateSuccess {
+    utility: Utility!
+}
+
+type UtilityDeleteSuccess {
+    utilityId: String!
+}
+
+type UtilityUpdateInfoSuccess {
+    utility: Utility!
+}
+
+type UtilitySetPublishStatusSuccess {
+    utility: Utility!
+}
+
+# ------------------------------
+# Union (Payload) Definitions
+# ------------------------------
+union UtilityCreatePayload =
+    UtilityCreateSuccess
+
+union UtilityDeletePayload =
+    UtilityDeleteSuccess
+
+union UtilityUpdateInfoPayload =
+    UtilityUpdateInfoSuccess
+
+union UtilitySetPublishStatusPayload =
+    UtilitySetPublishStatusSuccess

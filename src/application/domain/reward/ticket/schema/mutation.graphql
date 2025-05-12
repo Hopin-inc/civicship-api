@@ -1,0 +1,100 @@
+# ------------------------------
+# Ticket Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    ticketIssue(
+        input: TicketIssueInput!
+        permission: CheckCommunityPermissionInput!
+    ): TicketIssuePayload
+    @authz(rules: [IsCommunityMember])
+
+    ticketClaim(
+        input: TicketClaimInput!
+    ): TicketClaimPayload
+    @authz(rules: [IsUser])
+
+    ticketPurchase(
+        input: TicketPurchaseInput!
+        permission: CheckCommunityPermissionInput!
+    ): TicketPurchasePayload
+    @authz(rules: [IsCommunityMember])
+
+    ticketRefund(
+        id: ID!
+        input: TicketRefundInput!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketRefundPayload
+    @authz(rules: [IsSelf])
+
+    ticketUse(
+        id: ID!
+        permission: CheckIsSelfPermissionInput!
+    ): TicketUsePayload
+    @authz(rules: [IsSelf])
+}
+
+# ------------------------------
+# Ticket Mutation Input Definitions
+# ------------------------------
+input TicketIssueInput {
+    utilityId: ID!
+    qtyToBeIssued: Int!
+}
+
+input TicketClaimInput {
+    ticketClaimLinkId: ID!
+}
+
+input TicketPurchaseInput {
+    walletId: ID!
+    utilityId: ID!
+    communityId: ID!
+    pointsRequired: Int!
+}
+
+input TicketRefundInput {
+    walletId: ID!
+    communityId: ID!
+    pointsRequired: Int!
+}
+
+# ------------------------------
+# Ticket Mutation Success Type Definitions
+# ------------------------------
+type TicketIssueSuccess {
+    issue: TicketIssuer!
+}
+
+type TicketPurchaseSuccess {
+    ticket: Ticket!
+}
+
+type TicketUseSuccess {
+    ticket: Ticket!
+}
+
+type TicketRefundSuccess {
+    ticket: Ticket!
+}
+
+type TicketClaimSuccess {
+    tickets: [Ticket!]!
+}
+
+# ------------------------------
+# Ticket Mutation Union (Payload) Definitions
+# ------------------------------
+union TicketPurchasePayload =
+    TicketPurchaseSuccess
+
+union TicketUsePayload =
+    TicketUseSuccess
+
+union TicketRefundPayload =
+    TicketRefundSuccess
+
+union TicketIssuePayload =
+    TicketIssueSuccess
+
+union TicketClaimPayload =
+    TicketClaimSuccess

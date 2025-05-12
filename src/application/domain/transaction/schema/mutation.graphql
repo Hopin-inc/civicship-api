@@ -1,0 +1,71 @@
+# ------------------------------
+# Transaction Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    transactionIssueCommunityPoint(
+        input: TransactionIssueCommunityPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionIssueCommunityPointPayload
+    @authz(rules: [IsCommunityOwner])
+
+    transactionGrantCommunityPoint(
+        input: TransactionGrantCommunityPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionGrantCommunityPointPayload
+    @authz(rules: [IsCommunityOwner])
+
+    transactionDonateSelfPoint(
+        input: TransactionDonateSelfPointInput!
+        permission:CheckCommunityPermissionInput!
+    ): TransactionDonateSelfPointPayload
+    @authz(rules: [IsCommunityMember])
+}
+
+# ------------------------------
+# Transaction Mutation Input Definitions
+# ------------------------------
+input TransactionIssueCommunityPointInput {
+    toWalletId: ID!
+    transferPoints: Int!
+}
+
+input TransactionGrantCommunityPointInput {
+    fromWalletId: ID!
+    toUserId: ID!
+    communityId: ID!
+    transferPoints: Int!
+}
+
+input TransactionDonateSelfPointInput {
+    fromWalletId: ID!
+    toUserId: ID!
+    communityId: ID!
+    transferPoints: Int!
+}
+
+# ------------------------------
+# Transaction Mutation Success Type Definitions
+# ------------------------------
+type TransactionIssueCommunityPointSuccess {
+    transaction: Transaction!
+}
+
+type TransactionGrantCommunityPointSuccess {
+    transaction: Transaction!
+}
+
+type TransactionDonateSelfPointSuccess {
+    transaction: Transaction!
+}
+
+# ------------------------------
+# Transaction Mutation Union (Payload) Definitions
+# ------------------------------
+union TransactionIssueCommunityPointPayload =
+    TransactionIssueCommunityPointSuccess
+
+union TransactionGrantCommunityPointPayload =
+    TransactionGrantCommunityPointSuccess
+
+union TransactionDonateSelfPointPayload =
+    TransactionDonateSelfPointSuccess

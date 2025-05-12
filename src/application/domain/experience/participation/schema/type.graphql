@@ -1,0 +1,48 @@
+# ------------------------------
+# Participation Object Type Definitions
+# ------------------------------
+type Participation {
+    id: ID!
+    status: ParticipationStatus!
+    reason: ParticipationStatusReason!
+    source: Source
+    description: String
+
+    images: [String!]
+
+    user: User
+    community: Community
+    reservation: Reservation
+    evaluation: Evaluation
+
+    ticketStatusHistories: [TicketStatusHistory!]
+    statusHistories: [ParticipationStatusHistory!]
+    transactions: [Transaction!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Participation Enum Definitions
+# ------------------------------
+enum ParticipationStatus {
+    PENDING
+    PARTICIPATING
+    PARTICIPATED
+    NOT_PARTICIPATING
+}
+
+enum ParticipationStatusReason {
+    PERSONAL_RECORD
+
+    RESERVATION_JOINED
+
+    RESERVATION_APPLIED
+    RESERVATION_CANCELED
+
+    RESERVATION_ACCEPTED
+    RESERVATION_REJECTED
+
+    OPPORTUNITY_CANCELED
+}

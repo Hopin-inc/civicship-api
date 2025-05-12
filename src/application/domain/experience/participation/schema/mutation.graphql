@@ -1,0 +1,43 @@
+# ------------------------------
+# Participation Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    participationCreatePersonalRecord(
+        input: ParticipationCreatePersonalRecordInput!
+    ): ParticipationCreatePersonalRecordPayload
+    @authz(rules: [IsUser])
+
+    participationDeletePersonalRecord(
+        id: ID!
+        permission: CheckIsSelfPermissionInput!
+    ): ParticipationDeletePayload
+    @authz(rules: [IsSelf])
+}
+
+# ------------------------------
+# Participation Mutation Input Definitions
+# ------------------------------
+input ParticipationCreatePersonalRecordInput {
+    description: String
+    images: [ImageInput!]
+}
+
+# ------------------------------
+# Participation Mutation Success Type Definitions
+# ------------------------------
+type ParticipationCreatePersonalRecordSuccess {
+    participation: Participation!
+}
+
+type ParticipationDeleteSuccess {
+    participationId: ID!
+}
+
+# ------------------------------
+# Participation Mutation Union (Payload) Definitions
+# ------------------------------
+union ParticipationCreatePersonalRecordPayload =
+    ParticipationCreatePersonalRecordSuccess
+
+union ParticipationDeletePayload =
+    ParticipationDeleteSuccess

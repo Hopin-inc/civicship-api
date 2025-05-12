@@ -41,6 +41,7 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+false/
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
@@ -102,7 +103,6 @@ dist
 
 # vuepress v2.x temp and cache directory
 .temp
-.cache
 
 # Docusaurus cache and generated files
 .docusaurus
@@ -128,3 +128,18 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# certificates
+certificates/
+
+# Docker
+container/docker/postgresql/init/*.sql
+
+# Credential
+credentials/
+
+# Cursor
+.cursor/
+
+# idea
+.idea/

@@ -1,0 +1,25 @@
+# ------------------------------
+# TicketClaimLink Object Type Definitions
+# ------------------------------
+type TicketClaimLink {
+    id: ID!
+    status: ClaimLinkStatus!
+
+    """Max number of tickets a user can claim using this link"""
+    qty: Int!
+
+    issuer: TicketIssuer
+    tickets: [Ticket!]
+
+    claimedAt: Datetime
+    createdAt: Datetime
+}
+
+# ------------------------------
+# TicketClaimLink Enum Definitions
+# ------------------------------
+enum ClaimLinkStatus {
+    ISSUED
+    CLAIMED
+    EXPIRED
+}

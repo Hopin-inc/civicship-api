@@ -1,0 +1,23 @@
+# ------------------------------
+# Utility Object Type Definitions
+# ------------------------------
+type Utility {
+    id: ID!
+    name: String
+
+    publishStatus: PublishStatus!
+    pointsRequired: Int!
+
+    description: String
+    images: [String!]
+
+    community: Community
+
+    ticketIssuers: [TicketIssuer!]
+    tickets: [Ticket!]
+
+    requiredForOpportunities: [Opportunity!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}

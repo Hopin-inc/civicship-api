@@ -1,0 +1,46 @@
+# ------------------------------
+# Query Definitions
+# ------------------------------
+extend type Query {
+    utilities(
+        filter: UtilityFilterInput
+        sort: UtilitySortInput
+        cursor: String
+        first: Int
+    ): UtilitiesConnection!
+    utility(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): Utility
+}
+
+# ------------------------------
+# Type Definitions for Queries
+# ------------------------------
+type UtilitiesConnection {
+    edges: [UtilityEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type UtilityEdge implements Edge {
+    cursor: String!
+    node: Utility
+}
+
+# ------------------------------
+# Input Definitions for Queries
+# ------------------------------
+input UtilityFilterInput {
+    communityId: ID
+    publishStatus: [PublishStatus!]
+
+    and: [UtilityFilterInput!]
+    or: [UtilityFilterInput!]
+    not: UtilityFilterInput
+}
+
+input UtilitySortInput {
+    createdAt: SortDirection
+    pointsRequired: SortDirection
+}

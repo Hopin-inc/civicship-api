@@ -1,0 +1,28 @@
+# ------------------------------
+# Evaluation Object Type Definitions
+# ------------------------------
+type Evaluation {
+    id: ID!
+    status: EvaluationStatus!
+    comment: String
+
+    participation: Participation
+    evaluator: User
+
+    credentialUrl: String
+    issuedAt: Datetime
+
+    histories: [EvaluationHistory!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Evaluation Enum Definitions
+# ------------------------------
+enum EvaluationStatus {
+    PENDING
+    PASSED
+    FAILED
+}

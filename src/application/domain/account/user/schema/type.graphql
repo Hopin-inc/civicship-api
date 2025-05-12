@@ -1,0 +1,63 @@
+# ------------------------------
+# User Object Type Definitions
+# ------------------------------
+type User {
+    id: ID!
+
+    sysRole: SysRole
+    name: String!
+    slug: String
+    image: String
+    bio: String
+    phoneNumber: String @authz(rules: [CanReadPhoneNumber])
+
+    urlWebsite: String
+    urlX: String
+    urlFacebook: String
+    urlInstagram: String
+    urlYoutube: String
+    urlTiktok: String
+
+    currentPrefecture: CurrentPrefecture
+
+    identities: [Identity!]
+    portfolios: [Portfolio!]
+
+    memberships: [Membership!]
+    membershipChangedByMe: [MembershipHistory!]
+
+    wallets: [Wallet!]
+
+    opportunitiesCreatedByMe: [Opportunity!]
+    reservations: [Reservation!]
+    reservationStatusChangedByMe: [ReservationHistory!]
+    participations: [Participation!]
+    participationStatusChangedByMe: [ParticipationStatusHistory!]
+    evaluations: [Evaluation!]
+    evaluationCreatedByMe: [EvaluationHistory!]
+
+    articlesWrittenByMe: [Article!]
+    articlesAboutMe: [Article!]
+
+    ticketStatusChangedByMe: [TicketStatusHistory!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# User Enum Definitions
+# ------------------------------
+enum SysRole {
+    SYS_ADMIN
+    USER
+}
+
+enum CurrentPrefecture {
+    KAGAWA
+    TOKUSHIMA
+    KOCHI
+    EHIME
+    OUTSIDE_SHIKOKU
+    UNKNOWN
+}

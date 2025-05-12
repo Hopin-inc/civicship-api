@@ -1,0 +1,45 @@
+# ------------------------------
+# Reservation Query Definitions
+# ------------------------------
+
+extend type Query {
+    reservations(
+        filter: ReservationFilterInput
+        sort: ReservationSortInput
+        cursor: String
+        first: Int
+    ): ReservationsConnection!
+
+    reservation(id: ID!): Reservation
+}
+
+# ------------------------------
+# Reservation Connection Type Definitions
+# ------------------------------
+
+type ReservationsConnection {
+    edges: [ReservationEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type ReservationEdge implements Edge {
+    cursor: String!
+    node: Reservation
+}
+
+# ------------------------------
+# Reservation Query Input Definitions
+# ------------------------------
+
+input ReservationFilterInput {
+    status: ReservationStatus
+    opportunityId: ID
+    opportunitySlotId: ID
+    createdByUserId: ID
+}
+
+input ReservationSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}

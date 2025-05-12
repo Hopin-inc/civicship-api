@@ -1,0 +1,27 @@
+# ------------------------------
+# Reservation Object Type Definitions
+# ------------------------------
+type Reservation {
+    id: ID!
+    status: ReservationStatus!
+
+    opportunitySlot: OpportunitySlot
+    participations: [Participation!]
+
+    createdByUser: User
+
+    histories: [ReservationHistory!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Reservation Enum Definitions
+# ------------------------------
+enum ReservationStatus {
+    APPLIED
+    ACCEPTED
+    REJECTED
+    CANCELED
+}

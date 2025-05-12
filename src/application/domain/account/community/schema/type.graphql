@@ -1,0 +1,24 @@
+# ------------------------------
+# Community Object Type Definitions
+# ------------------------------
+type Community {
+    id: ID!
+    name: String
+    pointName: String
+    image: String
+    bio: String
+    establishedAt: Datetime
+    website: String
+
+    places: [Place!]
+
+    memberships: [Membership!]
+    wallets: [Wallet!]
+    opportunities: [Opportunity!]
+    participations: [Participation!]
+    utilities: [Utility!]
+    articles: [Article!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}

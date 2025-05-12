@@ -1,0 +1,38 @@
+# ------------------------------
+# User Query Definitions
+# ------------------------------
+extend type Query {
+    users(
+        filter: UserFilterInput
+        sort: UserSortInput
+        cursor: String
+        first: Int
+    ): UsersConnection!
+    user(id: ID!): User
+}
+
+# ------------------------------
+# User Connection Type Definitions
+# ------------------------------
+type UsersConnection {
+    edges: [UserEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type UserEdge implements Edge {
+    cursor: String!
+    node: User
+}
+
+# ------------------------------
+# User Query Input Definitions
+# ------------------------------
+input UserFilterInput {
+    keyword: String
+    sysRole: SysRole
+}
+
+input UserSortInput {
+    createdAt: SortDirection
+}

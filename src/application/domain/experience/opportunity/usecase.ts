@@ -1,0 +1,171 @@
+import {
+  GqlMutationOpportunityCreateArgs,
+  GqlMutationOpportunityDeleteArgs,
+  GqlMutationOpportunitySetPublishStatusArgs,
+  GqlMutationOpportunityUpdateContentArgs,
+  GqlOpportunitiesConnection,
+  GqlOpportunity,
+  GqlOpportunityCreatePayload,
+  GqlOpportunityDeletePayload,
+  GqlOpportunityFilterInput,
+  GqlOpportunitySetPublishStatusPayload,
+  GqlOpportunityUpdateContentPayload,
+  GqlQueryOpportunitiesArgs,
+  GqlQueryOpportunityArgs,
+} from "@/types/graphql";
+import { IContext } from "@/types/server";
+import OpportunityPresenter from "@/application/domain/experience/opportunity/presenter";
+import { PublishStatus } from "@prisma/client";
+import OpportunityService from "@/application/domain/experience/opportunity/service";
+import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { inject, injectable } from "tsyringe";
+
+@injectable()
+export default class OpportunityUseCase {
+  constructor(@inject("OpportunityService") private readonly service: OpportunityService) {}
+
+  async anyoneBrowseOpportunities(
+    { filter, sort, cursor, first }: GqlQueryOpportunitiesArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitiesConnection> {
+    const take = clampFirst(first);
+
+    const currentUserId = ctx.currentUser?.id;
+    const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
+
+    const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
+    const allowedPublishStatuses = isManager
+      ? Object.values(PublishStatus)
+      : isMember
+        ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
+        : [PublishStatus.PUBLIC];
+
+    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
+
+    const validatedFilter: GqlOpportunityFilterInput = validateByMembershipRoles(
+      communityIds,
+      isMember,
+      isManager,
+      currentUserId,
+      filter,
+    );
+
+    const records = await this.service.fetchOpportunities(
+      ctx,
+      {
+        cursor,
+        sort,
+        filter: validatedFilter,
+      },
+      take,
+    );
+
+    const hasNextPage = records.length > take;
+    const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
+
+    return OpportunityPresenter.query(data, hasNextPage);
+  }
+
+  async visitorViewOpportunity(
+    { id, permission }: GqlQueryOpportunityArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunity | null> {
+    const currentUserId = ctx.currentUser?.id;
+    const communityIds = [permission.communityId];
+    const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
+
+    const validatedFilter = validateByMembershipRoles(
+      communityIds,
+      isMember,
+      isManager,
+      currentUserId,
+    );
+
+    const record = await this.service.findOpportunityAccessible(ctx, id, validatedFilter);
+    return record ? OpportunityPresenter.get(record) : null;
+  }
+
+  async managerCreateOpportunity(
+    { input }: GqlMutationOpportunityCreateArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunityCreatePayload> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const record = await this.service.createOpportunity(ctx, input, tx);
+      return OpportunityPresenter.create(record);
+    });
+  }
+
+  async managerDeleteOpportunity(
+    { id }: GqlMutationOpportunityDeleteArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunityDeletePayload> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const record = await this.service.deleteOpportunity(ctx, id, tx);
+      return OpportunityPresenter.delete(record);
+    });
+  }
+
+  async managerUpdateOpportunityContent(
+    { id, input }: GqlMutationOpportunityUpdateContentArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunityUpdateContentPayload> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const record = await this.service.updateOpportunityContent(ctx, id, input, tx);
+      return OpportunityPresenter.update(record);
+    });
+  }
+
+  async managerSetOpportunityPublishStatus(
+    { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitySetPublishStatusPayload> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      const record = await this.service.setOpportunityPublishStatus(
+        ctx,
+        id,
+        input.publishStatus,
+        tx,
+      );
+      return OpportunityPresenter.setPublishStatus(record);
+    });
+  }
+}
+
+function validateByMembershipRoles(
+  communityIds: string[],
+  isManager: Record<string, boolean>,
+  isMember: Record<string, boolean>,
+  currentUserId?: string,
+  filter?: GqlOpportunityFilterInput,
+): GqlOpportunityFilterInput {
+  if (communityIds.length === 0) {
+    return {
+      and: [{ publishStatus: [PublishStatus.PUBLIC] }, ...(filter ? [filter] : [])],
+    };
+  }
+
+  const orConditions: GqlOpportunityFilterInput[] = communityIds.map((communityId) => {
+    if (isManager[communityId]) {
+      return {
+        and: [{ communityIds: [communityId] }, ...(filter ? [filter] : [])],
+      };
+    }
+    return {
+      and: [
+        { communityIds: [communityId] },
+        {
+          or: [
+            { publishStatus: [PublishStatus.PUBLIC] },
+            ...(isMember[communityId]
+              ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
+              : []),
+            ...(currentUserId ? [{ createdByUserIds: [currentUserId] }] : []),
+          ],
+        },
+        ...(filter ? [filter] : []),
+      ],
+    };
+  });
+
+  return { or: orConditions };
+}

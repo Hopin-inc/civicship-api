@@ -1,0 +1,40 @@
+# ------------------------------
+# Ticket Object Type Definitions
+# ------------------------------
+type Ticket {
+    id: ID!
+    status: TicketStatus!
+    reason: TicketStatusReason!
+
+    claimLink: TicketClaimLink
+
+    utility: Utility
+    wallet: Wallet
+
+    ticketStatusHistories: [TicketStatusHistory!]
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# Ticket Enum Definitions
+# ------------------------------
+enum TicketStatus {
+    AVAILABLE
+    DISABLED
+}
+
+enum TicketStatusReason {
+    GIFTED
+
+    PURCHASED
+    REFUNDED
+
+    RESERVED
+    CANCELED
+
+    USED
+
+    EXPIRED
+}
