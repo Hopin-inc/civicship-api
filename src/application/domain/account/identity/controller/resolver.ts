@@ -22,7 +22,7 @@ export default class IdentityResolver {
       return this.usecase.userDeleteAccount(ctx);
     },
     linkPhoneAuth: (_: unknown, args: GqlMutationLinkPhoneAuthArgs, ctx: IContext) => {
-      return this.usecase.linkPhoneAuth(ctx, args.input.phoneUid);
+      return this.usecase.linkPhoneAuth(ctx, args.input.phoneUid, args.permission?.userId);
     },
   };
 

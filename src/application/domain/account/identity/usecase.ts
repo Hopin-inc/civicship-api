@@ -63,6 +63,7 @@ export default class IdentityUseCase {
   async linkPhoneAuth(
     ctx: IContext,
     phoneUid: string,
+    userId?: string,
   ): Promise<GqlLinkPhoneAuthPayload> {
     if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.LINE) {
       throw new Error("LINE authentication required");
@@ -71,6 +72,10 @@ export default class IdentityUseCase {
     const lineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
     if (!lineIdentity) {
       throw new Error("User not found with LINE identity");
+    }
+    
+    if (userId && lineIdentity.id !== userId) {
+      throw new Error("User is not self");
     }
 
     const user = await ctx.issuer.public(ctx, async (tx) => {

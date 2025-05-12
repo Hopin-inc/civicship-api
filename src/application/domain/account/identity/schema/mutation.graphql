@@ -9,7 +9,10 @@ extend type Mutation {
     ): UserDeletePayload
     @authz(rules: [IsSelf])
     
-    linkPhoneAuth(input: LinkPhoneAuthInput!): LinkPhoneAuthPayload
+    linkPhoneAuth(
+        input: LinkPhoneAuthInput!
+        permission: CheckIsSelfPermissionInput!
+    ): LinkPhoneAuthPayload
     @authz(rules: [IsSelf])
 }
 
