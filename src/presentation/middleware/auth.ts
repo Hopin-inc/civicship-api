@@ -25,35 +25,39 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   if (!tenantId) {
     throw new Error("FIREBASE_AUTH_TENANT_ID not defined.");
   }
-  const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-  const decoded = await tenantedAuth.verifyIdToken(idToken);
-  const uid = decoded.uid;
-  const platform = decoded.platform;
+  try {
+    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
+    const decoded = await tenantedAuth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+    const platform = decoded.platform;
 
-  const [currentUser, hasPermissions] = await Promise.all([
-    issuer.internal(async (tx) =>
-      tx.user.findFirst({
-        where: { identities: { some: { uid } } },
-        include: userAuthInclude,
-      }),
-    ),
-    issuer.internal(async (tx) =>
-      tx.user.findFirst({
-        where: { identities: { some: { uid } } },
-        select: userAuthSelect,
-      }),
-    ),
-  ]);
+    const [currentUser, hasPermissions] = await Promise.all([
+      issuer.internal(async (tx) =>
+        tx.user.findFirst({
+          where: { identities: { some: { uid } } },
+          include: userAuthInclude,
+        }),
+      ),
+      issuer.internal(async (tx) =>
+        tx.user.findFirst({
+          where: { identities: { some: { uid } } },
+          select: userAuthSelect,
+        }),
+      ),
+    ]);
 
-  return {
-    uid,
-    tenantId,
-    platform,
-    currentUser,
-    hasPermissions,
-    loaders,
-    issuer,
-  };
+    return {
+      uid,
+      tenantId,
+      platform,
+      currentUser,
+      hasPermissions,
+      loaders,
+      issuer,
+    };
+  } catch (e) {
+    return { issuer, loaders };
+  }
 }
 
 export function authHandler(server: ApolloServer<IContext>) {
