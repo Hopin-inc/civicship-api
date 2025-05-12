@@ -13,7 +13,6 @@ extend type Mutation {
         input: LinkPhoneAuthInput!
         permission: CheckIsSelfPermissionInput!
     ): LinkPhoneAuthPayload
-    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
