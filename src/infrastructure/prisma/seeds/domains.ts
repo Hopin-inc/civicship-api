@@ -19,7 +19,7 @@ import { processInBatches } from "@/utils/array";
 import { Opportunity, OpportunitySlot, Place, Reservation, User, Wallet } from "@prisma/client";
 import { Community } from "@prisma/client/index.d";
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 100;
 const NUM_UTILITIES = 3;
 const NUM_SLOTS_PER_OPPORTUNITY = 3;
 const NUM_RESERVATIONS_PER_SLOT = 1;
