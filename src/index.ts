@@ -34,7 +34,9 @@ async function startServer() {
   const apolloServer = await createApolloServer(server);
 
   app.use(corsHandler);
-  app.use(express.json({ limit: "50mb" }), requestLogger);
+  app.use(express.json({ limit: "50mb" }));
+  app.use(requestLogger);
+
   app.use((err, _req, res, _next) => {
     logger.error("Unhandled Express Error:", {
       message: err.message,
@@ -43,8 +45,9 @@ async function startServer() {
     res.status(500).json({ error: "Internal Server Error" });
   });
 
-  app.use("/graphql", authHandler(apolloServer));
+  app.use("/graphql", corsHandler, authHandler(apolloServer));
   app.use("/line", lineRouter);
+
   server.listen(port, () => {
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
     const host = "localhost";
