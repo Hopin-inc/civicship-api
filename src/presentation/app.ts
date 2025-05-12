@@ -8,7 +8,8 @@ export function createExpressApp() {
 
   app.set("trust proxy", 1);
 
-  app.use("/graphql", express.json({ limit: "50mb" }), corsHandler, requestLogger);
+  app.use(corsHandler);
+  app.use("/graphql", express.json({ limit: "50mb" }), requestLogger);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   app.use((err, _req, res, _next) => {
