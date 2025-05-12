@@ -33,8 +33,19 @@ async function startServer() {
 
   const apolloServer = await createApolloServer(server);
 
-  app.use(express.json({ limit: "50mb" }), corsHandler, requestLogger);
-  app.use((err, _req, res, _next) => {
+  app.use(corsHandler);
+  app.use(express.json({ limit: "50mb" }));
+  app.use(requestLogger);
+
+  app.use((err, req, res, _next) => {
+    const origin = req.headers.origin;
+    const allowed = (process.env.ALLOWED_ORIGINS ?? "").split(" ");
+
+    if (origin && allowed.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+
     logger.error("Unhandled Express Error:", {
       message: err.message,
       stack: err.stack,
@@ -44,6 +55,7 @@ async function startServer() {
 
   app.use("/graphql", authHandler(apolloServer));
   app.use("/line", lineRouter);
+
   server.listen(port, () => {
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
     const host = "localhost";

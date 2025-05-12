@@ -8,5 +8,5 @@ type ReservationHistory {
     reservation: Reservation!
     createdByUser: User
 
-    createdAt: Datetime!
+    createdAt: Datetime
 }

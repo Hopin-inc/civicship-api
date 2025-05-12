@@ -20,12 +20,12 @@ type Wallet {
 }
 
 type CurrentPointView {
-    walletId: String!
+    walletId: String
     currentPoint: Int!
 }
 
 type AccumulatedPointView {
-    walletId: String!
+    walletId: String
     accumulatedPoint: Int!
 }
 

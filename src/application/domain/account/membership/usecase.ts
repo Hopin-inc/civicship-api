@@ -47,7 +47,7 @@ export default class MembershipUseCase {
     args: GqlQueryMembershipArgs,
     ctx: IContext,
   ): Promise<GqlMembership | null> {
-    const membership = await this.membershipService.findMembership(
+    const membership = await this.membershipService.findMembershipDetail(
       ctx,
       args.userId,
       args.communityId,

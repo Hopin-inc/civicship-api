@@ -34,6 +34,15 @@ export default class MembershipRepository implements IMembershipRepository {
     });
   }
 
+  async findDetail(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.membership.findUnique({
+        where,
+        select: membershipSelectDetail,
+      });
+    });
+  }
+
   async find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.membership.findUnique({

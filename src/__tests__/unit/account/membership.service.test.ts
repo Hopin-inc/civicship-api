@@ -10,6 +10,7 @@ import MembershipConverter from "@/application/domain/account/membership/data/co
 // --- Mockクラス ---
 class MockMembershipRepository implements IMembershipRepository {
   query = jest.fn();
+  findDetail = jest.fn();
   find = jest.fn();
   create = jest.fn();
   update = jest.fn();
