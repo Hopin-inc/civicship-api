@@ -349,7 +349,8 @@ export type GqlIdentity = {
 
 export const GqlIdentityPlatform = {
   Facebook: 'FACEBOOK',
-  Line: 'LINE'
+  Line: 'LINE',
+  Phone: 'PHONE'
 } as const;
 
 export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
