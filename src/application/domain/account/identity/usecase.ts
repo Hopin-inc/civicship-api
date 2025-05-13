@@ -3,6 +3,7 @@ import {
   GqlCurrentUserPayload,
   GqlMutationUserSignUpArgs,
   GqlUserDeletePayload,
+  GqlLinkPhoneAuthPayload,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -11,6 +12,7 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
+import { IdentityPlatform } from "@prisma/client";
 
 @injectable()
 export default class IdentityUseCase {
@@ -34,7 +36,7 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
-    const { data, image } = IdentityConverter.create(args);
+    const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
       ? await this.imageService.uploadPublicImage(image, "users")
@@ -47,6 +49,7 @@ export default class IdentityUseCase {
       },
       ctx.uid,
       ctx.platform,
+      phoneUid,
     );
 
     const res = await ctx.issuer.public(ctx, async (tx) => {
@@ -56,6 +59,25 @@ export default class IdentityUseCase {
     });
 
     return IdentityPresenter.create(res);
+  }
+
+  async linkPhoneAuth(
+    ctx: IContext,
+    phoneUid: string,
+    userId: string,
+  ): Promise<GqlLinkPhoneAuthPayload> {
+    if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.LINE) {
+      throw new Error("LINE authentication required");
+    }
+
+    const user = await ctx.issuer.public(ctx, async (tx) => {
+      return this.identityService.linkPhoneIdentity(ctx, userId, phoneUid, tx);
+    });
+
+    return {
+      success: true,
+      user: user,
+    };
   }
 
   async userDeleteAccount(context: IContext): Promise<GqlUserDeletePayload> {

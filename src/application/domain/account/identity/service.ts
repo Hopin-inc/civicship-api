@@ -3,6 +3,7 @@ import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
 import { injectable, inject } from "tsyringe";
+import { IContext } from "@/types/server";
 
 @injectable()
 export default class IdentityService {
@@ -15,13 +16,51 @@ export default class IdentityService {
     data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
+    phoneUid?: string,
   ) {
+    const identityCreate = phoneUid 
+      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
+      : { create: { uid, platform } };
+      
     return this.userRepository.create({
       ...data,
-      identities: {
-        create: { uid, platform },
-      },
+      identities: identityCreate,
     });
+  }
+
+  async linkPhoneIdentity(
+    ctx: IContext,
+    userId: string,
+    phoneUid: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+    
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    await tx.identity.create({
+      data: {
+        uid: phoneUid,
+        platform: IdentityPlatform.PHONE,
+        userId: userId
+      }
+    });
+    
+    return this.userRepository.find(ctx, userId);
+  }
+
+  async findUserByIdentity(ctx: IContext, uid: string): Promise<User | null> {
+    const identity = await this.identityRepository.find(uid);
+    if (identity) {
+      const user = await this.userRepository.find(ctx, identity.userId);
+      return user;
+    }
+    return null;
   }
 
   async deleteUserAndIdentity(uid: string): Promise<User | null> {

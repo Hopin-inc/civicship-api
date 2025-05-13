@@ -11,3 +11,8 @@ type Identity {
     createdAt: Datetime
     updatedAt: Datetime
 }
+
+type LinkPhoneAuthPayload {
+    success: Boolean!
+    user: User
+}
