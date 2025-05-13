@@ -16,12 +16,15 @@ export default class IdentityService {
     data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
+    phoneUid?: string,
   ) {
+    const identityCreate = phoneUid 
+      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
+      : { create: { uid, platform } };
+      
     return this.userRepository.create({
       ...data,
-      identities: {
-        create: { uid, platform },
-      },
+      identities: identityCreate,
     });
   }
 

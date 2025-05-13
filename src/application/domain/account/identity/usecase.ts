@@ -36,7 +36,7 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
-    const { data, image } = IdentityConverter.create(args);
+    const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
       ? await this.imageService.uploadPublicImage(image, "users")
@@ -49,6 +49,7 @@ export default class IdentityUseCase {
       },
       ctx.uid,
       ctx.platform,
+      phoneUid,
     );
 
     const res = await ctx.issuer.public(ctx, async (tx) => {
