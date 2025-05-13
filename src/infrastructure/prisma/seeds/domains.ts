@@ -19,11 +19,12 @@ import { processInBatches } from "@/utils/array";
 import { Opportunity, OpportunitySlot, Place, Reservation, User, Wallet } from "@prisma/client";
 import { Community } from "@prisma/client/index.d";
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 10;  // edit this ONLY when seeding is slow to the extent database connections are established properly
 const NUM_UTILITIES = 3;
 const NUM_SLOTS_PER_OPPORTUNITY = 3;
 const NUM_RESERVATIONS_PER_SLOT = 1;
 const NUM_TRANSACTIONS = 5;
+const NUM_PLACES = 100;
 
 export async function seedUsecase() {
   console.info("🔥 Resetting DB...");
@@ -118,7 +119,7 @@ async function createUtilitiesAndTickets(users: User[], community: Community, wa
 // 💡 STEP 1.5 を追加：Placeを複数作成
 async function createPlaces(community: Community) {
   const results: Place[] = [];
-  for (let i = 0; i < 20 / BATCH_SIZE; i++) {
+  for (let i = 0; i < NUM_PLACES / BATCH_SIZE; i++) {
     results.push(
       ...(await PlaceFactory.createList(BATCH_SIZE, {
         transientCommunity: community,

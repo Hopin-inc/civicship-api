@@ -973,6 +973,7 @@ export type GqlOpportunityFilterInput = {
   slotHostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   slotRemainingCapacity?: InputMaybe<Scalars['Int']['input']>;
   slotStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  stateCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type GqlOpportunitySetPublishStatusInput = {
