@@ -37,6 +37,7 @@ UNKNOWN UNKNOWN
         IdentityPlatform {
             LINE LINE
 FACEBOOK FACEBOOK
+PHONE PHONE
         }
     
 
