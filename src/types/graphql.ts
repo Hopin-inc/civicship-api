@@ -982,6 +982,8 @@ export type GqlOpportunityFilterInput = {
   cityCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  isReservableWithTicket?: InputMaybe<Scalars['Boolean']['input']>;
+  keyword?: InputMaybe<Scalars['String']['input']>;
   not?: InputMaybe<GqlOpportunityFilterInput>;
   or?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
