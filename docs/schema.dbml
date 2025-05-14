@@ -536,6 +536,7 @@ Enum CurrentPrefecture {
 Enum IdentityPlatform {
   LINE
   FACEBOOK
+  PHONE
 }
 
 Enum Role {

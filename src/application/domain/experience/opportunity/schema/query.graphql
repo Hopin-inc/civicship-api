@@ -29,6 +29,8 @@ type OpportunityEdge implements Edge {
 # Opportunity Query Input Definitions
 # ------------------------------
 input OpportunityFilterInput {
+    keyword: String
+
     category: OpportunityCategory
     publishStatus: [PublishStatus!]
 
@@ -39,6 +41,8 @@ input OpportunityFilterInput {
     stateCodes: [ID!]
     articleIds: [ID!]
     requiredUtilityIds: [ID!]
+
+    isReservableWithTicket: Boolean
 
     # slot
     slotHostingStatus: [OpportunitySlotHostingStatus!]

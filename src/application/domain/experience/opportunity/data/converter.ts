@@ -137,6 +137,23 @@ export default class OpportunityConverter {
   private opportunityFilter(filter: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput[] {
     const conditions: Prisma.OpportunityWhereInput[] = [];
 
+    if (filter.keyword) {
+      conditions.push({
+        OR: [
+          { title: { contains: filter.keyword } },
+          {
+            place: {
+              name: { contains: filter.keyword },
+              city: {
+                name: { contains: filter.keyword },
+                state: { name: { contains: filter.keyword } },
+              },
+            },
+          },
+          { createdByUser: { name: { contains: filter.keyword } } },
+        ],
+      });
+    }
     if (filter.category) conditions.push({ category: filter.category });
     if (filter.publishStatus?.length)
       conditions.push({ publishStatus: { in: filter.publishStatus } });

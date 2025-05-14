@@ -93,6 +93,7 @@ input ImageInput {
 enum IdentityPlatform {
     LINE
     FACEBOOK
+    PHONE
 }
 
 enum PublishStatus {

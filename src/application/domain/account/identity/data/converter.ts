@@ -5,8 +5,9 @@ export default class IdentityConverter {
   static create({ input }: GqlMutationUserSignUpArgs): {
     data: Prisma.UserCreateInput;
     image?: GqlImageInput;
+    phoneUid?: string;
   } {
-    const { image, slug, name, currentPrefecture } = input;
+    const { image, slug, name, currentPrefecture, phoneUid } = input;
 
     return {
       data: {
@@ -15,6 +16,7 @@ export default class IdentityConverter {
         slug: slug || "",
       },
       image,
+      phoneUid,
     };
   }
 }

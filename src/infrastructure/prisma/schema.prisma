@@ -247,6 +247,7 @@ model Identity {
 enum IdentityPlatform {
   LINE
   FACEBOOK
+  PHONE
 }
 
 // ------------------------------ Membership Domain ------------------------------
