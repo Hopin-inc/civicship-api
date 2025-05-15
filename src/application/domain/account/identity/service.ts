@@ -6,6 +6,7 @@ import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
 import { DID_VC_API_URL } from "@/consts/utils";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class IdentityService {
@@ -96,7 +97,7 @@ export default class IdentityService {
         const newTokens = await this.refreshAuthToken(uid, identity.refreshToken);
         return { token: newTokens.authToken, isValid: true };
       } catch (error) {
-        console.error("Failed to refresh token:", error);
+        logger.error("Failed to refresh token:", error);
         return { token: null, isValid: false };
       }
     }
@@ -126,7 +127,7 @@ export default class IdentityService {
         expiryTime,
       };
     } catch (error) {
-      console.error("Token refresh failed:", error);
+      logger.error("Token refresh failed:", error);
       throw new Error("Failed to refresh authentication token");
     }
   }
@@ -168,7 +169,7 @@ export default class IdentityService {
 
       return response?.data;
     } catch (error) {
-      console.error(`Error calling DID/VC server at ${endpoint}:`, error);
+      logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
       
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 401) {
         const identity = await this.identityRepository.find(uid);
@@ -178,7 +179,7 @@ export default class IdentityService {
             await this.refreshAuthToken(uid, identity.refreshToken);
             return this.callDIDVCServer(uid, endpoint, method, data);
           } catch (refreshError) {
-            console.error("Failed to refresh token during API call:", refreshError);
+            logger.error("Failed to refresh token during API call:", refreshError);
             throw new Error("Authentication failed and token refresh was unsuccessful");
           }
         }

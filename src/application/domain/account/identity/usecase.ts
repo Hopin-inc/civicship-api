@@ -14,6 +14,7 @@ import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { IdentityPlatform } from "@prisma/client";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class IdentityUseCase {
@@ -116,7 +117,7 @@ export default class IdentityUseCase {
         expiresAt: expiryTime,
       };
     } catch (error) {
-      console.error("Failed to store auth tokens:", error);
+      logger.error("Failed to store auth tokens:", error);
       return {
         success: false,
         expiresAt: null,
