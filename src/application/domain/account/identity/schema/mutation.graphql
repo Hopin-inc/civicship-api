@@ -11,6 +11,9 @@ extend type Mutation {
     
     linkPhoneAuth(input: LinkPhoneAuthInput!): LinkPhoneAuthPayload
     @authz(rules: [IsSelf])
+    
+    storePhoneAuthToken(input: StorePhoneAuthTokenInput!): StorePhoneAuthTokenPayload
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
@@ -30,6 +33,13 @@ input LinkPhoneAuthInput {
     phoneUid: String!
 }
 
+input StorePhoneAuthTokenInput {
+    phoneUid: String!
+    authToken: String!
+    refreshToken: String!
+    expiresIn: Int!
+}
+
 # ------------------------------
 # User Account Type Definitions
 # ------------------------------
@@ -39,4 +49,9 @@ type CurrentUserPayload {
 
 type UserDeletePayload {
     userId: ID
+}
+
+type StorePhoneAuthTokenPayload {
+    success: Boolean!
+    expiresAt: Datetime
 }

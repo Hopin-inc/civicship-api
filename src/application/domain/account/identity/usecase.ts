@@ -4,6 +4,7 @@ import {
   GqlMutationUserSignUpArgs,
   GqlUserDeletePayload,
   GqlLinkPhoneAuthPayload,
+  GqlStorePhoneAuthTokenPayload,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -91,5 +92,35 @@ export default class IdentityUseCase {
     const user = await this.identityService.deleteUserAndIdentity(uid);
     await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
     return IdentityPresenter.delete(user);
+  }
+
+  async storePhoneAuthToken(
+    ctx: IContext,
+    phoneUid: string,
+    authToken: string,
+    refreshToken: string,
+    expiresIn: number
+  ): Promise<GqlStorePhoneAuthTokenPayload> {
+    if (!ctx.uid || !ctx.platform) {
+      throw new Error("Authentication required");
+    }
+
+    const expiryTime = new Date();
+    expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
+
+    try {
+      await this.identityService.storeAuthTokens(phoneUid, authToken, refreshToken, expiryTime);
+      
+      return {
+        success: true,
+        expiresAt: expiryTime,
+      };
+    } catch (error) {
+      console.error("Failed to store auth tokens:", error);
+      return {
+        success: false,
+        expiresAt: null,
+      };
+    }
   }
 }
