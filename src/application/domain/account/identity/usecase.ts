@@ -38,7 +38,7 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
-    const { data, image } = IdentityConverter.create(args);
+    const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
       ? await this.imageService.uploadPublicImage(image, "users")
@@ -51,6 +51,7 @@ export default class IdentityUseCase {
       },
       ctx.uid,
       ctx.platform,
+      phoneUid,
     );
 
     const res = await ctx.issuer.public(ctx, async (tx) => {
@@ -65,18 +66,14 @@ export default class IdentityUseCase {
   async linkPhoneAuth(
     ctx: IContext,
     phoneUid: string,
+    userId: string,
   ): Promise<GqlLinkPhoneAuthPayload> {
     if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.LINE) {
       throw new Error("LINE authentication required");
     }
 
-    const lineIdentity = await this.identityService.findUserByIdentity(ctx, ctx.uid);
-    if (!lineIdentity) {
-      throw new Error("User not found with LINE identity");
-    }
-
     const user = await ctx.issuer.public(ctx, async (tx) => {
-      return this.identityService.linkPhoneIdentity(ctx, lineIdentity.id, phoneUid, tx);
+      return this.identityService.linkPhoneIdentity(ctx, userId, phoneUid, tx);
     });
 
     return {

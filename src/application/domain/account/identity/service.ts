@@ -19,12 +19,15 @@ export default class IdentityService {
     data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
+    phoneUid?: string,
   ) {
+    const identityCreate = phoneUid 
+      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
+      : { create: { uid, platform } };
+      
     return this.userRepository.create({
       ...data,
-      identities: {
-        create: { uid, platform },
-      },
+      identities: identityCreate,
     });
   }
 
@@ -34,16 +37,24 @@ export default class IdentityService {
     phoneUid: string,
     tx: Prisma.TransactionClient,
   ) {
-    return this.userRepository.update(
-      ctx,
-      userId,
-      {
-        identities: {
-          create: { uid: phoneUid, platform: IdentityPlatform.PHONE },
-        },
-      },
-      tx,
-    );
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+    
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
+    }
+    
+    await tx.identity.create({
+      data: {
+        uid: phoneUid,
+        platform: IdentityPlatform.PHONE,
+        userId: userId
+      }
+    });
+    
+    return this.userRepository.find(ctx, userId);
   }
 
   async findUserByIdentity(ctx: IContext, uid: string): Promise<User | null> {

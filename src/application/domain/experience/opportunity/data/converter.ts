@@ -146,6 +146,8 @@ export default class OpportunityConverter {
     if (filter.placeIds?.length) conditions.push({ placeId: { in: filter.placeIds } });
     if (filter.cityCodes?.length)
       conditions.push({ place: { cityCode: { in: filter.cityCodes } } });
+    if (filter.stateCodes?.length)
+      conditions.push({ place: { city: { state: { code: { in: filter.cityCodes } } } } });
     if (filter.articleIds?.length)
       conditions.push({ articles: { some: { id: { in: filter.articleIds } } } });
     if (filter.requiredUtilityIds?.length)

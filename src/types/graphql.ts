@@ -349,7 +349,8 @@ export type GqlIdentity = {
 
 export const GqlIdentityPlatform = {
   Facebook: 'FACEBOOK',
-  Line: 'LINE'
+  Line: 'LINE',
+  Phone: 'PHONE'
 } as const;
 
 export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIdentityPlatform];
@@ -357,6 +358,16 @@ export type GqlImageInput = {
   alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
   file: Scalars['Upload']['input'];
+};
+
+export type GqlLinkPhoneAuthInput = {
+  phoneUid: Scalars['String']['input'];
+};
+
+export type GqlLinkPhoneAuthPayload = {
+  __typename?: 'LinkPhoneAuthPayload';
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<GqlUser>;
 };
 
 export type GqlMembership = {
@@ -533,6 +544,7 @@ export type GqlMutation = {
   communityUpdateProfile?: Maybe<GqlCommunityUpdateProfilePayload>;
   evaluationFail?: Maybe<GqlEvaluationCreatePayload>;
   evaluationPass?: Maybe<GqlEvaluationCreatePayload>;
+  linkPhoneAuth?: Maybe<GqlLinkPhoneAuthPayload>;
   membershipAcceptMyInvitation?: Maybe<GqlMembershipSetInvitationStatusPayload>;
   membershipAssignManager?: Maybe<GqlMembershipSetRolePayload>;
   membershipAssignMember?: Maybe<GqlMembershipSetRolePayload>;
@@ -604,6 +616,12 @@ export type GqlMutationEvaluationFailArgs = {
 export type GqlMutationEvaluationPassArgs = {
   input: GqlEvaluationCreateInput;
   permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationLinkPhoneAuthArgs = {
+  input: GqlLinkPhoneAuthInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
@@ -973,6 +991,7 @@ export type GqlOpportunityFilterInput = {
   slotHostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   slotRemainingCapacity?: InputMaybe<Scalars['Int']['input']>;
   slotStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  stateCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type GqlOpportunitySetPublishStatusInput = {
@@ -2119,6 +2138,7 @@ export type GqlUserSignUpInput = {
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
+  phoneUid?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -2461,6 +2481,8 @@ export type GqlResolversTypes = ResolversObject<{
   ImageInput: GqlImageInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
+  LinkPhoneAuthInput: GqlLinkPhoneAuthInput;
+  LinkPhoneAuthPayload: ResolverTypeWrapper<Omit<GqlLinkPhoneAuthPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   Membership: ResolverTypeWrapper<Membership>;
   MembershipCursorInput: GqlMembershipCursorInput;
   MembershipEdge: ResolverTypeWrapper<Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Membership']> }>;
@@ -2717,6 +2739,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ImageInput: GqlImageInput;
   Int: Scalars['Int']['output'];
   JSON: Scalars['JSON']['output'];
+  LinkPhoneAuthInput: GqlLinkPhoneAuthInput;
+  LinkPhoneAuthPayload: Omit<GqlLinkPhoneAuthPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   Membership: Membership;
   MembershipCursorInput: GqlMembershipCursorInput;
   MembershipEdge: Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Membership']> };
@@ -3115,6 +3139,12 @@ export interface GqlJsonScalarConfig extends GraphQLScalarTypeConfig<GqlResolver
   name: 'JSON';
 }
 
+export type GqlLinkPhoneAuthPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['LinkPhoneAuthPayload'] = GqlResolversParentTypes['LinkPhoneAuthPayload']> = ResolversObject<{
+  success?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlMembershipResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Membership'] = GqlResolversParentTypes['Membership']> = ResolversObject<{
   bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
@@ -3237,6 +3267,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
   evaluationFail?: Resolver<Maybe<GqlResolversTypes['EvaluationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEvaluationFailArgs, 'input' | 'permission'>>;
   evaluationPass?: Resolver<Maybe<GqlResolversTypes['EvaluationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEvaluationPassArgs, 'input' | 'permission'>>;
+  linkPhoneAuth?: Resolver<Maybe<GqlResolversTypes['LinkPhoneAuthPayload']>, ParentType, ContextType, RequireFields<GqlMutationLinkPhoneAuthArgs, 'input' | 'permission'>>;
   membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input' | 'permission'>>;
   membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input' | 'permission'>>;
   membershipAssignMember?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignMemberArgs, 'input' | 'permission'>>;
@@ -4034,6 +4065,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   EvaluationsConnection?: GqlEvaluationsConnectionResolvers<ContextType>;
   Identity?: GqlIdentityResolvers<ContextType>;
   JSON?: GraphQLScalarType;
+  LinkPhoneAuthPayload?: GqlLinkPhoneAuthPayloadResolvers<ContextType>;
   Membership?: GqlMembershipResolvers<ContextType>;
   MembershipEdge?: GqlMembershipEdgeResolvers<ContextType>;
   MembershipHistory?: GqlMembershipHistoryResolvers<ContextType>;
