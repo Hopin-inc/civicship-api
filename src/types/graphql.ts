@@ -571,6 +571,7 @@ export type GqlMutation = {
   reservationCreate?: Maybe<GqlReservationCreatePayload>;
   reservationJoin?: Maybe<GqlReservationSetStatusPayload>;
   reservationReject?: Maybe<GqlReservationSetStatusPayload>;
+  storePhoneAuthToken?: Maybe<GqlStorePhoneAuthTokenPayload>;
   ticketClaim?: Maybe<GqlTicketClaimPayload>;
   ticketIssue?: Maybe<GqlTicketIssuePayload>;
   ticketPurchase?: Maybe<GqlTicketPurchasePayload>;
@@ -774,6 +775,11 @@ export type GqlMutationReservationJoinArgs = {
 export type GqlMutationReservationRejectArgs = {
   id: Scalars['ID']['input'];
   permission: GqlCheckOpportunityPermissionInput;
+};
+
+
+export type GqlMutationStorePhoneAuthTokenArgs = {
+  input: GqlStorePhoneAuthTokenInput;
 };
 
 
@@ -1815,6 +1821,19 @@ export type GqlState = {
   name: Scalars['String']['output'];
 };
 
+export type GqlStorePhoneAuthTokenInput = {
+  authToken: Scalars['String']['input'];
+  expiresIn: Scalars['Int']['input'];
+  phoneUid: Scalars['String']['input'];
+  refreshToken: Scalars['String']['input'];
+};
+
+export type GqlStorePhoneAuthTokenPayload = {
+  __typename?: 'StorePhoneAuthTokenPayload';
+  expiresAt?: Maybe<Scalars['Datetime']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export const GqlSysRole = {
   SysAdmin: 'SYS_ADMIN',
   User: 'USER'
@@ -2607,6 +2626,8 @@ export type GqlResolversTypes = ResolversObject<{
   SortDirection: GqlSortDirection;
   Source: GqlSource;
   State: ResolverTypeWrapper<State>;
+  StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
+  StorePhoneAuthTokenPayload: ResolverTypeWrapper<GqlStorePhoneAuthTokenPayload>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SysRole: GqlSysRole;
   Ticket: ResolverTypeWrapper<Ticket>;
@@ -2850,6 +2871,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationSortInput: GqlReservationSortInput;
   ReservationsConnection: Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ReservationEdge']> };
   State: State;
+  StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
+  StorePhoneAuthTokenPayload: GqlStorePhoneAuthTokenPayload;
   String: Scalars['String']['output'];
   Ticket: Ticket;
   TicketClaimInput: GqlTicketClaimInput;
@@ -3294,6 +3317,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   reservationCreate?: Resolver<Maybe<GqlResolversTypes['ReservationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCreateArgs, 'input'>>;
   reservationJoin?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationJoinArgs, 'id'>>;
   reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'permission'>>;
+  storePhoneAuthToken?: Resolver<Maybe<GqlResolversTypes['StorePhoneAuthTokenPayload']>, ParentType, ContextType, RequireFields<GqlMutationStorePhoneAuthTokenArgs, 'input'>>;
   ticketClaim?: Resolver<Maybe<GqlResolversTypes['TicketClaimPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketClaimArgs, 'input'>>;
   ticketIssue?: Resolver<Maybe<GqlResolversTypes['TicketIssuePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketIssueArgs, 'input' | 'permission'>>;
   ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input' | 'permission'>>;
@@ -3702,6 +3726,12 @@ export type GqlStateResolvers<ContextType = any, ParentType extends GqlResolvers
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   countryCode?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlStorePhoneAuthTokenPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['StorePhoneAuthTokenPayload'] = GqlResolversParentTypes['StorePhoneAuthTokenPayload']> = ResolversObject<{
+  expiresAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  success?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4137,6 +4167,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ReservationSetStatusSuccess?: GqlReservationSetStatusSuccessResolvers<ContextType>;
   ReservationsConnection?: GqlReservationsConnectionResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
+  StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;
   TicketClaimLink?: GqlTicketClaimLinkResolvers<ContextType>;
   TicketClaimPayload?: GqlTicketClaimPayloadResolvers<ContextType>;

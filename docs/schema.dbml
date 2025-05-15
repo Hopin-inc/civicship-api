@@ -127,6 +127,9 @@ Table t_identities {
   platform IdentityPlatform [not null]
   userId String [not null]
   user t_users [not null]
+  authToken String
+  refreshToken String
+  tokenExpiresAt DateTime
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }

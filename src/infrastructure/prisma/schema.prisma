@@ -238,7 +238,6 @@ model Identity {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Fields for DID/VC server authentication
   authToken      String?   @map("auth_token") @db.Text
   refreshToken   String?   @map("refresh_token") @db.Text
   tokenExpiresAt DateTime? @map("token_expires_at")

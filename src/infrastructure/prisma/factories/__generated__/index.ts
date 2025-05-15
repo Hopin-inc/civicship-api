@@ -1681,6 +1681,9 @@ type IdentityuserFactory = {
 type IdentityFactoryDefineInput = {
     uid?: string;
     platform?: IdentityPlatform;
+    authToken?: string | null;
+    refreshToken?: string | null;
+    tokenExpiresAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     user: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput;

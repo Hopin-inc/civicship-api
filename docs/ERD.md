@@ -271,6 +271,9 @@ TICKET_REFUNDED TICKET_REFUNDED
     String uid "🗝️"
     IdentityPlatform platform 
     String user_id 
+    String auth_token "❓"
+    String refresh_token "❓"
+    DateTime token_expires_at "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
