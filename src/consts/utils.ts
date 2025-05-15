@@ -6,4 +6,4 @@ export const SignInProvider: Record<string, IdentityPlatform> = {
   "phone": IdentityPlatform.PHONE,
 };
 
-export const DID_VC_API_URL = process.env.DID_VC_API_URL || "https://kyoso-identus-api.example.com";
+export const IDENTUS_API_URL = process.env.IDENTUS_API_URL || "https://kyoso-identus-api.example.com";

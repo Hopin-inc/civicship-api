@@ -5,7 +5,7 @@ import { IIdentityRepository } from "@/application/domain/account/identity/data/
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
-import { DID_VC_API_URL } from "@/consts/utils";
+import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -110,7 +110,7 @@ export default class IdentityService {
 
   async refreshAuthToken(uid: string, refreshToken: string): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
     try {
-      const response = await axios.post(`${DID_VC_API_URL}/auth/refresh`, {
+      const response = await axios.post(`${IDENTUS_API_URL}/auth/refresh`, {
         refreshToken,
       });
 
@@ -145,7 +145,7 @@ export default class IdentityService {
     }
 
     try {
-      const url = `${DID_VC_API_URL}${endpoint}`;
+      const url = `${IDENTUS_API_URL}${endpoint}`;
       const headers = {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
