@@ -2,7 +2,7 @@ import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
-import { injectable, inject } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
 import { IDENTUS_API_URL } from "@/consts/utils";
@@ -21,10 +21,10 @@ export default class IdentityService {
     platform: IdentityPlatform,
     phoneUid?: string,
   ) {
-    const identityCreate = phoneUid 
+    const identityCreate = phoneUid
       ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
       : { create: { uid, platform } };
-      
+
     return this.userRepository.create({
       ...data,
       identities: identityCreate,
@@ -41,11 +41,11 @@ export default class IdentityService {
       where: { id: userId },
       select: { id: true }
     });
-    
+
     if (!user) {
       throw new Error(`User with ID ${userId} not found`);
     }
-    
+
     await tx.identity.create({
       data: {
         uid: phoneUid,
@@ -53,15 +53,14 @@ export default class IdentityService {
         userId: userId
       }
     });
-    
+
     return this.userRepository.find(ctx, userId);
   }
 
   async findUserByIdentity(ctx: IContext, uid: string): Promise<User | null> {
     const identity = await this.identityRepository.find(uid);
     if (identity) {
-      const user = await this.userRepository.find(ctx, identity.userId);
-      return user;
+      return await this.userRepository.find(ctx, identity.userId);
     }
     return null;
   }
@@ -95,7 +94,7 @@ export default class IdentityService {
 
   async getAuthToken(uid: string): Promise<{ token: string | null; isValid: boolean }> {
     const identity = await this.identityRepository.find(uid);
-    
+
     if (!identity || !identity.authToken || !identity.tokenExpiresAt) {
       return { token: null, isValid: false };
     }
@@ -113,9 +112,9 @@ export default class IdentityService {
       }
     }
 
-    return { 
-      token: identity.authToken, 
-      isValid: !isExpired 
+    return {
+      token: identity.authToken,
+      isValid: !isExpired
     };
   }
 
@@ -126,7 +125,7 @@ export default class IdentityService {
       });
 
       const { token, refreshToken: newRefreshToken, expiresIn } = response.data;
-      
+
       const expiryTime = new Date();
       expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
 
@@ -181,10 +180,10 @@ export default class IdentityService {
       return response?.data;
     } catch (error) {
       logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
-      
+
       if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 401) {
         const identity = await this.identityRepository.find(uid);
-        
+
         if (identity?.refreshToken) {
           try {
             await this.refreshAuthToken(uid, identity.refreshToken);
@@ -195,7 +194,7 @@ export default class IdentityService {
           }
         }
       }
-      
+
       throw error;
     }
   }
