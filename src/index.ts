@@ -37,6 +37,7 @@ async function startServer() {
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
   app.use(requestLogger);
+  app.use(tokenUpdaterMiddleware); // Apply token-updater middleware globally
 
   app.use((err, req, res, _next) => {
     const origin = req.headers.origin;

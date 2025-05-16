@@ -33,6 +33,13 @@ router.post("/liff-login", async (req, res) => {
     const expiryTimestamp = Math.floor(expiryTime.getTime() / 1000);
 
     res.setHeader('X-Token-Expires-At', expiryTimestamp.toString());
+    
+    (req as any).context = {
+      uid: result.profile.userId,
+      platform: 'LINE',
+      idToken: accessToken,
+      refreshToken: accessToken // Using accessToken as refreshToken since actual refreshToken isn't available
+    };
 
     return res.status(200).json({
       customToken: result.customToken,
