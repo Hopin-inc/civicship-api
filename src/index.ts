@@ -11,6 +11,7 @@ import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
+import { tokenUpdaterMiddleware } from "@/presentation/middleware/token-updater";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -53,7 +54,11 @@ async function startServer() {
     res.status(500).json({ error: "Internal Server Error" });
   });
 
-  app.use("/graphql", authHandler(apolloServer));
+  app.use(
+    "/graphql",
+    authHandler(apolloServer),
+    tokenUpdaterMiddleware,
+  );
   app.use("/line", lineRouter);
 
   server.listen(port, () => {
