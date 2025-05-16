@@ -19,9 +19,10 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   
   const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
   const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
+  const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
 
   if (!idToken) {
-    return { issuer, loaders, phoneAuthToken, phoneRefreshToken };
+    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt };
   }
 
   const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;

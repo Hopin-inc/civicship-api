@@ -12,6 +12,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
   const tokenExpiresAt = req.headers['x-token-expires-at'] as string || '';
   const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
   const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
+  const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
   
   if (!idToken && !phoneAuthToken) {
     return next();
@@ -52,15 +53,27 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
         
         if (phoneAuthToken && phoneUid) {
           let phoneExpiryTime = new Date();
-          phoneExpiryTime.setHours(phoneExpiryTime.getHours() + 1); // Default expiry
           
-          try {
-            const tokenData = JSON.parse(Buffer.from(phoneAuthToken.split('.')[1], 'base64').toString());
-            if (tokenData.exp) {
-              phoneExpiryTime = new Date(tokenData.exp * 1000);
+          if (phoneTokenExpiresAt) {
+            try {
+              phoneExpiryTime = new Date(phoneTokenExpiresAt);
+              logger.debug(`Using phone token expiry from header: ${phoneExpiryTime.toISOString()}`);
+            } catch (parseError) {
+              logger.debug('Could not parse phone token expiry from header, falling back to token data');
             }
-          } catch (parseError) {
-            logger.debug('Could not parse phone token expiry, using default');
+          }
+          
+          if (!phoneTokenExpiresAt || isNaN(phoneExpiryTime.getTime())) {
+            try {
+              const tokenData = JSON.parse(Buffer.from(phoneAuthToken.split('.')[1], 'base64').toString());
+              if (tokenData.exp) {
+                phoneExpiryTime = new Date(tokenData.exp * 1000);
+              } else {
+                phoneExpiryTime.setHours(phoneExpiryTime.getHours() + 1); // Default expiry
+              }
+            } catch (parseError) {
+              logger.debug('Could not parse phone token expiry, using default');
+            }
           }
           
           await identityService.storeAuthTokens(phoneUid, phoneAuthToken, phoneRefreshToken, phoneExpiryTime);

@@ -13,6 +13,7 @@ export type LoggedInUserInfo = {
   loaders: Loaders;
   phoneAuthToken?: string;
   phoneRefreshToken?: string;
+  phoneTokenExpiresAt?: string;
   // TODO: add DID authentication info
 };
 
