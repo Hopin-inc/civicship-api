@@ -255,6 +255,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String bio "❓"
     SysRole sys_role 
     CurrentPrefecture current_prefecture 
+    String phone_number "❓"
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"

@@ -95,6 +95,7 @@ Table t_users {
   bio String
   sysRole SysRole [not null, default: 'USER']
   currentPrefecture CurrentPrefecture [not null]
+  phoneNumber String
   urlWebsite String
   urlX String
   urlFacebook String

@@ -13,19 +13,21 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
   const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
   const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
   const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
-  
-  if (!idToken && !phoneAuthToken) {
+
+  if (!idToken) {
     return next();
   }
-  
+
   res.on('finish', async () => {
+    console.debug("token-updater working!!");
     try {
       const uid = (req as any).context?.uid;
       const phoneUid = (req as any).context?.phoneUid;
-      
+      console.debug("!!!debug: (uid, phoneUid):", uid, phoneUid);
+
       if (uid) {
         const identityService = container.resolve(IdentityService);
-        
+
         if (idToken) {
           let expiryTime = new Date();
           if (tokenExpiresAt) {
@@ -58,14 +60,14 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               logger.debug('Could not parse token expiry, using default');
             }
           }
-          
+
           await identityService.storeAuthTokens(uid, idToken, refreshToken, expiryTime);
           logger.debug(`Updated LINE auth token for user ${uid}, expires at ${expiryTime.toISOString()}`);
         }
-        
+
         if (phoneAuthToken && phoneUid) {
           let phoneExpiryTime = new Date();
-          
+
           if (phoneTokenExpiresAt) {
             try {
               phoneExpiryTime = new Date(parseInt(phoneTokenExpiresAt, 10) * 1000);
@@ -74,7 +76,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               logger.debug('Could not parse phone token expiry from header, falling back to token data');
             }
           }
-          
+
           if (!phoneTokenExpiresAt || isNaN(phoneExpiryTime.getTime())) {
             try {
               const tokenData = JSON.parse(Buffer.from(phoneAuthToken.split('.')[1], 'base64').toString());
@@ -87,7 +89,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               logger.debug('Could not parse phone token expiry, using default');
             }
           }
-          
+
           await identityService.storeAuthTokens(phoneUid, phoneAuthToken, phoneRefreshToken, phoneExpiryTime);
           logger.debug(`Updated phone auth token for user ${phoneUid}, expires at ${phoneExpiryTime.toISOString()}`);
         }
@@ -96,6 +98,6 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
       logger.error('Failed to update auth tokens:', error);
     }
   });
-  
+
   next();
 }

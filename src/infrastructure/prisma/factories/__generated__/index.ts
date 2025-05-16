@@ -1503,6 +1503,7 @@ type UserFactoryDefineInput = {
     bio?: string | null;
     sysRole?: SysRole;
     currentPrefecture?: CurrentPrefecture;
+    phoneNumber?: string | null;
     urlWebsite?: string | null;
     urlX?: string | null;
     urlFacebook?: string | null;
