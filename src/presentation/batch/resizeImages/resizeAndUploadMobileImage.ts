@@ -2,7 +2,6 @@ import { storage, getPublicUrl, gcsBucketName } from "@/infrastructure/libs/stor
 import sharp from "sharp";
 import path from "path";
 import { prismaClient } from "@/infrastructure/prisma/client";
-import "dotenv/config";
 
 const targetPrefix = "images/mobile/";
 const width = 480;
@@ -13,20 +12,23 @@ const bucket = storage.bucket(gcsBucketName);
  * `originalUrl IS NULL` の Image レコードを対象に、
  * オリジナル画像をリサイズ → GCS に軽量画像保存 → DB 更新（originalUrl, url）
  */
-export async function resizeAllImages() {
+export async function resizeAllImages(): Promise<{
+  total: number;
+  resizedCount: number;
+  skippedCount: number;
+  failureCount: number;
+}> {
   const images = await prismaClient.image.findMany({
     where: {
       originalUrl: null,
-      AND: [
-        { folderPath: { not: { contains: "field" } } },
-        { filename: { not: { contains: "field" } } },
-      ],
     },
-    // take: 10,
   });
 
+  let resizedCount = 0;
+  let skippedCount = 0;
+  let failureCount = 0;
+
   for (const image of images) {
-    // 🚨 無効なレコードをスキップ
     if (
       !image.folderPath ||
       !image.filename ||
@@ -34,14 +36,24 @@ export async function resizeAllImages() {
       image.filename.includes("field")
     ) {
       console.warn(`⚠️ Skip invalid record: ${image.id}`);
+      skippedCount++;
       continue;
     }
 
     const filePath = `${image.folderPath}/${image.filename}`;
-    if (filePath.includes("/mobile/")) continue;
+    if (filePath.includes("/mobile/")) {
+      console.log(`🔁 Already mobile: ${filePath}`);
+      skippedCount++;
+      continue;
+    }
 
     try {
       const resizedUrl = await resizeAndUploadMobileImage(filePath);
+      if (!resizedUrl) {
+        console.warn(`⚠️ Skip DB update: resize failed for ${image.id}`);
+        skippedCount++;
+        continue;
+      }
 
       await prismaClient.image.update({
         where: { id: image.id },
@@ -52,25 +64,46 @@ export async function resizeAllImages() {
       });
 
       console.log(`📝 Updated DB for image ID ${image.id}`);
+      resizedCount++;
     } catch (err) {
       console.error(`❌ Failed to process ${image.id} (${filePath})`, err);
+      failureCount++;
     }
   }
+
+  const total = images.length;
+
+  console.log(
+    `📦 Resize Summary: ${total} total / ✅ ${resizedCount} / 🔁 ${skippedCount} / ❌ ${failureCount}`,
+  );
+
+  return { total, resizedCount, skippedCount, failureCount };
 }
 
 /**
  * 指定された GCS 上の画像ファイルを、横幅480pxのJPEG形式にリサイズして
  * `/mobile/` フォルダに保存。保存後はその画像の public URL を返す。
  */
-async function resizeAndUploadMobileImage(filePath: string): Promise<string> {
+async function resizeAndUploadMobileImage(filePath: string): Promise<string | null> {
   const filename = path.basename(filePath);
   const targetPath = `${targetPrefix}${filename.replace(/\.\w+$/, ".jpg")}`;
   const targetFile = bucket.file(targetPath);
+  const srcFile = bucket.file(filePath);
 
-  const [exists] = await targetFile.exists();
-  if (!exists) {
-    const [buffer] = await bucket.file(filePath).download();
+  const [srcExists] = await srcFile.exists();
+  if (!srcExists) {
+    console.warn(`⚠️ Source not found: ${filePath}`);
+    return null;
+  }
 
+  const [targetExists] = await targetFile.exists();
+  if (targetExists) {
+    console.log(`🔁 Skip (already exists): ${targetPath}`);
+    return getPublicUrl(path.basename(targetPath), path.dirname(targetPath));
+  }
+
+  try {
+    const [buffer] = await srcFile.download();
     const resized = await sharp(buffer).resize({ width }).jpeg({ quality }).toBuffer();
 
     await targetFile.save(resized, {
@@ -80,33 +113,10 @@ async function resizeAndUploadMobileImage(filePath: string): Promise<string> {
       },
     });
 
-    console.log(
-      `✅ Uploaded: ${getPublicUrl(path.basename(targetPath), path.dirname(targetPath))}`,
-    );
-  } else {
-    console.log(`🔁 Skip (already exists): ${targetPath}`);
+    console.log(`✅ Uploaded: ${targetPath}`);
+    return getPublicUrl(path.basename(targetPath), path.dirname(targetPath));
+  } catch (err) {
+    console.error(`❌ Resize failed for ${filePath}`, err);
+    return null;
   }
-
-  return getPublicUrl(path.basename(targetPath), path.dirname(targetPath));
 }
-
-// /**
-//  * メイン処理：順番に実行
-//  */
-// async function main() {
-//   console.log("🚚 Starting relocation of undefined images...");
-//   await relocateUndefinedImages();
-//
-//   console.log("🖼 Starting image resizing...");
-//   await resizeAllImages();
-// }
-//
-// main()
-//   .then(() => {
-//     console.log("✅ Done");
-//     process.exit(0);
-//   })
-//   .catch((err) => {
-//     console.error("❌ Batch failed", err);
-//     process.exit(1);
-//   });
