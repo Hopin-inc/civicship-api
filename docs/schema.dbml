@@ -6,6 +6,7 @@ Table t_images {
   id String [pk]
   isPublic Boolean [not null]
   url String [not null]
+  originalUrl String
   bucket String [not null]
   folderPath String [not null]
   filename String [not null]

@@ -53,20 +53,21 @@ enum Source {
 // ------------------------------ General (Image) ------------------------------
 
 model Image {
-  id         String  @id @default(cuid())
-  isPublic   Boolean @map("is_public")
-  url        String
-  bucket     String
-  folderPath String  @map("folder_path")
-  filename   String
-  size       Int?
-  width      Int?
-  height     Int?
-  mime       String
-  ext        String
-  alt        String?
-  caption    String?
-  strapiId   Int?    @map("strapi_id")
+  id          String  @id @default(cuid())
+  isPublic    Boolean @map("is_public")
+  url         String
+  originalUrl String? @map("original_url")
+  bucket      String
+  folderPath  String  @map("folder_path")
+  filename    String
+  size        Int?
+  width       Int?
+  height      Int?
+  mime        String
+  ext         String
+  alt         String?
+  caption     String?
+  strapiId    Int?    @map("strapi_id")
 
   users       User[]
   communities Community[]

@@ -187,6 +187,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     Boolean is_public 
     String url 
+    String original_url "❓"
     String bucket 
     String folder_path 
     String filename 
