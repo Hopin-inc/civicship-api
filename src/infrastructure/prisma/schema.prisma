@@ -180,6 +180,7 @@ model User {
   bio               String?
   sysRole           SysRole           @default(USER) @map("sys_role")
   currentPrefecture CurrentPrefecture @map("current_prefecture")
+  phoneNumber       String?           @map("phone_number")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")

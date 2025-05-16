@@ -13,7 +13,7 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
-import { IdentityPlatform } from "@prisma/client";
+import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -38,7 +38,7 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
-    const { data, image, phoneUid } = IdentityConverter.create(args);
+    const { data, image, phoneUid } = IdentityConverter.create(args, ctx.phoneNumber);
 
     const uploadedImage = image
       ? await this.imageService.uploadPublicImage(image, "users")
@@ -79,7 +79,7 @@ export default class IdentityUseCase {
       }
     }
 
-    if (ctx.uid && ctx.idToken && ctx.refreshToken && ctx.platform === IdentityPlatform.LINE) {
+    if (ctx.uid && ctx.idToken && ctx.refreshToken && ctx.platform === IdentityPlatform.Line) {
       try {
         const expiryTime = ctx.tokenExpiresAt 
           ? new Date(parseInt(ctx.tokenExpiresAt, 10) * 1000)
@@ -106,7 +106,7 @@ export default class IdentityUseCase {
     phoneUid: string,
     userId: string,
   ): Promise<GqlLinkPhoneAuthPayload> {
-    if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.LINE) {
+    if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.Line) {
       throw new Error("LINE authentication required");
     }
 
