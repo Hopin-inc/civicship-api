@@ -62,8 +62,9 @@ export default class IdentityUseCase {
 
     if (phoneUid && ctx.phoneAuthToken && ctx.phoneRefreshToken) {
       try {
-        const expiryTime = new Date();
-        expiryTime.setHours(expiryTime.getHours() + 1); // Default 1 hour expiry
+        const expiryTime = ctx.phoneTokenExpiresAt 
+          ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10) * 1000)
+          : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
         
         await this.identityService.storeAuthTokens(
           phoneUid,
@@ -75,6 +76,25 @@ export default class IdentityUseCase {
         logger.debug(`Stored phone auth tokens during user signup for ${phoneUid}, expires at ${expiryTime.toISOString()}`);
       } catch (error) {
         logger.error("Failed to store phone auth tokens during user signup:", error);
+      }
+    }
+
+    if (ctx.uid && ctx.idToken && ctx.refreshToken && ctx.platform === IdentityPlatform.LINE) {
+      try {
+        const expiryTime = ctx.tokenExpiresAt 
+          ? new Date(parseInt(ctx.tokenExpiresAt, 10) * 1000)
+          : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
+        
+        await this.identityService.storeAuthTokens(
+          ctx.uid,
+          ctx.idToken,
+          ctx.refreshToken,
+          expiryTime
+        );
+        
+        logger.debug(`Stored LINE auth tokens during user signup for ${ctx.uid}, expires at ${expiryTime.toISOString()}`);
+      } catch (error) {
+        logger.error("Failed to store LINE auth tokens during user signup:", error);
       }
     }
 

@@ -14,6 +14,9 @@ export type LoggedInUserInfo = {
   phoneAuthToken?: string;
   phoneRefreshToken?: string;
   phoneTokenExpiresAt?: string;
+  refreshToken?: string;
+  tokenExpiresAt?: string;
+  idToken?: string;
   // TODO: add DID authentication info
 };
 
