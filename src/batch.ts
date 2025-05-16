@@ -6,6 +6,8 @@ export async function batchProcess() {
       return;
     case "send-line-messages":
       return;
+    case "resize-images":
+      return;
     default:
       logger.error("Invalid batch process called.");
   }

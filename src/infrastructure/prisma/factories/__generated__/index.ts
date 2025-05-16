@@ -666,6 +666,7 @@ type ImageFactoryDefineInput = {
     id?: string;
     isPublic?: boolean;
     url?: string;
+    originalUrl?: string | null;
     bucket?: string;
     folderPath?: string;
     filename?: string;
