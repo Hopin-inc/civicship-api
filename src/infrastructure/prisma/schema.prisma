@@ -181,6 +181,7 @@ model User {
   bio               String?
   sysRole           SysRole           @default(USER) @map("sys_role")
   currentPrefecture CurrentPrefecture @map("current_prefecture")
+  phoneNumber       String?           @map("phone_number")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")
@@ -238,6 +239,10 @@ model Identity {
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  authToken      String?   @map("auth_token") @db.Text
+  refreshToken   String?   @map("refresh_token") @db.Text
+  tokenExpiresAt DateTime? @map("token_expires_at")
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
