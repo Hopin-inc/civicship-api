@@ -30,8 +30,9 @@ router.post("/liff-login", async (req, res) => {
     );
     const expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + response.data.expires_in);
+    const expiryTimestamp = Math.floor(expiryTime.getTime() / 1000);
 
-    res.setHeader('X-Token-Expires-At', expiryTime.toISOString());
+    res.setHeader('X-Token-Expires-At', expiryTimestamp.toString());
 
     return res.status(200).json({
       customToken: result.customToken,

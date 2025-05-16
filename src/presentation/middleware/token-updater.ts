@@ -30,7 +30,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
           let expiryTime = new Date();
           if (tokenExpiresAt) {
             try {
-              expiryTime = new Date(tokenExpiresAt);
+              expiryTime = new Date(parseInt(tokenExpiresAt, 10) * 1000);
             } catch (parseError) {
               logger.debug('Could not parse token expiry from header, trying to extract from token');
               try {
@@ -56,7 +56,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
           
           if (phoneTokenExpiresAt) {
             try {
-              phoneExpiryTime = new Date(phoneTokenExpiresAt);
+              phoneExpiryTime = new Date(parseInt(phoneTokenExpiresAt, 10) * 1000);
               logger.debug(`Using phone token expiry from header: ${phoneExpiryTime.toISOString()}`);
             } catch (parseError) {
               logger.debug('Could not parse phone token expiry from header, falling back to token data');
