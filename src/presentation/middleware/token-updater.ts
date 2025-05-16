@@ -45,10 +45,22 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
                 logger.debug('Could not parse token expiry, using default');
               }
             }
-            
-            await identityService.storeAuthTokens(uid, idToken, refreshToken, expiryTime);
-            logger.debug(`Updated LINE auth token for user ${uid}, expires at ${expiryTime.toISOString()}`);
+          } else {
+            try {
+              const tokenData = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+              if (tokenData.exp) {
+                expiryTime = new Date(tokenData.exp * 1000);
+              } else {
+                expiryTime.setHours(expiryTime.getHours() + 1);
+              }
+            } catch (tokenParseError) {
+              expiryTime.setHours(expiryTime.getHours() + 1);
+              logger.debug('Could not parse token expiry, using default');
+            }
           }
+          
+          await identityService.storeAuthTokens(uid, idToken, refreshToken, expiryTime);
+          logger.debug(`Updated LINE auth token for user ${uid}, expires at ${expiryTime.toISOString()}`);
         }
         
         if (phoneAuthToken && phoneUid) {
