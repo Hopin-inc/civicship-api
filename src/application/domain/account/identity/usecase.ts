@@ -60,6 +60,24 @@ export default class IdentityUseCase {
       return user;
     });
 
+    if (phoneUid && ctx.phoneAuthToken && ctx.phoneRefreshToken) {
+      try {
+        const expiryTime = new Date();
+        expiryTime.setHours(expiryTime.getHours() + 1); // Default 1 hour expiry
+        
+        await this.identityService.storeAuthTokens(
+          phoneUid,
+          ctx.phoneAuthToken,
+          ctx.phoneRefreshToken,
+          expiryTime
+        );
+        
+        logger.debug(`Stored phone auth tokens during user signup for ${phoneUid}, expires at ${expiryTime.toISOString()}`);
+      } catch (error) {
+        logger.error("Failed to store phone auth tokens during user signup:", error);
+      }
+    }
+
     return IdentityPresenter.create(res);
   }
 

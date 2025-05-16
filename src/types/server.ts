@@ -11,6 +11,8 @@ export type LoggedInUserInfo = {
   currentUser?: PrismaAuthUser | null;
   hasPermissions?: PrismaUserPermission | null;
   loaders: Loaders;
+  phoneAuthToken?: string;
+  phoneRefreshToken?: string;
   // TODO: add DID authentication info
 };
 

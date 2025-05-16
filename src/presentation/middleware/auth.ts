@@ -16,9 +16,12 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const issuer = new PrismaClientIssuer();
   const loaders: Loaders = createLoaders(issuer);
   const idToken = getIdTokenFromRequest(req);
+  
+  const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
+  const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
 
   if (!idToken) {
-    return { issuer, loaders };
+    return { issuer, loaders, phoneAuthToken, phoneRefreshToken };
   }
 
   const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
@@ -54,9 +57,11 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       hasPermissions,
       loaders,
       issuer,
+      phoneAuthToken,
+      phoneRefreshToken,
     };
   } catch (e) {
-    return { issuer, loaders };
+    return { issuer, loaders, phoneAuthToken, phoneRefreshToken };
   }
 }
 
