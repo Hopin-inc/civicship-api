@@ -173,3 +173,56 @@ export class NoAvailableParticipationSlotsError extends ApolloError {
     Object.defineProperty(this, "name", { value: "NoAvailableParticipationSlotsError" });
   }
 }
+
+export class PersonalRecordOnlyDeletableError extends ApolloError {
+  public reason: string;
+  
+  constructor(reason: string) {
+    const message = `Only personal participation records can be deleted. Current reason: ${reason}`;
+    super(message, "PERSONAL_RECORD_ONLY_DELETABLE");
+    this.reason = reason;
+    Object.defineProperty(this, "name", { value: "PersonalRecordOnlyDeletableError" });
+  }
+}
+
+export class InvalidTransferMethodError extends ApolloError {
+  constructor(message: string = "Use validateTransferMemberToMember()") {
+    super(message, "INVALID_TRANSFER_METHOD");
+    Object.defineProperty(this, "name", { value: "InvalidTransferMethodError" });
+  }
+}
+
+export class MissingWalletInformationError extends ApolloError {
+  public missingWallets: string[];
+  
+  constructor(missingWallets: string[]) {
+    const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
+    super(message, "MISSING_WALLET_INFORMATION");
+    this.missingWallets = missingWallets;
+    Object.defineProperty(this, "name", { value: "MissingWalletInformationError" });
+  }
+}
+
+export class UnsupportedTransactionReasonError extends ApolloError {
+  public reason: string;
+  
+  constructor(reason: string) {
+    const message = `Unsupported TransactionReason: ${reason}`;
+    super(message, "UNSUPPORTED_TRANSACTION_REASON");
+    this.reason = reason;
+    Object.defineProperty(this, "name", { value: "UnsupportedTransactionReasonError" });
+  }
+}
+
+export class InvalidPublishStatusError extends ApolloError {
+  public allowedStatuses: string[];
+  public providedStatuses: string[];
+  
+  constructor(allowedStatuses: string[], providedStatuses: string[]) {
+    const message = `Publish status must be one of ${allowedStatuses.join(", ")}`;
+    super(message, "INVALID_PUBLISH_STATUS");
+    this.allowedStatuses = allowedStatuses;
+    this.providedStatuses = providedStatuses;
+    Object.defineProperty(this, "name", { value: "InvalidPublishStatusError" });
+  }
+}
