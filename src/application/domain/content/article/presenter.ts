@@ -4,6 +4,7 @@ import { PrismaArticleDetail } from "@/application/domain/content/article/data/t
 export default class ArticlePresenter {
   static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {
     return {
+      __typename: "ArticlesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -19,6 +20,9 @@ export default class ArticlePresenter {
   }
 
   static get(r: PrismaArticleDetail): GqlArticle {
-    return r;
+    return {
+      __typename: "Article",
+      ...r,
+    };
   }
 }

@@ -20,7 +20,7 @@ export default class OpportunityService {
     @inject("OpportunityRepository") private readonly repository: OpportunityRepository,
     @inject("OpportunityConverter") private readonly converter: OpportunityConverter,
     @inject("ImageService") private readonly imageService: ImageService,
-  ) { }
+  ) {}
 
   async fetchOpportunities(
     ctx: IContext,
@@ -30,6 +30,10 @@ export default class OpportunityService {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
 
+    console.log("============================");
+    console.dir(where, { depth: null });
+    console.log("============================");
+
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -37,11 +41,7 @@ export default class OpportunityService {
     return await this.repository.find(ctx, id);
   }
 
-  async findOpportunityAccessible(
-    ctx: IContext,
-    id: string,
-    filter: GqlOpportunityFilterInput,
-  ) {
+  async findOpportunityAccessible(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
     const where = this.converter.findAccessible(id, filter ?? {});
 
     const opportunity = await this.repository.findAccessible(ctx, where);
@@ -60,7 +60,11 @@ export default class OpportunityService {
     return opportunity;
   }
 
-  async createOpportunity(ctx: IContext, input: GqlOpportunityCreateInput, tx: Prisma.TransactionClient) {
+  async createOpportunity(
+    ctx: IContext,
+    input: GqlOpportunityCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
     const currentUserId = getCurrentUserId(ctx);
 
     validatePlaceInput(input.place);
@@ -111,7 +115,12 @@ export default class OpportunityService {
     return await this.repository.update(ctx, id, updateInput, tx);
   }
 
-  async setOpportunityPublishStatus(ctx: IContext, id: string, status: PublishStatus, tx: Prisma.TransactionClient) {
+  async setOpportunityPublishStatus(
+    ctx: IContext,
+    id: string,
+    status: PublishStatus,
+    tx: Prisma.TransactionClient,
+  ) {
     await this.findOpportunityOrThrow(ctx, id);
 
     return this.repository.setPublishStatus(ctx, id, status, tx);

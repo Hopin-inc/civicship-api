@@ -11,6 +11,7 @@ import { PrismaTicketDetail } from "@/application/domain/reward/ticket/data/type
 export default class TicketPresenter {
   static query(tickets: GqlTicket[], hasNextPage: boolean): GqlTicketsConnection {
     return {
+      __typename: "TicketsConnection",
       totalCount: tickets.length,
       pageInfo: {
         hasNextPage,
@@ -26,29 +27,36 @@ export default class TicketPresenter {
   }
 
   static get(r: PrismaTicketDetail): GqlTicket {
-    return r;
+    return {
+      __typename: "Ticket",
+      ...r,
+    };
   }
 
   static claim(tickets: PrismaTicketDetail[]): GqlTicketClaimSuccess {
     return {
+      __typename: "TicketClaimSuccess",
       tickets: tickets.map(this.get),
     };
   }
 
   static purchase(r: PrismaTicketDetail): GqlTicketPurchaseSuccess {
     return {
+      __typename: "TicketPurchaseSuccess",
       ticket: this.get(r),
     };
   }
 
   static use(r: PrismaTicketDetail): GqlTicketUseSuccess {
     return {
+      __typename: "TicketUseSuccess",
       ticket: this.get(r),
     };
   }
 
   static refund(r: PrismaTicketDetail): GqlTicketRefundSuccess {
     return {
+      __typename: "TicketRefundSuccess",
       ticket: this.get(r),
     };
   }

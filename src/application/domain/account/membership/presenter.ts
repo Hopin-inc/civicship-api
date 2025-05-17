@@ -17,6 +17,7 @@ import { ParticipationType } from "@prisma/client";
 export default class MembershipPresenter {
   static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
     return {
+      __typename: "MembershipsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -60,6 +61,7 @@ export default class MembershipPresenter {
       participationCountViews.find((v) => v.type === ParticipationType.HOSTED)?.totalCount ?? 0;
 
     return {
+      __typename: "Membership",
       ...prop,
       participationView: {
         hosted: {
@@ -73,6 +75,7 @@ export default class MembershipPresenter {
 
   static invite(r: Omit<PrismaMembership, "user">): GqlMembershipInviteSuccess {
     return {
+      __typename: "MembershipInviteSuccess",
       membership: r,
     };
   }
@@ -81,6 +84,7 @@ export default class MembershipPresenter {
     r: Omit<PrismaMembership, "user">,
   ): GqlMembershipSetInvitationStatusSuccess {
     return {
+      __typename: "MembershipSetInvitationStatusSuccess",
       membership: r,
     };
   }
@@ -88,6 +92,7 @@ export default class MembershipPresenter {
   static withdraw(r: Omit<PrismaMembership, "user">): GqlMembershipWithdrawSuccess {
     const { userId, communityId } = r;
     return {
+      __typename: "MembershipWithdrawSuccess",
       userId,
       communityId,
     };
@@ -96,6 +101,7 @@ export default class MembershipPresenter {
   static remove(r: Omit<PrismaMembership, "user">): GqlMembershipRemoveSuccess {
     const { userId, communityId } = r;
     return {
+      __typename: "MembershipRemoveSuccess",
       userId,
       communityId,
     };
@@ -103,6 +109,7 @@ export default class MembershipPresenter {
 
   static setRole(r: Omit<PrismaMembership, "user">): GqlMembershipSetRoleSuccess {
     return {
+      __typename: "MembershipSetRoleSuccess",
       membership: r,
     };
   }

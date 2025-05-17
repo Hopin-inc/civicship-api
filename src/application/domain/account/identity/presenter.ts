@@ -4,14 +4,23 @@ import { PrismaIdentityDetail } from "@/application/domain/account/identity/data
 
 export default class IdentityPresenter {
   static create(user: User): GqlCurrentUserPayload {
-    return { user };
+    return {
+      __typename: "CurrentUserPayload",
+      user,
+    };
   }
 
   static delete(user: User | null): GqlUserDeletePayload {
-    return { userId: user?.id };
+    return {
+      __typename: "UserDeletePayload",
+      userId: user?.id,
+    };
   }
 
-  static get(r: PrismaIdentityDetail): GqlIdentity {
-    return r;
+  static get(identity: PrismaIdentityDetail): GqlIdentity {
+    return {
+      __typename: "Identity",
+      ...identity,
+    };
   }
 }

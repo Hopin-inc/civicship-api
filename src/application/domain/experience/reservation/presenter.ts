@@ -24,17 +24,22 @@ export default class ReservationPresenter {
   }
 
   static get(record: PrismaReservationDetail): GqlReservation {
-    return record;
+    return {
+      __typename: "Reservation",
+      ...record,
+    };
   }
 
   static create(record: PrismaReservationDetail): GqlReservationCreateSuccess {
     return {
+      __typename: "ReservationCreateSuccess",
       reservation: record,
     };
   }
 
   static setStatus(record: PrismaReservationDetail): GqlReservationSetStatusSuccess {
     return {
+      __typename: "ReservationSetStatusSuccess",
       reservation: record,
     };
   }
