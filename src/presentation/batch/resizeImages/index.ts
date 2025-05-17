@@ -1,24 +1,25 @@
 import { relocateUndefinedImages } from "@/presentation/batch/resizeImages/relocateUndefinedImages";
 import { resizeAllImages } from "@/presentation/batch/resizeImages/resizeAndUploadMobileImage";
+import logger from "@/infrastructure/logging";
 
 /**
  * メイン処理：順番に実行（進捗と件数をログ）
  */
-async function resizeImages() {
-  console.log("🚚 Starting relocation of undefined images...");
+export async function resizeImages() {
+  logger.info("🚚 Starting relocation of undefined images...");
 
   const result = await relocateUndefinedImages();
-  console.log(
+  logger.info(
     `📦 Processed ${result.total} image(s): ` +
       `${result.successCount} succeeded, ` +
       `${result.failureCount} failed, ` +
       `${result.skippedCount} skipped.`,
   );
 
-  console.log("🖼 Starting image resizing...");
+  logger.info("🖼 Starting image resizing...");
 
   const resize = await resizeAllImages();
-  console.log(
+  logger.info(
     `🖼 Processed ${resize.total} image(s): ` +
       `${resize.resizedCount} succeeded, ` +
       `${resize.failureCount} failed, ` +
@@ -28,10 +29,10 @@ async function resizeImages() {
 
 resizeImages()
   .then(() => {
-    console.log("✅ Done");
+    logger.info("✅ Done");
     process.exit(0);
   })
   .catch((err) => {
-    console.error("❌ Batch failed", err);
+    logger.error("❌ Batch failed", err);
     process.exit(1);
   });

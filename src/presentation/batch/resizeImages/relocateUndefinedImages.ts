@@ -1,5 +1,6 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { gcsBucketName, getPublicUrl, storage } from "@/infrastructure/libs/storage";
+import logger from "@/infrastructure/logging";
 
 const bucket = storage.bucket(gcsBucketName);
 
@@ -49,7 +50,7 @@ export async function relocateUndefinedImages(): Promise<{
       // --- ファイル存在チェック ---
       const [exists] = await oldFile.exists();
       if (!exists) {
-        console.warn(`⚠️ Skip ${image.id} (missing GCS file): ${oldPath}`);
+        logger.warn(`⚠️ Skip ${image.id} (missing GCS file): ${oldPath}`);
         skippedCount++;
         continue;
       }
@@ -68,10 +69,10 @@ export async function relocateUndefinedImages(): Promise<{
         },
       });
 
-      console.log(`✅ Relocated ${image.id}: ${oldPath} → ${newPath}`);
+      logger.debug(`✅ Relocated ${image.id}: ${oldPath} → ${newPath}`);
       successCount++;
     } catch (err) {
-      console.error(`❌ Failed to relocate ${image.id}`, err);
+      logger.error(`❌ Failed to relocate ${image.id}`, err);
       failureCount++;
     }
   }

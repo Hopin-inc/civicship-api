@@ -2,6 +2,7 @@ import { storage, getPublicUrl, gcsBucketName } from "@/infrastructure/libs/stor
 import sharp from "sharp";
 import path from "path";
 import { prismaClient } from "@/infrastructure/prisma/client";
+import logger from "@/infrastructure/logging";
 
 const targetPrefix = "images/mobile/";
 const width = 480;
@@ -35,14 +36,14 @@ export async function resizeAllImages(): Promise<{
       image.folderPath.includes("field") ||
       image.filename.includes("field")
     ) {
-      console.warn(`⚠️ Skip invalid record: ${image.id}`);
+      logger.warn(`⚠️ Skip invalid record: ${image.id}`);
       skippedCount++;
       continue;
     }
 
     const filePath = `${image.folderPath}/${image.filename}`;
     if (filePath.includes("/mobile/")) {
-      console.log(`🔁 Already mobile: ${filePath}`);
+      logger.debug(`🔁 Already mobile: ${filePath}`);
       skippedCount++;
       continue;
     }
@@ -50,7 +51,7 @@ export async function resizeAllImages(): Promise<{
     try {
       const resizedUrl = await resizeAndUploadMobileImage(filePath);
       if (!resizedUrl) {
-        console.warn(`⚠️ Skip DB update: resize failed for ${image.id}`);
+        logger.warn(`⚠️ Skip DB update: resize failed for ${image.id}`);
         skippedCount++;
         continue;
       }
@@ -63,17 +64,17 @@ export async function resizeAllImages(): Promise<{
         },
       });
 
-      console.log(`📝 Updated DB for image ID ${image.id}`);
+      logger.debug(`📝 Updated DB for image ID ${image.id}`);
       resizedCount++;
     } catch (err) {
-      console.error(`❌ Failed to process ${image.id} (${filePath})`, err);
+      logger.error(`❌ Failed to process ${image.id} (${filePath})`, err);
       failureCount++;
     }
   }
 
   const total = images.length;
 
-  console.log(
+  logger.info(
     `📦 Resize Summary: ${total} total / ✅ ${resizedCount} / 🔁 ${skippedCount} / ❌ ${failureCount}`,
   );
 
@@ -92,13 +93,13 @@ async function resizeAndUploadMobileImage(filePath: string): Promise<string | nu
 
   const [srcExists] = await srcFile.exists();
   if (!srcExists) {
-    console.warn(`⚠️ Source not found: ${filePath}`);
+    logger.warn(`⚠️ Source not found: ${filePath}`);
     return null;
   }
 
   const [targetExists] = await targetFile.exists();
   if (targetExists) {
-    console.log(`🔁 Skip (already exists): ${targetPath}`);
+    logger.debug(`🔁 Skip (already exists): ${targetPath}`);
     return getPublicUrl(path.basename(targetPath), path.dirname(targetPath));
   }
 
@@ -113,10 +114,10 @@ async function resizeAndUploadMobileImage(filePath: string): Promise<string | nu
       },
     });
 
-    console.log(`✅ Uploaded: ${targetPath}`);
+    logger.info(`✅ Uploaded: ${targetPath}`);
     return getPublicUrl(path.basename(targetPath), path.dirname(targetPath));
   } catch (err) {
-    console.error(`❌ Resize failed for ${filePath}`, err);
+    logger.error(`❌ Resize failed for ${filePath}`, err);
     return null;
   }
 }
