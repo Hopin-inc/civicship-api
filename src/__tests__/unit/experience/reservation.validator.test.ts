@@ -5,7 +5,6 @@ import {
   ReservationConflictError, 
   AlreadyStartedReservationError,
   ReservationCancellationTimeoutError,
-  ReservationAdvanceBookingRequiredError,
   ReservationNotAcceptedError,
   SlotNotScheduledError,
   NoAvailableParticipationSlotsError

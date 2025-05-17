@@ -1,6 +1,6 @@
 import ArticleConverter from "@/application/domain/content/article/data/converter";
 import { Prisma, PublishStatus } from "@prisma/client";
-import { ValidationError, InvalidPublishStatusError } from "@/errors/graphql";
+import { InvalidPublishStatusError } from "@/errors/graphql";
 import { IArticleRepository } from "@/application/domain/content/article/data/interface";
 import { IContext } from "@/types/server";
 import { GqlArticleFilterInput, GqlQueryArticlesArgs } from "@/types/graphql";

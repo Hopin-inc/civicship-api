@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
 
 enum CurrentPrefecture {
   KAGAWA = "KAGAWA"

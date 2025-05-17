@@ -8,7 +8,7 @@ import {
 import OpportunityRepository from "@/application/domain/experience/opportunity/data/repository";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { NotFoundError, ValidationError, InvalidPublishStatusError, InvalidPlaceInputError } from "@/errors/graphql";
+import { NotFoundError, InvalidPublishStatusError, InvalidPlaceInputError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunityConverter from "@/application/domain/experience/opportunity/data/converter";
 import ImageService from "@/application/domain/content/image/service";
