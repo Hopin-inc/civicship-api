@@ -75,6 +75,7 @@ import MembershipRepository from "@/application/domain/account/membership/data/r
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/usecase";
+import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -204,6 +205,7 @@ export function registerProductionDependencies() {
   container.register("TicketClaimLinkRepository", { useClass: TicketClaimLinkRepository });
 
   // 🧾 TicketIssuer
+  container.register("TicketIssuerUseCase", { useClass: TicketIssuerUseCase });
   container.register("TicketIssuerService", { useClass: TicketIssuerService });
   container.register("TicketIssuerConverter", { useClass: TicketIssuerConverter });
   container.register("TicketIssuerRepository", { useClass: TicketIssuerRepository });

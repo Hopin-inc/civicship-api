@@ -3,6 +3,13 @@ import { Prisma } from "@prisma/client";
 import { PrismaTicketIssuerDetail } from "./type";
 
 export interface ITicketIssuerRepository {
+  query(
+    ctx: IContext,
+    where: Prisma.TicketIssuerWhereInput,
+    orderBy: Prisma.TicketIssuerOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaTicketIssuerDetail[]>;
   find(ctx: IContext, id: string): Promise<PrismaTicketIssuerDetail | null>;
   create(
     ctx: IContext,

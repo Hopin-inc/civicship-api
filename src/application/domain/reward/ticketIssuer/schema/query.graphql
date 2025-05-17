@@ -1,0 +1,37 @@
+# ------------------------------
+# TicketIssuer Query Definitions
+# ------------------------------
+extend type Query {
+    ticketIssuers(
+        filter: TicketIssuerFilterInput
+        sort: TicketIssuerSortInput
+        cursor: String
+        first: Int
+    ): TicketIssuersConnection!
+    ticketIssuer(id: ID!): TicketIssuer
+}
+
+# ------------------------------
+# TicketIssuer Connection Type Definitions
+# ------------------------------
+type TicketIssuersConnection {
+    edges: [TicketIssuerEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TicketIssuerEdge implements Edge {
+    cursor: String!
+    node: TicketIssuer
+}
+
+# ------------------------------
+# TicketIssuer Query Input Definitions
+# ------------------------------
+input TicketIssuerFilterInput {
+    ownerId: ID
+}
+
+input TicketIssuerSortInput {
+    createdAt: SortDirection
+}
