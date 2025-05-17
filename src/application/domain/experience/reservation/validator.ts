@@ -14,6 +14,7 @@ export default class ReservationValidator {
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
     this.validateNoConflicts(reservations.length);
+    this.validateSlotAtLeast7DaysAhead(slot.startsAt);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
       throw new ValidationError("Capacity exceeded for this opportunity slot.", [
@@ -71,6 +72,14 @@ export default class ReservationValidator {
     }
     if (slot.startsAt.getTime() < Date.now()) {
       throw new ValidationError("This slot has already started.");
+    }
+  }
+
+  private validateSlotAtLeast7DaysAhead(startsAt: Date) {
+    const now = new Date();
+    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    if (startsAt.getTime() < sevenDaysLater.getTime()) {
+      throw new ValidationError("Reservation must be made at least 7 days in advance.");
     }
   }
 }
