@@ -16,6 +16,7 @@ import TicketResolver from "@/application/domain/reward/ticket/controller/resolv
 import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
+import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -34,7 +35,7 @@ const evaluation = container.resolve(EvaluationResolver);
 const place = container.resolve(PlaceResolver);
 
 const ticket = container.resolve(TicketResolver);
-const ticketIssuer = container.resolve(TicketResolver);
+const ticketIssuer = container.resolve(TicketIssuerResolver);
 const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
 
@@ -92,7 +93,7 @@ const resolvers = {
   Place: place.Place,
 
   Ticket: ticket.Ticket,
-  TicketIssuer: ticketIssuer.Ticket,
+  TicketIssuer: ticketIssuer.TicketIssuer,
   TicketClaimLink: ticketClaimLink.TicketClaimLink,
   Utility: utility.Utility,
 

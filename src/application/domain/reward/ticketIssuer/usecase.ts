@@ -1,4 +1,4 @@
-import { injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import type {
   GqlQueryTicketIssuerArgs,
   GqlQueryTicketIssuersArgs,
@@ -12,7 +12,9 @@ import { clampFirst } from "@/application/domain/utils";
 
 @injectable()
 export class TicketIssuerUseCase {
-  constructor(private readonly ticketIssuerService: TicketIssuerService) {}
+  constructor(
+    @inject("TicketIssuerService") private readonly ticketIssuerService: TicketIssuerService,
+  ) {}
 
   async visitorBrowseTicketIssuers(
     ctx: IContext,
