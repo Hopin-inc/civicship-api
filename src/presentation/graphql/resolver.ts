@@ -34,6 +34,7 @@ const evaluation = container.resolve(EvaluationResolver);
 const place = container.resolve(PlaceResolver);
 
 const ticket = container.resolve(TicketResolver);
+const ticketIssuer = container.resolve(TicketResolver);
 const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
 
@@ -55,6 +56,7 @@ const resolvers = {
     ...place.Query,
     ...utility.Query,
     ...ticket.Query,
+    ...ticketIssuer.Query,
     ...ticketClaimLink.Query,
     ...transaction.Query,
   },
@@ -78,15 +80,22 @@ const resolvers = {
   Wallet: wallet.Wallet,
   Membership: membership.Membership,
   Community: community.Community,
+
   Article: article.Article,
+
   Opportunity: opportunity.Opportunity,
   OpportunitySlot: opportunitySlot.OpportunitySlot,
   Reservation: reservation.Reservation,
   Participation: participation.Participation,
   Evaluation: evaluation.Evaluation,
+
   Place: place.Place,
+
   Ticket: ticket.Ticket,
+  TicketIssuer: ticketIssuer.Ticket,
+  TicketClaimLink: ticketClaimLink.TicketClaimLink,
   Utility: utility.Utility,
+
   Transaction: transaction.Transaction,
 };
 
