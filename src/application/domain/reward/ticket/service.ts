@@ -2,8 +2,8 @@ import { inject, injectable } from "tsyringe";
 import { GqlQueryTicketsArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
-import { Prisma, TicketStatus, TicketStatusReason } from "@prisma/client";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { Prisma } from "@prisma/client";
+import { NotFoundError, MissingTicketIdsError, TicketParticipantMismatchError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import TicketPresenter from "@/application/domain/reward/ticket/presenter";
 import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
@@ -66,10 +66,10 @@ export default class TicketService {
     ticketIds?: string[],
   ) {
     const currentUserId = getCurrentUserId(ctx);
-    if (!ticketIds) throw new ValidationError("Ticket IDs are not provided");
+    if (!ticketIds) throw new MissingTicketIdsError();
 
     if (ticketIds.length !== participationIds.length) {
-      throw new ValidationError("The number of tickets does not match the number of participants");
+      throw new TicketParticipantMismatchError(ticketIds.length, participationIds.length);
     }
 
     const updates = ticketIds.map((ticketId, index) => ({
@@ -90,7 +90,7 @@ export default class TicketService {
   ) {
     const cancellableTickets = tickets.filter(
       (ticket) =>
-        ticket.status === TicketStatus.DISABLED && ticket.reason === TicketStatusReason.RESERVED,
+        ticket.status === "DISABLED" && ticket.reason === "RESERVED",
     );
 
     const data = this.converter.cancelReserved(currentUserId);
