@@ -9,7 +9,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
   async query(
     ctx: IContext,
     where: Prisma.TicketIssuerWhereInput,
-    orderBy: Prisma.TicketIssuerOrderByWithRelationInput,
+    orderBy: Prisma.TicketIssuerOrderByWithRelationInput[],
     take: number,
     cursor?: string,
   ) {
