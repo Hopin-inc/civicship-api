@@ -9,18 +9,7 @@ import {
   SlotNotScheduledError,
   NoAvailableParticipationSlotsError
 } from "@/errors/graphql";
-
-enum OpportunitySlotHostingStatus {
-  SCHEDULED = "SCHEDULED",
-  CANCELLED = "CANCELLED",
-  COMPLETED = "COMPLETED"
-}
-
-enum ReservationStatus {
-  APPLIED = "APPLIED",
-  ACCEPTED = "ACCEPTED",
-  REJECTED = "REJECTED"
-}
+import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 
 describe("ReservationValidator", () => {
