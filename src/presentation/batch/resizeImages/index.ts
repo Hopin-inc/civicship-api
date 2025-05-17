@@ -26,13 +26,3 @@ export async function resizeImages() {
       `${resize.skippedCount} skipped.`,
   );
 }
-
-resizeImages()
-  .then(() => {
-    logger.info("✅ Done");
-    process.exit(0);
-  })
-  .catch((err) => {
-    logger.error("❌ Batch failed", err);
-    process.exit(1);
-  });
