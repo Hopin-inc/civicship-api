@@ -90,3 +90,86 @@ export class UtilityAlreadyUsedError extends ApolloError {
     Object.defineProperty(this, "name", { value: "UtilityAlreadyUsedError" });
   }
 }
+
+export class ReservationFullError extends ApolloError {
+  public capacity: number;
+  public requested: number;
+
+  constructor(capacity: number, requested: number) {
+    const message = `Reservation is full: capacity ${capacity} is less than requested ${requested}`;
+    super(message, "RESERVATION_FULL");
+    this.capacity = capacity;
+    this.requested = requested;
+    Object.defineProperty(this, "name", { value: "ReservationFullError" });
+  }
+}
+
+export class AlreadyJoinedError extends ApolloError {
+  constructor(message: string = "You have already joined this reservation.") {
+    super(message, "ALREADY_JOINED");
+    Object.defineProperty(this, "name", { value: "AlreadyJoinedError" });
+  }
+}
+
+export class ReservationConflictError extends ApolloError {
+  constructor(message: string = "You already have a conflicting reservation.") {
+    super(message, "RESERVATION_CONFLICT");
+    Object.defineProperty(this, "name", { value: "ReservationConflictError" });
+  }
+}
+
+export class AlreadyStartedReservationError extends ApolloError {
+  constructor(message: string = "This reservation has already started.") {
+    super(message, "ALREADY_STARTED_RESERVATION");
+    Object.defineProperty(this, "name", { value: "AlreadyStartedReservationError" });
+  }
+}
+
+export class AlreadyUsedClaimLinkError extends ApolloError {
+  constructor(message: string = "This claim link has already been used.") {
+    super(message, "ALREADY_USED_CLAIM_LINK");
+    Object.defineProperty(this, "name", { value: "AlreadyUsedClaimLinkError" });
+  }
+}
+
+export class ClaimLinkExpiredError extends ApolloError {
+  constructor(message: string = "This claim link has expired.") {
+    super(message, "CLAIM_LINK_EXPIRED");
+    Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
+  }
+}
+
+export class ReservationCancellationTimeoutError extends ApolloError {
+  constructor(message: string = "Reservation can no longer be canceled within 24 hours of the event.") {
+    super(message, "RESERVATION_CANCELLATION_TIMEOUT");
+    Object.defineProperty(this, "name", { value: "ReservationCancellationTimeoutError" });
+  }
+}
+
+export class ReservationAdvanceBookingRequiredError extends ApolloError {
+  constructor(message: string = "Reservation must be made at least 7 days in advance.") {
+    super(message, "RESERVATION_ADVANCE_BOOKING_REQUIRED");
+    Object.defineProperty(this, "name", { value: "ReservationAdvanceBookingRequiredError" });
+  }
+}
+
+export class ReservationNotAcceptedError extends ApolloError {
+  constructor(message: string = "Reservation is not accepted yet.") {
+    super(message, "RESERVATION_NOT_ACCEPTED");
+    Object.defineProperty(this, "name", { value: "ReservationNotAcceptedError" });
+  }
+}
+
+export class SlotNotScheduledError extends ApolloError {
+  constructor(message: string = "This slot is not scheduled.") {
+    super(message, "SLOT_NOT_SCHEDULED");
+    Object.defineProperty(this, "name", { value: "SlotNotScheduledError" });
+  }
+}
+
+export class NoAvailableParticipationSlotsError extends ApolloError {
+  constructor(message: string = "No available participation slots.") {
+    super(message, "NO_AVAILABLE_PARTICIPATION_SLOTS");
+    Object.defineProperty(this, "name", { value: "NoAvailableParticipationSlotsError" });
+  }
+}
