@@ -19,11 +19,9 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
   }
 
   res.on('finish', async () => {
-    console.debug("token-updater working!!");
     try {
       const uid = (req as any).context?.uid;
       const phoneUid = (req as any).context?.phoneUid;
-      console.debug("!!!debug: (uid, phoneUid):", uid, phoneUid);
 
       if (uid) {
         const identityService = container.resolve(IdentityService);
