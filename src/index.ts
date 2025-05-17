@@ -74,6 +74,9 @@ async function startServer() {
 async function main() {
   if (process.env.PROCESS_TYPE === "batch") {
     await batchProcess();
+    if (process.env.ENV === "LOCAL") {
+      process.exit(0);
+    }
   } else {
     await startServer();
   }

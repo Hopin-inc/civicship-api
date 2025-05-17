@@ -37,7 +37,7 @@ export async function relocateUndefinedImages(): Promise<{
     try {
       // --- パスの正規化 ---
       const cleanFolder = normalizePath(
-        image.folderPath.replace(/^kyoso-dev-civicship-storage-public\//, ""),
+        image.folderPath.replace(new RegExp(`^${ process.env.GCS_BUCKET_NAME }/`), ""),
       );
       const cleanFilename = normalizePath(image.filename);
       const oldPath = `${cleanFolder}/${cleanFilename}`;
