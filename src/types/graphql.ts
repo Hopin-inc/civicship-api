@@ -244,6 +244,13 @@ export type GqlCurrentUserPayload = {
   user?: Maybe<GqlUser>;
 };
 
+export type GqlDateTimeRangeFilter = {
+  gt?: InputMaybe<Scalars['Datetime']['input']>;
+  gte?: InputMaybe<Scalars['Datetime']['input']>;
+  lt?: InputMaybe<Scalars['Datetime']['input']>;
+  lte?: InputMaybe<Scalars['Datetime']['input']>;
+};
+
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -571,6 +578,7 @@ export type GqlMutation = {
   reservationCreate?: Maybe<GqlReservationCreatePayload>;
   reservationJoin?: Maybe<GqlReservationSetStatusPayload>;
   reservationReject?: Maybe<GqlReservationSetStatusPayload>;
+  storePhoneAuthToken?: Maybe<GqlStorePhoneAuthTokenPayload>;
   ticketClaim?: Maybe<GqlTicketClaimPayload>;
   ticketIssue?: Maybe<GqlTicketIssuePayload>;
   ticketPurchase?: Maybe<GqlTicketPurchasePayload>;
@@ -774,6 +782,11 @@ export type GqlMutationReservationJoinArgs = {
 export type GqlMutationReservationRejectArgs = {
   id: Scalars['ID']['input'];
   permission: GqlCheckOpportunityPermissionInput;
+};
+
+
+export type GqlMutationStorePhoneAuthTokenArgs = {
+  input: GqlStorePhoneAuthTokenInput;
 };
 
 
@@ -989,10 +1002,9 @@ export type GqlOpportunityFilterInput = {
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  slotEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  slotDateRange?: InputMaybe<GqlDateTimeRangeFilter>;
   slotHostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   slotRemainingCapacity?: InputMaybe<Scalars['Int']['input']>;
-  slotStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
   stateCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -1415,6 +1427,8 @@ export type GqlQuery = {
   states: Array<GqlState>;
   ticket?: Maybe<GqlTicket>;
   ticketClaimLink?: Maybe<GqlTicketClaimLink>;
+  ticketIssuer?: Maybe<GqlTicketIssuer>;
+  ticketIssuers: GqlTicketIssuersConnection;
   ticketStatusHistories: GqlTicketStatusHistoriesConnection;
   ticketStatusHistory?: Maybe<GqlTicketStatusHistory>;
   tickets: GqlTicketsConnection;
@@ -1605,6 +1619,19 @@ export type GqlQueryTicketArgs = {
 
 export type GqlQueryTicketClaimLinkArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type GqlQueryTicketIssuerArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type GqlQueryTicketIssuersArgs = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlTicketIssuerFilterInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  sort?: InputMaybe<GqlTicketIssuerSortInput>;
 };
 
 
@@ -1817,6 +1844,19 @@ export type GqlState = {
   name: Scalars['String']['output'];
 };
 
+export type GqlStorePhoneAuthTokenInput = {
+  authToken: Scalars['String']['input'];
+  expiresIn: Scalars['Int']['input'];
+  phoneUid: Scalars['String']['input'];
+  refreshToken: Scalars['String']['input'];
+};
+
+export type GqlStorePhoneAuthTokenPayload = {
+  __typename?: 'StorePhoneAuthTokenPayload';
+  expiresAt?: Maybe<Scalars['Datetime']['output']>;
+  success: Scalars['Boolean']['output'];
+};
+
 export const GqlSysRole = {
   SysAdmin: 'SYS_ADMIN',
   User: 'USER'
@@ -1893,6 +1933,27 @@ export type GqlTicketIssuer = {
   qtyToBeIssued: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   utility?: Maybe<GqlUtility>;
+};
+
+export type GqlTicketIssuerEdge = GqlEdge & {
+  __typename?: 'TicketIssuerEdge';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<GqlTicketIssuer>;
+};
+
+export type GqlTicketIssuerFilterInput = {
+  ownerId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+export type GqlTicketIssuerSortInput = {
+  createdAt?: InputMaybe<GqlSortDirection>;
+};
+
+export type GqlTicketIssuersConnection = {
+  __typename?: 'TicketIssuersConnection';
+  edges?: Maybe<Array<Maybe<GqlTicketIssuerEdge>>>;
+  pageInfo: GqlPageInfo;
+  totalCount: Scalars['Int']['output'];
 };
 
 export type GqlTicketPurchaseInput = {
@@ -2140,6 +2201,7 @@ export type GqlUserSignUpInput = {
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
   name: Scalars['String']['input'];
+  phoneNumber?: InputMaybe<Scalars['String']['input']>;
   phoneUid?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2423,7 +2485,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -2460,6 +2522,7 @@ export type GqlResolversTypes = ResolversObject<{
   CurrentPointView: ResolverTypeWrapper<CurrentPointView>;
   CurrentPrefecture: GqlCurrentPrefecture;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
+  DateTimeRangeFilter: GqlDateTimeRangeFilter;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
@@ -2609,6 +2672,8 @@ export type GqlResolversTypes = ResolversObject<{
   SortDirection: GqlSortDirection;
   Source: GqlSource;
   State: ResolverTypeWrapper<State>;
+  StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
+  StorePhoneAuthTokenPayload: ResolverTypeWrapper<GqlStorePhoneAuthTokenPayload>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   SysRole: GqlSysRole;
   Ticket: ResolverTypeWrapper<Ticket>;
@@ -2622,6 +2687,10 @@ export type GqlResolversTypes = ResolversObject<{
   TicketIssuePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TicketIssuePayload']>;
   TicketIssueSuccess: ResolverTypeWrapper<Omit<GqlTicketIssueSuccess, 'issue'> & { issue: GqlResolversTypes['TicketIssuer'] }>;
   TicketIssuer: ResolverTypeWrapper<TicketIssuer>;
+  TicketIssuerEdge: ResolverTypeWrapper<Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<GqlResolversTypes['TicketIssuer']> }>;
+  TicketIssuerFilterInput: GqlTicketIssuerFilterInput;
+  TicketIssuerSortInput: GqlTicketIssuerSortInput;
+  TicketIssuersConnection: ResolverTypeWrapper<Omit<GqlTicketIssuersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['TicketIssuerEdge']>>> }>;
   TicketPurchaseInput: GqlTicketPurchaseInput;
   TicketPurchasePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['TicketPurchasePayload']>;
   TicketPurchaseSuccess: ResolverTypeWrapper<Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: GqlResolversTypes['Ticket'] }>;
@@ -2720,6 +2789,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityUpdateProfileSuccess: Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
   CurrentPointView: CurrentPointView;
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
+  DateTimeRangeFilter: GqlDateTimeRangeFilter;
   Datetime: Scalars['Datetime']['output'];
   Decimal: Scalars['Decimal']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
@@ -2852,6 +2922,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationSortInput: GqlReservationSortInput;
   ReservationsConnection: Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ReservationEdge']> };
   State: State;
+  StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
+  StorePhoneAuthTokenPayload: GqlStorePhoneAuthTokenPayload;
   String: Scalars['String']['output'];
   Ticket: Ticket;
   TicketClaimInput: GqlTicketClaimInput;
@@ -2864,6 +2936,10 @@ export type GqlResolversParentTypes = ResolversObject<{
   TicketIssuePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TicketIssuePayload'];
   TicketIssueSuccess: Omit<GqlTicketIssueSuccess, 'issue'> & { issue: GqlResolversParentTypes['TicketIssuer'] };
   TicketIssuer: TicketIssuer;
+  TicketIssuerEdge: Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['TicketIssuer']> };
+  TicketIssuerFilterInput: GqlTicketIssuerFilterInput;
+  TicketIssuerSortInput: GqlTicketIssuerSortInput;
+  TicketIssuersConnection: Omit<GqlTicketIssuersConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['TicketIssuerEdge']>>> };
   TicketPurchaseInput: GqlTicketPurchaseInput;
   TicketPurchasePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['TicketPurchasePayload'];
   TicketPurchaseSuccess: Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: GqlResolversParentTypes['Ticket'] };
@@ -3065,7 +3141,7 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
 }
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -3296,6 +3372,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   reservationCreate?: Resolver<Maybe<GqlResolversTypes['ReservationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCreateArgs, 'input'>>;
   reservationJoin?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationJoinArgs, 'id'>>;
   reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'permission'>>;
+  storePhoneAuthToken?: Resolver<Maybe<GqlResolversTypes['StorePhoneAuthTokenPayload']>, ParentType, ContextType, RequireFields<GqlMutationStorePhoneAuthTokenArgs, 'input'>>;
   ticketClaim?: Resolver<Maybe<GqlResolversTypes['TicketClaimPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketClaimArgs, 'input'>>;
   ticketIssue?: Resolver<Maybe<GqlResolversTypes['TicketIssuePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketIssueArgs, 'input' | 'permission'>>;
   ticketPurchase?: Resolver<Maybe<GqlResolversTypes['TicketPurchasePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketPurchaseArgs, 'input' | 'permission'>>;
@@ -3622,6 +3699,8 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   states?: Resolver<Array<GqlResolversTypes['State']>, ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
   ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;
+  ticketIssuer?: Resolver<Maybe<GqlResolversTypes['TicketIssuer']>, ParentType, ContextType, RequireFields<GqlQueryTicketIssuerArgs, 'id'>>;
+  ticketIssuers?: Resolver<GqlResolversTypes['TicketIssuersConnection'], ParentType, ContextType, Partial<GqlQueryTicketIssuersArgs>>;
   ticketStatusHistories?: Resolver<GqlResolversTypes['TicketStatusHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryTicketStatusHistoriesArgs>>;
   ticketStatusHistory?: Resolver<Maybe<GqlResolversTypes['TicketStatusHistory']>, ParentType, ContextType, RequireFields<GqlQueryTicketStatusHistoryArgs, 'id'>>;
   tickets?: Resolver<GqlResolversTypes['TicketsConnection'], ParentType, ContextType, Partial<GqlQueryTicketsArgs>>;
@@ -3707,6 +3786,12 @@ export type GqlStateResolvers<ContextType = any, ParentType extends GqlResolvers
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlStorePhoneAuthTokenPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['StorePhoneAuthTokenPayload'] = GqlResolversParentTypes['StorePhoneAuthTokenPayload']> = ResolversObject<{
+  expiresAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  success?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlTicketResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Ticket'] = GqlResolversParentTypes['Ticket']> = ResolversObject<{
   claimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -3763,6 +3848,19 @@ export type GqlTicketIssuerResolvers<ContextType = any, ParentType extends GqlRe
   qtyToBeIssued?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   utility?: Resolver<Maybe<GqlResolversTypes['Utility']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTicketIssuerEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketIssuerEdge'] = GqlResolversParentTypes['TicketIssuerEdge']> = ResolversObject<{
+  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<Maybe<GqlResolversTypes['TicketIssuer']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlTicketIssuersConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketIssuersConnection'] = GqlResolversParentTypes['TicketIssuersConnection']> = ResolversObject<{
+  edges?: Resolver<Maybe<Array<Maybe<GqlResolversTypes['TicketIssuerEdge']>>>, ParentType, ContextType>;
+  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4139,6 +4237,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ReservationSetStatusSuccess?: GqlReservationSetStatusSuccessResolvers<ContextType>;
   ReservationsConnection?: GqlReservationsConnectionResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
+  StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;
   TicketClaimLink?: GqlTicketClaimLinkResolvers<ContextType>;
   TicketClaimPayload?: GqlTicketClaimPayloadResolvers<ContextType>;
@@ -4147,6 +4246,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   TicketIssuePayload?: GqlTicketIssuePayloadResolvers<ContextType>;
   TicketIssueSuccess?: GqlTicketIssueSuccessResolvers<ContextType>;
   TicketIssuer?: GqlTicketIssuerResolvers<ContextType>;
+  TicketIssuerEdge?: GqlTicketIssuerEdgeResolvers<ContextType>;
+  TicketIssuersConnection?: GqlTicketIssuersConnectionResolvers<ContextType>;
   TicketPurchasePayload?: GqlTicketPurchasePayloadResolvers<ContextType>;
   TicketPurchaseSuccess?: GqlTicketPurchaseSuccessResolvers<ContextType>;
   TicketRefundPayload?: GqlTicketRefundPayloadResolvers<ContextType>;

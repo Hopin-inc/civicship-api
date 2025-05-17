@@ -10,6 +10,7 @@ import { PrismaPlace, PrismaPlaceDetail } from "@/application/domain/location/pl
 export default class PlacePresenter {
   static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {
     return {
+      __typename: "PlacesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -28,8 +29,8 @@ export default class PlacePresenter {
     const { latitude, longitude, ...prop } = r;
 
     return {
+      __typename: "Place",
       ...prop,
-      opportunities: [],
       latitude: latitude.toString(),
       longitude: longitude.toString(),
     };
@@ -37,18 +38,21 @@ export default class PlacePresenter {
 
   static create(r: PrismaPlaceDetail): GqlPlaceCreateSuccess {
     return {
+      __typename: "PlaceCreateSuccess",
       place: this.get(r),
     };
   }
 
   static update(r: PrismaPlaceDetail): GqlPlaceUpdateSuccess {
     return {
+      __typename: "PlaceUpdateSuccess",
       place: this.get(r),
     };
   }
 
   static delete(r: PrismaPlaceDetail): GqlPlaceDeleteSuccess {
     return {
+      __typename: "PlaceDeleteSuccess",
       id: r.id,
     };
   }
@@ -57,6 +61,7 @@ export default class PlacePresenter {
     const { latitude, longitude, ...prop } = r;
 
     return {
+      __typename: "Place",
       ...prop,
       latitude: latitude.toString(),
       longitude: longitude.toString(),

@@ -10,6 +10,7 @@ export default class ParticipationStatusHistoryService {
   constructor(
     @inject("ParticipationStatusHistoryRepository")
     private readonly repository: IParticipationStatusHistoryRepository,
+    @inject("ParticipationStatusHistoryConverter")
     private readonly converter: ParticipationStatusHistoryConverter,
   ) {}
 

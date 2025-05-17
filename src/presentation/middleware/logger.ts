@@ -7,19 +7,5 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     body: req.body ?? null,
     authorization: req.headers.authorization ?? null,
   });
-  const { send } = res;
-  res.send = function (body) {
-    logger.debug(`[Responded] ${this.req.method} ${this.req.originalUrl}`, {
-      request: {
-        body: this.req.body,
-      },
-      response: {
-        statusCode: this.statusCode,
-        message: this.statusMessage,
-        body,
-      },
-    });
-    return send.call(this, body);
-  }
   next();
 };

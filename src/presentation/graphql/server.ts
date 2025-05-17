@@ -26,25 +26,9 @@ export async function createApolloServer(httpServer: http.Server) {
       }),
     ],
     validationRules: [...armorProtection.validationRules],
-    formatError: (err, error) => {
+    formatError: (err) => {
       const { message, locations, path } = err;
       const code = err.extensions?.code ?? "INTERNAL_SERVER_ERROR";
-
-      try {
-        const originalError = (error as any)?.originalError;
-        const res = (originalError as any)?.res;
-        const req = (originalError as any)?.req;
-        const origin = req?.headers?.origin;
-        const allowed = (process.env.ALLOWED_ORIGINS ?? "").split(" ");
-
-        if (res?.setHeader && origin && allowed.includes(origin)) {
-          res.setHeader("Access-Control-Allow-Origin", origin);
-          res.setHeader("Access-Control-Allow-Credentials", "true");
-        }
-      } catch {
-        // 念のため握りつぶしておく
-      }
-
       if (code === "INTERNAL_SERVER_ERROR") {
         logger.error(`GraphQL Error: ${err.message}`, err);
       }

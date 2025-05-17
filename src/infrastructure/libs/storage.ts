@@ -1,4 +1,4 @@
-import { Storage } from '@google-cloud/storage';
+import { Storage } from "@google-cloud/storage";
 import logger from "@/infrastructure/logging";
 
 const base64Encoded = process.env.GCS_SERVICE_ACCOUNT_BASE64;
@@ -12,20 +12,21 @@ export const storage = new Storage({
   credentials,
 });
 
-export async function generateSignedUrl(fileName: string, folderPath?: string, bucketName?: string): Promise<string> {
+export async function generateSignedUrl(
+  fileName: string,
+  folderPath?: string,
+  bucketName?: string,
+): Promise<string> {
   try {
     bucketName = bucketName ?? gcsBucketName;
-    const filePath = folderPath ? `${ folderPath }/${ fileName }` : fileName;
+    const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
     const options = {
-      version: 'v4' as const,
-      action: 'read' as const,
+      version: "v4" as const,
+      action: "read" as const,
       expires: Date.now() + 15 * 60 * 1000, // 15分間有効
     };
 
-    const [url] = await storage
-      .bucket(bucketName)
-      .file(filePath)
-      .getSignedUrl(options);
+    const [url] = await storage.bucket(bucketName).file(filePath).getSignedUrl(options);
     return url;
   } catch (e) {
     logger.warn(e);
@@ -35,8 +36,11 @@ export async function generateSignedUrl(fileName: string, folderPath?: string, b
 
 export function getPublicUrl(fileName: string, folderPath?: string, bucketName?: string): string {
   bucketName = bucketName ?? gcsBucketName;
-  const filePath = folderPath ? `${ folderPath }/${ fileName }` : fileName;
-  return `https://storage.googleapis.com/${ bucketName }/${ filePath }`;
+  const safeFolderPath = folderPath?.replace(/^\/+/, "").replace(/\/+$/, "");
+  const safeFileName = fileName.replace(/^\/+/, "");
+
+  const filePath = safeFolderPath ? `${safeFolderPath}/${safeFileName}` : safeFileName;
+  return `https://storage.googleapis.com/${bucketName}/${filePath}`;
 }
 
 export function getFileInfoFromUrl(url: string) {

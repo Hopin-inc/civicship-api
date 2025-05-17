@@ -4,6 +4,7 @@ import {
   GqlMutationUserSignUpArgs,
   GqlUserDeletePayload,
   GqlLinkPhoneAuthPayload,
+  GqlStorePhoneAuthTokenPayload,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -12,7 +13,8 @@ import MembershipService from "@/application/domain/account/membership/service";
 import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
-import { IdentityPlatform } from "@prisma/client";
+import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class IdentityUseCase {
@@ -58,6 +60,44 @@ export default class IdentityUseCase {
       return user;
     });
 
+    if (phoneUid && ctx.phoneAuthToken && ctx.phoneRefreshToken) {
+      try {
+        const expiryTime = ctx.phoneTokenExpiresAt 
+          ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10) * 1000)
+          : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
+        
+        await this.identityService.storeAuthTokens(
+          phoneUid,
+          ctx.phoneAuthToken,
+          ctx.phoneRefreshToken,
+          expiryTime
+        );
+        
+        logger.debug(`Stored phone auth tokens during user signup for ${phoneUid}, expires at ${expiryTime.toISOString()}`);
+      } catch (error) {
+        logger.error("Failed to store phone auth tokens during user signup:", error);
+      }
+    }
+
+    if (ctx.uid && ctx.idToken && ctx.refreshToken && ctx.platform === IdentityPlatform.Line) {
+      try {
+        const expiryTime = ctx.tokenExpiresAt 
+          ? new Date(parseInt(ctx.tokenExpiresAt, 10) * 1000)
+          : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
+        
+        await this.identityService.storeAuthTokens(
+          ctx.uid,
+          ctx.idToken,
+          ctx.refreshToken,
+          expiryTime
+        );
+        
+        logger.debug(`Stored LINE auth tokens during user signup for ${ctx.uid}, expires at ${expiryTime.toISOString()}`);
+      } catch (error) {
+        logger.error("Failed to store LINE auth tokens during user signup:", error);
+      }
+    }
+
     return IdentityPresenter.create(res);
   }
 
@@ -66,7 +106,7 @@ export default class IdentityUseCase {
     phoneUid: string,
     userId: string,
   ): Promise<GqlLinkPhoneAuthPayload> {
-    if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.LINE) {
+    if (!ctx.uid || !ctx.platform || ctx.platform !== IdentityPlatform.Line) {
       throw new Error("LINE authentication required");
     }
 
@@ -88,5 +128,35 @@ export default class IdentityUseCase {
     const user = await this.identityService.deleteUserAndIdentity(uid);
     await this.identityService.deleteFirebaseAuthUser(uid, context.tenantId);
     return IdentityPresenter.delete(user);
+  }
+
+  async storePhoneAuthToken(
+    ctx: IContext,
+    phoneUid: string,
+    authToken: string,
+    refreshToken: string,
+    expiresIn: number
+  ): Promise<GqlStorePhoneAuthTokenPayload> {
+    if (!ctx.uid || !ctx.platform) {
+      throw new Error("Authentication required");
+    }
+
+    const expiryTime = new Date();
+    expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
+
+    try {
+      await this.identityService.storeAuthTokens(phoneUid, authToken, refreshToken, expiryTime);
+      
+      return {
+        success: true,
+        expiresAt: expiryTime,
+      };
+    } catch (error) {
+      logger.error("Failed to store auth tokens:", error);
+      return {
+        success: false,
+        expiresAt: null,
+      };
+    }
   }
 }

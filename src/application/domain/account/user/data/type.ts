@@ -106,6 +106,7 @@ export const userSelectDetail = Prisma.validator<Prisma.UserSelect>()({
   urlInstagram: true,
   urlYoutube: true,
   urlTiktok: true,
+  phoneNumber: true,
 
   imageId: true,
 

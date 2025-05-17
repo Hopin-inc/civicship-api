@@ -4,6 +4,7 @@ import { PrismaWalletDetail } from "@/application/domain/account/wallet/data/typ
 export default class WalletPresenter {
   static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {
     return {
+      __typename: "WalletsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -19,6 +20,9 @@ export default class WalletPresenter {
   }
 
   static get(r: PrismaWalletDetail): GqlWallet {
-    return r;
+    return {
+      __typename: "Wallet",
+      ...r,
+    };
   }
 }

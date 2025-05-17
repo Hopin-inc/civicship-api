@@ -12,6 +12,7 @@ import {
 export default class OpportunitySlotPresenter {
   static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
     return {
+      __typename: "OpportunitySlotsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -29,6 +30,7 @@ export default class OpportunitySlotPresenter {
   static get(r: PrismaOpportunitySlotDetail): GqlOpportunitySlot {
     const { remainingCapacityView, ...prop } = r;
     return {
+      __typename: "OpportunitySlot",
       ...prop,
       remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
     };
@@ -37,10 +39,16 @@ export default class OpportunitySlotPresenter {
   static setHostingStatus(
     r: Omit<PrismaOpportunitySlotSetHostingStatus, "reservations" | "opportunity">,
   ): GqlOpportunitySlotSetHostingStatusSuccess {
-    return { slot: { ...r } };
+    return {
+      __typename: "OpportunitySlotSetHostingStatusSuccess",
+      slot: { ...r },
+    };
   }
 
   static bulkUpdate(slots: GqlOpportunitySlot[]): GqlOpportunitySlotsBulkUpdateSuccess {
-    return { slots };
+    return {
+      __typename: "OpportunitySlotsBulkUpdateSuccess",
+      slots,
+    };
   }
 }

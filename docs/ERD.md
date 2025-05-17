@@ -187,6 +187,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     Boolean is_public 
     String url 
+    String original_url "❓"
     String bucket 
     String folder_path 
     String filename 
@@ -255,6 +256,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String bio "❓"
     SysRole sys_role 
     CurrentPrefecture current_prefecture 
+    String phone_number "❓"
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"
@@ -271,6 +273,9 @@ TICKET_REFUNDED TICKET_REFUNDED
     String uid "🗝️"
     IdentityPlatform platform 
     String user_id 
+    String auth_token "❓"
+    String refresh_token "❓"
+    DateTime token_expires_at "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }

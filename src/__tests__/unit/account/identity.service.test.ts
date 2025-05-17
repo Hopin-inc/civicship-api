@@ -32,6 +32,7 @@ describe("IdentityService", () => {
 
   class MockIdentityRepository {
     find = jest.fn();
+    update = jest.fn();
   }
 
   // --- モックインスタンス ---

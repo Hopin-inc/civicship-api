@@ -8,6 +8,7 @@ import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluati
 export default class EvaluationPresenter {
   static query(records: GqlEvaluation[], hasNextPage: boolean): GqlEvaluationsConnection {
     return {
+      __typename: "EvaluationsConnection",
       totalCount: records.length,
       pageInfo: {
         hasNextPage,
@@ -23,11 +24,15 @@ export default class EvaluationPresenter {
   }
 
   static get(record: PrismaEvaluationDetail): GqlEvaluation {
-    return record;
+    return {
+      __typename: "Evaluation",
+      ...record,
+    };
   }
 
   static create(record: PrismaEvaluationDetail): GqlEvaluationCreateSuccess {
     return {
+      __typename: "EvaluationCreateSuccess",
       evaluation: this.get(record),
     };
   }

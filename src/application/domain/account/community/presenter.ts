@@ -10,6 +10,7 @@ import { PrismaCommunityDetail } from "@/application/domain/account/community/da
 export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
     return {
+      __typename: "CommunitiesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -26,6 +27,7 @@ export default class CommunityPresenter {
 
   static get(r: PrismaCommunityDetail): GqlCommunity {
     return {
+      __typename: "Community",
       ...r,
       memberships: [],
       wallets: [],
@@ -41,18 +43,21 @@ export default class CommunityPresenter {
 
   static create(r: PrismaCommunityDetail): GqlCommunityCreateSuccess {
     return {
+      __typename: "CommunityCreateSuccess",
       community: this.get(r),
     };
   }
 
   static delete(r: PrismaCommunityDetail): GqlCommunityDeleteSuccess {
     return {
+      __typename: "CommunityDeleteSuccess",
       communityId: r.id,
     };
   }
 
   static update(r: PrismaCommunityDetail): GqlCommunityUpdateProfileSuccess {
     return {
+      __typename: "CommunityUpdateProfileSuccess",
       community: this.get(r),
     };
   }

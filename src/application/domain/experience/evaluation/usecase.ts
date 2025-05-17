@@ -39,7 +39,6 @@ export default class EvaluationUseCase {
 
     const hasNextPage = evaluations.length > take;
     const data = evaluations.slice(0, take).map(EvaluationPresenter.get);
-    console.log(data);
     return EvaluationPresenter.query(data, hasNextPage);
   }
 

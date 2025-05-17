@@ -5,3 +5,5 @@ export const SignInProvider: Record<string, IdentityPlatform> = {
   "facebook.com": IdentityPlatform.FACEBOOK,
   "phone": IdentityPlatform.PHONE,
 };
+
+export const IDENTUS_API_URL = process.env.IDENTUS_API_URL || "https://kyoso-identus-api.example.com";

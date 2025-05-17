@@ -11,6 +11,7 @@ import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
+import { tokenUpdaterMiddleware } from "@/presentation/middleware/token-updater";
 
 const port = Number(process.env.PORT ?? 3000);
 
@@ -36,16 +37,9 @@ async function startServer() {
   app.use(corsHandler);
   app.use(express.json({ limit: "50mb" }));
   app.use(requestLogger);
+  app.use(tokenUpdaterMiddleware); // Apply token-updater middleware globally
 
   app.use((err, req, res, _next) => {
-    const origin = req.headers.origin;
-    const allowed = (process.env.ALLOWED_ORIGINS ?? "").split(" ");
-
-    if (origin && allowed.includes(origin)) {
-      res.setHeader("Access-Control-Allow-Origin", origin);
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-    }
-
     logger.error("Unhandled Express Error:", {
       message: err.message,
       stack: err.stack,
@@ -53,7 +47,7 @@ async function startServer() {
     res.status(500).json({ error: "Internal Server Error" });
   });
 
-  app.use("/graphql", authHandler(apolloServer));
+  app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);
 
   server.listen(port, () => {
@@ -68,6 +62,9 @@ async function startServer() {
 async function main() {
   if (process.env.PROCESS_TYPE === "batch") {
     await batchProcess();
+    if (process.env.ENV === "LOCAL") {
+      process.exit(0);
+    }
   } else {
     await startServer();
   }
