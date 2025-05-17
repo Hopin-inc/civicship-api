@@ -68,6 +68,13 @@ scalar Upload
 # ------------------------------------------------
 # Input Types
 # ------------------------------------------------
+input DateTimeRangeFilter {
+    gte: Datetime
+    lte: Datetime
+    gt: Datetime
+    lt: Datetime
+}
+
 input CheckCommunityPermissionInput {
     communityId: ID!
 }
