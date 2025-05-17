@@ -41,16 +41,16 @@ export default class MembershipPresenter {
     const hostedGeoMap = new Map<string, GqlMembershipParticipationLocation>();
 
     participationGeoViews
-      .filter((v) => v.type === ParticipationType.HOSTED)
+      .filter((v) => v.type === ParticipationType.HOSTED && v.placeId)
       .forEach((v) => {
         if (!hostedGeoMap.has(v.placeId)) {
           hostedGeoMap.set(v.placeId, {
             placeId: v.placeId,
-            placeName: v.placeName,
-            placeImage: v.placeImage,
-            address: v.address,
-            latitude: v.latitude.toString(),
-            longitude: v.longitude.toString(),
+            placeName: v.placeName ?? "",
+            placeImage: v.placeImage ?? "",
+            address: v.address ?? "",
+            latitude: v.latitude != null ? v.latitude.toString() : "",
+            longitude: v.longitude != null ? v.longitude.toString() : "",
           });
         }
       });
