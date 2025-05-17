@@ -1,14 +1,34 @@
 import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
-import {
-  CurrentPrefecture,
-  MembershipStatus,
-  MembershipStatusReason,
-  Role,
-  TransactionReason,
-  WalletType,
-} from "@prisma/client";
+import { Prisma } from "@prisma/client";
+
+enum CurrentPrefecture {
+  KAGAWA = "KAGAWA"
+}
+
+enum MembershipStatus {
+  JOINED = "JOINED"
+}
+
+enum MembershipStatusReason {
+  INVITED = "INVITED",
+  ASSIGNED = "ASSIGNED"
+}
+
+enum Role {
+  MEMBER = "MEMBER"
+}
+
+enum TransactionReason {
+  GRANT = "GRANT",
+  DONATION = "DONATION",
+  TICKET_PURCHASED = "TICKET_PURCHASED"
+}
+
+enum WalletType {
+  MEMBER = "MEMBER"
+}
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
