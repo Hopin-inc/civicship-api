@@ -5,7 +5,7 @@ import EvaluationConverter from "@/application/domain/experience/evaluation/data
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { ValidationError } from "@/errors/graphql";
+import { InvalidEvaluationStatusError, ParticipationOrOpportunityNotFoundError, CommunityIdNotFoundError, UserIdNotFoundError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -40,7 +40,7 @@ export default class EvaluationService {
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 
     if (!isValidFinalStatus) {
-      throw new ValidationError("Invalid status. Only PASSED or FAILED are allowed.", [status]);
+      throw new InvalidEvaluationStatusError(status);
     }
 
     const currentUserId = getCurrentUserId(ctx);
@@ -61,19 +61,17 @@ export default class EvaluationService {
     const opportunity = participation?.reservation?.opportunitySlot?.opportunity;
 
     if (!participation || !opportunity) {
-      throw new ValidationError("Participation or Opportunity not found for evaluation", [
-        evaluation.id,
-      ]);
+      throw new ParticipationOrOpportunityNotFoundError(evaluation.id);
     }
 
     const communityId = participation?.communityId;
     if (!communityId) {
-      throw new ValidationError("Community ID not found for participation", [evaluation.id]);
+      throw new CommunityIdNotFoundError(evaluation.id);
     }
 
     const userId = participation?.userId;
     if (!userId) {
-      throw new ValidationError("User ID not found for participation", [evaluation.id]);
+      throw new UserIdNotFoundError(evaluation.id);
     }
 
     return { participation, opportunity, communityId, userId };

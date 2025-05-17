@@ -226,3 +226,75 @@ export class InvalidPublishStatusError extends ApolloError {
     Object.defineProperty(this, "name", { value: "InvalidPublishStatusError" });
   }
 }
+
+export class MissingTicketIdsError extends ApolloError {
+  constructor(message: string = "Ticket IDs are not provided") {
+    super(message, "MISSING_TICKET_IDS");
+    Object.defineProperty(this, "name", { value: "MissingTicketIdsError" });
+  }
+}
+
+export class TicketParticipantMismatchError extends ApolloError {
+  public ticketCount: number;
+  public participantCount: number;
+  
+  constructor(ticketCount: number, participantCount: number) {
+    const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
+    super(message, "TICKET_PARTICIPANT_MISMATCH");
+    this.ticketCount = ticketCount;
+    this.participantCount = participantCount;
+    Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
+  }
+}
+
+export class InvalidEvaluationStatusError extends ApolloError {
+  public status: string;
+  
+  constructor(status: string) {
+    const message = `Invalid status. Only PASSED or FAILED are allowed.`;
+    super(message, "INVALID_EVALUATION_STATUS");
+    this.status = status;
+    Object.defineProperty(this, "name", { value: "InvalidEvaluationStatusError" });
+  }
+}
+
+export class ParticipationOrOpportunityNotFoundError extends NotFoundError {
+  public evaluationId: string;
+  
+  constructor(evaluationId: string) {
+    super(`Participation or Opportunity not found for evaluation`);
+    this.evaluationId = evaluationId;
+    Object.defineProperty(this, "name", { value: "ParticipationOrOpportunityNotFoundError" });
+  }
+}
+
+export class CommunityIdNotFoundError extends NotFoundError {
+  public evaluationId: string;
+  
+  constructor(evaluationId: string) {
+    super(`Community ID not found for participation`);
+    this.evaluationId = evaluationId;
+    Object.defineProperty(this, "name", { value: "CommunityIdNotFoundError" });
+  }
+}
+
+export class UserIdNotFoundError extends NotFoundError {
+  public evaluationId: string;
+  
+  constructor(evaluationId: string) {
+    super(`User ID not found for participation`);
+    this.evaluationId = evaluationId;
+    Object.defineProperty(this, "name", { value: "UserIdNotFoundError" });
+  }
+}
+
+export class InvalidPlaceInputError extends ApolloError {
+  public place: any;
+  
+  constructor(place: any) {
+    const message = `For Place, choose only one of "where" or "create."`;
+    super(message, "INVALID_PLACE_INPUT");
+    this.place = place;
+    Object.defineProperty(this, "name", { value: "InvalidPlaceInputError" });
+  }
+}
