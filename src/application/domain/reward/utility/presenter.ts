@@ -10,6 +10,7 @@ import { PrismaUtilityDetail } from "@/application/domain/reward/utility/data/ty
 export default class UtilityPresenter {
   static query(utilities: GqlUtility[], hasNextPage: boolean): GqlUtilitiesConnection {
     return {
+      __typename: "UtilitiesConnection",
       totalCount: utilities.length,
       pageInfo: {
         hasNextPage,
@@ -25,23 +26,29 @@ export default class UtilityPresenter {
   }
 
   static get(r: PrismaUtilityDetail): GqlUtility {
-    return r;
+    return {
+      __typename: "Utility",
+      ...r,
+    };
   }
 
   static create(r: PrismaUtilityDetail): GqlUtilityCreateSuccess {
     return {
+      __typename: "UtilityCreateSuccess",
       utility: this.get(r),
     };
   }
 
   static delete(r: PrismaUtilityDetail): GqlUtilityDeleteSuccess {
     return {
+      __typename: "UtilityDeleteSuccess",
       utilityId: r.id,
     };
   }
 
   static updateInfo(r: PrismaUtilityDetail): GqlUtilityUpdateInfoSuccess {
     return {
+      __typename: "UtilityUpdateInfoSuccess",
       utility: this.get(r),
     };
   }

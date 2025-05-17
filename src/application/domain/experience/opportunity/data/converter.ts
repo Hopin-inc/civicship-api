@@ -179,17 +179,25 @@ export default class OpportunityConverter {
     if (filter.slotHostingStatus?.length)
       slotConditions.push({ hostingStatus: { in: filter.slotHostingStatus } });
 
-    if (filter.slotStartsAt && filter.slotEndsAt) {
-      slotConditions.push({
-        startsAt: { lte: filter.slotEndsAt },
-        endsAt: { gte: filter.slotStartsAt },
-      });
-    } else {
-      if (filter.slotStartsAt) {
-        slotConditions.push({ startsAt: { gte: filter.slotStartsAt } });
+    const range = filter.slotDateRange;
+    if (range) {
+      const startsAtCondition: Record<string, Date> = {};
+
+      if (range.gte) {
+        startsAtCondition.gte = range.gte;
       }
-      if (filter.slotEndsAt) {
-        slotConditions.push({ endsAt: { lte: filter.slotEndsAt } });
+      if (range.lte) {
+        startsAtCondition.lte = range.lte;
+      }
+      if (range.gt) {
+        startsAtCondition.gt = range.gt;
+      }
+      if (range.lt) {
+        startsAtCondition.lt = range.lt;
+      }
+
+      if (Object.keys(startsAtCondition).length > 0) {
+        slotConditions.push({ startsAt: startsAtCondition });
       }
     }
 

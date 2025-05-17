@@ -6,6 +6,7 @@ export default class TicketClaimLinkPresenter {
     const { issuer, ...prop } = r;
 
     return {
+      __typename: "TicketClaimLink",
       ...prop,
       issuer,
     };

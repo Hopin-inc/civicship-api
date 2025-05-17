@@ -46,8 +46,7 @@ input OpportunityFilterInput {
 
     # slot
     slotHostingStatus: [OpportunitySlotHostingStatus!]
-    slotStartsAt: Datetime
-    slotEndsAt: Datetime
+    slotDateRange: DateTimeRangeFilter
     slotRemainingCapacity: Int
 
     and: [OpportunityFilterInput!]

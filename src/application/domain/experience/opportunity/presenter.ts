@@ -11,6 +11,7 @@ import { PrismaOpportunityDetail } from "@/application/domain/experience/opportu
 export default class OpportunityPresenter {
   static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
     return {
+      __typename: "OpportunitiesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -26,29 +27,36 @@ export default class OpportunityPresenter {
   }
 
   static get(r: PrismaOpportunityDetail): GqlOpportunity {
-    return r;
+    return {
+      __typename: "Opportunity",
+      ...r,
+    };
   }
 
   static create(r: PrismaOpportunityDetail): GqlOpportunityCreateSuccess {
     return {
+      __typename: "OpportunityCreateSuccess",
       opportunity: this.get(r),
     };
   }
 
   static delete(r: PrismaOpportunityDetail): GqlOpportunityDeleteSuccess {
     return {
+      __typename: "OpportunityDeleteSuccess",
       opportunityId: r.id,
     };
   }
 
   static update(r: PrismaOpportunityDetail): GqlOpportunityUpdateContentSuccess {
     return {
+      __typename: "OpportunityUpdateContentSuccess",
       opportunity: this.get(r),
     };
   }
 
   static setPublishStatus(r: PrismaOpportunityDetail): GqlOpportunitySetPublishStatusSuccess {
     return {
+      __typename: "OpportunitySetPublishStatusSuccess",
       opportunity: this.get(r),
     };
   }

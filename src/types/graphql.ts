@@ -244,6 +244,13 @@ export type GqlCurrentUserPayload = {
   user?: Maybe<GqlUser>;
 };
 
+export type GqlDateTimeRangeFilter = {
+  gt?: InputMaybe<Scalars['Datetime']['input']>;
+  gte?: InputMaybe<Scalars['Datetime']['input']>;
+  lt?: InputMaybe<Scalars['Datetime']['input']>;
+  lte?: InputMaybe<Scalars['Datetime']['input']>;
+};
+
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -995,10 +1002,9 @@ export type GqlOpportunityFilterInput = {
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  slotEndsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  slotDateRange?: InputMaybe<GqlDateTimeRangeFilter>;
   slotHostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
   slotRemainingCapacity?: InputMaybe<Scalars['Int']['input']>;
-  slotStartsAt?: InputMaybe<Scalars['Datetime']['input']>;
   stateCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
@@ -2516,6 +2522,7 @@ export type GqlResolversTypes = ResolversObject<{
   CurrentPointView: ResolverTypeWrapper<CurrentPointView>;
   CurrentPrefecture: GqlCurrentPrefecture;
   CurrentUserPayload: ResolverTypeWrapper<Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
+  DateTimeRangeFilter: GqlDateTimeRangeFilter;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
@@ -2782,6 +2789,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CommunityUpdateProfileSuccess: Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: GqlResolversParentTypes['Community'] };
   CurrentPointView: CurrentPointView;
   CurrentUserPayload: Omit<GqlCurrentUserPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
+  DateTimeRangeFilter: GqlDateTimeRangeFilter;
   Datetime: Scalars['Datetime']['output'];
   Decimal: Scalars['Decimal']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];

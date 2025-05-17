@@ -9,6 +9,7 @@ import { PrismaParticipationDetail } from "@/application/domain/experience/parti
 export default class ParticipationPresenter {
   static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
     return {
+      __typename: "ParticipationsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -24,17 +25,22 @@ export default class ParticipationPresenter {
   }
 
   static get(r: PrismaParticipationDetail): GqlParticipation {
-    return r;
+    return {
+      __typename: "Participation",
+      ...r,
+    };
   }
 
   static create(r: PrismaParticipationDetail): GqlParticipationCreatePersonalRecordSuccess {
     return {
+      __typename: "ParticipationCreatePersonalRecordSuccess",
       participation: this.get(r),
     };
   }
 
   static delete(r: PrismaParticipationDetail): GqlParticipationDeleteSuccess {
     return {
+      __typename: "ParticipationDeleteSuccess",
       participationId: r.id,
     };
   }

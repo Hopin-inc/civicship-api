@@ -3,6 +3,9 @@ import { GqlCity } from "@/types/graphql";
 
 export default class MasterPresenter {
   static get(r: PrismaCityDetail): GqlCity {
-    return r;
+    return {
+      __typename: "City",
+      ...r,
+    };
   }
 }

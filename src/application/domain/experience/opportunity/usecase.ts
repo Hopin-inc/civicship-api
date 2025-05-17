@@ -34,31 +34,23 @@ export default class OpportunityUseCase {
     const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
 
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
-    const allowedPublishStatuses = isManager
-      ? Object.values(PublishStatus)
-      : isMember
-        ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
-        : [PublishStatus.PUBLIC];
+    const allowedStatuses = getAllowedPublishStatuses(communityIds, isManager, isMember);
 
-    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
+    await this.service.validatePublishStatus(allowedStatuses, filter);
 
-    const validatedFilter: GqlOpportunityFilterInput = validateByMembershipRoles(
-      communityIds,
-      isMember,
-      isManager,
-      currentUserId,
-      filter,
-    );
+    const accessFilter = enforceAccessFilter(currentUserId, communityIds);
+    const finalFilter = accessFilter ? { and: [accessFilter, filter ?? {}] } : (filter ?? {});
 
     const records = await this.service.fetchOpportunities(
       ctx,
       {
         cursor,
         sort,
-        filter: validatedFilter,
+        filter: finalFilter,
       },
       take,
     );
+    console.log(records);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
@@ -129,6 +121,33 @@ export default class OpportunityUseCase {
       return OpportunityPresenter.setPublishStatus(record);
     });
   }
+}
+
+function getAllowedPublishStatuses(
+  communityIds: string[],
+  isManager: Record<string, boolean>,
+  isMember: Record<string, boolean>,
+): PublishStatus[] {
+  if (communityIds.some((id) => isManager[id])) {
+    return Object.values(PublishStatus);
+  }
+  if (communityIds.some((id) => isMember[id])) {
+    return [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+  }
+  return [PublishStatus.PUBLIC];
+}
+
+function enforceAccessFilter(
+  currentUserId: string | undefined,
+  communityIds: string[],
+): GqlOpportunityFilterInput | undefined {
+  if (communityIds.length === 0) return undefined;
+
+  return {
+    or: communityIds.map((communityId) => ({
+      communityIds: [communityId],
+    })),
+  };
 }
 
 function validateByMembershipRoles(

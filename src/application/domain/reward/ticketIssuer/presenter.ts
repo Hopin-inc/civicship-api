@@ -8,6 +8,7 @@ import { PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssu
 export default class TicketIssuerPresenter {
   static query(records: GqlTicketIssuer[], hasNextPage: boolean): GqlTicketIssuersConnection {
     return {
+      __typename: "TicketIssuersConnection",
       totalCount: records.length,
       pageInfo: {
         hasNextPage,
@@ -23,11 +24,15 @@ export default class TicketIssuerPresenter {
   }
 
   static get(r: PrismaTicketIssuerDetail): GqlTicketIssuer {
-    return r;
+    return {
+      __typename: "TicketIssuer",
+      ...r,
+    };
   }
 
   static issue(r: PrismaTicketIssuerDetail): GqlTicketIssuePayload {
     return {
+      __typename: "TicketIssueSuccess",
       issue: this.get(r),
     };
   }
