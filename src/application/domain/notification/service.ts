@@ -51,8 +51,8 @@ export default class NotificationService {
       year,
       date,
       time,
-      hostName: host.name,
-      hostImageUrl: host.image?.url ?? DEFAULT_HOST_IMAGE_URL,
+      hostName: host?.name ?? "NEO88四国祭",
+      hostImageUrl: host?.image?.url ?? DEFAULT_HOST_IMAGE_URL,
       redirectUrl,
     });
 
