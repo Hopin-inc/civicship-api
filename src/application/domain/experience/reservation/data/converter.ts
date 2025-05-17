@@ -56,9 +56,7 @@ export default class ReservationConverter {
       status: {
         notIn: [ReservationStatus.REJECTED, ReservationStatus.CANCELED],
       },
-      opportunitySlot: {
-        id: slotId,
-      },
+      opportunitySlotId: slotId,
     };
   }
 
