@@ -136,11 +136,16 @@ type TicketParticipantMismatchError {
 
 union ReservationCreatePayload =
     ReservationCreateSuccess
+    | ReservationConflictError
+    | ReservationAdvanceBookingRequiredError
     | ReservationFullError
     | ReservationNotAcceptedError
     | SlotNotScheduledError
+    | MissingTicketIdsError
+    | TicketParticipantMismatchError
 
 union ReservationSetStatusPayload =
     ReservationSetStatusSuccess
     | AlreadyJoinedError
     | ReservationCancellationTimeoutError
+    | NoAvailableParticipationSlotsError
