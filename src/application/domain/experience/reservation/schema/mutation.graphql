@@ -73,11 +73,40 @@ type ReservationSetStatusSuccess {
 }
 
 # ------------------------------
+# Reservation Mutation Error Type Definitions
+# ------------------------------
+
+type ReservationFullError {
+    message: String!
+}
+
+type AlreadyJoinedError {
+    message: String!
+}
+
+type ReservationCancellationTimeoutError {
+    message: String!
+}
+
+type ReservationNotAcceptedError {
+    message: String!
+}
+
+type SlotNotScheduledError {
+    message: String!
+}
+
+# ------------------------------
 # Reservation Mutation Union (Payload) Definitions
 # ------------------------------
 
 union ReservationCreatePayload =
     ReservationCreateSuccess
+    | ReservationFullError
+    | ReservationNotAcceptedError
+    | SlotNotScheduledError
 
 union ReservationSetStatusPayload =
     ReservationSetStatusSuccess
+    | AlreadyJoinedError
+    | ReservationCancellationTimeoutError

@@ -1,0 +1,71 @@
+# --------------------------------------------------------
+# ユーザー認証関連のエラー
+# --------------------------------------------------------
+# 認証（未ログイン）や権限不足など、ユーザー関連のエラーを定義
+type AuthenticationError {
+    message: String!
+}
+
+type AuthorizationError {
+    message: String!
+}
+
+# --------------------------------------------------------
+# 汎用エラー
+# --------------------------------------------------------
+# バリデーションエラーやデータベース関連のエラーを定義
+type ValidationError {
+    message: String!
+}
+
+type DatabaseError {
+    message: String!
+}
+
+type RateLimitError {
+    message: String!
+}
+
+# --------------------------------------------------------
+# 特定の処理に関するエラー
+# --------------------------------------------------------
+# 特定のビジネスロジックに基づくエラー
+type AlreadyUsedClaimLinkError {
+    message: String!
+}
+
+type ClaimLinkExpiredError {
+    message: String!
+}
+
+type InvalidTransferMethodError {
+    message: String!
+}
+
+type MissingWalletInformationError {
+    message: String!
+}
+
+type UnsupportedTransactionReasonError {
+    message: String!
+}
+
+type InvalidPublishStatusError {
+    message: String!
+}
+
+type MissingTicketIdsError {
+    message: String!
+}
+
+type TicketParticipantMismatchError {
+    message: String!
+}
+
+type InvalidEvaluationStatusError {
+    message: String!
+}
+
+type PersonalRecordOnlyDeletableError {
+    message: String!
+}
