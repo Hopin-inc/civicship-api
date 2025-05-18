@@ -485,8 +485,8 @@ model Opportunity {
 
   articles Article[] @relation("t_opportunities_on_articles")
 
-  createdBy     String? @map("created_by")
-  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy     String @map("created_by")
+  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -517,9 +517,8 @@ model OpportunitySlot {
   startsAt DateTime @map("starts_at")
   endsAt   DateTime @map("ends_at")
 
-  capacity               Int?
-  remainingCapacityView  RemainingCapacityView?
-  slotEvaluationProgress SlotEvaluationProgress?
+  capacity              Int?
+  remainingCapacityView RemainingCapacityView?
 
   opportunityId String      @map("opportunity_id")
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
@@ -545,16 +544,6 @@ view RemainingCapacityView {
   remainingCapacity Int? @map("remaining_capacity")
 
   @@map("v_slot_remaining_capacity")
-}
-
-view SlotEvaluationProgress {
-  slotId String          @id @map("slot_id")
-  slot   OpportunitySlot @relation(fields: [slotId], references: [id])
-
-  totalEvaluated      Int @map("total_evaluated")
-  validParticipations Int @map("valid_participations")
-
-  @@map("v_slot_evaluation_progress")
 }
 
 // ------------------------------ Reservation Domain ------------------------------
@@ -685,8 +674,8 @@ model Evaluation {
   participationId String        @unique @map("participation_id")
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
 
-  evaluatorId String? @map("evaluator_id")
-  evaluator   User?   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
+  evaluatorId String @map("evaluator_id")
+  evaluator   User   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
 
   histories EvaluationHistory[]
 

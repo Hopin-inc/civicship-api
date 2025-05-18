@@ -1,14 +1,8 @@
 import "reflect-metadata";
-import { Prisma } from "@prisma/client";
+import { ClaimLinkStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TicketClaimLinkService from "@/application/domain/reward/ticketClaimLink/service";
-import { NotFoundError, AlreadyUsedClaimLinkError, ClaimLinkExpiredError } from "@/errors/graphql";
-
-enum ClaimLinkStatus {
-  ISSUED = "ISSUED",
-  CLAIMED = "CLAIMED",
-  EXPIRED = "EXPIRED"
-}
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 describe("TicketClaimLinkService", () => {
   // --- Mockクラス ---
@@ -38,6 +32,7 @@ describe("TicketClaimLinkService", () => {
   describe("validateBeforeClaim", () => {
     const claimLinkId = "claim-link-id";
 
+    const errorStatuses = [ClaimLinkStatus.CLAIMED, ClaimLinkStatus.EXPIRED];
     const validStatuses = [ClaimLinkStatus.ISSUED];
 
     it("should throw NotFoundError if link not found", async () => {
@@ -47,22 +42,13 @@ describe("TicketClaimLinkService", () => {
       expect(mockRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
     });
 
-    it.each([ClaimLinkStatus.CLAIMED])("should throw AlreadyUsedClaimLinkError if link status is %s", async (status) => {
+    it.each(errorStatuses)("should throw ValidationError if link status is %s", async (status) => {
       mockRepository.find.mockResolvedValue({
         id: claimLinkId,
         status,
       });
 
-      await expect(service.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(AlreadyUsedClaimLinkError);
-    });
-    
-    it.each([ClaimLinkStatus.EXPIRED])("should throw ClaimLinkExpiredError if link status is %s", async (status) => {
-      mockRepository.find.mockResolvedValue({
-        id: claimLinkId,
-        status,
-      });
-
-      await expect(service.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(ClaimLinkExpiredError);
+      await expect(service.validateBeforeClaim(ctx, claimLinkId)).rejects.toThrow(ValidationError);
       expect(mockRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
     });
 

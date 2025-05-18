@@ -40,10 +40,6 @@ export default class OpportunitySlotService {
     return this.repository.queryByOpportunityId(ctx, where, orderBy);
   }
 
-  async findOpportunitySlot(ctx: IContext, id: string) {
-    return await this.repository.find(ctx, id);
-  }
-
   async findOpportunitySlotOrThrow(ctx: IContext, id: string) {
     const record = await this.repository.find(ctx, id);
 

@@ -135,8 +135,8 @@ export default class OpportunityService {
       !filter.publishStatus.every((status) => allowedStatuses.includes(status))
     ) {
       throw new ValidationError(
-        `Publish status must be one of ${allowedStatuses.join(", ")}`,
-        filter?.publishStatus || []
+        `Validation error: publishStatus must be one of ${allowedStatuses.join(", ")}`,
+        [JSON.stringify(filter?.publishStatus)],
       );
     }
   }
@@ -145,7 +145,9 @@ export default class OpportunityService {
 function validatePlaceInput(place?: GqlNestedPlaceConnectOrCreateInput): void {
   if (place) {
     if ((place.where && place.create) || (!place.where && !place.create)) {
-      throw new ValidationError(`For Place, choose only one of "where" or "create."`, [JSON.stringify(place)]);
+      throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
+        JSON.stringify(place),
+      ]);
     }
   }
 }
