@@ -78,56 +78,51 @@ type ReservationSetStatusSuccess {
 
 type ReservationFullError {
     message: String!
-    code: GqlErrorCode!
+    code: ErrorCode!
     capacity: Int!
     requested: Int!
 }
 
-type AlreadyJoinedError {
-    message: String!
-    code: GqlErrorCode!
-}
-
-type ReservationConflictError {
-    message: String!
-    code: GqlErrorCode!
-}
-
 type ReservationAdvanceBookingRequiredError {
     message: String!
-    code: GqlErrorCode!
-}
-
-type ReservationCancellationTimeoutError {
-    message: String!
-    code: GqlErrorCode!
+    code: ErrorCode!
 }
 
 type ReservationNotAcceptedError {
     message: String!
-    code: GqlErrorCode!
+    code: ErrorCode!
 }
 
 type SlotNotScheduledError {
     message: String!
-    code: GqlErrorCode!
-}
-
-type NoAvailableParticipationSlotsError {
-    message: String!
-    code: GqlErrorCode!
+    code: ErrorCode!
 }
 
 type MissingTicketIdsError {
     message: String!
-    code: GqlErrorCode!
+    code: ErrorCode!
 }
 
 type TicketParticipantMismatchError {
     message: String!
-    code: GqlErrorCode!
+    code: ErrorCode!
     ticketCount: Int!
     participantCount: Int!
+}
+
+type ReservationCancellationTimeoutError {
+    message: String!
+    code: ErrorCode!
+}
+
+type AlreadyJoinedError {
+    message: String!
+    code: ErrorCode!
+}
+
+type NoAvailableParticipationSlotsError {
+    message: String!
+    code: ErrorCode!
 }
 
 # ------------------------------
@@ -136,7 +131,6 @@ type TicketParticipantMismatchError {
 
 union ReservationCreatePayload =
     ReservationCreateSuccess
-    | ReservationConflictError
     | ReservationAdvanceBookingRequiredError
     | ReservationFullError
     | ReservationNotAcceptedError

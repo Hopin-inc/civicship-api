@@ -30,7 +30,7 @@ export type GqlAccumulatedPointView = {
 
 export type GqlAlreadyJoinedError = {
   __typename?: 'AlreadyJoinedError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -276,6 +276,34 @@ export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
 
+export const GqlErrorCode = {
+  AlreadyJoined: 'ALREADY_JOINED',
+  AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
+  ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
+  Forbidden: 'FORBIDDEN',
+  InsuperableBalance: 'INSUPERABLE_BALANCE',
+  InternalServerError: 'INTERNAL_SERVER_ERROR',
+  InvalidEvaluationStatus: 'INVALID_EVALUATION_STATUS',
+  InvalidPlaceInput: 'INVALID_PLACE_INPUT',
+  InvalidPublishStatus: 'INVALID_PUBLISH_STATUS',
+  InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
+  MissingTicketIds: 'MISSING_TICKET_IDS',
+  MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
+  NotFound: 'NOT_FOUND',
+  PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
+  RateLimit: 'RATE_LIMIT',
+  ReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
+  ReservationFull: 'RESERVATION_FULL',
+  ReservationNotAccepted: 'RESERVATION_NOT_ACCEPTED',
+  SlotNotScheduled: 'SLOT_NOT_SCHEDULED',
+  TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
+  Unauthenticated: 'UNAUTHENTICATED',
+  UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
+  UserIdNotFound: 'USER_ID_NOT_FOUND',
+  ValidationError: 'VALIDATION_ERROR'
+} as const;
+
+export type GqlErrorCode = typeof GqlErrorCode[keyof typeof GqlErrorCode];
 export type GqlEvaluation = {
   __typename?: 'Evaluation';
   comment?: Maybe<Scalars['String']['output']>;
@@ -366,34 +394,6 @@ export type GqlEvaluationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-export const GqlGqlErrorCode = {
-  AlreadyJoined: 'ALREADY_JOINED',
-  AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
-  ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
-  Forbidden: 'FORBIDDEN',
-  InsuperableBalance: 'INSUPERABLE_BALANCE',
-  InternalServerError: 'INTERNAL_SERVER_ERROR',
-  InvalidEvaluationStatus: 'INVALID_EVALUATION_STATUS',
-  InvalidPlaceInput: 'INVALID_PLACE_INPUT',
-  InvalidPublishStatus: 'INVALID_PUBLISH_STATUS',
-  InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
-  MissingTicketIds: 'MISSING_TICKET_IDS',
-  MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
-  NotFound: 'NOT_FOUND',
-  PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
-  RateLimit: 'RATE_LIMIT',
-  ReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
-  ReservationFull: 'RESERVATION_FULL',
-  ReservationNotAccepted: 'RESERVATION_NOT_ACCEPTED',
-  SlotNotScheduled: 'SLOT_NOT_SCHEDULED',
-  TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
-  Unauthenticated: 'UNAUTHENTICATED',
-  UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
-  UserIdNotFound: 'USER_ID_NOT_FOUND',
-  ValidationError: 'VALIDATION_ERROR'
-} as const;
-
-export type GqlGqlErrorCode = typeof GqlGqlErrorCode[keyof typeof GqlGqlErrorCode];
 export type GqlIdentity = {
   __typename?: 'Identity';
   createdAt?: Maybe<Scalars['Datetime']['output']>;
@@ -595,7 +595,7 @@ export type GqlMembershipsConnection = {
 
 export type GqlMissingTicketIdsError = {
   __typename?: 'MissingTicketIdsError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -962,7 +962,7 @@ export type GqlNestedPlacesBulkUpdateInput = {
 
 export type GqlNoAvailableParticipationSlotsError = {
   __typename?: 'NoAvailableParticipationSlotsError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1789,7 +1789,7 @@ export type GqlReservation = {
 
 export type GqlReservationAdvanceBookingRequiredError = {
   __typename?: 'ReservationAdvanceBookingRequiredError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1800,13 +1800,7 @@ export type GqlReservationCancelInput = {
 
 export type GqlReservationCancellationTimeoutError = {
   __typename?: 'ReservationCancellationTimeoutError';
-  code: GqlGqlErrorCode;
-  message: Scalars['String']['output'];
-};
-
-export type GqlReservationConflictError = {
-  __typename?: 'ReservationConflictError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1818,7 +1812,7 @@ export type GqlReservationCreateInput = {
   totalParticipantCount: Scalars['Int']['input'];
 };
 
-export type GqlReservationCreatePayload = GqlMissingTicketIdsError | GqlReservationAdvanceBookingRequiredError | GqlReservationConflictError | GqlReservationCreateSuccess | GqlReservationFullError | GqlReservationNotAcceptedError | GqlSlotNotScheduledError | GqlTicketParticipantMismatchError;
+export type GqlReservationCreatePayload = GqlMissingTicketIdsError | GqlReservationAdvanceBookingRequiredError | GqlReservationCreateSuccess | GqlReservationFullError | GqlReservationNotAcceptedError | GqlSlotNotScheduledError | GqlTicketParticipantMismatchError;
 
 export type GqlReservationCreateSuccess = {
   __typename?: 'ReservationCreateSuccess';
@@ -1841,7 +1835,7 @@ export type GqlReservationFilterInput = {
 export type GqlReservationFullError = {
   __typename?: 'ReservationFullError';
   capacity: Scalars['Int']['output'];
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
   requested: Scalars['Int']['output'];
 };
@@ -1880,7 +1874,7 @@ export type GqlReservationHistorySortInput = {
 
 export type GqlReservationNotAcceptedError = {
   __typename?: 'ReservationNotAcceptedError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1926,7 +1920,7 @@ export const GqlRole = {
 export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
 export type GqlSlotNotScheduledError = {
   __typename?: 'SlotNotScheduledError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -2063,7 +2057,7 @@ export type GqlTicketIssuersConnection = {
 
 export type GqlTicketParticipantMismatchError = {
   __typename?: 'TicketParticipantMismatchError';
-  code: GqlGqlErrorCode;
+  code: GqlErrorCode;
   message: Scalars['String']['output'];
   participantCount: Scalars['Int']['output'];
   ticketCount: Scalars['Int']['output'];
@@ -2584,7 +2578,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   PlaceCreatePayload: ( Omit<GqlPlaceCreateSuccess, 'place'> & { place: _RefType['Place'] } );
   PlaceDeletePayload: ( GqlPlaceDeleteSuccess );
   PlaceUpdatePayload: ( Omit<GqlPlaceUpdateSuccess, 'place'> & { place: _RefType['Place'] } );
-  ReservationCreatePayload: ( GqlMissingTicketIdsError ) | ( GqlReservationAdvanceBookingRequiredError ) | ( GqlReservationConflictError ) | ( Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } ) | ( GqlReservationFullError ) | ( GqlReservationNotAcceptedError ) | ( GqlSlotNotScheduledError ) | ( GqlTicketParticipantMismatchError );
+  ReservationCreatePayload: ( GqlMissingTicketIdsError ) | ( GqlReservationAdvanceBookingRequiredError ) | ( Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } ) | ( GqlReservationFullError ) | ( GqlReservationNotAcceptedError ) | ( GqlSlotNotScheduledError ) | ( GqlTicketParticipantMismatchError );
   ReservationSetStatusPayload: ( GqlAlreadyJoinedError ) | ( GqlNoAvailableParticipationSlotsError ) | ( GqlReservationCancellationTimeoutError ) | ( Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } );
   TicketClaimPayload: ( Omit<GqlTicketClaimSuccess, 'tickets'> & { tickets: Array<_RefType['Ticket']> } );
   TicketIssuePayload: ( Omit<GqlTicketIssueSuccess, 'issue'> & { issue: _RefType['TicketIssuer'] } );
@@ -2648,6 +2642,7 @@ export type GqlResolversTypes = ResolversObject<{
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
+  ErrorCode: GqlErrorCode;
   Evaluation: ResolverTypeWrapper<Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversTypes['Participation']> }>;
   EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EvaluationCreatePayload']>;
@@ -2662,7 +2657,6 @@ export type GqlResolversTypes = ResolversObject<{
   EvaluationSortInput: GqlEvaluationSortInput;
   EvaluationStatus: GqlEvaluationStatus;
   EvaluationsConnection: ResolverTypeWrapper<Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['EvaluationEdge']> }>;
-  GqlErrorCode: GqlGqlErrorCode;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Identity: ResolverTypeWrapper<Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityPlatform: GqlIdentityPlatform;
@@ -2780,7 +2774,6 @@ export type GqlResolversTypes = ResolversObject<{
   ReservationAdvanceBookingRequiredError: ResolverTypeWrapper<GqlReservationAdvanceBookingRequiredError>;
   ReservationCancelInput: GqlReservationCancelInput;
   ReservationCancellationTimeoutError: ResolverTypeWrapper<GqlReservationCancellationTimeoutError>;
-  ReservationConflictError: ResolverTypeWrapper<GqlReservationConflictError>;
   ReservationCreateInput: GqlReservationCreateInput;
   ReservationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ReservationCreatePayload']>;
   ReservationCreateSuccess: ResolverTypeWrapper<Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: GqlResolversTypes['Reservation'] }>;
@@ -3050,7 +3043,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationAdvanceBookingRequiredError: GqlReservationAdvanceBookingRequiredError;
   ReservationCancelInput: GqlReservationCancelInput;
   ReservationCancellationTimeoutError: GqlReservationCancellationTimeoutError;
-  ReservationConflictError: GqlReservationConflictError;
   ReservationCreateInput: GqlReservationCreateInput;
   ReservationCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ReservationCreatePayload'];
   ReservationCreateSuccess: Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: GqlResolversParentTypes['Reservation'] };
@@ -3173,7 +3165,7 @@ export type GqlAccumulatedPointViewResolvers<ContextType = any, ParentType exten
 }>;
 
 export type GqlAlreadyJoinedErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['AlreadyJoinedError'] = GqlResolversParentTypes['AlreadyJoinedError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3510,7 +3502,7 @@ export type GqlMembershipsConnectionResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlMissingTicketIdsErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MissingTicketIdsError'] = GqlResolversParentTypes['MissingTicketIdsError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3567,7 +3559,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
 }>;
 
 export type GqlNoAvailableParticipationSlotsErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NoAvailableParticipationSlotsError'] = GqlResolversParentTypes['NoAvailableParticipationSlotsError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3914,25 +3906,19 @@ export type GqlReservationResolvers<ContextType = any, ParentType extends GqlRes
 }>;
 
 export type GqlReservationAdvanceBookingRequiredErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationAdvanceBookingRequiredError'] = GqlResolversParentTypes['ReservationAdvanceBookingRequiredError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlReservationCancellationTimeoutErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationCancellationTimeoutError'] = GqlResolversParentTypes['ReservationCancellationTimeoutError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
-  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type GqlReservationConflictErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationConflictError'] = GqlResolversParentTypes['ReservationConflictError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlReservationCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationCreatePayload'] = GqlResolversParentTypes['ReservationCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'MissingTicketIdsError' | 'ReservationAdvanceBookingRequiredError' | 'ReservationConflictError' | 'ReservationCreateSuccess' | 'ReservationFullError' | 'ReservationNotAcceptedError' | 'SlotNotScheduledError' | 'TicketParticipantMismatchError', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'MissingTicketIdsError' | 'ReservationAdvanceBookingRequiredError' | 'ReservationCreateSuccess' | 'ReservationFullError' | 'ReservationNotAcceptedError' | 'SlotNotScheduledError' | 'TicketParticipantMismatchError', ParentType, ContextType>;
 }>;
 
 export type GqlReservationCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationCreateSuccess'] = GqlResolversParentTypes['ReservationCreateSuccess']> = ResolversObject<{
@@ -3948,7 +3934,7 @@ export type GqlReservationEdgeResolvers<ContextType = any, ParentType extends Gq
 
 export type GqlReservationFullErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationFullError'] = GqlResolversParentTypes['ReservationFullError']> = ResolversObject<{
   capacity?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   requested?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3977,7 +3963,7 @@ export type GqlReservationHistoryEdgeResolvers<ContextType = any, ParentType ext
 }>;
 
 export type GqlReservationNotAcceptedErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationNotAcceptedError'] = GqlResolversParentTypes['ReservationNotAcceptedError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3999,7 +3985,7 @@ export type GqlReservationsConnectionResolvers<ContextType = any, ParentType ext
 }>;
 
 export type GqlSlotNotScheduledErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SlotNotScheduledError'] = GqlResolversParentTypes['SlotNotScheduledError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4090,7 +4076,7 @@ export type GqlTicketIssuersConnectionResolvers<ContextType = any, ParentType ex
 }>;
 
 export type GqlTicketParticipantMismatchErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketParticipantMismatchError'] = GqlResolversParentTypes['TicketParticipantMismatchError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['GqlErrorCode'], ParentType, ContextType>;
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   participantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   ticketCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
@@ -4474,7 +4460,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Reservation?: GqlReservationResolvers<ContextType>;
   ReservationAdvanceBookingRequiredError?: GqlReservationAdvanceBookingRequiredErrorResolvers<ContextType>;
   ReservationCancellationTimeoutError?: GqlReservationCancellationTimeoutErrorResolvers<ContextType>;
-  ReservationConflictError?: GqlReservationConflictErrorResolvers<ContextType>;
   ReservationCreatePayload?: GqlReservationCreatePayloadResolvers<ContextType>;
   ReservationCreateSuccess?: GqlReservationCreateSuccessResolvers<ContextType>;
   ReservationEdge?: GqlReservationEdgeResolvers<ContextType>;

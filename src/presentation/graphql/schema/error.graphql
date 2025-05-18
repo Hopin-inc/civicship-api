@@ -2,7 +2,7 @@
 # GqlErrorCode Enum Definition
 # ------------------------------
 
-enum GqlErrorCode {
+enum ErrorCode {
     VALIDATION_ERROR         # 入力検証エラー
     UNAUTHENTICATED          # 認証エラー（未ログイン）
     FORBIDDEN                # 権限不足エラー（認可エラー）

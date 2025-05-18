@@ -100,13 +100,6 @@ export class AlreadyJoinedError extends ApolloError {
   }
 }
 
-export class ReservationConflictError extends ApolloError {
-  constructor(message: string = "You already have a conflicting reservation.") {
-    super(message, "RESERVATION_CONFLICT");
-    Object.defineProperty(this, "name", { value: "ReservationConflictError" });
-  }
-}
-
 export class AlreadyStartedReservationError extends ApolloError {
   constructor(message: string = "This reservation has already started.") {
     super(message, "ALREADY_STARTED_RESERVATION");

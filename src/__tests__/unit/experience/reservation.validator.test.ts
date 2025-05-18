@@ -1,13 +1,12 @@
 import "reflect-metadata";
-import { 
-  ReservationFullError, 
-  AlreadyJoinedError, 
-  ReservationConflictError, 
+import {
+  ReservationFullError,
+  AlreadyJoinedError,
   AlreadyStartedReservationError,
   ReservationCancellationTimeoutError,
   ReservationNotAcceptedError,
   SlotNotScheduledError,
-  NoAvailableParticipationSlotsError
+  NoAvailableParticipationSlotsError,
 } from "@/errors/graphql";
 import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
@@ -50,18 +49,6 @@ describe("ReservationValidator", () => {
       expect(() => {
         validator.validateReservable(slot, 1, 5, []);
       }).toThrow(AlreadyStartedReservationError);
-    });
-
-    it("should throw if there are conflicting reservations", () => {
-      const slot = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
-        startsAt: futureDate(),
-      } as any;
-      const conflicts = [{}] as any[];
-
-      expect(() => {
-        validator.validateReservable(slot, 1, 5, conflicts);
-      }).toThrow(ReservationConflictError);
     });
 
     it("should throw if participant count exceeds capacity", () => {

@@ -1,7 +1,6 @@
 import {
   ReservationFullError,
   AlreadyJoinedError,
-  ReservationConflictError,
   AlreadyStartedReservationError,
   ReservationCancellationTimeoutError,
   ReservationAdvanceBookingRequiredError,
@@ -20,10 +19,8 @@ export default class ReservationValidator {
     slot: PrismaOpportunitySlotReserve,
     participantCount: number,
     remainingCapacity: number | undefined,
-    reservations: PrismaReservation[],
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
-    this.validateNoConflicts(reservations.length);
     this.validateSlotAtLeast7DaysAhead(slot.startsAt);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
@@ -60,12 +57,6 @@ export default class ReservationValidator {
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();
-    }
-  }
-
-  private validateNoConflicts(length: number) {
-    if (length > 0) {
-      throw new ReservationConflictError();
     }
   }
 
