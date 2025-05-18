@@ -140,9 +140,7 @@ export class ClaimLinkExpiredError extends ApolloError {
 }
 
 export class ReservationCancellationTimeoutError extends ApolloError {
-  constructor(
-    message: string = "Reservation can no longer be canceled within 24 hours of the event.",
-  ) {
+  constructor(message: string = "Reservation can no longer be canceled within 24 hours of the event.") {
     super(message, "RESERVATION_CANCELLATION_TIMEOUT");
     Object.defineProperty(this, "name", { value: "ReservationCancellationTimeoutError" });
   }
@@ -254,46 +252,5 @@ export class InvalidEvaluationStatusError extends ApolloError {
     super(message, "INVALID_EVALUATION_STATUS");
     this.status = status;
     Object.defineProperty(this, "name", { value: "InvalidEvaluationStatusError" });
-  }
-}
-
-export class ParticipationOrOpportunityNotFoundError extends NotFoundError {
-  public evaluationId: string;
-
-  constructor(evaluationId: string) {
-    super(`Participation or Opportunity not found for evaluation`);
-    this.evaluationId = evaluationId;
-    Object.defineProperty(this, "name", { value: "ParticipationOrOpportunityNotFoundError" });
-  }
-}
-
-export class CommunityIdNotFoundError extends NotFoundError {
-  public evaluationId: string;
-
-  constructor(evaluationId: string) {
-    super(`Community ID not found for participation`);
-    this.evaluationId = evaluationId;
-    Object.defineProperty(this, "name", { value: "CommunityIdNotFoundError" });
-  }
-}
-
-export class UserIdNotFoundError extends NotFoundError {
-  public evaluationId: string;
-
-  constructor(evaluationId: string) {
-    super(`User ID not found for participation`);
-    this.evaluationId = evaluationId;
-    Object.defineProperty(this, "name", { value: "UserIdNotFoundError" });
-  }
-}
-
-export class InvalidPlaceInputError extends ApolloError {
-  public place: any;
-
-  constructor(place: any) {
-    const message = `For Place, choose only one of "where" or "create."`;
-    super(message, "INVALID_PLACE_INPUT");
-    this.place = place;
-    Object.defineProperty(this, "name", { value: "InvalidPlaceInputError" });
   }
 }
