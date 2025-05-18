@@ -112,7 +112,7 @@ export default class ParticipationService implements IParticipationService {
 
   validateDeletable(participation: PrismaParticipationDetail) {
     if (participation.reason !== ParticipationStatusReason.PERSONAL_RECORD) {
-      throw new PersonalRecordOnlyDeletableError(participation.reason);
+      throw new PersonalRecordOnlyDeletableError();
     }
   }
 }

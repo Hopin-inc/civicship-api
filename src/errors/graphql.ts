@@ -140,7 +140,9 @@ export class ClaimLinkExpiredError extends ApolloError {
 }
 
 export class ReservationCancellationTimeoutError extends ApolloError {
-  constructor(message: string = "Reservation can no longer be canceled within 24 hours of the event.") {
+  constructor(
+    message: string = "Reservation can no longer be canceled within 24 hours of the event.",
+  ) {
     super(message, "RESERVATION_CANCELLATION_TIMEOUT");
     Object.defineProperty(this, "name", { value: "ReservationCancellationTimeoutError" });
   }
@@ -175,12 +177,9 @@ export class NoAvailableParticipationSlotsError extends ApolloError {
 }
 
 export class PersonalRecordOnlyDeletableError extends ApolloError {
-  public reason: string;
-  
-  constructor(reason: string) {
-    const message = `Only personal participation records can be deleted. Current reason: ${reason}`;
+  constructor() {
+    const message = "Only personal participation records can be deleted.";
     super(message, "PERSONAL_RECORD_ONLY_DELETABLE");
-    this.reason = reason;
     Object.defineProperty(this, "name", { value: "PersonalRecordOnlyDeletableError" });
   }
 }
@@ -194,7 +193,7 @@ export class InvalidTransferMethodError extends ApolloError {
 
 export class MissingWalletInformationError extends ApolloError {
   public missingWallets: string[];
-  
+
   constructor(missingWallets: string[]) {
     const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
     super(message, "MISSING_WALLET_INFORMATION");
@@ -205,7 +204,7 @@ export class MissingWalletInformationError extends ApolloError {
 
 export class UnsupportedTransactionReasonError extends ApolloError {
   public reason: string;
-  
+
   constructor(reason: string) {
     const message = `Unsupported TransactionReason: ${reason}`;
     super(message, "UNSUPPORTED_TRANSACTION_REASON");
@@ -217,7 +216,7 @@ export class UnsupportedTransactionReasonError extends ApolloError {
 export class InvalidPublishStatusError extends ApolloError {
   public allowedStatuses: string[];
   public providedStatuses: string[];
-  
+
   constructor(allowedStatuses: string[], providedStatuses: string[]) {
     const message = `Publish status must be one of ${allowedStatuses.join(", ")}`;
     super(message, "INVALID_PUBLISH_STATUS");
@@ -237,7 +236,7 @@ export class MissingTicketIdsError extends ApolloError {
 export class TicketParticipantMismatchError extends ApolloError {
   public ticketCount: number;
   public participantCount: number;
-  
+
   constructor(ticketCount: number, participantCount: number) {
     const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
     super(message, "TICKET_PARTICIPANT_MISMATCH");
@@ -249,7 +248,7 @@ export class TicketParticipantMismatchError extends ApolloError {
 
 export class InvalidEvaluationStatusError extends ApolloError {
   public status: string;
-  
+
   constructor(status: string) {
     const message = `Invalid status. Only PASSED or FAILED are allowed.`;
     super(message, "INVALID_EVALUATION_STATUS");
@@ -260,7 +259,7 @@ export class InvalidEvaluationStatusError extends ApolloError {
 
 export class ParticipationOrOpportunityNotFoundError extends NotFoundError {
   public evaluationId: string;
-  
+
   constructor(evaluationId: string) {
     super(`Participation or Opportunity not found for evaluation`);
     this.evaluationId = evaluationId;
@@ -270,7 +269,7 @@ export class ParticipationOrOpportunityNotFoundError extends NotFoundError {
 
 export class CommunityIdNotFoundError extends NotFoundError {
   public evaluationId: string;
-  
+
   constructor(evaluationId: string) {
     super(`Community ID not found for participation`);
     this.evaluationId = evaluationId;
@@ -280,7 +279,7 @@ export class CommunityIdNotFoundError extends NotFoundError {
 
 export class UserIdNotFoundError extends NotFoundError {
   public evaluationId: string;
-  
+
   constructor(evaluationId: string) {
     super(`User ID not found for participation`);
     this.evaluationId = evaluationId;
@@ -290,7 +289,7 @@ export class UserIdNotFoundError extends NotFoundError {
 
 export class InvalidPlaceInputError extends ApolloError {
   public place: any;
-  
+
   constructor(place: any) {
     const message = `For Place, choose only one of "where" or "create."`;
     super(message, "INVALID_PLACE_INPUT");
