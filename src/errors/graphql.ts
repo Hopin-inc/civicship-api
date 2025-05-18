@@ -90,3 +90,211 @@ export class UtilityAlreadyUsedError extends ApolloError {
     Object.defineProperty(this, "name", { value: "UtilityAlreadyUsedError" });
   }
 }
+
+export class ReservationFullError extends ApolloError {
+  public capacity: number;
+  public requested: number;
+
+  constructor(capacity: number, requested: number) {
+    const message = `Reservation is full: capacity ${capacity} is less than requested ${requested}`;
+    super(message, "RESERVATION_FULL");
+    this.capacity = capacity;
+    this.requested = requested;
+    Object.defineProperty(this, "name", { value: "ReservationFullError" });
+  }
+}
+
+export class AlreadyJoinedError extends ApolloError {
+  constructor(message: string = "You have already joined this reservation.") {
+    super(message, "ALREADY_JOINED");
+    Object.defineProperty(this, "name", { value: "AlreadyJoinedError" });
+  }
+}
+
+export class ReservationConflictError extends ApolloError {
+  constructor(message: string = "You already have a conflicting reservation.") {
+    super(message, "RESERVATION_CONFLICT");
+    Object.defineProperty(this, "name", { value: "ReservationConflictError" });
+  }
+}
+
+export class AlreadyStartedReservationError extends ApolloError {
+  constructor(message: string = "This reservation has already started.") {
+    super(message, "ALREADY_STARTED_RESERVATION");
+    Object.defineProperty(this, "name", { value: "AlreadyStartedReservationError" });
+  }
+}
+
+export class AlreadyUsedClaimLinkError extends ApolloError {
+  constructor(message: string = "This claim link has already been used.") {
+    super(message, "ALREADY_USED_CLAIM_LINK");
+    Object.defineProperty(this, "name", { value: "AlreadyUsedClaimLinkError" });
+  }
+}
+
+export class ClaimLinkExpiredError extends ApolloError {
+  constructor(message: string = "This claim link has expired.") {
+    super(message, "CLAIM_LINK_EXPIRED");
+    Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
+  }
+}
+
+export class ReservationCancellationTimeoutError extends ApolloError {
+  constructor(message: string = "Reservation can no longer be canceled within 24 hours of the event.") {
+    super(message, "RESERVATION_CANCELLATION_TIMEOUT");
+    Object.defineProperty(this, "name", { value: "ReservationCancellationTimeoutError" });
+  }
+}
+
+export class ReservationAdvanceBookingRequiredError extends ApolloError {
+  constructor(message: string = "Reservation must be made at least 7 days in advance.") {
+    super(message, "RESERVATION_ADVANCE_BOOKING_REQUIRED");
+    Object.defineProperty(this, "name", { value: "ReservationAdvanceBookingRequiredError" });
+  }
+}
+
+export class ReservationNotAcceptedError extends ApolloError {
+  constructor(message: string = "Reservation is not accepted yet.") {
+    super(message, "RESERVATION_NOT_ACCEPTED");
+    Object.defineProperty(this, "name", { value: "ReservationNotAcceptedError" });
+  }
+}
+
+export class SlotNotScheduledError extends ApolloError {
+  constructor(message: string = "This slot is not scheduled.") {
+    super(message, "SLOT_NOT_SCHEDULED");
+    Object.defineProperty(this, "name", { value: "SlotNotScheduledError" });
+  }
+}
+
+export class NoAvailableParticipationSlotsError extends ApolloError {
+  constructor(message: string = "No available participation slots.") {
+    super(message, "NO_AVAILABLE_PARTICIPATION_SLOTS");
+    Object.defineProperty(this, "name", { value: "NoAvailableParticipationSlotsError" });
+  }
+}
+
+export class PersonalRecordOnlyDeletableError extends ApolloError {
+  public reason: string;
+  
+  constructor(reason: string) {
+    const message = `Only personal participation records can be deleted. Current reason: ${reason}`;
+    super(message, "PERSONAL_RECORD_ONLY_DELETABLE");
+    this.reason = reason;
+    Object.defineProperty(this, "name", { value: "PersonalRecordOnlyDeletableError" });
+  }
+}
+
+export class InvalidTransferMethodError extends ApolloError {
+  constructor(message: string = "Use validateTransferMemberToMember()") {
+    super(message, "INVALID_TRANSFER_METHOD");
+    Object.defineProperty(this, "name", { value: "InvalidTransferMethodError" });
+  }
+}
+
+export class MissingWalletInformationError extends ApolloError {
+  public missingWallets: string[];
+  
+  constructor(missingWallets: string[]) {
+    const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
+    super(message, "MISSING_WALLET_INFORMATION");
+    this.missingWallets = missingWallets;
+    Object.defineProperty(this, "name", { value: "MissingWalletInformationError" });
+  }
+}
+
+export class UnsupportedTransactionReasonError extends ApolloError {
+  public reason: string;
+  
+  constructor(reason: string) {
+    const message = `Unsupported TransactionReason: ${reason}`;
+    super(message, "UNSUPPORTED_TRANSACTION_REASON");
+    this.reason = reason;
+    Object.defineProperty(this, "name", { value: "UnsupportedTransactionReasonError" });
+  }
+}
+
+export class InvalidPublishStatusError extends ApolloError {
+  public allowedStatuses: string[];
+  public providedStatuses: string[];
+  
+  constructor(allowedStatuses: string[], providedStatuses: string[]) {
+    const message = `Publish status must be one of ${allowedStatuses.join(", ")}`;
+    super(message, "INVALID_PUBLISH_STATUS");
+    this.allowedStatuses = allowedStatuses;
+    this.providedStatuses = providedStatuses;
+    Object.defineProperty(this, "name", { value: "InvalidPublishStatusError" });
+  }
+}
+
+export class MissingTicketIdsError extends ApolloError {
+  constructor(message: string = "Ticket IDs are not provided") {
+    super(message, "MISSING_TICKET_IDS");
+    Object.defineProperty(this, "name", { value: "MissingTicketIdsError" });
+  }
+}
+
+export class TicketParticipantMismatchError extends ApolloError {
+  public ticketCount: number;
+  public participantCount: number;
+  
+  constructor(ticketCount: number, participantCount: number) {
+    const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
+    super(message, "TICKET_PARTICIPANT_MISMATCH");
+    this.ticketCount = ticketCount;
+    this.participantCount = participantCount;
+    Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
+  }
+}
+
+export class InvalidEvaluationStatusError extends ApolloError {
+  public status: string;
+  
+  constructor(status: string) {
+    const message = `Invalid status. Only PASSED or FAILED are allowed.`;
+    super(message, "INVALID_EVALUATION_STATUS");
+    this.status = status;
+    Object.defineProperty(this, "name", { value: "InvalidEvaluationStatusError" });
+  }
+}
+
+export class ParticipationOrOpportunityNotFoundError extends NotFoundError {
+  public evaluationId: string;
+  
+  constructor(evaluationId: string) {
+    super(`Participation or Opportunity not found for evaluation`);
+    this.evaluationId = evaluationId;
+    Object.defineProperty(this, "name", { value: "ParticipationOrOpportunityNotFoundError" });
+  }
+}
+
+export class CommunityIdNotFoundError extends NotFoundError {
+  public evaluationId: string;
+  
+  constructor(evaluationId: string) {
+    super(`Community ID not found for participation`);
+    this.evaluationId = evaluationId;
+    Object.defineProperty(this, "name", { value: "CommunityIdNotFoundError" });
+  }
+}
+
+export class UserIdNotFoundError extends NotFoundError {
+  public evaluationId: string;
+  
+  constructor(evaluationId: string) {
+    super(`User ID not found for participation`);
+    this.evaluationId = evaluationId;
+    Object.defineProperty(this, "name", { value: "UserIdNotFoundError" });
+  }
+}
+
+export class InvalidPlaceInputError extends ApolloError {
+  public place: any;
+  
+  constructor(place: any) {
+    const message = `For Place, choose only one of "where" or "create."`;
+    super(message, "INVALID_PLACE_INPUT");
+    this.place = place;
+    Object.defineProperty(this, "name", { value: "InvalidPlaceInputError" });
+  }
+}
