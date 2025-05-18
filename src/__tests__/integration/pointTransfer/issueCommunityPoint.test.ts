@@ -2,7 +2,11 @@ import "reflect-metadata";
 import { GqlTransactionIssueCommunityPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
-import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
+import { 
+  GqlCurrentPrefecture as CurrentPrefecture, 
+  GqlTransactionReason as TransactionReason, 
+  GqlWalletType as WalletType 
+} from "@/types/graphql";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
@@ -29,7 +33,7 @@ describe("Point Issue Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: "Issuer",
       slug: "issuer-slug",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     const ctx = { currentUser: { id: user.id } } as unknown as IContext;
 
@@ -39,7 +43,7 @@ describe("Point Issue Tests", () => {
     });
 
     const wallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.COMMUNITY,
+      type: WalletType.Community,
       community: { connect: { id: community.id } },
     });
 
@@ -56,7 +60,7 @@ describe("Point Issue Tests", () => {
     await TestDataSourceHelper.refreshCurrentPoints();
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.POINT_ISSUED,
+      (t) => t.reason === TransactionReason.PointIssued,
     );
 
     expect(tx).toBeDefined();

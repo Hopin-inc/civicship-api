@@ -2,7 +2,11 @@ import "reflect-metadata";
 import { GqlTransactionGrantCommunityPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
-import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
+import { 
+  GqlCurrentPrefecture as CurrentPrefecture, 
+  GqlTransactionReason as TransactionReason, 
+  GqlWalletType as WalletType 
+} from "@/types/graphql";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
@@ -29,7 +33,7 @@ describe("Point Grant Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: "Recipient",
       slug: "recipient-slug",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     const ctx = { currentUser: { id: user.id } } as IContext;
 
@@ -39,12 +43,12 @@ describe("Point Grant Tests", () => {
     });
 
     const communityWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.COMMUNITY,
+      type: WalletType.Community,
       community: { connect: { id: community.id } },
     });
 
     const memberWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: community.id } },
       user: { connect: { id: user.id } },
     });
@@ -53,7 +57,7 @@ describe("Point Grant Tests", () => {
       toWallet: { connect: { id: communityWallet.id } },
       fromPointChange: GRANT_POINTS,
       toPointChange: GRANT_POINTS,
-      reason: TransactionReason.POINT_ISSUED,
+      reason: TransactionReason.PointIssued,
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
@@ -68,7 +72,7 @@ describe("Point Grant Tests", () => {
     await transactionUseCase.ownerGrantCommunityPoint(ctx, input);
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.GRANT,
+      (t) => t.reason === TransactionReason.Grant,
     );
 
     expect(tx).toBeDefined();
@@ -80,7 +84,7 @@ describe("Point Grant Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: "Recipient",
       slug: "recipient-slug",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     const ctx = { currentUser: { id: user.id } } as IContext;
 
@@ -90,7 +94,7 @@ describe("Point Grant Tests", () => {
     });
 
     const communityWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.COMMUNITY,
+      type: WalletType.Community,
       community: { connect: { id: community.id } },
     });
 
