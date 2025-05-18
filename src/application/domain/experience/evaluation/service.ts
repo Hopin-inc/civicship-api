@@ -4,7 +4,12 @@ import { IEvaluationRepository } from "@/application/domain/experience/evaluatio
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import {
+  AlreadyEvaluatedError,
+  CannotEvaluateBeforeOpportunityStartError,
+  NotFoundError,
+  ValidationError,
+} from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -27,6 +32,20 @@ export default class EvaluationService {
 
   async findEvaluation(ctx: IContext, id: string) {
     return await this.repository.find(ctx, id);
+  }
+
+  async validateEvaluatable(ctx: IContext, participationId: string) {
+    const exist = await this.repository.queryByParticipation(ctx, participationId);
+    if (exist.length > 0) throw new AlreadyEvaluatedError();
+
+    const startsAt = exist[0].participation?.reservation?.opportunitySlot.startsAt;
+    if (!startsAt) throw new ValidationError("OpportunitySlot startsAt is undefined.");
+
+    const jstStartsAt = new Date(startsAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+    const nowJST = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+
+    if (new Date(nowJST) < new Date(jstStartsAt))
+      throw new CannotEvaluateBeforeOpportunityStartError();
   }
 
   async createEvaluation(

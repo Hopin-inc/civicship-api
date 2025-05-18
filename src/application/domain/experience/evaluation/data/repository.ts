@@ -4,6 +4,7 @@ import { IContext } from "@/types/server";
 import {
   evaluationInclude,
   evaluationSelectDetail,
+  evaluationSelectSlotStartsAt,
 } from "@/application/domain/experience/evaluation/data/type";
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
@@ -24,6 +25,16 @@ export default class EvaluationRepository implements IEvaluationRepository {
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
         select: evaluationSelectDetail,
+      });
+    });
+  }
+
+  async queryByParticipation(ctx: IContext, participationId: string) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.evaluation.findMany({
+        where: { participationId },
+        take: 1,
+        select: evaluationSelectSlotStartsAt,
       });
     });
   }
