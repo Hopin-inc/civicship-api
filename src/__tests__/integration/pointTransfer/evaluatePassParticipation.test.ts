@@ -2,17 +2,17 @@ import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import {
-  CurrentPrefecture,
-  MembershipStatus,
-  MembershipStatusReason,
-  OpportunityCategory,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  PublishStatus,
-  Role,
-  TransactionReason,
-  WalletType,
-} from "@prisma/client";
+  GqlCurrentPrefecture as CurrentPrefecture,
+  GqlMembershipStatus as MembershipStatus,
+  GqlMembershipStatusReason as MembershipStatusReason,
+  GqlOpportunityCategory as OpportunityCategory,
+  GqlParticipationStatus as ParticipationStatus,
+  GqlParticipationStatusReason as ParticipationStatusReason,
+  GqlPublishStatus as PublishStatus,
+  GqlRole as Role,
+  GqlTransactionReason as TransactionReason,
+  GqlWalletType as WalletType,
+} from "@/types/graphql";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
@@ -51,7 +51,7 @@ describe("Point Reward Tests", () => {
       name: testSetup.userName,
       slug: testSetup.slug,
       image: undefined,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
     ctx = { currentUser: { id: opportunityOwnerUserId } } as unknown as IContext;
@@ -60,7 +60,7 @@ describe("Point Reward Tests", () => {
       name: testSetup.userName,
       slug: testSetup.slug,
       image: undefined,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     participationUserId = participationUserInserted.id;
 
@@ -77,35 +77,35 @@ describe("Point Reward Tests", () => {
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: opportunityOwnerUserId } },
       community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MANAGER,
-      reason: MembershipStatusReason.ASSIGNED,
+      status: MembershipStatus.Joined,
+      role: Role.Manager,
+      reason: MembershipStatusReason.Assigned,
     });
 
     const communityWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.COMMUNITY,
+      type: WalletType.Community,
       community: { connect: { id: communityId } },
     });
     communityWalletId = communityWallet.id;
 
     const participationWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: participationUserId } },
     });
     participationWalletId = participationWallet.id;
 
     const opportunityOwnerWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: opportunityOwnerUserId } },
     });
     opportunityOwnerWalletId = opportunityOwnerWallet.id;
 
     const opportunity = await TestDataSourceHelper.createOpportunity({
-      category: OpportunityCategory.QUEST,
+      category: OpportunityCategory.Quest,
       description: "opportunity",
-      publishStatus: PublishStatus.PUBLIC,
+      publishStatus: PublishStatus.Public,
       requireApproval: true,
       title: "opportunity",
       pointsToEarn: testSetup.pointsToEarn,
@@ -125,8 +125,8 @@ describe("Point Reward Tests", () => {
     });
 
     const participation = await TestDataSourceHelper.createParticipation({
-      status: ParticipationStatus.PENDING,
-      reason: ParticipationStatusReason.RESERVATION_APPLIED,
+      status: ParticipationStatus.Pending,
+      reason: ParticipationStatusReason.ReservationApplied,
       community: { connect: { id: communityId } },
       user: { connect: { id: participationUserId } },
       reservation: { connect: { id: reservation.id } },
@@ -137,7 +137,7 @@ describe("Point Reward Tests", () => {
       toWallet: { connect: { id: communityWalletId } },
       toPointChange: testSetup.communityInitialPoint,
       fromPointChange: testSetup.communityInitialPoint,
-      reason: TransactionReason.POINT_ISSUED,
+      reason: TransactionReason.PointIssued,
     });
 
     await TestDataSourceHelper.createTransaction({
@@ -145,7 +145,7 @@ describe("Point Reward Tests", () => {
       toWallet: { connect: { id: opportunityOwnerWalletId } },
       toPointChange: testSetup.communityInitialPoint,
       fromPointChange: testSetup.communityInitialPoint,
-      reason: TransactionReason.GRANT,
+      reason: TransactionReason.Grant,
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
@@ -170,7 +170,7 @@ describe("Point Reward Tests", () => {
     );
 
     const transactions = await TestDataSourceHelper.findAllTransactions();
-    const transaction = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
+    const transaction = transactions.find((t) => t.reason === TransactionReason.PointReward);
     expect(transaction).toBeDefined();
   });
 
@@ -184,7 +184,7 @@ describe("Point Reward Tests", () => {
     );
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.POINT_REWARD,
+      (t) => t.reason === TransactionReason.PointReward,
     );
 
     expect(tx?.from).toEqual(opportunityOwnerWalletId);
