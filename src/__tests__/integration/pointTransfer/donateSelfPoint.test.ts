@@ -2,7 +2,11 @@ import "reflect-metadata";
 import { GqlTransactionDonateSelfPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
-import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
+import { 
+  GqlCurrentPrefecture as CurrentPrefecture, 
+  GqlTransactionReason as TransactionReason, 
+  GqlWalletType as WalletType 
+} from "@/types/graphql";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
@@ -34,25 +38,25 @@ describe("Point Donate Tests", () => {
     const fromUser = await TestDataSourceHelper.createUser({
       name: "From User",
       slug: "from-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     const toUser = await TestDataSourceHelper.createUser({
       name: "To User",
       slug: "to-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     const ctx = { currentUser: { id: fromUser.id } } as IContext;
 
     const fromWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: community.id } },
       user: { connect: { id: fromUser.id } },
     });
 
     const toWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: community.id } },
       user: { connect: { id: toUser.id } },
     });
@@ -61,7 +65,7 @@ describe("Point Donate Tests", () => {
       toWallet: { connect: { id: fromWallet.id } },
       fromPointChange: DONATION_POINTS,
       toPointChange: DONATION_POINTS,
-      reason: TransactionReason.GRANT,
+      reason: TransactionReason.Grant,
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
@@ -76,7 +80,7 @@ describe("Point Donate Tests", () => {
     await transactionUseCase.userDonateSelfPointToAnother(ctx, input);
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.DONATION,
+      (t) => t.reason === TransactionReason.Donation,
     );
 
     expect(tx).toBeDefined();
@@ -95,17 +99,17 @@ describe("Point Donate Tests", () => {
     const fromUser = await TestDataSourceHelper.createUser({
       name: "From User",
       slug: "from-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     const toUser = await TestDataSourceHelper.createUser({
       name: "To User",
       slug: "to-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     const fromWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: community.id } },
       user: { connect: { id: fromUser.id } },
     });
