@@ -4,8 +4,7 @@ import { IEvaluationRepository } from "@/application/domain/experience/evaluatio
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -32,6 +31,7 @@ export default class EvaluationService {
 
   async createEvaluation(
     ctx: IContext,
+    currentUserId: string,
     input: GqlEvaluationCreateInput,
     status: EvaluationStatus,
     tx?: Prisma.TransactionClient,
@@ -40,12 +40,10 @@ export default class EvaluationService {
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 
     if (!isValidFinalStatus) {
-      throw new ValidationError("Invalid status. Only PASSED or FAILED are allowed.", [status]);
+      throw new InvalidEvaluationStatusError(status);
     }
 
-    const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.create(input.participationId, currentUserId, status, input.comment);
-
     return this.repository.create(ctx, data, tx);
   }
 
