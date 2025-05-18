@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { Role } from "@prisma/client";
+import { GqlRole as Role } from "@/types/graphql";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
 
 export function getCurrentUserId(ctx: IContext): string {
@@ -56,7 +56,7 @@ function determineRoleForCommunity(
 ): { isManager: boolean; isMember: boolean } {
   const role = userMemberships.get(communityId);
   return {
-    isManager: role === Role.OWNER || role === Role.MANAGER,
+    isManager: role === Role.Owner || role === Role.Manager,
     isMember: role !== undefined, // `Map.get()` は `undefined` を返すので、そのまま `boolean` に変換
   };
 }

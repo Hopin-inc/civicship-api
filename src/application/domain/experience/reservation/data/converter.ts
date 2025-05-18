@@ -1,18 +1,18 @@
-import { GqlReservationFilterInput, GqlReservationSortInput } from "@/types/graphql";
-import {
-  OpportunityCategory,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Prisma,
-  ReservationStatus,
-} from "@prisma/client";
+import { 
+  GqlReservationFilterInput, 
+  GqlReservationSortInput,
+  GqlOpportunityCategory as OpportunityCategory,
+  GqlParticipationStatus as ParticipationStatus,
+  GqlParticipationStatusReason as ParticipationStatusReason,
+  GqlReservationStatus as ReservationStatus
+} from "@/types/graphql";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 import { injectable } from "tsyringe";
 
 @injectable()
 export default class ReservationConverter {
-  filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
-    const conditions: Prisma.ReservationWhereInput[] = [];
+  filter(filter?: GqlReservationFilterInput): any {
+    const conditions: any[] = [];
     if (!filter) return {};
 
     if (filter.status) conditions.push({ status: filter.status });
@@ -32,7 +32,7 @@ export default class ReservationConverter {
   countByUserAndOpportunityCategory(
     userId: string,
     category: OpportunityCategory,
-  ): Prisma.ReservationWhereInput {
+  ): any {
     return {
       createdBy: userId,
       opportunitySlot: {
@@ -43,18 +43,18 @@ export default class ReservationConverter {
     };
   }
 
-  sort(sort?: GqlReservationSortInput): Prisma.ReservationOrderByWithRelationInput[] {
+  sort(sort?: GqlReservationSortInput): any[] {
     return [
-      { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
+      { createdAt: sort?.createdAt ?? 'desc' },
       ...(sort?.updatedAt ? [{ updatedAt: sort.updatedAt }] : []),
     ];
   }
 
-  checkConflict(userId: string, slotId: string): Prisma.ReservationWhereInput {
+  checkConflict(userId: string, slotId: string): any {
     return {
       createdBy: userId,
       status: {
-        notIn: [ReservationStatus.REJECTED, ReservationStatus.CANCELED],
+        notIn: [ReservationStatus.Rejected, ReservationStatus.Canceled],
       },
       opportunitySlotId: slotId,
     };
@@ -66,7 +66,7 @@ export default class ReservationConverter {
     participantCount: number,
     userIdsIfExists: string[],
     { reservationStatus, participationStatus, participationStatusReason }: ReservationStatuses,
-  ): Prisma.ReservationCreateInput {
+  ): any {
     const userIds = [currentUserId, ...userIdsIfExists];
 
     const participations = createParticipations(
@@ -91,7 +91,7 @@ export default class ReservationConverter {
     };
   }
 
-  setStatus(currentUserId: string, status: ReservationStatus): Prisma.ReservationUpdateInput {
+  setStatus(currentUserId: string, status: ReservationStatus): any {
     return {
       status,
       histories: {
@@ -110,8 +110,8 @@ function createParticipations(
   count: number,
   status: ParticipationStatus,
   reason: ParticipationStatusReason,
-): Prisma.ParticipationCreateWithoutReservationInput[] {
-  const results: Prisma.ParticipationCreateWithoutReservationInput[] = [];
+): any[] {
+  const results: any[] = [];
 
   for (let i = 0; i < count; i++) {
     results.push(createParticipationInput(currentUserId, userIds[i], status, reason));
@@ -125,7 +125,7 @@ function createParticipationInput(
   userId: string | undefined,
   status: ParticipationStatus,
   reason: ParticipationStatusReason,
-): Prisma.ParticipationCreateWithoutReservationInput {
+): any {
   return {
     status,
     reason,

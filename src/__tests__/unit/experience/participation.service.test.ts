@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
-import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { NotFoundError, PersonalRecordOnlyDeletableError } from "@/errors/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
@@ -166,12 +166,12 @@ describe("ParticipationService", () => {
       }).not.toThrow();
     });
 
-    it("should throw ValidationError if participation is not personal record", () => {
+    it("should throw PersonalRecordOnlyDeletableError if participation is not personal record", () => {
       const participation = { reason: "ATTENDED" } as any;
 
       expect(() => {
         service.validateDeletable(participation);
-      }).toThrow(ValidationError);
+      }).toThrow(PersonalRecordOnlyDeletableError);
     });
   });
 });

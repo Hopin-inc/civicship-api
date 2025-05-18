@@ -1,5 +1,6 @@
 import { IContext } from "@/types/server";
-import { Prisma, TransactionReason } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { GqlTransactionReason as TransactionReason } from "@/types/graphql";
 import { 
   InsufficientBalanceError, 
   InvalidTransferMethodError,
@@ -29,7 +30,7 @@ export default class WalletValidator {
     reason: TransactionReason,
   ) {
     const direction = getTransferDirection(reason);
-    const createIfNeeded = reason === TransactionReason.GRANT;
+    const createIfNeeded = reason === TransactionReason.Grant;
 
     const { from, to } = await this.getWalletPairByDirection(
       ctx,
@@ -108,13 +109,13 @@ enum TransferDirection {
 
 function getTransferDirection(reason: TransactionReason): TransferDirection {
   switch (reason) {
-    case TransactionReason.ONBOARDING:
-    case TransactionReason.GRANT:
+    case TransactionReason.Onboarding:
+    case TransactionReason.Grant:
       return TransferDirection.COMMUNITY_TO_MEMBER;
-    case TransactionReason.POINT_REWARD:
-    case TransactionReason.TICKET_PURCHASED:
-    case TransactionReason.TICKET_REFUNDED:
-    case TransactionReason.DONATION:
+    case TransactionReason.PointReward:
+    case TransactionReason.TicketPurchased:
+    case TransactionReason.TicketRefunded:
+    case TransactionReason.Donation:
       return TransferDirection.MEMBER_TO_MEMBER;
     default:
       throw new UnsupportedTransactionReasonError(reason);

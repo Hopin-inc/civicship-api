@@ -2,7 +2,11 @@ import {
   GqlParticipationCreatePersonalRecordInput,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
-import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { 
+  GqlParticipationStatus as ParticipationStatus, 
+  GqlParticipationStatusReason as ParticipationStatusReason 
+} from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError, PersonalRecordOnlyDeletableError } from "@/errors/graphql";
@@ -53,11 +57,11 @@ export default class ParticipationService implements IParticipationService {
   ) {
     const { data, images } = this.converter.create(input, currentUserId);
 
-    const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = await Promise.all(
+    const uploadedImages: any[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "participations")),
     );
 
-    const createInput: Prisma.ParticipationCreateInput = {
+    const createInput: any = {
       ...data,
       images: {
         create: uploadedImages,
@@ -82,7 +86,7 @@ export default class ParticipationService implements IParticipationService {
   ) {
     const userId = currentUserId ?? getCurrentUserId(ctx);
 
-    const data: Prisma.ParticipationUpdateInput = this.converter.setStatus(userId, status, reason);
+    const data: any = this.converter.setStatus(userId, status, reason);
     return this.repository.update(ctx, id, data, tx);
   }
 
@@ -104,14 +108,14 @@ export default class ParticipationService implements IParticipationService {
     return this.repository.bulkSetStatusByReservation(
       ctx,
       ids,
-      ParticipationStatus.NOT_PARTICIPATING,
-      ParticipationStatusReason.OPPORTUNITY_CANCELED,
+      ParticipationStatus.NotParticipating,
+      ParticipationStatusReason.OpportunityCanceled,
       tx,
     );
   }
 
   validateDeletable(participation: PrismaParticipationDetail) {
-    if (participation.reason !== ParticipationStatusReason.PERSONAL_RECORD) {
+    if (participation.reason !== ParticipationStatusReason.PersonalRecord) {
       throw new PersonalRecordOnlyDeletableError();
     }
   }

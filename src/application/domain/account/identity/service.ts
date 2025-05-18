@@ -1,4 +1,5 @@
-import { IdentityPlatform, Prisma, User } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { GqlIdentityPlatform as IdentityPlatform, GqlUser as User } from "@/types/graphql";
 import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
@@ -16,13 +17,13 @@ export default class IdentityService {
   ) {}
 
   async createUserAndIdentity(
-    data: Prisma.UserCreateInput,
+    data: any,
     uid: string,
     platform: IdentityPlatform,
     phoneUid?: string,
   ) {
     const identityCreate = phoneUid
-      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
+      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.Phone }] }
       : { create: { uid, platform } };
 
     return this.userRepository.create({
@@ -49,7 +50,7 @@ export default class IdentityService {
     await tx.identity.create({
       data: {
         uid: phoneUid,
-        platform: IdentityPlatform.PHONE,
+        platform: IdentityPlatform.Phone,
         userId: userId
       }
     });

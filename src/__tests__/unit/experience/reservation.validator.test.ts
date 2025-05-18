@@ -160,7 +160,7 @@ describe("ReservationValidator", () => {
 });
 
 // 🔹 テスト用ヘルパー関数
-function futureDate(days = 1): Date {
+function futureDate(days = 8): Date {
   const date = new Date();
   date.setDate(date.getDate() + days);
   return date;

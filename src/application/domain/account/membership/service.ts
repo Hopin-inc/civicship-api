@@ -6,7 +6,11 @@ import {
   GqlMembershipSetRoleInput,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
-import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
+import { 
+  GqlMembershipStatus as MembershipStatus, 
+  GqlMembershipStatusReason as MembershipStatusReason, 
+  GqlRole as Role 
+} from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
@@ -67,10 +71,10 @@ export default class MembershipService {
     if (!membership) {
       const data = this.converter.join(currentUserId, communityId, joinedUserId);
       membership = await this.repository.create(ctx, data, tx);
-    } else if (membership.status !== MembershipStatus.JOINED) {
+    } else if (membership.status !== MembershipStatus.Joined) {
       const data = this.converter.update(
-        MembershipStatus.JOINED,
-        MembershipStatusReason.ACCEPTED_INVITATION,
+        MembershipStatus.Joined,
+        MembershipStatusReason.AcceptedInvitation,
         membership.role,
         currentUserId,
       );
@@ -110,7 +114,7 @@ export default class MembershipService {
 
     const data = this.converter.update(
       membership.status,
-      MembershipStatusReason.ASSIGNED,
+      MembershipStatusReason.Assigned,
       role,
       currentUserId,
     );

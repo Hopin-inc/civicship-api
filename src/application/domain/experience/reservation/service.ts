@@ -1,4 +1,5 @@
-import { ReservationStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { GqlReservationStatus as ReservationStatus } from "@/types/graphql";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 import { getCurrentUserId, clampFirst } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";

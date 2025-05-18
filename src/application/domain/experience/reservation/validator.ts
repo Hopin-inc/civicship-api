@@ -11,7 +11,10 @@ import {
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { injectable } from "tsyringe";
 import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
-import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
+import { 
+  GqlOpportunitySlotHostingStatus as OpportunitySlotHostingStatus, 
+  GqlReservationStatus as ReservationStatus 
+} from "@/types/graphql";
 
 @injectable()
 export default class ReservationValidator {
@@ -32,7 +35,7 @@ export default class ReservationValidator {
     reservation: Pick<PrismaReservation, "status" | "participations" | "opportunitySlot">,
     userId: string,
   ): { availableParticipationId: string } {
-    if (reservation.status !== ReservationStatus.ACCEPTED) {
+    if (reservation.status !== ReservationStatus.Accepted) {
       throw new ReservationNotAcceptedError();
     }
     this.validateSlotScheduledAndNotStarted(reservation.opportunitySlot);
@@ -63,7 +66,7 @@ export default class ReservationValidator {
   private validateSlotScheduledAndNotStarted(
     slot: Pick<PrismaOpportunitySlotReserve, "hostingStatus" | "startsAt">,
   ) {
-    if (slot.hostingStatus !== OpportunitySlotHostingStatus.SCHEDULED) {
+    if (slot.hostingStatus !== OpportunitySlotHostingStatus.Scheduled) {
       throw new SlotNotScheduledError();
     }
     if (slot.startsAt.getTime() < Date.now()) {

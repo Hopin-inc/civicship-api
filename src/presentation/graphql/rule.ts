@@ -1,7 +1,7 @@
 import { postExecRule, preExecRule } from "@graphql-authz/core";
 import { AuthenticationError, AuthorizationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import { Role } from "@prisma/client";
+import { GqlRole as Role } from "@/types/graphql";
 import { GqlUser } from "@/types/graphql";
 
 // 🔐 ログイン済みか
@@ -42,7 +42,7 @@ const IsCommunityOwner = preExecRule({
     (m) => m.communityId === permission.communityId,
   );
 
-  return membership?.role === Role.OWNER;
+  return membership?.role === Role.Owner;
 });
 
 // 🔐 コミュニティマネージャー（OWNER または MANAGER）
@@ -57,7 +57,7 @@ const IsCommunityManager = preExecRule({
   const membership = context.hasPermissions?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
-  return membership?.role === Role.OWNER || membership?.role === Role.MANAGER;
+  return membership?.role === Role.Owner || membership?.role === Role.Manager;
 });
 
 // 🔐 コミュニティメンバー（OWNER / MANAGER / MEMBER）
@@ -72,7 +72,7 @@ const IsCommunityMember = preExecRule({
   const membership = context.hasPermissions?.memberships?.find(
     (m) => m.communityId === permission.communityId,
   );
-  return [Role.OWNER, Role.MANAGER, Role.MEMBER].includes(membership?.role as Role);
+  return [Role.Owner, Role.Manager, Role.Member].includes(membership?.role as Role);
 });
 
 // 🔐 Opportunity 作成者
@@ -103,7 +103,7 @@ const CanReadPhoneNumber = postExecRule({
 
   const isCommunityManager = targetCommunityIds.some((cid) =>
     context.hasPermissions?.memberships?.some(
-      (m) => m.communityId === cid && (m.role === Role.OWNER || m.role === Role.MANAGER),
+      (m) => m.communityId === cid && (m.role === Role.Owner || m.role === Role.Manager),
     ),
   );
 

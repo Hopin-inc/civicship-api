@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+
 import { GqlImageInput } from "@/types/graphql";
 import { gcsBucketName, storage } from "@/infrastructure/libs/storage";
 import path from "path";
@@ -9,7 +9,7 @@ export default class ImageService {
   async uploadPublicImage(
     image: GqlImageInput,
     folderPath: string,
-  ): Promise<Prisma.ImageCreateWithoutUsersInput> {
+  ): Promise<any> {
     const { file, alt, caption } = image;
     const { createReadStream, filename: rawFilename, mimetype: mime } = await file;
 
@@ -43,6 +43,6 @@ export default class ImageService {
       ext,
       mime,
       isPublic: true,
-    } satisfies Prisma.ImageCreateWithoutUsersInput;
+    };
   }
 }

@@ -5,16 +5,15 @@ import {
   GqlParticipationSortInput,
 } from "@/types/graphql";
 import {
-  OpportunityCategory,
-  ParticipationStatus,
-  ParticipationStatusReason,
-  Prisma,
-} from "@prisma/client";
+  GqlOpportunityCategory as OpportunityCategory,
+  GqlParticipationStatus as ParticipationStatus,
+  GqlParticipationStatusReason as ParticipationStatusReason,
+} from "@/types/graphql";
 import { injectable } from "tsyringe";
 
 @injectable()
 export default class ParticipationConverter {
-  filter(filter?: GqlParticipationFilterInput): Prisma.ParticipationWhereInput {
+  filter(filter?: GqlParticipationFilterInput): any {
     return {
       AND: [
         filter?.userIds ? { userId: { in: filter.userIds } } : {},
@@ -86,7 +85,7 @@ export default class ParticipationConverter {
     };
   }
 
-  sort(sort?: GqlParticipationSortInput): Prisma.ParticipationOrderByWithRelationInput[] {
+  sort(sort?: GqlParticipationSortInput): any[] {
     return [
       { reservation: { opportunitySlot: { startsAt: sort?.startsAt ?? "desc" } } },
       { createdAt: "desc" },
@@ -97,21 +96,21 @@ export default class ParticipationConverter {
     input: GqlParticipationCreatePersonalRecordInput,
     currentUserId: string,
   ): {
-    data: Omit<Prisma.ParticipationCreateInput, "images">;
+    data: any;
     images: GqlImageInput[];
   } {
     const { images, description } = input;
 
     return {
       data: {
-        status: ParticipationStatus.PARTICIPATED,
-        reason: ParticipationStatusReason.PERSONAL_RECORD,
+        status: ParticipationStatus.Participated,
+        reason: ParticipationStatusReason.PersonalRecord,
         description: description ?? null,
         user: { connect: { id: currentUserId } },
         statusHistories: {
           create: {
-            status: ParticipationStatus.PARTICIPATED,
-            reason: ParticipationStatusReason.PERSONAL_RECORD,
+            status: ParticipationStatus.Participated,
+            reason: ParticipationStatusReason.PersonalRecord,
             createdByUser: { connect: { id: currentUserId } },
           },
         },
@@ -124,7 +123,7 @@ export default class ParticipationConverter {
     currentUserId: string,
     status: ParticipationStatus,
     reason: ParticipationStatusReason,
-  ): Prisma.ParticipationUpdateInput {
+  ): any {
     return {
       status,
       reason,
@@ -140,5 +139,5 @@ export default class ParticipationConverter {
 }
 
 function isOpportunityCategory(value: string): value is OpportunityCategory {
-  return ["QUEST", "EVENT", "ACTIVITY"].includes(value);
+  return ["Quest", "Event", "Activity"].includes(value);
 }
