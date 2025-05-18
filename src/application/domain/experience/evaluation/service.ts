@@ -4,7 +4,7 @@ import { IEvaluationRepository } from "@/application/domain/experience/evaluatio
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -40,7 +40,7 @@ export default class EvaluationService {
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 
     if (!isValidFinalStatus) {
-      throw new InvalidEvaluationStatusError(status);
+      throw new ValidationError("create evaluation allowed PASSED or FAILED status only.");
     }
 
     const data = this.converter.create(input.participationId, currentUserId, status, input.comment);
