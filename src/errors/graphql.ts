@@ -107,6 +107,13 @@ export class AlreadyStartedReservationError extends ApolloError {
   }
 }
 
+export class AlreadyEvaluatedError extends ApolloError {
+  constructor(message: string = "This participation has already been evaluated.") {
+    super(message, "ALREADY_EVALUATED");
+    Object.defineProperty(this, "name", { value: "AlreadyEvaluatedError" });
+  }
+}
+
 export class AlreadyUsedClaimLinkError extends ApolloError {
   constructor(message: string = "This claim link has already been used.") {
     super(message, "ALREADY_USED_CLAIM_LINK");

@@ -78,51 +78,42 @@ type ReservationSetStatusSuccess {
 
 type ReservationFullError {
     message: String!
-    code: ErrorCode!
     capacity: Int!
     requested: Int!
 }
 
 type ReservationAdvanceBookingRequiredError {
     message: String!
-    code: ErrorCode!
 }
 
 type ReservationNotAcceptedError {
     message: String!
-    code: ErrorCode!
 }
 
 type SlotNotScheduledError {
     message: String!
-    code: ErrorCode!
 }
 
 type MissingTicketIdsError {
     message: String!
-    code: ErrorCode!
 }
 
 type TicketParticipantMismatchError {
     message: String!
-    code: ErrorCode!
     ticketCount: Int!
     participantCount: Int!
 }
 
 type ReservationCancellationTimeoutError {
     message: String!
-    code: ErrorCode!
 }
 
 type AlreadyJoinedError {
     message: String!
-    code: ErrorCode!
 }
 
 type NoAvailableParticipationSlotsError {
     message: String!
-    code: ErrorCode!
 }
 
 # ------------------------------

@@ -30,7 +30,6 @@ export type GqlAccumulatedPointView = {
 
 export type GqlAlreadyJoinedError = {
   __typename?: 'AlreadyJoinedError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -595,7 +594,6 @@ export type GqlMembershipsConnection = {
 
 export type GqlMissingTicketIdsError = {
   __typename?: 'MissingTicketIdsError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -962,7 +960,6 @@ export type GqlNestedPlacesBulkUpdateInput = {
 
 export type GqlNoAvailableParticipationSlotsError = {
   __typename?: 'NoAvailableParticipationSlotsError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1789,7 +1786,6 @@ export type GqlReservation = {
 
 export type GqlReservationAdvanceBookingRequiredError = {
   __typename?: 'ReservationAdvanceBookingRequiredError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1800,7 +1796,6 @@ export type GqlReservationCancelInput = {
 
 export type GqlReservationCancellationTimeoutError = {
   __typename?: 'ReservationCancellationTimeoutError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1835,7 +1830,6 @@ export type GqlReservationFilterInput = {
 export type GqlReservationFullError = {
   __typename?: 'ReservationFullError';
   capacity: Scalars['Int']['output'];
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
   requested: Scalars['Int']['output'];
 };
@@ -1874,7 +1868,6 @@ export type GqlReservationHistorySortInput = {
 
 export type GqlReservationNotAcceptedError = {
   __typename?: 'ReservationNotAcceptedError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -1920,7 +1913,6 @@ export const GqlRole = {
 export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
 export type GqlSlotNotScheduledError = {
   __typename?: 'SlotNotScheduledError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
 };
 
@@ -2057,7 +2049,6 @@ export type GqlTicketIssuersConnection = {
 
 export type GqlTicketParticipantMismatchError = {
   __typename?: 'TicketParticipantMismatchError';
-  code: GqlErrorCode;
   message: Scalars['String']['output'];
   participantCount: Scalars['Int']['output'];
   ticketCount: Scalars['Int']['output'];
@@ -3165,7 +3156,6 @@ export type GqlAccumulatedPointViewResolvers<ContextType = any, ParentType exten
 }>;
 
 export type GqlAlreadyJoinedErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['AlreadyJoinedError'] = GqlResolversParentTypes['AlreadyJoinedError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3502,7 +3492,6 @@ export type GqlMembershipsConnectionResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlMissingTicketIdsErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['MissingTicketIdsError'] = GqlResolversParentTypes['MissingTicketIdsError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3559,7 +3548,6 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
 }>;
 
 export type GqlNoAvailableParticipationSlotsErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NoAvailableParticipationSlotsError'] = GqlResolversParentTypes['NoAvailableParticipationSlotsError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3906,13 +3894,11 @@ export type GqlReservationResolvers<ContextType = any, ParentType extends GqlRes
 }>;
 
 export type GqlReservationAdvanceBookingRequiredErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationAdvanceBookingRequiredError'] = GqlResolversParentTypes['ReservationAdvanceBookingRequiredError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlReservationCancellationTimeoutErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationCancellationTimeoutError'] = GqlResolversParentTypes['ReservationCancellationTimeoutError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3934,7 +3920,6 @@ export type GqlReservationEdgeResolvers<ContextType = any, ParentType extends Gq
 
 export type GqlReservationFullErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationFullError'] = GqlResolversParentTypes['ReservationFullError']> = ResolversObject<{
   capacity?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   requested?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -3963,7 +3948,6 @@ export type GqlReservationHistoryEdgeResolvers<ContextType = any, ParentType ext
 }>;
 
 export type GqlReservationNotAcceptedErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ReservationNotAcceptedError'] = GqlResolversParentTypes['ReservationNotAcceptedError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -3985,7 +3969,6 @@ export type GqlReservationsConnectionResolvers<ContextType = any, ParentType ext
 }>;
 
 export type GqlSlotNotScheduledErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SlotNotScheduledError'] = GqlResolversParentTypes['SlotNotScheduledError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -4076,7 +4059,6 @@ export type GqlTicketIssuersConnectionResolvers<ContextType = any, ParentType ex
 }>;
 
 export type GqlTicketParticipantMismatchErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketParticipantMismatchError'] = GqlResolversParentTypes['TicketParticipantMismatchError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
   message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   participantCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   ticketCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
