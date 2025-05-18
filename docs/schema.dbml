@@ -225,8 +225,8 @@ Table t_opportunities {
   placeId String
   place t_places
   articles t_articles [not null]
-  createdBy String [not null]
-  createdByUser t_users [not null]
+  createdBy String
+  createdByUser t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -238,6 +238,7 @@ Table t_opportunity_slots {
   endsAt DateTime [not null]
   capacity Int
   remainingCapacityView v_slot_remaining_capacity
+  slotEvaluationProgress v_slot_evaluation_progress
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
@@ -309,8 +310,8 @@ Table t_evaluations {
   issuedAt DateTime
   participationId String [unique, not null]
   participation t_participations [not null]
-  evaluatorId String [not null]
-  evaluator t_users [not null]
+  evaluatorId String
+  evaluator t_users
   histories t_evaluation_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -476,6 +477,13 @@ Table v_slot_remaining_capacity {
   slotId String [pk]
   slot t_opportunity_slots [not null]
   remainingCapacity Int
+}
+
+Table v_slot_evaluation_progress {
+  slotId String [pk]
+  slot t_opportunity_slots [not null]
+  totalEvaluated Int [not null]
+  validParticipations Int [not null]
 }
 
 Table t_images_on_opportunities {
@@ -760,3 +768,5 @@ Ref: mv_accumulated_points.walletId - t_wallets.id
 Ref: v_earliest_reservable_slot.opportunityId - t_opportunities.id
 
 Ref: v_slot_remaining_capacity.slotId - t_opportunity_slots.id
+
+Ref: v_slot_evaluation_progress.slotId - t_opportunity_slots.id

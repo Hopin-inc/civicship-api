@@ -16,11 +16,13 @@ import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import ParticipationService from "@/application/domain/experience/participation/service";
 
 @injectable()
 export default class EvaluationUseCase {
   constructor(
     @inject("EvaluationService") private readonly evaluationService: EvaluationService,
+    @inject("ParticipationService") private readonly participationService: ParticipationService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
@@ -55,14 +57,20 @@ export default class EvaluationUseCase {
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
+    await Promise.all([
+      this.participationService.findParticipationOrThrow(ctx, input.participationId),
+      this.evaluationService.validateEvaluatable(ctx, input.participationId),
+    ]);
 
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
       const evaluation = await this.evaluationService.createEvaluation(
         ctx,
+        currentUserId,
         input,
         EvaluationStatus.PASSED,
         tx,
       );
+      console.log(evaluation);
 
       const { participation, opportunity, communityId, userId } =
         this.evaluationService.validateParticipationHasOpportunity(evaluation);
@@ -100,8 +108,11 @@ export default class EvaluationUseCase {
     { input }: GqlMutationEvaluationFailArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     const evaluation = await this.evaluationService.createEvaluation(
       ctx,
+      currentUserId,
       input,
       EvaluationStatus.FAILED,
     );

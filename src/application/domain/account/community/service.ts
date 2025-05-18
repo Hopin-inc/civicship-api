@@ -102,9 +102,7 @@ function validateConnectOrCreatePlacesInput(input: GqlCommunityUpdateProfileInpu
   if (input.places?.connectOrCreate) {
     input.places.connectOrCreate.forEach((item) => {
       if ((item.where && item.create) || (!item.where && !item.create)) {
-        throw new ValidationError(`For each Place, choose only one of "where" or "create."`, [
-          JSON.stringify(input.places.connectOrCreate),
-        ]);
+        throw new ValidationError(`For Place, choose only one of "where" or "create."`, [JSON.stringify(item)]);
       }
     });
   }

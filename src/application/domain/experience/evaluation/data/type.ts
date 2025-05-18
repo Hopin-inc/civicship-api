@@ -28,10 +28,20 @@ export const evaluationSelectDetail = Prisma.validator<Prisma.EvaluationSelect>(
   updatedAt: true,
 });
 
+export const evaluationSelectSlotStartsAt = Prisma.validator<Prisma.EvaluationSelect>()({
+  participation: {
+    select: { reservation: { select: { opportunitySlot: { select: { startsAt: true } } } } },
+  },
+});
+
 export type PrismaEvaluation = Prisma.EvaluationGetPayload<{
   include: typeof evaluationInclude;
 }>;
 
 export type PrismaEvaluationDetail = Prisma.EvaluationGetPayload<{
   select: typeof evaluationSelectDetail;
+}>;
+
+export type PrismaEvaluationSelectSlotStartsAt = Prisma.EvaluationGetPayload<{
+  select: typeof evaluationSelectSlotStartsAt;
 }>;

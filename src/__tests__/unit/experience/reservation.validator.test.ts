@@ -1,5 +1,13 @@
 import "reflect-metadata";
-import { ValidationError } from "@/errors/graphql";
+import {
+  ReservationFullError,
+  AlreadyJoinedError,
+  AlreadyStartedReservationError,
+  ReservationCancellationTimeoutError,
+  ReservationNotAcceptedError,
+  SlotNotScheduledError,
+  NoAvailableParticipationSlotsError,
+} from "@/errors/graphql";
 import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 
@@ -14,10 +22,9 @@ describe("ReservationValidator", () => {
       } as any;
       const participantCount = 2;
       const remainingCapacity = 5;
-      const reservations: any[] = [];
 
       expect(() => {
-        validator.validateReservable(slot, participantCount, remainingCapacity, reservations);
+        validator.validateReservable(slot, participantCount, remainingCapacity);
       }).not.toThrow();
     });
 
@@ -28,8 +35,8 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
-      }).toThrow(ValidationError);
+        validator.validateReservable(slot, 1, 5);
+      }).toThrow(SlotNotScheduledError);
     });
 
     it("should throw if slot has already started", () => {
@@ -39,20 +46,8 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
-      }).toThrow(ValidationError);
-    });
-
-    it("should throw if there are conflicting reservations", () => {
-      const slot = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
-        startsAt: futureDate(),
-      } as any;
-      const conflicts = [{}] as any[];
-
-      expect(() => {
-        validator.validateReservable(slot, 1, 5, conflicts);
-      }).toThrow(ValidationError);
+        validator.validateReservable(slot, 1, 5);
+      }).toThrow(AlreadyStartedReservationError);
     });
 
     it("should throw if participant count exceeds capacity", () => {
@@ -62,8 +57,8 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 10, 5, []);
-      }).toThrow(ValidationError);
+        validator.validateReservable(slot, 10, 5);
+      }).toThrow(ReservationFullError);
     });
   });
 
@@ -98,7 +93,7 @@ describe("ReservationValidator", () => {
 
       expect(() => {
         validator.validateJoinable(reservation, "user-1");
-      }).toThrow(ValidationError);
+      }).toThrow(ReservationNotAcceptedError);
     });
 
     it("should throw if opportunitySlot has already started", () => {
@@ -113,7 +108,7 @@ describe("ReservationValidator", () => {
 
       expect(() => {
         validator.validateJoinable(reservation, "user-1");
-      }).toThrow(ValidationError);
+      }).toThrow(AlreadyStartedReservationError);
     });
 
     it("should throw if user already joined", () => {
@@ -128,7 +123,7 @@ describe("ReservationValidator", () => {
 
       expect(() => {
         validator.validateJoinable(reservation, "user-1");
-      }).toThrow(ValidationError);
+      }).toThrow(AlreadyJoinedError);
     });
 
     it("should throw if no available participations", () => {
@@ -143,7 +138,7 @@ describe("ReservationValidator", () => {
 
       expect(() => {
         validator.validateJoinable(reservation, "user-1");
-      }).toThrow(ValidationError);
+      }).toThrow(NoAvailableParticipationSlotsError);
     });
   });
 
@@ -159,7 +154,7 @@ describe("ReservationValidator", () => {
       const slotStartAt = futureDate(0.5); // 半日後
       expect(() => {
         validator.validateCancellable(slotStartAt);
-      }).toThrow(ValidationError);
+      }).toThrow(ReservationCancellationTimeoutError);
     });
   });
 });

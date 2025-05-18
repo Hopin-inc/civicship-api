@@ -40,8 +40,8 @@ export default class ArticleService {
       !filter.publishStatus.every((status) => allowedStatuses.includes(status))
     ) {
       throw new ValidationError(
-        `Validation error: publishStatus must be one of ${allowedStatuses.join(", ")}`,
-        [JSON.stringify(filter?.publishStatus)],
+        `Publish status must be one of ${allowedStatuses.join(", ")}`,
+        filter?.publishStatus || []
       );
     }
   }

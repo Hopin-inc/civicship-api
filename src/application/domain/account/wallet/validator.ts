@@ -1,6 +1,11 @@
 import { IContext } from "@/types/server";
 import { Prisma, TransactionReason } from "@prisma/client";
-import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
+import { 
+  InsufficientBalanceError, 
+  InvalidTransferMethodError,
+  MissingWalletInformationError,
+  UnsupportedTransactionReasonError
+} from "@/errors/graphql";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
@@ -58,7 +63,7 @@ export default class WalletValidator {
       case TransferDirection.MEMBER_TO_COMMUNITY:
         return { from: memberWallet, to: communityWallet };
       case TransferDirection.MEMBER_TO_MEMBER:
-        throw new ValidationError("Use validateTransferMemberToMember()");
+        throw new InvalidTransferMethodError();
     }
   }
 
@@ -85,7 +90,7 @@ export default class WalletValidator {
         ...(!fromWallet ? ["fromWallet"] : []),
         ...(!toWallet ? ["toWallet"] : []),
       ];
-      throw new ValidationError("Wallet information is missing for points transfer", invalidArgs);
+      throw new MissingWalletInformationError(invalidArgs);
     }
     const { currentPoint } = fromWallet.currentPointView || {};
 
@@ -112,6 +117,6 @@ function getTransferDirection(reason: TransactionReason): TransferDirection {
     case TransactionReason.DONATION:
       return TransferDirection.MEMBER_TO_MEMBER;
     default:
-      throw new ValidationError(`Unsupported TransactionReason`, [reason]);
+      throw new UnsupportedTransactionReasonError(reason);
   }
 }

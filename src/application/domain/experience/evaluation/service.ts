@@ -4,8 +4,12 @@ import { IEvaluationRepository } from "@/application/domain/experience/evaluatio
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { ValidationError } from "@/errors/graphql";
+import {
+  AlreadyEvaluatedError,
+  CannotEvaluateBeforeOpportunityStartError,
+  NotFoundError,
+  ValidationError,
+} from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -30,8 +34,23 @@ export default class EvaluationService {
     return await this.repository.find(ctx, id);
   }
 
+  async validateEvaluatable(ctx: IContext, participationId: string) {
+    const exist = await this.repository.queryByParticipation(ctx, participationId);
+    if (exist.length > 0) throw new AlreadyEvaluatedError();
+
+    const startsAt = exist[0].participation?.reservation?.opportunitySlot.startsAt;
+    if (!startsAt) throw new ValidationError("OpportunitySlot startsAt is undefined.");
+
+    const jstStartsAt = new Date(startsAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+    const nowJST = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+
+    if (new Date(nowJST) < new Date(jstStartsAt))
+      throw new CannotEvaluateBeforeOpportunityStartError();
+  }
+
   async createEvaluation(
     ctx: IContext,
+    currentUserId: string,
     input: GqlEvaluationCreateInput,
     status: EvaluationStatus,
     tx?: Prisma.TransactionClient,
@@ -40,12 +59,10 @@ export default class EvaluationService {
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 
     if (!isValidFinalStatus) {
-      throw new ValidationError("Invalid status. Only PASSED or FAILED are allowed.", [status]);
+      throw new ValidationError("create evaluation allowed PASSED or FAILED status only.");
     }
 
-    const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.create(input.participationId, currentUserId, status, input.comment);
-
     return this.repository.create(ctx, data, tx);
   }
 
@@ -61,19 +78,17 @@ export default class EvaluationService {
     const opportunity = participation?.reservation?.opportunitySlot?.opportunity;
 
     if (!participation || !opportunity) {
-      throw new ValidationError("Participation or Opportunity not found for evaluation", [
-        evaluation.id,
-      ]);
+      throw new NotFoundError("Participation or Opportunity", { evaluationId: evaluation.id });
     }
 
     const communityId = participation?.communityId;
     if (!communityId) {
-      throw new ValidationError("Community ID not found for participation", [evaluation.id]);
+      throw new NotFoundError("Community ID", { evaluationId: evaluation.id });
     }
 
     const userId = participation?.userId;
     if (!userId) {
-      throw new ValidationError("User ID not found for participation", [evaluation.id]);
+      throw new NotFoundError("User ID", { evaluationId: evaluation.id });
     }
 
     return { participation, opportunity, communityId, userId };
