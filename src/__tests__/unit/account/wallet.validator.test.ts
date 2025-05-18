@@ -1,7 +1,8 @@
 import "reflect-metadata";
-import { Prisma, TransactionReason, WalletType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
-import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
+import { InsufficientBalanceError, MissingWalletInformationError } from "@/errors/graphql";
+import { GqlTransactionReason as TransactionReason, GqlWalletType as WalletType } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
@@ -34,11 +35,11 @@ describe("WalletValidator", () => {
     updatedAt: null,
   };
 
-  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: WalletType.MEMBER };
+  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: WalletType.Member };
   const communityWallet = {
     ...baseWallet,
     id: "community-wallet-111",
-    type: WalletType.COMMUNITY,
+    type: WalletType.Community,
     userId: null,
   };
 
@@ -68,7 +69,7 @@ describe("WalletValidator", () => {
         communityId,
         userId,
         transferPoints,
-        TransactionReason.GRANT,
+        TransactionReason.Grant,
       );
 
       expect(result).toEqual({
@@ -132,25 +133,25 @@ describe("WalletValidator", () => {
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).resolves.not.toThrow();
     });
 
-    it("should throw ValidationError if fromWallet is null", async () => {
+    it("should throw MissingWalletInformationError if fromWallet is null", async () => {
       const toWallet = {
         id: "wallet-to",
         currentPointView: { currentPoint: 0 },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, null, toWallet)).rejects.toThrow(
-        ValidationError,
+        MissingWalletInformationError,
       );
     });
 
-    it("should throw ValidationError if toWallet is null", async () => {
+    it("should throw MissingWalletInformationError if toWallet is null", async () => {
       const fromWallet = {
         id: "wallet-from",
         currentPointView: { currentPoint: 500 },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, null)).rejects.toThrow(
-        ValidationError,
+        MissingWalletInformationError,
       );
     });
 

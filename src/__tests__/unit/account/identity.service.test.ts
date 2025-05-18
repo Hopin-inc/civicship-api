@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
+import { GqlCurrentPrefecture as CurrentPrefecture, GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import IdentityService from "@/application/domain/account/identity/service";
 import { auth } from "@/infrastructure/libs/firebase";
 
@@ -45,7 +45,7 @@ describe("IdentityService", () => {
     name: "Test User",
     email: "test@example.com",
     slug: "test-user",
-    currentPrefecture: CurrentPrefecture.KAGAWA,
+    currentPrefecture: CurrentPrefecture.Kagawa,
   };
   const TEST_USER = {
     id: TEST_USER_ID,
@@ -56,7 +56,7 @@ describe("IdentityService", () => {
     userId: TEST_USER_ID,
     uid: "test-uid",
     tenantId: "test-tenant-id",
-    platform: IdentityPlatform.LINE,
+    platform: IdentityPlatform.Line,
   };
 
   const mockTenantedAuth = {
@@ -82,7 +82,7 @@ describe("IdentityService", () => {
       mockUserRepository.create.mockResolvedValue(TEST_USER);
 
       const uid = "test-uid";
-      const platform = IdentityPlatform.FACEBOOK;
+      const platform = IdentityPlatform.Facebook;
 
       const result = await service.createUserAndIdentity(TEST_USER_DATA, uid, platform);
 
@@ -97,7 +97,7 @@ describe("IdentityService", () => {
 
     it("should throw an error when user creation fails", async () => {
       const uid = "test-uid";
-      const platform = IdentityPlatform.FACEBOOK;
+      const platform = IdentityPlatform.Facebook;
       const error = new Error("User creation failed");
       mockUserRepository.create.mockRejectedValue(error);
 

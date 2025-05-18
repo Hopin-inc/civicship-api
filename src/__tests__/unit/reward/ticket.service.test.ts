@@ -3,7 +3,7 @@ import { container } from "tsyringe";
 import TicketService from "@/application/domain/reward/ticket/service";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 
 class MockTicketRepository {
   create = jest.fn();

@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import UtilityService from "@/application/domain/reward/utility/service";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { PublishStatus } from "@prisma/client";
+import { GqlPublishStatus as PublishStatus } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import {
@@ -73,7 +73,7 @@ describe("UtilityService", () => {
       const mockUtility = {
         id: "u1",
         name: "Test Utility",
-        publishStatus: PublishStatus.PUBLIC,
+        publishStatus: PublishStatus.Public,
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
@@ -113,7 +113,7 @@ describe("UtilityService", () => {
       const mockUtility = {
         id: "u1",
         name: "Test Utility",
-        publishStatus: PublishStatus.PUBLIC,
+        publishStatus: PublishStatus.Public,
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
@@ -182,7 +182,7 @@ describe("UtilityService", () => {
       const mockUtility = {
         id,
         name: "Test Utility",
-        publishStatus: PublishStatus.PUBLIC,
+        publishStatus: PublishStatus.Public,
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
@@ -249,16 +249,16 @@ describe("UtilityService", () => {
   describe("validatePublishStatus", () => {
     it("should pass if all statuses are allowed", () => {
       expect(() =>
-        service.validatePublishStatus([PublishStatus.PUBLIC], {
-          publishStatus: [PublishStatus.PUBLIC],
+        service.validatePublishStatus([PublishStatus.Public], {
+          publishStatus: [PublishStatus.Public],
         }),
       ).not.toThrow();
     });
 
     it("should throw if disallowed status is present", async () => {
       try {
-        await service.validatePublishStatus([PublishStatus.PUBLIC], {
-          publishStatus: [PublishStatus.PRIVATE],
+        await service.validatePublishStatus([PublishStatus.Public], {
+          publishStatus: [PublishStatus.Private],
         });
         fail("Expected ValidationError to be thrown");
       } catch (e: unknown) {

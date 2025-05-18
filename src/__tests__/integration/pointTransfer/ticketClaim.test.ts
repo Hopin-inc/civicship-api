@@ -2,13 +2,13 @@ import "reflect-metadata";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import {
-  CurrentPrefecture,
-  MembershipStatus,
-  MembershipStatusReason,
-  Role,
-  TransactionReason,
-  WalletType,
-} from "@prisma/client";
+  GqlCurrentPrefecture as CurrentPrefecture,
+  GqlMembershipStatus as MembershipStatus,
+  GqlMembershipStatusReason as MembershipStatusReason,
+  GqlRole as Role,
+  GqlTransactionReason as TransactionReason,
+  GqlWalletType as WalletType,
+} from "@/types/graphql";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
@@ -46,7 +46,7 @@ describe("Ticket Claim Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
       slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     userId = user.id;
     ctx = { currentUser: { id: userId } } as unknown as IContext;
@@ -60,23 +60,23 @@ describe("Ticket Claim Tests", () => {
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: userId } },
       community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.INVITED,
+      status: MembershipStatus.Joined,
+      role: Role.Member,
+      reason: MembershipStatusReason.Invited,
     });
 
     const owner = await TestDataSourceHelper.createUser({
       name: "Ticket Owner",
       slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: owner.id } },
       community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.ASSIGNED,
+      status: MembershipStatus.Joined,
+      role: Role.Member,
+      reason: MembershipStatusReason.Assigned,
     });
 
     const utility = await TestDataSourceHelper.createUtility({
@@ -97,14 +97,14 @@ describe("Ticket Claim Tests", () => {
     ticketClaimLinkId = claimLink.id;
 
     const ownerWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: owner.id } },
     });
     ownerWalletId = ownerWallet.id;
 
     const memberWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: userId } },
     });
@@ -115,7 +115,7 @@ describe("Ticket Claim Tests", () => {
       toWallet: { connect: { id: ownerWalletId } },
       toPointChange: transferPoints,
       fromPointChange: transferPoints,
-      reason: TransactionReason.GRANT,
+      reason: TransactionReason.Grant,
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
@@ -128,11 +128,15 @@ describe("Ticket Claim Tests", () => {
   it("should claim ticket successfully", async () => {
     const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
+    if (result.__typename !== 'TicketClaimSuccess') {
+      fail(`Expected TicketClaimSuccess but got ${result.__typename}`);
+    }
+    
     expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
 
     const tx = await TestDataSourceHelper.findAllTransactions();
-    const donateTx = tx.find((t) => t.reason === TransactionReason.DONATION);
-    const purchaseTx = tx.find((t) => t.reason === TransactionReason.TICKET_PURCHASED);
+    const donateTx = tx.find((t) => t.reason === TransactionReason.Donation);
+    const purchaseTx = tx.find((t) => t.reason === TransactionReason.TicketPurchased);
 
     expect(donateTx).toBeDefined();
     expect(purchaseTx).toBeDefined();
@@ -142,7 +146,7 @@ describe("Ticket Claim Tests", () => {
     await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.DONATION,
+      (t) => t.reason === TransactionReason.Donation,
     );
 
     expect(tx?.from).toBe(ownerWalletId);
@@ -172,7 +176,7 @@ describe("Ticket Claim Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
       slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     userId = user.id;
     ctx = { currentUser: { id: userId } } as unknown as IContext;
@@ -186,23 +190,23 @@ describe("Ticket Claim Tests", () => {
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: userId } },
       community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.INVITED,
+      status: MembershipStatus.Joined,
+      role: Role.Member,
+      reason: MembershipStatusReason.Invited,
     });
 
     const owner = await TestDataSourceHelper.createUser({
       name: "Ticket Owner",
       slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: owner.id } },
       community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.ASSIGNED,
+      status: MembershipStatus.Joined,
+      role: Role.Member,
+      reason: MembershipStatusReason.Assigned,
     });
 
     const utility = await TestDataSourceHelper.createUtility({
@@ -223,13 +227,13 @@ describe("Ticket Claim Tests", () => {
     ticketClaimLinkId = claimLink.id;
 
     await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: owner.id } },
     });
 
     await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: userId } },
     });
@@ -264,7 +268,7 @@ describe("Ticket Claim Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
       slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
     userId = user.id;
     ctx = { currentUser: { id: userId } } as unknown as IContext;
@@ -278,15 +282,15 @@ describe("Ticket Claim Tests", () => {
     const owner = await TestDataSourceHelper.createUser({
       name: "Ticket Owner",
       slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: CurrentPrefecture.Kagawa,
     });
 
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: owner.id } },
       community: { connect: { id: community.id } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.ASSIGNED,
+      status: MembershipStatus.Joined,
+      role: Role.Member,
+      reason: MembershipStatusReason.Assigned,
     });
 
     const utility = await TestDataSourceHelper.createUtility({
@@ -307,7 +311,7 @@ describe("Ticket Claim Tests", () => {
     ticketClaimLinkId = claimLink.id;
 
     const ownerWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: owner.id } },
     });
@@ -317,11 +321,11 @@ describe("Ticket Claim Tests", () => {
       toWallet: { connect: { id: ownerWalletId } },
       toPointChange: transferPoints,
       fromPointChange: transferPoints,
-      reason: TransactionReason.GRANT,
+      reason: TransactionReason.Grant,
     });
 
     await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
+      type: WalletType.Member,
       community: { connect: { id: communityId } },
       user: { connect: { id: userId } },
     });
@@ -330,6 +334,10 @@ describe("Ticket Claim Tests", () => {
 
     const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
+    if (result.__typename !== 'TicketClaimSuccess') {
+      fail(`Expected TicketClaimSuccess but got ${result.__typename}`);
+    }
+    
     expect(result.tickets.length).toBe(2);
   });
 });

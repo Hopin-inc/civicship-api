@@ -1,5 +1,6 @@
 import "reflect-metadata";
-import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { GqlMembershipStatus as MembershipStatus, GqlMembershipStatusReason as MembershipStatusReason, GqlRole as Role } from "@/types/graphql";
 import { container } from "tsyringe";
 import MembershipService from "@/application/domain/account/membership/service";
 import { IContext } from "@/types/server";
@@ -66,7 +67,7 @@ afterEach(() => {
 describe("MembershipService", () => {
   describe("fetchMemberships", () => {
     it("should fetch memberships", async () => {
-      const memberships = [{ userId, communityId, role: Role.MEMBER }];
+      const memberships = [{ userId, communityId, role: Role.Member }];
       mockConverter.filter.mockReturnValue({});
       mockConverter.sort.mockReturnValue({ createdAt: "desc" });
       mockRepository.query.mockResolvedValue(memberships);
@@ -84,7 +85,7 @@ describe("MembershipService", () => {
 
   describe("findMembership", () => {
     it("should find membership", async () => {
-      const membership = { userId, communityId, role: Role.MEMBER };
+      const membership = { userId, communityId, role: Role.Member };
       mockRepository.find.mockResolvedValue(membership);
 
       const result = await service.findMembership(mockCtx, userId, communityId);
@@ -95,9 +96,9 @@ describe("MembershipService", () => {
 
   describe("inviteMember", () => {
     it("should invite a member", async () => {
-      const input = { userId, communityId, role: Role.MEMBER };
+      const input = { userId, communityId, role: Role.Member };
       const mockInput = {};
-      const mockCreated = { userId, communityId, role: Role.MEMBER };
+      const mockCreated = { userId, communityId, role: Role.Member };
 
       mockConverter.invite.mockReturnValue(mockInput);
       mockRepository.create.mockResolvedValue(mockCreated);
@@ -112,7 +113,7 @@ describe("MembershipService", () => {
     it("should create membership if not found", async () => {
       mockRepository.find.mockResolvedValue(null);
       const mockInput = {};
-      const mockCreated = { userId, communityId, role: Role.MEMBER };
+      const mockCreated = { userId, communityId, role: Role.Member };
       mockConverter.join.mockReturnValue(mockInput);
       mockRepository.create.mockResolvedValue(mockCreated);
 
@@ -122,11 +123,11 @@ describe("MembershipService", () => {
     });
 
     it("should update membership if exists but not joined", async () => {
-      const existing = { userId, communityId, status: MembershipStatus.PENDING, role: Role.MEMBER };
+      const existing = { userId, communityId, status: MembershipStatus.Pending, role: Role.Member };
       mockRepository.find.mockResolvedValue(existing);
 
       const mockInput = {};
-      const updated = { ...existing, status: MembershipStatus.JOINED };
+      const updated = { ...existing, status: MembershipStatus.Joined };
       mockConverter.update.mockReturnValue(mockInput);
       mockRepository.update.mockResolvedValue(updated);
 
@@ -138,19 +139,19 @@ describe("MembershipService", () => {
 
   describe("setStatus", () => {
     it("should set membership status", async () => {
-      const existing = { userId, communityId, status: MembershipStatus.PENDING, role: Role.MEMBER };
+      const existing = { userId, communityId, status: MembershipStatus.Pending, role: Role.Member };
       mockRepository.find.mockResolvedValue(existing);
 
       const mockInput = {};
-      const updated = { ...existing, status: MembershipStatus.LEFT };
+      const updated = { ...existing, status: MembershipStatus.Left };
       mockConverter.update.mockReturnValue(mockInput);
       mockRepository.update.mockResolvedValue(updated);
 
       const result = await service.setStatus(
         mockCtx,
         { userId, communityId },
-        MembershipStatus.LEFT,
-        MembershipStatusReason.WITHDRAWN,
+        MembershipStatus.Left,
+        MembershipStatusReason.Withdrawn,
         mockTx,
       );
 
@@ -164,8 +165,8 @@ describe("MembershipService", () => {
         service.setStatus(
           mockCtx,
           { userId, communityId },
-          MembershipStatus.LEFT,
-          MembershipStatusReason.WITHDRAWN,
+          MembershipStatus.Left,
+          MembershipStatusReason.Withdrawn,
           mockTx,
         ),
       ).rejects.toThrow(NotFoundError);
@@ -174,15 +175,15 @@ describe("MembershipService", () => {
 
   describe("setRole", () => {
     it("should update membership role", async () => {
-      const existing = { userId, communityId, status: MembershipStatus.JOINED, role: Role.MEMBER };
+      const existing = { userId, communityId, status: MembershipStatus.Joined, role: Role.Member };
       mockRepository.find.mockResolvedValue(existing);
 
       const mockInput = {};
-      const updated = { ...existing, role: Role.MANAGER };
+      const updated = { ...existing, role: Role.Manager };
       mockConverter.update.mockReturnValue(mockInput);
       mockRepository.update.mockResolvedValue(updated);
 
-      const result = await service.setRole(mockCtx, { userId, communityId }, Role.MANAGER, mockTx);
+      const result = await service.setRole(mockCtx, { userId, communityId }, Role.Manager, mockTx);
 
       expect(result).toEqual(updated);
     });
@@ -191,14 +192,14 @@ describe("MembershipService", () => {
       mockRepository.find.mockResolvedValue(null);
 
       await expect(
-        service.setRole(mockCtx, { userId, communityId }, Role.MANAGER, mockTx),
+        service.setRole(mockCtx, { userId, communityId }, Role.Manager, mockTx),
       ).rejects.toThrow(NotFoundError);
     });
   });
 
   describe("deleteMembership", () => {
     it("should delete membership", async () => {
-      const existing = { userId, communityId, role: Role.MEMBER };
+      const existing = { userId, communityId, role: Role.Member };
       mockRepository.find.mockResolvedValue(existing);
       mockRepository.delete.mockResolvedValue(existing);
 

@@ -8,7 +8,7 @@ import {
   SlotNotScheduledError,
   NoAvailableParticipationSlotsError,
 } from "@/errors/graphql";
-import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
+import { GqlOpportunitySlotHostingStatus as OpportunitySlotHostingStatus, GqlReservationStatus as ReservationStatus } from "@/types/graphql";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 
 describe("ReservationValidator", () => {
@@ -17,48 +17,47 @@ describe("ReservationValidator", () => {
   describe("validateReservable", () => {
     it("should pass when slot is valid and no conflicts and enough capacity", () => {
       const slot = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        hostingStatus: OpportunitySlotHostingStatus.Scheduled,
         startsAt: futureDate(),
       } as any;
       const participantCount = 2;
       const remainingCapacity = 5;
-      const reservations: any[] = [];
 
       expect(() => {
-        validator.validateReservable(slot, participantCount, remainingCapacity, reservations);
+        validator.validateReservable(slot, participantCount, remainingCapacity);
       }).not.toThrow();
     });
 
     it("should throw if slot is not scheduled", () => {
       const slot = {
-        hostingStatus: OpportunitySlotHostingStatus.CANCELLED,
+        hostingStatus: OpportunitySlotHostingStatus.Cancelled,
         startsAt: futureDate(),
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(SlotNotScheduledError);
     });
 
     it("should throw if slot has already started", () => {
       const slot = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        hostingStatus: OpportunitySlotHostingStatus.Scheduled,
         startsAt: pastDate(),
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(AlreadyStartedReservationError);
     });
 
     it("should throw if participant count exceeds capacity", () => {
       const slot = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        hostingStatus: OpportunitySlotHostingStatus.Scheduled,
         startsAt: futureDate(),
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 10, 5, []);
+        validator.validateReservable(slot, 10, 5);
       }).toThrow(ReservationFullError);
     });
   });
@@ -66,9 +65,9 @@ describe("ReservationValidator", () => {
   describe("validateJoinable", () => {
     it("should pass and return availableParticipationId if joinable", () => {
       const reservation = {
-        status: ReservationStatus.ACCEPTED,
+        status: ReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+          hostingStatus: OpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [
@@ -84,9 +83,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if reservation is not accepted", () => {
       const reservation = {
-        status: ReservationStatus.APPLIED,
+        status: ReservationStatus.Applied,
         opportunitySlot: {
-          hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+          hostingStatus: OpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [],
@@ -99,9 +98,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if opportunitySlot has already started", () => {
       const reservation = {
-        status: ReservationStatus.ACCEPTED,
+        status: ReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+          hostingStatus: OpportunitySlotHostingStatus.Scheduled,
           startsAt: pastDate(),
         },
         participations: [],
@@ -114,9 +113,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if user already joined", () => {
       const reservation = {
-        status: ReservationStatus.ACCEPTED,
+        status: ReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+          hostingStatus: OpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [{ id: "p1", userId: "user-1" }],
@@ -129,9 +128,9 @@ describe("ReservationValidator", () => {
 
     it("should throw if no available participations", () => {
       const reservation = {
-        status: ReservationStatus.ACCEPTED,
+        status: ReservationStatus.Accepted,
         opportunitySlot: {
-          hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+          hostingStatus: OpportunitySlotHostingStatus.Scheduled,
           startsAt: futureDate(),
         },
         participations: [{ id: "p1", userId: "user-2" }],
