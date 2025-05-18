@@ -17,12 +17,18 @@ class MockEvaluationConverter {
   create = jest.fn();
 }
 
+class MockUtils {
+  getCurrentUserId = jest.fn();
+}
+
 describe("EvaluationService", () => {
   let service: EvaluationService;
   let mockRepository: MockEvaluationRepository;
   let mockConverter: MockEvaluationConverter;
+  let mockUtils: MockUtils;
   const mockCtx = { currentUser: { id: "test-user-id" } } as unknown as IContext;
   const mockTx = {} as Prisma.TransactionClient;
+  const mockCurrentUserId = "test-user-id";
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,9 +36,12 @@ describe("EvaluationService", () => {
 
     mockRepository = new MockEvaluationRepository();
     mockConverter = new MockEvaluationConverter();
+    mockUtils = { getCurrentUserId: jest.fn() }; // モックを作成
+    mockUtils.getCurrentUserId.mockReturnValue(mockCurrentUserId);
 
     container.register("EvaluationRepository", { useValue: mockRepository });
     container.register("EvaluationConverter", { useValue: mockConverter });
+    container.register("getCurrentUserId", { useValue: mockUtils.getCurrentUserId });
 
     service = container.resolve(EvaluationService);
   });
@@ -50,11 +59,11 @@ describe("EvaluationService", () => {
       mockConverter.create.mockReturnValue(converted);
       mockRepository.create.mockResolvedValue({ id: "evaluation-1" });
 
-      const result = await service.createEvaluation(mockCtx, input, status, mockTx);
+      const result = await service.createEvaluation(mockCtx, mockCurrentUserId, input, status);
 
       expect(mockConverter.create).toHaveBeenCalledWith(
         input.participationId,
-        "test-user-id",
+        mockCurrentUserId,
         status,
         input.comment,
       );
@@ -66,9 +75,9 @@ describe("EvaluationService", () => {
       const input = { participationId: "p1", comment: "ok" } as any;
       const invalidStatus = "REVIEWING" as any; // 不正なステータス
 
-      await expect(service.createEvaluation(mockCtx, input, invalidStatus, mockTx)).rejects.toThrow(
-        ValidationError,
-      );
+      await expect(
+        service.createEvaluation(mockCtx, mockCurrentUserId, input, invalidStatus),
+      ).rejects.toThrow(ValidationError);
     });
   });
 

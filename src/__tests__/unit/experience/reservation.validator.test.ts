@@ -22,10 +22,9 @@ describe("ReservationValidator", () => {
       } as any;
       const participantCount = 2;
       const remainingCapacity = 5;
-      const reservations: any[] = [];
 
       expect(() => {
-        validator.validateReservable(slot, participantCount, remainingCapacity, reservations);
+        validator.validateReservable(slot, participantCount, remainingCapacity);
       }).not.toThrow();
     });
 
@@ -36,7 +35,7 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(SlotNotScheduledError);
     });
 
@@ -47,7 +46,7 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(AlreadyStartedReservationError);
     });
 
@@ -58,7 +57,7 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 10, 5, []);
+        validator.validateReservable(slot, 10, 5);
       }).toThrow(ReservationFullError);
     });
   });
