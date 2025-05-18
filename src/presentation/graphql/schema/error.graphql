@@ -1,7 +1,37 @@
+# ------------------------------
+# GqlErrorCode Enum Definition
+# ------------------------------
+
+enum GqlErrorCode {
+    VALIDATION_ERROR         # 入力検証エラー
+    UNAUTHENTICATED          # 認証エラー（未ログイン）
+    FORBIDDEN                # 権限不足エラー（認可エラー）
+    NOT_FOUND                # リソースが見つからない（404エラー）
+    INTERNAL_SERVER_ERROR    # サーバ内部エラー（DB障害等）
+    RATE_LIMIT               # リクエストが過剰な場合
+    RESERVATION_FULL         # 予約枠が満員
+    ALREADY_JOINED           # 既に予約している場合
+    RESERVATION_CANCELLATION_TIMEOUT # 予約キャンセルが締め切り時間を過ぎた場合
+    RESERVATION_NOT_ACCEPTED # 予約がまだ承認されていない
+    SLOT_NOT_SCHEDULED       # スロットが未スケジュール
+    INSUPERABLE_BALANCE      # 残高不足
+    USER_ID_NOT_FOUND        # ユーザーIDが見つからない
+    ALREADY_USED_CLAIM_LINK  # クレームリンクがすでに使用されている
+    CLAIM_LINK_EXPIRED       # クレームリンクが期限切れ
+    INVALID_PLACE_INPUT      # 無効な場所の入力
+    INVALID_TRANSFER_METHOD  # 無効な転送方法
+    MISSING_WALLET_INFORMATION # ウォレット情報が不足している
+    UNSUPPORTED_TRANSACTION_REASON # サポートされていないトランザクション理由
+    INVALID_PUBLISH_STATUS   # 無効な公開ステータス
+    MISSING_TICKET_IDS       # チケットIDが提供されていない
+    TICKET_PARTICIPANT_MISMATCH # チケット数と参加者数が一致しない
+    INVALID_EVALUATION_STATUS # 無効な評価ステータス
+    PERSONAL_RECORD_ONLY_DELETABLE # 個人の記録のみ削除可能
+}
+
 # --------------------------------------------------------
 # ユーザー認証関連のエラー
 # --------------------------------------------------------
-# 認証（未ログイン）や権限不足など、ユーザー関連のエラーを定義
 type AuthenticationError {
     message: String!
 }
@@ -13,7 +43,6 @@ type AuthorizationError {
 # --------------------------------------------------------
 # 汎用エラー
 # --------------------------------------------------------
-# バリデーションエラーやデータベース関連のエラーを定義
 type ValidationError {
     message: String!
 }
@@ -23,49 +52,5 @@ type DatabaseError {
 }
 
 type RateLimitError {
-    message: String!
-}
-
-# --------------------------------------------------------
-# 特定の処理に関するエラー
-# --------------------------------------------------------
-# 特定のビジネスロジックに基づくエラー
-type AlreadyUsedClaimLinkError {
-    message: String!
-}
-
-type ClaimLinkExpiredError {
-    message: String!
-}
-
-type InvalidTransferMethodError {
-    message: String!
-}
-
-type MissingWalletInformationError {
-    message: String!
-}
-
-type UnsupportedTransactionReasonError {
-    message: String!
-}
-
-type InvalidPublishStatusError {
-    message: String!
-}
-
-type MissingTicketIdsError {
-    message: String!
-}
-
-type TicketParticipantMismatchError {
-    message: String!
-}
-
-type InvalidEvaluationStatusError {
-    message: String!
-}
-
-type PersonalRecordOnlyDeletableError {
     message: String!
 }
