@@ -7,6 +7,7 @@ type OpportunitySlot {
     hostingStatus: OpportunitySlotHostingStatus!
     capacity: Int
     remainingCapacity: Int
+    evaluationProgress: SlotEvaluationProgress
 
     startsAt: Datetime!
     endsAt: Datetime!
@@ -17,6 +18,11 @@ type OpportunitySlot {
 
     createdAt: Datetime
     updatedAt: Datetime
+}
+
+type SlotEvaluationProgress {
+    totalEvaluated: Int
+    validParticipations: Int
 }
 
 enum OpportunitySlotHostingStatus {

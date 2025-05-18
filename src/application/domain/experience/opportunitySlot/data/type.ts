@@ -20,6 +20,7 @@ export const opportunitySlotSelectDetail = Prisma.validator<Prisma.OpportunitySl
   capacity: true,
 
   remainingCapacityView: { select: { remainingCapacity: true } },
+  slotEvaluationProgress: { select: { totalEvaluated: true, validParticipations: true } },
   opportunityId: true,
 
   createdAt: true,

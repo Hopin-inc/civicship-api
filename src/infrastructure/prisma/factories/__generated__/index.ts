@@ -30,6 +30,7 @@ import type { CurrentPointView } from "@prisma/client";
 import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
+import type { SlotEvaluationProgress } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
@@ -385,6 +386,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "RemainingCapacityView",
                 relationName: "OpportunitySlotToRemainingCapacityView"
             }, {
+                name: "slotEvaluationProgress",
+                type: "SlotEvaluationProgress",
+                relationName: "OpportunitySlotToSlotEvaluationProgress"
+            }, {
                 name: "opportunity",
                 type: "Opportunity",
                 relationName: "OpportunityToOpportunitySlot"
@@ -649,6 +654,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "slot",
                 type: "OpportunitySlot",
                 relationName: "OpportunitySlotToRemainingCapacityView"
+            }]
+    }, {
+        name: "SlotEvaluationProgress",
+        fields: [{
+                name: "slot",
+                type: "OpportunitySlot",
+                relationName: "OpportunitySlotToSlotEvaluationProgress"
             }]
     }];
 
@@ -2781,6 +2793,11 @@ type OpportunitySlotremainingCapacityViewFactory = {
     build: () => PromiseLike<Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput["create"]>;
 };
 
+type OpportunitySlotslotEvaluationProgressFactory = {
+    _factoryFor: "SlotEvaluationProgress";
+    build: () => PromiseLike<Prisma.SlotEvaluationProgressCreateNestedOneWithoutSlotInput["create"]>;
+};
+
 type OpportunitySlotopportunityFactory = {
     _factoryFor: "Opportunity";
     build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutSlotsInput["create"]>;
@@ -2795,6 +2812,7 @@ type OpportunitySlotFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     remainingCapacityView?: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput;
+    slotEvaluationProgress?: OpportunitySlotslotEvaluationProgressFactory | Prisma.SlotEvaluationProgressCreateNestedOneWithoutSlotInput;
     opportunity: OpportunitySlotopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutSlotsInput;
     reservations?: Prisma.ReservationCreateNestedManyWithoutOpportunitySlotInput;
 };
@@ -2814,6 +2832,10 @@ type OpportunitySlotFactoryDefineOptions<TTransients extends Record<string, unkn
 
 function isOpportunitySlotremainingCapacityViewFactory(x: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput | undefined): x is OpportunitySlotremainingCapacityViewFactory {
     return (x as any)?._factoryFor === "RemainingCapacityView";
+}
+
+function isOpportunitySlotslotEvaluationProgressFactory(x: OpportunitySlotslotEvaluationProgressFactory | Prisma.SlotEvaluationProgressCreateNestedOneWithoutSlotInput | undefined): x is OpportunitySlotslotEvaluationProgressFactory {
+    return (x as any)?._factoryFor === "SlotEvaluationProgress";
 }
 
 function isOpportunitySlotopportunityFactory(x: OpportunitySlotopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutSlotsInput | undefined): x is OpportunitySlotopportunityFactory {
@@ -2884,6 +2906,9 @@ function defineOpportunitySlotFactoryInternal<TTransients extends Record<string,
                 remainingCapacityView: isOpportunitySlotremainingCapacityViewFactory(defaultData.remainingCapacityView) ? {
                     create: await defaultData.remainingCapacityView.build()
                 } : defaultData.remainingCapacityView,
+                slotEvaluationProgress: isOpportunitySlotslotEvaluationProgressFactory(defaultData.slotEvaluationProgress) ? {
+                    create: await defaultData.slotEvaluationProgress.build()
+                } : defaultData.slotEvaluationProgress,
                 opportunity: isOpportunitySlotopportunityFactory(defaultData.opportunity) ? {
                     create: await defaultData.opportunity.build()
                 } : defaultData.opportunity
@@ -6112,3 +6137,157 @@ export const defineRemainingCapacityViewFactory = (<TOptions extends RemainingCa
 }) as RemainingCapacityViewFactoryBuilder;
 
 defineRemainingCapacityViewFactory.withTransientFields = defaultTransientFieldValues => options => defineRemainingCapacityViewFactoryInternal(options, defaultTransientFieldValues);
+
+type SlotEvaluationProgressScalarOrEnumFields = {
+    totalEvaluated: number;
+    validParticipations: number;
+};
+
+type SlotEvaluationProgressslotFactory = {
+    _factoryFor: "OpportunitySlot";
+    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutSlotEvaluationProgressInput["create"]>;
+};
+
+type SlotEvaluationProgressFactoryDefineInput = {
+    totalEvaluated?: number;
+    validParticipations?: number;
+    slot: SlotEvaluationProgressslotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutSlotEvaluationProgressInput;
+};
+
+type SlotEvaluationProgressTransientFields = Record<string, unknown> & Partial<Record<keyof SlotEvaluationProgressFactoryDefineInput, never>>;
+
+type SlotEvaluationProgressFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<SlotEvaluationProgressFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<SlotEvaluationProgress, Prisma.SlotEvaluationProgressCreateInput, TTransients>;
+
+type SlotEvaluationProgressFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<SlotEvaluationProgressFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: SlotEvaluationProgressFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<SlotEvaluationProgress, Prisma.SlotEvaluationProgressCreateInput, TTransients>;
+
+function isSlotEvaluationProgressslotFactory(x: SlotEvaluationProgressslotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutSlotEvaluationProgressInput | undefined): x is SlotEvaluationProgressslotFactory {
+    return (x as any)?._factoryFor === "OpportunitySlot";
+}
+
+type SlotEvaluationProgressTraitKeys<TOptions extends SlotEvaluationProgressFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface SlotEvaluationProgressFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "SlotEvaluationProgress";
+    build(inputData?: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>): PromiseLike<Prisma.SlotEvaluationProgressCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>): PromiseLike<Prisma.SlotEvaluationProgressCreateInput>;
+    buildList(list: readonly Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>[]): PromiseLike<Prisma.SlotEvaluationProgressCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>): PromiseLike<Prisma.SlotEvaluationProgressCreateInput[]>;
+    pickForConnect(inputData: SlotEvaluationProgress): Pick<SlotEvaluationProgress, "slotId">;
+    create(inputData?: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>): PromiseLike<SlotEvaluationProgress>;
+    createList(list: readonly Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>[]): PromiseLike<SlotEvaluationProgress[]>;
+    createList(count: number, item?: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>): PromiseLike<SlotEvaluationProgress[]>;
+    createForConnect(inputData?: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>): PromiseLike<Pick<SlotEvaluationProgress, "slotId">>;
+}
+
+export interface SlotEvaluationProgressFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends SlotEvaluationProgressFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): SlotEvaluationProgressFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateSlotEvaluationProgressScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): SlotEvaluationProgressScalarOrEnumFields {
+    return {
+        totalEvaluated: getScalarFieldValueGenerator().Int({ modelName: "SlotEvaluationProgress", fieldName: "totalEvaluated", isId: false, isUnique: false, seq }),
+        validParticipations: getScalarFieldValueGenerator().Int({ modelName: "SlotEvaluationProgress", fieldName: "validParticipations", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineSlotEvaluationProgressFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends SlotEvaluationProgressFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): SlotEvaluationProgressFactoryInterface<TTransients, SlotEvaluationProgressTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly SlotEvaluationProgressTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("SlotEvaluationProgress", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateSlotEvaluationProgressScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<SlotEvaluationProgressFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<SlotEvaluationProgressFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                slot: isSlotEvaluationProgressslotFactory(defaultData.slot) ? {
+                    create: await defaultData.slot.build()
+                } : defaultData.slot
+            } as Prisma.SlotEvaluationProgressCreateInput;
+            const data: Prisma.SlotEvaluationProgressCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: SlotEvaluationProgress) => ({
+            slotId: inputData.slotId
+        });
+        const create = async (inputData: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().slotEvaluationProgress.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.SlotEvaluationProgressCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "SlotEvaluationProgress" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: SlotEvaluationProgressTraitKeys<TOptions>, ...names: readonly SlotEvaluationProgressTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface SlotEvaluationProgressFactoryBuilder {
+    <TOptions extends SlotEvaluationProgressFactoryDefineOptions>(options: TOptions): SlotEvaluationProgressFactoryInterface<{}, SlotEvaluationProgressTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends SlotEvaluationProgressTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends SlotEvaluationProgressFactoryDefineOptions<TTransients>>(options: TOptions) => SlotEvaluationProgressFactoryInterface<TTransients, SlotEvaluationProgressTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link SlotEvaluationProgress} model.
+ *
+ * @param options
+ * @returns factory {@link SlotEvaluationProgressFactoryInterface}
+ */
+export const defineSlotEvaluationProgressFactory = (<TOptions extends SlotEvaluationProgressFactoryDefineOptions>(options: TOptions): SlotEvaluationProgressFactoryInterface<TOptions> => {
+    return defineSlotEvaluationProgressFactoryInternal(options, {});
+}) as SlotEvaluationProgressFactoryBuilder;
+
+defineSlotEvaluationProgressFactory.withTransientFields = defaultTransientFieldValues => options => defineSlotEvaluationProgressFactoryInternal(options, defaultTransientFieldValues);

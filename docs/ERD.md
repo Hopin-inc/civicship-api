@@ -550,6 +550,13 @@ TICKET_REFUNDED TICKET_REFUNDED
     Int remainingCapacity "❓"
     }
   
+
+  "v_slot_evaluation_progress" {
+    String slotId "🗝️"
+    Int totalEvaluated 
+    Int validParticipations 
+    }
+  
     "t_images" o{--}o "t_users" : "users"
     "t_images" o{--}o "t_communities" : "communities"
     "t_images" o{--}o "t_articles" : "articles"
@@ -633,6 +640,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hosting_status"
     "t_opportunity_slots" o{--}o "v_slot_remaining_capacity" : "remainingCapacityView"
+    "t_opportunity_slots" o{--}o "v_slot_evaluation_progress" : "slotEvaluationProgress"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
     "t_reservations" o|--|| "t_opportunity_slots" : "opportunitySlot"
@@ -703,4 +711,5 @@ TICKET_REFUNDED TICKET_REFUNDED
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
     "v_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
     "v_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
+    "v_slot_evaluation_progress" o|--|| "t_opportunity_slots" : "slot"
 ```

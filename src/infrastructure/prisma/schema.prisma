@@ -517,8 +517,9 @@ model OpportunitySlot {
   startsAt DateTime @map("starts_at")
   endsAt   DateTime @map("ends_at")
 
-  capacity              Int?
-  remainingCapacityView RemainingCapacityView?
+  capacity               Int?
+  remainingCapacityView  RemainingCapacityView?
+  slotEvaluationProgress SlotEvaluationProgress?
 
   opportunityId String      @map("opportunity_id")
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
@@ -544,6 +545,16 @@ view RemainingCapacityView {
   remainingCapacity Int? @map("remaining_capacity")
 
   @@map("v_slot_remaining_capacity")
+}
+
+view SlotEvaluationProgress {
+  slotId String          @id @map("slot_id")
+  slot   OpportunitySlot @relation(fields: [slotId], references: [id])
+
+  totalEvaluated      Int @map("total_evaluated")
+  validParticipations Int @map("valid_participations")
+
+  @@map("v_slot_evaluation_progress")
 }
 
 // ------------------------------ Reservation Domain ------------------------------
