@@ -26,9 +26,7 @@ export function createSlotsByOpportunityLoader(issuer: PrismaClientIssuer) {
     const opportunities = await issuer.internal((tx) =>
       tx.opportunity.findMany({
         where: { id: { in: [...opportunityIds] } },
-        include: {
-          slots: { include: { remainingCapacityView: true, slotEvaluationProgress: true } },
-        },
+        include: { slots: { include: { remainingCapacityView: true } } },
       }),
     );
 

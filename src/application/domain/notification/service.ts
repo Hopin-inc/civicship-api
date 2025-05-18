@@ -28,7 +28,14 @@ export default class NotificationService {
     ctx: IContext,
     slot: PrismaOpportunitySlotSetHostingStatus,
   ) {
-    const lineId = this.resolveLineId(ctx);
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
 
     const { year, date, time } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const opportunityId = slot.opportunityId;
@@ -53,7 +60,14 @@ export default class NotificationService {
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId = this.resolveLineId(ctx);
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -78,7 +92,14 @@ export default class NotificationService {
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId = this.resolveLineId(ctx);
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
@@ -105,7 +126,14 @@ export default class NotificationService {
     currentUserId: string,
     reservation: PrismaReservation,
   ): Promise<void> {
-    const lineId = this.resolveLineId(ctx);
+    const lineId =
+      process.env.ENV === "LOCAL"
+        ? LOCAL_UID
+        : ctx.uid
+          ? ctx.uid
+          : (() => {
+              throw new Error("uid is required");
+            })();
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -139,12 +167,16 @@ export default class NotificationService {
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
-    const lineUid = membership.user?.identities.find(
+    let lineUid = membership.user?.identities.find(
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;
 
     if (!lineUid) {
-      return;
+      if (process.env.ENV === "LOCAL") {
+        lineUid = LOCAL_UID;
+      } else {
+        return;
+      }
     }
 
     const richMenuId =
@@ -160,10 +192,5 @@ export default class NotificationService {
     const date = dayjs(start).format("M月D日");
     const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
     return { year, date, time };
-  }
-
-  private resolveLineId(ctx: IContext): string {
-    if (ctx.uid) return ctx.uid;
-    throw new Error("uid is required");
   }
 }

@@ -10,7 +10,6 @@ export const opportunitySlotReserveInclude = Prisma.validator<Prisma.Opportunity
   opportunity: { include: { requiredUtilities: true } },
   reservations: { include: { participations: true } },
   remainingCapacityView: true,
-  slotEvaluationProgress: true,
 });
 
 export const opportunitySlotSelectDetail = Prisma.validator<Prisma.OpportunitySlotSelect>()({
@@ -21,7 +20,6 @@ export const opportunitySlotSelectDetail = Prisma.validator<Prisma.OpportunitySl
   capacity: true,
 
   remainingCapacityView: { select: { remainingCapacity: true } },
-  slotEvaluationProgress: { select: { totalEvaluated: true, validParticipations: true } },
   opportunityId: true,
 
   createdAt: true,
