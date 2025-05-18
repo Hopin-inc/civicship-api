@@ -8,7 +8,7 @@ import {
 import OpportunityRepository from "@/application/domain/experience/opportunity/data/repository";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { NotFoundError, InvalidPublishStatusError, ValidationError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import OpportunityConverter from "@/application/domain/experience/opportunity/data/converter";
 import ImageService from "@/application/domain/content/image/service";
@@ -134,8 +134,8 @@ export default class OpportunityService {
       filter?.publishStatus &&
       !filter.publishStatus.every((status) => allowedStatuses.includes(status))
     ) {
-      throw new InvalidPublishStatusError(
-        allowedStatuses,
+      throw new ValidationError(
+        `Publish status must be one of ${allowedStatuses.join(", ")}`,
         filter?.publishStatus || []
       );
     }

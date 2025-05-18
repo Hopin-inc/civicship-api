@@ -5,7 +5,7 @@ import EvaluationConverter from "@/application/domain/experience/evaluation/data
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { InvalidEvaluationStatusError, NotFoundError } from "@/errors/graphql";
+import { ValidationError, NotFoundError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -40,7 +40,7 @@ export default class EvaluationService {
       status === EvaluationStatus.PASSED || status === EvaluationStatus.FAILED;
 
     if (!isValidFinalStatus) {
-      throw new InvalidEvaluationStatusError(status);
+      throw new ValidationError("Invalid status. Only PASSED or FAILED are allowed.", [status]);
     }
 
     const currentUserId = getCurrentUserId(ctx);

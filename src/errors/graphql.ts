@@ -202,26 +202,6 @@ export class UnsupportedTransactionReasonError extends ApolloError {
   }
 }
 
-export class InvalidPublishStatusError extends ApolloError {
-  public allowedStatuses: string[];
-  public providedStatuses: string[];
-
-  constructor(allowedStatuses: string[], providedStatuses: string[]) {
-    const message = `Publish status must be one of ${allowedStatuses.join(", ")}`;
-    super(message, "INVALID_PUBLISH_STATUS");
-    this.allowedStatuses = allowedStatuses;
-    this.providedStatuses = providedStatuses;
-    Object.defineProperty(this, "name", { value: "InvalidPublishStatusError" });
-  }
-}
-
-export class MissingTicketIdsError extends ApolloError {
-  constructor(message: string = "Ticket IDs are not provided") {
-    super(message, "MISSING_TICKET_IDS");
-    Object.defineProperty(this, "name", { value: "MissingTicketIdsError" });
-  }
-}
-
 export class TicketParticipantMismatchError extends ApolloError {
   public ticketCount: number;
   public participantCount: number;
@@ -232,16 +212,5 @@ export class TicketParticipantMismatchError extends ApolloError {
     this.ticketCount = ticketCount;
     this.participantCount = participantCount;
     Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
-  }
-}
-
-export class InvalidEvaluationStatusError extends ApolloError {
-  public status: string;
-
-  constructor(status: string) {
-    const message = `Invalid status. Only PASSED or FAILED are allowed.`;
-    super(message, "INVALID_EVALUATION_STATUS");
-    this.status = status;
-    Object.defineProperty(this, "name", { value: "InvalidEvaluationStatusError" });
   }
 }
