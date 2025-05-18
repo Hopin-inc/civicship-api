@@ -10,6 +10,7 @@ export const opportunitySlotReserveInclude = Prisma.validator<Prisma.Opportunity
   opportunity: { include: { requiredUtilities: true } },
   reservations: { include: { participations: true } },
   remainingCapacityView: true,
+  slotEvaluationProgress: true,
 });
 
 export const opportunitySlotSelectDetail = Prisma.validator<Prisma.OpportunitySlotSelect>()({
