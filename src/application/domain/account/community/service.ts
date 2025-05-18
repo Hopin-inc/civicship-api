@@ -7,7 +7,7 @@ import CommunityConverter from "@/application/domain/account/community/data/conv
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { NotFoundError, InvalidPlaceInputError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import { inject, injectable } from "tsyringe";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
@@ -102,7 +102,7 @@ function validateConnectOrCreatePlacesInput(input: GqlCommunityUpdateProfileInpu
   if (input.places?.connectOrCreate) {
     input.places.connectOrCreate.forEach((item) => {
       if ((item.where && item.create) || (!item.where && !item.create)) {
-        throw new InvalidPlaceInputError(item);
+        throw new ValidationError(`For Place, choose only one of "where" or "create."`, [JSON.stringify(item)]);
       }
     });
   }
