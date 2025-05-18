@@ -1,29 +1,18 @@
-import { 
-  ReservationFullError, 
-  AlreadyJoinedError, 
-  ReservationConflictError, 
+import {
+  ReservationFullError,
+  AlreadyJoinedError,
+  ReservationConflictError,
   AlreadyStartedReservationError,
   ReservationCancellationTimeoutError,
   ReservationAdvanceBookingRequiredError,
   ReservationNotAcceptedError,
   SlotNotScheduledError,
-  NoAvailableParticipationSlotsError
+  NoAvailableParticipationSlotsError,
 } from "@/errors/graphql";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
-
-enum OpportunitySlotHostingStatus {
-  SCHEDULED = "SCHEDULED",
-  CANCELLED = "CANCELLED",
-  COMPLETED = "COMPLETED"
-}
-
-enum ReservationStatus {
-  APPLIED = "APPLIED",
-  ACCEPTED = "ACCEPTED",
-  REJECTED = "REJECTED"
-}
 import { injectable } from "tsyringe";
 import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
+import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 
 @injectable()
 export default class ReservationValidator {
@@ -38,10 +27,7 @@ export default class ReservationValidator {
     this.validateSlotAtLeast7DaysAhead(slot.startsAt);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
-      throw new ReservationFullError(
-        remainingCapacity,
-        participantCount
-      );
+      throw new ReservationFullError(remainingCapacity, participantCount);
     }
   }
 
