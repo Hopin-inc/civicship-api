@@ -80,17 +80,6 @@ export class InsufficientBalanceError extends ApolloError {
   }
 }
 
-export class UtilityAlreadyUsedError extends ApolloError {
-  public usedAt: Date;
-
-  constructor(usedAt: Date) {
-    const message = `Utility already used at ${usedAt.toString()}`;
-    super(message, "UTILITY_ALREADY_USED");
-    this.usedAt = usedAt;
-    Object.defineProperty(this, "name", { value: "UtilityAlreadyUsedError" });
-  }
-}
-
 export class ReservationFullError extends ApolloError {
   public capacity: number;
   public requested: number;
@@ -140,7 +129,9 @@ export class ClaimLinkExpiredError extends ApolloError {
 }
 
 export class ReservationCancellationTimeoutError extends ApolloError {
-  constructor(message: string = "Reservation can no longer be canceled within 24 hours of the event.") {
+  constructor(
+    message: string = "Reservation can no longer be canceled within 24 hours of the event.",
+  ) {
     super(message, "RESERVATION_CANCELLATION_TIMEOUT");
     Object.defineProperty(this, "name", { value: "ReservationCancellationTimeoutError" });
   }
