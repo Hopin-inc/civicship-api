@@ -343,7 +343,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     Int fee_required "❓"
     String community_id "❓"
     String place_id "❓"
-    String created_by 
+    String created_by "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -412,7 +412,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String credential_url "❓"
     DateTime issued_at "❓"
     String participation_id 
-    String evaluator_id 
+    String evaluator_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -637,7 +637,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunities" o{--}o "t_articles" : "articles"
-    "t_opportunities" o|--|| "t_users" : "createdByUser"
+    "t_opportunities" o|--|o "t_users" : "createdByUser"
     "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hosting_status"
     "t_opportunity_slots" o{--}o "v_slot_remaining_capacity" : "remainingCapacityView"
     "t_opportunity_slots" o{--}o "v_slot_evaluation_progress" : "slotEvaluationProgress"
@@ -668,7 +668,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participation_status_histories" o|--|o "t_users" : "createdByUser"
     "t_evaluations" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluations" o|--|| "t_participations" : "participation"
-    "t_evaluations" o|--|| "t_users" : "evaluator"
+    "t_evaluations" o|--|o "t_users" : "evaluator"
     "t_evaluations" o{--}o "t_evaluation_histories" : "histories"
     "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"

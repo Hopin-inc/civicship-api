@@ -2620,7 +2620,7 @@ type OpportunityFactoryDefineInput = {
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     place?: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
-    createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
+    createdByUser?: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
 };
 
 type OpportunityTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunityFactoryDefineInput, never>>;
@@ -2630,9 +2630,9 @@ type OpportunityFactoryTrait<TTransients extends Record<string, unknown>> = {
 } & CallbackDefineOptions<Opportunity, Prisma.OpportunityCreateInput, TTransients>;
 
 type OpportunityFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<OpportunityFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData?: Resolver<OpportunityFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: OpportunityFactoryTrait<TTransients>;
+        [traitName: TraitName]: OpportunityFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<Opportunity, Prisma.OpportunityCreateInput, TTransients>;
 
@@ -2701,7 +2701,7 @@ function defineOpportunityFactoryInternal<TTransients extends Record<string, unk
         const build = async (inputData: Partial<Prisma.OpportunityCreateInput & TTransients> = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateOpportunityScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<OpportunityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const resolveValue = normalizeResolver<OpportunityFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -2767,8 +2767,8 @@ function defineOpportunityFactoryInternal<TTransients extends Record<string, unk
 }
 
 interface OpportunityFactoryBuilder {
-    <TOptions extends OpportunityFactoryDefineOptions>(options: TOptions): OpportunityFactoryInterface<{}, OpportunityTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends OpportunityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends OpportunityFactoryDefineOptions<TTransients>>(options: TOptions) => OpportunityFactoryInterface<TTransients, OpportunityTraitKeys<TOptions>>;
+    <TOptions extends OpportunityFactoryDefineOptions>(options?: TOptions): OpportunityFactoryInterface<{}, OpportunityTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends OpportunityTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends OpportunityFactoryDefineOptions<TTransients>>(options?: TOptions) => OpportunityFactoryInterface<TTransients, OpportunityTraitKeys<TOptions>>;
 }
 
 /**
@@ -2777,11 +2777,11 @@ interface OpportunityFactoryBuilder {
  * @param options
  * @returns factory {@link OpportunityFactoryInterface}
  */
-export const defineOpportunityFactory = (<TOptions extends OpportunityFactoryDefineOptions>(options: TOptions): OpportunityFactoryInterface<TOptions> => {
-    return defineOpportunityFactoryInternal(options, {});
+export const defineOpportunityFactory = (<TOptions extends OpportunityFactoryDefineOptions>(options?: TOptions): OpportunityFactoryInterface<TOptions> => {
+    return defineOpportunityFactoryInternal(options ?? {}, {});
 }) as OpportunityFactoryBuilder;
 
-defineOpportunityFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityFactoryInternal(options, defaultTransientFieldValues);
+defineOpportunityFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type OpportunitySlotScalarOrEnumFields = {
     startsAt: Date;
@@ -3691,7 +3691,7 @@ type EvaluationFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     participation: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput;
-    evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput;
+    evaluator?: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput;
     histories?: Prisma.EvaluationHistoryCreateNestedManyWithoutEvaluationInput;
 };
 

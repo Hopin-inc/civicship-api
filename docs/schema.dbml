@@ -225,8 +225,8 @@ Table t_opportunities {
   placeId String
   place t_places
   articles t_articles [not null]
-  createdBy String [not null]
-  createdByUser t_users [not null]
+  createdBy String
+  createdByUser t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -310,8 +310,8 @@ Table t_evaluations {
   issuedAt DateTime
   participationId String [unique, not null]
   participation t_participations [not null]
-  evaluatorId String [not null]
-  evaluator t_users [not null]
+  evaluatorId String
+  evaluator t_users
   histories t_evaluation_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime

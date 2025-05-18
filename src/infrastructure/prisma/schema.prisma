@@ -485,8 +485,8 @@ model Opportunity {
 
   articles Article[] @relation("t_opportunities_on_articles")
 
-  createdBy     String @map("created_by")
-  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -685,8 +685,8 @@ model Evaluation {
   participationId String        @unique @map("participation_id")
   participation   Participation @relation(fields: [participationId], references: [id], onDelete: Cascade)
 
-  evaluatorId String @map("evaluator_id")
-  evaluator   User   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
+  evaluatorId String? @map("evaluator_id")
+  evaluator   User?   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
 
   histories EvaluationHistory[]
 
