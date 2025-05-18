@@ -7,7 +7,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { Prisma, PublishStatus } from "@prisma/client";
-import { NotFoundError, InvalidPublishStatusError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { IImageService } from "../../content/image/interface";
 import UtilityConverter from "./data/converter";
 import { IUtilityService, IUtilityRepository } from "./data/interface";
@@ -98,8 +98,8 @@ export default class UtilityService implements IUtilityService {
       filter?.publishStatus &&
       !filter.publishStatus.every((publishStatus) => allowedStatuses.includes(publishStatus))
     ) {
-      throw new InvalidPublishStatusError(
-        allowedStatuses,
+      throw new ValidationError(
+        `Publish status must be one of ${allowedStatuses.join(", ")}`,
         filter?.publishStatus || []
       );
     }

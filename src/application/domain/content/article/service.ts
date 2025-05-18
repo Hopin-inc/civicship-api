@@ -1,6 +1,6 @@
 import ArticleConverter from "@/application/domain/content/article/data/converter";
 import { Prisma, PublishStatus } from "@prisma/client";
-import { InvalidPublishStatusError } from "@/errors/graphql";
+import { ValidationError } from "@/errors/graphql";
 import { IArticleRepository } from "@/application/domain/content/article/data/interface";
 import { IContext } from "@/types/server";
 import { GqlArticleFilterInput, GqlQueryArticlesArgs } from "@/types/graphql";
@@ -39,8 +39,8 @@ export default class ArticleService {
       filter?.publishStatus &&
       !filter.publishStatus.every((status) => allowedStatuses.includes(status))
     ) {
-      throw new InvalidPublishStatusError(
-        allowedStatuses,
+      throw new ValidationError(
+        `Publish status must be one of ${allowedStatuses.join(", ")}`,
         filter?.publishStatus || []
       );
     }

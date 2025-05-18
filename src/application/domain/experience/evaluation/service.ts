@@ -4,12 +4,7 @@ import { IEvaluationRepository } from "@/application/domain/experience/evaluatio
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import {
-  InvalidEvaluationStatusError,
-  ParticipationOrOpportunityNotFoundError,
-  CommunityIdNotFoundError,
-  UserIdNotFoundError,
-} from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()
@@ -64,17 +59,17 @@ export default class EvaluationService {
     const opportunity = participation?.reservation?.opportunitySlot?.opportunity;
 
     if (!participation || !opportunity) {
-      throw new ParticipationOrOpportunityNotFoundError(evaluation.id);
+      throw new NotFoundError("Participation or Opportunity", { evaluationId: evaluation.id });
     }
 
     const communityId = participation?.communityId;
     if (!communityId) {
-      throw new CommunityIdNotFoundError(evaluation.id);
+      throw new NotFoundError("Community ID", { evaluationId: evaluation.id });
     }
 
     const userId = participation?.userId;
     if (!userId) {
-      throw new UserIdNotFoundError(evaluation.id);
+      throw new NotFoundError("User ID", { evaluationId: evaluation.id });
     }
 
     return { participation, opportunity, communityId, userId };

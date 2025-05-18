@@ -1,29 +1,17 @@
-import { 
-  ReservationFullError, 
-  AlreadyJoinedError, 
-  ReservationConflictError, 
+import {
+  ReservationFullError,
+  AlreadyJoinedError,
   AlreadyStartedReservationError,
   ReservationCancellationTimeoutError,
   ReservationAdvanceBookingRequiredError,
   ReservationNotAcceptedError,
   SlotNotScheduledError,
-  NoAvailableParticipationSlotsError
+  NoAvailableParticipationSlotsError,
 } from "@/errors/graphql";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
-
-enum OpportunitySlotHostingStatus {
-  SCHEDULED = "SCHEDULED",
-  CANCELLED = "CANCELLED",
-  COMPLETED = "COMPLETED"
-}
-
-enum ReservationStatus {
-  APPLIED = "APPLIED",
-  ACCEPTED = "ACCEPTED",
-  REJECTED = "REJECTED"
-}
 import { injectable } from "tsyringe";
 import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
+import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
 
 @injectable()
 export default class ReservationValidator {
@@ -31,17 +19,12 @@ export default class ReservationValidator {
     slot: PrismaOpportunitySlotReserve,
     participantCount: number,
     remainingCapacity: number | undefined,
-    reservations: PrismaReservation[],
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
-    this.validateNoConflicts(reservations.length);
     this.validateSlotAtLeast7DaysAhead(slot.startsAt);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
-      throw new ReservationFullError(
-        remainingCapacity,
-        participantCount
-      );
+      throw new ReservationFullError(remainingCapacity, participantCount);
     }
   }
 
@@ -74,12 +57,6 @@ export default class ReservationValidator {
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();
-    }
-  }
-
-  private validateNoConflicts(length: number) {
-    if (length > 0) {
-      throw new ReservationConflictError();
     }
   }
 

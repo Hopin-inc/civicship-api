@@ -3,7 +3,7 @@ import { GqlQueryTicketsArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { ITicketRepository } from "@/application/domain/reward/ticket/data/interface";
 import { Prisma } from "@prisma/client";
-import { NotFoundError, MissingTicketIdsError, TicketParticipantMismatchError } from "@/errors/graphql";
+import { NotFoundError, ValidationError, TicketParticipantMismatchError } from "@/errors/graphql";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import TicketPresenter from "@/application/domain/reward/ticket/presenter";
 import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
@@ -66,7 +66,7 @@ export default class TicketService {
     ticketIds?: string[],
   ) {
     const currentUserId = getCurrentUserId(ctx);
-    if (!ticketIds) throw new MissingTicketIdsError();
+    if (!ticketIds) throw new ValidationError("Ticket IDs are not provided");
 
     if (ticketIds.length !== participationIds.length) {
       throw new TicketParticipantMismatchError(ticketIds.length, participationIds.length);
