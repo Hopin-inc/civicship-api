@@ -33,6 +33,11 @@ export type GqlAlreadyJoinedError = {
   message: Scalars['String']['output'];
 };
 
+export type GqlAlreadyUsedClaimLinkError = {
+  __typename?: 'AlreadyUsedClaimLinkError';
+  message: Scalars['String']['output'];
+};
+
 export type GqlArticle = {
   __typename?: 'Article';
   authors?: Maybe<Array<GqlUser>>;
@@ -145,6 +150,11 @@ export type GqlCity = {
   code: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   state?: Maybe<GqlState>;
+};
+
+export type GqlClaimLinkExpiredError = {
+  __typename?: 'ClaimLinkExpiredError';
+  message: Scalars['String']['output'];
 };
 
 export const GqlClaimLinkStatus = {
@@ -275,34 +285,6 @@ export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
 
-export const GqlErrorCode = {
-  AlreadyJoined: 'ALREADY_JOINED',
-  AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
-  ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
-  Forbidden: 'FORBIDDEN',
-  InsuperableBalance: 'INSUPERABLE_BALANCE',
-  InternalServerError: 'INTERNAL_SERVER_ERROR',
-  InvalidEvaluationStatus: 'INVALID_EVALUATION_STATUS',
-  InvalidPlaceInput: 'INVALID_PLACE_INPUT',
-  InvalidPublishStatus: 'INVALID_PUBLISH_STATUS',
-  InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
-  MissingTicketIds: 'MISSING_TICKET_IDS',
-  MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
-  NotFound: 'NOT_FOUND',
-  PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
-  RateLimit: 'RATE_LIMIT',
-  ReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
-  ReservationFull: 'RESERVATION_FULL',
-  ReservationNotAccepted: 'RESERVATION_NOT_ACCEPTED',
-  SlotNotScheduled: 'SLOT_NOT_SCHEDULED',
-  TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
-  Unauthenticated: 'UNAUTHENTICATED',
-  UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
-  UserIdNotFound: 'USER_ID_NOT_FOUND',
-  ValidationError: 'VALIDATION_ERROR'
-} as const;
-
-export type GqlErrorCode = typeof GqlErrorCode[keyof typeof GqlErrorCode];
 export type GqlEvaluation = {
   __typename?: 'Evaluation';
   comment?: Maybe<Scalars['String']['output']>;
@@ -1983,7 +1965,7 @@ export type GqlTicketClaimLink = {
   tickets?: Maybe<Array<GqlTicket>>;
 };
 
-export type GqlTicketClaimPayload = GqlTicketClaimSuccess;
+export type GqlTicketClaimPayload = GqlAlreadyUsedClaimLinkError | GqlClaimLinkExpiredError | GqlTicketClaimSuccess;
 
 export type GqlTicketClaimSuccess = {
   __typename?: 'TicketClaimSuccess';
@@ -2571,7 +2553,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   PlaceUpdatePayload: ( Omit<GqlPlaceUpdateSuccess, 'place'> & { place: _RefType['Place'] } );
   ReservationCreatePayload: ( GqlMissingTicketIdsError ) | ( GqlReservationAdvanceBookingRequiredError ) | ( Omit<GqlReservationCreateSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } ) | ( GqlReservationFullError ) | ( GqlReservationNotAcceptedError ) | ( GqlSlotNotScheduledError ) | ( GqlTicketParticipantMismatchError );
   ReservationSetStatusPayload: ( GqlAlreadyJoinedError ) | ( GqlNoAvailableParticipationSlotsError ) | ( GqlReservationCancellationTimeoutError ) | ( Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: _RefType['Reservation'] } );
-  TicketClaimPayload: ( Omit<GqlTicketClaimSuccess, 'tickets'> & { tickets: Array<_RefType['Ticket']> } );
+  TicketClaimPayload: ( GqlAlreadyUsedClaimLinkError ) | ( GqlClaimLinkExpiredError ) | ( Omit<GqlTicketClaimSuccess, 'tickets'> & { tickets: Array<_RefType['Ticket']> } );
   TicketIssuePayload: ( Omit<GqlTicketIssueSuccess, 'issue'> & { issue: _RefType['TicketIssuer'] } );
   TicketPurchasePayload: ( Omit<GqlTicketPurchaseSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
   TicketRefundPayload: ( Omit<GqlTicketRefundSuccess, 'ticket'> & { ticket: _RefType['Ticket'] } );
@@ -2595,6 +2577,7 @@ export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>>
 export type GqlResolversTypes = ResolversObject<{
   AccumulatedPointView: ResolverTypeWrapper<AccumulatedPointView>;
   AlreadyJoinedError: ResolverTypeWrapper<GqlAlreadyJoinedError>;
+  AlreadyUsedClaimLinkError: ResolverTypeWrapper<GqlAlreadyUsedClaimLinkError>;
   Article: ResolverTypeWrapper<Article>;
   ArticleCategory: GqlArticleCategory;
   ArticleEdge: ResolverTypeWrapper<Omit<GqlArticleEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Article']> }>;
@@ -2611,6 +2594,7 @@ export type GqlResolversTypes = ResolversObject<{
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: ResolverTypeWrapper<City>;
+  ClaimLinkExpiredError: ResolverTypeWrapper<GqlClaimLinkExpiredError>;
   ClaimLinkStatus: GqlClaimLinkStatus;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
   Community: ResolverTypeWrapper<Community>;
@@ -2633,7 +2617,6 @@ export type GqlResolversTypes = ResolversObject<{
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
-  ErrorCode: GqlErrorCode;
   Evaluation: ResolverTypeWrapper<Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversTypes['Participation']> }>;
   EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EvaluationCreatePayload']>;
@@ -2881,6 +2864,7 @@ export type GqlResolversTypes = ResolversObject<{
 export type GqlResolversParentTypes = ResolversObject<{
   AccumulatedPointView: AccumulatedPointView;
   AlreadyJoinedError: GqlAlreadyJoinedError;
+  AlreadyUsedClaimLinkError: GqlAlreadyUsedClaimLinkError;
   Article: Article;
   ArticleEdge: Omit<GqlArticleEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Article']> };
   ArticleFilterInput: GqlArticleFilterInput;
@@ -2895,6 +2879,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
   City: City;
+  ClaimLinkExpiredError: GqlClaimLinkExpiredError;
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
   CommunityCreateInput: GqlCommunityCreateInput;
@@ -3160,6 +3145,11 @@ export type GqlAlreadyJoinedErrorResolvers<ContextType = any, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlAlreadyUsedClaimLinkErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['AlreadyUsedClaimLinkError'] = GqlResolversParentTypes['AlreadyUsedClaimLinkError']> = ResolversObject<{
+  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlArticleResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Article'] = GqlResolversParentTypes['Article']> = ResolversObject<{
   authors?: Resolver<Maybe<Array<GqlResolversTypes['User']>>, ParentType, ContextType>;
   body?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
@@ -3205,6 +3195,11 @@ export type GqlCityResolvers<ContextType = any, ParentType extends GqlResolversP
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   state?: Resolver<Maybe<GqlResolversTypes['State']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlClaimLinkExpiredErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ClaimLinkExpiredError'] = GqlResolversParentTypes['ClaimLinkExpiredError']> = ResolversObject<{
+  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4011,7 +4006,7 @@ export type GqlTicketClaimLinkResolvers<ContextType = any, ParentType extends Gq
 }>;
 
 export type GqlTicketClaimPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketClaimPayload'] = GqlResolversParentTypes['TicketClaimPayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'TicketClaimSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'AlreadyUsedClaimLinkError' | 'ClaimLinkExpiredError' | 'TicketClaimSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlTicketClaimSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['TicketClaimSuccess'] = GqlResolversParentTypes['TicketClaimSuccess']> = ResolversObject<{
@@ -4344,12 +4339,14 @@ export type GqlWalletsConnectionResolvers<ContextType = any, ParentType extends 
 export type GqlResolvers<ContextType = any> = ResolversObject<{
   AccumulatedPointView?: GqlAccumulatedPointViewResolvers<ContextType>;
   AlreadyJoinedError?: GqlAlreadyJoinedErrorResolvers<ContextType>;
+  AlreadyUsedClaimLinkError?: GqlAlreadyUsedClaimLinkErrorResolvers<ContextType>;
   Article?: GqlArticleResolvers<ContextType>;
   ArticleEdge?: GqlArticleEdgeResolvers<ContextType>;
   ArticlesConnection?: GqlArticlesConnectionResolvers<ContextType>;
   AuthenticationError?: GqlAuthenticationErrorResolvers<ContextType>;
   AuthorizationError?: GqlAuthorizationErrorResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
+  ClaimLinkExpiredError?: GqlClaimLinkExpiredErrorResolvers<ContextType>;
   CommunitiesConnection?: GqlCommunitiesConnectionResolvers<ContextType>;
   Community?: GqlCommunityResolvers<ContextType>;
   CommunityCreatePayload?: GqlCommunityCreatePayloadResolvers<ContextType>;
