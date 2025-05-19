@@ -109,6 +109,10 @@ export default class EvaluationUseCase {
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
+    await Promise.all([
+      this.participationService.findParticipationOrThrow(ctx, input.participationId),
+      this.evaluationService.validateEvaluatable(ctx, input.participationId),
+    ]);
 
     const evaluation = await this.evaluationService.createEvaluation(
       ctx,
