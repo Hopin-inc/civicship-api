@@ -290,9 +290,9 @@ view MembershipParticipationGeoView {
 
   type ParticipationType
 
-  placeId    String @map("place_id")
-  placeName  String @map("place_name")
-  placeImage String @map("place_image")
+  placeId    String  @map("place_id")
+  placeName  String? @map("place_name")
+  placeImage String? @map("place_image")
 
   address   String
   latitude  Decimal

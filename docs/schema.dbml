@@ -419,8 +419,8 @@ Table v_membership_participation_geo {
   communityId String [not null]
   type ParticipationType [not null]
   placeId String [not null]
-  placeName String [not null]
-  placeImage String [not null]
+  placeName String
+  placeImage String
   address String [not null]
   latitude Decimal [not null]
   longitude Decimal [not null]
