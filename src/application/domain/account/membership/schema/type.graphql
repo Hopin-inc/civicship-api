@@ -38,7 +38,7 @@ type MembershipParticipatedMetrics {
 
 type MembershipParticipationLocation{
     placeId: ID!
-    placeName: String!
+    placeName: String
     placeImage: String
 
     address: String!
