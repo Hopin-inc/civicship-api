@@ -14,10 +14,9 @@ describe("ReservationValidator", () => {
       } as any;
       const participantCount = 2;
       const remainingCapacity = 5;
-      const reservations: any[] = [];
 
       expect(() => {
-        validator.validateReservable(slot, participantCount, remainingCapacity, reservations);
+        validator.validateReservable(slot, participantCount, remainingCapacity);
       }).not.toThrow();
     });
 
@@ -28,7 +27,7 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(ValidationError);
     });
 
@@ -39,7 +38,7 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, []);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(ValidationError);
     });
 
@@ -48,10 +47,9 @@ describe("ReservationValidator", () => {
         hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
         startsAt: futureDate(),
       } as any;
-      const conflicts = [{}] as any[];
 
       expect(() => {
-        validator.validateReservable(slot, 1, 5, conflicts);
+        validator.validateReservable(slot, 1, 5);
       }).toThrow(ValidationError);
     });
 
@@ -62,7 +60,7 @@ describe("ReservationValidator", () => {
       } as any;
 
       expect(() => {
-        validator.validateReservable(slot, 10, 5, []);
+        validator.validateReservable(slot, 10, 5);
       }).toThrow(ValidationError);
     });
   });
