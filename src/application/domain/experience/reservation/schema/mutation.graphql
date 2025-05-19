@@ -73,64 +73,11 @@ type ReservationSetStatusSuccess {
 }
 
 # ------------------------------
-# Reservation Mutation Error Type Definitions
-# ------------------------------
-
-type ReservationFullError {
-    message: String!
-    capacity: Int!
-    requested: Int!
-}
-
-type ReservationAdvanceBookingRequiredError {
-    message: String!
-}
-
-type ReservationNotAcceptedError {
-    message: String!
-}
-
-type SlotNotScheduledError {
-    message: String!
-}
-
-type MissingTicketIdsError {
-    message: String!
-}
-
-type TicketParticipantMismatchError {
-    message: String!
-    ticketCount: Int!
-    participantCount: Int!
-}
-
-type ReservationCancellationTimeoutError {
-    message: String!
-}
-
-type AlreadyJoinedError {
-    message: String!
-}
-
-type NoAvailableParticipationSlotsError {
-    message: String!
-}
-
-# ------------------------------
 # Reservation Mutation Union (Payload) Definitions
 # ------------------------------
 
 union ReservationCreatePayload =
     ReservationCreateSuccess
-    | ReservationAdvanceBookingRequiredError
-    | ReservationFullError
-    | ReservationNotAcceptedError
-    | SlotNotScheduledError
-    | MissingTicketIdsError
-    | TicketParticipantMismatchError
 
 union ReservationSetStatusPayload =
     ReservationSetStatusSuccess
-    | AlreadyJoinedError
-    | ReservationCancellationTimeoutError
-    | NoAvailableParticipationSlotsError

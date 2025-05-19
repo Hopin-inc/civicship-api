@@ -1,7 +1,7 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { NotFoundError, AlreadyUsedClaimLinkError, ClaimLinkExpiredError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { ClaimLinkStatus } from "@prisma/client";
 import { ITicketClaimLinkRepository, ITicketClaimLinkService } from "./data/interface";
 
@@ -31,11 +31,11 @@ export default class TicketClaimLinkService implements ITicketClaimLinkService {
     }
 
     if (link.status === ClaimLinkStatus.CLAIMED) {
-      throw new AlreadyUsedClaimLinkError();
+      throw new ValidationError("This claim link has already been used.");
     }
 
     if (link.status === ClaimLinkStatus.EXPIRED) {
-      throw new ClaimLinkExpiredError();
+      throw new ValidationError("This claim link has expired.");
     }
 
     return link;

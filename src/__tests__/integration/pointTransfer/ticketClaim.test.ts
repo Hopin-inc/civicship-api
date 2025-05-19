@@ -127,11 +127,8 @@ describe("Ticket Claim Tests", () => {
 
   it("should claim ticket successfully", async () => {
     const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
-    if (result.__typename === "TicketClaimSuccess") {
-      expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
-    } else {
-      console.log("No tickets available for this claim");
-    }
+
+    expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
 
     const tx = await TestDataSourceHelper.findAllTransactions();
     const donateTx = tx.find((t) => t.reason === TransactionReason.DONATION);
@@ -333,10 +330,6 @@ describe("Ticket Claim Tests", () => {
 
     const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
 
-    if (result.__typename === "TicketClaimSuccess") {
-      expect(result.tickets.length).toBe(2);
-    } else {
-      console.log("No tickets available for this claim");
-    }
+    expect(result.tickets.length).toBe(2);
   });
 });

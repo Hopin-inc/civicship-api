@@ -67,7 +67,6 @@ export class RateLimitError extends ApolloError {
   }
 }
 
-// Wallet
 export class InsufficientBalanceError extends ApolloError {
   public currentBalance: number;
   public requestedAmount: number;
@@ -81,150 +80,13 @@ export class InsufficientBalanceError extends ApolloError {
   }
 }
 
-export class InvalidTransferMethodError extends ApolloError {
-  constructor(message: string = "Use validateTransferMemberToMember()") {
-    super(message, "INVALID_TRANSFER_METHOD");
-    Object.defineProperty(this, "name", { value: "InvalidTransferMethodError" });
-  }
-}
+export class UtilityAlreadyUsedError extends ApolloError {
+  public usedAt: Date;
 
-export class MissingWalletInformationError extends ApolloError {
-  public missingWallets: string[];
-
-  constructor(missingWallets: string[]) {
-    const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
-    super(message, "MISSING_WALLET_INFORMATION");
-    this.missingWallets = missingWallets;
-    Object.defineProperty(this, "name", { value: "MissingWalletInformationError" });
-  }
-}
-
-export class UnsupportedTransactionReasonError extends ApolloError {
-  public reason: string;
-
-  constructor(reason: string) {
-    const message = `Unsupported TransactionReason: ${reason}`;
-    super(message, "UNSUPPORTED_TRANSACTION_REASON");
-    this.reason = reason;
-    Object.defineProperty(this, "name", { value: "UnsupportedTransactionReasonError" });
-  }
-}
-
-//Reservation
-export class ReservationFullError extends ApolloError {
-  public capacity: number;
-  public requested: number;
-
-  constructor(capacity: number, requested: number) {
-    const message = `Reservation is full: capacity ${capacity} is less than requested ${requested}`;
-    super(message, "RESERVATION_FULL");
-    this.capacity = capacity;
-    this.requested = requested;
-    Object.defineProperty(this, "name", { value: "ReservationFullError" });
-  }
-}
-
-export class AlreadyStartedReservationError extends ApolloError {
-  constructor(message: string = "This reservation has already started.") {
-    super(message, "ALREADY_STARTED_RESERVATION");
-    Object.defineProperty(this, "name", { value: "AlreadyStartedReservationError" });
-  }
-}
-
-export class ReservationCancellationTimeoutError extends ApolloError {
-  constructor(
-    message: string = "Reservation can no longer be canceled within 24 hours of the event.",
-  ) {
-    super(message, "RESERVATION_CANCELLATION_TIMEOUT");
-    Object.defineProperty(this, "name", { value: "ReservationCancellationTimeoutError" });
-  }
-}
-
-export class ReservationAdvanceBookingRequiredError extends ApolloError {
-  constructor(message: string = "Reservation must be made at least 7 days in advance.") {
-    super(message, "RESERVATION_ADVANCE_BOOKING_REQUIRED");
-    Object.defineProperty(this, "name", { value: "ReservationAdvanceBookingRequiredError" });
-  }
-}
-
-export class ReservationNotAcceptedError extends ApolloError {
-  constructor(message: string = "Reservation is not accepted yet.") {
-    super(message, "RESERVATION_NOT_ACCEPTED");
-    Object.defineProperty(this, "name", { value: "ReservationNotAcceptedError" });
-  }
-}
-
-export class SlotNotScheduledError extends ApolloError {
-  constructor(message: string = "This slot is not scheduled.") {
-    super(message, "SLOT_NOT_SCHEDULED");
-    Object.defineProperty(this, "name", { value: "SlotNotScheduledError" });
-  }
-}
-
-export class TicketParticipantMismatchError extends ApolloError {
-  public ticketCount: number;
-  public participantCount: number;
-
-  constructor(ticketCount: number, participantCount: number) {
-    const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
-    super(message, "TICKET_PARTICIPANT_MISMATCH");
-    this.ticketCount = ticketCount;
-    this.participantCount = participantCount;
-    Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
-  }
-}
-
-//Participation
-export class AlreadyJoinedError extends ApolloError {
-  constructor(message: string = "You have already joined this reservation.") {
-    super(message, "ALREADY_JOINED");
-    Object.defineProperty(this, "name", { value: "AlreadyJoinedError" });
-  }
-}
-
-export class NoAvailableParticipationSlotsError extends ApolloError {
-  constructor(message: string = "No available participation slots.") {
-    super(message, "NO_AVAILABLE_PARTICIPATION_SLOTS");
-    Object.defineProperty(this, "name", { value: "NoAvailableParticipationSlotsError" });
-  }
-}
-
-export class PersonalRecordOnlyDeletableError extends ApolloError {
-  constructor() {
-    const message = "Only personal participation records can be deleted.";
-    super(message, "PERSONAL_RECORD_ONLY_DELETABLE");
-    Object.defineProperty(this, "name", { value: "PersonalRecordOnlyDeletableError" });
-  }
-}
-
-//Evaluation
-export class AlreadyEvaluatedError extends ApolloError {
-  constructor(message: string = "This participation has already been evaluated.") {
-    super(message, "ALREADY_EVALUATED");
-    Object.defineProperty(this, "name", { value: "AlreadyEvaluatedError" });
-  }
-}
-
-export class CannotEvaluateBeforeOpportunityStartError extends ApolloError {
-  constructor(
-    message: string = "You cannot evaluate this participation before the opportunity starts.",
-  ) {
-    super(message, "CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START");
-    Object.defineProperty(this, "name", { value: "CannotEvaluateBeforeOpportunityStartError" });
-  }
-}
-
-//Ticket
-export class AlreadyUsedClaimLinkError extends ApolloError {
-  constructor(message: string = "This claim link has already been used.") {
-    super(message, "ALREADY_USED_CLAIM_LINK");
-    Object.defineProperty(this, "name", { value: "AlreadyUsedClaimLinkError" });
-  }
-}
-
-export class ClaimLinkExpiredError extends ApolloError {
-  constructor(message: string = "This claim link has expired.") {
-    super(message, "CLAIM_LINK_EXPIRED");
-    Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
+  constructor(usedAt: Date) {
+    const message = `Utility already used at ${usedAt.toString()}`;
+    super(message, "UTILITY_ALREADY_USED");
+    this.usedAt = usedAt;
+    Object.defineProperty(this, "name", { value: "UtilityAlreadyUsedError" });
   }
 }

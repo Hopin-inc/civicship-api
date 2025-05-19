@@ -20,7 +20,7 @@ export default class OpportunitySlotResolver {
       return this.slotUseCase.visitorBrowseOpportunitySlots(args, ctx);
     },
     opportunitySlot: (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
-      return this.slotUseCase.visitorViewOpportunitySlot(args, ctx);
+      return ctx.loaders.opportunitySlot.load(args.id);
     },
   };
 

@@ -19,7 +19,7 @@ export default class EvaluationResolver {
     },
 
     evaluation: (_: unknown, args: GqlQueryEvaluationArgs, ctx: IContext) => {
-      return this.evaluationUseCase.visitorViewEvaluation(ctx, args);
+      return ctx.loaders.evaluation.load(args.id);
     },
   };
 

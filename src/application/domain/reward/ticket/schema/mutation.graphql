@@ -82,17 +82,6 @@ type TicketClaimSuccess {
 }
 
 # ------------------------------
-# Ticket Mutation Error Type Definitions
-# ------------------------------
-type AlreadyUsedClaimLinkError {
-    message: String!
-}
-
-type ClaimLinkExpiredError {
-    message: String!
-}
-
-# ------------------------------
 # Ticket Mutation Union (Payload) Definitions
 # ------------------------------
 union TicketPurchasePayload =
@@ -109,5 +98,3 @@ union TicketIssuePayload =
 
 union TicketClaimPayload =
     TicketClaimSuccess
-    | AlreadyUsedClaimLinkError
-    | ClaimLinkExpiredError

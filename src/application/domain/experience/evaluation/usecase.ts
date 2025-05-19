@@ -23,7 +23,6 @@ import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/er
 export default class EvaluationUseCase {
   constructor(
     @inject("EvaluationService") private readonly evaluationService: EvaluationService,
-    @inject("ParticipationService") private readonly participationService: ParticipationService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
@@ -63,7 +62,6 @@ export default class EvaluationUseCase {
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
       const evaluation = await this.evaluationService.createEvaluation(
         ctx,
-        currentUserId,
         input,
         EvaluationStatus.PASSED,
         tx,

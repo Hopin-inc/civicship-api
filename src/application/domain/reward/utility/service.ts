@@ -99,8 +99,8 @@ export default class UtilityService implements IUtilityService {
       !filter.publishStatus.every((publishStatus) => allowedStatuses.includes(publishStatus))
     ) {
       throw new ValidationError(
-        `Publish status must be one of ${allowedStatuses.join(", ")}`,
-        filter?.publishStatus || []
+        `Validation error: publishStatus must be one of ${allowedStatuses.join(", ")}`,
+        [JSON.stringify(filter?.publishStatus)],
       );
     }
   }

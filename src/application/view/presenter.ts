@@ -25,11 +25,6 @@ export default class ViewPresenter {
     const { opportunity, startsAt } = reservation.opportunitySlot;
     const place = opportunity.place;
 
-    const thumbnailUrl =
-      (images && images.length > 0 && images[0]?.url) ||
-      (opportunity.images && opportunity.images.length > 0 && opportunity.images[0]?.url) ||
-      null;
-
     return {
       id: p.id,
       title: opportunity.title,
@@ -38,7 +33,7 @@ export default class ViewPresenter {
       reservationStatus: reservation?.status,
       date: startsAt,
       place: place ? PlacePresenter.formatPortfolio(place) : null,
-      thumbnailUrl,
+      thumbnailUrl: images?.[0]?.url ?? opportunity.images[0].url,
       participants: reservation?.participations
         ? reservation.participations
             .map((p) => p.user)
@@ -57,12 +52,13 @@ export default class ViewPresenter {
       const { relatedUsers, authors } = article;
       const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
 
-      const thumbnailUrl =
-        Array.isArray(article.thumbnail) &&
-        article.thumbnail.length > 0 &&
-        article.thumbnail[0]?.url
+      const thumbnailUrl = article.thumbnail
+        ? Array.isArray(article.thumbnail) &&
+          article.thumbnail.length > 0 &&
+          article.thumbnail[0].url
           ? article.thumbnail[0].url
-          : null;
+          : null
+        : null;
 
       return {
         id: article.id,
