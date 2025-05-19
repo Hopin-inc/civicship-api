@@ -25,6 +25,10 @@ export default class ReservationConverter {
         opportunitySlotId: filter.opportunitySlotId,
       });
     if (filter.createdByUserId) conditions.push({ createdBy: filter.createdByUserId });
+    if (filter.opportunityOwnerId)
+      conditions.push({
+        opportunitySlot: { opportunity: { createdBy: filter.opportunityOwnerId } },
+      });
 
     return conditions.length ? { AND: conditions } : {};
   }
