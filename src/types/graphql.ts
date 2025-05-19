@@ -489,8 +489,8 @@ export type GqlMembershipParticipationLocation = {
   latitude: Scalars['Decimal']['output'];
   longitude: Scalars['Decimal']['output'];
   placeId: Scalars['ID']['output'];
-  placeImage: Scalars['String']['output'];
-  placeName: Scalars['String']['output'];
+  placeImage?: Maybe<Scalars['String']['output']>;
+  placeName?: Maybe<Scalars['String']['output']>;
 };
 
 export type GqlMembershipParticipationView = {
@@ -3329,8 +3329,8 @@ export type GqlMembershipParticipationLocationResolvers<ContextType = any, Paren
   latitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
   longitude?: Resolver<GqlResolversTypes['Decimal'], ParentType, ContextType>;
   placeId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  placeImage?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  placeName?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  placeImage?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  placeName?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
