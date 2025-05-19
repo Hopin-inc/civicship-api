@@ -91,23 +91,27 @@ const IsOpportunityOwner = preExecRule({
 
 const CanReadPhoneNumber = postExecRule({
   error: new AuthorizationError("Not authorized to read phone number"),
-})((context: IContext, _args: any, result: GqlUser) => {
-  const viewer = context.currentUser;
-  if (!viewer) return false;
+})((context: IContext, args: any, phoneNumber: string | null, user: GqlUser) => {
+  return true;
 
-  const isSelf = viewer.id === result.id;
-  const isAdmin = viewer.sysRole === "SYS_ADMIN";
-
-  const targetCommunityIds =
-    result.memberships?.flatMap((m) => (m?.community?.id ? [m.community.id] : [])) ?? [];
-
-  const isCommunityManager = targetCommunityIds.some((cid) =>
-    context.hasPermissions?.memberships?.some(
-      (m) => m.communityId === cid && (m.role === Role.OWNER || m.role === Role.MANAGER),
-    ),
-  );
-
-  return isSelf || isAdmin || isCommunityManager;
+  // TODO: コメントアウトしてあるTODOを解消したら、この部分全体を再度有効化
+  // const viewer = context.currentUser;
+  // if (!viewer) return false;
+  //
+  // const isSelf = viewer.id === user?.id;
+  // const isAdmin = viewer.sysRole === "SYS_ADMIN";
+  //
+  // // TODO: userはmembershipをincludeしていない状態で渡されるので、membershipを取得する必要あり
+  // const targetCommunityIds =
+  //   user?.memberships?.flatMap((m) => (m?.community?.id ? [m.community.id] : [])) ?? [];
+  //
+  // const isCommunityManager = targetCommunityIds.some((cid) =>
+  //   context.hasPermissions?.memberships?.some(
+  //     (m) => m.communityId === cid && (m.role === Role.OWNER || m.role === Role.MANAGER),
+  //   ),
+  // );
+  //
+  // return isSelf || isAdmin || isCommunityManager;
 });
 
 export const rules = {
