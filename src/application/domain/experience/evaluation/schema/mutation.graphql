@@ -13,6 +13,12 @@ extend type Mutation {
         permission: CheckCommunityPermissionInput!
     ): EvaluationCreatePayload
     @authz(rules: [IsCommunityManager])
+    
+    evaluationBulkCreate(
+        input: EvaluationBulkCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): EvaluationBulkCreatePayload
+    @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
@@ -23,6 +29,16 @@ input EvaluationCreateInput {
     comment: String
 }
 
+input EvaluationItem {
+    participationId: ID!
+    status: EvaluationStatus!
+    comment: String
+}
+
+input EvaluationBulkCreateInput {
+    evaluations: [EvaluationItem!]!
+}
+
 # ------------------------------
 # Evaluation Mutation Success Type Definitions
 # ------------------------------
@@ -30,8 +46,15 @@ type EvaluationCreateSuccess {
     evaluation: Evaluation!
 }
 
+type EvaluationBulkCreateSuccess {
+    evaluations: [Evaluation!]!
+}
+
 # ------------------------------
 # Evaluation Mutation Union (Payload) Definitions
 # ------------------------------
 union EvaluationCreatePayload =
     EvaluationCreateSuccess
+
+union EvaluationBulkCreatePayload =
+    EvaluationBulkCreateSuccess

@@ -1,6 +1,7 @@
 import {
   GqlEvaluation,
   GqlEvaluationCreateSuccess,
+  GqlEvaluationBulkCreateSuccess,
   GqlEvaluationsConnection,
 } from "@/types/graphql";
 import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
@@ -34,6 +35,13 @@ export default class EvaluationPresenter {
     return {
       __typename: "EvaluationCreateSuccess",
       evaluation: record,
+    };
+  }
+  
+  static bulkCreate(records: PrismaEvaluationDetail[]): any {
+    return {
+      __typename: "EvaluationBulkCreateSuccess",
+      evaluations: records.map(record => this.get(record)),
     };
   }
 }
