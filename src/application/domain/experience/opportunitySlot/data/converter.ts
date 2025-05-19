@@ -10,11 +10,32 @@ import { injectable } from "tsyringe";
 @injectable()
 export default class OpportunitySlotConverter {
   filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
+    const slotConditions: Prisma.OpportunitySlotWhereInput[] = [];
+
+    if (filter?.opportunityId) {
+      slotConditions.push({ opportunityId: filter.opportunityId });
+    }
+
+    if (filter?.hostingStatus) {
+      slotConditions.push({ hostingStatus: filter.hostingStatus });
+    }
+
+    const range = filter?.dateRange;
+    if (range) {
+      const startsAtCondition: Record<string, Date> = {};
+
+      if (range.gte) startsAtCondition.gte = range.gte;
+      if (range.lte) startsAtCondition.lte = range.lte;
+      if (range.gt) startsAtCondition.gt = range.gt;
+      if (range.lt) startsAtCondition.lt = range.lt;
+
+      if (Object.keys(startsAtCondition).length > 0) {
+        slotConditions.push({ startsAt: startsAtCondition });
+      }
+    }
+
     return {
-      AND: [
-        filter?.opportunityId ? { opportunityId: filter.opportunityId } : {},
-        filter?.hostingStatus ? { hostingStatus: filter.hostingStatus } : {},
-      ],
+      AND: slotConditions,
     };
   }
 

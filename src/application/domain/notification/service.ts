@@ -13,12 +13,11 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 
-export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
-  "https://s3-ap-northeast-1.amazonaws.com/seiryu/66b7cbe0421aa90001d53e2f/programs/66b863bb421aa90001d55278/guide1_images/display.jpg?1726810902";
+  "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
 export const DEFAULT_THUMBNAIL =
-  "https://s3-ap-northeast-1.amazonaws.com/seiryu/66b7cbe0421aa90001d53e2f/events/carousel_image3s/display.jpg?1729667925";
-export const USER_MY_PAGE = "https://liff.line.me/2006078430-XGzG9kqm/users/me";
+  "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/ogp.jpg";
+export const USER_MY_PAGE = "https://liff.line.me/2007252081-qlwyMQnK/users/me";
 
 dayjs.locale("ja");
 
@@ -28,14 +27,7 @@ export default class NotificationService {
     ctx: IContext,
     slot: PrismaOpportunitySlotSetHostingStatus,
   ) {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
 
     const { year, date, time } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const opportunityId = slot.opportunityId;
@@ -43,8 +35,8 @@ export default class NotificationService {
     const host = slot.opportunity.createdByUser;
 
     const redirectUrl = communityId
-      ? `https://liff.line.me/2006078430-XGzG9kqm/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
-      : `https://liff.line.me/2006078430-XGzG9kqm/activities/${opportunityId}&community_id=${communityId}`;
+      ? `https://liff.line.me/2007252081-qlwyMQnK/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
+      : `https://liff.line.me/2007252081-qlwyMQnK/activities`;
 
     const message = buildCancelOpportunitySlotMessage({
       title: slot.opportunity.title,
@@ -60,14 +52,7 @@ export default class NotificationService {
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -76,7 +61,7 @@ export default class NotificationService {
 
     const { opportunitySlot, participations, id } = reservation;
     const applicant = ctx.currentUser;
-    const redirectUrl = `https://liff.line.me/2006078430-XGzG9kqm/admin/reservations/${id}`;
+    const redirectUrl = `https://liff.line.me/2007252081-qlwyMQnK/admin/reservations/${id}`;
 
     const message = buildReservationAppliedMessage({
       title: opportunitySlot.opportunity.title,
@@ -92,21 +77,15 @@ export default class NotificationService {
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
+
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
     );
     const { opportunitySlot, participations, id } = reservation;
     const applicant = ctx.currentUser;
-    const redirectUrl = `https://liff.line.me/2006078430-XGzG9kqm/admin/reservations/${id}`;
+    const redirectUrl = `https://liff.line.me/2007252081-qlwyMQnK/admin/reservations/${id}`;
 
     const message = buildReservationCanceledMessage({
       title: opportunitySlot.opportunity.title,
@@ -126,14 +105,7 @@ export default class NotificationService {
     currentUserId: string,
     reservation: PrismaReservation,
   ): Promise<void> {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -144,7 +116,7 @@ export default class NotificationService {
     const participationId = participation ? participation.id : undefined;
 
     const redirectUrl = participationId
-      ? `https://liff.line.me/2006078430-XGzG9kqm/participations/${participationId}`
+      ? `https://liff.line.me/2007252081-qlwyMQnK/participations/${participationId}`
       : USER_MY_PAGE;
 
     const { title, images, place, createdByUser } = reservation.opportunitySlot.opportunity;
@@ -167,16 +139,12 @@ export default class NotificationService {
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
-    let lineUid = membership.user?.identities.find(
+    const lineUid = membership.user?.identities.find(
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;
 
     if (!lineUid) {
-      if (process.env.ENV === "LOCAL") {
-        lineUid = LOCAL_UID;
-      } else {
-        return;
-      }
+      return;
     }
 
     const richMenuId =
@@ -185,6 +153,13 @@ export default class NotificationService {
         : LINE_RICHMENU.PUBLIC;
 
     await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+  }
+
+  private resolveLineUid(ctx: IContext): string {
+    if (!ctx.uid) {
+      throw new Error("ctx.uid is required for LINE message delivery.");
+    }
+    return ctx.uid;
   }
 
   private formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {

@@ -7,7 +7,6 @@ import { buildReservationCanceledMessage } from "../src/application/domain/notif
 import {
   DEFAULT_HOST_IMAGE_URL,
   DEFAULT_THUMBNAIL,
-  LOCAL_UID,
   USER_MY_PAGE,
 } from "../src/application/domain/notification/service";
 
@@ -18,6 +17,8 @@ import {
 
 // 🚨 LOCAL_UIDは自分のIDに変更して下さい、今のままなら阪田に届きます
 // ===================================
+
+const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 
 function resolveLineId(to?: string): string {
   return (
