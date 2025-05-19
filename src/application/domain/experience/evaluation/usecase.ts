@@ -17,6 +17,7 @@ import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import ParticipationService from "@/application/domain/experience/participation/service";
+import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -57,10 +58,7 @@ export default class EvaluationUseCase {
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    await Promise.all([
-      this.participationService.findParticipationOrThrow(ctx, input.participationId),
-      this.evaluationService.validateEvaluatable(ctx, input.participationId),
-    ]);
+    await this.validateEvaluatable(ctx, input.participationId);
 
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
       const evaluation = await this.evaluationService.createEvaluation(
@@ -70,7 +68,6 @@ export default class EvaluationUseCase {
         EvaluationStatus.PASSED,
         tx,
       );
-      console.log(evaluation);
 
       const { participation, opportunity, communityId, userId } =
         this.evaluationService.validateParticipationHasOpportunity(evaluation);
@@ -100,6 +97,7 @@ export default class EvaluationUseCase {
 
       return evaluation;
     });
+    console.log(evaluation, "passed");
 
     return EvaluationPresenter.create(evaluation);
   }
@@ -109,17 +107,38 @@ export default class EvaluationUseCase {
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    await Promise.all([
-      this.participationService.findParticipationOrThrow(ctx, input.participationId),
-      this.evaluationService.validateEvaluatable(ctx, input.participationId),
-    ]);
+    await this.validateEvaluatable(ctx, input.participationId);
 
-    const evaluation = await this.evaluationService.createEvaluation(
-      ctx,
-      currentUserId,
-      input,
-      EvaluationStatus.FAILED,
-    );
+    const evaluation = await ctx.issuer.public(ctx, async (tx) => {
+      return await this.evaluationService.createEvaluation(
+        ctx,
+        currentUserId,
+        input,
+        EvaluationStatus.FAILED,
+        tx,
+      );
+    });
+    console.log(evaluation, "failed");
     return EvaluationPresenter.create(evaluation);
+  }
+
+  private async validateEvaluatable(ctx: IContext, participationId: string) {
+    const participation = await this.participationService.findParticipationWithSlotOrThrow(
+      ctx,
+      participationId,
+    );
+    await this.evaluationService.throwIfExist(ctx, participationId);
+
+    const startsAt = participation.reservation?.opportunitySlot.startsAt;
+    if (!startsAt) {
+      throw new ValidationError("OpportunitySlot startsAt is undefined.");
+    }
+
+    const jstStartsAt = new Date(startsAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+    const nowJST = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+
+    if (new Date(nowJST) < new Date(jstStartsAt)) {
+      throw new CannotEvaluateBeforeOpportunityStartError();
+    }
   }
 }
