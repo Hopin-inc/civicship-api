@@ -1749,6 +1749,7 @@ export type GqlReservationEdge = GqlEdge & {
 export type GqlReservationFilterInput = {
   createdByUserId?: InputMaybe<Scalars['ID']['input']>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
+  opportunityOwnerId?: InputMaybe<Scalars['ID']['input']>;
   opportunitySlotId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlReservationStatus>;
 };
