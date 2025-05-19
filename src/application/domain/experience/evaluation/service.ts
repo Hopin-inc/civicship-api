@@ -4,7 +4,7 @@ import { IEvaluationRepository } from "@/application/domain/experience/evaluatio
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
 import { EvaluationStatus, Prisma } from "@prisma/client";
-import { NotFoundError } from "@/errors/graphql";
+import { InvalidEvaluationStatusError, NotFoundError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 @injectable()

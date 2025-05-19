@@ -114,6 +114,13 @@ export class AlreadyEvaluatedError extends ApolloError {
   }
 }
 
+export class InvalidEvaluationStatusError extends ApolloError {
+  constructor(message: string = "Evaluation value should be either PASSED or FAILED.") {
+    super(message, "INVALID_EVALUATION_STATUS");
+    Object.defineProperty(this, "name", { value: "InvalidEvaluationStatusError" });
+  }
+}
+
 export class AlreadyUsedClaimLinkError extends ApolloError {
   constructor(message: string = "This claim link has already been used.") {
     super(message, "ALREADY_USED_CLAIM_LINK");
