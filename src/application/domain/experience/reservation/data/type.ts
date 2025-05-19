@@ -4,11 +4,15 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
   opportunitySlot: {
     include: {
       opportunity: {
-        include: { place: true, images: true, createdByUser: { include: { image: true } } },
+        include: {
+          place: true,
+          images: true,
+          createdByUser: { include: { image: true, identities: true } },
+        },
       },
     },
   },
-  participations: { include: { user: true } },
+  participations: { include: { user: { include: { identities: true } } } },
 });
 
 export const reservationSelectDetail = Prisma.validator<Prisma.ReservationSelect>()({
