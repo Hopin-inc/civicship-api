@@ -17,7 +17,7 @@
       "action": {
         "type": "uri",
         "label": "ホームに戻る",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK"
       }
     },
     {
@@ -30,7 +30,7 @@
       "action": {
         "type": "uri",
         "label": "みつける",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/activities"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/activities"
       }
     },
     {
@@ -43,7 +43,7 @@
       "action": {
         "type": "uri",
         "label": "拠点",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/places?mode=map"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/places?mode=map"
       }
     },
     {
@@ -56,7 +56,7 @@
       "action": {
         "type": "uri",
         "label": "マイページ",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/users/me"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/users/me"
       }
     }
   ]

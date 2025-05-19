@@ -1064,6 +1064,7 @@ export type GqlOpportunitySlot = {
   capacity?: Maybe<Scalars['Int']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   endsAt: Scalars['Datetime']['output'];
+  evaluationProgress?: Maybe<GqlSlotEvaluationProgress>;
   hostingStatus: GqlOpportunitySlotHostingStatus;
   id: Scalars['ID']['output'];
   opportunity?: Maybe<GqlOpportunity>;
@@ -1893,6 +1894,12 @@ export const GqlRole = {
 } as const;
 
 export type GqlRole = typeof GqlRole[keyof typeof GqlRole];
+export type GqlSlotEvaluationProgress = {
+  __typename?: 'SlotEvaluationProgress';
+  totalEvaluated?: Maybe<Scalars['Int']['output']>;
+  validParticipations?: Maybe<Scalars['Int']['output']>;
+};
+
 export type GqlSlotNotScheduledError = {
   __typename?: 'SlotNotScheduledError';
   message: Scalars['String']['output'];
@@ -2767,6 +2774,7 @@ export type GqlResolversTypes = ResolversObject<{
   ReservationStatus: GqlReservationStatus;
   ReservationsConnection: ResolverTypeWrapper<Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ReservationEdge']> }>;
   Role: GqlRole;
+  SlotEvaluationProgress: ResolverTypeWrapper<GqlSlotEvaluationProgress>;
   SlotNotScheduledError: ResolverTypeWrapper<GqlSlotNotScheduledError>;
   SortDirection: GqlSortDirection;
   Source: GqlSource;
@@ -3035,6 +3043,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationSetStatusSuccess: Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: GqlResolversParentTypes['Reservation'] };
   ReservationSortInput: GqlReservationSortInput;
   ReservationsConnection: Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ReservationEdge']> };
+  SlotEvaluationProgress: GqlSlotEvaluationProgress;
   SlotNotScheduledError: GqlSlotNotScheduledError;
   State: State;
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
@@ -3616,6 +3625,7 @@ export type GqlOpportunitySlotResolvers<ContextType = any, ParentType extends Gq
   capacity?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   endsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  evaluationProgress?: Resolver<Maybe<GqlResolversTypes['SlotEvaluationProgress']>, ParentType, ContextType>;
   hostingStatus?: Resolver<GqlResolversTypes['OpportunitySlotHostingStatus'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType>;
@@ -3960,6 +3970,12 @@ export type GqlReservationsConnectionResolvers<ContextType = any, ParentType ext
   edges?: Resolver<Array<GqlResolversTypes['ReservationEdge']>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlSlotEvaluationProgressResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['SlotEvaluationProgress'] = GqlResolversParentTypes['SlotEvaluationProgress']> = ResolversObject<{
+  totalEvaluated?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  validParticipations?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4450,6 +4466,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ReservationSetStatusPayload?: GqlReservationSetStatusPayloadResolvers<ContextType>;
   ReservationSetStatusSuccess?: GqlReservationSetStatusSuccessResolvers<ContextType>;
   ReservationsConnection?: GqlReservationsConnectionResolvers<ContextType>;
+  SlotEvaluationProgress?: GqlSlotEvaluationProgressResolvers<ContextType>;
   SlotNotScheduledError?: GqlSlotNotScheduledErrorResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
   StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;

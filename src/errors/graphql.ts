@@ -67,6 +67,7 @@ export class RateLimitError extends ApolloError {
   }
 }
 
+// Wallet
 export class InsufficientBalanceError extends ApolloError {
   public currentBalance: number;
   public requestedAmount: number;
@@ -80,6 +81,36 @@ export class InsufficientBalanceError extends ApolloError {
   }
 }
 
+export class InvalidTransferMethodError extends ApolloError {
+  constructor(message: string = "Use validateTransferMemberToMember()") {
+    super(message, "INVALID_TRANSFER_METHOD");
+    Object.defineProperty(this, "name", { value: "InvalidTransferMethodError" });
+  }
+}
+
+export class MissingWalletInformationError extends ApolloError {
+  public missingWallets: string[];
+
+  constructor(missingWallets: string[]) {
+    const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
+    super(message, "MISSING_WALLET_INFORMATION");
+    this.missingWallets = missingWallets;
+    Object.defineProperty(this, "name", { value: "MissingWalletInformationError" });
+  }
+}
+
+export class UnsupportedTransactionReasonError extends ApolloError {
+  public reason: string;
+
+  constructor(reason: string) {
+    const message = `Unsupported TransactionReason: ${reason}`;
+    super(message, "UNSUPPORTED_TRANSACTION_REASON");
+    this.reason = reason;
+    Object.defineProperty(this, "name", { value: "UnsupportedTransactionReasonError" });
+  }
+}
+
+//Reservation
 export class ReservationFullError extends ApolloError {
   public capacity: number;
   public requested: number;
@@ -93,45 +124,10 @@ export class ReservationFullError extends ApolloError {
   }
 }
 
-export class AlreadyJoinedError extends ApolloError {
-  constructor(message: string = "You have already joined this reservation.") {
-    super(message, "ALREADY_JOINED");
-    Object.defineProperty(this, "name", { value: "AlreadyJoinedError" });
-  }
-}
-
 export class AlreadyStartedReservationError extends ApolloError {
   constructor(message: string = "This reservation has already started.") {
     super(message, "ALREADY_STARTED_RESERVATION");
     Object.defineProperty(this, "name", { value: "AlreadyStartedReservationError" });
-  }
-}
-
-export class AlreadyEvaluatedError extends ApolloError {
-  constructor(message: string = "This participation has already been evaluated.") {
-    super(message, "ALREADY_EVALUATED");
-    Object.defineProperty(this, "name", { value: "AlreadyEvaluatedError" });
-  }
-}
-
-export class InvalidEvaluationStatusError extends ApolloError {
-  constructor(message: string = "Evaluation value should be either PASSED or FAILED.") {
-    super(message, "INVALID_EVALUATION_STATUS");
-    Object.defineProperty(this, "name", { value: "InvalidEvaluationStatusError" });
-  }
-}
-
-export class AlreadyUsedClaimLinkError extends ApolloError {
-  constructor(message: string = "This claim link has already been used.") {
-    super(message, "ALREADY_USED_CLAIM_LINK");
-    Object.defineProperty(this, "name", { value: "AlreadyUsedClaimLinkError" });
-  }
-}
-
-export class ClaimLinkExpiredError extends ApolloError {
-  constructor(message: string = "This claim link has expired.") {
-    super(message, "CLAIM_LINK_EXPIRED");
-    Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
   }
 }
 
@@ -165,6 +161,27 @@ export class SlotNotScheduledError extends ApolloError {
   }
 }
 
+export class TicketParticipantMismatchError extends ApolloError {
+  public ticketCount: number;
+  public participantCount: number;
+
+  constructor(ticketCount: number, participantCount: number) {
+    const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
+    super(message, "TICKET_PARTICIPANT_MISMATCH");
+    this.ticketCount = ticketCount;
+    this.participantCount = participantCount;
+    Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
+  }
+}
+
+//Participation
+export class AlreadyJoinedError extends ApolloError {
+  constructor(message: string = "You have already joined this reservation.") {
+    super(message, "ALREADY_JOINED");
+    Object.defineProperty(this, "name", { value: "AlreadyJoinedError" });
+  }
+}
+
 export class NoAvailableParticipationSlotsError extends ApolloError {
   constructor(message: string = "No available participation slots.") {
     super(message, "NO_AVAILABLE_PARTICIPATION_SLOTS");
@@ -180,44 +197,34 @@ export class PersonalRecordOnlyDeletableError extends ApolloError {
   }
 }
 
-export class InvalidTransferMethodError extends ApolloError {
-  constructor(message: string = "Use validateTransferMemberToMember()") {
-    super(message, "INVALID_TRANSFER_METHOD");
-    Object.defineProperty(this, "name", { value: "InvalidTransferMethodError" });
+//Evaluation
+export class AlreadyEvaluatedError extends ApolloError {
+  constructor(message: string = "This participation has already been evaluated.") {
+    super(message, "ALREADY_EVALUATED");
+    Object.defineProperty(this, "name", { value: "AlreadyEvaluatedError" });
   }
 }
 
-export class MissingWalletInformationError extends ApolloError {
-  public missingWallets: string[];
-
-  constructor(missingWallets: string[]) {
-    const message = `Wallet information is missing for points transfer: ${missingWallets.join(", ")}`;
-    super(message, "MISSING_WALLET_INFORMATION");
-    this.missingWallets = missingWallets;
-    Object.defineProperty(this, "name", { value: "MissingWalletInformationError" });
+export class CannotEvaluateBeforeOpportunityStartError extends ApolloError {
+  constructor(
+    message: string = "You cannot evaluate this participation before the opportunity starts.",
+  ) {
+    super(message, "CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START");
+    Object.defineProperty(this, "name", { value: "CannotEvaluateBeforeOpportunityStartError" });
   }
 }
 
-export class UnsupportedTransactionReasonError extends ApolloError {
-  public reason: string;
-
-  constructor(reason: string) {
-    const message = `Unsupported TransactionReason: ${reason}`;
-    super(message, "UNSUPPORTED_TRANSACTION_REASON");
-    this.reason = reason;
-    Object.defineProperty(this, "name", { value: "UnsupportedTransactionReasonError" });
+//Ticket
+export class AlreadyUsedClaimLinkError extends ApolloError {
+  constructor(message: string = "This claim link has already been used.") {
+    super(message, "ALREADY_USED_CLAIM_LINK");
+    Object.defineProperty(this, "name", { value: "AlreadyUsedClaimLinkError" });
   }
 }
 
-export class TicketParticipantMismatchError extends ApolloError {
-  public ticketCount: number;
-  public participantCount: number;
-
-  constructor(ticketCount: number, participantCount: number) {
-    const message = `The number of tickets (${ticketCount}) does not match the number of participants (${participantCount})`;
-    super(message, "TICKET_PARTICIPANT_MISMATCH");
-    this.ticketCount = ticketCount;
-    this.participantCount = participantCount;
-    Object.defineProperty(this, "name", { value: "TicketParticipantMismatchError" });
+export class ClaimLinkExpiredError extends ApolloError {
+  constructor(message: string = "This claim link has expired.") {
+    super(message, "CLAIM_LINK_EXPIRED");
+    Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
   }
 }

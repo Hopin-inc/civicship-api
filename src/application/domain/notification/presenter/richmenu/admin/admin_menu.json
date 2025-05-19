@@ -30,7 +30,7 @@
       "action": {
         "type": "uri",
         "label": "管理者ホーム",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/admin"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/admin"
       }
     },
     {
@@ -43,7 +43,7 @@
       "action": {
         "type": "uri",
         "label": "チケット送付",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/admin/tickets"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/admin/tickets"
       }
     },
     {
@@ -56,7 +56,7 @@
       "action": {
         "type": "uri",
         "label": "応募対応",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/admin/reservations"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/admin/reservations"
       }
     },
     {
@@ -69,7 +69,7 @@
       "action": {
         "type": "uri",
         "label": "出欠管理",
-        "uri": "https://liff.line.me/2006078430-XGzG9kqm/admin/opportunities"
+        "uri": "https://liff.line.me/2007252081-qlwyMQnK/admin/opportunities"
       }
     }
   ]

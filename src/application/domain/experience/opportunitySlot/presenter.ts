@@ -28,11 +28,17 @@ export default class OpportunitySlotPresenter {
   }
 
   static get(r: PrismaOpportunitySlotDetail): GqlOpportunitySlot {
-    const { remainingCapacityView, ...prop } = r;
+    const { remainingCapacityView, slotEvaluationProgress, ...prop } = r;
     return {
       __typename: "OpportunitySlot",
       ...prop,
       remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
+      evaluationProgress: {
+        totalEvaluated: slotEvaluationProgress ? slotEvaluationProgress.totalEvaluated : null,
+        validParticipations: slotEvaluationProgress
+          ? slotEvaluationProgress.validParticipations
+          : null,
+      },
     };
   }
 
