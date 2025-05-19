@@ -13,7 +13,6 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 
-export const LOCAL_UID = "Uf4a68d8e6d68927a496120aa16842027";
 export const DEFAULT_HOST_IMAGE_URL =
   "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
 export const DEFAULT_THUMBNAIL =
@@ -28,14 +27,7 @@ export default class NotificationService {
     ctx: IContext,
     slot: PrismaOpportunitySlotSetHostingStatus,
   ) {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
 
     const { year, date, time } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const opportunityId = slot.opportunityId;
@@ -60,14 +52,7 @@ export default class NotificationService {
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -92,14 +77,8 @@ export default class NotificationService {
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
+
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
       reservation.opportunitySlot.endsAt,
@@ -126,14 +105,7 @@ export default class NotificationService {
     currentUserId: string,
     reservation: PrismaReservation,
   ): Promise<void> {
-    const lineId =
-      process.env.ENV === "LOCAL"
-        ? LOCAL_UID
-        : ctx.uid
-          ? ctx.uid
-          : (() => {
-              throw new Error("uid is required");
-            })();
+    const lineId = this.resolveLineUid(ctx);
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -167,16 +139,12 @@ export default class NotificationService {
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
-    let lineUid = membership.user?.identities.find(
+    const lineUid = membership.user?.identities.find(
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;
 
     if (!lineUid) {
-      if (process.env.ENV === "LOCAL") {
-        lineUid = LOCAL_UID;
-      } else {
-        return;
-      }
+      return;
     }
 
     const richMenuId =
@@ -185,6 +153,13 @@ export default class NotificationService {
         : LINE_RICHMENU.PUBLIC;
 
     await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+  }
+
+  private resolveLineUid(ctx: IContext): string {
+    if (!ctx.uid) {
+      throw new Error("ctx.uid is required for LINE message delivery.");
+    }
+    return ctx.uid;
   }
 
   private formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
