@@ -5,6 +5,8 @@ import {
   GqlOpportunitySlotsBulkUpdatePayload,
   GqlMutationOpportunitySlotSetHostingStatusArgs,
   GqlOpportunitySlotSetHostingStatusPayload,
+  GqlQueryOpportunitySlotArgs,
+  GqlOpportunitySlot,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
@@ -40,14 +42,14 @@ export default class OpportunitySlotUseCase {
     return OpportunitySlotPresenter.query(data, hasNextPage);
   }
 
-  // async visitorViewOpportunitySlot(
-  //   { id }: GqlQueryOpportunitySlotArgs,
-  //   ctx: IContext,
-  // ): Promise<GqlOpportunitySlot | null> {
-  //   const slot = await this.service.findOpportunitySlot(ctx, id);
-  //   if (!slot) return null;
-  //   return OpportunitySlotPresenter.get(slot);
-  // }
+  async visitorViewOpportunitySlot(
+    { id }: GqlQueryOpportunitySlotArgs,
+    ctx: IContext,
+  ): Promise<GqlOpportunitySlot | null> {
+    const slot = await this.service.findOpportunitySlot(ctx, id);
+    if (!slot) return null;
+    return OpportunitySlotPresenter.get(slot);
+  }
 
   async managerSetOpportunitySlotHostingStatus(
     { id, input }: GqlMutationOpportunitySlotSetHostingStatusArgs,

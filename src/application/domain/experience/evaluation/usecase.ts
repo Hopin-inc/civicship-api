@@ -57,7 +57,10 @@ export default class EvaluationUseCase {
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    await this.participationService.findParticipationOrThrow(ctx, input.participationId);
+    await Promise.all([
+      this.participationService.findParticipationOrThrow(ctx, input.participationId),
+      this.evaluationService.validateEvaluatable(ctx, input.participationId),
+    ]);
 
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
       const evaluation = await this.evaluationService.createEvaluation(
@@ -106,6 +109,10 @@ export default class EvaluationUseCase {
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
+    await Promise.all([
+      this.participationService.findParticipationOrThrow(ctx, input.participationId),
+      this.evaluationService.validateEvaluatable(ctx, input.participationId),
+    ]);
 
     const evaluation = await this.evaluationService.createEvaluation(
       ctx,
