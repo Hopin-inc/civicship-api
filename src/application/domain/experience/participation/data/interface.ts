@@ -1,4 +1,4 @@
-import { PrismaParticipationDetail } from "./type";
+import { PrismaParticipationDetail, PrismaParticipationIncludeSlot } from "./type";
 import { IContext } from "@/types/server";
 import {
   GqlParticipationCreatePersonalRecordInput,
@@ -67,6 +67,7 @@ export interface IParticipationRepository {
   ): Promise<PrismaParticipationDetail[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
+  findWithSlot(ctx: IContext, id: string): Promise<PrismaParticipationIncludeSlot | null>;
 
   create(
     ctx: IContext,
