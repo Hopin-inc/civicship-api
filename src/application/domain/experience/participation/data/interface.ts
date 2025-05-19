@@ -1,10 +1,13 @@
-import { PrismaParticipationDetail, PrismaParticipationIncludeSlot } from "./type";
 import { IContext } from "@/types/server";
 import {
   GqlParticipationCreatePersonalRecordInput,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import {
+  PrismaParticipationDetail,
+  PrismaParticipationIncludeSlot,
+} from "@/application/domain/experience/participation/data/type";
 
 export interface IParticipationService {
   fetchParticipations<T extends Prisma.ParticipationInclude>(

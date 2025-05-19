@@ -5,7 +5,7 @@ import {
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError, PersonalRecordOnlyDeletableError } from "@/errors/graphql";
 import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 import { inject, injectable } from "tsyringe";
 import {
@@ -120,9 +120,7 @@ export default class ParticipationService implements IParticipationService {
 
   validateDeletable(participation: PrismaParticipationDetail) {
     if (participation.reason !== ParticipationStatusReason.PERSONAL_RECORD) {
-      throw new ValidationError("Only personal participation records can be deleted.", [
-        `participation.reason: ${participation.reason}`,
-      ]);
+      throw new PersonalRecordOnlyDeletableError();
     }
   }
 }
