@@ -255,6 +255,41 @@ export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
 
+export type GqlError = {
+  __typename?: 'Error';
+  code: GqlErrorCode;
+  message: Scalars['String']['output'];
+};
+
+export const GqlErrorCode = {
+  AlreadyEvaluated: 'ALREADY_EVALUATED',
+  AlreadyJoined: 'ALREADY_JOINED',
+  AlreadyStartedReservation: 'ALREADY_STARTED_RESERVATION',
+  AlreadyUsedClaimLink: 'ALREADY_USED_CLAIM_LINK',
+  CannotEvaluateBeforeOpportunityStart: 'CANNOT_EVALUATE_BEFORE_OPPORTUNITY_START',
+  ClaimLinkExpired: 'CLAIM_LINK_EXPIRED',
+  Forbidden: 'FORBIDDEN',
+  InsufficientBalance: 'INSUFFICIENT_BALANCE',
+  InternalServerError: 'INTERNAL_SERVER_ERROR',
+  InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
+  MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
+  NotFound: 'NOT_FOUND',
+  NoAvailableParticipationSlots: 'NO_AVAILABLE_PARTICIPATION_SLOTS',
+  PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
+  RateLimit: 'RATE_LIMIT',
+  ReservationAdvanceBookingRequired: 'RESERVATION_ADVANCE_BOOKING_REQUIRED',
+  ReservationCancellationTimeout: 'RESERVATION_CANCELLATION_TIMEOUT',
+  ReservationFull: 'RESERVATION_FULL',
+  ReservationNotAccepted: 'RESERVATION_NOT_ACCEPTED',
+  SlotNotScheduled: 'SLOT_NOT_SCHEDULED',
+  TicketParticipantMismatch: 'TICKET_PARTICIPANT_MISMATCH',
+  Unauthenticated: 'UNAUTHENTICATED',
+  Unknown: 'UNKNOWN',
+  UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
+  ValidationError: 'VALIDATION_ERROR'
+} as const;
+
+export type GqlErrorCode = typeof GqlErrorCode[keyof typeof GqlErrorCode];
 export type GqlEvaluation = {
   __typename?: 'Evaluation';
   comment?: Maybe<Scalars['String']['output']>;
@@ -1749,6 +1784,7 @@ export type GqlReservationEdge = GqlEdge & {
 export type GqlReservationFilterInput = {
   createdByUserId?: InputMaybe<Scalars['ID']['input']>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
+  opportunityOwnerId?: InputMaybe<Scalars['ID']['input']>;
   opportunitySlotId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlReservationStatus>;
 };
@@ -2526,6 +2562,8 @@ export type GqlResolversTypes = ResolversObject<{
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
+  Error: ResolverTypeWrapper<GqlError>;
+  ErrorCode: GqlErrorCode;
   Evaluation: ResolverTypeWrapper<Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversTypes['Participation']> }>;
   EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EvaluationCreatePayload']>;
@@ -2793,6 +2831,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   Datetime: Scalars['Datetime']['output'];
   Decimal: Scalars['Decimal']['output'];
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
+  Error: GqlError;
   Evaluation: Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<Array<GqlResolversParentTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversParentTypes['Participation']> };
   EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EvaluationCreatePayload'];
@@ -3143,6 +3182,12 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
   __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+}>;
+
+export type GqlErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Error'] = GqlResolversParentTypes['Error']> = ResolversObject<{
+  code?: Resolver<GqlResolversTypes['ErrorCode'], ParentType, ContextType>;
+  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlEvaluationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Evaluation'] = GqlResolversParentTypes['Evaluation']> = ResolversObject<{
@@ -4155,6 +4200,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Datetime?: GraphQLScalarType;
   Decimal?: GraphQLScalarType;
   Edge?: GqlEdgeResolvers<ContextType>;
+  Error?: GqlErrorResolvers<ContextType>;
   Evaluation?: GqlEvaluationResolvers<ContextType>;
   EvaluationCreatePayload?: GqlEvaluationCreatePayloadResolvers<ContextType>;
   EvaluationCreateSuccess?: GqlEvaluationCreateSuccessResolvers<ContextType>;

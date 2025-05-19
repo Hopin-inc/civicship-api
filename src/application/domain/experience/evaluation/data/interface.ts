@@ -3,6 +3,7 @@ import { IContext } from "@/types/server";
 import {
   PrismaEvaluation,
   PrismaEvaluationDetail,
+  PrismaEvaluationSelectSlotStartsAt,
 } from "@/application/domain/experience/evaluation/data/type";
 
 export interface IEvaluationRepository {
@@ -13,6 +14,11 @@ export interface IEvaluationRepository {
     take: number,
     cursor?: string,
   ): Promise<PrismaEvaluationDetail[]>;
+
+  queryByParticipation(
+    ctx: IContext,
+    participationId: string,
+  ): Promise<PrismaEvaluationSelectSlotStartsAt[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaEvaluationDetail | null>;
 

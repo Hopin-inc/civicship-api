@@ -12,25 +12,6 @@ export const participationInclude = Prisma.validator<Prisma.ParticipationInclude
   images: true,
 });
 
-export const portfolioFromParticipationInclude = Prisma.validator<Prisma.ParticipationInclude>()({
-  reservation: {
-    include: {
-      opportunitySlot: {
-        include: {
-          opportunity: {
-            include: {
-              images: true,
-              place: true,
-            },
-          },
-        },
-      },
-      participations: { include: { user: true } },
-    },
-  },
-  images: true,
-});
-
 export type PrismaParticipation = Prisma.ParticipationGetPayload<{
   include: typeof participationInclude;
 }>;
