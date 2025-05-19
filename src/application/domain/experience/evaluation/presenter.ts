@@ -33,7 +33,7 @@ export default class EvaluationPresenter {
   static create(record: PrismaEvaluationDetail): GqlEvaluationCreateSuccess {
     return {
       __typename: "EvaluationCreateSuccess",
-      evaluation: this.get(record),
+      evaluation: record,
     };
   }
 }

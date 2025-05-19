@@ -1,10 +1,13 @@
-import { PrismaParticipationDetail } from "./type";
 import { IContext } from "@/types/server";
 import {
   GqlParticipationCreatePersonalRecordInput,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
+import {
+  PrismaParticipationDetail,
+  PrismaParticipationIncludeSlot,
+} from "@/application/domain/experience/participation/data/type";
 
 export interface IParticipationService {
   fetchParticipations<T extends Prisma.ParticipationInclude>(
@@ -67,6 +70,7 @@ export interface IParticipationRepository {
   ): Promise<PrismaParticipationDetail[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
+  findWithSlot(ctx: IContext, id: string): Promise<PrismaParticipationIncludeSlot | null>;
 
   create(
     ctx: IContext,

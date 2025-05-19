@@ -37,6 +37,7 @@ input ReservationFilterInput {
     opportunityId: ID
     opportunitySlotId: ID
     createdByUserId: ID
+    opportunityOwnerId: ID
 }
 
 input ReservationSortInput {

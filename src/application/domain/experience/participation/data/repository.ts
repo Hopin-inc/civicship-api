@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import {
+  participationIncludeSlot,
   participationSelectDetail,
   PrismaParticipationDetail,
 } from "@/application/domain/experience/participation/data/type";
@@ -28,15 +29,6 @@ export default class ParticipationRepository implements IParticipationRepository
     );
   }
 
-  async queryByReservationId(ctx: IContext, id: string) {
-    return ctx.issuer.public(ctx, (tx) => {
-      return tx.participation.findMany({
-        where: { reservationId: id },
-        select: participationSelectDetail,
-      });
-    });
-  }
-
   async count(ctx: IContext, where: Prisma.ParticipationWhereInput) {
     return ctx.issuer.public(ctx, (dbTx) => {
       return dbTx.participation.count({
@@ -50,6 +42,15 @@ export default class ParticipationRepository implements IParticipationRepository
       return tx.participation.findUnique({
         where: { id },
         select: participationSelectDetail,
+      });
+    });
+  }
+
+  async findWithSlot(ctx: IContext, id: string) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.participation.findUnique({
+        where: { id },
+        include: participationIncludeSlot,
       });
     });
   }
