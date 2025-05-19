@@ -27,23 +27,13 @@ export async function createApolloServer(httpServer: http.Server) {
     ],
     validationRules: [...armorProtection.validationRules],
     formatError: (err) => {
-      const { message, locations, path, extensions } = err;
-      const code = extensions?.code ?? "INTERNAL_SERVER_ERROR";
-
+      const { message, locations, path } = err;
+      const code = err.extensions?.code ?? "INTERNAL_SERVER_ERROR";
       if (code === "INTERNAL_SERVER_ERROR") {
-        logger.error(`GraphQL Error: ${message}`, err);
+        logger.error(`GraphQL Error: ${err.message}`, err);
       }
-
-      return {
-        message,
-        locations,
-        path,
-        extensions: {
-          code,
-        },
-      };
+      return { message, locations, path, code };
     },
-
     introspection: !isProduction,
   });
 

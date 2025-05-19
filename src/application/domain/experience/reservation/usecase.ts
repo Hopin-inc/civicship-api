@@ -90,10 +90,17 @@ export default class ReservationUseCase {
     );
     const { opportunity } = slot;
 
+    const reservationExists = await this.reservationService.fetchConflictingReservations(
+      ctx,
+      currentUserId,
+      slot.id,
+    );
+
     this.reservationValidator.validateReservable(
       slot,
       input.totalParticipantCount,
       slot.remainingCapacityView?.remainingCapacity ?? undefined,
+      reservationExists,
     );
 
     const { communityId, requiredUtilities } = opportunity;
