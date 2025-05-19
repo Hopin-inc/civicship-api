@@ -20,6 +20,7 @@
     "db:migrate": "prisma migrate dev --schema src/infrastructure/prisma/schema.prisma --create-only",
     "db:deploy": "prisma migrate deploy --schema src/infrastructure/prisma/schema.prisma",
     "db:mark-rolled-back": "prisma migrate resolve --schema src/infrastructure/prisma/schema.prisma --rolled-back",
+    "db:migrate-reset": "prisma migrate reset --schema src/infrastructure/prisma/schema.prisma",
     "db:studio": "prisma studio --schema src/infrastructure/prisma/schema.prisma",
     "gql:generate": "graphql-codegen --config codegen.yaml",
     "container:up": "ls src/infrastructure/prisma/migrations/*/migration.sql | sort | awk -F'/' '{print \"cp \"$0\" ./container/docker/postgresql/init/\"$(NF-2)\"_\"$(NF-1)\"_\"$(NF)}' | bash | docker-compose up -d",
