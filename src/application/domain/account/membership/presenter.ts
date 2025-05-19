@@ -37,6 +37,10 @@ export default class MembershipPresenter {
   static get(r: PrismaMembershipDetail): GqlMembership {
     const { participationGeoViews, participationCountViews, opportunityHostedCountView, ...prop } =
       r;
+    console.log(participationGeoViews, "participationGeoViews");
+    console.log(participationCountViews, "participationCountViews");
+    console.log(opportunityHostedCountView, "opportunityHostedCountView");
+    console.log(prop, "prop");
 
     const hostedGeoMap = new Map<string, GqlMembershipParticipationLocation>();
 
@@ -46,9 +50,9 @@ export default class MembershipPresenter {
         if (!hostedGeoMap.has(v.placeId)) {
           hostedGeoMap.set(v.placeId, {
             placeId: v.placeId,
-            placeName: v.placeName,
-            placeImage: v.placeImage,
-            address: v.address,
+            placeName: v.placeName ?? null,
+            placeImage: v.placeImage ?? null,
+            address: v.address ?? null,
             latitude: v.latitude.toString(),
             longitude: v.longitude.toString(),
           });

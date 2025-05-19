@@ -37,6 +37,7 @@ export default class MembershipUseCase {
   ): Promise<GqlMembershipsConnection> {
     const take = clampFirst(args.first);
     const records = await this.membershipService.fetchMemberships(ctx, args, take);
+    console.log(records);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map(MembershipPresenter.get);
