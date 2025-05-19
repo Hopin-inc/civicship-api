@@ -45,6 +45,14 @@ export default class ParticipationService implements IParticipationService {
     return participation;
   }
 
+  async findParticipationWithSlotOrThrow(ctx: IContext, id: string) {
+    const participation = await this.repository.findWithSlot(ctx, id);
+    if (!participation) {
+      throw new NotFoundError(`ParticipationNotFound: ID=${id}`);
+    }
+    return participation;
+  }
+
   async createParticipation(
     ctx: IContext,
     input: GqlParticipationCreatePersonalRecordInput,

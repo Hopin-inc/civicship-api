@@ -25,6 +25,6 @@ export interface IEvaluationRepository {
   create(
     ctx: IContext,
     data: Prisma.EvaluationCreateInput,
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ): Promise<PrismaEvaluation>;
 }

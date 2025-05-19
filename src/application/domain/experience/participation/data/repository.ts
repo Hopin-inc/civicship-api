@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import {
+  participationIncludeSlot,
   participationSelectDetail,
   PrismaParticipationDetail,
 } from "@/application/domain/experience/participation/data/type";
@@ -41,6 +42,15 @@ export default class ParticipationRepository implements IParticipationRepository
       return tx.participation.findUnique({
         where: { id },
         select: participationSelectDetail,
+      });
+    });
+  }
+
+  async findWithSlot(ctx: IContext, id: string) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.participation.findUnique({
+        where: { id },
+        include: participationIncludeSlot,
       });
     });
   }
