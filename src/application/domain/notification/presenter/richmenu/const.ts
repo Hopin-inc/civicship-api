@@ -1,5 +1,5 @@
 export const LINE_RICHMENU = {
-  ADMIN_MANAGE: 'richmenu-7d4cf3b69d32f9fb2fc704bd25462695',
-  ADMIN_USER: 'richmenu-580a77998c6752c510831746bb754d31',
-  PUBLIC: 'richmenu-99f8a456c801bbfcdc34be24dd3aa4ee',
+  ADMIN_MANAGE: 'richmenu-a9f9bfd56b09422cd94a774378fb546d',
+  ADMIN_USER: 'richmenu-787fa76f73a8482a92d96195f26dc1f4',
+  PUBLIC: 'richmenu-298bbb612f76e42e5650b3ceda8b9e7d',
 };
