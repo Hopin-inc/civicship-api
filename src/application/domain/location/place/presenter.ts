@@ -26,11 +26,14 @@ export default class PlacePresenter {
   }
 
   static get(r: PrismaPlaceDetail): GqlPlace {
-    const { latitude, longitude, ...prop } = r;
+    const { latitude, longitude, currentPublicOpportunityCount, accumulatedParticipants, ...prop } =
+      r;
 
     return {
       __typename: "Place",
       ...prop,
+      currentPublicOpportunityCount: currentPublicOpportunityCount?.currentPublicCount ?? 0,
+      accumulatedParticipants: accumulatedParticipants?.accumulatedParticipants ?? 0,
       latitude: latitude.toString(),
       longitude: longitude.toString(),
     };
