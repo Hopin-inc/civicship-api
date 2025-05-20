@@ -19,7 +19,7 @@ export type Scalars = {
   Datetime: { input: Date; output: Date; }
   Decimal: { input: string; output: string; }
   JSON: { input: any; output: any; }
-  Upload: { input: Promise<import('graphql-upload-minimal').FileUpload>; output: Promise<import('graphql-upload-minimal').FileUpload>; }
+  Upload: { input: typeof import('graphql-upload/GraphQLUpload.mjs'); output: typeof import('graphql-upload/GraphQLUpload.mjs'); }
 };
 
 export type GqlAccumulatedPointView = {
