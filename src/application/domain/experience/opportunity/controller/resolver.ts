@@ -3,6 +3,7 @@ import {
   GqlMutationOpportunityDeleteArgs,
   GqlMutationOpportunitySetPublishStatusArgs,
   GqlMutationOpportunityUpdateContentArgs,
+  GqlOpportunitySlotsArgs,
   GqlQueryOpportunitiesArgs,
   GqlQueryOpportunityArgs,
 } from "@/types/graphql";
@@ -110,8 +111,12 @@ export default class OpportunityResolver {
       return ctx.loaders.utilitiesByOpportunity.load(parent.id);
     },
 
-    slots: (parent, _: unknown, ctx: IContext) => {
-      return ctx.loaders.opportunitySlotByOpportunity.load(parent.id);
+    slots: (parent, args: GqlOpportunitySlotsArgs, ctx: IContext) => {
+      return ctx.loaders.opportunitySlotByOpportunity.load({
+        key: parent.id,
+        filter: args.filter ?? {},
+        sort: args.sort ?? {},
+      });
     },
 
     articles: (parent, _: unknown, ctx: IContext) => {

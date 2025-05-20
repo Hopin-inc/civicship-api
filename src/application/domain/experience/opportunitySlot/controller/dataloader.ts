@@ -1,12 +1,18 @@
-import DataLoader from "dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { GqlOpportunitySlot } from "@/types/graphql";
+import {
+  GqlOpportunitySlot,
+  GqlOpportunitySlotFilterInput,
+  GqlOpportunitySlotSortInput,
+} from "@/types/graphql";
 import {
   opportunitySlotSelectDetail,
   PrismaOpportunitySlotDetail,
 } from "@/application/domain/experience/opportunitySlot/data/type";
 import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
-import { createLoaderById } from "@/presentation/graphql/dataloader/utils";
+import {
+  createFilterSortAwareHasManyLoaderByKey,
+  createLoaderById,
+} from "@/presentation/graphql/dataloader/utils";
 
 export function createOpportunitySlotLoader(issuer: PrismaClientIssuer) {
   return createLoaderById<PrismaOpportunitySlotDetail, GqlOpportunitySlot>(
@@ -22,19 +28,29 @@ export function createOpportunitySlotLoader(issuer: PrismaClientIssuer) {
 }
 
 export function createSlotsByOpportunityLoader(issuer: PrismaClientIssuer) {
-  return new DataLoader<string, GqlOpportunitySlot[]>(async (opportunityIds) => {
-    const opportunities = await issuer.internal((tx) =>
-      tx.opportunity.findMany({
-        where: { id: { in: [...opportunityIds] } },
-        include: { slots: { include: { remainingCapacityView: true } } },
-      }),
-    );
-
-    const map = new Map<string, GqlOpportunitySlot[]>();
-    for (const o of opportunities) {
-      map.set(o.id, o.slots.map(OpportunitySlotPresenter.get));
-    }
-
-    return opportunityIds.map((id) => map.get(id) ?? []);
-  });
+  return createFilterSortAwareHasManyLoaderByKey<
+    "opportunityId",
+    GqlOpportunitySlotFilterInput,
+    GqlOpportunitySlotSortInput,
+    PrismaOpportunitySlotDetail,
+    GqlOpportunitySlot
+  >(
+    "opportunityId",
+    async (opportunityId, filter, sort) => {
+      const opportunity = await issuer.internal((tx) =>
+        tx.opportunity.findUnique({
+          where: { id: opportunityId },
+          include: {
+            slots: {
+              where: filter,
+              orderBy: sort,
+              include: { remainingCapacityView: true },
+            },
+          },
+        }),
+      );
+      return opportunity?.slots ?? [];
+    },
+    (slot) => OpportunitySlotPresenter.get(slot),
+  );
 }
