@@ -504,8 +504,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     String communityId "🗝️"
     ParticipationType type 
     String placeId "🗝️"
-    String placeName 
-    String placeImage 
+    String placeName "❓"
+    String placeImage "❓"
     String address 
     Decimal latitude 
     Decimal longitude 

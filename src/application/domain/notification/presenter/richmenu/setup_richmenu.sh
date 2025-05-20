@@ -29,16 +29,26 @@ for i in "${!ALIASES[@]}"; do
   baseName="${BASE_NAMES[$i]}"
   dir="${DIRS[$i]}"
 
-  # リッチメニュー作成
+  json_path="${SCRIPT_DIR}/${dir}/${baseName}.json"
+  tmp_json="$SCRIPT_DIR/tmp_${baseName}.json"
+
+  # 環境変数の埋め込み（envsubst）
+  envsubst '${LIFF_BASE_URL}' < "$json_path" > "$tmp_json"
+
+  # JSON構文チェック（任意だが推奨）
+  jq . "$tmp_json" > /dev/null || {
+    echo "❌ JSON構文エラー: $tmp_json"
+    continue
+  }
+
+  # リッチメニュー作成（変換済みテンポラリJSONを使用）
   richMenuId=$(curl -s -X POST https://api.line.me/v2/bot/richmenu \
     -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" \
     -H 'Content-Type: application/json' \
-    -d @"${SCRIPT_DIR}/${dir}/${baseName}.json" | jq -r '.richMenuId')
+    -d @"$tmp_json" | jq -r '.richMenuId')
 
-  if [ -z "$richMenuId" ] || [ "$richMenuId" = "null" ]; then
-    echo "❌ Failed to create rich menu for alias=${alias}"
-    continue
-  fi
+  # テンポラリJSON削除
+  rm "$tmp_json"
 
   echo "✅ Created: alias=${alias}, id=${richMenuId}"
 

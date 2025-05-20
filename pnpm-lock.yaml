@@ -95,9 +95,9 @@ importers:
       graphql-scalars:
         specifier: ^1.24.2
         version: 1.24.2(graphql@16.10.0)
-      graphql-upload-minimal:
-        specifier: ^1.6.1
-        version: 1.6.1(graphql@16.10.0)
+      graphql-upload:
+        specifier: ^17.0.0
+        version: 17.0.0(@types/express@4.17.21)(@types/koa@2.15.0)(graphql@16.10.0)
       json-stable-stringify:
         specifier: ^1.3.0
         version: 1.3.0
@@ -2810,6 +2810,9 @@ packages:
   '@types/body-parser@1.19.5':
     resolution: {integrity: sha512-fB3Zu92ucau0iQ0JMCFQE7b/dv8Ot07NI3KaZIkIUNXq82k4eBAqUaneXfleGY9JWskeS9y+u0nXMyspcuQrCg==}
 
+  '@types/busboy@1.5.4':
+    resolution: {integrity: sha512-kG7WrUuAKK0NoyxfQHsVE6j1m01s6kMma64E+OZenQABMQyTJop1DumUWcLwAQ2JzpefU7PDYoRDKl8uZosFjw==}
+
   '@types/caseless@0.12.5':
     resolution: {integrity: sha512-hWtVTC2q7hc7xZ/RLbxapMvDMgUnDvKvMOpKal4DrMyfGBUfB1oKaZlIRr6mJL+If3bAP6sV/QneGzF6tJjZDg==}
 
@@ -3016,6 +3019,9 @@ packages:
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
+
+  '@types/object-path@0.11.4':
+    resolution: {integrity: sha512-4tgJ1Z3elF/tOMpA8JLVuR9spt9Ynsf7+JjqsQ2IqtiPJtcLoHoXcT6qU4E10cPFqyXX5HDm9QwIzZhBSkLxsw==}
 
   '@types/qs@6.9.18':
     resolution: {integrity: sha512-kK7dgTYDyGqS+e2Q4aK9X3D7q234CIZ1Bv0q/7Z5IwRDoADNU81xXJK/YVyLbLTZCoIwUoDoffFeF+p/eIklAA==}
@@ -4948,11 +4954,18 @@ packages:
     peerDependencies:
       graphql: ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
 
-  graphql-upload-minimal@1.6.1:
-    resolution: {integrity: sha512-wNUf/KqA0B/OguL1k6qWa4AmAduLUAhXzovh9i14SKbpBa8HX2vc7f+fR67S0rG7fSpGdM/aivxzC329/+9xXw==}
-    engines: {node: '>=12'}
+  graphql-upload@17.0.0:
+    resolution: {integrity: sha512-AI42S1UR1mdqg+LQ7KqGbrgcf4l9gpPu/R0drM4vSA5C94NfIjYyCeCdpktEledvZoAL8JURLLeB53++WACo1w==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=22.0.0}
     peerDependencies:
-      graphql: 0.13.1 - 16
+      '@types/express': 4.0.29 - 5
+      '@types/koa': ^2.11.4
+      graphql: ^16.3.0
+    peerDependenciesMeta:
+      '@types/express':
+        optional: true
+      '@types/koa':
+        optional: true
 
   graphql-ws@6.0.4:
     resolution: {integrity: sha512-8b4OZtNOvv8+NZva8HXamrc0y1jluYC0+13gdh7198FKjVzXyTvVc95DCwGzaKEfn3YuWZxUqjJlHe3qKM/F2g==}
@@ -6256,6 +6269,10 @@ packages:
   object-keys@1.1.1:
     resolution: {integrity: sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==}
     engines: {node: '>= 0.4'}
+
+  object-path@0.11.8:
+    resolution: {integrity: sha512-YJjNZrlXJFM42wTBn6zgOJVar9KFJvzx6sTWDte8sWZF//cnjl0BxHNpfZx+ZffXX63A9q0b1zsFiBX4g4X5KA==}
+    engines: {node: '>= 10.12.0'}
 
   object-treeify@1.1.33:
     resolution: {integrity: sha512-EFVjAYfzWqWsBMRHPMAXLCDIJnpMhdWAqR7xG6M6a2cs6PMFpl/+Z20w9zDW4vkxOFfddegBKq9Rehd0bxWE7A==}
@@ -11933,6 +11950,10 @@ snapshots:
       '@types/connect': 3.4.38
       '@types/node': 22.15.2
 
+  '@types/busboy@1.5.4':
+    dependencies:
+      '@types/node': 22.15.2
+
   '@types/caseless@0.12.5': {}
 
   '@types/connect@3.4.38':
@@ -12192,6 +12213,8 @@ snapshots:
       undici-types: 6.21.0
 
   '@types/normalize-package-data@2.4.4': {}
+
+  '@types/object-path@0.11.4': {}
 
   '@types/qs@6.9.18': {}
 
@@ -14529,10 +14552,19 @@ snapshots:
       graphql: 16.10.0
       tslib: 2.8.1
 
-  graphql-upload-minimal@1.6.1(graphql@16.10.0):
+  graphql-upload@17.0.0(@types/express@4.17.21)(@types/koa@2.15.0)(graphql@16.10.0):
     dependencies:
+      '@types/busboy': 1.5.4
+      '@types/node': 22.15.2
+      '@types/object-path': 0.11.4
       busboy: 1.6.0
+      fs-capacitor: 8.0.0
       graphql: 16.10.0
+      http-errors: 2.0.0
+      object-path: 0.11.8
+    optionalDependencies:
+      '@types/express': 4.17.21
+      '@types/koa': 2.15.0
 
   graphql-ws@6.0.4(graphql@16.10.0)(ws@8.18.1):
     dependencies:
@@ -16086,6 +16118,8 @@ snapshots:
   object-inspect@1.13.4: {}
 
   object-keys@1.1.1: {}
+
+  object-path@0.11.8: {}
 
   object-treeify@1.1.33: {}
 
