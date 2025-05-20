@@ -21,6 +21,12 @@ export const reservationSelectDetail = Prisma.validator<Prisma.ReservationSelect
 
   opportunitySlotId: true,
   createdBy: true,
+  
+  participations: {
+    include: {
+      evaluation: true
+    }
+  },
 
   createdAt: true,
   updatedAt: true,
