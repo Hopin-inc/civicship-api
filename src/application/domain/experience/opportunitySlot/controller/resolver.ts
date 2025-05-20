@@ -51,29 +51,15 @@ export default class OpportunitySlotResolver {
     },
     
     numParticipants: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      const reservations = await ctx.loaders.reservationByOpportunitySlot.load(parent.id);
-      const participations = reservations.flatMap((reservation) => reservation.participations || []);
-      return participations.length;
+      return this.slotUseCase.getParticipantsCount(parent.id, ctx);
     },
     
     numEvaluated: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      const reservations = await ctx.loaders.reservationByOpportunitySlot.load(parent.id);
-      const participations = reservations.flatMap((reservation) => reservation.participations || []);
-      return participations.filter(
-        (participation) => participation.evaluation && 
-        (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
-      ).length;
+      return this.slotUseCase.getEvaluatedParticipantsCount(parent.id, ctx);
     },
     
     isFullyEvaluated: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
-      const reservations = await ctx.loaders.reservationByOpportunitySlot.load(parent.id);
-      const participations = reservations.flatMap((reservation) => reservation.participations || []);
-      if (participations.length === 0) return true; // If no participants, consider it fully evaluated
-      
-      return participations.every(
-        (participation) => participation.evaluation && 
-        (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
-      );
+      return this.slotUseCase.isSlotFullyEvaluated(parent.id, ctx);
     },
   };
 }

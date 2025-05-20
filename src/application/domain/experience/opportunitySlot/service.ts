@@ -90,4 +90,40 @@ export default class OpportunitySlotService {
     if (ids.length === 0) return;
     return await this.repository.deleteMany(ctx, ids, tx);
   }
+
+  /**
+   * Get the total number of participants for a slot
+   */
+  async getParticipantsCount(ctx: IContext, slotId: string): Promise<number> {
+    const reservations = await ctx.loaders.reservationByOpportunitySlot.load(slotId);
+    const participations = reservations.flatMap((reservation) => reservation.participations || []);
+    return participations.length;
+  }
+
+  /**
+   * Get the number of evaluated participants for a slot
+   */
+  async getEvaluatedParticipantsCount(ctx: IContext, slotId: string): Promise<number> {
+    const reservations = await ctx.loaders.reservationByOpportunitySlot.load(slotId);
+    const participations = reservations.flatMap((reservation) => reservation.participations || []);
+    return participations.filter(
+      (participation) => participation.evaluation && 
+      (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
+    ).length;
+  }
+
+  /**
+   * Check if all participants of a slot have been evaluated
+   */
+  async isSlotFullyEvaluated(ctx: IContext, slotId: string): Promise<boolean> {
+    const reservations = await ctx.loaders.reservationByOpportunitySlot.load(slotId);
+    const participations = reservations.flatMap((reservation) => reservation.participations || []);
+    
+    if (participations.length === 0) return true; // If no participants, consider it fully evaluated
+    
+    return participations.every(
+      (participation) => participation.evaluation && 
+      (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
+    );
+  }
 }
