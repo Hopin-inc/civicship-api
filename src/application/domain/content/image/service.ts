@@ -11,7 +11,10 @@ export default class ImageService {
     folderPath: string,
   ): Promise<Prisma.ImageCreateWithoutUsersInput> {
     const { file, alt, caption } = image;
-    const { createReadStream, filename: rawFilename, mimetype: mime } = await file;
+    const {
+      file: { createReadStream, filename: rawFilename, mimetype: mime },
+    } = await file;
+    console.log(rawFilename, mime);
 
     const ext = path.extname(rawFilename);
     const filename = `${Date.now()}_${rawFilename}`;
