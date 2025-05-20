@@ -23,8 +23,8 @@ import type { TicketClaimLink } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
-import type { CurrentPublicOpportunityCountView } from "@prisma/client";
-import type { AccumulatedParticipantsView } from "@prisma/client";
+import type { PlacePublicOpportunityCountView } from "@prisma/client";
+import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
 import type { MembershipParticipationCountView } from "@prisma/client";
 import type { MembershipHostedOpportunityCountView } from "@prisma/client";
@@ -146,12 +146,12 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "OpportunityToPlace"
             }, {
                 name: "currentPublicOpportunityCount",
-                type: "CurrentPublicOpportunityCountView",
-                relationName: "CurrentPublicOpportunityCountViewToPlace"
+                type: "PlacePublicOpportunityCountView",
+                relationName: "PlaceToPlacePublicOpportunityCountView"
             }, {
                 name: "accumulatedParticipants",
-                type: "AccumulatedParticipantsView",
-                relationName: "AccumulatedParticipantsViewToPlace"
+                type: "PlaceAccumulatedParticipantsView",
+                relationName: "PlaceToPlaceAccumulatedParticipantsView"
             }]
     }, {
         name: "Community",
@@ -617,18 +617,18 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "TicketStatusHistoryToTransaction"
             }]
     }, {
-        name: "CurrentPublicOpportunityCountView",
+        name: "PlacePublicOpportunityCountView",
         fields: [{
                 name: "place",
                 type: "Place",
-                relationName: "CurrentPublicOpportunityCountViewToPlace"
+                relationName: "PlaceToPlacePublicOpportunityCountView"
             }]
     }, {
-        name: "AccumulatedParticipantsView",
+        name: "PlaceAccumulatedParticipantsView",
         fields: [{
                 name: "place",
                 type: "Place",
-                relationName: "AccumulatedParticipantsViewToPlace"
+                relationName: "PlaceToPlaceAccumulatedParticipantsView"
             }]
     }, {
         name: "MembershipParticipationGeoView",
@@ -1184,13 +1184,13 @@ type PlacecommunityFactory = {
 };
 
 type PlacecurrentPublicOpportunityCountFactory = {
-    _factoryFor: "CurrentPublicOpportunityCountView";
-    build: () => PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateNestedOneWithoutPlaceInput["create"]>;
+    _factoryFor: "PlacePublicOpportunityCountView";
+    build: () => PromiseLike<Prisma.PlacePublicOpportunityCountViewCreateNestedOneWithoutPlaceInput["create"]>;
 };
 
 type PlaceaccumulatedParticipantsFactory = {
-    _factoryFor: "AccumulatedParticipantsView";
-    build: () => PromiseLike<Prisma.AccumulatedParticipantsViewCreateNestedOneWithoutPlaceInput["create"]>;
+    _factoryFor: "PlaceAccumulatedParticipantsView";
+    build: () => PromiseLike<Prisma.PlaceAccumulatedParticipantsViewCreateNestedOneWithoutPlaceInput["create"]>;
 };
 
 type PlaceFactoryDefineInput = {
@@ -1208,8 +1208,8 @@ type PlaceFactoryDefineInput = {
     city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
     community?: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
-    currentPublicOpportunityCount?: PlacecurrentPublicOpportunityCountFactory | Prisma.CurrentPublicOpportunityCountViewCreateNestedOneWithoutPlaceInput;
-    accumulatedParticipants?: PlaceaccumulatedParticipantsFactory | Prisma.AccumulatedParticipantsViewCreateNestedOneWithoutPlaceInput;
+    currentPublicOpportunityCount?: PlacecurrentPublicOpportunityCountFactory | Prisma.PlacePublicOpportunityCountViewCreateNestedOneWithoutPlaceInput;
+    accumulatedParticipants?: PlaceaccumulatedParticipantsFactory | Prisma.PlaceAccumulatedParticipantsViewCreateNestedOneWithoutPlaceInput;
 };
 
 type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;
@@ -1237,12 +1237,12 @@ function isPlacecommunityFactory(x: PlacecommunityFactory | Prisma.CommunityCrea
     return (x as any)?._factoryFor === "Community";
 }
 
-function isPlacecurrentPublicOpportunityCountFactory(x: PlacecurrentPublicOpportunityCountFactory | Prisma.CurrentPublicOpportunityCountViewCreateNestedOneWithoutPlaceInput | undefined): x is PlacecurrentPublicOpportunityCountFactory {
-    return (x as any)?._factoryFor === "CurrentPublicOpportunityCountView";
+function isPlacecurrentPublicOpportunityCountFactory(x: PlacecurrentPublicOpportunityCountFactory | Prisma.PlacePublicOpportunityCountViewCreateNestedOneWithoutPlaceInput | undefined): x is PlacecurrentPublicOpportunityCountFactory {
+    return (x as any)?._factoryFor === "PlacePublicOpportunityCountView";
 }
 
-function isPlaceaccumulatedParticipantsFactory(x: PlaceaccumulatedParticipantsFactory | Prisma.AccumulatedParticipantsViewCreateNestedOneWithoutPlaceInput | undefined): x is PlaceaccumulatedParticipantsFactory {
-    return (x as any)?._factoryFor === "AccumulatedParticipantsView";
+function isPlaceaccumulatedParticipantsFactory(x: PlaceaccumulatedParticipantsFactory | Prisma.PlaceAccumulatedParticipantsViewCreateNestedOneWithoutPlaceInput | undefined): x is PlaceaccumulatedParticipantsFactory {
+    return (x as any)?._factoryFor === "PlaceAccumulatedParticipantsView";
 }
 
 type PlaceTraitKeys<TOptions extends PlaceFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -5113,69 +5113,69 @@ export const defineTransactionFactory = (<TOptions extends TransactionFactoryDef
 
 defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
-type CurrentPublicOpportunityCountViewScalarOrEnumFields = {
-    publicOpportunityCount: number;
+type PlacePublicOpportunityCountViewScalarOrEnumFields = {
+    currentPublicCount: number;
 };
 
-type CurrentPublicOpportunityCountViewplaceFactory = {
+type PlacePublicOpportunityCountViewplaceFactory = {
     _factoryFor: "Place";
     build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput["create"]>;
 };
 
-type CurrentPublicOpportunityCountViewFactoryDefineInput = {
-    publicOpportunityCount?: number;
-    place: CurrentPublicOpportunityCountViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput;
+type PlacePublicOpportunityCountViewFactoryDefineInput = {
+    currentPublicCount?: number;
+    place: PlacePublicOpportunityCountViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput;
 };
 
-type CurrentPublicOpportunityCountViewTransientFields = Record<string, unknown> & Partial<Record<keyof CurrentPublicOpportunityCountViewFactoryDefineInput, never>>;
+type PlacePublicOpportunityCountViewTransientFields = Record<string, unknown> & Partial<Record<keyof PlacePublicOpportunityCountViewFactoryDefineInput, never>>;
 
-type CurrentPublicOpportunityCountViewFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<CurrentPublicOpportunityCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<CurrentPublicOpportunityCountView, Prisma.CurrentPublicOpportunityCountViewCreateInput, TTransients>;
+type PlacePublicOpportunityCountViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<PlacePublicOpportunityCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<PlacePublicOpportunityCountView, Prisma.PlacePublicOpportunityCountViewCreateInput, TTransients>;
 
-type CurrentPublicOpportunityCountViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<CurrentPublicOpportunityCountViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+type PlacePublicOpportunityCountViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<PlacePublicOpportunityCountViewFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: CurrentPublicOpportunityCountViewFactoryTrait<TTransients>;
+        [traitName: string | symbol]: PlacePublicOpportunityCountViewFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<CurrentPublicOpportunityCountView, Prisma.CurrentPublicOpportunityCountViewCreateInput, TTransients>;
+} & CallbackDefineOptions<PlacePublicOpportunityCountView, Prisma.PlacePublicOpportunityCountViewCreateInput, TTransients>;
 
-function isCurrentPublicOpportunityCountViewplaceFactory(x: CurrentPublicOpportunityCountViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput | undefined): x is CurrentPublicOpportunityCountViewplaceFactory {
+function isPlacePublicOpportunityCountViewplaceFactory(x: PlacePublicOpportunityCountViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput | undefined): x is PlacePublicOpportunityCountViewplaceFactory {
     return (x as any)?._factoryFor === "Place";
 }
 
-type CurrentPublicOpportunityCountViewTraitKeys<TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+type PlacePublicOpportunityCountViewTraitKeys<TOptions extends PlacePublicOpportunityCountViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
-export interface CurrentPublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "CurrentPublicOpportunityCountView";
-    build(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput>;
-    buildList(list: readonly Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>[]): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput[]>;
-    pickForConnect(inputData: CurrentPublicOpportunityCountView): Pick<CurrentPublicOpportunityCountView, "placeId">;
-    create(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<CurrentPublicOpportunityCountView>;
-    createList(list: readonly Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>[]): PromiseLike<CurrentPublicOpportunityCountView[]>;
-    createList(count: number, item?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<CurrentPublicOpportunityCountView[]>;
-    createForConnect(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Pick<CurrentPublicOpportunityCountView, "placeId">>;
+export interface PlacePublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "PlacePublicOpportunityCountView";
+    build(inputData?: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.PlacePublicOpportunityCountViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.PlacePublicOpportunityCountViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>[]): PromiseLike<Prisma.PlacePublicOpportunityCountViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.PlacePublicOpportunityCountViewCreateInput[]>;
+    pickForConnect(inputData: PlacePublicOpportunityCountView): Pick<PlacePublicOpportunityCountView, "placeId">;
+    create(inputData?: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<PlacePublicOpportunityCountView>;
+    createList(list: readonly Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>[]): PromiseLike<PlacePublicOpportunityCountView[]>;
+    createList(count: number, item?: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<PlacePublicOpportunityCountView[]>;
+    createForConnect(inputData?: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Pick<PlacePublicOpportunityCountView, "placeId">>;
 }
 
-export interface CurrentPublicOpportunityCountViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CurrentPublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): CurrentPublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients>;
+export interface PlacePublicOpportunityCountViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends PlacePublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): PlacePublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients>;
 }
 
-function autoGenerateCurrentPublicOpportunityCountViewScalarsOrEnums({ seq }: {
+function autoGeneratePlacePublicOpportunityCountViewScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): CurrentPublicOpportunityCountViewScalarOrEnumFields {
+}): PlacePublicOpportunityCountViewScalarOrEnumFields {
     return {
-        publicOpportunityCount: getScalarFieldValueGenerator().Int({ modelName: "CurrentPublicOpportunityCountView", fieldName: "publicOpportunityCount", isId: false, isUnique: false, seq })
+        currentPublicCount: getScalarFieldValueGenerator().Int({ modelName: "PlacePublicOpportunityCountView", fieldName: "currentPublicCount", isId: false, isUnique: false, seq })
     };
 }
 
-function defineCurrentPublicOpportunityCountViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CurrentPublicOpportunityCountViewFactoryInterface<TTransients, CurrentPublicOpportunityCountViewTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly CurrentPublicOpportunityCountViewTraitKeys<TOptions>[] = []) => {
+function definePlacePublicOpportunityCountViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends PlacePublicOpportunityCountViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): PlacePublicOpportunityCountViewFactoryInterface<TTransients, PlacePublicOpportunityCountViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly PlacePublicOpportunityCountViewTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("CurrentPublicOpportunityCountView", modelFieldDefinitions);
+        const screen = createScreener("PlacePublicOpportunityCountView", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -5188,15 +5188,15 @@ function defineCurrentPublicOpportunityCountViewFactoryInternal<TTransients exte
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateCurrentPublicOpportunityCountViewScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<CurrentPublicOpportunityCountViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const requiredScalarData = autoGeneratePlacePublicOpportunityCountViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<PlacePublicOpportunityCountViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<CurrentPublicOpportunityCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<PlacePublicOpportunityCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
@@ -5204,30 +5204,30 @@ function defineCurrentPublicOpportunityCountViewFactoryInternal<TTransients exte
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                place: isCurrentPublicOpportunityCountViewplaceFactory(defaultData.place) ? {
+                place: isPlacePublicOpportunityCountViewplaceFactory(defaultData.place) ? {
                     create: await defaultData.place.build()
                 } : defaultData.place
-            } as Prisma.CurrentPublicOpportunityCountViewCreateInput;
-            const data: Prisma.CurrentPublicOpportunityCountViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            } as Prisma.PlacePublicOpportunityCountViewCreateInput;
+            const data: Prisma.PlacePublicOpportunityCountViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: CurrentPublicOpportunityCountView) => ({
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: PlacePublicOpportunityCountView) => ({
             placeId: inputData.placeId
         });
-        const create = async (inputData: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().currentPublicOpportunityCountView.create({ data });
+            const createdData = await getClient<PrismaClient>().placePublicOpportunityCountView.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.PlacePublicOpportunityCountViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "CurrentPublicOpportunityCountView" as const,
+            _factoryFor: "PlacePublicOpportunityCountView" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -5238,7 +5238,7 @@ function defineCurrentPublicOpportunityCountViewFactoryInternal<TTransients exte
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: CurrentPublicOpportunityCountViewTraitKeys<TOptions>, ...names: readonly CurrentPublicOpportunityCountViewTraitKeys<TOptions>[]) => {
+    const useTraits = (name: PlacePublicOpportunityCountViewTraitKeys<TOptions>, ...names: readonly PlacePublicOpportunityCountViewTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -5247,86 +5247,86 @@ function defineCurrentPublicOpportunityCountViewFactoryInternal<TTransients exte
     };
 }
 
-interface CurrentPublicOpportunityCountViewFactoryBuilder {
-    <TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions>(options: TOptions): CurrentPublicOpportunityCountViewFactoryInterface<{}, CurrentPublicOpportunityCountViewTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends CurrentPublicOpportunityCountViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions<TTransients>>(options: TOptions) => CurrentPublicOpportunityCountViewFactoryInterface<TTransients, CurrentPublicOpportunityCountViewTraitKeys<TOptions>>;
+interface PlacePublicOpportunityCountViewFactoryBuilder {
+    <TOptions extends PlacePublicOpportunityCountViewFactoryDefineOptions>(options: TOptions): PlacePublicOpportunityCountViewFactoryInterface<{}, PlacePublicOpportunityCountViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends PlacePublicOpportunityCountViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends PlacePublicOpportunityCountViewFactoryDefineOptions<TTransients>>(options: TOptions) => PlacePublicOpportunityCountViewFactoryInterface<TTransients, PlacePublicOpportunityCountViewTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link CurrentPublicOpportunityCountView} model.
+ * Define factory for {@link PlacePublicOpportunityCountView} model.
  *
  * @param options
- * @returns factory {@link CurrentPublicOpportunityCountViewFactoryInterface}
+ * @returns factory {@link PlacePublicOpportunityCountViewFactoryInterface}
  */
-export const defineCurrentPublicOpportunityCountViewFactory = (<TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions>(options: TOptions): CurrentPublicOpportunityCountViewFactoryInterface<TOptions> => {
-    return defineCurrentPublicOpportunityCountViewFactoryInternal(options, {});
-}) as CurrentPublicOpportunityCountViewFactoryBuilder;
+export const definePlacePublicOpportunityCountViewFactory = (<TOptions extends PlacePublicOpportunityCountViewFactoryDefineOptions>(options: TOptions): PlacePublicOpportunityCountViewFactoryInterface<TOptions> => {
+    return definePlacePublicOpportunityCountViewFactoryInternal(options, {});
+}) as PlacePublicOpportunityCountViewFactoryBuilder;
 
-defineCurrentPublicOpportunityCountViewFactory.withTransientFields = defaultTransientFieldValues => options => defineCurrentPublicOpportunityCountViewFactoryInternal(options, defaultTransientFieldValues);
+definePlacePublicOpportunityCountViewFactory.withTransientFields = defaultTransientFieldValues => options => definePlacePublicOpportunityCountViewFactoryInternal(options, defaultTransientFieldValues);
 
-type AccumulatedParticipantsViewScalarOrEnumFields = {
+type PlaceAccumulatedParticipantsViewScalarOrEnumFields = {
     accumulatedParticipants: number;
 };
 
-type AccumulatedParticipantsViewplaceFactory = {
+type PlaceAccumulatedParticipantsViewplaceFactory = {
     _factoryFor: "Place";
     build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutAccumulatedParticipantsInput["create"]>;
 };
 
-type AccumulatedParticipantsViewFactoryDefineInput = {
+type PlaceAccumulatedParticipantsViewFactoryDefineInput = {
     accumulatedParticipants?: number;
-    place: AccumulatedParticipantsViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutAccumulatedParticipantsInput;
+    place: PlaceAccumulatedParticipantsViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutAccumulatedParticipantsInput;
 };
 
-type AccumulatedParticipantsViewTransientFields = Record<string, unknown> & Partial<Record<keyof AccumulatedParticipantsViewFactoryDefineInput, never>>;
+type PlaceAccumulatedParticipantsViewTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceAccumulatedParticipantsViewFactoryDefineInput, never>>;
 
-type AccumulatedParticipantsViewFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<AccumulatedParticipantsViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<AccumulatedParticipantsView, Prisma.AccumulatedParticipantsViewCreateInput, TTransients>;
+type PlaceAccumulatedParticipantsViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<PlaceAccumulatedParticipantsViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<PlaceAccumulatedParticipantsView, Prisma.PlaceAccumulatedParticipantsViewCreateInput, TTransients>;
 
-type AccumulatedParticipantsViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<AccumulatedParticipantsViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+type PlaceAccumulatedParticipantsViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<PlaceAccumulatedParticipantsViewFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: AccumulatedParticipantsViewFactoryTrait<TTransients>;
+        [traitName: string | symbol]: PlaceAccumulatedParticipantsViewFactoryTrait<TTransients>;
     };
-} & CallbackDefineOptions<AccumulatedParticipantsView, Prisma.AccumulatedParticipantsViewCreateInput, TTransients>;
+} & CallbackDefineOptions<PlaceAccumulatedParticipantsView, Prisma.PlaceAccumulatedParticipantsViewCreateInput, TTransients>;
 
-function isAccumulatedParticipantsViewplaceFactory(x: AccumulatedParticipantsViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutAccumulatedParticipantsInput | undefined): x is AccumulatedParticipantsViewplaceFactory {
+function isPlaceAccumulatedParticipantsViewplaceFactory(x: PlaceAccumulatedParticipantsViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutAccumulatedParticipantsInput | undefined): x is PlaceAccumulatedParticipantsViewplaceFactory {
     return (x as any)?._factoryFor === "Place";
 }
 
-type AccumulatedParticipantsViewTraitKeys<TOptions extends AccumulatedParticipantsViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+type PlaceAccumulatedParticipantsViewTraitKeys<TOptions extends PlaceAccumulatedParticipantsViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
-export interface AccumulatedParticipantsViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "AccumulatedParticipantsView";
-    build(inputData?: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Prisma.AccumulatedParticipantsViewCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Prisma.AccumulatedParticipantsViewCreateInput>;
-    buildList(list: readonly Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>[]): PromiseLike<Prisma.AccumulatedParticipantsViewCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Prisma.AccumulatedParticipantsViewCreateInput[]>;
-    pickForConnect(inputData: AccumulatedParticipantsView): Pick<AccumulatedParticipantsView, "placeId">;
-    create(inputData?: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<AccumulatedParticipantsView>;
-    createList(list: readonly Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>[]): PromiseLike<AccumulatedParticipantsView[]>;
-    createList(count: number, item?: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<AccumulatedParticipantsView[]>;
-    createForConnect(inputData?: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Pick<AccumulatedParticipantsView, "placeId">>;
+export interface PlaceAccumulatedParticipantsViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "PlaceAccumulatedParticipantsView";
+    build(inputData?: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Prisma.PlaceAccumulatedParticipantsViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Prisma.PlaceAccumulatedParticipantsViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>[]): PromiseLike<Prisma.PlaceAccumulatedParticipantsViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Prisma.PlaceAccumulatedParticipantsViewCreateInput[]>;
+    pickForConnect(inputData: PlaceAccumulatedParticipantsView): Pick<PlaceAccumulatedParticipantsView, "placeId">;
+    create(inputData?: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<PlaceAccumulatedParticipantsView>;
+    createList(list: readonly Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>[]): PromiseLike<PlaceAccumulatedParticipantsView[]>;
+    createList(count: number, item?: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<PlaceAccumulatedParticipantsView[]>;
+    createForConnect(inputData?: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>): PromiseLike<Pick<PlaceAccumulatedParticipantsView, "placeId">>;
 }
 
-export interface AccumulatedParticipantsViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends AccumulatedParticipantsViewFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): AccumulatedParticipantsViewFactoryInterfaceWithoutTraits<TTransients>;
+export interface PlaceAccumulatedParticipantsViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends PlaceAccumulatedParticipantsViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): PlaceAccumulatedParticipantsViewFactoryInterfaceWithoutTraits<TTransients>;
 }
 
-function autoGenerateAccumulatedParticipantsViewScalarsOrEnums({ seq }: {
+function autoGeneratePlaceAccumulatedParticipantsViewScalarsOrEnums({ seq }: {
     readonly seq: number;
-}): AccumulatedParticipantsViewScalarOrEnumFields {
+}): PlaceAccumulatedParticipantsViewScalarOrEnumFields {
     return {
-        accumulatedParticipants: getScalarFieldValueGenerator().Int({ modelName: "AccumulatedParticipantsView", fieldName: "accumulatedParticipants", isId: false, isUnique: false, seq })
+        accumulatedParticipants: getScalarFieldValueGenerator().Int({ modelName: "PlaceAccumulatedParticipantsView", fieldName: "accumulatedParticipants", isId: false, isUnique: false, seq })
     };
 }
 
-function defineAccumulatedParticipantsViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends AccumulatedParticipantsViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): AccumulatedParticipantsViewFactoryInterface<TTransients, AccumulatedParticipantsViewTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly AccumulatedParticipantsViewTraitKeys<TOptions>[] = []) => {
+function definePlaceAccumulatedParticipantsViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends PlaceAccumulatedParticipantsViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): PlaceAccumulatedParticipantsViewFactoryInterface<TTransients, PlaceAccumulatedParticipantsViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly PlaceAccumulatedParticipantsViewTraitKeys<TOptions>[] = []) => {
         const seqKey = {};
         const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("AccumulatedParticipantsView", modelFieldDefinitions);
+        const screen = createScreener("PlaceAccumulatedParticipantsView", modelFieldDefinitions);
         const handleAfterBuild = createCallbackChain([
             onAfterBuild,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
@@ -5339,15 +5339,15 @@ function defineAccumulatedParticipantsViewFactoryInternal<TTransients extends Re
             onAfterCreate,
             ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
         ]);
-        const build = async (inputData: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients> = {}) => {
+        const build = async (inputData: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients> = {}) => {
             const seq = getSeq();
-            const requiredScalarData = autoGenerateAccumulatedParticipantsViewScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<AccumulatedParticipantsViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const requiredScalarData = autoGeneratePlaceAccumulatedParticipantsViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<PlaceAccumulatedParticipantsViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
                 const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<AccumulatedParticipantsViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const resolveTraitValue = normalizeResolver<Partial<PlaceAccumulatedParticipantsViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
                 const traitData = await resolveTraitValue(resolverInput);
                 return {
                     ...acc,
@@ -5355,30 +5355,30 @@ function defineAccumulatedParticipantsViewFactoryInternal<TTransients extends Re
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
-                place: isAccumulatedParticipantsViewplaceFactory(defaultData.place) ? {
+                place: isPlaceAccumulatedParticipantsViewplaceFactory(defaultData.place) ? {
                     create: await defaultData.place.build()
                 } : defaultData.place
-            } as Prisma.AccumulatedParticipantsViewCreateInput;
-            const data: Prisma.AccumulatedParticipantsViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            } as Prisma.PlaceAccumulatedParticipantsViewCreateInput;
+            const data: Prisma.PlaceAccumulatedParticipantsViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
         };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: AccumulatedParticipantsView) => ({
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: PlaceAccumulatedParticipantsView) => ({
             placeId: inputData.placeId
         });
-        const create = async (inputData: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients> = {}) => {
+        const create = async (inputData: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients> = {}) => {
             const data = await build({ ...inputData }).then(screen);
             const [transientFields] = destructure(defaultTransientFieldValues, inputData);
             await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().accumulatedParticipantsView.create({ data });
+            const createdData = await getClient<PrismaClient>().placeAccumulatedParticipantsView.create({ data });
             await handleAfterCreate(createdData, transientFields);
             return createdData;
         };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.AccumulatedParticipantsViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.PlaceAccumulatedParticipantsViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
         return {
-            _factoryFor: "AccumulatedParticipantsView" as const,
+            _factoryFor: "PlaceAccumulatedParticipantsView" as const,
             build,
             buildList,
             buildCreateInput: build,
@@ -5389,7 +5389,7 @@ function defineAccumulatedParticipantsViewFactoryInternal<TTransients extends Re
         };
     };
     const factory = getFactoryWithTraits();
-    const useTraits = (name: AccumulatedParticipantsViewTraitKeys<TOptions>, ...names: readonly AccumulatedParticipantsViewTraitKeys<TOptions>[]) => {
+    const useTraits = (name: PlaceAccumulatedParticipantsViewTraitKeys<TOptions>, ...names: readonly PlaceAccumulatedParticipantsViewTraitKeys<TOptions>[]) => {
         return getFactoryWithTraits([name, ...names]);
     };
     return {
@@ -5398,22 +5398,22 @@ function defineAccumulatedParticipantsViewFactoryInternal<TTransients extends Re
     };
 }
 
-interface AccumulatedParticipantsViewFactoryBuilder {
-    <TOptions extends AccumulatedParticipantsViewFactoryDefineOptions>(options: TOptions): AccumulatedParticipantsViewFactoryInterface<{}, AccumulatedParticipantsViewTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends AccumulatedParticipantsViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends AccumulatedParticipantsViewFactoryDefineOptions<TTransients>>(options: TOptions) => AccumulatedParticipantsViewFactoryInterface<TTransients, AccumulatedParticipantsViewTraitKeys<TOptions>>;
+interface PlaceAccumulatedParticipantsViewFactoryBuilder {
+    <TOptions extends PlaceAccumulatedParticipantsViewFactoryDefineOptions>(options: TOptions): PlaceAccumulatedParticipantsViewFactoryInterface<{}, PlaceAccumulatedParticipantsViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends PlaceAccumulatedParticipantsViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends PlaceAccumulatedParticipantsViewFactoryDefineOptions<TTransients>>(options: TOptions) => PlaceAccumulatedParticipantsViewFactoryInterface<TTransients, PlaceAccumulatedParticipantsViewTraitKeys<TOptions>>;
 }
 
 /**
- * Define factory for {@link AccumulatedParticipantsView} model.
+ * Define factory for {@link PlaceAccumulatedParticipantsView} model.
  *
  * @param options
- * @returns factory {@link AccumulatedParticipantsViewFactoryInterface}
+ * @returns factory {@link PlaceAccumulatedParticipantsViewFactoryInterface}
  */
-export const defineAccumulatedParticipantsViewFactory = (<TOptions extends AccumulatedParticipantsViewFactoryDefineOptions>(options: TOptions): AccumulatedParticipantsViewFactoryInterface<TOptions> => {
-    return defineAccumulatedParticipantsViewFactoryInternal(options, {});
-}) as AccumulatedParticipantsViewFactoryBuilder;
+export const definePlaceAccumulatedParticipantsViewFactory = (<TOptions extends PlaceAccumulatedParticipantsViewFactoryDefineOptions>(options: TOptions): PlaceAccumulatedParticipantsViewFactoryInterface<TOptions> => {
+    return definePlaceAccumulatedParticipantsViewFactoryInternal(options, {});
+}) as PlaceAccumulatedParticipantsViewFactoryBuilder;
 
-defineAccumulatedParticipantsViewFactory.withTransientFields = defaultTransientFieldValues => options => defineAccumulatedParticipantsViewFactoryInternal(options, defaultTransientFieldValues);
+definePlaceAccumulatedParticipantsViewFactory.withTransientFields = defaultTransientFieldValues => options => definePlaceAccumulatedParticipantsViewFactoryInternal(options, defaultTransientFieldValues);
 
 type MembershipParticipationGeoViewScalarOrEnumFields = {
     type: ParticipationType;

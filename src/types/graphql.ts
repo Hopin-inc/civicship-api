@@ -1311,10 +1311,12 @@ export type GqlParticipationsConnection = {
 
 export type GqlPlace = {
   __typename?: 'Place';
+  accumulatedParticipants?: Maybe<Scalars['Int']['output']>;
   address: Scalars['String']['output'];
   city?: Maybe<GqlCity>;
   community?: Maybe<GqlCommunity>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
+  currentPublicOpportunityCount?: Maybe<Scalars['Int']['output']>;
   googlePlaceId?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
@@ -3644,10 +3646,12 @@ export type GqlParticipationsConnectionResolvers<ContextType = any, ParentType e
 }>;
 
 export type GqlPlaceResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Place'] = GqlResolversParentTypes['Place']> = ResolversObject<{
+  accumulatedParticipants?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   address?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   city?: Resolver<Maybe<GqlResolversTypes['City']>, ParentType, ContextType>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  currentPublicOpportunityCount?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   googlePlaceId?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   image?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;

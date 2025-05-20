@@ -136,7 +136,7 @@ model Place {
 
   opportunities Opportunity[]
 
-  currentPublicOpportunityCount CurrentPublicOpportunityCountView?
+  currentPublicOpportunityCount PlacePublicOpportunityCountView?
   accumulatedParticipants       PlaceAccumulatedParticipantsView?
 
   createdAt DateTime  @default(now()) @map("created_at")
@@ -145,13 +145,13 @@ model Place {
   @@map("t_places")
 }
 
-view CurrentPublicOpportunityCountView {
+view PlacePublicOpportunityCountView {
   placeId String @id @map("place_id")
   place   Place  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
-  publicOpportunityCount Int @map("public_opportunity_count")
+  currentPublicCount Int @map("current_public_count")
 
-  @@map("v_current_public_opportunity_count")
+  @@map("v_place_public_opportunity_count")
 }
 
 view PlaceAccumulatedParticipantsView {
