@@ -49,5 +49,31 @@ export default class OpportunitySlotResolver {
     reservations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.reservationByOpportunitySlot.load(parent.id);
     },
+    
+    numParticipants: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
+      const reservations = await ctx.loaders.reservationByOpportunitySlot.load(parent.id);
+      const participations = reservations.flatMap((reservation) => reservation.participations || []);
+      return participations.length;
+    },
+    
+    numEvaluated: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
+      const reservations = await ctx.loaders.reservationByOpportunitySlot.load(parent.id);
+      const participations = reservations.flatMap((reservation) => reservation.participations || []);
+      return participations.filter(
+        (participation) => participation.evaluation && 
+        (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
+      ).length;
+    },
+    
+    isFullyEvaluated: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
+      const reservations = await ctx.loaders.reservationByOpportunitySlot.load(parent.id);
+      const participations = reservations.flatMap((reservation) => reservation.participations || []);
+      if (participations.length === 0) return true; // If no participants, consider it fully evaluated
+      
+      return participations.every(
+        (participation) => participation.evaluation && 
+        (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
+      );
+    },
   };
 }
