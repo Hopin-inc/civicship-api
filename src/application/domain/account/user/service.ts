@@ -39,23 +39,20 @@ export default class UserService {
     { input }: GqlMutationUserUpdateMyProfileArgs,
     tx: Prisma.TransactionClient,
   ) {
-    if (!ctx.uid) {
+    if (!ctx.uid || !ctx.currentUser) {
       throw new Error("Authentication required (uid or platform missing)");
     }
     const { data, image } = this.converter.update(input);
 
-    let uploadedImageData: Prisma.ImageCreateWithoutUsersInput | undefined = undefined;
-    if (image) {
-      uploadedImageData = await this.imageService.uploadPublicImage(image, "users");
-    }
-
     const userUpdateInput: Prisma.UserUpdateInput = {
       ...data,
-      image: {
-        create: uploadedImageData,
-      },
     };
+    if (image) {
+      userUpdateInput.image = {
+        create: await this.imageService.uploadPublicImage(image, "users"),
+      };
+    }
 
-    return this.repository.update(ctx, ctx.uid, userUpdateInput, tx);
+    return this.repository.update(ctx, ctx.currentUser.id, userUpdateInput, tx);
   }
 }
