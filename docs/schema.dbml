@@ -66,6 +66,7 @@ Table t_places {
   community t_communities
   opportunities t_opportunities [not null]
   currentPublicOpportunityCount v_current_public_opportunity_count
+  accumulatedParticipants v_accumulated_participants
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -221,6 +222,7 @@ Table t_opportunities {
   requiredUtilities t_utilities [not null]
   slots t_opportunity_slots [not null]
   earliestReservableSlotView v_earliest_reservable_slot
+  accumulatedParticipants v_opportunity_accumulated_participants
   communityId String
   community t_communities
   placeId String
@@ -421,6 +423,12 @@ Table v_current_public_opportunity_count {
   publicOpportunityCount Int [not null]
 }
 
+Table v_accumulated_participants {
+  placeId String [pk]
+  place t_places [not null]
+  accumulatedParticipants Int [not null]
+}
+
 Table v_membership_participation_geo {
   userId String [not null]
   communityId String [not null]
@@ -477,6 +485,12 @@ Table v_earliest_reservable_slot {
   opportunityId String [pk]
   opportunity t_opportunities [not null]
   earliestReservableAt DateTime
+}
+
+Table v_opportunity_accumulated_participants {
+  opportunityId String [pk]
+  opportunity t_opportunities [not null]
+  accumulatedParticipants Int [not null]
 }
 
 Table v_slot_remaining_capacity {
@@ -756,6 +770,8 @@ Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 
 Ref: v_current_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 
+Ref: v_accumulated_participants.placeId - t_places.id [delete: Restrict]
+
 Ref: v_membership_participation_geo.(userId, communityId) > t_memberships.(userId, communityId)
 
 Ref: v_membership_participation_count.(userId, communityId) > t_memberships.(userId, communityId)
@@ -767,5 +783,7 @@ Ref: mv_current_points.walletId - t_wallets.id
 Ref: mv_accumulated_points.walletId - t_wallets.id
 
 Ref: v_earliest_reservable_slot.opportunityId - t_opportunities.id
+
+Ref: v_opportunity_accumulated_participants.opportunityId - t_opportunities.id [delete: Cascade]
 
 Ref: v_slot_remaining_capacity.slotId - t_opportunity_slots.id

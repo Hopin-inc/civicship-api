@@ -137,7 +137,7 @@ model Place {
   opportunities Opportunity[]
 
   currentPublicOpportunityCount CurrentPublicOpportunityCountView?
-  accumulatedParticipants       AccumulatedParticipantsView?
+  accumulatedParticipants       PlaceAccumulatedParticipantsView?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -154,13 +154,13 @@ view CurrentPublicOpportunityCountView {
   @@map("v_current_public_opportunity_count")
 }
 
-view AccumulatedParticipantsView {
+view PlaceAccumulatedParticipantsView {
   placeId String @id @map("place_id")
   place   Place  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
   accumulatedParticipants Int @map("accumulated_participants")
 
-  @@map("v_accumulated_participants")
+  @@map("v_place_accumulated_participants")
 }
 
 // ------------------------------ Community Domain ------------------------------
@@ -497,7 +497,7 @@ model Opportunity {
 
   slots                      OpportunitySlot[]
   earliestReservableSlotView EarliestReservableSlotView?
-  // accumulatedParticipants    OpportunityAccumulatedParticipantsView?
+  accumulatedParticipants    OpportunityAccumulatedParticipantsView?
 
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -531,14 +531,14 @@ view EarliestReservableSlotView {
   @@map("v_earliest_reservable_slot")
 }
 
-// view OpportunityAccumulatedParticipantsView {
-//   opportunityId String      @id @map("opportunity_id")
-//   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-//
-//   accumulatedParticipants Int @map("accumulated_participants")
-//
-//   @@map("v_opportunity_accumulated_participants")
-// }
+view OpportunityAccumulatedParticipantsView {
+  opportunityId String      @id @map("opportunity_id")
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  accumulatedParticipants Int @map("accumulated_participants")
+
+  @@map("v_opportunity_accumulated_participants")
+}
 
 model OpportunitySlot {
   id String @id @default(cuid())

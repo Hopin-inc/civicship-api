@@ -505,6 +505,12 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "v_accumulated_participants" {
+    String placeId "🗝️"
+    Int accumulatedParticipants 
+    }
+  
+
   "v_membership_participation_geo" {
     String userId "🗝️"
     String communityId "🗝️"
@@ -551,6 +557,12 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "v_opportunity_accumulated_participants" {
+    String opportunityId "🗝️"
+    Int accumulatedParticipants 
+    }
+  
+
   "v_slot_remaining_capacity" {
     String slotId "🗝️"
     Int remainingCapacity "❓"
@@ -571,6 +583,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_places" o|--|o "t_communities" : "community"
     "t_places" o{--}o "t_opportunities" : "opportunities"
     "t_places" o{--}o "v_current_public_opportunity_count" : "currentPublicOpportunityCount"
+    "t_places" o{--}o "v_accumulated_participants" : "accumulated_participants"
     "t_communities" o|--|o "t_images" : "image"
     "t_communities" o{--}o "t_places" : "places"
     "t_communities" o{--}o "t_memberships" : "memberships"
@@ -634,6 +647,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_opportunities" o{--}o "t_utilities" : "requiredUtilities"
     "t_opportunities" o{--}o "t_opportunity_slots" : "slots"
     "t_opportunities" o{--}o "v_earliest_reservable_slot" : "earliestReservableSlotView"
+    "t_opportunities" o{--}o "v_opportunity_accumulated_participants" : "accumulated_participants"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|o "t_places" : "place"
     "t_opportunities" o{--}o "t_articles" : "articles"
@@ -702,6 +716,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "v_current_public_opportunity_count" o|--|| "t_places" : "place"
+    "v_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
     "v_membership_participation_geo" o|--|| "t_memberships" : "membership"
     "v_membership_participation_count" o|--|| "ParticipationType" : "enum:type"
@@ -710,5 +725,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     "mv_current_points" o|--|| "t_wallets" : "wallet"
     "mv_accumulated_points" o|--|| "t_wallets" : "wallet"
     "v_earliest_reservable_slot" o|--|| "t_opportunities" : "opportunity"
+    "v_opportunity_accumulated_participants" o|--|| "t_opportunities" : "opportunity"
     "v_slot_remaining_capacity" o|--|| "t_opportunity_slots" : "slot"
 ```
