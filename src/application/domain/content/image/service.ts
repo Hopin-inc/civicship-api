@@ -12,6 +12,7 @@ export default class ImageService {
   ): Promise<Prisma.ImageCreateWithoutUsersInput> {
     const { file, alt, caption } = image;
     const {
+      // @ts-expect-error Library type definition is not compatible with the original library
       file: { createReadStream, filename: rawFilename, mimetype: mime },
     } = await file;
     console.log(rawFilename, mime);

@@ -17,7 +17,7 @@ generates:
         Datetime: Date
         Decimal: string
         JSON: any
-        Upload: "Promise<import('graphql-upload/processRequest.mjs').GraphQLUpload>"
+        Upload: "typeof import('graphql-upload/GraphQLUpload.mjs')"
       enumsAsConst: true
       mappers:
         User: "@prisma/client/index.d#User"
