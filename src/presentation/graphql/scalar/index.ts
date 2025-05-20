@@ -1,6 +1,6 @@
 import { GraphQLScalarType, Kind } from "graphql";
 import { Decimal } from "@prisma/client/runtime/library";
-import { GraphQLUpload } from "graphql-upload-minimal";
+import GraphQLUpload from "graphql-upload/GraphQLUpload.mjs";
 
 const DecimalScalar = new GraphQLScalarType({
   name: "Decimal",
