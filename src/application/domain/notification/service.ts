@@ -13,10 +13,13 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
-
 dayjs.locale("ja");
 
-const liffBaseUrl = process.env.LIFF_BASE_URL;
+const liffBaseUrl = (() => {
+  const value = process.env.LIFF_BASE_URL;
+  if (!value) throw new Error("LIFF_BASE_URL is required");
+  return value;
+})();
 
 export const DEFAULT_HOST_IMAGE_URL =
   "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
@@ -25,10 +28,7 @@ export const DEFAULT_THUMBNAIL =
 
 @injectable()
 export default class NotificationService {
-  async pushCancelOpportunitySlotMessage(
-    ctx: IContext,
-    slot: PrismaOpportunitySlotSetHostingStatus,
-  ) {
+  async pushCancelOpportunitySlotMessage(slot: PrismaOpportunitySlotSetHostingStatus) {
     const participantInfos = this.extractLineUidsFromParticipations(
       slot.reservations.flatMap((r) => r.participations),
     );
@@ -108,11 +108,7 @@ export default class NotificationService {
     await safePushMessage({ to: lineUid, messages: [message] });
   }
 
-  async pushReservationAcceptedMessage(
-    ctx: IContext,
-    currentUserId: string,
-    reservation: PrismaReservation,
-  ) {
+  async pushReservationAcceptedMessage(reservation: PrismaReservation) {
     const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
     if (participantInfos.length === 0) return;
 
@@ -122,7 +118,7 @@ export default class NotificationService {
     );
 
     const { title, images, place, createdByUser } = reservation.opportunitySlot.opportunity;
-    const { name: hostName = "案内人", image: hostImage } = createdByUser ?? {};
+    const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
     await Promise.all(
@@ -136,7 +132,7 @@ export default class NotificationService {
           time,
           place: place?.name ?? "要問い合わせ",
           participantCount,
-          hostName,
+          hostName: hostName ?? "案内人",
           hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
           redirectUrl,
         });
