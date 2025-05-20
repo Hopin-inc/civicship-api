@@ -65,6 +65,7 @@ Table t_places {
   communityId String
   community t_communities
   opportunities t_opportunities [not null]
+  currentPublicOpportunityCount v_current_public_opportunity_count
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -414,6 +415,12 @@ Table t_transactions {
   updatedAt DateTime
 }
 
+Table v_current_public_opportunity_count {
+  placeId String [pk]
+  place t_places [not null]
+  publicOpportunityCount Int [not null]
+}
+
 Table v_membership_participation_geo {
   userId String [not null]
   communityId String [not null]
@@ -746,6 +753,8 @@ Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
+
+Ref: v_current_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 
 Ref: v_membership_participation_geo.(userId, communityId) > t_memberships.(userId, communityId)
 

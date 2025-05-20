@@ -136,10 +136,31 @@ model Place {
 
   opportunities Opportunity[]
 
+  currentPublicOpportunityCount CurrentPublicOpportunityCountView?
+  accumulatedParticipants       AccumulatedParticipantsView?
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_places")
+}
+
+view CurrentPublicOpportunityCountView {
+  placeId String @id @map("place_id")
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Restrict)
+
+  publicOpportunityCount Int @map("public_opportunity_count")
+
+  @@map("v_current_public_opportunity_count")
+}
+
+view AccumulatedParticipantsView {
+  placeId String @id @map("place_id")
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Restrict)
+
+  accumulatedParticipants Int @map("accumulated_participants")
+
+  @@map("v_accumulated_participants")
 }
 
 // ------------------------------ Community Domain ------------------------------
@@ -476,6 +497,7 @@ model Opportunity {
 
   slots                      OpportunitySlot[]
   earliestReservableSlotView EarliestReservableSlotView?
+  // accumulatedParticipants    OpportunityAccumulatedParticipantsView?
 
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id], onDelete: Cascade)
@@ -508,6 +530,15 @@ view EarliestReservableSlotView {
 
   @@map("v_earliest_reservable_slot")
 }
+
+// view OpportunityAccumulatedParticipantsView {
+//   opportunityId String      @id @map("opportunity_id")
+//   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+//
+//   accumulatedParticipants Int @map("accumulated_participants")
+//
+//   @@map("v_opportunity_accumulated_participants")
+// }
 
 model OpportunitySlot {
   id String @id @default(cuid())

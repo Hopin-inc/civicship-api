@@ -23,6 +23,7 @@ import type { TicketClaimLink } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
+import type { CurrentPublicOpportunityCountView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
 import type { MembershipParticipationCountView } from "@prisma/client";
 import type { MembershipHostedOpportunityCountView } from "@prisma/client";
@@ -141,6 +142,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "opportunities",
                 type: "Opportunity",
                 relationName: "OpportunityToPlace"
+            }, {
+                name: "currentPublicOpportunityCount",
+                type: "CurrentPublicOpportunityCountView",
+                relationName: "CurrentPublicOpportunityCountViewToPlace"
             }]
     }, {
         name: "Community",
@@ -600,6 +605,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "ticketStatusHistory",
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
+            }]
+    }, {
+        name: "CurrentPublicOpportunityCountView",
+        fields: [{
+                name: "place",
+                type: "Place",
+                relationName: "CurrentPublicOpportunityCountViewToPlace"
             }]
     }, {
         name: "MembershipParticipationGeoView",
@@ -1147,6 +1159,11 @@ type PlacecommunityFactory = {
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutPlacesInput["create"]>;
 };
 
+type PlacecurrentPublicOpportunityCountFactory = {
+    _factoryFor: "CurrentPublicOpportunityCountView";
+    build: () => PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateNestedOneWithoutPlaceInput["create"]>;
+};
+
 type PlaceFactoryDefineInput = {
     id?: string;
     name?: string;
@@ -1162,6 +1179,7 @@ type PlaceFactoryDefineInput = {
     city: PlacecityFactory | Prisma.CityCreateNestedOneWithoutPlacesInput;
     community?: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput;
     opportunities?: Prisma.OpportunityCreateNestedManyWithoutPlaceInput;
+    currentPublicOpportunityCount?: PlacecurrentPublicOpportunityCountFactory | Prisma.CurrentPublicOpportunityCountViewCreateNestedOneWithoutPlaceInput;
 };
 
 type PlaceTransientFields = Record<string, unknown> & Partial<Record<keyof PlaceFactoryDefineInput, never>>;
@@ -1187,6 +1205,10 @@ function isPlacecityFactory(x: PlacecityFactory | Prisma.CityCreateNestedOneWith
 
 function isPlacecommunityFactory(x: PlacecommunityFactory | Prisma.CommunityCreateNestedOneWithoutPlacesInput | undefined): x is PlacecommunityFactory {
     return (x as any)?._factoryFor === "Community";
+}
+
+function isPlacecurrentPublicOpportunityCountFactory(x: PlacecurrentPublicOpportunityCountFactory | Prisma.CurrentPublicOpportunityCountViewCreateNestedOneWithoutPlaceInput | undefined): x is PlacecurrentPublicOpportunityCountFactory {
+    return (x as any)?._factoryFor === "CurrentPublicOpportunityCountView";
 }
 
 type PlaceTraitKeys<TOptions extends PlaceFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1261,7 +1283,10 @@ function definePlaceFactoryInternal<TTransients extends Record<string, unknown>,
                 } : defaultData.city,
                 community: isPlacecommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community
+                } : defaultData.community,
+                currentPublicOpportunityCount: isPlacecurrentPublicOpportunityCountFactory(defaultData.currentPublicOpportunityCount) ? {
+                    create: await defaultData.currentPublicOpportunityCount.build()
+                } : defaultData.currentPublicOpportunityCount
             } as Prisma.PlaceCreateInput;
             const data: Prisma.PlaceCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -5037,6 +5062,157 @@ export const defineTransactionFactory = (<TOptions extends TransactionFactoryDef
 }) as TransactionFactoryBuilder;
 
 defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type CurrentPublicOpportunityCountViewScalarOrEnumFields = {
+    publicOpportunityCount: number;
+};
+
+type CurrentPublicOpportunityCountViewplaceFactory = {
+    _factoryFor: "Place";
+    build: () => PromiseLike<Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput["create"]>;
+};
+
+type CurrentPublicOpportunityCountViewFactoryDefineInput = {
+    publicOpportunityCount?: number;
+    place: CurrentPublicOpportunityCountViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput;
+};
+
+type CurrentPublicOpportunityCountViewTransientFields = Record<string, unknown> & Partial<Record<keyof CurrentPublicOpportunityCountViewFactoryDefineInput, never>>;
+
+type CurrentPublicOpportunityCountViewFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CurrentPublicOpportunityCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CurrentPublicOpportunityCountView, Prisma.CurrentPublicOpportunityCountViewCreateInput, TTransients>;
+
+type CurrentPublicOpportunityCountViewFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CurrentPublicOpportunityCountViewFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CurrentPublicOpportunityCountViewFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CurrentPublicOpportunityCountView, Prisma.CurrentPublicOpportunityCountViewCreateInput, TTransients>;
+
+function isCurrentPublicOpportunityCountViewplaceFactory(x: CurrentPublicOpportunityCountViewplaceFactory | Prisma.PlaceCreateNestedOneWithoutCurrentPublicOpportunityCountInput | undefined): x is CurrentPublicOpportunityCountViewplaceFactory {
+    return (x as any)?._factoryFor === "Place";
+}
+
+type CurrentPublicOpportunityCountViewTraitKeys<TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CurrentPublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CurrentPublicOpportunityCountView";
+    build(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput>;
+    buildList(list: readonly Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>[]): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Prisma.CurrentPublicOpportunityCountViewCreateInput[]>;
+    pickForConnect(inputData: CurrentPublicOpportunityCountView): Pick<CurrentPublicOpportunityCountView, "placeId">;
+    create(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<CurrentPublicOpportunityCountView>;
+    createList(list: readonly Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>[]): PromiseLike<CurrentPublicOpportunityCountView[]>;
+    createList(count: number, item?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<CurrentPublicOpportunityCountView[]>;
+    createForConnect(inputData?: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>): PromiseLike<Pick<CurrentPublicOpportunityCountView, "placeId">>;
+}
+
+export interface CurrentPublicOpportunityCountViewFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CurrentPublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CurrentPublicOpportunityCountViewFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCurrentPublicOpportunityCountViewScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CurrentPublicOpportunityCountViewScalarOrEnumFields {
+    return {
+        publicOpportunityCount: getScalarFieldValueGenerator().Int({ modelName: "CurrentPublicOpportunityCountView", fieldName: "publicOpportunityCount", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCurrentPublicOpportunityCountViewFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CurrentPublicOpportunityCountViewFactoryInterface<TTransients, CurrentPublicOpportunityCountViewTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CurrentPublicOpportunityCountViewTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CurrentPublicOpportunityCountView", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCurrentPublicOpportunityCountViewScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CurrentPublicOpportunityCountViewFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CurrentPublicOpportunityCountViewFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                place: isCurrentPublicOpportunityCountViewplaceFactory(defaultData.place) ? {
+                    create: await defaultData.place.build()
+                } : defaultData.place
+            } as Prisma.CurrentPublicOpportunityCountViewCreateInput;
+            const data: Prisma.CurrentPublicOpportunityCountViewCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CurrentPublicOpportunityCountView) => ({
+            placeId: inputData.placeId
+        });
+        const create = async (inputData: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().currentPublicOpportunityCountView.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CurrentPublicOpportunityCountViewCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CurrentPublicOpportunityCountView" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CurrentPublicOpportunityCountViewTraitKeys<TOptions>, ...names: readonly CurrentPublicOpportunityCountViewTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CurrentPublicOpportunityCountViewFactoryBuilder {
+    <TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions>(options: TOptions): CurrentPublicOpportunityCountViewFactoryInterface<{}, CurrentPublicOpportunityCountViewTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CurrentPublicOpportunityCountViewTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions<TTransients>>(options: TOptions) => CurrentPublicOpportunityCountViewFactoryInterface<TTransients, CurrentPublicOpportunityCountViewTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CurrentPublicOpportunityCountView} model.
+ *
+ * @param options
+ * @returns factory {@link CurrentPublicOpportunityCountViewFactoryInterface}
+ */
+export const defineCurrentPublicOpportunityCountViewFactory = (<TOptions extends CurrentPublicOpportunityCountViewFactoryDefineOptions>(options: TOptions): CurrentPublicOpportunityCountViewFactoryInterface<TOptions> => {
+    return defineCurrentPublicOpportunityCountViewFactoryInternal(options, {});
+}) as CurrentPublicOpportunityCountViewFactoryBuilder;
+
+defineCurrentPublicOpportunityCountViewFactory.withTransientFields = defaultTransientFieldValues => options => defineCurrentPublicOpportunityCountViewFactoryInternal(options, defaultTransientFieldValues);
 
 type MembershipParticipationGeoViewScalarOrEnumFields = {
     type: ParticipationType;
