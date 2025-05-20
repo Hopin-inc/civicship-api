@@ -5041,8 +5041,6 @@ defineTransactionFactory.withTransientFields = defaultTransientFieldValues => op
 type MembershipParticipationGeoViewScalarOrEnumFields = {
     type: ParticipationType;
     placeId: string;
-    placeName: string;
-    placeImage: string;
     address: string;
     latitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
     longitude: (Prisma.Decimal | Prisma.DecimalJsLike | string);
@@ -5056,8 +5054,8 @@ type MembershipParticipationGeoViewmembershipFactory = {
 type MembershipParticipationGeoViewFactoryDefineInput = {
     type?: ParticipationType;
     placeId?: string;
-    placeName?: string;
-    placeImage?: string;
+    placeName?: string | null;
+    placeImage?: string | null;
     address?: string;
     latitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
     longitude?: (Prisma.Decimal | Prisma.DecimalJsLike | string);
@@ -5106,8 +5104,6 @@ function autoGenerateMembershipParticipationGeoViewScalarsOrEnums({ seq }: {
     return {
         type: "HOSTED",
         placeId: getScalarFieldValueGenerator().String({ modelName: "MembershipParticipationGeoView", fieldName: "placeId", isId: true, isUnique: false, seq }),
-        placeName: getScalarFieldValueGenerator().String({ modelName: "MembershipParticipationGeoView", fieldName: "placeName", isId: false, isUnique: false, seq }),
-        placeImage: getScalarFieldValueGenerator().String({ modelName: "MembershipParticipationGeoView", fieldName: "placeImage", isId: false, isUnique: false, seq }),
         address: getScalarFieldValueGenerator().String({ modelName: "MembershipParticipationGeoView", fieldName: "address", isId: false, isUnique: false, seq }),
         latitude: getScalarFieldValueGenerator().Decimal({ modelName: "MembershipParticipationGeoView", fieldName: "latitude", isId: false, isUnique: false, seq }),
         longitude: getScalarFieldValueGenerator().Decimal({ modelName: "MembershipParticipationGeoView", fieldName: "longitude", isId: false, isUnique: false, seq })

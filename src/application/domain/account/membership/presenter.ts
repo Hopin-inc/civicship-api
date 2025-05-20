@@ -46,8 +46,8 @@ export default class MembershipPresenter {
         if (!hostedGeoMap.has(v.placeId)) {
           hostedGeoMap.set(v.placeId, {
             placeId: v.placeId,
-            placeName: v.placeName,
-            placeImage: v.placeImage,
+            placeName: v.placeName ?? undefined,
+            placeImage: v.placeImage ?? undefined,
             address: v.address,
             latitude: v.latitude.toString(),
             longitude: v.longitude.toString(),
