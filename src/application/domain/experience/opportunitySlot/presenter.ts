@@ -33,6 +33,9 @@ export default class OpportunitySlotPresenter {
       __typename: "OpportunitySlot",
       ...prop,
       remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
+      isFullyEvaluated: false, // デフォルト値を設定
+      numEvaluated: 0,         // デフォルト値を設定
+      numParticipants: 0,      // デフォルト値を設定
     };
   }
 
@@ -41,7 +44,7 @@ export default class OpportunitySlotPresenter {
   ): GqlOpportunitySlotSetHostingStatusSuccess {
     return {
       __typename: "OpportunitySlotSetHostingStatusSuccess",
-      slot: { 
+      slot: {
         ...r,
         id: r.id,
         hostingStatus: r.hostingStatus,
