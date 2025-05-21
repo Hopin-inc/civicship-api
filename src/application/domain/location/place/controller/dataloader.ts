@@ -30,6 +30,7 @@ export function createPlacesByCommunityLoader(issuer: PrismaClientIssuer) {
       return issuer.internal((tx) =>
         tx.place.findMany({
           where: { communityId: { in: [...communityIds] } },
+          include: { currentPublicOpportunityCount: true, accumulatedParticipants: true },
         }),
       );
     },

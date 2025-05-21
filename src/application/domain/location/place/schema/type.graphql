@@ -17,6 +17,9 @@ type Place {
     city: City
     community: Community
 
+    currentPublicOpportunityCount: Int
+    accumulatedParticipants: Int
+
     opportunities: [Opportunity!]
 
     createdAt: Datetime
