@@ -66,7 +66,7 @@ export default class EvaluationUseCase {
         ctx,
         currentUserId,
         input,
-        EvaluationStatus.PASSED,
+        GqlEvaluationStatus.Passed,
         tx,
       );
 
@@ -115,7 +115,7 @@ export default class EvaluationUseCase {
         ctx,
         currentUserId,
         input,
-        EvaluationStatus.FAILED,
+        GqlEvaluationStatus.Failed,
         tx,
       );
     });
@@ -142,7 +142,7 @@ export default class EvaluationUseCase {
           tx,
         );
         
-        if (item.status === EvaluationStatus.PASSED) {
+        if (item.status === GqlEvaluationStatus.Passed) {
           const { participation, opportunity, communityId, userId } =
             this.evaluationService.validateParticipationHasOpportunity(evaluation);
             

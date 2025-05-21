@@ -43,9 +43,14 @@ export default class OpportunitySlotPresenter {
       __typename: "OpportunitySlotSetHostingStatusSuccess",
       slot: { 
         ...r,
+        id: r.id,
+        hostingStatus: r.hostingStatus,
+        startsAt: r.startsAt,
+        endsAt: r.endsAt,
         isFullyEvaluated: false, // デフォルト値を設定
         numEvaluated: 0,         // デフォルト値を設定
         numParticipants: 0,      // デフォルト値を設定
+        __typename: "OpportunitySlot"
       },
     };
   }
