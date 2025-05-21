@@ -1,7 +1,6 @@
 import {
   GqlEvaluation,
   GqlEvaluationCreateSuccess,
-  GqlEvaluationBulkCreateSuccess,
   GqlEvaluationsConnection,
 } from "@/types/graphql";
 import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";

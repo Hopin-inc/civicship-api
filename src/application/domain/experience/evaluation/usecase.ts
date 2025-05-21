@@ -2,15 +2,13 @@ import { inject, injectable } from "tsyringe";
 import {
   GqlEvaluation,
   GqlEvaluationCreatePayload,
-  GqlEvaluationBulkCreatePayload,
   GqlEvaluationsConnection,
   GqlMutationEvaluationFailArgs,
   GqlMutationEvaluationPassArgs,
-  GqlMutationEvaluationBulkCreateArgs,
   GqlQueryEvaluationArgs,
   GqlQueryEvaluationsArgs,
 } from "@/types/graphql";
-import { EvaluationStatus, Prisma } from "@prisma/client";
+import { GqlEvaluationStatus } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";

@@ -41,7 +41,12 @@ export default class OpportunitySlotPresenter {
   ): GqlOpportunitySlotSetHostingStatusSuccess {
     return {
       __typename: "OpportunitySlotSetHostingStatusSuccess",
-      slot: { ...r },
+      slot: { 
+        ...r,
+        isFullyEvaluated: false, // デフォルト値を設定
+        numEvaluated: 0,         // デフォルト値を設定
+        numParticipants: 0,      // デフォルト値を設定
+      },
     };
   }
 
