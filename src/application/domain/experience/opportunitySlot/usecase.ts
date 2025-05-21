@@ -108,4 +108,25 @@ export default class OpportunitySlotUseCase {
       return OpportunitySlotPresenter.bulkUpdate(rows.map((r) => OpportunitySlotPresenter.get(r)));
     });
   }
+
+  /**
+   * Get the total number of participants for a slot
+   */
+  async getParticipantsCount(slotId: string, ctx: IContext): Promise<number> {
+    return this.service.getParticipantsCount(ctx, slotId);
+  }
+
+  /**
+   * Get the number of evaluated participants for a slot
+   */
+  async getEvaluatedParticipantsCount(slotId: string, ctx: IContext): Promise<number> {
+    return this.service.getEvaluatedParticipantsCount(ctx, slotId);
+  }
+
+  /**
+   * Check if all participants of a slot have been evaluated
+   */
+  async isSlotFullyEvaluated(slotId: string, ctx: IContext): Promise<boolean> {
+    return this.service.isSlotFullyEvaluated(ctx, slotId);
+  }
 }

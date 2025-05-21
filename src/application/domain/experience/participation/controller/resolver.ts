@@ -57,8 +57,14 @@ export default class ParticipationResolver {
       return parent.reservationId ? ctx.loaders.reservation.load(parent.reservationId) : null;
     },
 
-    evaluation: (parent, _: unknown, ctx: IContext) => {
-      return parent.evaluationId ? ctx.loaders.evaluation.load(parent.evaluationId) : null;
+    evaluation: async (parent, _: unknown, ctx: IContext) => {
+      // evaluationIdを参照せず、participationIdで直接Evaluationを検索
+      const evaluation = await ctx.issuer.internal((tx) =>
+        tx.evaluation.findUnique({
+          where: { participationId: parent.id },
+        })
+      );
+      return evaluation;
     },
 
     images: (parent, _: unknown, ctx: IContext) => {

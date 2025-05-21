@@ -3,6 +3,7 @@ import {
   GqlQueryEvaluationArgs,
   GqlMutationEvaluationPassArgs,
   GqlMutationEvaluationFailArgs,
+  GqlMutationEvaluationBulkCreateArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
@@ -29,6 +30,9 @@ export default class EvaluationResolver {
     },
     evaluationFail: (_: unknown, args: GqlMutationEvaluationFailArgs, ctx: IContext) => {
       return this.evaluationUseCase.managerFailEvaluation(args, ctx);
+    },
+    evaluationBulkCreate: (_: unknown, args: GqlMutationEvaluationBulkCreateArgs, ctx: IContext) => {
+      return this.evaluationUseCase.managerBulkCreateEvaluations(args, ctx);
     },
   };
 

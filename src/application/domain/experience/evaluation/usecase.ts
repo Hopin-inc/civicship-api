@@ -8,10 +8,11 @@ import {
   GqlQueryEvaluationArgs,
   GqlQueryEvaluationsArgs,
 } from "@/types/graphql";
-import { EvaluationStatus } from "@prisma/client";
+import { GqlEvaluationStatus } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
+import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
@@ -65,7 +66,7 @@ export default class EvaluationUseCase {
         ctx,
         currentUserId,
         input,
-        EvaluationStatus.PASSED,
+        GqlEvaluationStatus.Passed,
         tx,
       );
 
@@ -114,12 +115,68 @@ export default class EvaluationUseCase {
         ctx,
         currentUserId,
         input,
-        EvaluationStatus.FAILED,
+        GqlEvaluationStatus.Failed,
         tx,
       );
     });
     console.log(evaluation, "failed");
     return EvaluationPresenter.create(evaluation);
+  }
+  
+  async managerBulkCreateEvaluations(
+    { input, permission }: any,
+    ctx: IContext,
+  ): Promise<any> {
+    const currentUserId = getCurrentUserId(ctx);
+    const evaluations: PrismaEvaluationDetail[] = [];
+    
+    const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
+      for (const item of input.evaluations) {
+        await this.validateEvaluatable(ctx, item.participationId);
+        
+        const evaluation = await this.evaluationService.createEvaluation(
+          ctx,
+          currentUserId,
+          { participationId: item.participationId, comment: item.comment },
+          item.status,
+          tx,
+        );
+        
+        if (item.status === GqlEvaluationStatus.Passed) {
+          const { participation, opportunity, communityId, userId } =
+            this.evaluationService.validateParticipationHasOpportunity(evaluation);
+            
+          if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
+            const [fromWallet, toWallet] = await Promise.all([
+              this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
+              this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
+            ]);
+            
+            const { fromWalletId, toWalletId } =
+              await this.walletValidator.validateTransferMemberToMember(
+                fromWallet,
+                toWallet,
+                opportunity.pointsToEarn,
+              );
+              
+            await this.transactionService.giveRewardPoint(
+              ctx,
+              tx,
+              participation.id,
+              opportunity.pointsToEarn,
+              fromWalletId,
+              toWalletId,
+            );
+          }
+        }
+        
+        evaluations.push(evaluation);
+      }
+      
+      return evaluations;
+    });
+    
+    return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 
   private async validateEvaluatable(ctx: IContext, participationId: string) {
