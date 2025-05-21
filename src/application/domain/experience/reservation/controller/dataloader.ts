@@ -55,6 +55,11 @@ export function createReservationsCreatedByUserLoader(issuer: PrismaClientIssuer
           where: {
             createdBy: { in: [...userIds] },
           },
+          include: {
+            participations: {
+              include: { evaluation: true },
+            }
+          }
         }),
       );
     },

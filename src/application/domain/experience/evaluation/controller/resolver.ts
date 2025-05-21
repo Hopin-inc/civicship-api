@@ -31,7 +31,7 @@ export default class EvaluationResolver {
     evaluationFail: (_: unknown, args: GqlMutationEvaluationFailArgs, ctx: IContext) => {
       return this.evaluationUseCase.managerFailEvaluation(args, ctx);
     },
-    evaluationBulkCreate: (_: unknown, args: any, ctx: IContext) => {
+    evaluationBulkCreate: (_: unknown, args: GqlMutationEvaluationBulkCreateArgs, ctx: IContext) => {
       return this.evaluationUseCase.managerBulkCreateEvaluations(args, ctx);
     },
   };
