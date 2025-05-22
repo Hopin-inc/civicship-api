@@ -20,6 +20,9 @@ export const placeSelectDetail = Prisma.validator<Prisma.PlaceSelect>()({
   cityCode: true,
   imageId: true,
 
+  currentPublicOpportunityCount: true,
+  accumulatedParticipants: true,
+
   createdAt: true,
   updatedAt: true,
 });

@@ -222,11 +222,7 @@ export default class ReservationUseCase {
     });
 
     if (acceptedReservation) {
-      await this.notificationService.pushReservationAcceptedMessage(
-        ctx,
-        currentUserId,
-        acceptedReservation,
-      );
+      await this.notificationService.pushReservationAcceptedMessage(acceptedReservation);
     }
 
     return ReservationPresenter.setStatus(reservation);

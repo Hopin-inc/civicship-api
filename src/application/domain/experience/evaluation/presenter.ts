@@ -36,4 +36,11 @@ export default class EvaluationPresenter {
       evaluation: record,
     };
   }
+  
+  static bulkCreate(records: PrismaEvaluationDetail[]): any {
+    return {
+      __typename: "EvaluationBulkCreateSuccess",
+      evaluations: records.map(record => this.get(record)),
+    };
+  }
 }

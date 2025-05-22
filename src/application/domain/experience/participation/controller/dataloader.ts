@@ -33,6 +33,9 @@ export function createParticipationsByReservationLoader(issuer: PrismaClientIssu
           where: {
             reservationId: { in: [...reservationIds] },
           },
+          include: {
+            evaluation: true
+          }
         }),
       );
     },

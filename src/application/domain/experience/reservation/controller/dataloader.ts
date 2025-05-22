@@ -32,6 +32,13 @@ export function createReservationsByOpportunitySlotLoader(issuer: PrismaClientIs
           where: {
             opportunitySlotId: { in: [...opportunitySlotIds] },
           },
+          include: {
+            participations: {
+              include: {
+                evaluation: true
+              }
+            }
+          }
         }),
       );
     },
@@ -48,6 +55,11 @@ export function createReservationsCreatedByUserLoader(issuer: PrismaClientIssuer
           where: {
             createdBy: { in: [...userIds] },
           },
+          include: {
+            participations: {
+              include: { evaluation: true },
+            }
+          }
         }),
       );
     },
