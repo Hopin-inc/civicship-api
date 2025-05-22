@@ -1110,6 +1110,7 @@ export type GqlOpportunitySlotFilterInput = {
   dateRange?: InputMaybe<GqlDateTimeRangeFilter>;
   hostingStatus?: InputMaybe<GqlOpportunitySlotHostingStatus>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
+  ownerId?: InputMaybe<Scalars['ID']['input']>;
 };
 
 export const GqlOpportunitySlotHostingStatus = {
