@@ -111,6 +111,7 @@ export default class ReservationUseCase {
         input.otherUserIds ?? [],
         statuses,
         tx,
+        input.comment,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
