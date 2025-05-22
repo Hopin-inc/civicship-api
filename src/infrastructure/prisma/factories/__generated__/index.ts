@@ -3033,6 +3033,7 @@ type ReservationcreatedByUserFactory = {
 
 type ReservationFactoryDefineInput = {
     id?: string;
+    comment?: string | null;
     status?: ReservationStatus;
     createdAt?: Date;
     updatedAt?: Date | null;
