@@ -80,15 +80,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
+          const { cityCode, communityId, ...restCreate } = place.create!;
+          return {
+            create: {
+              ...restCreate,
+              city: { connect: { code: cityCode } },
+              community: { connect: { id: communityId } },
+            },
+          };
+        })();
     }
 
     return {
@@ -114,15 +114,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
+          const { cityCode, communityId, ...restCreate } = place.create!;
+          return {
+            create: {
+              ...restCreate,
+              city: { connect: { code: cityCode } },
+              community: { connect: { id: communityId } },
+            },
+          };
+        })();
     }
 
     return {
@@ -164,7 +164,7 @@ export default class OpportunityConverter {
     if (filter.cityCodes?.length)
       conditions.push({ place: { cityCode: { in: filter.cityCodes } } });
     if (filter.stateCodes?.length)
-      conditions.push({ place: { city: { state: { code: { in: filter.cityCodes } } } } });
+      conditions.push({ place: { city: { state: { code: { in: filter.stateCodes } } } } });
     if (filter.articleIds?.length)
       conditions.push({ articles: { some: { id: { in: filter.articleIds } } } });
     if (filter.requiredUtilityIds?.length)
