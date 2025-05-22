@@ -16,6 +16,10 @@ export default class OpportunitySlotConverter {
       slotConditions.push({ opportunityId: filter.opportunityId });
     }
 
+    if (filter?.ownerId) {
+      slotConditions.push({ opportunity: { createdBy: filter.ownerId } });
+    }
+
     if (filter?.hostingStatus) {
       slotConditions.push({ hostingStatus: filter.hostingStatus });
     }
