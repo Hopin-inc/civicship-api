@@ -7,12 +7,12 @@ import WalletService from "@/application/domain/account/wallet/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import {
+  GqlMutationTransactionDonateSelfPointArgs,
   GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlQueryTransactionArgs,
   GqlQueryTransactionsArgs,
   GqlTransaction,
-  GqlTransactionDonateSelfPointInput,
   GqlTransactionDonateSelfPointPayload,
   GqlTransactionGrantCommunityPointPayload,
   GqlTransactionIssueCommunityPointPayload,
@@ -119,17 +119,25 @@ export default class TransactionUseCase {
 
   async userDonateSelfPointToAnother(
     ctx: IContext,
-    input: GqlTransactionDonateSelfPointInput,
+    { input }: GqlMutationTransactionDonateSelfPointArgs,
   ): Promise<GqlTransactionDonateSelfPointPayload> {
-    const { communityId, fromWalletId, toUserId, transferPoints } = input;
+    const { communityId, toUserId, transferPoints } = input;
+    const currentUserId = getCurrentUserId(ctx);
+    const fromWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      currentUserId,
+      communityId,
+    );
 
     return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
-      const [fromWallet, toWallet] = await Promise.all([
-        this.walletService.checkIfMemberWalletExists(ctx, fromWalletId),
-        this.walletService.createMemberWalletIfNeeded(ctx, toUserId, communityId, tx),
-      ]);
+      const toWallet = await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        toUserId,
+        communityId,
+        tx,
+      );
 
       const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
         fromWallet,
@@ -139,7 +147,7 @@ export default class TransactionUseCase {
 
       const transaction = await this.transactionService.donateSelfPoint(
         ctx,
-        fromWalletId,
+        fromWallet.id,
         toWalletId,
         transferPoints,
         tx,

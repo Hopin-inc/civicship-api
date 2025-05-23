@@ -40,10 +40,10 @@ export default class TransactionResolver {
     },
     transactionDonateSelfPoint: async (
       _: unknown,
-      { input }: GqlMutationTransactionDonateSelfPointArgs,
+      args: GqlMutationTransactionDonateSelfPointArgs,
       ctx: IContext,
     ) => {
-      return this.useCase.userDonateSelfPointToAnother(ctx, input);
+      return this.useCase.userDonateSelfPointToAnother(ctx, args);
     },
   };
 

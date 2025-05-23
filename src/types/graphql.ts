@@ -881,7 +881,7 @@ export type GqlMutationTicketUseArgs = {
 
 export type GqlMutationTransactionDonateSelfPointArgs = {
   input: GqlTransactionDonateSelfPointInput;
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
@@ -2138,7 +2138,6 @@ export type GqlTransaction = {
 
 export type GqlTransactionDonateSelfPointInput = {
   communityId: Scalars['ID']['input'];
-  fromWalletId: Scalars['ID']['input'];
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };

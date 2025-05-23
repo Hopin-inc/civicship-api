@@ -16,9 +16,9 @@ extend type Mutation {
 
     transactionDonateSelfPoint(
         input: TransactionDonateSelfPointInput!
-        permission:CheckCommunityPermissionInput!
+        permission:CheckIsSelfPermissionInput!
     ): TransactionDonateSelfPointPayload
-    @authz(rules: [IsCommunityMember])
+    @authz(rules: [IsSelf])
 }
 
 # ------------------------------
@@ -34,9 +34,8 @@ input TransactionGrantCommunityPointInput {
 }
 
 input TransactionDonateSelfPointInput {
-    fromWalletId: ID!
-    toUserId: ID!
     communityId: ID!
+    toUserId: ID!
     transferPoints: Int!
 }
 
