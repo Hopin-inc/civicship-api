@@ -25,14 +25,11 @@ extend type Mutation {
 # Transaction Mutation Input Definitions
 # ------------------------------
 input TransactionIssueCommunityPointInput {
-    toWalletId: ID!
     transferPoints: Int!
 }
 
 input TransactionGrantCommunityPointInput {
-    fromWalletId: ID!
     toUserId: ID!
-    communityId: ID!
     transferPoints: Int!
 }
 

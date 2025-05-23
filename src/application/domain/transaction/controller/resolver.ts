@@ -33,10 +33,10 @@ export default class TransactionResolver {
     },
     transactionGrantCommunityPoint: async (
       _: unknown,
-      { input }: GqlMutationTransactionGrantCommunityPointArgs,
+      args: GqlMutationTransactionGrantCommunityPointArgs,
       ctx: IContext,
     ) => {
-      return this.useCase.ownerGrantCommunityPoint(ctx, input);
+      return this.useCase.ownerGrantCommunityPoint(ctx, args);
     },
     transactionDonateSelfPoint: async (
       _: unknown,

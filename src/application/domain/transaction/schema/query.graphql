@@ -29,11 +29,20 @@ type TransactionEdge implements Edge {
 # Transaction Query Input Definitions
 # ------------------------------
 input TransactionFilterInput {
+    communityId: ID
     reason: TransactionReason
+
+    fromWalletType: WalletType
+    toWalletType: WalletType
+
     fromWalletId: ID
     toWalletId: ID
     fromUserId: ID
     toUserId: ID
+
+    and: [TransactionFilterInput!]
+    or: [TransactionFilterInput!]
+    not: TransactionFilterInput
 }
 
 input TransactionSortInput {

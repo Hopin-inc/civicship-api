@@ -2157,16 +2157,20 @@ export type GqlTransactionEdge = GqlEdge & {
 };
 
 export type GqlTransactionFilterInput = {
+  and?: InputMaybe<Array<GqlTransactionFilterInput>>;
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   fromUserId?: InputMaybe<Scalars['ID']['input']>;
   fromWalletId?: InputMaybe<Scalars['ID']['input']>;
+  fromWalletType?: InputMaybe<GqlWalletType>;
+  not?: InputMaybe<GqlTransactionFilterInput>;
+  or?: InputMaybe<Array<GqlTransactionFilterInput>>;
   reason?: InputMaybe<GqlTransactionReason>;
   toUserId?: InputMaybe<Scalars['ID']['input']>;
   toWalletId?: InputMaybe<Scalars['ID']['input']>;
+  toWalletType?: InputMaybe<GqlWalletType>;
 };
 
 export type GqlTransactionGrantCommunityPointInput = {
-  communityId: Scalars['ID']['input'];
-  fromWalletId: Scalars['ID']['input'];
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2179,7 +2183,6 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 };
 
 export type GqlTransactionIssueCommunityPointInput = {
-  toWalletId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
 
