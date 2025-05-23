@@ -16,9 +16,9 @@ type OpportunitySlot {
     reservations: [Reservation!]
     
     # Evaluation statistics
-    isFullyEvaluated: Boolean!
-    numParticipants: Int!
-    numEvaluated: Int!
+    isFullyEvaluated: Boolean
+    numParticipants: Int
+    numEvaluated: Int
 
     createdAt: Datetime
     updatedAt: Datetime

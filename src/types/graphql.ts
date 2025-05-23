@@ -1085,9 +1085,9 @@ export type GqlOpportunitySlot = {
   endsAt: Scalars['Datetime']['output'];
   hostingStatus: GqlOpportunitySlotHostingStatus;
   id: Scalars['ID']['output'];
-  isFullyEvaluated: Scalars['Boolean']['output'];
-  numEvaluated: Scalars['Int']['output'];
-  numParticipants: Scalars['Int']['output'];
+  isFullyEvaluated?: Maybe<Scalars['Boolean']['output']>;
+  numEvaluated?: Maybe<Scalars['Int']['output']>;
+  numParticipants?: Maybe<Scalars['Int']['output']>;
   opportunity?: Maybe<GqlOpportunity>;
   remainingCapacity?: Maybe<Scalars['Int']['output']>;
   reservations?: Maybe<Array<GqlReservation>>;
@@ -3558,9 +3558,9 @@ export type GqlOpportunitySlotResolvers<ContextType = any, ParentType extends Gq
   endsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   hostingStatus?: Resolver<GqlResolversTypes['OpportunitySlotHostingStatus'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  isFullyEvaluated?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
-  numEvaluated?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  numParticipants?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  isFullyEvaluated?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
+  numEvaluated?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  numParticipants?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType>;
   remainingCapacity?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
