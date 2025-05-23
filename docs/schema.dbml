@@ -252,6 +252,7 @@ Table t_reservations {
   id String [pk]
   opportunitySlotId String [not null]
   opportunitySlot t_opportunity_slots [not null]
+  comment String
   status ReservationStatus [not null, default: 'APPLIED']
   participations t_participations [not null]
   createdBy String

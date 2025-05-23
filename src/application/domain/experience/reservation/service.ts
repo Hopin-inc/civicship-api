@@ -58,6 +58,7 @@ export default class ReservationService implements IReservationService {
     userIdsIfExists: string[],
     reservationStatuses: ReservationStatuses,
     tx: Prisma.TransactionClient,
+    comment?: string,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.create(
@@ -66,6 +67,7 @@ export default class ReservationService implements IReservationService {
       participantCount,
       userIdsIfExists,
       reservationStatuses,
+      comment,
     );
     return this.repository.create(ctx, data, tx);
   }

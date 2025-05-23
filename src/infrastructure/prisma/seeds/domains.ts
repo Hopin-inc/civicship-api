@@ -19,7 +19,7 @@ import { processInBatches } from "@/utils/array";
 import { Opportunity, OpportunitySlot, Place, Reservation, User, Wallet } from "@prisma/client";
 import { Community } from "@prisma/client/index.d";
 
-const BATCH_SIZE = 10;  // edit this ONLY when seeding is slow to the extent database connections are established properly
+const BATCH_SIZE = 10; // edit this ONLY when seeding is slow to the extent database connections are established properly
 const NUM_UTILITIES = 3;
 const NUM_SLOTS_PER_OPPORTUNITY = 3;
 const NUM_RESERVATIONS_PER_SLOT = 1;
@@ -27,10 +27,17 @@ const NUM_TRANSACTIONS = 5;
 const NUM_PLACES = 100;
 
 export async function seedUsecase() {
+  // await prismaClient.opportunity.updateMany({
+  //   where: {},
+  //   data: {
+  //     createdBy: "cmawfulj70004s60elzlotgd9",
+  //   },
+  // });
+
   console.info("🔥 Resetting DB...");
   await prismaClient.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(`
-      TRUNCATE TABLE 
+      TRUNCATE TABLE
         t_evaluation_histories,
         t_evaluations,
         t_images,

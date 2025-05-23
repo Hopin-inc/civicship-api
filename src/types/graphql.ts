@@ -1776,6 +1776,7 @@ export type GqlQueryWalletsArgs = {
 
 export type GqlReservation = {
   __typename?: 'Reservation';
+  comment?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   createdByUser?: Maybe<GqlUser>;
   histories?: Maybe<Array<GqlReservationHistory>>;
@@ -1792,6 +1793,7 @@ export type GqlReservationCancelInput = {
 };
 
 export type GqlReservationCreateInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   opportunitySlotId: Scalars['ID']['input'];
   otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   paymentMethod: GqlReservationPaymentMethod;
@@ -3815,6 +3817,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
 }>;
 
 export type GqlReservationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Reservation'] = GqlResolversParentTypes['Reservation']> = ResolversObject<{
+  comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   histories?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
