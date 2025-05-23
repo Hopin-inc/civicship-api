@@ -107,7 +107,7 @@ export default class MembershipService {
     tx: Prisma.TransactionClient,
   ) {
     const currentUserId = this.currentUserId(ctx);
-    // const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
+    await this.findMembershipOrThrow(ctx, userId, communityId);
 
     const data = this.converter.update(
       GqlMembershipStatus.Joined,
