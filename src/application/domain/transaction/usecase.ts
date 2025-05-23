@@ -7,13 +7,13 @@ import WalletService from "@/application/domain/account/wallet/service";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import {
+  GqlMutationTransactionDonateSelfPointArgs,
+  GqlMutationTransactionGrantCommunityPointArgs,
   GqlMutationTransactionIssueCommunityPointArgs,
   GqlQueryTransactionArgs,
   GqlQueryTransactionsArgs,
   GqlTransaction,
-  GqlTransactionDonateSelfPointInput,
   GqlTransactionDonateSelfPointPayload,
-  GqlTransactionGrantCommunityPointInput,
   GqlTransactionGrantCommunityPointPayload,
   GqlTransactionIssueCommunityPointPayload,
   GqlTransactionsConnection,
@@ -44,7 +44,6 @@ export default class TransactionUseCase {
     const data: GqlTransaction[] = records.slice(0, take).map((record) => {
       return TransactionPresenter.get(record);
     });
-    console.log(data);
     return TransactionPresenter.query(data, hasNextPage);
   }
 
@@ -60,28 +59,48 @@ export default class TransactionUseCase {
   }
 
   async ownerIssueCommunityPoint(
-    { input }: GqlMutationTransactionIssueCommunityPointArgs,
+    { input, permission }: GqlMutationTransactionIssueCommunityPointArgs,
     ctx: IContext,
   ): Promise<GqlTransactionIssueCommunityPointPayload> {
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(
+      ctx,
+      permission.communityId,
+    );
+    console.log(communityWallet, "communityWallet");
     const res = await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      return await this.transactionService.issueCommunityPoint(ctx, input, tx);
+      return await this.transactionService.issueCommunityPoint(
+        ctx,
+        input.transferPoints,
+        communityWallet.id,
+        tx,
+      );
     });
     return TransactionPresenter.issueCommunityPoint(res);
   }
 
   async ownerGrantCommunityPoint(
     ctx: IContext,
-    input: GqlTransactionGrantCommunityPointInput,
+    { input, permission }: GqlMutationTransactionGrantCommunityPointArgs,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {
-    const { communityId, toUserId, transferPoints } = input;
+    const { toUserId, transferPoints } = input;
     const currentUserId = getCurrentUserId(ctx);
+    const communityWallet = await this.walletService.findCommunityWalletOrThrow(
+      ctx,
+      permission.communityId,
+    );
 
     return await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx, toUserId);
+      await this.membershipService.joinIfNeeded(
+        ctx,
+        currentUserId,
+        permission.communityId,
+        tx,
+        toUserId,
+      );
       const { toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
         ctx,
         tx,
-        communityId,
+        permission.communityId,
         toUserId,
         transferPoints,
         TransactionReason.GRANT,
@@ -89,7 +108,8 @@ export default class TransactionUseCase {
 
       const transaction = await this.transactionService.grantCommunityPoint(
         ctx,
-        input,
+        transferPoints,
+        communityWallet.id,
         toWalletId,
         tx,
       );
@@ -99,17 +119,25 @@ export default class TransactionUseCase {
 
   async userDonateSelfPointToAnother(
     ctx: IContext,
-    input: GqlTransactionDonateSelfPointInput,
+    { input }: GqlMutationTransactionDonateSelfPointArgs,
   ): Promise<GqlTransactionDonateSelfPointPayload> {
-    const { communityId, fromWalletId, toUserId, transferPoints } = input;
+    const { communityId, toUserId, transferPoints } = input;
+    const currentUserId = getCurrentUserId(ctx);
+    const fromWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      currentUserId,
+      communityId,
+    );
 
     return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
-      const [fromWallet, toWallet] = await Promise.all([
-        this.walletService.checkIfMemberWalletExists(ctx, fromWalletId),
-        this.walletService.createMemberWalletIfNeeded(ctx, toUserId, communityId, tx),
-      ]);
+      const toWallet = await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        toUserId,
+        communityId,
+        tx,
+      );
 
       const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
         fromWallet,
@@ -119,7 +147,7 @@ export default class TransactionUseCase {
 
       const transaction = await this.transactionService.donateSelfPoint(
         ctx,
-        fromWalletId,
+        fromWallet.id,
         toWalletId,
         transferPoints,
         tx,
