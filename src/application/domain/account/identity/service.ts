@@ -1,4 +1,3 @@
-import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
@@ -7,6 +6,8 @@ import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
 import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
+import { GqlIdentityPlatform as IdentityPlatform, GqlUser as User } from "@/types/graphql";
+import { prismaClient } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class IdentityService {
@@ -16,13 +17,13 @@ export default class IdentityService {
   ) {}
 
   async createUserAndIdentity(
-    data: Prisma.UserCreateInput,
+    data: any, // Replace Prisma.UserCreateInput with any
     uid: string,
     platform: IdentityPlatform,
     phoneUid?: string,
   ) {
     const identityCreate = phoneUid
-      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
+      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.Phone }] }
       : { create: { uid, platform } };
 
     return this.userRepository.create({
@@ -35,7 +36,7 @@ export default class IdentityService {
     ctx: IContext,
     userId: string,
     phoneUid: string,
-    tx: Prisma.TransactionClient,
+    tx: any, // Replace Prisma.TransactionClient with any
   ) {
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -49,7 +50,7 @@ export default class IdentityService {
     await tx.identity.create({
       data: {
         uid: phoneUid,
-        platform: IdentityPlatform.PHONE,
+        platform: IdentityPlatform.Phone,
         userId: userId
       }
     });
@@ -195,6 +196,67 @@ export default class IdentityService {
         }
       }
 
+      throw error;
+    }
+  }
+
+  async requestDIDIssuance(
+    userId: string,
+    phoneUid: string,
+  ): Promise<{ success: boolean; requestId: string }> {
+    try {
+      const { token, isValid } = await this.getAuthToken(phoneUid);
+      
+      if (!token || !isValid) {
+        throw new Error("No valid authentication token available for DID issuance");
+      }
+      
+      const didRequest = await prismaClient.dIDIssuanceRequest.create({
+        data: {
+          userId,
+          status: 'PENDING',
+        }
+      });
+      
+      try {
+        const didResponse = await this.callDIDVCServer(
+          phoneUid,
+          '/did/issue',
+          'POST',
+          {
+            userId,
+            requestId: didRequest.id
+          }
+        );
+        
+        if (didResponse?.didValue) {
+          await prismaClient.dIDIssuanceRequest.update({
+            where: { id: didRequest.id },
+            data: {
+              status: 'COMPLETED',
+              didValue: didResponse.didValue,
+              completedAt: new Date()
+            }
+          });
+          
+          return { success: true, requestId: didRequest.id };
+        }
+        
+        return { success: true, requestId: didRequest.id };
+      } catch (error) {
+        await prismaClient.dIDIssuanceRequest.update({
+          where: { id: didRequest.id },
+          data: {
+            status: 'FAILED',
+            errorMessage: error instanceof Error ? error.message : 'Unknown error occurred during DID issuance',
+          }
+        });
+        
+        logger.error("Failed to issue DID:", error);
+        return { success: false, requestId: didRequest.id };
+      }
+    } catch (error) {
+      logger.error("Error in requestDIDIssuance:", error);
       throw error;
     }
   }

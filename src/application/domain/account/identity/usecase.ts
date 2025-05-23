@@ -73,6 +73,13 @@ export default class IdentityUseCase {
           expiryTime
         );
         
+        try {
+          await this.identityService.requestDIDIssuance(res.id, phoneUid);
+          logger.debug(`Requested DID issuance for user ${res.id} with phoneUid ${phoneUid}`);
+        } catch (didError) {
+          logger.error("Failed to request DID issuance during user signup:", didError);
+        }
+        
         logger.debug(`Stored phone auth tokens during user signup for ${phoneUid}, expires at ${expiryTime.toISOString()}`);
       } catch (error) {
         logger.error("Failed to store phone auth tokens during user signup:", error);
