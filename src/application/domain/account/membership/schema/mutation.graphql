@@ -7,13 +7,13 @@ extend type Mutation {
         input: MembershipInviteInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipInvitePayload
-    @authz(rules: [IsCommunityManager])
+    @authz(rules: [IsCommunityOwner])
 
     membershipCancelInvitation(
         input: MembershipSetInvitationStatusInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipSetInvitationStatusPayload
-    @authz(rules: [IsCommunityManager])
+    @authz(rules: [IsCommunityOwner])
 
     membershipAcceptMyInvitation(
         input: MembershipSetInvitationStatusInput!
@@ -45,7 +45,7 @@ extend type Mutation {
         input: MembershipSetRoleInput!
         permission:CheckCommunityPermissionInput!
     ): MembershipSetRolePayload
-    @authz(rules: [IsCommunityManager])
+    @authz(rules: [IsCommunityOwner])
 
     membershipAssignMember(
         input: MembershipSetRoleInput!
