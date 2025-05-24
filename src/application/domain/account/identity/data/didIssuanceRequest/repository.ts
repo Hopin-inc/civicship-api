@@ -1,6 +1,6 @@
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
-import { DIDIssuanceStatus } from "@prisma/client";
+import { DIDIssuanceStatus } from "./enum";
 import { IDIDIssuanceRequestRepository } from "./interface";
 import { DIDIssuanceRequestWithUser, DIDIssuanceRequestDetail } from "./type";
 

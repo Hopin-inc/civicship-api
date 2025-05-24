@@ -16,6 +16,7 @@ import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
+import DIDIssuanceRequestRepository from "@/application/domain/account/identity/data/didIssuanceRequest/repository";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
 import ArticleService from "@/application/domain/content/article/service";
 import ArticleRepository from "@/application/domain/content/article/data/repository";
@@ -119,6 +120,8 @@ export function registerProductionDependencies() {
   container.register("IdentityUseCase", { useClass: IdentityUseCase });
   container.register("IdentityRepository", { useClass: IdentityRepository });
   container.register("IdentityConverter", { useClass: IdentityConverter });
+  
+  container.register("didIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
 
   // ------------------------------
   // 📰 Content
