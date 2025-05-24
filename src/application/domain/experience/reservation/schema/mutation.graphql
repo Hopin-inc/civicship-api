@@ -28,6 +28,7 @@ extend type Mutation {
 
     reservationReject(
         id: ID!
+        input: ReservationRejectInput!
         permission: CheckOpportunityPermissionInput!
     ): ReservationSetStatusPayload
     @authz(rules: [IsCommunityManager, IsOpportunityOwner])
@@ -51,6 +52,10 @@ input ReservationCreateInput {
 input ReservationCancelInput {
     paymentMethod: ReservationPaymentMethod!
     ticketIdsIfExists: [ID!]
+}
+
+input ReservationRejectInput {
+    comment: String
 }
 
 # ------------------------------
