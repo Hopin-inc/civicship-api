@@ -14,6 +14,7 @@ import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
+import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 dayjs.locale("ja");
 
 const liffBaseUrl = (() => {
@@ -107,6 +108,34 @@ export default class NotificationService {
     });
 
     await safePushMessage({ to: lineUid, messages: [message] });
+  }
+
+  async pushReservationRejectedMessage(reservation: PrismaReservation, comment?: string) {
+    const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
+    if (participantInfos.length === 0) return;
+
+    const { year, date, time } = this.formatDateTime(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.endsAt,
+    );
+
+    const { title, createdByUser } = reservation.opportunitySlot.opportunity;
+    const { name: hostName, image: hostImage } = createdByUser ?? {};
+
+    await Promise.all(
+      participantInfos.map(({ uid }) => {
+        const message = buildDeclineOpportunitySlotMessage({
+          title,
+          year,
+          date,
+          time,
+          hostName: hostName ?? "案内人",
+          hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
+          comment,
+        });
+        return safePushMessage({ to: uid, messages: [message] });
+      }),
+    );
   }
 
   async pushReservationAcceptedMessage(reservation: PrismaReservation) {
