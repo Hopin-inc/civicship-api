@@ -51,10 +51,8 @@ export default class ViewPresenter {
     return allArticles.map((article): GqlPortfolio => {
       const { relatedUsers, authors } = article;
       const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
-      console.log(article.id, participations);
-      console.log(article);
-      const thumbnailUrl = article.thumbnail?.url ?? null;
 
+      const thumbnailUrl = article.thumbnail?.url ?? null;
       return {
         id: article.id,
         title: article.title,
