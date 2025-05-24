@@ -1,13 +1,14 @@
 import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
-import { inject, injectable } from "tsyringe";
+import { inject, injectable, container } from "tsyringe";
 import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
 import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
 import { GqlIdentityPlatform as IdentityPlatform, GqlUser as User } from "@/types/graphql";
-import { prismaClient } from "@/infrastructure/prisma/client";
+import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/data/didIssuanceRequest/interface";
+import { DIDIssuanceStatus } from "@/application/domain/account/identity/data/didIssuanceRequest/enum";
 
 @injectable()
 export default class IdentityService {
@@ -203,6 +204,7 @@ export default class IdentityService {
   async requestDIDIssuance(
     userId: string,
     phoneUid: string,
+    ctx: IContext
   ): Promise<{ success: boolean; requestId: string }> {
     try {
       const { token, isValid } = await this.getAuthToken(phoneUid);
@@ -211,11 +213,10 @@ export default class IdentityService {
         throw new Error("No valid authentication token available for DID issuance");
       }
       
-      const didRequest = await prismaClient.dIDIssuanceRequest.create({
-        data: {
-          userId,
-          status: 'PENDING',
-        }
+      const didIssuanceRepository = container.resolve<IDIDIssuanceRequestRepository>("didIssuanceRequestRepository");
+      const didRequest = await didIssuanceRepository.create(ctx, {
+        userId,
+        status: DIDIssuanceStatus.PENDING
       });
       
       try {
@@ -230,13 +231,10 @@ export default class IdentityService {
         );
         
         if (didResponse?.didValue) {
-          await prismaClient.dIDIssuanceRequest.update({
-            where: { id: didRequest.id },
-            data: {
-              status: 'COMPLETED',
-              didValue: didResponse.didValue,
-              completedAt: new Date()
-            }
+          await didIssuanceRepository.update(ctx, didRequest.id, {
+            status: DIDIssuanceStatus.COMPLETED,
+            didValue: didResponse.didValue,
+            completedAt: new Date()
           });
           
           return { success: true, requestId: didRequest.id };
@@ -244,12 +242,9 @@ export default class IdentityService {
         
         return { success: true, requestId: didRequest.id };
       } catch (error) {
-        await prismaClient.dIDIssuanceRequest.update({
-          where: { id: didRequest.id },
-          data: {
-            status: 'FAILED',
-            errorMessage: error instanceof Error ? error.message : 'Unknown error occurred during DID issuance',
-          }
+        await didIssuanceRepository.update(ctx, didRequest.id, {
+          status: DIDIssuanceStatus.FAILED,
+          errorMessage: error instanceof Error ? error.message : 'Unknown error occurred during DID issuance',
         });
         
         logger.error("Failed to issue DID:", error);

@@ -74,7 +74,7 @@ export default class IdentityUseCase {
         );
         
         try {
-          await this.identityService.requestDIDIssuance(res.id, phoneUid);
+          await this.identityService.requestDIDIssuance(res.id, phoneUid, ctx);
           logger.debug(`Requested DID issuance for user ${res.id} with phoneUid ${phoneUid}`);
         } catch (didError) {
           logger.error("Failed to request DID issuance during user signup:", didError);
