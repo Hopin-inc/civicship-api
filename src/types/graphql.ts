@@ -840,6 +840,7 @@ export type GqlMutationReservationJoinArgs = {
 
 export type GqlMutationReservationRejectArgs = {
   id: Scalars['ID']['input'];
+  input: GqlReservationRejectInput;
   permission: GqlCheckOpportunityPermissionInput;
 };
 
@@ -881,7 +882,7 @@ export type GqlMutationTicketUseArgs = {
 
 export type GqlMutationTransactionDonateSelfPointArgs = {
   input: GqlTransactionDonateSelfPointInput;
-  permission: GqlCheckCommunityPermissionInput;
+  permission: GqlCheckIsSelfPermissionInput;
 };
 
 
@@ -1085,9 +1086,9 @@ export type GqlOpportunitySlot = {
   endsAt: Scalars['Datetime']['output'];
   hostingStatus: GqlOpportunitySlotHostingStatus;
   id: Scalars['ID']['output'];
-  isFullyEvaluated: Scalars['Boolean']['output'];
-  numEvaluated: Scalars['Int']['output'];
-  numParticipants: Scalars['Int']['output'];
+  isFullyEvaluated?: Maybe<Scalars['Boolean']['output']>;
+  numEvaluated?: Maybe<Scalars['Int']['output']>;
+  numParticipants?: Maybe<Scalars['Int']['output']>;
   opportunity?: Maybe<GqlOpportunity>;
   remainingCapacity?: Maybe<Scalars['Int']['output']>;
   reservations?: Maybe<Array<GqlReservation>>;
@@ -1776,6 +1777,7 @@ export type GqlQueryWalletsArgs = {
 
 export type GqlReservation = {
   __typename?: 'Reservation';
+  comment?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   createdByUser?: Maybe<GqlUser>;
   histories?: Maybe<Array<GqlReservationHistory>>;
@@ -1792,6 +1794,7 @@ export type GqlReservationCancelInput = {
 };
 
 export type GqlReservationCreateInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   opportunitySlotId: Scalars['ID']['input'];
   otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   paymentMethod: GqlReservationPaymentMethod;
@@ -1858,6 +1861,10 @@ export const GqlReservationPaymentMethod = {
 } as const;
 
 export type GqlReservationPaymentMethod = typeof GqlReservationPaymentMethod[keyof typeof GqlReservationPaymentMethod];
+export type GqlReservationRejectInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type GqlReservationSetStatusPayload = GqlReservationSetStatusSuccess;
 
 export type GqlReservationSetStatusSuccess = {
@@ -2138,7 +2145,6 @@ export type GqlTransaction = {
 
 export type GqlTransactionDonateSelfPointInput = {
   communityId: Scalars['ID']['input'];
-  fromWalletId: Scalars['ID']['input'];
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2157,16 +2163,20 @@ export type GqlTransactionEdge = GqlEdge & {
 };
 
 export type GqlTransactionFilterInput = {
+  and?: InputMaybe<Array<GqlTransactionFilterInput>>;
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   fromUserId?: InputMaybe<Scalars['ID']['input']>;
   fromWalletId?: InputMaybe<Scalars['ID']['input']>;
+  fromWalletType?: InputMaybe<GqlWalletType>;
+  not?: InputMaybe<GqlTransactionFilterInput>;
+  or?: InputMaybe<Array<GqlTransactionFilterInput>>;
   reason?: InputMaybe<GqlTransactionReason>;
   toUserId?: InputMaybe<Scalars['ID']['input']>;
   toWalletId?: InputMaybe<Scalars['ID']['input']>;
+  toWalletType?: InputMaybe<GqlWalletType>;
 };
 
 export type GqlTransactionGrantCommunityPointInput = {
-  communityId: Scalars['ID']['input'];
-  fromWalletId: Scalars['ID']['input'];
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2179,7 +2189,6 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 };
 
 export type GqlTransactionIssueCommunityPointInput = {
-  toWalletId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
 
@@ -2737,6 +2746,7 @@ export type GqlResolversTypes = ResolversObject<{
   ReservationHistoryFilterInput: GqlReservationHistoryFilterInput;
   ReservationHistorySortInput: GqlReservationHistorySortInput;
   ReservationPaymentMethod: GqlReservationPaymentMethod;
+  ReservationRejectInput: GqlReservationRejectInput;
   ReservationSetStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ReservationSetStatusPayload']>;
   ReservationSetStatusSuccess: ResolverTypeWrapper<Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: GqlResolversTypes['Reservation'] }>;
   ReservationSortInput: GqlReservationSortInput;
@@ -2996,6 +3006,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationHistoryEdge: Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['ReservationHistory']> };
   ReservationHistoryFilterInput: GqlReservationHistoryFilterInput;
   ReservationHistorySortInput: GqlReservationHistorySortInput;
+  ReservationRejectInput: GqlReservationRejectInput;
   ReservationSetStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ReservationSetStatusPayload'];
   ReservationSetStatusSuccess: Omit<GqlReservationSetStatusSuccess, 'reservation'> & { reservation: GqlResolversParentTypes['Reservation'] };
   ReservationSortInput: GqlReservationSortInput;
@@ -3466,7 +3477,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   reservationCancel?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCancelArgs, 'id' | 'input' | 'permission'>>;
   reservationCreate?: Resolver<Maybe<GqlResolversTypes['ReservationCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationCreateArgs, 'input'>>;
   reservationJoin?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationJoinArgs, 'id'>>;
-  reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'permission'>>;
+  reservationReject?: Resolver<Maybe<GqlResolversTypes['ReservationSetStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationReservationRejectArgs, 'id' | 'input' | 'permission'>>;
   storePhoneAuthToken?: Resolver<Maybe<GqlResolversTypes['StorePhoneAuthTokenPayload']>, ParentType, ContextType, RequireFields<GqlMutationStorePhoneAuthTokenArgs, 'input'>>;
   ticketClaim?: Resolver<Maybe<GqlResolversTypes['TicketClaimPayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketClaimArgs, 'input'>>;
   ticketIssue?: Resolver<Maybe<GqlResolversTypes['TicketIssuePayload']>, ParentType, ContextType, RequireFields<GqlMutationTicketIssueArgs, 'input' | 'permission'>>;
@@ -3556,9 +3567,9 @@ export type GqlOpportunitySlotResolvers<ContextType = any, ParentType extends Gq
   endsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   hostingStatus?: Resolver<GqlResolversTypes['OpportunitySlotHostingStatus'], ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  isFullyEvaluated?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
-  numEvaluated?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
-  numParticipants?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  isFullyEvaluated?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
+  numEvaluated?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  numParticipants?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType>;
   remainingCapacity?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
@@ -3815,6 +3826,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
 }>;
 
 export type GqlReservationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Reservation'] = GqlResolversParentTypes['Reservation']> = ResolversObject<{
+  comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   histories?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;

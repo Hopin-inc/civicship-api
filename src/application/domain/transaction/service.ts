@@ -6,11 +6,7 @@ import {
 } from "@/application/domain/transaction/data/interface";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
-import {
-  GqlQueryTransactionsArgs,
-  GqlTransactionGrantCommunityPointInput,
-  GqlTransactionIssueCommunityPointInput,
-} from "@/types/graphql";
+import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -37,10 +33,11 @@ export default class TransactionService implements ITransactionService {
 
   async issueCommunityPoint(
     ctx: IContext,
-    input: GqlTransactionIssueCommunityPointInput,
+    transferPoints: number,
+    toWalletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.issueCommunityPoint(input);
+    const data = this.converter.issueCommunityPoint(toWalletId, transferPoints);
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
@@ -48,11 +45,12 @@ export default class TransactionService implements ITransactionService {
 
   async grantCommunityPoint(
     ctx: IContext,
-    input: GqlTransactionGrantCommunityPointInput,
+    transferPoints: number,
+    fromWalletId: string,
     memberWalletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.grantCommunityPoint(input, memberWalletId);
+    const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId);
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;

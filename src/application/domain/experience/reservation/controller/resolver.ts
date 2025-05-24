@@ -24,7 +24,7 @@ export default class ReservationResolver {
       return this.reservationUseCase.visitorBrowseReservations(ctx, args);
     },
     reservation: (_: unknown, args: GqlQueryReservationArgs, ctx: IContext) => {
-      return ctx.loaders.reservation.load(args.id);
+      return this.reservationUseCase.visitorViewReservation(ctx, args);
     },
   };
 

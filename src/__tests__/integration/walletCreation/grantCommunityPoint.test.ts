@@ -82,16 +82,16 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     //////////////////////////////////////////////////
     const grantedPoint = 50;
     const input: GqlTransactionGrantCommunityPointInput = {
-      fromWalletId: walletId,
       transferPoints: grantedPoint,
-      communityId: communityId,
       toUserId: userId,
     };
+
+    const permission = { communityId: communityId };
 
     //////////////////////////////////////////////////
     // execute
     //////////////////////////////////////////////////
-    await useCase.ownerGrantCommunityPoint(ctx, input);
+    await useCase.ownerGrantCommunityPoint(ctx, { input, permission });
 
     //////////////////////////////////////////////////
     // assert result

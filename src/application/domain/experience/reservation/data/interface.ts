@@ -30,6 +30,7 @@ export interface IReservationService {
     userIdsIfExists: string[],
     reservationStatuses: ReservationStatuses,
     tx: Prisma.TransactionClient,
+    comment?: string,
   ): Promise<PrismaReservation>;
 
   setStatus(

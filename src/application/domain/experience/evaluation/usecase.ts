@@ -98,7 +98,6 @@ export default class EvaluationUseCase {
 
       return evaluation;
     });
-    console.log(evaluation, "passed");
 
     return EvaluationPresenter.create(evaluation);
   }
@@ -119,21 +118,21 @@ export default class EvaluationUseCase {
         tx,
       );
     });
-    console.log(evaluation, "failed");
+
     return EvaluationPresenter.create(evaluation);
   }
-  
+
   async managerBulkCreateEvaluations(
     { input, permission }: any,
     ctx: IContext,
   ): Promise<any> {
     const currentUserId = getCurrentUserId(ctx);
     const evaluations: PrismaEvaluationDetail[] = [];
-    
+
     const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
       for (const item of input.evaluations) {
         await this.validateEvaluatable(ctx, item.participationId);
-        
+
         const evaluation = await this.evaluationService.createEvaluation(
           ctx,
           currentUserId,
@@ -141,24 +140,24 @@ export default class EvaluationUseCase {
           item.status,
           tx,
         );
-        
+
         if (item.status === GqlEvaluationStatus.Passed) {
           const { participation, opportunity, communityId, userId } =
             this.evaluationService.validateParticipationHasOpportunity(evaluation);
-            
+
           if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
             const [fromWallet, toWallet] = await Promise.all([
               this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
               this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
             ]);
-            
+
             const { fromWalletId, toWalletId } =
               await this.walletValidator.validateTransferMemberToMember(
                 fromWallet,
                 toWallet,
                 opportunity.pointsToEarn,
               );
-              
+
             await this.transactionService.giveRewardPoint(
               ctx,
               tx,
@@ -169,13 +168,13 @@ export default class EvaluationUseCase {
             );
           }
         }
-        
+
         evaluations.push(evaluation);
       }
-      
+
       return evaluations;
     });
-    
+
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 

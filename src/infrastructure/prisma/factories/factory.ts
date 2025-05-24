@@ -29,6 +29,7 @@ import {
   randFullName,
   randNumber,
   randParagraph,
+  randPhoneNumber,
   randSlug,
   randState,
   randStreetAddress,
@@ -116,6 +117,7 @@ export const UserFactory = defineUserFactory.withTransientFields<{
     return {
       name: randFullName(),
       slug: randSlug().toLowerCase(),
+      phoneNumber: randPhoneNumber(),
       urlInstagram: `https://instagram.com/${randUserName()}`,
       urlX: `https://x.com/${randUserName()}`,
       urlFacebook: `https://facebook.com/${randUserName()}`,
@@ -381,7 +383,7 @@ export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
           PublishStatus.COMMUNITY_INTERNAL,
           PublishStatus.PRIVATE,
         ]),
-      requireApproval: false,
+      requireApproval: true,
       feeRequired: randNumber({ min: 1000, max: 5000 }),
       pointsToEarn: randNumber({ min: 1000, max: 5000 }),
       category:

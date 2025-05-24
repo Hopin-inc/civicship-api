@@ -40,6 +40,10 @@ export default class OpportunitySlotService {
     return this.repository.queryByOpportunityId(ctx, where, orderBy);
   }
 
+  async findOpportunitySlot(ctx: IContext, id: string) {
+    return await this.repository.find(ctx, id);
+  }
+
   async findOpportunitySlotOrThrow(ctx: IContext, id: string) {
     const record = await this.repository.find(ctx, id);
 
@@ -107,8 +111,10 @@ export default class OpportunitySlotService {
     const reservations = await ctx.loaders.reservationByOpportunitySlot.load(slotId);
     const participations = reservations.flatMap((reservation) => reservation.participations || []);
     return participations.filter(
-      (participation) => participation.evaluation && 
-      (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
+      (participation) =>
+        participation.evaluation &&
+        (participation.evaluation.status === "PASSED" ||
+          participation.evaluation.status === "FAILED"),
     ).length;
   }
 
@@ -118,12 +124,14 @@ export default class OpportunitySlotService {
   async isSlotFullyEvaluated(ctx: IContext, slotId: string): Promise<boolean> {
     const reservations = await ctx.loaders.reservationByOpportunitySlot.load(slotId);
     const participations = reservations.flatMap((reservation) => reservation.participations || []);
-    
+
     if (participations.length === 0) return true; // If no participants, consider it fully evaluated
-    
+
     return participations.every(
-      (participation) => participation.evaluation && 
-      (participation.evaluation.status === 'PASSED' || participation.evaluation.status === 'FAILED')
+      (participation) =>
+        participation.evaluation &&
+        (participation.evaluation.status === "PASSED" ||
+          participation.evaluation.status === "FAILED"),
     );
   }
 }
