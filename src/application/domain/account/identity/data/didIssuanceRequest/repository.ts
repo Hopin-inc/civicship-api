@@ -1,13 +1,19 @@
-import { injectable } from "tsyringe";
+import { injectable, container } from "tsyringe";
 import { IContext } from "@/types/server";
 import { DIDIssuanceStatus } from "./enum";
 import { IDIDIssuanceRequestRepository } from "./interface";
 import { DIDIssuanceRequestWithUser, DIDIssuanceRequestDetail } from "./type";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequestRepository {
+  private getIssuer(): PrismaClientIssuer {
+    return container.resolve<PrismaClientIssuer>("prismaClientIssuer");
+  }
+
   async findById(ctx: IContext, id: string): Promise<DIDIssuanceRequestDetail | null> {
-    return ctx.issuer.public(ctx, (tx) => {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
       return tx.dIDIssuanceRequest.findUnique({
         where: { id }
       });
@@ -19,7 +25,8 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
     maxRetries: number, 
     limit?: number
   ): Promise<DIDIssuanceRequestWithUser[]> {
-    return ctx.issuer.public(ctx, (tx) => {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
       return tx.dIDIssuanceRequest.findMany({
         where: {
           status: 'PENDING',
@@ -45,7 +52,8 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
     ctx: IContext, 
     retryCount: number
   ): Promise<DIDIssuanceRequestDetail[]> {
-    return ctx.issuer.public(ctx, (tx) => {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
       return tx.dIDIssuanceRequest.findMany({
         where: {
           status: 'PENDING',
@@ -62,7 +70,8 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
       status?: DIDIssuanceStatus 
     }
   ): Promise<DIDIssuanceRequestDetail> {
-    return ctx.issuer.public(ctx, (tx) => {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
       return tx.dIDIssuanceRequest.create({
         data: {
           userId: data.userId,
@@ -92,7 +101,8 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
       });
     }
     
-    return ctx.issuer.public(ctx, (tx) => {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
       return tx.dIDIssuanceRequest.update({
         where: { id },
         data
@@ -108,7 +118,8 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
       errorMessage?: string
     }
   ): Promise<void> {
-    await ctx.issuer.public(ctx, (tx) => {
+    const issuer = ctx.issuer || this.getIssuer();
+    await issuer.public(ctx, (tx) => {
       return tx.dIDIssuanceRequest.updateMany({
         where: {
           id: {

@@ -1,5 +1,5 @@
 import { container } from "tsyringe";
-import { prismaClient } from "@/infrastructure/prisma/client";
+import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
@@ -84,6 +84,7 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("prismaClient", { useValue: prismaClient });
+  container.register("prismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
 
   // ------------------------------
