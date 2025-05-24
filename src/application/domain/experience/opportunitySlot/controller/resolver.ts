@@ -20,7 +20,7 @@ export default class OpportunitySlotResolver {
       return this.slotUseCase.visitorBrowseOpportunitySlots(args, ctx);
     },
     opportunitySlot: (_: unknown, args: GqlQueryOpportunitySlotArgs, ctx: IContext) => {
-      return ctx.loaders.opportunitySlot.load(args.id);
+      return this.slotUseCase.visitorViewOpportunitySlot(args, ctx);
     },
   };
 
@@ -49,15 +49,15 @@ export default class OpportunitySlotResolver {
     reservations: (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.reservationByOpportunitySlot.load(parent.id);
     },
-    
+
     numParticipants: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
       return this.slotUseCase.getParticipantsCount(parent.id, ctx);
     },
-    
+
     numEvaluated: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
       return this.slotUseCase.getEvaluatedParticipantsCount(parent.id, ctx);
     },
-    
+
     isFullyEvaluated: async (parent: PrismaOpportunitySlotDetail, _: unknown, ctx: IContext) => {
       return this.slotUseCase.isSlotFullyEvaluated(parent.id, ctx);
     },
