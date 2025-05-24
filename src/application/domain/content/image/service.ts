@@ -15,7 +15,6 @@ export default class ImageService {
       // @ts-expect-error Library type definition is not compatible with the original library
       file: { createReadStream, filename: rawFilename, mimetype: mime },
     } = await file;
-    console.log(rawFilename, mime);
 
     const ext = path.extname(rawFilename);
     const filename = `${Date.now()}_${rawFilename}`;

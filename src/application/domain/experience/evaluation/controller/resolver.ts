@@ -38,7 +38,6 @@ export default class EvaluationResolver {
 
   Evaluation = {
     evaluator: (parent: PrismaEvaluationDetail, _: unknown, ctx: IContext) => {
-      console.log(parent);
       return parent.evaluatorId ? ctx.loaders.user.load(parent.evaluatorId) : null;
     },
 
