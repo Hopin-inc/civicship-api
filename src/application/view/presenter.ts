@@ -33,7 +33,7 @@ export default class ViewPresenter {
       reservationStatus: reservation?.status,
       date: startsAt,
       place: place ? PlacePresenter.formatPortfolio(place) : null,
-      thumbnailUrl: images?.[0]?.url ?? opportunity.images[0].url,
+      thumbnailUrl: images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,
       participants: reservation?.participations
         ? reservation.participations
             .map((p) => p.user)
