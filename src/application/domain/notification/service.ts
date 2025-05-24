@@ -13,7 +13,6 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
-import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 dayjs.locale("ja");
 
@@ -180,16 +179,16 @@ export default class NotificationService {
 
     const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
     const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
-    const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+    await safeLinkRichMenuIdToUser(lineUid, richMenuId);
 
-    const redirectUrl = `${liffBaseUrl}/admin`;
-
-    if (isAdmin && success) {
-      await safePushMessage({
-        to: lineUid,
-        messages: [buildAdminGrantedMessage(redirectUrl)],
-      });
-    }
+    // const redirectUrl = `${liffBaseUrl}/admin`;
+    //
+    // if (isAdmin && success) {
+    //   await safePushMessage({
+    //     to: lineUid,
+    //     messages: [buildAdminGrantedMessage(redirectUrl)],
+    //   });
+    // }
   }
 
   // --- 共通化したプライベートユーティリティ ---
