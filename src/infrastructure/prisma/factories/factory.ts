@@ -383,7 +383,7 @@ export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
           PublishStatus.COMMUNITY_INTERNAL,
           PublishStatus.PRIVATE,
         ]),
-      requireApproval: false,
+      requireApproval: true,
       feeRequired: randNumber({ min: 1000, max: 5000 }),
       pointsToEarn: randNumber({ min: 1000, max: 5000 }),
       category:

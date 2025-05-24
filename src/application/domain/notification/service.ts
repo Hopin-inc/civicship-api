@@ -153,10 +153,12 @@ export default class NotificationService {
     const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
     const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
 
+    const redirectUrl = `${liffBaseUrl}/admin`;
+
     if (isAdmin && success) {
       await safePushMessage({
         to: lineUid,
-        messages: [buildAdminGrantedMessage()],
+        messages: [buildAdminGrantedMessage(redirectUrl)],
       });
     }
   }
