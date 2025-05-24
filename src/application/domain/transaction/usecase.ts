@@ -66,7 +66,6 @@ export default class TransactionUseCase {
       ctx,
       permission.communityId,
     );
-    console.log(communityWallet, "communityWallet");
     const res = await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
       return await this.transactionService.issueCommunityPoint(
         ctx,

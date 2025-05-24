@@ -1,5 +1,6 @@
 import DataLoader from "dataloader";
 import stringify from "json-stable-stringify";
+import logger from "@/infrastructure/logging";
 
 type RecordWithKey<K extends string> = Record<K, string | null>; // nullableの外部キーに対応（e.g. transaction.participation.id）
 type RequestWithFilterAndSort<F, S> = { key: string; filter: F; sort: S };
@@ -86,7 +87,7 @@ export function createHasManyLoaderByKey<K extends string, R extends RecordWithK
     for (const record of records) {
       const keyValue = record[key];
       if (!keyValue) {
-        console.warn("[HasManyLoader] record with missing key:", record);
+        logger.warn("[HasManyLoader] record with missing key:", record);
         continue;
       }
       if (!grouped.has(keyValue)) grouped.set(keyValue, []);

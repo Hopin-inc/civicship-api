@@ -29,11 +29,6 @@ export default class OpportunityService {
   ) {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
-
-    console.log("============================");
-    console.dir(where, { depth: null });
-    console.log("============================");
-
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
