@@ -29,6 +29,7 @@ import {
   randFullName,
   randNumber,
   randParagraph,
+  randPhoneNumber,
   randSlug,
   randState,
   randStreetAddress,
@@ -116,6 +117,7 @@ export const UserFactory = defineUserFactory.withTransientFields<{
     return {
       name: randFullName(),
       slug: randSlug().toLowerCase(),
+      phoneNumber: randPhoneNumber(),
       urlInstagram: `https://instagram.com/${randUserName()}`,
       urlX: `https://x.com/${randUserName()}`,
       urlFacebook: `https://facebook.com/${randUserName()}`,
