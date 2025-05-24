@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { GqlTransactionDonateSelfPointInput } from "@/types/graphql";
+import { GqlCheckIsSelfPermissionInput, GqlTransactionDonateSelfPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
@@ -68,12 +68,16 @@ describe("Point Donate Tests", () => {
 
     const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,
-      fromWalletId: fromWallet.id,
       toUserId: toUser.id,
       transferPoints: DONATION_POINTS,
     };
 
-    await transactionUseCase.userDonateSelfPointToAnother(ctx, input);
+    const permission: GqlCheckIsSelfPermissionInput = {
+      userId: ctx.currentUser?.id ?? "",
+    };
+    const args = { input, permission };
+
+    await transactionUseCase.userDonateSelfPointToAnother(ctx, args);
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
       (t) => t.reason === TransactionReason.DONATION,
@@ -104,22 +108,20 @@ describe("Point Donate Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const fromWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: community.id } },
-      user: { connect: { id: fromUser.id } },
-    });
-
     const ctx = { currentUser: { id: fromUser.id } } as IContext;
 
     const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,
-      fromWalletId: fromWallet.id,
       toUserId: toUser.id,
       transferPoints: 9999, // 残高不足
     };
 
-    await expect(transactionUseCase.userDonateSelfPointToAnother(ctx, input)).rejects.toThrow(
+    const permission: GqlCheckIsSelfPermissionInput = {
+      userId: ctx.currentUser?.id ?? "",
+    };
+    const args = { input, permission };
+
+    await expect(transactionUseCase.userDonateSelfPointToAnother(ctx, args)).rejects.toThrow(
       /Insufficient balance/i,
     );
 

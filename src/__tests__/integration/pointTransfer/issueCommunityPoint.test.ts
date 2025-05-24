@@ -45,7 +45,6 @@ describe("Point Issue Tests", () => {
 
     const input: GqlTransactionIssueCommunityPointInput = {
       transferPoints: ISSUE_POINTS,
-      toWalletId: wallet.id,
     };
 
     await transactionUseCase.ownerIssueCommunityPoint(
