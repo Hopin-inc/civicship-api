@@ -10,21 +10,26 @@ export async function safeLinkRichMenuIdToUser(
 
   try {
     const response = await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
-    logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse);
+    logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse, userId);
     return true;
   } catch (error) {
-    logLineApiError("linkRichMenuIdToUser", endpoint, error);
+    logLineApiError("linkRichMenuIdToUser", endpoint, error, userId);
     return false;
   }
 }
 
-export async function safePushMessage(params: { to: string; messages: messagingApi.Message[] }) {
+export async function safePushMessage(params: {
+  to: string;
+  messages: messagingApi.Message[];
+}): Promise<boolean> {
   const endpoint = "https://api.line.me/v2/bot/message/push";
 
   try {
     const response = await lineClient.pushMessageWithHttpInfo(params);
-    logLineApiSuccess("pushMessage", endpoint, response.httpResponse);
+    logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to);
+    return true;
   } catch (error) {
-    logLineApiError("pushMessage", endpoint, error);
+    logLineApiError("pushMessage", endpoint, error, params.to);
+    return false;
   }
 }
