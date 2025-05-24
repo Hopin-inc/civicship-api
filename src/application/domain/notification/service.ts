@@ -13,6 +13,7 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
+import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 dayjs.locale("ja");
 
 const liffBaseUrl = (() => {
@@ -148,12 +149,16 @@ export default class NotificationService {
 
     if (!lineUid) return;
 
-    const richMenuId =
-      membership.role === Role.OWNER || membership.role === Role.MANAGER
-        ? LINE_RICHMENU.ADMIN_MANAGE
-        : LINE_RICHMENU.PUBLIC;
+    const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
+    const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
+    const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
 
-    await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+    if (isAdmin && success) {
+      await safePushMessage({
+        to: lineUid,
+        messages: [buildAdminGrantedMessage()],
+      });
+    }
   }
 
   // --- 共通化したプライベートユーティリティ ---

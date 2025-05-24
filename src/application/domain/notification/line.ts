@@ -2,14 +2,19 @@ import { lineClient } from "@/infrastructure/libs/line";
 import { logLineApiError, logLineApiSuccess } from "./logger";
 import { messagingApi } from "@line/bot-sdk";
 
-export async function safeLinkRichMenuIdToUser(userId: string, richMenuId: string) {
+export async function safeLinkRichMenuIdToUser(
+  userId: string,
+  richMenuId: string,
+): Promise<boolean> {
   const endpoint = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
 
   try {
     const response = await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
     logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse);
+    return true;
   } catch (error) {
     logLineApiError("linkRichMenuIdToUser", endpoint, error);
+    return false;
   }
 }
 
