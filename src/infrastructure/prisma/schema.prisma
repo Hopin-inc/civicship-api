@@ -214,8 +214,8 @@ model User {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  identities Identity[]
-  didIssuanceRequests DIDIssuanceRequest[]
+  identities          Identity[]
+  didIssuanceRequests DidIssuanceRequest[]
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
@@ -278,30 +278,32 @@ enum IdentityPlatform {
   PHONE
 }
 
-enum DIDIssuanceStatus {
+enum DidIssuanceStatus {
   PENDING
   PROCESSING
   COMPLETED
   FAILED
+
+  @@map("DIDIssuanceStatus")
 }
 
-model DIDIssuanceRequest {
-  id            String            @id @default(cuid())
-  
-  status        DIDIssuanceStatus @default(PENDING)
-  didValue      String?           @map("did_value")
-  errorMessage  String?           @map("error_message")
-  retryCount    Int               @default(0) @map("retry_count")
-  
-  requestedAt   DateTime          @default(now()) @map("requested_at")
-  processedAt   DateTime?         @map("processed_at")
-  completedAt   DateTime?         @map("completed_at")
-  
-  userId        String            @map("user_id")
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime?         @updatedAt @map("updated_at")
+model DidIssuanceRequest {
+  id String @id @default(cuid())
+
+  status       DidIssuanceStatus @default(PENDING)
+  didValue     String?           @map("did_value")
+  errorMessage String?           @map("error_message")
+  retryCount   Int               @default(0) @map("retry_count")
+
+  requestedAt DateTime  @default(now()) @map("requested_at")
+  processedAt DateTime? @map("processed_at")
+  completedAt DateTime? @map("completed_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_did_issuance_requests")
 }

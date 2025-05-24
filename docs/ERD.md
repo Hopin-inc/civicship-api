@@ -42,6 +42,15 @@ PHONE PHONE
     
 
 
+        DIDIssuanceStatus {
+            PENDING PENDING
+PROCESSING PROCESSING
+COMPLETED COMPLETED
+FAILED FAILED
+        }
+    
+
+
         Role {
             OWNER OWNER
 MANAGER MANAGER
@@ -276,6 +285,21 @@ TICKET_REFUNDED TICKET_REFUNDED
     String auth_token "❓"
     String refresh_token "❓"
     DateTime token_expires_at "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_did_issuance_requests" {
+    String id "🗝️"
+    DidIssuanceStatus status 
+    String did_value "❓"
+    String error_message "❓"
+    Int retry_count 
+    DateTime requested_at 
+    DateTime processed_at "❓"
+    DateTime completed_at "❓"
+    String user_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -596,6 +620,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
+    "t_users" o{--}o "t_did_issuance_requests" : "didIssuanceRequests"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
@@ -612,6 +637,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
+    "t_did_issuance_requests" o|--|| "DidIssuanceStatus" : "enum:status"
+    "t_did_issuance_requests" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
