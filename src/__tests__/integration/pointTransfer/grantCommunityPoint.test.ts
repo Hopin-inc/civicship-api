@@ -59,13 +59,13 @@ describe("Point Grant Tests", () => {
     await TestDataSourceHelper.refreshCurrentPoints();
 
     const input: GqlTransactionGrantCommunityPointInput = {
-      fromWalletId: communityWallet.id,
       toUserId: user.id,
       transferPoints: GRANT_POINTS,
-      communityId: community.id,
     };
 
-    await transactionUseCase.ownerGrantCommunityPoint(ctx, input);
+    const permission = { communityId: community.id };
+
+    await transactionUseCase.ownerGrantCommunityPoint(ctx, { input, permission });
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
       (t) => t.reason === TransactionReason.GRANT,
@@ -89,21 +89,15 @@ describe("Point Grant Tests", () => {
       pointName: "c-point",
     });
 
-    const communityWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.COMMUNITY,
-      community: { connect: { id: community.id } },
-    });
-
     const input: GqlTransactionGrantCommunityPointInput = {
-      fromWalletId: communityWallet.id,
       transferPoints: 9999, // 残高不足
-      communityId: community.id,
       toUserId: user.id,
     };
+    const permission = { communityId: community.id };
 
-    await expect(transactionUseCase.ownerGrantCommunityPoint(ctx, input)).rejects.toThrow(
-      /Insufficient balance/i,
-    );
+    await expect(
+      transactionUseCase.ownerGrantCommunityPoint(ctx, { input, permission }),
+    ).rejects.toThrow(/Insufficient balance/i);
 
     const txs = await TestDataSourceHelper.findAllTransactions();
     expect(txs).toHaveLength(0);
