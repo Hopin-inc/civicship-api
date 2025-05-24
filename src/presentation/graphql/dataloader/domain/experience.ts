@@ -16,6 +16,8 @@ export function createExperienceLoaders(issuer: PrismaClientIssuer) {
     opportunitiesByCommunity: OpportunityLoaders.createOpportunitiesByCommunityLoader(issuer),
     opportunitiesByPlace: OpportunityLoaders.createOpportunitiesByPlaceLoader(issuer),
 
+    isReservableWithTicket: OpportunityLoaders.createIsReservableWithTicketLoader(issuer),
+
     opportunitySlot: OpportunitySlotLoaders.createOpportunitySlotLoader(issuer),
     opportunitySlotByOpportunity: OpportunitySlotLoaders.createSlotsByOpportunityLoader(issuer),
 

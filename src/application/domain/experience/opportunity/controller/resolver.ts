@@ -62,45 +62,18 @@ export default class OpportunityResolver {
       return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
     },
 
-    // TODO: これで問題ないかをチェックする
-    isReservableWithTicket: (parent, _: unknown, ctx: IContext) => {
-      if (!ctx.currentUser) return false;
+    isReservableWithTicket: async (parent, _, ctx: IContext) => {
+      const userId = ctx.currentUser?.id;
+      const communityId = parent.communityId;
+      if (!userId || !communityId) return false;
 
-      return ctx.issuer.internal(async (tx) => {
-        const utilities = await tx.utility.findMany({
-          where: {
-            requiredForOpportunities: {
-              some: {
-                id: parent.id,
-              },
-            },
-          },
-          select: { id: true },
-        });
-
-        if (utilities.length === 0) return false;
-
-        const wallet = await tx.wallet.findFirst({
-          where: {
-            userId: ctx.currentUser?.id,
-            communityId: parent.communityId || "",
-          },
-          select: { id: true },
-        });
-
-        if (!wallet) return false;
-
-        const tickets = await tx.ticket.findMany({
-          where: {
-            walletId: wallet.id,
-            utilityId: { in: utilities.map((u) => u.id) },
-            status: "AVAILABLE",
-          },
-          select: { id: true },
-        });
-
-        return tickets.length > 0;
+      const result = await ctx.loaders.isReservableWithTicket.load({
+        userId: userId,
+        communityId: communityId,
+        opportunityId: parent.id,
       });
+
+      return result ?? false;
     },
 
     images: (parent, _: unknown, ctx: IContext) => {
