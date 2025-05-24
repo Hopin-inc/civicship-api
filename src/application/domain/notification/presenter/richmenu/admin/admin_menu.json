@@ -35,19 +35,6 @@
     },
     {
       "bounds": {
-        "x": 0,
-        "y": 843,
-        "width": 833,
-        "height": 843
-      },
-      "action": {
-        "type": "uri",
-        "label": "チケット送付",
-        "uri": "${LIFF_BASE_URL}/admin/tickets"
-      }
-    },
-    {
-      "bounds": {
         "x": 833,
         "y": 843,
         "width": 833,
