@@ -1,4 +1,4 @@
-import { PrismaClient, DIDIssuanceStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import logger from "@/infrastructure/logging";
 import IdentityService from "@/application/domain/account/identity/service";
 import { container } from 'tsyringe';
@@ -48,7 +48,7 @@ export async function syncDIDVC() {
         
         const didStatus = await identityService.callDIDVCServer(
           phoneIdentity.uid,
-          `/did/status/${request.id}`,
+          `/did/jobs/${request.id}`,
           'GET'
         );
         
@@ -87,7 +87,7 @@ export async function syncDIDVC() {
           where: { id: request.id },
           data: {
             status: 'PENDING', // Revert to pending for retry
-            errorMessage: error.message
+            errorMessage: error instanceof Error ? error.message : 'Unknown error'
           }
         });
       }

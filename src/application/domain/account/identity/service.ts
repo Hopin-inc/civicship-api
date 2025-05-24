@@ -221,7 +221,7 @@ export default class IdentityService {
       try {
         const didResponse = await this.callDIDVCServer(
           phoneUid,
-          '/did/issue',
+          '/did/jobs/create-and-publish',
           'POST',
           {
             userId,
