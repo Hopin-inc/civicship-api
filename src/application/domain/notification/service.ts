@@ -14,6 +14,7 @@ import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
+import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 dayjs.locale("ja");
 
 const liffBaseUrl = (() => {
@@ -179,16 +180,17 @@ export default class NotificationService {
 
     const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
     const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
-    await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+    const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
 
-    // const redirectUrl = `${liffBaseUrl}/admin`;
-    //
-    // if (isAdmin && success) {
-    //   await safePushMessage({
-    //     to: lineUid,
-    //     messages: [buildAdminGrantedMessage(redirectUrl)],
-    //   });
-    // }
+    const redirectUrl = `${liffBaseUrl}/admin`;
+
+    //TODO feature flagにしては細かすぎる設定
+    if (isAdmin && success && membership.communityId !== "neo88") {
+      await safePushMessage({
+        to: lineUid,
+        messages: [buildAdminGrantedMessage(redirectUrl)],
+      });
+    }
   }
 
   // --- 共通化したプライベートユーティリティ ---
