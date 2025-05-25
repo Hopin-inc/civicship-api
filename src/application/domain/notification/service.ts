@@ -13,8 +13,8 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
-import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
+import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 dayjs.locale("ja");
 
 const liffBaseUrl = (() => {
@@ -184,7 +184,8 @@ export default class NotificationService {
 
     const redirectUrl = `${liffBaseUrl}/admin`;
 
-    if (isAdmin && success) {
+    //TODO feature flagにしては細かすぎる設定
+    if (isAdmin && success && membership.communityId !== "neo88") {
       await safePushMessage({
         to: lineUid,
         messages: [buildAdminGrantedMessage(redirectUrl)],
