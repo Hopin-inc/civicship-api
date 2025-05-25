@@ -85,6 +85,9 @@ function buildDeclineMessage(comment?: string): messagingApi.FlexBox {
   const fallbackMessage =
     "今回は日程の都合により申込を辞退させていただきました。またの機会がございましたら、どうぞよろしくお願い致します。";
 
+  const safeComment = typeof comment === "string" ? comment.trim() : "";
+  const text = safeComment.length > 0 ? safeComment : fallbackMessage;
+
   return {
     type: "box",
     layout: "vertical",
@@ -94,7 +97,7 @@ function buildDeclineMessage(comment?: string): messagingApi.FlexBox {
     contents: [
       {
         type: "text",
-        text: comment?.trim() || fallbackMessage,
+        text,
         size: "sm",
         color: "#111111",
         wrap: true,
