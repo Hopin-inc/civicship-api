@@ -94,7 +94,7 @@ function buildDeclineMessage(comment?: string): messagingApi.FlexBox {
     contents: [
       {
         type: "text",
-        text: comment?.trim() || fallbackMessage,
+        text: comment ?? fallbackMessage,
         size: "sm",
         color: "#111111",
         wrap: true,
