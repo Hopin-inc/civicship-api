@@ -9,6 +9,7 @@ export async function safeLinkRichMenuIdToUser(
   const endpoint = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
 
   try {
+    await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
     const response = await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
     logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse, userId);
     return true;
@@ -29,6 +30,7 @@ export async function safePushMessage(params: {
   const { to, messages } = params;
 
   try {
+    await lineClient.validatePushWithHttpInfo({ messages });
     const response = await lineClient.pushMessageWithHttpInfo({ to, messages });
     logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to);
     return true;
