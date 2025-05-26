@@ -20,10 +20,10 @@ export function buildReservationAcceptedMessage(
     type: "flex",
     altText: `${params.date}開催「${params.title}」の予約が確定しました🙋`,
     contents: buildBubble(params),
-    // sender: {
-    //   name: params.hostName,
-    //   iconUrl: params.hostImageUrl,
-    // },
+    sender: {
+      name: params.hostName,
+      iconUrl: params.hostImageUrl,
+    },
   };
 }
 
