@@ -8,6 +8,7 @@ interface CancelOpportunitySlotParams {
   hostName: string;
   hostImageUrl: string;
   redirectUrl: string;
+  comment?: string;
 }
 
 export function buildCancelOpportunitySlotMessage(
@@ -40,7 +41,7 @@ function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
     contents: [
       buildTitle(),
       buildOpportunityInfo(params),
-      buildApologyMessage(),
+      buildApologyMessage(params.comment),
       buildHostSection(params),
     ],
   };
@@ -82,7 +83,12 @@ function buildOpportunityInfo(params: CancelOpportunitySlotParams): messagingApi
   };
 }
 
-function buildApologyMessage(): messagingApi.FlexBox {
+function buildApologyMessage(comment?: string): messagingApi.FlexBox {
+  const fallbackMessage =
+    "誠に恐れ入りますが、やむを得ない事情により本開催を中止させていただきます。ご迷惑をおかけしますことをお詫び申し上げます。";
+  const safeComment = typeof comment === "string" ? comment.trim() : "";
+  const text = safeComment.length > 0 ? safeComment : fallbackMessage;
+
   return {
     type: "box",
     layout: "vertical",
@@ -92,14 +98,7 @@ function buildApologyMessage(): messagingApi.FlexBox {
     contents: [
       {
         type: "text",
-        text: "お申し込みいただいたイベントは、やむを得ず中止とさせていただきました。",
-        size: "sm",
-        color: "#111111",
-        wrap: true,
-      },
-      {
-        type: "text",
-        text: "楽しみにしてくださっていた皆様には、心よりお詫び申し上げます。",
+        text,
         size: "sm",
         color: "#111111",
         wrap: true,

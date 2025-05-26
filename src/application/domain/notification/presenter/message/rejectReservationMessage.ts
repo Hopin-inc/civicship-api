@@ -83,7 +83,7 @@ function buildOpportunityInfo(params: DeclineOpportunitySlotParams): messagingAp
 
 function buildDeclineMessage(comment?: string): messagingApi.FlexBox {
   const fallbackMessage =
-    "今回は日程の都合により申込を辞退させていただきました。またの機会がございましたら、どうぞよろしくお願い致します。";
+    "今回は日程や運営の都合により、申込をお受けできかねる結果となりました。またの機会がございましたら、ぜひご参加をご検討いただけますと幸いです。";
 
   const safeComment = typeof comment === "string" ? comment.trim() : "";
   const text = safeComment.length > 0 ? safeComment : fallbackMessage;

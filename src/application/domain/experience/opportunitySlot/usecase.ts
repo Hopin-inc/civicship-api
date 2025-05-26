@@ -97,7 +97,7 @@ export default class OpportunitySlotUseCase {
     });
 
     if (cancelledSlot) {
-      await this.notificationService.pushCancelOpportunitySlotMessage(cancelledSlot);
+      await this.notificationService.pushCancelOpportunitySlotMessage(cancelledSlot, input.comment);
     }
 
     return OpportunitySlotPresenter.setHostingStatus(res);
