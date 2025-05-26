@@ -1,6 +1,5 @@
 import { GqlReservationFilterInput, GqlReservationSortInput } from "@/types/graphql";
 import {
-  OpportunityCategory,
   ParticipationStatus,
   ParticipationStatusReason,
   Prisma,
@@ -12,39 +11,76 @@ import { injectable } from "tsyringe";
 @injectable()
 export default class ReservationConverter {
   filter(filter?: GqlReservationFilterInput): Prisma.ReservationWhereInput {
-    const conditions: Prisma.ReservationWhereInput[] = [];
-    if (!filter) return {};
+    const resolve = (input?: GqlReservationFilterInput): Prisma.ReservationWhereInput => {
+      if (!input) return {};
 
-    if (filter.status) conditions.push({ status: filter.status });
-    if (filter.opportunityId)
-      conditions.push({
-        opportunitySlot: { opportunityId: filter.opportunityId },
-      });
-    if (filter.opportunitySlotId)
-      conditions.push({
-        opportunitySlotId: filter.opportunitySlotId,
-      });
-    if (filter.createdByUserId) conditions.push({ createdBy: filter.createdByUserId });
-    if (filter.opportunityOwnerId)
-      conditions.push({
-        opportunitySlot: { opportunity: { createdBy: filter.opportunityOwnerId } },
-      });
+      const conditions: Prisma.ReservationWhereInput[] = [];
 
-    return conditions.length ? { AND: conditions } : {};
-  }
+      if (input.reservationStatus?.length) {
+        conditions.push({ status: { in: input.reservationStatus } });
+      }
 
-  countByUserAndOpportunityCategory(
-    userId: string,
-    category: OpportunityCategory,
-  ): Prisma.ReservationWhereInput {
-    return {
-      createdBy: userId,
-      opportunitySlot: {
-        opportunity: {
-          category,
-        },
-      },
+      if (input.hostingStatus?.length) {
+        conditions.push({ opportunitySlot: { hostingStatus: { in: input.hostingStatus } } });
+      }
+
+      if (input.participationStatus?.length) {
+        conditions.push({
+          participations: {
+            some: { status: { in: input.participationStatus } },
+          },
+        });
+      }
+
+      if (input.evaluationStatus) {
+        conditions.push({
+          participations: {
+            some: {
+              evaluation: {
+                status: input.evaluationStatus,
+              },
+            },
+          },
+        });
+      }
+
+      if (input.opportunityId) {
+        conditions.push({ opportunitySlot: { opportunityId: input.opportunityId } });
+      }
+
+      if (input.opportunitySlotId) {
+        conditions.push({ opportunitySlotId: input.opportunitySlotId });
+      }
+
+      if (input.createdByUserId) {
+        conditions.push({ createdBy: input.createdByUserId });
+      }
+
+      if (input.opportunityOwnerId) {
+        conditions.push({
+          opportunitySlot: { opportunity: { createdBy: input.opportunityOwnerId } },
+        });
+      }
+
+      const and = input.and?.map(resolve).filter(Boolean);
+      if (and?.length) {
+        conditions.push({ AND: and });
+      }
+
+      const or = input.or?.map(resolve).filter(Boolean);
+      if (or?.length) {
+        conditions.push({ OR: or });
+      }
+
+      const not = input.not?.map(resolve).filter(Boolean);
+      if (not?.length) {
+        conditions.push({ NOT: not });
+      }
+
+      return conditions.length ? { AND: conditions } : {};
     };
+
+    return resolve(filter);
   }
 
   sort(sort?: GqlReservationSortInput): Prisma.ReservationOrderByWithRelationInput[] {
