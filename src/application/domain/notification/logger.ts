@@ -30,12 +30,16 @@ export function logLineApiError(
   error: unknown,
   uid?: string,
   retryCount?: number,
+  requestBody?: unknown,
 ) {
   if (error instanceof HTTPFetchError) {
     logger.error(`LINE ${operationName} failed`, {
       ...baseLogFields(endpoint, uid, retryCount),
       requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
       statusCode: error.status,
+      message: error.message,
+      requestBody: requestBody ? JSON.stringify(requestBody) : undefined,
+      details: error,
     });
   } else if (error instanceof Error) {
     logger.error(`Unexpected error on LINE ${operationName}`, {
@@ -43,11 +47,13 @@ export function logLineApiError(
       name: error.name,
       message: error.message,
       stack: error.stack,
+      details: error,
     });
   } else {
     logger.error(`Unknown error on LINE ${operationName}`, {
       ...baseLogFields(endpoint, uid, retryCount),
       error,
+      details: error,
     });
   }
 }

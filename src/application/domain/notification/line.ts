@@ -13,7 +13,10 @@ export async function safeLinkRichMenuIdToUser(
     logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse, userId);
     return true;
   } catch (error) {
-    logLineApiError("linkRichMenuIdToUser", endpoint, error, userId);
+    logLineApiError("linkRichMenuIdToUser", endpoint, error, userId, undefined, {
+      userId,
+      richMenuId,
+    });
     return false;
   }
 }
@@ -30,7 +33,7 @@ export async function safePushMessage(params: {
     logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to);
     return true;
   } catch (error) {
-    logLineApiError("pushMessage", endpoint, error, params.to);
+    logLineApiError("pushMessage", endpoint, error, params.to, undefined, params);
     return false;
   }
 }
