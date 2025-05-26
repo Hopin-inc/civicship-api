@@ -17,12 +17,7 @@ import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notific
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 dayjs.locale("ja");
 
-const liffBaseUrl = (() => {
-  const value = process.env.LIFF_BASE_URL;
-  if (!value) throw new Error("LIFF_BASE_URL is required");
-  return value;
-})();
-
+const liffBaseUrl = process.env.LIFF_BASE_URL;
 export const DEFAULT_HOST_IMAGE_URL =
   "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
 export const DEFAULT_THUMBNAIL =
