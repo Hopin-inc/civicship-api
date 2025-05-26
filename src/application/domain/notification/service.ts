@@ -50,9 +50,9 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await Promise.all(
-      participantInfos.map(({ uid }) => safePushMessage({ to: uid, messages: [message] })),
-    );
+    for (const { uid } of participantInfos) {
+      await safePushMessage({ to: uid, messages: [message] });
+    }
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
@@ -117,20 +117,19 @@ export default class NotificationService {
     const { title, createdByUser } = reservation.opportunitySlot.opportunity;
     const { name: hostName, image: hostImage } = createdByUser ?? {};
 
-    await Promise.all(
-      participantInfos.map(({ uid }) => {
-        const message = buildDeclineOpportunitySlotMessage({
-          title,
-          year,
-          date,
-          time,
-          hostName: hostName ?? "案内人",
-          hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
-          comment,
-        });
-        return safePushMessage({ to: uid, messages: [message] });
-      }),
-    );
+    for (const { uid } of participantInfos) {
+      const message = buildDeclineOpportunitySlotMessage({
+        title,
+        year,
+        date,
+        time,
+        hostName: hostName ?? "案内人",
+        hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
+        comment,
+      });
+
+      await safePushMessage({ to: uid, messages: [message] });
+    }
   }
 
   async pushReservationAcceptedMessage(reservation: PrismaReservation) {
@@ -146,24 +145,22 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
-    await Promise.all(
-      participantInfos.map(({ uid, participationId }) => {
-        const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
-        const message = buildReservationAcceptedMessage({
-          title,
-          thumbnail: images[0]?.url ?? DEFAULT_THUMBNAIL,
-          year,
-          date,
-          time,
-          place: place?.name ?? "要問い合わせ",
-          participantCount,
-          hostName: hostName ?? "案内人",
-          hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
-          redirectUrl,
-        });
-        return safePushMessage({ to: uid, messages: [message] });
-      }),
-    );
+    for (const { uid, participationId } of participantInfos) {
+      const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
+      const message = buildReservationAcceptedMessage({
+        title,
+        thumbnail: images[0]?.url ?? DEFAULT_THUMBNAIL,
+        year,
+        date,
+        time,
+        place: place?.name ?? "要問い合わせ",
+        participantCount,
+        hostName: hostName ?? "案内人",
+        hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
+        redirectUrl,
+      });
+      await safePushMessage({ to: uid, messages: [message] });
+    }
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
