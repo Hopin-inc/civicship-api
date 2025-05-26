@@ -46,7 +46,7 @@ export default class NotificationService {
       date,
       time,
       hostName: createdByUser?.name ?? "NEO88四国祭",
-      hostImageUrl: createdByUser?.image?.url ?? DEFAULT_HOST_IMAGE_URL,
+      hostImageUrl: this.safeImageUrl(createdByUser.image?.url, DEFAULT_HOST_IMAGE_URL),
       redirectUrl,
     });
 
@@ -124,7 +124,7 @@ export default class NotificationService {
         date,
         time,
         hostName: hostName ?? "案内人",
-        hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
+        hostImageUrl: this.safeImageUrl(hostImage?.url, DEFAULT_HOST_IMAGE_URL),
         comment,
       });
 
@@ -149,14 +149,14 @@ export default class NotificationService {
       const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
       const message = buildReservationAcceptedMessage({
         title,
-        thumbnail: images[0]?.url ?? DEFAULT_THUMBNAIL,
+        thumbnail: this.safeImageUrl(images[0]?.url, DEFAULT_THUMBNAIL),
         year,
         date,
         time,
         place: place?.name ?? "要問い合わせ",
         participantCount,
         hostName: hostName ?? "案内人",
-        hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
+        hostImageUrl: this.safeImageUrl(hostImage?.url, DEFAULT_HOST_IMAGE_URL),
         redirectUrl,
       });
       await safePushMessage({ to: uid, messages: [message] });
@@ -218,5 +218,21 @@ export default class NotificationService {
     const date = dayjs(start).format("M月D日");
     const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
     return { year, date, time };
+  }
+
+  private safeImageUrl(url: string | null | undefined, fallback: string): string {
+    // eslint-disable-next-line no-control-regex
+    const invalidPattern = new RegExp("[\\u0000-\\u001F\\u007F\\u3000\\s]");
+
+    if (!url || !url.startsWith("https://") || invalidPattern.test(url)) {
+      return fallback;
+    }
+
+    try {
+      const parsed = new URL(url);
+      return encodeURI(parsed.toString());
+    } catch {
+      return fallback;
+    }
   }
 }
