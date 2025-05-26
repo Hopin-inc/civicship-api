@@ -1122,6 +1122,7 @@ export const GqlOpportunitySlotHostingStatus = {
 
 export type GqlOpportunitySlotHostingStatus = typeof GqlOpportunitySlotHostingStatus[keyof typeof GqlOpportunitySlotHostingStatus];
 export type GqlOpportunitySlotSetHostingStatusInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   status: GqlOpportunitySlotHostingStatus;
 };
 

@@ -25,7 +25,10 @@ export const DEFAULT_THUMBNAIL =
 
 @injectable()
 export default class NotificationService {
-  async pushCancelOpportunitySlotMessage(slot: PrismaOpportunitySlotSetHostingStatus) {
+  async pushCancelOpportunitySlotMessage(
+    slot: PrismaOpportunitySlotSetHostingStatus,
+    comment?: string,
+  ) {
     const participantInfos = this.extractLineUidsFromParticipations(
       slot.reservations.flatMap((r) => r.participations),
     );
@@ -48,6 +51,7 @@ export default class NotificationService {
       hostName: createdByUser?.name ?? "NEO88四国祭",
       hostImageUrl: this.safeImageUrl(createdByUser.image?.url, DEFAULT_HOST_IMAGE_URL),
       redirectUrl,
+      comment,
     });
 
     for (const { uid } of participantInfos) {
