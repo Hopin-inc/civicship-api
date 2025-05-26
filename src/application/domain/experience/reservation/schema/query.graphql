@@ -33,11 +33,19 @@ type ReservationEdge implements Edge {
 # ------------------------------
 
 input ReservationFilterInput {
-    status: ReservationStatus
+    reservationStatus: [ReservationStatus!]
+    hostingStatus: [OpportunitySlotHostingStatus!]
+    participationStatus: [ParticipationStatus!]
+    evaluationStatus: EvaluationStatus
+
     opportunityId: ID
     opportunitySlotId: ID
     createdByUserId: ID
     opportunityOwnerId: ID
+
+    and: [ReservationFilterInput!]
+    or: [ReservationFilterInput!]
+    not: [ReservationFilterInput!]
 }
 
 input ReservationSortInput {

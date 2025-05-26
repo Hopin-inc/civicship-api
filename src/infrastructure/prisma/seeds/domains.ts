@@ -1,7 +1,6 @@
 import {
   ArticleFactory,
   CommunityFactory,
-  EvaluationFactory,
   MembershipFactory,
   OpportunityFactory,
   OpportunitySlotFactory,
@@ -16,8 +15,21 @@ import {
 } from "@/infrastructure/prisma/factories/factory";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { processInBatches } from "@/utils/array";
-import { Opportunity, OpportunitySlot, Place, Reservation, User, Wallet } from "@prisma/client";
+import {
+  Opportunity,
+  OpportunitySlot,
+  Place,
+  Reservation,
+  ReservationStatus,
+  User,
+  Wallet,
+} from "@prisma/client";
 import { Community } from "@prisma/client/index.d";
+import {
+  GqlOpportunitySlotHostingStatus,
+  GqlParticipationStatus,
+  GqlReservationStatus,
+} from "@/types/graphql";
 
 const BATCH_SIZE = 10; // edit this ONLY when seeding is slow to the extent database connections are established properly
 const NUM_UTILITIES = 3;
@@ -30,9 +42,11 @@ export async function seedUsecase() {
   // await prismaClient.opportunity.updateMany({
   //   where: {},
   //   data: {
-  //     createdBy: "cmawfulj70004s60elzlotgd9",
+  //     createdBy: "cmb4vm7d9001i8z93s953arpl",
   //   },
   // });
+  //
+  // return;
 
   console.info("🔥 Resetting DB...");
   await prismaClient.$transaction(async (tx) => {
@@ -170,35 +184,58 @@ async function createNestedEntities(
     for (const slot of slots) {
       const reservations: Reservation[] = [];
       for (let i = 0; i < NUM_RESERVATIONS_PER_SLOT; i++) {
+        let reservationStatus: ReservationStatus;
+
+        if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Scheduled) {
+          // 予定のスロットは申込（未承認）またはキャンセル状態
+          reservationStatus =
+            Math.random() > 0.5
+              ? GqlReservationStatus.Applied // 50%の確率で未承認
+              : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
+        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed) {
+          reservationStatus = GqlReservationStatus.Accepted; // 完了済みのスロットは承認済み
+        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Cancelled) {
+          reservationStatus = GqlReservationStatus.Rejected; // キャンセル済み
+        } else {
+          reservationStatus = GqlReservationStatus.Applied; // 他の状態（予期しない場合）は保留状態
+        }
+
         reservations.push(
           ...(await ReservationFactory.createList(1, {
             transientUser: user,
             transientSlot: slot,
+            transientStatus: reservationStatus, // 状態を設定
           })),
         );
       }
 
-      const participations = await processInBatches(reservations, 1, async (reservation) => {
+      await processInBatches(reservations, 1, async (reservation) => {
         return ParticipationFactory.create({
           transientUser: user,
           transientReservation: reservation,
           transientCommunity: community,
+          transientStatus:
+            reservation.status === GqlReservationStatus.Applied
+              ? GqlParticipationStatus.Participating // 未対応（申込中）
+              : reservation.status === GqlReservationStatus.Accepted
+                ? GqlParticipationStatus.Participating // 承認済みでも出欠未対応
+                : GqlParticipationStatus.Participated, // 完了済み
         });
       });
 
-      await processInBatches(participations, 1, async (participation) => {
-        const evaluation = await EvaluationFactory.create({
-          transientParticipation: participation,
-          transientUser: user,
-        });
-
-        await prismaClient.participation.update({
-          where: { id: participation.id },
-          data: { evaluationId: evaluation.id },
-        });
-
-        return evaluation;
-      });
+      // await processInBatches(participations, 1, async (participation) => {
+      //   const evaluation = await EvaluationFactory.create({
+      //     transientParticipation: participation,
+      //     transientUser: user,
+      //   });
+      //
+      //   await prismaClient.participation.update({
+      //     where: { id: participation.id },
+      //     data: { evaluationId: evaluation.id },
+      //   });
+      //
+      //   return evaluation;
+      // });
     }
 
     await ArticleFactory.create({
