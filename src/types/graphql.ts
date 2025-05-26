@@ -1816,11 +1816,17 @@ export type GqlReservationEdge = GqlEdge & {
 };
 
 export type GqlReservationFilterInput = {
+  and?: InputMaybe<Array<GqlReservationFilterInput>>;
   createdByUserId?: InputMaybe<Scalars['ID']['input']>;
+  evaluationStatus?: InputMaybe<GqlEvaluationStatus>;
+  hostingStatus?: InputMaybe<Array<GqlOpportunitySlotHostingStatus>>;
+  not?: InputMaybe<Array<GqlReservationFilterInput>>;
   opportunityId?: InputMaybe<Scalars['ID']['input']>;
   opportunityOwnerId?: InputMaybe<Scalars['ID']['input']>;
   opportunitySlotId?: InputMaybe<Scalars['ID']['input']>;
-  status?: InputMaybe<GqlReservationStatus>;
+  or?: InputMaybe<Array<GqlReservationFilterInput>>;
+  participationStatus?: InputMaybe<Array<GqlParticipationStatus>>;
+  reservationStatus?: InputMaybe<Array<GqlReservationStatus>>;
 };
 
 export type GqlReservationHistoriesConnection = {
