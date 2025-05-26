@@ -23,9 +23,10 @@ export async function safePushMessage(params: {
   messages: messagingApi.Message[];
 }): Promise<boolean> {
   const endpoint = "https://api.line.me/v2/bot/message/push";
+  const { to, messages } = params;
 
   try {
-    const response = await lineClient.pushMessageWithHttpInfo(params);
+    const response = await lineClient.pushMessageWithHttpInfo({ to, messages });
     logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to);
     return true;
   } catch (error) {
