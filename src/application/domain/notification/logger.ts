@@ -31,29 +31,25 @@ export function logLineApiError(
   uid?: string,
   retryCount?: number,
   requestBody?: unknown,
+  details?: unknown,
 ) {
   if (error instanceof HTTPFetchError) {
+    let parsedBody: any;
+    try {
+      parsedBody = JSON.parse(error.body); // ← ここで JSON を解析
+    } catch {
+      parsedBody = error.body; // パースできなければそのまま
+    }
+
     logger.error(`LINE ${operationName} failed`, {
       ...baseLogFields(endpoint, uid, retryCount),
       requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
       statusCode: error.status,
-      message: error.message,
+      message: parsedBody?.message ?? error.message,
+      responseDetails: parsedBody?.details,
+      rawResponseBody: error.body,
       requestBody: requestBody ? JSON.stringify(requestBody) : undefined,
-      details: error,
-    });
-  } else if (error instanceof Error) {
-    logger.error(`Unexpected error on LINE ${operationName}`, {
-      ...baseLogFields(endpoint, uid, retryCount),
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      details: error,
-    });
-  } else {
-    logger.error(`Unknown error on LINE ${operationName}`, {
-      ...baseLogFields(endpoint, uid, retryCount),
-      error,
-      details: error,
+      details,
     });
   }
 }
