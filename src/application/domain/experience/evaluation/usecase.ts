@@ -3,8 +3,12 @@ import {
   GqlEvaluation,
   GqlEvaluationCreatePayload,
   GqlEvaluationsConnection,
+  GqlMutationEvaluationBulkCreateArgs,
   GqlMutationEvaluationFailArgs,
   GqlMutationEvaluationPassArgs,
+  GqlOpportunitySlotsBulkUpdatePayload,
+  GqlParticipationStatus,
+  GqlParticipationStatusReason,
   GqlQueryEvaluationArgs,
   GqlQueryEvaluationsArgs,
 } from "@/types/graphql";
@@ -62,6 +66,15 @@ export default class EvaluationUseCase {
     await this.validateEvaluatable(ctx, input.participationId);
 
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
+      //TODO 理由に評価されたからを追加する
+      await this.participationService.setStatus(
+        ctx,
+        input.participationId,
+        GqlParticipationStatus.Participated,
+        GqlParticipationStatusReason.ReservationAccepted,
+        tx,
+        currentUserId,
+      );
       const evaluation = await this.evaluationService.createEvaluation(
         ctx,
         currentUserId,
@@ -123,15 +136,25 @@ export default class EvaluationUseCase {
   }
 
   async managerBulkCreateEvaluations(
-    { input, permission }: any,
+    { input }: GqlMutationEvaluationBulkCreateArgs,
     ctx: IContext,
-  ): Promise<any> {
+  ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
     const currentUserId = getCurrentUserId(ctx);
     const evaluations: PrismaEvaluationDetail[] = [];
 
     const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
       for (const item of input.evaluations) {
         await this.validateEvaluatable(ctx, item.participationId);
+
+        //TODO 理由に評価されたからを追加する
+        await this.participationService.setStatus(
+          ctx,
+          item.participationId,
+          GqlParticipationStatus.Participated,
+          GqlParticipationStatusReason.ReservationAccepted,
+          tx,
+          currentUserId,
+        );
 
         const evaluation = await this.evaluationService.createEvaluation(
           ctx,
