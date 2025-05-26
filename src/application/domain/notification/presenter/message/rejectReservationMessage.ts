@@ -22,10 +22,10 @@ export function buildDeclineOpportunitySlotMessage(
     type: "flex",
     altText: `${params.date}開催「${params.title}」への申込を辞退させていただきました🙇‍♀️`,
     contents: bubble,
-    sender: {
-      name: params.hostName,
-      iconUrl: params.hostImageUrl,
-    },
+    // sender: {
+    //   name: params.hostName,
+    //   iconUrl: params.hostImageUrl,
+    // },
   };
 }
 

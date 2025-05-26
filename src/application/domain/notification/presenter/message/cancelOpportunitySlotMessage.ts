@@ -23,10 +23,10 @@ export function buildCancelOpportunitySlotMessage(
     type: "flex",
     altText: `${params.date}開催「${params.title}」の開催を中止させていただきます🙇‍♀️`,
     contents: bubble,
-    sender: {
-      name: params.hostName,
-      iconUrl: params.hostImageUrl,
-    },
+    // sender: {
+    //   name: params.hostName,
+    //   iconUrl: params.hostImageUrl,
+    // },
   };
 }
 
