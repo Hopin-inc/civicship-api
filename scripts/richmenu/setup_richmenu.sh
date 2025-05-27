@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-ENV_PATH="$SCRIPT_DIR/../../../../../../.env"
+ENV_PATH="$SCRIPT_DIR/../../.env"
 
 if [ ! -f "$ENV_PATH" ]; then
   echo "❌ .env file not found at $ENV_PATH"
@@ -9,7 +9,7 @@ if [ ! -f "$ENV_PATH" ]; then
 fi
 
 set -a
-# shellcheck source=../../../../../../.env
+# shellcheck source=../../.env
 source "$ENV_PATH"
 set +a
 
@@ -21,8 +21,7 @@ BASE_NAMES=("admin_menu" "user_menu" "public_menu")
 DIRS=("admin" "user" "public")  # 👈 修正ポイント
 
 # 書き出し用 const.ts 初期化
-CONSTANT_FILE_PATH="$SCRIPT_DIR/const.ts"
-echo "export const LINE_RICHMENU = {" > "$CONSTANT_FILE_PATH"
+CONSTANT_FILE_PATH="$SCRIPT_DIR/../../.generated/richmenu.txt"
 
 for i in "${!ALIASES[@]}"; do
   alias="${ALIASES[$i]}"
@@ -75,7 +74,7 @@ for i in "${!ALIASES[@]}"; do
     }"
   echo "🔗 Alias created: ${alias}"
 
-  # const.ts に追記
+  # .generated/richmenu.txt に追記
   if [ "$alias" = "admin-menu" ]; then
     key="ADMIN_MANAGE"
   elif [ "$alias" = "user-menu" ]; then
@@ -86,11 +85,9 @@ for i in "${!ALIASES[@]}"; do
     key=$(echo "$alias" | tr 'a-z-' 'A-Z_')
   fi
 
-  echo "  $key: '$richMenuId'," >> "$CONSTANT_FILE_PATH"
+  echo "RICH_MENU_ID_$key=$richMenuId" >> "$CONSTANT_FILE_PATH"
   echo "-----------------------------"
 done
-
-echo "};" >> "$CONSTANT_FILE_PATH"
 
 # デフォルトメニュー設定
 defaultKey=""
