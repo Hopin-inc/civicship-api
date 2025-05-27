@@ -11,7 +11,10 @@ export async function safeLinkRichMenuIdToUser(
   try {
     await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
     const response = await lineClient.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
-    logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse, userId);
+    logLineApiSuccess("linkRichMenuIdToUser", endpoint, response.httpResponse, userId, undefined, {
+      userId,
+      richMenuId,
+    });
     return true;
   } catch (error) {
     logLineApiError("linkRichMenuIdToUser", endpoint, error, userId, undefined, {
@@ -32,7 +35,7 @@ export async function safePushMessage(params: {
   try {
     await lineClient.validatePushWithHttpInfo({ messages });
     const response = await lineClient.pushMessageWithHttpInfo({ to, messages });
-    logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to);
+    logLineApiSuccess("pushMessage", endpoint, response.httpResponse, params.to, undefined, params);
     return true;
   } catch (error) {
     logLineApiError("pushMessage", endpoint, error, params.to, undefined, params);
