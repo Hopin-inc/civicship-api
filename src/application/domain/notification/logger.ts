@@ -16,11 +16,13 @@ export function logLineApiSuccess(
   response: Response,
   uid?: string,
   retryCount?: number,
+  responseBody?: unknown,
 ) {
   logger.info(`LINE ${operationName} success`, {
     ...baseLogFields(endpoint, uid, retryCount),
     requestId: response.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
     statusCode: response.status,
+    ...(responseBody ? { responseBody: JSON.stringify(responseBody) } : {}),
   });
 }
 
@@ -31,7 +33,6 @@ export function logLineApiError(
   uid?: string,
   retryCount?: number,
   requestBody?: unknown,
-  details?: unknown,
 ) {
   if (error instanceof HTTPFetchError) {
     let parsedBody: any;
@@ -49,7 +50,6 @@ export function logLineApiError(
       responseDetails: parsedBody?.details,
       rawResponseBody: error.body,
       requestBody: requestBody ? JSON.stringify(requestBody) : undefined,
-      details,
     });
   }
 }
