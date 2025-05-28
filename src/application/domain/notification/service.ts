@@ -70,7 +70,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}`;
+    const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
       year,
