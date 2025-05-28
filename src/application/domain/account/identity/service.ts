@@ -1,4 +1,3 @@
-import { IdentityPlatform, Prisma, User } from "@prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import { IIdentityRepository } from "@/application/domain/account/identity/data/interface";
@@ -8,6 +7,17 @@ import axios, { AxiosError } from "axios";
 import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
 
+enum IdentityPlatform {
+  LINE = "LINE",
+  PHONE = "PHONE"
+}
+
+interface User {
+  id: string;
+  name: string;
+  [key: string]: unknown;
+}
+
 @injectable()
 export default class IdentityService {
   constructor(
@@ -16,7 +26,13 @@ export default class IdentityService {
   ) {}
 
   async createUserAndIdentity(
-    data: Prisma.UserCreateInput,
+    data: {
+      name: string;
+      currentPrefecture: string;
+      slug: string;
+      phoneNumber?: string;
+      [key: string]: unknown;
+    },
     uid: string,
     platform: IdentityPlatform,
     phoneUid?: string,
@@ -35,7 +51,14 @@ export default class IdentityService {
     ctx: IContext,
     userId: string,
     phoneUid: string,
-    tx: Prisma.TransactionClient,
+    tx: {
+      user: {
+        findUnique: (args: { where: { id: string }, select: { id: boolean } }) => Promise<{ id: string } | null>
+      },
+      identity: {
+        create: (args: { data: { uid: string, platform: IdentityPlatform, userId: string } }) => Promise<unknown>
+      }
+    },
   ) {
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -146,8 +169,8 @@ export default class IdentityService {
     uid: string,
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    data?: any,
-  ): Promise<any> {
+    data?: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     const { token, isValid } = await this.getAuthToken(uid);
 
     if (!token || !isValid) {
