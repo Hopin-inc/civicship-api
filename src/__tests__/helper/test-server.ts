@@ -5,11 +5,11 @@ import { rules } from "@/presentation/graphql/rule";
 import express, { json } from "express";
 import logger from "@/infrastructure/logging";
 
-export async function createApolloTestServer(mockContext: any) {
+export async function createApolloTestServer(mockContext: Record<string, unknown>) {
   const app = express();
 
   const { default: schema } = await import("@/presentation/graphql/schema");
-  const server = new ApolloServer<any>({
+  const server = new ApolloServer<Record<string, unknown>>({
     schema,
     plugins: [authZApolloPlugin({ rules })],
     formatError: (err) => {
