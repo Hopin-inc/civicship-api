@@ -26,7 +26,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
       if (uid) {
         const identityService = container.resolve(IdentityService);
 
-        if (idToken) {
+        if (idToken && refreshToken) {
           let expiryTime = new Date();
           if (tokenExpiresAt) {
             try {
@@ -61,9 +61,11 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
 
           await identityService.storeAuthTokens(uid, idToken, refreshToken, expiryTime);
           logger.debug(`Updated LINE auth token for user ${uid}, expires at ${expiryTime.toISOString()}`);
+        } else if (idToken) {
+          logger.debug(`Skipping LINE token update for user ${uid} - refresh token not provided`);
         }
 
-        if (phoneAuthToken && phoneUid) {
+        if (phoneAuthToken && phoneRefreshToken && phoneUid) {
           let phoneExpiryTime = new Date();
 
           if (phoneTokenExpiresAt) {

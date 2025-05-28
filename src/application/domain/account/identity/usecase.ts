@@ -38,6 +38,11 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
+    
+    if (!ctx.phoneAuthToken || !ctx.phoneRefreshToken) {
+      throw new Error("Phone authentication required for user signup");
+    }
+    
     const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
