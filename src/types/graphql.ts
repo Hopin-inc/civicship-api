@@ -3107,7 +3107,7 @@ export type GqlAuthzDirectiveArgs = {
   rules?: Maybe<Array<Maybe<GqlAuthZRules>>>;
 };
 
-export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = any, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = IContext, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
 export type GqlRequireRoleDirectiveArgs = {
   role: GqlRole;
