@@ -75,7 +75,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       tokenExpiresAt,
       idToken
     };
-  } catch (e) {
+  } catch {
     return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, refreshToken, tokenExpiresAt };
   }
 }

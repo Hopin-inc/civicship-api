@@ -20,8 +20,8 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
 
   res.on('finish', async () => {
     try {
-      const uid = (req as any).context?.uid;
-      const phoneUid = (req as any).context?.phoneUid;
+      const uid = req.context?.uid as string | undefined;
+      const phoneUid = req.context?.phoneUid as string | undefined;
 
       if (uid) {
         const identityService = container.resolve(IdentityService);
@@ -31,7 +31,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
           if (tokenExpiresAt) {
             try {
               expiryTime = new Date(parseInt(tokenExpiresAt, 10) * 1000);
-            } catch (parseError) {
+            } catch {
               logger.debug('Could not parse token expiry from header, trying to extract from token');
               try {
                 const tokenData = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
@@ -40,7 +40,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
                 } else {
                   expiryTime.setHours(expiryTime.getHours() + 1);
                 }
-              } catch (tokenParseError) {
+              } catch {
                 expiryTime.setHours(expiryTime.getHours() + 1);
                 logger.debug('Could not parse token expiry, using default');
               }
@@ -53,7 +53,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               } else {
                 expiryTime.setHours(expiryTime.getHours() + 1);
               }
-            } catch (tokenParseError) {
+            } catch {
               expiryTime.setHours(expiryTime.getHours() + 1);
               logger.debug('Could not parse token expiry, using default');
             }
@@ -72,7 +72,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
             try {
               phoneExpiryTime = new Date(parseInt(phoneTokenExpiresAt, 10) * 1000);
               logger.debug(`Using phone token expiry from header: ${phoneExpiryTime.toISOString()}`);
-            } catch (parseError) {
+            } catch {
               logger.debug('Could not parse phone token expiry from header, falling back to token data');
             }
           }
@@ -85,7 +85,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               } else {
                 phoneExpiryTime.setHours(phoneExpiryTime.getHours() + 1); // Default expiry
               }
-            } catch (parseError) {
+            } catch {
               logger.debug('Could not parse phone token expiry, using default');
             }
           }
