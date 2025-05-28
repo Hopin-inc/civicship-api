@@ -21,6 +21,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
   const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
   const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
+  const phoneUid = req.headers['x-phone-uid'] as string || '';
   const refreshToken = req.headers['x-refresh-token'] as string || '';
   const tokenExpiresAt = req.headers['x-token-expires-at'] as string || '';
   
@@ -32,7 +33,7 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   });
 
   if (!idToken) {
-    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, refreshToken, tokenExpiresAt };
+    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, phoneUid, refreshToken, tokenExpiresAt };
   }
 
   const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
@@ -71,12 +72,13 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       phoneAuthToken,
       phoneRefreshToken,
       phoneTokenExpiresAt,
+      phoneUid,
       refreshToken,
       tokenExpiresAt,
       idToken
     };
   } catch {
-    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, refreshToken, tokenExpiresAt };
+    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, phoneUid, refreshToken, tokenExpiresAt };
   }
 }
 

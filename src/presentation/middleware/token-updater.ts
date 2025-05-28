@@ -13,6 +13,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
   const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
   const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
   const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
+  const phoneUid = req.headers['x-phone-uid'] as string || '';
 
   if (!idToken) {
     return next();
@@ -21,7 +22,8 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
   res.on('finish', async () => {
     try {
       const uid = req.context?.uid as string | undefined;
-      const phoneUid = req.context?.phoneUid as string | undefined;
+      const contextPhoneUid = req.context?.phoneUid as string | undefined;
+      const effectivePhoneUid = contextPhoneUid || phoneUid;
 
       if (uid) {
         const identityService = container.resolve(IdentityService);
@@ -65,7 +67,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
           logger.debug(`Skipping LINE token update for user ${uid} - refresh token not provided`);
         }
 
-        if (phoneAuthToken && phoneRefreshToken && phoneUid) {
+        if (phoneAuthToken && phoneRefreshToken && effectivePhoneUid) {
           let phoneExpiryTime = new Date();
 
           if (phoneTokenExpiresAt) {
@@ -90,8 +92,8 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
             }
           }
 
-          await identityService.storeAuthTokens(phoneUid, phoneAuthToken, phoneRefreshToken, phoneExpiryTime);
-          logger.debug(`Updated phone auth token for user ${phoneUid}, expires at ${phoneExpiryTime.toISOString()}`);
+          await identityService.storeAuthTokens(effectivePhoneUid, phoneAuthToken, phoneRefreshToken, phoneExpiryTime);
+          logger.debug(`Updated phone auth token for user ${effectivePhoneUid}, expires at ${phoneExpiryTime.toISOString()}`);
         }
       }
     } catch (error) {
