@@ -10,8 +10,19 @@ export default class IdentityConverter {
     };
     image?: GqlImageInput;
     phoneUid?: string;
+    lineRefreshToken?: string;
+    phoneRefreshToken?: string;
   } {
-    const { image, slug, name, currentPrefecture, phoneUid, phoneNumber } = input;
+    const { 
+      image, 
+      slug, 
+      name, 
+      currentPrefecture, 
+      phoneUid, 
+      phoneNumber,
+      lineRefreshToken,
+      phoneRefreshToken
+    } = input;
 
     return {
       data: {
@@ -22,6 +33,8 @@ export default class IdentityConverter {
       },
       image,
       phoneUid,
+      lineRefreshToken,
+      phoneRefreshToken,
     };
   }
 }

@@ -71,10 +71,12 @@ export default class IdentityUseCase {
           ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
           : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
 
+        const refreshToken = IdentityConverter.create(args).phoneRefreshToken || ctx.phoneRefreshToken || "";
+
         await this.identityService.storeAuthTokens(
           phoneUid,
           ctx.phoneAuthToken,
-          ctx.phoneRefreshToken || "",
+          refreshToken,
           expiryTime
         );
 
@@ -84,16 +86,18 @@ export default class IdentityUseCase {
       }
     }
 
-    if (ctx.uid && ctx.idToken && ctx.refreshToken && ctx.platform === IdentityPlatform.Line) {
+    if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       try {
         const expiryTime = ctx.tokenExpiresAt
           ? new Date(parseInt(ctx.tokenExpiresAt, 10))
           : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
 
+        const refreshToken = IdentityConverter.create(args).lineRefreshToken || ctx.refreshToken || "";
+
         await this.identityService.storeAuthTokens(
           ctx.uid,
           ctx.idToken,
-          ctx.refreshToken,
+          refreshToken,
           expiryTime
         );
 
@@ -139,6 +143,7 @@ export default class IdentityUseCase {
     ctx: IContext,
     phoneUid: string,
     authToken: string,
+    refreshToken: string,
     expiresIn: number
   ): Promise<GqlStorePhoneAuthTokenPayload> {
     if (!ctx.uid || !ctx.platform) {
@@ -149,7 +154,7 @@ export default class IdentityUseCase {
     expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
 
     try {
-      await this.identityService.storeAuthTokens(phoneUid, authToken, "", expiryTime);
+      await this.identityService.storeAuthTokens(phoneUid, authToken, refreshToken, expiryTime);
 
       return {
         success: true,
