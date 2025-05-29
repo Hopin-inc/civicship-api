@@ -31,6 +31,8 @@ input UserSignUpInput {
     currentPrefecture: CurrentPrefecture!
     phoneUid: String
     phoneNumber: String
+    lineRefreshToken: String
+    phoneRefreshToken: String
 }
 
 input LinkPhoneAuthInput {

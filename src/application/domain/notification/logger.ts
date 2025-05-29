@@ -35,7 +35,7 @@ export function logLineApiError(
   requestBody?: unknown,
 ) {
   if (error instanceof HTTPFetchError) {
-    let parsedBody: any;
+    let parsedBody: Record<string, unknown> | string;
     try {
       parsedBody = JSON.parse(error.body); // ← ここで JSON を解析
     } catch {
@@ -46,8 +46,8 @@ export function logLineApiError(
       ...baseLogFields(endpoint, uid, retryCount),
       requestId: error.headers.get(LINE_REQUEST_ID_HTTP_HEADER_NAME) ?? "N/A",
       statusCode: error.status,
-      message: parsedBody?.message ?? error.message,
-      responseDetails: parsedBody?.details,
+      message: typeof parsedBody === 'string' ? error.message : (parsedBody?.message as string) ?? error.message,
+      responseDetails: typeof parsedBody === 'string' ? undefined : parsedBody?.details as Record<string, unknown>,
       rawResponseBody: error.body,
       requestBody: requestBody ? JSON.stringify(requestBody) : undefined,
     });

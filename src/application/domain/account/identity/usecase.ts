@@ -38,6 +38,11 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
+    
+    if (!ctx.phoneAuthToken) {
+      throw new Error("Phone authentication required for user signup");
+    }
+    
     const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
@@ -60,16 +65,18 @@ export default class IdentityUseCase {
       return user;
     });
 
-    if (phoneUid && ctx.phoneAuthToken && ctx.phoneRefreshToken) {
+    if (phoneUid && ctx.phoneAuthToken) {
       try {
         const expiryTime = ctx.phoneTokenExpiresAt
           ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
           : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
 
+        const refreshToken = IdentityConverter.create(args).phoneRefreshToken || ctx.phoneRefreshToken || "";
+
         await this.identityService.storeAuthTokens(
           phoneUid,
           ctx.phoneAuthToken,
-          ctx.phoneRefreshToken,
+          refreshToken,
           expiryTime
         );
 
@@ -79,16 +86,18 @@ export default class IdentityUseCase {
       }
     }
 
-    if (ctx.uid && ctx.idToken && ctx.refreshToken && ctx.platform === IdentityPlatform.Line) {
+    if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       try {
         const expiryTime = ctx.tokenExpiresAt
           ? new Date(parseInt(ctx.tokenExpiresAt, 10))
           : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
 
+        const refreshToken = IdentityConverter.create(args).lineRefreshToken || ctx.refreshToken || "";
+
         await this.identityService.storeAuthTokens(
           ctx.uid,
           ctx.idToken,
-          ctx.refreshToken,
+          refreshToken,
           expiryTime
         );
 
