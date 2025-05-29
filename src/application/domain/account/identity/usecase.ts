@@ -39,7 +39,7 @@ export default class IdentityUseCase {
       throw new Error("Authentication required (uid or platform missing)");
     }
     
-    if (!ctx.phoneAuthToken || !ctx.phoneRefreshToken) {
+    if (!ctx.phoneAuthToken) {
       throw new Error("Phone authentication required for user signup");
     }
     
@@ -65,7 +65,7 @@ export default class IdentityUseCase {
       return user;
     });
 
-    if (phoneUid && ctx.phoneAuthToken && ctx.phoneRefreshToken) {
+    if (phoneUid && ctx.phoneAuthToken) {
       try {
         const expiryTime = ctx.phoneTokenExpiresAt
           ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
@@ -74,7 +74,7 @@ export default class IdentityUseCase {
         await this.identityService.storeAuthTokens(
           phoneUid,
           ctx.phoneAuthToken,
-          ctx.phoneRefreshToken,
+          ctx.phoneRefreshToken || "",
           expiryTime
         );
 
@@ -139,7 +139,6 @@ export default class IdentityUseCase {
     ctx: IContext,
     phoneUid: string,
     authToken: string,
-    refreshToken: string,
     expiresIn: number
   ): Promise<GqlStorePhoneAuthTokenPayload> {
     if (!ctx.uid || !ctx.platform) {
@@ -150,7 +149,7 @@ export default class IdentityUseCase {
     expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
 
     try {
-      await this.identityService.storeAuthTokens(phoneUid, authToken, refreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(phoneUid, authToken, "", expiryTime);
 
       return {
         success: true,
