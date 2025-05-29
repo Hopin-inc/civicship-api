@@ -11,6 +11,7 @@ import UserPresenter from "@/application/domain/account/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
+import { prismaClient } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class UserUseCase {
@@ -42,5 +43,39 @@ export default class UserUseCase {
     });
 
     return UserPresenter.updateProfile(user);
+  }
+
+  //TODO あとでドメイン分割修正の必要性あり
+  async canCurrentUserViewPhoneNumber(
+    targetUserId: string,
+    viewerUserId: string,
+  ): Promise<boolean> {
+    if (viewerUserId === targetUserId) return true;
+
+    const hasReservationInTheirOpportunity = await prismaClient.reservation.findFirst({
+      where: {
+        createdBy: viewerUserId,
+        opportunitySlot: { opportunity: { createdByUser: { id: targetUserId } } },
+      },
+      select: { id: true },
+    });
+    if (hasReservationInTheirOpportunity) return true;
+
+    const isMyParticipant = await prismaClient.opportunity.findFirst({
+      where: {
+        createdBy: viewerUserId,
+        slots: {
+          some: {
+            reservations: {
+              some: {
+                createdBy: targetUserId,
+              },
+            },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    return !!isMyParticipant;
   }
 }
