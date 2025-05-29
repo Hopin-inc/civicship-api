@@ -6,17 +6,7 @@ import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
 import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
-
-enum IdentityPlatform {
-  LINE = "LINE",
-  PHONE = "PHONE"
-}
-
-interface User {
-  id: string;
-  name: string;
-  [key: string]: unknown;
-}
+import { Prisma, IdentityPlatform, User } from "@prisma/client";
 
 @injectable()
 export default class IdentityService {
@@ -26,13 +16,7 @@ export default class IdentityService {
   ) {}
 
   async createUserAndIdentity(
-    data: {
-      name: string;
-      currentPrefecture: string;
-      slug: string;
-      phoneNumber?: string;
-      [key: string]: unknown;
-    },
+    data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
     phoneUid?: string,

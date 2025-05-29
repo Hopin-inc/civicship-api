@@ -1,12 +1,11 @@
 import { inject, injectable } from "tsyringe";
 import {
-  GqlEvaluation,
+  GqlEvaluation, GqlEvaluationBulkCreatePayload,
   GqlEvaluationCreatePayload,
   GqlEvaluationsConnection,
   GqlMutationEvaluationBulkCreateArgs,
   GqlMutationEvaluationFailArgs,
   GqlMutationEvaluationPassArgs,
-  GqlOpportunitySlotsBulkUpdatePayload,
   GqlParticipationStatus,
   GqlParticipationStatusReason,
   GqlQueryEvaluationArgs,
@@ -138,7 +137,7 @@ export default class EvaluationUseCase {
   async managerBulkCreateEvaluations(
     { input }: GqlMutationEvaluationBulkCreateArgs,
     ctx: IContext,
-  ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
+  ): Promise<GqlEvaluationBulkCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
     const evaluations: PrismaEvaluationDetail[] = [];
 

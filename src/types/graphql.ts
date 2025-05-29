@@ -1,26 +1,5 @@
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import { IContext } from './server';
-type User = any;
-type Community = any;
-type Membership = any;
-type MembershipHistory = any;
-type Wallet = any;
-type CurrentPointView = any;
-type AccumulatedPointView = any;
-type Opportunity = any;
-type OpportunitySlot = any;
-type Place = any;
-type Participation = any;
-type ParticipationStatusHistory = any;
-type Article = any;
-type Utility = any;
-type Ticket = any;
-type TicketIssuer = any;
-type TicketClaimLink = any;
-type TicketStatusHistory = any;
-type Transaction = any;
-type City = any;
-type State = any;
+import { User, Community, Membership, MembershipHistory, Wallet, CurrentPointView, AccumulatedPointView, Opportunity, OpportunitySlot, Place, Participation, ParticipationStatusHistory, Article, Utility, Ticket, TicketIssuer, TicketClaimLink, TicketStatusHistory, Transaction, City, State } from '@prisma/client/index.d';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | undefined;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -39,7 +18,7 @@ export type Scalars = {
   Float: { input: number; output: number; }
   Datetime: { input: Date; output: Date; }
   Decimal: { input: string; output: string; }
-  JSON: { input: Record<string, unknown>; output: Record<string, unknown>; }
+  JSON: { input: any; output: any; }
   Upload: { input: typeof import('graphql-upload/GraphQLUpload.mjs'); output: typeof import('graphql-upload/GraphQLUpload.mjs'); }
 };
 
@@ -2304,8 +2283,10 @@ export type GqlUserSignUpInput = {
   communityId: Scalars['ID']['input'];
   currentPrefecture: GqlCurrentPrefecture;
   image?: InputMaybe<GqlImageInput>;
+  lineRefreshToken?: InputMaybe<Scalars['String']['input']>;
   name: Scalars['String']['input'];
   phoneNumber?: InputMaybe<Scalars['String']['input']>;
+  phoneRefreshToken?: InputMaybe<Scalars['String']['input']>;
   phoneUid?: InputMaybe<Scalars['String']['input']>;
   slug?: InputMaybe<Scalars['String']['input']>;
 };
@@ -2518,8 +2499,8 @@ export interface SubscriptionSubscriberObject<TResult, TKey extends string, TPar
 }
 
 export interface SubscriptionResolverObject<TResult, TParent, TContext, TArgs> {
-  subscribe: SubscriptionSubscribeFn<unknown, TParent, TContext, TArgs>;
-  resolve: SubscriptionResolveFn<TResult, unknown, TContext, TArgs>;
+  subscribe: SubscriptionSubscribeFn<any, TParent, TContext, TArgs>;
+  resolve: SubscriptionResolveFn<TResult, any, TContext, TArgs>;
 }
 
 export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, TArgs> =
@@ -2527,7 +2508,7 @@ export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, 
   | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
 
 export type SubscriptionResolver<TResult, TKey extends string, TParent = {}, TContext = {}, TArgs = {}> =
-  | ((parent: TParent, args: TArgs, context: TContext, info: GraphQLResolveInfo) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
+  | ((...args: any[]) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
   | SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>;
 
 export type TypeResolveFn<TTypes, TParent = {}, TContext = {}> = (
@@ -3127,7 +3108,7 @@ export type GqlAuthzDirectiveArgs = {
   rules?: Maybe<Array<Maybe<GqlAuthZRules>>>;
 };
 
-export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = IContext, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+export type GqlAuthzDirectiveResolver<Result, Parent, ContextType = any, Args = GqlAuthzDirectiveArgs> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
 
 export type GqlRequireRoleDirectiveArgs = {
   role: GqlRole;
