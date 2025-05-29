@@ -193,7 +193,10 @@ async function createNestedEntities(
               ? GqlReservationStatus.Applied // 50%の確率で未承認
               : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
         } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed) {
-          reservationStatus = GqlReservationStatus.Accepted; // 完了済みのスロットは承認済み
+          reservationStatus =
+            Math.random() > 0.5
+              ? GqlReservationStatus.Accepted // 50%の確率で未承認
+              : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
         } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Cancelled) {
           reservationStatus = GqlReservationStatus.Rejected; // キャンセル済み
         } else {
@@ -210,16 +213,30 @@ async function createNestedEntities(
       }
 
       await processInBatches(reservations, 1, async (reservation) => {
+        const startsAt = new Date(slot.startsAt);
+        const now = new Date();
+
+        const isFuture = startsAt > now;
+        const isCompleted = slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed;
+        const isAccepted = reservation.status === GqlReservationStatus.Accepted;
+        const isApplied = reservation.status === GqlReservationStatus.Applied;
+
+        let participationStatus: GqlParticipationStatus;
+
+        if (isApplied) {
+          participationStatus = GqlParticipationStatus.Participating; // 未承認は常に未対応
+        } else if (!isFuture && isCompleted && isAccepted) {
+          // 過去 + 開催済 + 承認済 のときだけ、未対応に振り分ける
+          participationStatus = GqlParticipationStatus.Participating;
+        } else {
+          participationStatus = GqlParticipationStatus.Participating; // その他は全て未対応
+        }
+
         return ParticipationFactory.create({
           transientUser: user,
           transientReservation: reservation,
           transientCommunity: community,
-          transientStatus:
-            reservation.status === GqlReservationStatus.Applied
-              ? GqlParticipationStatus.Participating // 未対応（申込中）
-              : reservation.status === GqlReservationStatus.Accepted
-                ? GqlParticipationStatus.Participating // 承認済みでも出欠未対応
-                : GqlParticipationStatus.Participated, // 完了済み
+          transientStatus: participationStatus,
         });
       });
 
