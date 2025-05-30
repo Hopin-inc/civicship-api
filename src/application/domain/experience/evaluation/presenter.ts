@@ -37,7 +37,10 @@ export default class EvaluationPresenter {
     };
   }
   
-  static bulkCreate(records: PrismaEvaluationDetail[]): any {
+  static bulkCreate(records: PrismaEvaluationDetail[]): {
+    __typename: "EvaluationBulkCreateSuccess";
+    evaluations: GqlEvaluation[];
+  } {
     return {
       __typename: "EvaluationBulkCreateSuccess",
       evaluations: records.map(record => this.get(record)),

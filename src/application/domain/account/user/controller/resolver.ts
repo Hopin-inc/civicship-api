@@ -29,6 +29,14 @@ export default class UserResolver {
   };
 
   User = {
+    phoneNumber: async (parent, _: unknown, ctx: IContext) => {
+      const viewerId = ctx.currentUser?.id;
+      if (!viewerId || !parent.id) return null;
+
+      const canView = await this.userUseCase.canCurrentUserViewPhoneNumber(parent.id, viewerId);
+      return canView ? parent.phoneNumber : null;
+    },
+
     portfolios: async (parent, _: unknown, ctx: IContext) => {
       return await this.viewUseCase.visitorBrowsePortfolios(parent, ctx);
     },
@@ -38,6 +46,8 @@ export default class UserResolver {
     },
 
     identities: (parent, _: unknown, ctx: IContext) => {
+      const viewerId = ctx.currentUser?.id;
+      if (!viewerId || !parent.id) return null;
       return ctx.loaders.identitiesByUser.load(parent.id);
     },
 
