@@ -111,6 +111,7 @@ Table t_users {
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
+  utiltyOwnedByMe t_utilities [not null]
   ticketIssuedByMe t_ticket_issuers [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
@@ -343,6 +344,8 @@ Table t_utilities {
   requiredForOpportunities t_opportunities [not null]
   ticketIssuer t_ticket_issuers [not null]
   tickets t_tickets [not null]
+  ownerId String
+  owner t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -742,6 +745,8 @@ Ref: t_evaluation_histories.evaluationId > t_evaluations.id [delete: Cascade]
 Ref: t_evaluation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_utilities.ownerId > t_users.id [delete: Set Null]
 
 Ref: t_ticket_issuers.utilityId > t_utilities.id
 

@@ -436,6 +436,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String description "❓"
     Int points_required 
     String community_id 
+    String owner_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -600,6 +601,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
+    "t_users" o{--}o "t_utilities" : "utiltyOwnedByMe"
     "t_users" o{--}o "t_ticket_issuers" : "ticketIssuedByMe"
     "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
     "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
@@ -693,6 +695,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
     "t_utilities" o{--}o "t_ticket_issuers" : "ticketIssuer"
     "t_utilities" o{--}o "t_tickets" : "tickets"
+    "t_utilities" o|--|o "t_users" : "owner"
     "t_ticket_issuers" o|--|| "t_utilities" : "utility"
     "t_ticket_issuers" o|--|| "t_users" : "owner"
     "t_ticket_issuers" o{--}o "t_ticket_claim_links" : "claimLink"

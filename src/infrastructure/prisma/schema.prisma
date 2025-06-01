@@ -220,6 +220,7 @@ model User {
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
 
+  utiltyOwnedByMe         Utility[]
   ticketIssuedByMe        TicketIssuer[]
   ticketStatusChangedByMe TicketStatusHistory[]
 
@@ -761,6 +762,9 @@ model Utility {
 
   ticketIssuer TicketIssuer[]
   tickets      Ticket[]
+
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
