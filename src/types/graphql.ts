@@ -1987,6 +1987,7 @@ export type GqlTicketEdge = GqlEdge & {
 };
 
 export type GqlTicketFilterInput = {
+  ownerId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlTicketStatus>;
   utilityId?: InputMaybe<Scalars['ID']['input']>;
   walletId?: InputMaybe<Scalars['ID']['input']>;
