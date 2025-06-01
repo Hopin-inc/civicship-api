@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
-import { GqlTicketIssuerFilterInput, GqlTicketIssuerSortInput } from "@/types/graphql";
+import {
+  GqlClaimLinkStatus,
+  GqlTicketIssuerFilterInput,
+  GqlTicketIssuerSortInput,
+} from "@/types/graphql";
 
 @injectable()
 export default class TicketIssuerConverter {
@@ -25,6 +29,7 @@ export default class TicketIssuerConverter {
       qtyToBeIssued: qty,
       utility: { connect: { id: utilityId } },
       owner: { connect: { id: userId } },
+      claimLink: { create: { status: GqlClaimLinkStatus.Issued } },
     };
   }
 }
