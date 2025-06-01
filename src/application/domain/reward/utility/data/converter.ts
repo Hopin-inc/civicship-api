@@ -17,6 +17,9 @@ export default class UtilityConverter {
     if (Array.isArray(filter.communityIds) && filter.communityIds.length > 0) {
       conditions.push({ communityId: { in: filter.communityIds } });
     }
+    if (Array.isArray(filter.ownerIds) && filter.ownerIds.length > 0) {
+      conditions.push({ ownerId: { in: filter.ownerIds } });
+    }
     if (Array.isArray(filter.publishStatus) && filter.publishStatus.length > 0) {
       conditions.push({ publishStatus: { in: filter.publishStatus } });
     }
@@ -57,6 +60,7 @@ export default class UtilityConverter {
 
   create(
     input: GqlUtilityCreateInput,
+    currentUserId: string,
     communityId: string,
   ): {
     data: Omit<Prisma.UtilityCreateInput, "images">;
@@ -67,6 +71,7 @@ export default class UtilityConverter {
       data: {
         ...prop,
         community: { connect: { id: communityId } },
+        owner: { connect: { id: currentUserId } },
       },
       images: images ?? [],
     };

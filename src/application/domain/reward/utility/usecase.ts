@@ -14,7 +14,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { PublishStatus } from "@prisma/client";
-import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { IUtilityService } from "./data/interface";
 import UtilityPresenter from "./presenter";
 
@@ -80,8 +80,16 @@ export default class UtilityUseCase {
     ctx: IContext,
     { input, permission }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     return ctx.issuer.public(ctx, async (tx) => {
-      const res = await this.service.createUtility(ctx, input, permission.communityId, tx);
+      const res = await this.service.createUtility(
+        ctx,
+        input,
+        currentUserId,
+        permission.communityId,
+        tx,
+      );
       return UtilityPresenter.create(res);
     });
   }

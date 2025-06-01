@@ -28,8 +28,6 @@ export default class UtilityService implements IUtilityService {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
 
-    console.log(where, "where");
-
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
@@ -53,10 +51,11 @@ export default class UtilityService implements IUtilityService {
   async createUtility(
     ctx: IContext,
     input: GqlUtilityCreateInput,
+    currentUserId: string,
     communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const { data, images } = this.converter.create(input, communityId);
+    const { data, images } = this.converter.create(input, currentUserId, communityId);
 
     const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
