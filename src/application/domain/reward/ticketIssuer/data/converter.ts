@@ -29,7 +29,11 @@ export default class TicketIssuerConverter {
       qtyToBeIssued: qty,
       utility: { connect: { id: utilityId } },
       owner: { connect: { id: userId } },
-      claimLink: { create: { status: GqlClaimLinkStatus.Issued } },
+      claimLink: {
+        create: {
+          status: GqlClaimLinkStatus.Issued,
+        },
+      },
     };
   }
 }
