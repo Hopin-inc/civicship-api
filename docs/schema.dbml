@@ -357,7 +357,6 @@ Table t_ticket_issuers {
   utility t_utilities [not null]
   ownerId String [not null]
   owner t_users [not null]
-  claimLinkId String [unique]
   claimLink t_ticket_claim_links
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -366,7 +365,7 @@ Table t_ticket_issuers {
 Table t_ticket_claim_links {
   id String [pk]
   status ClaimLinkStatus [not null, default: 'ISSUED']
-  qty Int [not null, default: 1, note: 'Max number of tickets a user can claim using this link']
+  qty Int [not null, default: 0, note: 'Max number of tickets a user can claim using this link']
   issuerId String [unique, not null]
   issuer t_ticket_issuers [not null]
   tickets t_tickets [not null]

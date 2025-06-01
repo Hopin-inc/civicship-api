@@ -4260,7 +4260,6 @@ type TicketIssuerclaimLinkFactory = {
 type TicketIssuerFactoryDefineInput = {
     id?: string;
     qtyToBeIssued?: number;
-    claimLinkId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     utility: TicketIssuerutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput;

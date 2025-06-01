@@ -447,7 +447,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     Int qty_to_be_issued 
     String utility_id 
     String owner_id 
-    String claim_link_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
