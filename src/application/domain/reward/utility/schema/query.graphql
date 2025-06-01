@@ -33,6 +33,8 @@ type UtilityEdge implements Edge {
 # ------------------------------
 input UtilityFilterInput {
     communityIds: [ID!]
+    ownerIds: [ID!]
+
     publishStatus: [PublishStatus!]
 
     and: [UtilityFilterInput!]

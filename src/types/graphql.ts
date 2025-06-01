@@ -2378,6 +2378,7 @@ export type GqlUtilityFilterInput = {
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   not?: InputMaybe<GqlUtilityFilterInput>;
   or?: InputMaybe<Array<GqlUtilityFilterInput>>;
+  ownerIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
 };
 
