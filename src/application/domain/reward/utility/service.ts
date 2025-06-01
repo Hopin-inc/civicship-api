@@ -28,6 +28,8 @@ export default class UtilityService implements IUtilityService {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
 
+    console.log(where, "where");
+
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
 

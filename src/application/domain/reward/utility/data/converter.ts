@@ -12,17 +12,29 @@ import { injectable } from "tsyringe";
 export default class UtilityConverter {
   filter(filter?: GqlUtilityFilterInput): Prisma.UtilityWhereInput {
     if (!filter) return {};
-
     const conditions: Prisma.UtilityWhereInput[] = [];
-    if (filter.communityId) conditions.push({ communityId: filter.communityId });
-    if (filter.publishStatus?.length)
+
+    if (Array.isArray(filter.communityIds) && filter.communityIds.length > 0) {
+      conditions.push({ communityId: { in: filter.communityIds } });
+    }
+    if (Array.isArray(filter.publishStatus) && filter.publishStatus.length > 0) {
       conditions.push({ publishStatus: { in: filter.publishStatus } });
+    }
 
-    if (filter.and?.length) conditions.push({ AND: filter.and.map(this.filter) });
-    if (filter.or?.length) conditions.push({ OR: filter.or.map(this.filter) });
-    if (filter.not) conditions.push({ NOT: this.filter(filter.not) });
+    if (Array.isArray(filter.and) && filter.and.length > 0) {
+      conditions.push({ AND: filter.and.map((f) => this.filter(f)).filter(Boolean) });
+    }
+    if (Array.isArray(filter.or) && filter.or.length > 0) {
+      conditions.push({ OR: filter.or.map((f) => this.filter(f)).filter(Boolean) });
+    }
+    if (filter.not) {
+      const notFilter = this.filter(filter.not);
+      if (Object.keys(notFilter).length > 0) {
+        conditions.push({ NOT: notFilter });
+      }
+    }
 
-    return conditions.length ? { AND: conditions } : {};
+    return conditions.length > 0 ? { AND: conditions } : {};
   }
 
   sort(sort: GqlUtilitySortInput): Prisma.UtilityOrderByWithRelationInput {
