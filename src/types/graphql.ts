@@ -2347,7 +2347,6 @@ export type GqlUtility = {
 };
 
 export type GqlUtilityCreateInput = {
-  communityId: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
   name: Scalars['String']['input'];

@@ -37,8 +37,6 @@ input UtilityCreateInput {
     description: String
     images: [ImageInput!]
     pointsRequired: Int!
-
-    communityId: ID!
 }
 
 input UtilityUpdateInfoInput {
