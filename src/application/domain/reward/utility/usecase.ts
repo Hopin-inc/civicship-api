@@ -38,7 +38,7 @@ export default class UtilityUseCase {
         ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
         : [PublishStatus.PUBLIC];
 
-    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
+    this.service.validatePublishStatus(allowedPublishStatuses, filter);
 
     const validatedFilter = validateByMembershipRoles(
       communityIds,
@@ -85,10 +85,10 @@ export default class UtilityUseCase {
 
   async managerCreateUtility(
     ctx: IContext,
-    { input }: GqlMutationUtilityCreateArgs,
+    { input, permission }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
     return ctx.issuer.public(ctx, async (tx) => {
-      const res = await this.service.createUtility(ctx, input, tx);
+      const res = await this.service.createUtility(ctx, input, permission.communityId, tx);
       return UtilityPresenter.create(res);
     });
   }

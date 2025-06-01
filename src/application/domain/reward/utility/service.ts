@@ -48,8 +48,13 @@ export default class UtilityService implements IUtilityService {
     return utility;
   }
 
-  async createUtility(ctx: IContext, input: GqlUtilityCreateInput, tx: Prisma.TransactionClient) {
-    const { data, images } = this.converter.create(input);
+  async createUtility(
+    ctx: IContext,
+    input: GqlUtilityCreateInput,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const { data, images } = this.converter.create(input, communityId);
 
     const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),

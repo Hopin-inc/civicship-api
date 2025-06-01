@@ -43,11 +43,14 @@ export default class UtilityConverter {
     };
   }
 
-  create(input: GqlUtilityCreateInput): {
+  create(
+    input: GqlUtilityCreateInput,
+    communityId: string,
+  ): {
     data: Omit<Prisma.UtilityCreateInput, "images">;
     images: GqlImageInput[];
   } {
-    const { images, communityId, ...prop } = input;
+    const { images, ...prop } = input;
     return {
       data: {
         ...prop,
