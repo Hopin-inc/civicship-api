@@ -69,6 +69,8 @@ export default class TicketUseCase {
       input.qtyToBeIssued,
     );
 
+    console.log(issuedTicket, "issuedTicket");
+
     return TicketIssuerPresenter.issue(issuedTicket);
   }
 
