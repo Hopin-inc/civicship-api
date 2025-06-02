@@ -6,10 +6,8 @@ import { IContext } from "@/types/server";
 import axios, { AxiosError } from "axios";
 import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
-import { GqlIdentityPlatform as IdentityPlatform, GqlUser as User } from "@/types/graphql";
-import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/data/didIssuanceRequest/interface";
-import { DIDIssuanceStatus } from "@/application/domain/account/identity/data/didIssuanceRequest/enum";
-import { Prisma, IdentityPlatform, User } from "@prisma/client";
+import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/didIssuanceRequest/data/interface";
+import { Prisma, IdentityPlatform, User, DidIssuanceStatus } from "@prisma/client";
 
 @injectable()
 export default class IdentityService {
@@ -25,7 +23,12 @@ export default class IdentityService {
     phoneUid?: string,
   ) {
     const identityCreate = phoneUid
-      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
+      ? {
+          create: [
+            { uid, platform },
+            { uid: phoneUid, platform: IdentityPlatform.PHONE },
+          ],
+        }
       : { create: { uid, platform } };
 
     return this.userRepository.create({
@@ -40,16 +43,21 @@ export default class IdentityService {
     phoneUid: string,
     tx: {
       user: {
-        findUnique: (args: { where: { id: string }, select: { id: boolean } }) => Promise<{ id: string } | null>
-      },
+        findUnique: (args: {
+          where: { id: string };
+          select: { id: boolean };
+        }) => Promise<{ id: string } | null>;
+      };
       identity: {
-        create: (args: { data: { uid: string, platform: IdentityPlatform, userId: string } }) => Promise<unknown>
-      }
+        create: (args: {
+          data: { uid: string; platform: IdentityPlatform; userId: string };
+        }) => Promise<unknown>;
+      };
     },
   ) {
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!user) {
@@ -60,8 +68,8 @@ export default class IdentityService {
       data: {
         uid: phoneUid,
         platform: IdentityPlatform.PHONE,
-        userId: userId
-      }
+        userId: userId,
+      },
     });
 
     return this.userRepository.find(ctx, userId);
@@ -117,18 +125,29 @@ export default class IdentityService {
         const newTokens = await this.refreshAuthToken(uid, identity.refreshToken);
         return { token: newTokens.authToken, isValid: true };
       } catch (error) {
-        logger.error("Failed to refresh token:", error);
+        logger.error("Failed to refresh token:", {
+          error: axios.isAxiosError(error)
+            ? {
+                status: error.response?.status,
+                data: error.response?.data,
+              }
+            : error,
+        });
+
         return { token: null, isValid: false };
       }
     }
 
     return {
       token: identity.authToken,
-      isValid: !isExpired
+      isValid: !isExpired,
     };
   }
 
-  async refreshAuthToken(uid: string, refreshToken: string): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
+  async refreshAuthToken(
+    uid: string,
+    refreshToken: string,
+  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
     try {
       const response = await axios.post(`${IDENTUS_API_URL}/auth/refresh`, {
         refreshToken,
@@ -152,12 +171,12 @@ export default class IdentityService {
     }
   }
 
-  async callDIDVCServer(
+  async callDIDVCServer<T>(
     uid: string,
     endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: "GET" | "POST" | "PUT" | "DELETE",
     data?: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
+  ): Promise<T> {
     const { token, isValid } = await this.getAuthToken(uid);
 
     if (!token || !isValid) {
@@ -168,26 +187,26 @@ export default class IdentityService {
       const url = `${IDENTUS_API_URL}${endpoint}`;
       const headers = {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
       let response;
       switch (method) {
-        case 'GET':
+        case "GET":
           response = await axios.get(url, { headers });
           break;
-        case 'POST':
+        case "POST":
           response = await axios.post(url, data, { headers });
           break;
-        case 'PUT':
+        case "PUT":
           response = await axios.put(url, data, { headers });
           break;
-        case 'DELETE':
+        case "DELETE":
           response = await axios.delete(url, { headers });
           break;
       }
 
-      return response?.data;
+      return response?.data as T;
     } catch (error) {
       logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
 
@@ -212,7 +231,7 @@ export default class IdentityService {
   async requestDIDIssuance(
     userId: string,
     phoneUid: string,
-    ctx: IContext
+    ctx: IContext,
   ): Promise<{ success: boolean; requestId: string }> {
     try {
       const { token, isValid } = await this.getAuthToken(phoneUid);
@@ -221,28 +240,30 @@ export default class IdentityService {
         throw new Error("No valid authentication token available for DID issuance");
       }
 
-      const didIssuanceRepository = container.resolve<IDIDIssuanceRequestRepository>("didIssuanceRequestRepository");
+      const didIssuanceRepository = container.resolve<IDIDIssuanceRequestRepository>(
+        "didIssuanceRequestRepository",
+      );
       const didRequest = await didIssuanceRepository.create(ctx, {
         userId,
-        status: DIDIssuanceStatus.PENDING
+        status: DidIssuanceStatus.PENDING,
       });
 
       try {
-        const didResponse = await this.callDIDVCServer(
+        const didResponse = await this.callDIDVCServer<{ didValue: string }>(
           phoneUid,
-          '/did/jobs/create-and-publish',
-          'POST',
+          "/did/jobs/create-and-publish",
+          "POST",
           {
             userId,
-            requestId: didRequest.id
-          }
+            requestId: didRequest.id,
+          },
         );
 
         if (didResponse?.didValue) {
           await didIssuanceRepository.update(ctx, didRequest.id, {
-            status: DIDIssuanceStatus.COMPLETED,
+            status: DidIssuanceStatus.COMPLETED,
             didValue: didResponse.didValue,
-            completedAt: new Date()
+            completedAt: new Date(),
           });
 
           return { success: true, requestId: didRequest.id };
@@ -251,8 +272,9 @@ export default class IdentityService {
         return { success: true, requestId: didRequest.id };
       } catch (error) {
         await didIssuanceRepository.update(ctx, didRequest.id, {
-          status: DIDIssuanceStatus.FAILED,
-          errorMessage: error instanceof Error ? error.message : 'Unknown error occurred during DID issuance',
+          status: DidIssuanceStatus.FAILED,
+          errorMessage:
+            error instanceof Error ? error.message : "Unknown error occurred during DID issuance",
         });
 
         logger.error("Failed to issue DID:", error);

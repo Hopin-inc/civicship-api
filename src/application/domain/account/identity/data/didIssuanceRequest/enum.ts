@@ -1,6 +1,0 @@
-export enum DIDIssuanceStatus {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED'
-}
