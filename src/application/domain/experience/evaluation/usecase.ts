@@ -1,6 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import {
-  GqlEvaluation, GqlEvaluationBulkCreatePayload,
+  GqlEvaluation,
+  GqlEvaluationBulkCreatePayload,
   GqlEvaluationCreatePayload,
   GqlEvaluationsConnection,
   GqlMutationEvaluationBulkCreateArgs,
@@ -22,6 +23,7 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
+import { participationInclude } from "@/application/domain/experience/participation/data/type";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -166,6 +168,7 @@ export default class EvaluationUseCase {
         if (item.status === GqlEvaluationStatus.Passed) {
           const { participation, opportunity, communityId, userId } =
             this.evaluationService.validateParticipationHasOpportunity(evaluation);
+          const user = participation.user;
 
           if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
             const [fromWallet, toWallet] = await Promise.all([
