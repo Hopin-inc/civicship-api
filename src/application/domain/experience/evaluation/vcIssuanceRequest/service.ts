@@ -4,7 +4,7 @@ import { IContext } from "@/types/server";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IVCIssuanceRequestRepository } from "./data/interface";
 import { VCIssuanceRequestInput, VCJobStatusResponse } from "./data/type";
-import { IDIDIssuanceRequestRepository } from "../didIssuanceRequest/data/interface";
+import { IDIDIssuanceRequestRepository } from "../../../account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import logger from "@/infrastructure/logging";
@@ -15,15 +15,17 @@ export class VCIssuanceService {
     @inject("IdentityService") private readonly identityService: IdentityService,
     @inject("IdentityRepository") private readonly identityRepository: IdentityRepository,
     @inject("DIDVCServerClient") private readonly client: DIDVCServerClient,
-    @inject("vcIssuanceRequestRepository") private readonly vcIssuanceRequestRepository: IVCIssuanceRequestRepository,
-    @inject("didIssuanceRequestRepository") private readonly didIssuanceRequestRepository: IDIDIssuanceRequestRepository
+    @inject("vcIssuanceRequestRepository")
+    private readonly vcIssuanceRequestRepository: IVCIssuanceRequestRepository,
+    @inject("didIssuanceRequestRepository")
+    private readonly didIssuanceRequestRepository: IDIDIssuanceRequestRepository,
   ) {}
 
   async requestVCIssuance(
     userId: string,
     phoneUid: string,
     vcRequest: VCIssuanceRequestInput,
-    ctx: IContext
+    ctx: IContext,
   ): Promise<{ success: boolean; requestId: string }> {
     const userDid = await this.getUserDid(userId, ctx);
     if (!userDid) {
@@ -59,7 +61,6 @@ export class VCIssuanceService {
     }
 
     try {
-
       const response = await this.client.call<{ jobId: string }>(
         phoneUid,
         token,
@@ -70,7 +71,7 @@ export class VCIssuanceService {
           claims: vcRequest.claims,
           credentialFormat: vcRequest.credentialFormat || "JWT",
           schemaId: vcRequest.schemaId,
-        }
+        },
       );
 
       if (response?.jobId) {
@@ -79,7 +80,7 @@ export class VCIssuanceService {
         });
 
         const vcRecordId = await this.waitForVcCompletion(phoneUid, token, response.jobId);
-        
+
         if (vcRecordId) {
           await this.vcIssuanceRequestRepository.update(ctx, vcIssuanceRequest.id, {
             status: VcIssuanceStatus.COMPLETED,
@@ -99,11 +100,14 @@ export class VCIssuanceService {
 
   private async getUserDid(userId: string, ctx: IContext): Promise<string | null> {
     const didRequests = await this.didIssuanceRequestRepository.findPending(ctx, 10);
-    const userDidRequest = didRequests.find(req => req.userId === userId);
+    const userDidRequest = didRequests.find((req) => req.userId === userId);
     return userDidRequest?.didValue || null;
   }
 
-  private evaluateTokenValidity(identity: { authToken: string | null; tokenExpiresAt: Date | null }): {
+  private evaluateTokenValidity(identity: {
+    authToken: string | null;
+    tokenExpiresAt: Date | null;
+  }): {
     token: string | null;
     isValid: boolean;
   } {
@@ -133,7 +137,7 @@ export class VCIssuanceService {
           phoneUid,
           token,
           `/vc/jobs/connectionless/${jobId}`,
-          "GET"
+          "GET",
         );
 
         if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
@@ -141,13 +145,13 @@ export class VCIssuanceService {
         }
 
         if (jobStatus?.status === "failed") {
-          throw new Error(`VC job failed: ${jobStatus.errorReason || "Unknown error"}`);
+          logger.warn(`VC job failed: ${jobStatus.errorReason || "Unknown error"}`);
         }
 
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       } catch (error) {
         if (i === maxRetries - 1) throw error;
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       }
     }
 
@@ -186,10 +190,10 @@ export class VCIssuanceService {
   private async markIssuanceFailed(
     ctx: IContext,
     requestId: string,
-    error: unknown
+    error: unknown,
   ): Promise<{ success: boolean; requestId: string }> {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     await this.vcIssuanceRequestRepository.update(ctx, requestId, {
       status: VcIssuanceStatus.FAILED,
       errorMessage,

@@ -79,8 +79,8 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
-import { VCIssuanceService } from "@/application/domain/account/identity/vcIssuanceRequest/service";
-import { VCIssuanceRequestRepository } from "@/application/domain/account/identity/vcIssuanceRequest/data/repository";
+import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
