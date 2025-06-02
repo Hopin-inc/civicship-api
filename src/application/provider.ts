@@ -77,6 +77,8 @@ import ReservationValidator from "@/application/domain/experience/reservation/va
 import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/usecase";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
+import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -122,6 +124,9 @@ export function registerProductionDependencies() {
   container.register("IdentityRepository", { useClass: IdentityRepository });
   container.register("IdentityConverter", { useClass: IdentityConverter });
 
+  // DID?VC
+  container.register("DIDVCServerClient", { useClass: DIDVCServerClient });
+  container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
   container.register("didIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
 
   // ------------------------------
