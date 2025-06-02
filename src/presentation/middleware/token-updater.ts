@@ -13,6 +13,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
   const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
   const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
   const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
+  const phoneUid = req.headers['x-phone-uid'] as string || '';
 
   if (!idToken) {
     return next();
@@ -20,18 +21,19 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
 
   res.on('finish', async () => {
     try {
-      const uid = (req as any).context?.uid;
-      const phoneUid = (req as any).context?.phoneUid;
+      const uid = req.context?.uid as string | undefined;
+      const contextPhoneUid = req.context?.phoneUid as string | undefined;
+      const effectivePhoneUid = contextPhoneUid || phoneUid;
 
       if (uid) {
         const identityService = container.resolve(IdentityService);
 
-        if (idToken) {
+        if (idToken && refreshToken) {
           let expiryTime = new Date();
           if (tokenExpiresAt) {
             try {
               expiryTime = new Date(parseInt(tokenExpiresAt, 10) * 1000);
-            } catch (parseError) {
+            } catch {
               logger.debug('Could not parse token expiry from header, trying to extract from token');
               try {
                 const tokenData = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
@@ -40,7 +42,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
                 } else {
                   expiryTime.setHours(expiryTime.getHours() + 1);
                 }
-              } catch (tokenParseError) {
+              } catch {
                 expiryTime.setHours(expiryTime.getHours() + 1);
                 logger.debug('Could not parse token expiry, using default');
               }
@@ -53,7 +55,7 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               } else {
                 expiryTime.setHours(expiryTime.getHours() + 1);
               }
-            } catch (tokenParseError) {
+            } catch {
               expiryTime.setHours(expiryTime.getHours() + 1);
               logger.debug('Could not parse token expiry, using default');
             }
@@ -61,16 +63,18 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
 
           await identityService.storeAuthTokens(uid, idToken, refreshToken, expiryTime);
           logger.debug(`Updated LINE auth token for user ${uid}, expires at ${expiryTime.toISOString()}`);
+        } else if (idToken) {
+          logger.debug(`Skipping LINE token update for user ${uid} - refresh token not provided`);
         }
 
-        if (phoneAuthToken && phoneUid) {
+        if (phoneAuthToken && phoneRefreshToken && effectivePhoneUid) {
           let phoneExpiryTime = new Date();
 
           if (phoneTokenExpiresAt) {
             try {
               phoneExpiryTime = new Date(parseInt(phoneTokenExpiresAt, 10) * 1000);
               logger.debug(`Using phone token expiry from header: ${phoneExpiryTime.toISOString()}`);
-            } catch (parseError) {
+            } catch {
               logger.debug('Could not parse phone token expiry from header, falling back to token data');
             }
           }
@@ -83,13 +87,13 @@ export function tokenUpdaterMiddleware(req: Request, res: Response, next: NextFu
               } else {
                 phoneExpiryTime.setHours(phoneExpiryTime.getHours() + 1); // Default expiry
               }
-            } catch (parseError) {
+            } catch {
               logger.debug('Could not parse phone token expiry, using default');
             }
           }
 
-          await identityService.storeAuthTokens(phoneUid, phoneAuthToken, phoneRefreshToken, phoneExpiryTime);
-          logger.debug(`Updated phone auth token for user ${phoneUid}, expires at ${phoneExpiryTime.toISOString()}`);
+          await identityService.storeAuthTokens(effectivePhoneUid, phoneAuthToken, phoneRefreshToken, phoneExpiryTime);
+          logger.debug(`Updated phone auth token for user ${effectivePhoneUid}, expires at ${phoneExpiryTime.toISOString()}`);
         }
       }
     } catch (error) {

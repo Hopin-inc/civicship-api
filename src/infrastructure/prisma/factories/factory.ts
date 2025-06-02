@@ -29,6 +29,7 @@ import {
   randFullName,
   randNumber,
   randParagraph,
+  randPhoneNumber,
   randSlug,
   randState,
   randStreetAddress,
@@ -116,6 +117,7 @@ export const UserFactory = defineUserFactory.withTransientFields<{
     return {
       name: randFullName(),
       slug: randSlug().toLowerCase(),
+      phoneNumber: randPhoneNumber(),
       urlInstagram: `https://instagram.com/${randUserName()}`,
       urlX: `https://x.com/${randUserName()}`,
       urlFacebook: `https://facebook.com/${randUserName()}`,
@@ -381,9 +383,9 @@ export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
           PublishStatus.COMMUNITY_INTERNAL,
           PublishStatus.PRIVATE,
         ]),
-      requireApproval: false,
+      requireApproval: true,
       feeRequired: randNumber({ min: 1000, max: 5000 }),
-      pointsToEarn: randNumber({ min: 1000, max: 5000 }),
+      pointsToEarn: 0,
       category:
         transientCategory ??
         rand([
@@ -415,13 +417,28 @@ export const OpportunitySlotFactory = defineOpportunitySlotFactory.withTransient
 })({
   defaultData: async ({ transientOpportunity, transientStatus }) => {
     const opportunity = transientOpportunity ?? (await OpportunityFactory.create());
-    const startOffsetDays = randNumber({ min: 7, max: 14 }); // 1〜2週間後
-    const startsAt = new Date(Date.now() + startOffsetDays * 24 * 60 * 60 * 1000);
+    const offsetDays = randNumber({ min: -7, max: 14 }); // -14日〜+14日（今日±2週間）
+    const startsAt = new Date(Date.now() + offsetDays * 24 * 60 * 60 * 1000);
     const endsAt = new Date(startsAt.getTime() + 60 * 60 * 1000); // +1時間
+
+    let hostingStatus: OpportunitySlotHostingStatus;
+
+    // 未来の日時であれば、Scheduled または Cancelled
+    if (startsAt > new Date()) {
+      hostingStatus =
+        transientStatus ??
+        rand([OpportunitySlotHostingStatus.SCHEDULED, OpportunitySlotHostingStatus.CANCELLED]);
+    }
+    // 過去の日時であれば、Completed または Cancelled
+    else {
+      hostingStatus =
+        transientStatus ??
+        rand([OpportunitySlotHostingStatus.CANCELLED, OpportunitySlotHostingStatus.COMPLETED]);
+    }
 
     return {
       opportunity: { connect: { id: opportunity.id } },
-      hostingStatus: transientStatus ?? OpportunitySlotHostingStatus.SCHEDULED,
+      hostingStatus,
       capacity: randNumber({ min: 1, max: 30 }),
       startsAt,
       endsAt,

@@ -10,6 +10,7 @@ import { PrismaTransactionDetail } from "@/application/domain/transaction/data/t
 export default class TransactionPresenter {
   static query(r: GqlTransaction[], hasNextPage: boolean): GqlTransactionsConnection {
     return {
+      __typename: "TransactionsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
@@ -25,23 +26,29 @@ export default class TransactionPresenter {
   }
 
   static get(r: PrismaTransactionDetail): GqlTransaction {
-    return r;
+    return {
+      __typename: "Transaction",
+      ...r,
+    };
   }
 
   static issueCommunityPoint(r: PrismaTransactionDetail): GqlTransactionIssueCommunityPointSuccess {
     return {
+      __typename: "TransactionIssueCommunityPointSuccess",
       transaction: this.get(r),
     };
   }
 
   static grantCommunityPoint(r: PrismaTransactionDetail): GqlTransactionGrantCommunityPointSuccess {
     return {
+      __typename: "TransactionGrantCommunityPointSuccess",
       transaction: this.get(r),
     };
   }
 
   static giveUserPoint(r: PrismaTransactionDetail): GqlTransactionDonateSelfPointSuccess {
     return {
+      __typename: "TransactionDonateSelfPointSuccess",
       transaction: this.get(r),
     };
   }

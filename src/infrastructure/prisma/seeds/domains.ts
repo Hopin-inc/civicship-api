@@ -1,7 +1,6 @@
 import {
   ArticleFactory,
   CommunityFactory,
-  EvaluationFactory,
   MembershipFactory,
   OpportunityFactory,
   OpportunitySlotFactory,
@@ -16,10 +15,23 @@ import {
 } from "@/infrastructure/prisma/factories/factory";
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { processInBatches } from "@/utils/array";
-import { Opportunity, OpportunitySlot, Place, Reservation, User, Wallet } from "@prisma/client";
+import {
+  Opportunity,
+  OpportunitySlot,
+  Place,
+  Reservation,
+  ReservationStatus,
+  User,
+  Wallet,
+} from "@prisma/client";
 import { Community } from "@prisma/client/index.d";
+import {
+  GqlOpportunitySlotHostingStatus,
+  GqlParticipationStatus,
+  GqlReservationStatus,
+} from "@/types/graphql";
 
-const BATCH_SIZE = 10;  // edit this ONLY when seeding is slow to the extent database connections are established properly
+const BATCH_SIZE = 10; // edit this ONLY when seeding is slow to the extent database connections are established properly
 const NUM_UTILITIES = 3;
 const NUM_SLOTS_PER_OPPORTUNITY = 3;
 const NUM_RESERVATIONS_PER_SLOT = 1;
@@ -27,10 +39,19 @@ const NUM_TRANSACTIONS = 5;
 const NUM_PLACES = 100;
 
 export async function seedUsecase() {
+  // await prismaClient.opportunity.updateMany({
+  //   where: {},
+  //   data: {
+  //     createdBy: "cmb4vm7d9001i8z93s953arpl",
+  //   },
+  // });
+  //
+  // return;
+
   console.info("🔥 Resetting DB...");
   await prismaClient.$transaction(async (tx) => {
     await tx.$executeRawUnsafe(`
-      TRUNCATE TABLE 
+      TRUNCATE TABLE
         t_evaluation_histories,
         t_evaluations,
         t_images,
@@ -163,35 +184,75 @@ async function createNestedEntities(
     for (const slot of slots) {
       const reservations: Reservation[] = [];
       for (let i = 0; i < NUM_RESERVATIONS_PER_SLOT; i++) {
+        let reservationStatus: ReservationStatus;
+
+        if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Scheduled) {
+          // 予定のスロットは申込（未承認）またはキャンセル状態
+          reservationStatus =
+            Math.random() > 0.5
+              ? GqlReservationStatus.Applied // 50%の確率で未承認
+              : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
+        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed) {
+          reservationStatus =
+            Math.random() > 0.5
+              ? GqlReservationStatus.Accepted // 50%の確率で未承認
+              : GqlReservationStatus.Canceled; // 50%の確率でキャンセル
+        } else if (slot.hostingStatus === GqlOpportunitySlotHostingStatus.Cancelled) {
+          reservationStatus = GqlReservationStatus.Rejected; // キャンセル済み
+        } else {
+          reservationStatus = GqlReservationStatus.Applied; // 他の状態（予期しない場合）は保留状態
+        }
+
         reservations.push(
           ...(await ReservationFactory.createList(1, {
             transientUser: user,
             transientSlot: slot,
+            transientStatus: reservationStatus, // 状態を設定
           })),
         );
       }
 
-      const participations = await processInBatches(reservations, 1, async (reservation) => {
+      await processInBatches(reservations, 1, async (reservation) => {
+        const startsAt = new Date(slot.startsAt);
+        const now = new Date();
+
+        const isFuture = startsAt > now;
+        const isCompleted = slot.hostingStatus === GqlOpportunitySlotHostingStatus.Completed;
+        const isAccepted = reservation.status === GqlReservationStatus.Accepted;
+        const isApplied = reservation.status === GqlReservationStatus.Applied;
+
+        let participationStatus: GqlParticipationStatus;
+
+        if (isApplied) {
+          participationStatus = GqlParticipationStatus.Participating; // 未承認は常に未対応
+        } else if (!isFuture && isCompleted && isAccepted) {
+          // 過去 + 開催済 + 承認済 のときだけ、未対応に振り分ける
+          participationStatus = GqlParticipationStatus.Participating;
+        } else {
+          participationStatus = GqlParticipationStatus.Participating; // その他は全て未対応
+        }
+
         return ParticipationFactory.create({
           transientUser: user,
           transientReservation: reservation,
           transientCommunity: community,
+          transientStatus: participationStatus,
         });
       });
 
-      await processInBatches(participations, 1, async (participation) => {
-        const evaluation = await EvaluationFactory.create({
-          transientParticipation: participation,
-          transientUser: user,
-        });
-
-        await prismaClient.participation.update({
-          where: { id: participation.id },
-          data: { evaluationId: evaluation.id },
-        });
-
-        return evaluation;
-      });
+      // await processInBatches(participations, 1, async (participation) => {
+      //   const evaluation = await EvaluationFactory.create({
+      //     transientParticipation: participation,
+      //     transientUser: user,
+      //   });
+      //
+      //   await prismaClient.participation.update({
+      //     where: { id: participation.id },
+      //     data: { evaluationId: evaluation.id },
+      //   });
+      //
+      //   return evaluation;
+      // });
     }
 
     await ArticleFactory.create({

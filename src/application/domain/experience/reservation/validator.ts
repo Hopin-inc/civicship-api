@@ -56,7 +56,7 @@ export default class ReservationValidator {
   validateCancellable(slotStartAt: Date) {
     const now = new Date();
     const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setHours(cancelLimit.getHours() - 24);
+    cancelLimit.setDate(cancelLimit.getDate() - 7);
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();

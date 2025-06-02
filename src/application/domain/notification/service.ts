@@ -13,14 +13,11 @@ import { injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import * as process from "node:process";
+import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
+import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 dayjs.locale("ja");
 
-const liffBaseUrl = (() => {
-  const value = process.env.LIFF_BASE_URL;
-  if (!value) throw new Error("LIFF_BASE_URL is required");
-  return value;
-})();
-
+const liffBaseUrl = process.env.LIFF_BASE_URL;
 export const DEFAULT_HOST_IMAGE_URL =
   "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
 export const DEFAULT_THUMBNAIL =
@@ -28,7 +25,10 @@ export const DEFAULT_THUMBNAIL =
 
 @injectable()
 export default class NotificationService {
-  async pushCancelOpportunitySlotMessage(slot: PrismaOpportunitySlotSetHostingStatus) {
+  async pushCancelOpportunitySlotMessage(
+    slot: PrismaOpportunitySlotSetHostingStatus,
+    comment?: string,
+  ) {
     const participantInfos = this.extractLineUidsFromParticipations(
       slot.reservations.flatMap((r) => r.participations),
     );
@@ -49,13 +49,14 @@ export default class NotificationService {
       date,
       time,
       hostName: createdByUser?.name ?? "NEO88四国祭",
-      hostImageUrl: createdByUser?.image?.url ?? DEFAULT_HOST_IMAGE_URL,
+      hostImageUrl: this.safeImageUrl(createdByUser.image?.url, DEFAULT_HOST_IMAGE_URL),
       redirectUrl,
+      comment,
     });
 
-    await Promise.all(
-      participantInfos.map(({ uid }) => safePushMessage({ to: uid, messages: [message] })),
-    );
+    for (const { uid } of participantInfos) {
+      await safePushMessage({ to: uid, messages: [message] });
+    }
   }
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
@@ -69,7 +70,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}`;
+    const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
       year,
@@ -108,6 +109,33 @@ export default class NotificationService {
     await safePushMessage({ to: lineUid, messages: [message] });
   }
 
+  async pushReservationRejectedMessage(reservation: PrismaReservation, comment?: string) {
+    const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
+    if (participantInfos.length === 0) return;
+
+    const { year, date, time } = this.formatDateTime(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.endsAt,
+    );
+
+    const { title, createdByUser } = reservation.opportunitySlot.opportunity;
+    const { name: hostName, image: hostImage } = createdByUser ?? {};
+
+    for (const { uid } of participantInfos) {
+      const message = buildDeclineOpportunitySlotMessage({
+        title,
+        year,
+        date,
+        time,
+        hostName: hostName ?? "案内人",
+        hostImageUrl: this.safeImageUrl(hostImage?.url, DEFAULT_HOST_IMAGE_URL),
+        comment,
+      });
+
+      await safePushMessage({ to: uid, messages: [message] });
+    }
+  }
+
   async pushReservationAcceptedMessage(reservation: PrismaReservation) {
     const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
     if (participantInfos.length === 0) return;
@@ -121,24 +149,22 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
-    await Promise.all(
-      participantInfos.map(({ uid, participationId }) => {
-        const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
-        const message = buildReservationAcceptedMessage({
-          title,
-          thumbnail: images[0]?.url ?? DEFAULT_THUMBNAIL,
-          year,
-          date,
-          time,
-          place: place?.name ?? "要問い合わせ",
-          participantCount,
-          hostName: hostName ?? "案内人",
-          hostImageUrl: hostImage?.url ?? DEFAULT_HOST_IMAGE_URL,
-          redirectUrl,
-        });
-        return safePushMessage({ to: uid, messages: [message] });
-      }),
-    );
+    for (const { uid, participationId } of participantInfos) {
+      const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
+      const message = buildReservationAcceptedMessage({
+        title,
+        thumbnail: this.safeImageUrl(images[0]?.url, DEFAULT_THUMBNAIL),
+        year,
+        date,
+        time,
+        place: place?.name ?? "要問い合わせ",
+        participantCount,
+        hostName: hostName ?? "案内人",
+        hostImageUrl: this.safeImageUrl(hostImage?.url, DEFAULT_HOST_IMAGE_URL),
+        redirectUrl,
+      });
+      await safePushMessage({ to: uid, messages: [message] });
+    }
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
@@ -148,12 +174,19 @@ export default class NotificationService {
 
     if (!lineUid) return;
 
-    const richMenuId =
-      membership.role === Role.OWNER || membership.role === Role.MANAGER
-        ? LINE_RICHMENU.ADMIN_MANAGE
-        : LINE_RICHMENU.PUBLIC;
+    const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
+    const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
+    const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
 
-    await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+    const redirectUrl = `${liffBaseUrl}/admin`;
+
+    //TODO feature flagにしては細かすぎる設定
+    if (isAdmin && success && membership.communityId !== "neo88") {
+      await safePushMessage({
+        to: lineUid,
+        messages: [buildAdminGrantedMessage(redirectUrl)],
+      });
+    }
   }
 
   // --- 共通化したプライベートユーティリティ ---
@@ -189,5 +222,21 @@ export default class NotificationService {
     const date = dayjs(start).format("M月D日");
     const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
     return { year, date, time };
+  }
+
+  private safeImageUrl(url: string | null | undefined, fallback: string): string {
+    // eslint-disable-next-line no-control-regex
+    const invalidPattern = new RegExp("[\\u0000-\\u001F\\u007F\\u3000\\s]");
+
+    if (!url || !url.startsWith("https://") || invalidPattern.test(url)) {
+      return fallback;
+    }
+
+    try {
+      const parsed = new URL(url);
+      return encodeURI(parsed.toString());
+    } catch {
+      return fallback;
+    }
   }
 }

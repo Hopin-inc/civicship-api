@@ -50,7 +50,6 @@ export default class OpportunityUseCase {
       },
       take,
     );
-    console.log(records);
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));

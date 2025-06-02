@@ -1,4 +1,4 @@
-import { PrismaClient, SysRole } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { AuthorizationError } from "@/errors/graphql";
@@ -38,7 +38,7 @@ export class PrismaClientIssuer {
   }
 
   public admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    if (ctx.currentUser?.sysRole === SysRole.SYS_ADMIN) {
+    if (ctx.currentUser?.sysRole === 'SYS_ADMIN') {
       return this.bypassRls(callback);
     } else {
       throw new AuthorizationError("User must be admin");

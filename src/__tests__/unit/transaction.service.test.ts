@@ -4,10 +4,6 @@ import { IContext } from "@/types/server";
 import { container } from "tsyringe";
 import TransactionService from "@/application/domain/transaction/service";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
-import {
-  GqlTransactionGrantCommunityPointInput,
-  GqlTransactionIssueCommunityPointInput,
-} from "@/types/graphql";
 
 class MockTransactionRepository {
   create = jest.fn();
@@ -32,8 +28,6 @@ describe("TransactionService", () => {
   const mockTx = {} as Prisma.TransactionClient;
   const transferPoints = 100;
   const walletId = "wallet-1";
-  const communityId = "community-1";
-  const userId = "user-1";
   const participationId = "participation-123";
 
   beforeEach(() => {
@@ -60,11 +54,6 @@ describe("TransactionService", () => {
         toPointChange: transferPoints,
       };
 
-      const input: GqlTransactionIssueCommunityPointInput = {
-        toWalletId: walletId,
-        transferPoints: transferPoints,
-      };
-
       const convertedData = {
         reason: "POINT_ISSUED",
         fromPointChange: transferPoints,
@@ -76,9 +65,14 @@ describe("TransactionService", () => {
       mockRepository.create.mockResolvedValue(mockTransaction);
       mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
-      const result = await mockService.issueCommunityPoint(mockCtx, input, mockTx);
+      const result = await mockService.issueCommunityPoint(
+        mockCtx,
+        transferPoints,
+        walletId,
+        mockTx,
+      );
 
-      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(input);
+      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints);
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
@@ -95,13 +89,6 @@ describe("TransactionService", () => {
         toPointChange: transferPoints,
       };
 
-      const input: GqlTransactionGrantCommunityPointInput = {
-        communityId,
-        fromWalletId: walletId,
-        toUserId: userId,
-        transferPoints: transferPoints,
-      };
-
       const convertedData = {
         reason: "GRANT",
         fromPointChange: transferPoints,
@@ -113,9 +100,19 @@ describe("TransactionService", () => {
       mockRepository.create.mockResolvedValue(mockTransaction);
       mockRepository.refreshCurrentPoints.mockResolvedValue(undefined);
 
-      const result = await mockService.grantCommunityPoint(mockCtx, input, walletId, mockTx);
+      const result = await mockService.grantCommunityPoint(
+        mockCtx,
+        transferPoints,
+        walletId,
+        walletId,
+        mockTx,
+      );
 
-      expect(mockConverter.grantCommunityPoint).toHaveBeenCalledWith(input, walletId);
+      expect(mockConverter.grantCommunityPoint).toHaveBeenCalledWith(
+        walletId,
+        transferPoints,
+        walletId,
+      );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);

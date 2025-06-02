@@ -1,10 +1,13 @@
 import { inject, injectable } from "tsyringe";
 import {
-  GqlEvaluation,
+  GqlEvaluation, GqlEvaluationBulkCreatePayload,
   GqlEvaluationCreatePayload,
   GqlEvaluationsConnection,
+  GqlMutationEvaluationBulkCreateArgs,
   GqlMutationEvaluationFailArgs,
   GqlMutationEvaluationPassArgs,
+  GqlParticipationStatus,
+  GqlParticipationStatusReason,
   GqlQueryEvaluationArgs,
   GqlQueryEvaluationsArgs,
 } from "@/types/graphql";
@@ -62,6 +65,15 @@ export default class EvaluationUseCase {
     await this.validateEvaluatable(ctx, input.participationId);
 
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
+      //TODO 理由に評価されたからを追加する
+      await this.participationService.setStatus(
+        ctx,
+        input.participationId,
+        GqlParticipationStatus.Participated,
+        GqlParticipationStatusReason.ReservationAccepted,
+        tx,
+        currentUserId,
+      );
       const evaluation = await this.evaluationService.createEvaluation(
         ctx,
         currentUserId,
@@ -98,7 +110,6 @@ export default class EvaluationUseCase {
 
       return evaluation;
     });
-    console.log(evaluation, "passed");
 
     return EvaluationPresenter.create(evaluation);
   }
@@ -119,21 +130,31 @@ export default class EvaluationUseCase {
         tx,
       );
     });
-    console.log(evaluation, "failed");
+
     return EvaluationPresenter.create(evaluation);
   }
-  
+
   async managerBulkCreateEvaluations(
-    { input, permission }: any,
+    { input }: GqlMutationEvaluationBulkCreateArgs,
     ctx: IContext,
-  ): Promise<any> {
+  ): Promise<GqlEvaluationBulkCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
     const evaluations: PrismaEvaluationDetail[] = [];
-    
+
     const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
       for (const item of input.evaluations) {
         await this.validateEvaluatable(ctx, item.participationId);
-        
+
+        //TODO 理由に評価されたからを追加する
+        await this.participationService.setStatus(
+          ctx,
+          item.participationId,
+          GqlParticipationStatus.Participated,
+          GqlParticipationStatusReason.ReservationAccepted,
+          tx,
+          currentUserId,
+        );
+
         const evaluation = await this.evaluationService.createEvaluation(
           ctx,
           currentUserId,
@@ -141,24 +162,24 @@ export default class EvaluationUseCase {
           item.status,
           tx,
         );
-        
+
         if (item.status === GqlEvaluationStatus.Passed) {
           const { participation, opportunity, communityId, userId } =
             this.evaluationService.validateParticipationHasOpportunity(evaluation);
-            
+
           if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
             const [fromWallet, toWallet] = await Promise.all([
               this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
               this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
             ]);
-            
+
             const { fromWalletId, toWalletId } =
               await this.walletValidator.validateTransferMemberToMember(
                 fromWallet,
                 toWallet,
                 opportunity.pointsToEarn,
               );
-              
+
             await this.transactionService.giveRewardPoint(
               ctx,
               tx,
@@ -169,13 +190,13 @@ export default class EvaluationUseCase {
             );
           }
         }
-        
+
         evaluations.push(evaluation);
       }
-      
+
       return evaluations;
     });
-    
+
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 

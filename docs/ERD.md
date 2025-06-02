@@ -388,6 +388,7 @@ TICKET_REFUNDED TICKET_REFUNDED
   "t_reservations" {
     String id "🗝️"
     String opportunity_slot_id 
+    String comment "❓"
     ReservationStatus status 
     String created_by "❓"
     DateTime created_at 

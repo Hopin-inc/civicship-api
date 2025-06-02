@@ -1,8 +1,13 @@
 import { postExecRule, preExecRule } from "@graphql-authz/core";
 import { AuthenticationError, AuthorizationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import { Role } from "@prisma/client";
 import { GqlUser } from "@/types/graphql";
+
+enum Role {
+  OWNER = "OWNER",
+  MANAGER = "MANAGER",
+  MEMBER = "MEMBER"
+}
 
 // 🔐 ログイン済みか
 const IsUser = preExecRule({
@@ -22,7 +27,7 @@ const IsAdmin = preExecRule({
 // 🔐 自分自身の操作か
 const IsSelf = preExecRule({
   error: new AuthorizationError("User is not self"),
-})((context: IContext, args: any) => {
+})((context: IContext, args: { permission?: { userId?: string } }) => {
   const user = context.currentUser;
   const permission = args.permission;
   return !!user && user.id === permission?.userId;
@@ -31,7 +36,7 @@ const IsSelf = preExecRule({
 // 🔐 コミュニティのオーナーか
 const IsCommunityOwner = preExecRule({
   error: new AuthorizationError("User must be community owner"),
-})((context: IContext, args: any) => {
+})((context: IContext, args: { permission?: { communityId?: string } }) => {
   const user = context.currentUser;
   const permission = args.permission;
 
@@ -48,7 +53,7 @@ const IsCommunityOwner = preExecRule({
 // 🔐 コミュニティマネージャー（OWNER または MANAGER）
 const IsCommunityManager = preExecRule({
   error: new AuthorizationError("User must be community manager or owner."),
-})((context: IContext, args: any) => {
+})((context: IContext, args: { permission?: { communityId?: string } }) => {
   const user = context.currentUser;
   const permission = args.permission;
 
@@ -63,7 +68,7 @@ const IsCommunityManager = preExecRule({
 // 🔐 コミュニティメンバー（OWNER / MANAGER / MEMBER）
 const IsCommunityMember = preExecRule({
   error: new AuthorizationError("User must be a community member"),
-})((context: IContext, args: any) => {
+})((context: IContext, args: { permission?: { communityId?: string } }) => {
   const user = context.currentUser;
   const permission = args.permission;
 
@@ -78,7 +83,7 @@ const IsCommunityMember = preExecRule({
 // 🔐 Opportunity 作成者
 const IsOpportunityOwner = preExecRule({
   error: new AuthorizationError("User must be opportunity owner"),
-})((context: IContext, args: any) => {
+})((context: IContext, args: { permission?: { opportunityId?: string } }) => {
   const user = context.currentUser;
   const opportunityId = args?.permission?.opportunityId;
 
@@ -91,7 +96,7 @@ const IsOpportunityOwner = preExecRule({
 
 const CanReadPhoneNumber = postExecRule({
   error: new AuthorizationError("Not authorized to read phone number"),
-})((context: IContext, args: any, phoneNumber: string | null, user: GqlUser) => {
+})((context: IContext, args: { permission?: Record<string, unknown> }, phoneNumber: string | null, user: GqlUser) => {
   return true;
 
   // TODO: コメントアウトしてあるTODOを解消したら、この部分全体を再度有効化

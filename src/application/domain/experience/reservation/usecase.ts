@@ -111,6 +111,7 @@ export default class ReservationUseCase {
         input.otherUserIds ?? [],
         statuses,
         tx,
+        input.comment,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
@@ -229,10 +230,12 @@ export default class ReservationUseCase {
   }
 
   async managerRejectReservation(
-    { id }: GqlMutationReservationRejectArgs,
+    { id, input }: GqlMutationReservationRejectArgs,
     ctx: IContext,
   ): Promise<GqlReservationSetStatusPayload> {
     const currentUserId = getCurrentUserId(ctx);
+
+    let rejectedReservation: PrismaReservation | null = null;
 
     const reservation = await ctx.issuer.public(ctx, async (tx) => {
       const res = await this.reservationService.setStatus(
@@ -251,8 +254,16 @@ export default class ReservationUseCase {
         tx,
       );
 
+      rejectedReservation = res;
       return res;
     });
+
+    if (rejectedReservation) {
+      await this.notificationService.pushReservationRejectedMessage(
+        rejectedReservation,
+        input.comment,
+      );
+    }
 
     return ReservationPresenter.setStatus(reservation);
   }

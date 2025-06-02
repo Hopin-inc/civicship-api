@@ -616,6 +616,7 @@ model Reservation {
   opportunitySlotId String          @map("opportunity_slot_id")
   opportunitySlot   OpportunitySlot @relation(fields: [opportunitySlotId], references: [id], onDelete: Cascade)
 
+  comment        String?
   status         ReservationStatus @default(APPLIED)
   participations Participation[]
 

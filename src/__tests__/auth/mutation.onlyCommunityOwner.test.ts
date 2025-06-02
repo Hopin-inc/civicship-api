@@ -1,7 +1,11 @@
 import { container } from "tsyringe";
 import request from "supertest";
 import { createApolloTestServer } from "@/__tests__/helper/test-server";
-import { Role } from "@prisma/client";
+enum Role {
+  OWNER = "OWNER",
+  MANAGER = "MANAGER",
+  MEMBER = "MEMBER"
+}
 import path from "path";
 import { registerProductionDependencies } from "@/application/provider";
 
@@ -133,7 +137,7 @@ describe("Owner-only mutations - AuthZ", () => {
     jest.clearAllMocks();
   });
 
-  const runTest = (name: string, query: string, vars: any, useCaseFn: jest.Mock) => {
+  const runTest = (name: string, query: string, vars: Record<string, unknown>, useCaseFn: jest.Mock) => {
     it.each([
       [Role.OWNER, true],
       [Role.MANAGER, false],

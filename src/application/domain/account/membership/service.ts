@@ -4,6 +4,7 @@ import {
   GqlMembershipInviteInput,
   GqlMembershipSetInvitationStatusInput,
   GqlMembershipSetRoleInput,
+  GqlMembershipStatus,
   GqlQueryMembershipsArgs,
 } from "@/types/graphql";
 import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";
@@ -106,10 +107,10 @@ export default class MembershipService {
     tx: Prisma.TransactionClient,
   ) {
     const currentUserId = this.currentUserId(ctx);
-    const membership = await this.findMembershipOrThrow(ctx, userId, communityId);
+    await this.findMembershipOrThrow(ctx, userId, communityId);
 
     const data = this.converter.update(
-      membership.status,
+      GqlMembershipStatus.Joined,
       MembershipStatusReason.ASSIGNED,
       role,
       currentUserId,

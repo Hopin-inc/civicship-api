@@ -143,3 +143,6 @@ credentials/
 
 # idea
 .idea/
+
+# sciprt result
+.generated/

@@ -9,6 +9,7 @@ import logger from "@/infrastructure/logging";
 import { GqlIdentityPlatform as IdentityPlatform, GqlUser as User } from "@/types/graphql";
 import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/data/didIssuanceRequest/interface";
 import { DIDIssuanceStatus } from "@/application/domain/account/identity/data/didIssuanceRequest/enum";
+import { Prisma, IdentityPlatform, User } from "@prisma/client";
 
 @injectable()
 export default class IdentityService {
@@ -18,13 +19,13 @@ export default class IdentityService {
   ) {}
 
   async createUserAndIdentity(
-    data: any, // Replace Prisma.UserCreateInput with any
+    data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
     phoneUid?: string,
   ) {
     const identityCreate = phoneUid
-      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.Phone }] }
+      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
       : { create: { uid, platform } };
 
     return this.userRepository.create({
@@ -37,7 +38,14 @@ export default class IdentityService {
     ctx: IContext,
     userId: string,
     phoneUid: string,
-    tx: any, // Replace Prisma.TransactionClient with any
+    tx: {
+      user: {
+        findUnique: (args: { where: { id: string }, select: { id: boolean } }) => Promise<{ id: string } | null>
+      },
+      identity: {
+        create: (args: { data: { uid: string, platform: IdentityPlatform, userId: string } }) => Promise<unknown>
+      }
+    },
   ) {
     const user = await tx.user.findUnique({
       where: { id: userId },
@@ -51,7 +59,7 @@ export default class IdentityService {
     await tx.identity.create({
       data: {
         uid: phoneUid,
-        platform: IdentityPlatform.Phone,
+        platform: IdentityPlatform.PHONE,
         userId: userId
       }
     });
@@ -148,8 +156,8 @@ export default class IdentityService {
     uid: string,
     endpoint: string,
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    data?: any,
-  ): Promise<any> {
+    data?: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
     const { token, isValid } = await this.getAuthToken(uid);
 
     if (!token || !isValid) {
@@ -208,17 +216,17 @@ export default class IdentityService {
   ): Promise<{ success: boolean; requestId: string }> {
     try {
       const { token, isValid } = await this.getAuthToken(phoneUid);
-      
+
       if (!token || !isValid) {
         throw new Error("No valid authentication token available for DID issuance");
       }
-      
+
       const didIssuanceRepository = container.resolve<IDIDIssuanceRequestRepository>("didIssuanceRequestRepository");
       const didRequest = await didIssuanceRepository.create(ctx, {
         userId,
         status: DIDIssuanceStatus.PENDING
       });
-      
+
       try {
         const didResponse = await this.callDIDVCServer(
           phoneUid,
@@ -229,24 +237,24 @@ export default class IdentityService {
             requestId: didRequest.id
           }
         );
-        
+
         if (didResponse?.didValue) {
           await didIssuanceRepository.update(ctx, didRequest.id, {
             status: DIDIssuanceStatus.COMPLETED,
             didValue: didResponse.didValue,
             completedAt: new Date()
           });
-          
+
           return { success: true, requestId: didRequest.id };
         }
-        
+
         return { success: true, requestId: didRequest.id };
       } catch (error) {
         await didIssuanceRepository.update(ctx, didRequest.id, {
           status: DIDIssuanceStatus.FAILED,
           errorMessage: error instanceof Error ? error.message : 'Unknown error occurred during DID issuance',
         });
-        
+
         logger.error("Failed to issue DID:", error);
         return { success: false, requestId: didRequest.id };
       }

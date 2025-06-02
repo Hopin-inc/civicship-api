@@ -1,28 +1,26 @@
 import { messagingApi } from "@line/bot-sdk";
 
-interface CancelOpportunitySlotParams {
+interface DeclineOpportunitySlotParams {
   title: string;
   year: string;
   date: string;
   time: string;
   hostName: string;
   hostImageUrl: string;
-  redirectUrl: string;
   comment?: string;
 }
 
-export function buildCancelOpportunitySlotMessage(
-  params: CancelOpportunitySlotParams,
+export function buildDeclineOpportunitySlotMessage(
+  params: DeclineOpportunitySlotParams,
 ): messagingApi.FlexMessage {
   const bubble: messagingApi.FlexBubble = {
     type: "bubble",
     body: buildBody(params),
-    footer: buildFooter(params.redirectUrl),
   };
 
   return {
     type: "flex",
-    altText: `${params.date}開催「${params.title}」の開催を中止させていただきます🙇‍♀️`,
+    altText: `${params.date}開催「${params.title}」への申込を辞退させていただきました🙇‍♀️`,
     contents: bubble,
     sender: {
       name: params.hostName,
@@ -31,7 +29,7 @@ export function buildCancelOpportunitySlotMessage(
   };
 }
 
-function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
+function buildBody(params: DeclineOpportunitySlotParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -41,7 +39,7 @@ function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
     contents: [
       buildTitle(),
       buildOpportunityInfo(params),
-      buildApologyMessage(params.comment),
+      buildDeclineMessage(params.comment),
       buildHostSection(params),
     ],
   };
@@ -50,14 +48,14 @@ function buildBody(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
 function buildTitle(): messagingApi.FlexText {
   return {
     type: "text",
-    text: "開催中止のお知らせ",
+    text: "申込辞退のご連絡",
     size: "xs",
-    color: "#EF4444",
+    color: "#F59E0B", // Amber（注意のニュアンス）
     weight: "bold",
   };
 }
 
-function buildOpportunityInfo(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
+function buildOpportunityInfo(params: DeclineOpportunitySlotParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "vertical",
@@ -83,9 +81,10 @@ function buildOpportunityInfo(params: CancelOpportunitySlotParams): messagingApi
   };
 }
 
-function buildApologyMessage(comment?: string): messagingApi.FlexBox {
+function buildDeclineMessage(comment?: string): messagingApi.FlexBox {
   const fallbackMessage =
-    "誠に恐れ入りますが、やむを得ない事情により本開催を中止させていただきます。ご迷惑をおかけしますことをお詫び申し上げます。";
+    "今回は日程や運営の都合により、申込をお受けできかねる結果となりました。またの機会がございましたら、ぜひご参加をご検討いただけますと幸いです。";
+
   const safeComment = typeof comment === "string" ? comment.trim() : "";
   const text = safeComment.length > 0 ? safeComment : fallbackMessage;
 
@@ -107,7 +106,7 @@ function buildApologyMessage(comment?: string): messagingApi.FlexBox {
   };
 }
 
-function buildHostSection(params: CancelOpportunitySlotParams): messagingApi.FlexBox {
+function buildHostSection(params: DeclineOpportunitySlotParams): messagingApi.FlexBox {
   return {
     type: "box",
     layout: "horizontal",
@@ -135,46 +134,20 @@ function buildHostSection(params: CancelOpportunitySlotParams): messagingApi.Fle
         layout: "vertical",
         contents: [
           {
-            type: "box",
-            layout: "horizontal",
-            spacing: "sm",
-            contents: [
-              {
-                type: "text",
-                text: params.hostName,
-                size: "sm",
-                color: "#111111",
-                weight: "bold",
-              },
-            ],
+            type: "text",
+            text: params.hostName,
+            size: "sm",
+            color: "#111111",
+            weight: "bold",
           },
           {
             type: "text",
-            text: "もしご都合が合いましたら、別日程でのご参加をご検討いただけると嬉しいです🙇‍♀️",
+            text: "ご理解のほど、どうぞよろしくお願いいたします🙇‍♀️",
             size: "xs",
             color: "#111111",
             wrap: true,
           },
         ],
-      },
-    ],
-  };
-}
-
-function buildFooter(redirectUrl: string): messagingApi.FlexBox {
-  return {
-    type: "box",
-    layout: "vertical",
-    margin: "xxl",
-    contents: [
-      {
-        type: "button",
-        style: "link",
-        action: {
-          type: "uri",
-          label: "別日程を確認する",
-          uri: redirectUrl,
-        },
       },
     ],
   };

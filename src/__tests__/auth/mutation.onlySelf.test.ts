@@ -137,7 +137,7 @@ describe("Self-only mutations - AuthZ", () => {
     jest.clearAllMocks();
   });
 
-  const runTest = (name: string, query: string, vars: any, useCaseFn: jest.Mock) => {
+  const runTest = (name: string, query: string, vars: Record<string, unknown>, useCaseFn: jest.Mock) => {
     it.each([
       ["same user", "user-1", true],
       ["different user", "user-2", false],
