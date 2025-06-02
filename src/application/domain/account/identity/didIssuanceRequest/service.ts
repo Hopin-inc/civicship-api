@@ -64,7 +64,7 @@ export class DIDIssuanceService {
         });
 
         const didValue = await this.waitForDidCompletion(phoneUid, token, response.jobId);
-        
+
         if (didValue) {
           await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
             status: DidIssuanceStatus.COMPLETED,
@@ -102,8 +102,8 @@ export class DIDIssuanceService {
     phoneUid: string,
     token: string,
     jobId: string,
-    maxRetries: number = 30,
-    retryDelay: number = 2000,
+    maxRetries: number = 5,
+    retryDelay: number = 10000,
   ): Promise<string | null> {
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -112,18 +112,19 @@ export class DIDIssuanceService {
           result?: { did: string };
         }>(phoneUid, token, `/did/jobs/${jobId}`, "GET");
 
-        if (jobStatus?.status === "completed" && jobStatus.result?.did) {
+        if (jobStatus?.status === DidIssuanceStatus.COMPLETED && jobStatus.result?.did) {
           return jobStatus.result.did;
         }
 
-        if (jobStatus?.status === "failed") {
-          throw new Error("DID job failed");
+        if (jobStatus?.status === DidIssuanceStatus.FAILED) {
+          logger.warn("DID job failed");
         }
 
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       } catch (error) {
+        logger.warn(`waitForDidCompletion: Retry ${i + 1}/${maxRetries} failed`, error);
         if (i === maxRetries - 1) throw error;
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       }
     }
 
@@ -132,10 +133,11 @@ export class DIDIssuanceService {
         phoneUid,
         token,
         "/did/status",
-        "GET"
+        "GET",
       );
       return didData?.did || null;
     } catch (error) {
+      logger.error("DIDIssuanceService.waitForDidCompletion: failed", error);
       return null;
     }
   }
