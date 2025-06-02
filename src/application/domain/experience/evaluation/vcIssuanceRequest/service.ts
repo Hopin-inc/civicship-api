@@ -67,7 +67,6 @@ export class VCIssuanceService {
         "/vc/jobs/connectionless/issue-to-holder",
         "POST",
         {
-          issuingDID: userDid,
           claims: vcRequest.claims,
           credentialFormat: vcRequest.credentialFormat || "JWT",
           schemaId: vcRequest.schemaId,
