@@ -216,6 +216,7 @@ model User {
 
   identities          Identity[]
   didIssuanceRequests DidIssuanceRequest[]
+  vcIssuanceRequests  VcIssuanceRequest[]
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
@@ -306,6 +307,39 @@ model DidIssuanceRequest {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_did_issuance_requests")
+}
+
+enum VcIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("VCIssuanceStatus")
+}
+
+model VcIssuanceRequest {
+  id String @id @default(cuid())
+
+  status           VcIssuanceStatus @default(PENDING)
+  vcRecordId       String?          @map("vc_record_id")
+  claims           Json
+  credentialFormat String?          @map("credential_format")
+  schemaId         String?          @map("schema_id")
+  errorMessage     String?          @map("error_message")
+  retryCount       Int              @default(0) @map("retry_count")
+
+  requestedAt DateTime  @default(now()) @map("requested_at")
+  processedAt DateTime? @map("processed_at")
+  completedAt DateTime? @map("completed_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_vc_issuance_requests")
 }
 
 // ------------------------------ Membership Domain ------------------------------

@@ -79,6 +79,8 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
+import { VCIssuanceService } from "@/application/domain/account/identity/vcIssuanceRequest/service";
+import { VCIssuanceRequestRepository } from "@/application/domain/account/identity/vcIssuanceRequest/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -128,6 +130,8 @@ export function registerProductionDependencies() {
   container.register("DIDVCServerClient", { useClass: DIDVCServerClient });
   container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
   container.register("didIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
+  container.register("VCIssuanceService", { useClass: VCIssuanceService });
+  container.register("vcIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
 
   // ------------------------------
   // 📰 Content
