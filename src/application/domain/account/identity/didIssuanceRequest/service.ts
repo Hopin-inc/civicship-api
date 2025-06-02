@@ -50,7 +50,7 @@ export class DIDIssuanceService {
     });
 
     try {
-      const response = await this.client.call<{ didValue: string }>(
+      const response = await this.client.call<{ jobId: string }>(
         phoneUid,
         token,
         "/did/jobs/create-and-publish",
@@ -58,13 +58,21 @@ export class DIDIssuanceService {
         { userId, requestId: didRequest.id },
       );
 
-      if (response?.didValue) {
+      if (response?.jobId) {
         await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
-          status: DidIssuanceStatus.COMPLETED,
-          didValue: response.didValue,
-          completedAt: new Date(),
+          status: DidIssuanceStatus.PROCESSING,
         });
-        return { success: true, requestId: didRequest.id };
+
+        const didValue = await this.waitForDidCompletion(phoneUid, token, response.jobId);
+        
+        if (didValue) {
+          await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
+            status: DidIssuanceStatus.COMPLETED,
+            didValue: didValue,
+            completedAt: new Date(),
+          });
+          return { success: true, requestId: didRequest.id };
+        }
       }
 
       return { success: true, requestId: didRequest.id };
@@ -88,6 +96,48 @@ export class DIDIssuanceService {
       token: identity.authToken,
       isValid: !isExpired,
     };
+  }
+
+  private async waitForDidCompletion(
+    phoneUid: string,
+    token: string,
+    jobId: string,
+    maxRetries: number = 30,
+    retryDelay: number = 2000,
+  ): Promise<string | null> {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const jobStatus = await this.client.call<{
+          status: string;
+          result?: { did: string };
+        }>(phoneUid, token, `/did/jobs/${jobId}`, "GET");
+
+        if (jobStatus?.status === "completed" && jobStatus.result?.did) {
+          return jobStatus.result.did;
+        }
+
+        if (jobStatus?.status === "failed") {
+          throw new Error("DID job failed");
+        }
+
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      } catch (error) {
+        if (i === maxRetries - 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+    }
+
+    try {
+      const didData = await this.client.call<{ did: string }>(
+        phoneUid,
+        token,
+        "/did/status",
+        "GET"
+      );
+      return didData?.did || null;
+    } catch (error) {
+      return null;
+    }
   }
 
   private async markIssuanceFailed(
