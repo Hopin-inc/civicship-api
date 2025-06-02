@@ -18,6 +18,7 @@ import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
 import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 import { Prisma, User } from "@prisma/client";
+import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 
 @injectable()
 export default class IdentityUseCase {
@@ -26,6 +27,7 @@ export default class IdentityUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("ImageService") private readonly imageService: ImageService,
+    @inject("DIDIssuanceService") private readonly didIssuanceService: DIDIssuanceService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -112,10 +114,8 @@ export default class IdentityUseCase {
     await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
 
     if (phoneUid) {
-      console.log("[userCreateAccount] Starting DID issuance...");
-      await this.issueUserDID(ctx, res.id, phoneUid);
+      await this.didIssuanceService.requestDIDIssuance(user.id, phoneUid, ctx);
     }
-    console.log("[userCreateAccount] Completed all steps. Returning user");
     return IdentityPresenter.create(res);
   }
 
@@ -214,14 +214,5 @@ export default class IdentityUseCase {
 
   private deriveExpiryTime(raw?: string): Date {
     return raw ? new Date(parseInt(raw, 10)) : new Date(Date.now() + 60 * 60 * 1000);
-  }
-
-  private async issueUserDID(ctx: IContext, userId: string, phoneUid: string): Promise<void> {
-    try {
-      await this.identityService.requestDIDIssuance(userId, phoneUid, ctx);
-      console.log(`Requested DID issuance for user ${userId}`);
-    } catch (didError) {
-      logger.error("Failed to request DID issuance during user signup:", didError);
-    }
   }
 }
