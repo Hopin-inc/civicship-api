@@ -51,6 +51,15 @@ FAILED FAILED
     
 
 
+        VCIssuanceStatus {
+            PENDING PENDING
+PROCESSING PROCESSING
+COMPLETED COMPLETED
+FAILED FAILED
+        }
+    
+
+
         Role {
             OWNER OWNER
 MANAGER MANAGER
@@ -294,6 +303,24 @@ TICKET_REFUNDED TICKET_REFUNDED
     String id "🗝️"
     DidIssuanceStatus status 
     String did_value "❓"
+    String error_message "❓"
+    Int retry_count 
+    DateTime requested_at 
+    DateTime processed_at "❓"
+    DateTime completed_at "❓"
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_vc_issuance_requests" {
+    String id "🗝️"
+    VcIssuanceStatus status 
+    String vc_record_id "❓"
+    Json claims 
+    String credential_format "❓"
+    String schema_id "❓"
     String error_message "❓"
     Int retry_count 
     DateTime requested_at 
@@ -622,6 +649,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_did_issuance_requests" : "didIssuanceRequests"
+    "t_users" o{--}o "t_vc_issuance_requests" : "vcIssuanceRequests"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
@@ -640,6 +668,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_identities" o|--|| "t_users" : "user"
     "t_did_issuance_requests" o|--|| "DidIssuanceStatus" : "enum:status"
     "t_did_issuance_requests" o|--|| "t_users" : "user"
+    "t_vc_issuance_requests" o|--|| "VcIssuanceStatus" : "enum:status"
+    "t_vc_issuance_requests" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
