@@ -6,6 +6,11 @@ import {
 } from "@/application/domain/account/identity/didIssuanceRequest/data/type";
 
 export interface IDIDIssuanceRequestRepository {
+  findLatestCompletedByUserId(
+    ctx: IContext,
+    userId: string,
+  ): Promise<DIDIssuanceRequestDetail | null>;
+
   findById(ctx: IContext, id: string): Promise<DIDIssuanceRequestDetail | null>;
 
   findPending(

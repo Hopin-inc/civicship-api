@@ -14,6 +14,24 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
     return container.resolve<PrismaClientIssuer>("prismaClientIssuer");
   }
 
+  async findLatestCompletedByUserId(
+    ctx: IContext,
+    userId: string,
+  ): Promise<DIDIssuanceRequestDetail | null> {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
+      return tx.didIssuanceRequest.findFirst({
+        where: {
+          userId,
+          status: DidIssuanceStatus.COMPLETED,
+        },
+        orderBy: {
+          completedAt: "desc",
+        },
+      });
+    });
+  }
+
   async findById(ctx: IContext, id: string): Promise<DIDIssuanceRequestDetail | null> {
     const issuer = ctx.issuer || this.getIssuer();
     return issuer.public(ctx, (tx) => {

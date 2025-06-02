@@ -64,10 +64,11 @@ export default class EvaluationUseCase {
   }
 
   async managerPassEvaluation(
-    { input }: GqlMutationEvaluationPassArgs,
+    { input, permission }: GqlMutationEvaluationPassArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
+    const communityId = permission.communityId;
     await this.validateEvaluatable(ctx, input.participationId);
 
     const evaluation = await ctx.issuer.public(ctx, async (tx) => {
@@ -88,7 +89,7 @@ export default class EvaluationUseCase {
         tx,
       );
 
-      const { participation, opportunity, communityId, userId } =
+      const { participation, opportunity, userId } =
         this.evaluationService.validateParticipationHasOpportunity(evaluation);
 
       if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
@@ -141,10 +142,11 @@ export default class EvaluationUseCase {
   }
 
   async managerBulkCreateEvaluations(
-    { input }: GqlMutationEvaluationBulkCreateArgs,
+    { input, permission }: GqlMutationEvaluationBulkCreateArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationBulkCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
+    const communityId = permission.communityId;
     const evaluations: PrismaEvaluationDetail[] = [];
 
     const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
@@ -170,7 +172,7 @@ export default class EvaluationUseCase {
         );
 
         if (item.status === GqlEvaluationStatus.Passed) {
-          const { participation, opportunity, communityId, userId } =
+          const { participation, opportunity, userId } =
             this.evaluationService.validateParticipationHasOpportunity(evaluation);
           const user = participation.user;
 

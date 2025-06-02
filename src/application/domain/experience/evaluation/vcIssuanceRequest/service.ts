@@ -99,9 +99,11 @@ export class VCIssuanceService {
   }
 
   private async getUserDid(userId: string, ctx: IContext): Promise<string | null> {
-    const didRequests = await this.didIssuanceRequestRepository.findPending(ctx, 10);
-    const userDidRequest = didRequests.find((req) => req.userId === userId);
-    return userDidRequest?.didValue || null;
+    const didRequest = await this.didIssuanceRequestRepository.findLatestCompletedByUserId(
+      ctx,
+      userId,
+    );
+    return didRequest?.didValue ?? null;
   }
 
   private evaluateTokenValidity(identity: {

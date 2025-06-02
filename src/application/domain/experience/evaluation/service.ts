@@ -57,7 +57,6 @@ export default class EvaluationService {
     opportunity: NonNullable<
       NonNullable<PrismaEvaluation["participation"]>["reservation"]
     >["opportunitySlot"]["opportunity"];
-    communityId: string;
     userId: string;
   } {
     const participation = evaluation.participation;
@@ -67,16 +66,11 @@ export default class EvaluationService {
       throw new NotFoundError("Participation or Opportunity", { evaluationId: evaluation.id });
     }
 
-    const communityId = participation?.communityId;
-    if (!communityId) {
-      throw new NotFoundError("Community ID", { evaluationId: evaluation.id });
-    }
-
     const userId = participation?.userId;
     if (!userId) {
       throw new NotFoundError("User ID", { evaluationId: evaluation.id });
     }
 
-    return { participation, opportunity, communityId, userId };
+    return { participation, opportunity, userId };
   }
 }
