@@ -23,7 +23,10 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
-import { participationInclude } from "@/application/domain/experience/participation/data/type";
+import { IdentityPlatform } from "@prisma/client";
+import logger from "@/infrastructure/logging";
+import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -33,6 +36,7 @@ export default class EvaluationUseCase {
     @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
+    @inject("VCIssuanceService") private readonly vcIssuanceService: VCIssuanceService,
   ) {}
 
   async visitorBrowseEvaluations(
@@ -169,6 +173,32 @@ export default class EvaluationUseCase {
           const { participation, opportunity, communityId, userId } =
             this.evaluationService.validateParticipationHasOpportunity(evaluation);
           const user = participation.user;
+
+          const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
+          const phoneUid = phoneIdentity?.uid;
+
+          if (phoneUid) {
+            const vcRequest: VCIssuanceRequestInput = {
+              claims: {
+                type: "EvaluationCredential",
+                score: item.status,
+                evaluatorId: currentUserId,
+                participationId: participation.id,
+              },
+              credentialFormat: "JWT",
+            };
+
+            const { success } = await this.vcIssuanceService.requestVCIssuance(
+              userId,
+              phoneUid,
+              vcRequest,
+              ctx,
+            );
+
+            if (!success) {
+              logger.warn(`⚠️ VC issuance failed for evaluation ${evaluation.id}`);
+            }
+          }
 
           if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
             const [fromWallet, toWallet] = await Promise.all([
