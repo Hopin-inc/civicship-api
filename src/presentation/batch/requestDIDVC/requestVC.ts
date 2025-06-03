@@ -3,6 +3,8 @@ import { IdentityPlatform, EvaluationStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { toVCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
 
 type BatchResult = {
   total: number;
@@ -33,17 +35,7 @@ export async function createVCRequests(
           },
         },
       },
-      include: {
-        participation: {
-          include: {
-            user: {
-              include: {
-                identities: { where: { platform: IdentityPlatform.PHONE } },
-              },
-            },
-          },
-        },
-      },
+      include: evaluationInclude,
     });
   });
 
@@ -67,15 +59,7 @@ export async function createVCRequests(
       const result = await vcService.requestVCIssuance(
         user.id,
         phoneIdentity.uid,
-        {
-          claims: {
-            type: "EvaluationCredential",
-            score: EvaluationStatus.PASSED,
-            evaluatorId: evaluation.evaluatorId ?? "",
-            participationId: evaluation.participationId,
-          },
-          credentialFormat: "JWT",
-        },
+        toVCIssuanceRequestInput(evaluation),
         ctx,
       );
 
