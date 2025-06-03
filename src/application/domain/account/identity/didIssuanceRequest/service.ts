@@ -61,6 +61,7 @@ export class DIDIssuanceService {
       if (response?.jobId) {
         await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
           status: DidIssuanceStatus.PROCESSING,
+          jobId: response.jobId,
         });
 
         const didValue = await this.waitForDidCompletion(phoneUid, token, response.jobId);

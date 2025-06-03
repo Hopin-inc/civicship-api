@@ -107,6 +107,7 @@ export default class DIDIssuanceRequestRepository implements IDIDIssuanceRequest
     id: string,
     data: {
       status?: DidIssuanceStatus;
+      jobId?: string;
       didValue?: string;
       errorMessage?: string;
       processedAt?: Date;

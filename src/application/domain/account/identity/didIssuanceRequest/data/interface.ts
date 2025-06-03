@@ -34,6 +34,7 @@ export interface IDIDIssuanceRequestRepository {
     id: string,
     data: {
       status?: DidIssuanceStatus;
+      jobId?: string;
       didValue?: string;
       errorMessage?: string;
       processedAt?: Date;

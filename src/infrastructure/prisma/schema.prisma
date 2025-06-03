@@ -292,6 +292,7 @@ model DidIssuanceRequest {
   id String @id @default(cuid())
 
   status       DidIssuanceStatus @default(PENDING)
+  jobId        String?           @map("job_id")
   didValue     String?           @map("did_value")
   errorMessage String?           @map("error_message")
   retryCount   Int               @default(0) @map("retry_count")
