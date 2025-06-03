@@ -121,10 +121,10 @@ export default class IdentityUseCase {
 
   private validateSignupContext(ctx: IContext): void {
     if (!ctx.uid || !ctx.platform) {
-      throw new Error("Authentication required (uid or platform missing)");
+      logger.error("Authentication required (uid or platform missing)");
     }
     if (!ctx.phoneAuthToken) {
-      throw new Error("Phone authentication required for user signup");
+      logger.error("Phone authentication required for user signup");
     }
   }
 
@@ -201,14 +201,14 @@ export default class IdentityUseCase {
         refreshToken,
         expiryTime,
       );
-      console.log(`Stored phone auth tokens for ${phoneUid}`);
+      logger.debug(`Stored phone auth tokens for ${phoneUid}`);
     }
 
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       const expiryTime = this.deriveExpiryTime(ctx.tokenExpiresAt);
       const refreshToken = lineRefreshToken || ctx.refreshToken || "";
       await this.identityService.storeAuthTokens(ctx.uid, ctx.idToken, refreshToken, expiryTime);
-      console.log(`Stored LINE auth tokens for ${ctx.uid}`);
+      logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
     }
   }
 
