@@ -26,7 +26,7 @@ export class VCIssuanceService {
     phoneUid: string,
     vcRequest: VCIssuanceRequestInput,
     ctx: IContext,
-  ): Promise<{ success: boolean; requestId: string }> {
+  ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
     const userDid = await this.getUserDid(userId, ctx);
     if (!userDid) {
       throw new Error("User DID not found. DID must be issued before VC issuance.");
@@ -79,7 +79,7 @@ export class VCIssuanceService {
           jobId: response.jobId,
         });
 
-        return { success: true, requestId: vcIssuanceRequest.id };
+        return { success: true, requestId: vcIssuanceRequest.id, jobId: response.jobId };
       }
 
       return { success: true, requestId: vcIssuanceRequest.id };

@@ -23,7 +23,7 @@ export class DIDIssuanceService {
     userId: string,
     phoneUid: string,
     ctx: IContext,
-  ): Promise<{ success: boolean; requestId: string }> {
+  ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
     const identity = await this.identityRepository.find(phoneUid);
     if (!identity) throw new Error("No identity found for DID issuance");
 
@@ -64,7 +64,7 @@ export class DIDIssuanceService {
           jobId: response.jobId,
         });
 
-        return { success: true, requestId: didRequest.id };
+        return { success: true, requestId: didRequest.id, jobId: response.jobId };
       }
 
       return { success: true, requestId: didRequest.id };
