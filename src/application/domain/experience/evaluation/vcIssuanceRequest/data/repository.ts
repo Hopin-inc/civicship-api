@@ -74,6 +74,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
     id: string,
     data: {
       status?: VcIssuanceStatus;
+      jobId?: string;
       vcRecordId?: string;
       errorMessage?: string;
       processedAt?: Date;
@@ -87,6 +88,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
         where: { id },
         data: {
           status: data.status,
+          jobId: data.jobId,
           vcRecordId: data.vcRecordId,
           errorMessage: data.errorMessage,
           processedAt: data.processedAt,
@@ -102,6 +104,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
         where: { id },
         data: {
           status: data.status,
+          jobId: data.jobId,
           vcRecordId: data.vcRecordId,
           errorMessage: data.errorMessage,
           processedAt: data.processedAt,

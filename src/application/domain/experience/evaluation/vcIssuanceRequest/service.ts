@@ -76,6 +76,7 @@ export class VCIssuanceService {
       if (response?.jobId) {
         await this.vcIssuanceRequestRepository.update(ctx, vcIssuanceRequest.id, {
           status: VcIssuanceStatus.PROCESSING,
+          jobId: response.jobId,
         });
 
         const vcRecordId = await this.waitForVcCompletion(phoneUid, token, response.jobId);

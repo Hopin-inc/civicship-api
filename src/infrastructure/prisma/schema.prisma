@@ -322,6 +322,7 @@ model VcIssuanceRequest {
   id String @id @default(cuid())
 
   status           VcIssuanceStatus @default(PENDING)
+  jobId            String?          @map("job_id")
   vcRecordId       String?          @map("vc_record_id")
   claims           Json
   credentialFormat String?          @map("credential_format")

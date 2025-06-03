@@ -27,6 +27,7 @@ export interface IVCIssuanceRequestRepository {
     id: string,
     data: {
       status?: VcIssuanceStatus;
+      jobId?: string;
       vcRecordId?: string;
       errorMessage?: string;
       processedAt?: Date;
