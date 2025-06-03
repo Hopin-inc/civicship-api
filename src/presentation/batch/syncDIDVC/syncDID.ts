@@ -53,23 +53,25 @@ export async function processDIDRequests(
 
       const jobStatus = await client.call<{
         status: string;
-        result?: { didValue: string };
+        result?: { did: string };
       }>(phoneIdentity.uid, phoneIdentity.authToken || "", `/did/jobs/${request.jobId}`, "GET");
 
-      if (jobStatus?.status === DidIssuanceStatus.COMPLETED && jobStatus.result?.didValue) {
+      logger.debug(`jobStatus: ${JSON.stringify(jobStatus, null, 2)}`);
+
+      if (jobStatus?.status === "completed" && jobStatus.result?.did) {
         await issuer.internal(async (tx) => {
           await tx.didIssuanceRequest.update({
             where: { id: request.id },
             data: {
               status: DidIssuanceStatus.COMPLETED,
-              didValue: jobStatus.result?.didValue,
+              didValue: jobStatus.result?.did,
               completedAt: new Date(),
             },
           });
         });
         logger.info(`✅ DID completed: ${request.id}`);
         successCount++;
-      } else if (jobStatus?.status === DidIssuanceStatus.FAILED) {
+      } else if (jobStatus?.status === "failed") {
         await issuer.internal(async (tx) => {
           await tx.didIssuanceRequest.update({
             where: { id: request.id },

@@ -61,7 +61,7 @@ export async function processVCRequests(
         "GET",
       );
 
-      if (jobStatus?.status === VcIssuanceStatus.COMPLETED && jobStatus.result?.recordId) {
+      if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
         await issuer.internal(async (tx) => {
           await tx.vcIssuanceRequest.update({
             where: { id: request.id },
@@ -74,7 +74,7 @@ export async function processVCRequests(
         });
         logger.info(`✅ VC completed: ${request.id}`);
         successCount++;
-      } else if (jobStatus?.status === VcIssuanceStatus.FAILED) {
+      } else if (jobStatus?.status === "failed") {
         await issuer.internal(async (tx) => {
           await tx.vcIssuanceRequest.update({
             where: { id: request.id },
