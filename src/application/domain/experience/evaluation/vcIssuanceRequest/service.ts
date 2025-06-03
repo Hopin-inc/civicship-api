@@ -3,7 +3,7 @@ import { VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IVCIssuanceRequestRepository } from "./data/interface";
-import { VCIssuanceRequestInput, VCJobStatusResponse } from "./data/type";
+import { VCIssuanceRequestInput } from "./data/type";
 import { IDIDIssuanceRequestRepository } from "../../../account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
@@ -79,16 +79,7 @@ export class VCIssuanceService {
           jobId: response.jobId,
         });
 
-        const vcRecordId = await this.waitForVcCompletion(phoneUid, token, response.jobId);
-
-        if (vcRecordId) {
-          await this.vcIssuanceRequestRepository.update(ctx, vcIssuanceRequest.id, {
-            status: VcIssuanceStatus.COMPLETED,
-            vcRecordId: vcRecordId,
-            completedAt: new Date(),
-          });
-          return { success: true, requestId: vcIssuanceRequest.id };
-        }
+        return { success: true, requestId: vcIssuanceRequest.id };
       }
 
       return { success: true, requestId: vcIssuanceRequest.id };
@@ -126,40 +117,6 @@ export class VCIssuanceService {
     };
   }
 
-  private async waitForVcCompletion(
-    phoneUid: string,
-    token: string,
-    jobId: string,
-    maxRetries: number = 5,
-    retryDelay: number = 10000,
-  ): Promise<string | null> {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const jobStatus = await this.client.call<VCJobStatusResponse>(
-          phoneUid,
-          token,
-          `/vc/jobs/connectionless/${jobId}`,
-          "GET",
-        );
-
-        if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
-          return jobStatus.result.recordId;
-        }
-
-        if (jobStatus?.status === "failed") {
-          logger.warn(`VC job failed: ${jobStatus.errorReason || "Unknown error"}`);
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      } catch (error) {
-        if (i === maxRetries - 1) throw error;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      }
-    }
-
-    logger.error("VCIssuanceService.waitForVcCompletion: timeout after max retries");
-    return null;
-  }
 
   async refreshAuthToken(
     uid: string,

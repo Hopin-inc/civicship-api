@@ -64,16 +64,7 @@ export class DIDIssuanceService {
           jobId: response.jobId,
         });
 
-        const didValue = await this.waitForDidCompletion(phoneUid, token, response.jobId);
-
-        if (didValue) {
-          await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
-            status: DidIssuanceStatus.COMPLETED,
-            didValue: didValue,
-            completedAt: new Date(),
-          });
-          return { success: true, requestId: didRequest.id };
-        }
+        return { success: true, requestId: didRequest.id };
       }
 
       return { success: true, requestId: didRequest.id };
@@ -99,49 +90,6 @@ export class DIDIssuanceService {
     };
   }
 
-  private async waitForDidCompletion(
-    phoneUid: string,
-    token: string,
-    jobId: string,
-    maxRetries: number = 5,
-    retryDelay: number = 10000,
-  ): Promise<string | null> {
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        const jobStatus = await this.client.call<{
-          status: string;
-          result?: { did: string };
-        }>(phoneUid, token, `/did/jobs/${jobId}`, "GET");
-
-        if (jobStatus?.status === DidIssuanceStatus.COMPLETED && jobStatus.result?.did) {
-          return jobStatus.result.did;
-        }
-
-        if (jobStatus?.status === DidIssuanceStatus.FAILED) {
-          logger.warn("DID job failed");
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      } catch (error) {
-        logger.warn(`waitForDidCompletion: Retry ${i + 1}/${maxRetries} failed`, error);
-        if (i === maxRetries - 1) throw error;
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      }
-    }
-
-    try {
-      const didData = await this.client.call<{ did: string }>(
-        phoneUid,
-        token,
-        "/did/status",
-        "GET",
-      );
-      return didData?.did || null;
-    } catch (error) {
-      logger.error("DIDIssuanceService.waitForDidCompletion: failed", error);
-      return null;
-    }
-  }
 
   private async markIssuanceFailed(
     ctx: IContext,
