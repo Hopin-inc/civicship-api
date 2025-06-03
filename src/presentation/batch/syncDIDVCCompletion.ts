@@ -2,10 +2,9 @@ import logger from "@/infrastructure/logging";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
-import { DidIssuanceStatus, VcIssuanceStatus } from "@prisma/client";
+import { DidIssuanceStatus, IdentityPlatform, VcIssuanceStatus } from "@prisma/client";
 
-
-export async function syncDIDVCCompletion() {
+export async function syncDIDVC() {
   logger.info("Starting DID/VC completion synchronization batch process");
 
   const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
@@ -13,7 +12,7 @@ export async function syncDIDVCCompletion() {
 
   try {
     await processDIDRequests(issuer, client);
-    
+
     await processVCRequests(issuer, client);
 
     logger.info("DID/VC completion synchronization batch process completed");
@@ -23,23 +22,22 @@ export async function syncDIDVCCompletion() {
 }
 
 async function processDIDRequests(issuer: PrismaClientIssuer, client: DIDVCServerClient) {
-  
   const processingRequests = await issuer.internal(async (tx) => {
     return tx.didIssuanceRequest.findMany({
       where: {
         status: DidIssuanceStatus.PROCESSING,
         jobId: { not: null },
-        retryCount: { lt: 3 }
+        retryCount: { lt: 3 },
       },
       include: {
         user: {
           include: {
             identities: {
-              where: { platform: 'PHONE' }
-            }
-          }
-        }
-      }
+              where: { platform: IdentityPlatform.PHONE },
+            },
+          },
+        },
+      },
     });
   });
 
@@ -47,36 +45,39 @@ async function processDIDRequests(issuer: PrismaClientIssuer, client: DIDVCServe
 
   for (const request of processingRequests) {
     try {
-      const phoneIdentity = request.user.identities[0];
+      const phoneIdentity = request.user.identities.find(
+        (identity) => identity.platform === IdentityPlatform.PHONE,
+      );
       if (!phoneIdentity) {
-        throw new Error(`No phone identity found for user ${request.userId}`);
+        logger.error(`No phone identity found for user ${request.userId}`);
+        continue;
       }
 
       const jobStatus = await client.call<{
         status: string;
         result?: { did: string };
-      }>(phoneIdentity.uid, phoneIdentity.authToken || '', `/did/jobs/${request.jobId}`, "GET");
+      }>(phoneIdentity?.uid, phoneIdentity?.authToken || "", `/did/jobs/${request.jobId}`, "GET");
 
-      if (jobStatus?.status === 'completed' && jobStatus.result?.did) {
+      if (jobStatus?.status === DidIssuanceStatus.COMPLETED && jobStatus.result?.did) {
         await issuer.internal(async (tx) => {
           return tx.didIssuanceRequest.update({
             where: { id: request.id },
             data: {
               status: DidIssuanceStatus.COMPLETED,
               didValue: jobStatus.result!.did,
-              completedAt: new Date()
-            }
+              completedAt: new Date(),
+            },
           });
         });
         logger.info(`DID issuance completed for request ${request.id}`);
-      } else if (jobStatus?.status === 'failed') {
+      } else if (jobStatus?.status === DidIssuanceStatus.FAILED) {
         await issuer.internal(async (tx) => {
           return tx.didIssuanceRequest.update({
             where: { id: request.id },
             data: {
               status: DidIssuanceStatus.FAILED,
-              errorMessage: 'DID issuance failed on server'
-            }
+              errorMessage: "DID issuance failed on server",
+            },
           });
         });
         logger.error(`DID issuance failed for request ${request.id}`);
@@ -84,7 +85,7 @@ async function processDIDRequests(issuer: PrismaClientIssuer, client: DIDVCServe
         await issuer.internal(async (tx) => {
           return tx.didIssuanceRequest.update({
             where: { id: request.id },
-            data: { retryCount: { increment: 1 } }
+            data: { retryCount: { increment: 1 } },
           });
         });
       }
@@ -95,14 +96,14 @@ async function processDIDRequests(issuer: PrismaClientIssuer, client: DIDVCServe
           where: { id: request.id },
           data: {
             retryCount: { increment: 1 },
-            errorMessage: error instanceof Error ? error.message : 'Unknown error'
-          }
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+          },
         });
       });
     }
   }
 
-  await markFailedRequests(issuer, 'didIssuanceRequest', DidIssuanceStatus.FAILED);
+  await markFailedRequests(issuer, "didIssuanceRequest", DidIssuanceStatus.FAILED);
 }
 
 async function processVCRequests(issuer: PrismaClientIssuer, client: DIDVCServerClient) {
@@ -111,17 +112,17 @@ async function processVCRequests(issuer: PrismaClientIssuer, client: DIDVCServer
       where: {
         status: VcIssuanceStatus.PROCESSING,
         jobId: { not: null },
-        retryCount: { lt: 3 }
+        retryCount: { lt: 3 },
       },
       include: {
         user: {
           include: {
             identities: {
-              where: { platform: 'PHONE' }
-            }
-          }
-        }
-      }
+              where: { platform: "PHONE" },
+            },
+          },
+        },
+      },
     });
   });
 
@@ -129,36 +130,44 @@ async function processVCRequests(issuer: PrismaClientIssuer, client: DIDVCServer
 
   for (const request of processingRequests) {
     try {
-      const phoneIdentity = request.user.identities[0];
+      const phoneIdentity = request.user.identities.find(
+        (identity) => identity.platform === IdentityPlatform.PHONE,
+      );
       if (!phoneIdentity) {
-        throw new Error(`No phone identity found for user ${request.userId}`);
+        logger.error(`No phone identity found for user ${request.userId}`);
+        continue;
       }
 
       const jobStatus = await client.call<{
         status: string;
         result?: { recordId: string };
-      }>(phoneIdentity.uid, phoneIdentity.authToken || '', `/vc/jobs/connectionless/${request.jobId}`, "GET");
+      }>(
+        phoneIdentity?.uid,
+        phoneIdentity?.authToken || "",
+        `/vc/jobs/connectionless/${request.jobId}`,
+        "GET",
+      );
 
-      if (jobStatus?.status === 'completed' && jobStatus.result?.recordId) {
+      if (jobStatus?.status === VcIssuanceStatus.COMPLETED && jobStatus.result?.recordId) {
         await issuer.internal(async (tx) => {
           return tx.vcIssuanceRequest.update({
             where: { id: request.id },
             data: {
               status: VcIssuanceStatus.COMPLETED,
               vcRecordId: jobStatus.result!.recordId,
-              completedAt: new Date()
-            }
+              completedAt: new Date(),
+            },
           });
         });
         logger.info(`VC issuance completed for request ${request.id}`);
-      } else if (jobStatus?.status === 'failed') {
+      } else if (jobStatus?.status === VcIssuanceStatus.FAILED) {
         await issuer.internal(async (tx) => {
           return tx.vcIssuanceRequest.update({
             where: { id: request.id },
             data: {
               status: VcIssuanceStatus.FAILED,
-              errorMessage: 'VC issuance failed on server'
-            }
+              errorMessage: "VC issuance failed on server",
+            },
           });
         });
         logger.error(`VC issuance failed for request ${request.id}`);
@@ -166,7 +175,7 @@ async function processVCRequests(issuer: PrismaClientIssuer, client: DIDVCServer
         await issuer.internal(async (tx) => {
           return tx.vcIssuanceRequest.update({
             where: { id: request.id },
-            data: { retryCount: { increment: 1 } }
+            data: { retryCount: { increment: 1 } },
           });
         });
       }
@@ -177,37 +186,44 @@ async function processVCRequests(issuer: PrismaClientIssuer, client: DIDVCServer
           where: { id: request.id },
           data: {
             retryCount: { increment: 1 },
-            errorMessage: error instanceof Error ? error.message : 'Unknown error'
-          }
+            errorMessage: error instanceof Error ? error.message : "Unknown error",
+          },
         });
       });
     }
   }
 
-  await markFailedRequests(issuer, 'vcIssuanceRequest', VcIssuanceStatus.FAILED);
+  await markFailedRequests(issuer, "vcIssuanceRequest", VcIssuanceStatus.FAILED);
 }
 
-async function markFailedRequests(issuer: PrismaClientIssuer, table: string, failedStatus: any) {
+async function markFailedRequests(
+  issuer: PrismaClientIssuer,
+  table: string,
+  failedStatus: DidIssuanceStatus | VcIssuanceStatus,
+) {
   const failedRequests = await issuer.internal(async (tx) => {
-    return (tx as any)[table].findMany({
+    return tx[table].findMany({
       where: {
-        status: table === 'didIssuanceRequest' ? DidIssuanceStatus.PROCESSING : VcIssuanceStatus.PROCESSING,
-        retryCount: { gte: 3 }
-      }
+        status:
+          table === "didIssuanceRequest"
+            ? DidIssuanceStatus.PROCESSING
+            : VcIssuanceStatus.PROCESSING,
+        retryCount: { gte: 3 },
+      },
     });
   });
 
   if (failedRequests.length > 0) {
     logger.warn(`Marking ${failedRequests.length} ${table} requests as failed after retry limit`);
     await issuer.internal(async (tx) => {
-      return (tx as any)[table].updateMany({
+      return tx[table].updateMany({
         where: {
-          id: { in: failedRequests.map((req: any) => req.id) }
+          id: { in: failedRequests.map((req) => req.id) },
         },
         data: {
           status: failedStatus,
-          errorMessage: 'Exceeded retry limit'
-        }
+          errorMessage: "Exceeded retry limit",
+        },
       });
     });
   }
