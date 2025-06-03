@@ -1929,6 +1929,7 @@ type DidIssuanceRequestuserFactory = {
 type DidIssuanceRequestFactoryDefineInput = {
     id?: string;
     status?: DidIssuanceStatus;
+    jobId?: string | null;
     didValue?: string | null;
     errorMessage?: string | null;
     retryCount?: number;
@@ -2087,6 +2088,7 @@ type VcIssuanceRequestuserFactory = {
 type VcIssuanceRequestFactoryDefineInput = {
     id?: string;
     status?: VcIssuanceStatus;
+    jobId?: string | null;
     vcRecordId?: string | null;
     claims?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
     credentialFormat?: string | null;

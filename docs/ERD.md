@@ -302,6 +302,7 @@ TICKET_REFUNDED TICKET_REFUNDED
   "t_did_issuance_requests" {
     String id "🗝️"
     DidIssuanceStatus status 
+    String job_id "❓"
     String did_value "❓"
     String error_message "❓"
     Int retry_count 
@@ -317,6 +318,7 @@ TICKET_REFUNDED TICKET_REFUNDED
   "t_vc_issuance_requests" {
     String id "🗝️"
     VcIssuanceStatus status 
+    String job_id "❓"
     String vc_record_id "❓"
     Json claims 
     String credential_format "❓"

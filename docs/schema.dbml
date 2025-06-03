@@ -143,6 +143,7 @@ Table t_identities {
 Table t_did_issuance_requests {
   id String [pk]
   status DidIssuanceStatus [not null, default: 'PENDING']
+  jobId String
   didValue String
   errorMessage String
   retryCount Int [not null, default: 0]
@@ -158,6 +159,7 @@ Table t_did_issuance_requests {
 Table t_vc_issuance_requests {
   id String [pk]
   status VcIssuanceStatus [not null, default: 'PENDING']
+  jobId String
   vcRecordId String
   claims Json [not null]
   credentialFormat String
