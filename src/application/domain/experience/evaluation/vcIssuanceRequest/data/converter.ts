@@ -1,32 +1,57 @@
 import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
+import logger from "@/infrastructure/logging";
 
 export const toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): VCIssuanceRequestInput => {
   const { status, evaluator, participation } = evaluation;
-  const user = participation.user;
-  const reservation = participation.reservation;
-  const opportunitySlot = reservation?.opportunitySlot;
-  const opportunity = opportunitySlot?.opportunity;
-  const startAt = opportunitySlot?.startsAt;
+
+  if (!evaluator) {
+    logger.error("Evaluator is missing required fields", { evaluator });
+    throw new Error("Evaluator is missing required fields");
+  }
+
+  const user = participation?.user;
+  if (!user) {
+    logger.error("Participation user is missing required fields", { user });
+    throw new Error("Participation user is missing required fields");
+  }
+
+  const reservation = participation?.reservation;
+  if (!reservation) {
+    logger.error("Reservation is missing required fields", { reservation });
+    throw new Error("Reservation is missing required fields");
+  }
+
+  const opportunitySlot = reservation.opportunitySlot;
+  if (!opportunitySlot) {
+    logger.error("OpportunitySlot is missing required fields", { opportunitySlot });
+    throw new Error("OpportunitySlot is missing required fields");
+  }
+
+  const opportunity = opportunitySlot.opportunity;
+  if (!opportunity) {
+    logger.error("Opportunity is missing required fields", { opportunity });
+    throw new Error("Opportunity is missing required fields");
+  }
 
   return {
     claims: {
       type: "EvaluationCredential",
       score: status,
       evaluator: {
-        id: evaluator?.id ?? "",
-        name: evaluator?.name ?? evaluator?.id ?? "",
+        id: evaluator.id,
+        name: evaluator.name,
       },
       participant: {
-        id: user?.id ?? "",
-        name: user?.name ?? "",
+        id: user.id,
+        name: user.name,
       },
       reservation: {
-        id: reservation?.id ?? "",
+        id: reservation.id,
         opportunity: {
-          id: opportunity?.id ?? "",
-          title: opportunity?.title ?? "",
-          startsAt: startAt?.toISOString() ?? "",
+          id: opportunity.id,
+          title: opportunity.title,
+          startsAt: opportunitySlot.startsAt.toISOString(),
         },
       },
     },
