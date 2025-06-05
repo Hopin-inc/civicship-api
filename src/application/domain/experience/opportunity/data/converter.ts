@@ -143,11 +143,17 @@ export default class OpportunityConverter {
           { title: { contains: filter.keyword } },
           {
             place: {
-              name: { contains: filter.keyword },
-              city: {
-                name: { contains: filter.keyword },
-                state: { name: { contains: filter.keyword } },
-              },
+              OR: [
+                { name: { contains: filter.keyword } },
+                {
+                  city: {
+                    OR: [
+                      { name: { contains: filter.keyword } },
+                      { state: { name: { contains: filter.keyword } } },
+                    ],
+                  },
+                },
+              ],
             },
           },
           { createdByUser: { name: { contains: filter.keyword } } },
