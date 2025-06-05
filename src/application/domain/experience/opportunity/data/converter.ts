@@ -140,23 +140,23 @@ export default class OpportunityConverter {
     if (filter.keyword) {
       conditions.push({
         OR: [
-          { title: { contains: filter.keyword } },
+          { title: { contains: filter.keyword, mode: 'insensitive' } },
           {
             place: {
               OR: [
-                { name: { contains: filter.keyword } },
+                { name: { contains: filter.keyword, mode: 'insensitive' } },
                 {
                   city: {
                     OR: [
-                      { name: { contains: filter.keyword } },
-                      { state: { name: { contains: filter.keyword } } },
+                      { name: { contains: filter.keyword, mode: 'insensitive' } },
+                      { state: { name: { contains: filter.keyword, mode: 'insensitive' } } },
                     ],
                   },
                 },
               ],
             },
           },
-          { createdByUser: { name: { contains: filter.keyword } } },
+          { createdByUser: { name: { contains: filter.keyword, mode: 'insensitive' } } },
         ],
       });
     }
