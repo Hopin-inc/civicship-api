@@ -6,11 +6,15 @@ import {
   GqlQueryUtilitiesArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { Prisma, PublishStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { GqlPublishStatus } from "@/types/graphql";
+
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { IImageService } from "../../content/image/interface";
 import UtilityConverter from "./data/converter";
 import { IUtilityService, IUtilityRepository } from "./data/interface";
+import { IOpportunityRepository } from "../../experience/opportunity/data/interface";
+import { getCurrentUserId } from "@/application/domain/utils";
 
 @injectable()
 export default class UtilityService implements IUtilityService {
@@ -18,6 +22,7 @@ export default class UtilityService implements IUtilityService {
     @inject("UtilityRepository") private readonly repository: IUtilityRepository,
     @inject("UtilityConverter") private readonly converter: UtilityConverter,
     @inject("ImageService") private readonly imageService: IImageService,
+    @inject("OpportunityRepository") private readonly opportunityRepository: IOpportunityRepository,
   ) {}
 
   async fetchUtilities(
@@ -49,13 +54,17 @@ export default class UtilityService implements IUtilityService {
   }
 
   async createUtility(ctx: IContext, input: GqlUtilityCreateInput, tx: Prisma.TransactionClient) {
+    if (input.requiredForOpportunityIds?.length) {
+      await this.validateOpportunityOwnership(ctx, input.requiredForOpportunityIds);
+    }
+
     const { data, images } = this.converter.create(input);
 
-    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
+    const uploadedImages: any[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
     );
 
-    const createInput: Prisma.UtilityCreateInput = {
+    const createInput: any = {
       ...data,
       images: {
         create: uploadedImages,
@@ -79,11 +88,11 @@ export default class UtilityService implements IUtilityService {
 
     const { data, images } = this.converter.updateInfo(input);
 
-    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
+    const uploadedImages: any[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
     );
 
-    const updateInput: Prisma.UtilityUpdateInput = {
+    const updateInput: any = {
       ...data,
       images: {
         create: uploadedImages,
@@ -93,7 +102,7 @@ export default class UtilityService implements IUtilityService {
     return await this.repository.update(ctx, id, updateInput, tx);
   }
 
-  validatePublishStatus(allowedStatuses: PublishStatus[], filter?: GqlUtilityFilterInput) {
+  validatePublishStatus(allowedStatuses: GqlPublishStatus[], filter?: GqlUtilityFilterInput) {
     if (
       filter?.publishStatus &&
       !filter.publishStatus.every((publishStatus) => allowedStatuses.includes(publishStatus))
@@ -102,6 +111,25 @@ export default class UtilityService implements IUtilityService {
         `Validation error: publishStatus must be one of ${allowedStatuses.join(", ")}`,
         [JSON.stringify(filter?.publishStatus)],
       );
+    }
+  }
+
+  private async validateOpportunityOwnership(ctx: IContext, opportunityIds: string[]) {
+    const currentUserId = getCurrentUserId(ctx);
+    
+    const opportunities = await Promise.all(
+      opportunityIds.map(id => this.opportunityRepository.find(ctx, id))
+    );
+
+    const invalidOpportunities = opportunities.filter((opp, index) => {
+      if (!opp) {
+        throw new NotFoundError("Opportunity", { id: opportunityIds[index] });
+      }
+      return opp.createdBy !== currentUserId;
+    });
+
+    if (invalidOpportunities.length > 0) {
+      throw new ValidationError("You can only connect opportunities that you own");
     }
   }
 }

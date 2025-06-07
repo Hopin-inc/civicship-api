@@ -47,11 +47,16 @@ export default class UtilityConverter {
     data: Omit<Prisma.UtilityCreateInput, "images">;
     images: GqlImageInput[];
   } {
-    const { images, communityId, ...prop } = input;
+    const { images, communityId, requiredForOpportunityIds, ...prop } = input;
     return {
       data: {
         ...prop,
         community: { connect: { id: communityId } },
+        ...(requiredForOpportunityIds?.length && {
+          requiredForOpportunities: {
+            connect: requiredForOpportunityIds.map(id => ({ id }))
+          }
+        })
       },
       images: images ?? [],
     };

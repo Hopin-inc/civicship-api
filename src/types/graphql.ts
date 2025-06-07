@@ -1,5 +1,5 @@
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
-import { User, Community, Membership, MembershipHistory, Wallet, CurrentPointView, AccumulatedPointView, Opportunity, OpportunitySlot, Place, Participation, ParticipationStatusHistory, Article, Utility, Ticket, TicketIssuer, TicketClaimLink, TicketStatusHistory, Transaction, City, State } from '@prisma/client/index.d';
+import { User, Community, Membership, MembershipHistory, Wallet, CurrentPointView, AccumulatedPointView, Opportunity, OpportunitySlot, Place, Participation, ParticipationStatusHistory, Article, Utility, Ticket, TicketIssuer, TicketClaimLink, TicketStatusHistory, Transaction, City, State } from '@prisma/client';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | undefined;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -2352,6 +2352,7 @@ export type GqlUtilityCreateInput = {
   images?: InputMaybe<Array<GqlImageInput>>;
   name: Scalars['String']['input'];
   pointsRequired: Scalars['Int']['input'];
+  requiredForOpportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type GqlUtilityCreatePayload = GqlUtilityCreateSuccess;
