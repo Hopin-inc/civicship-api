@@ -39,6 +39,7 @@ input UtilityCreateInput {
     pointsRequired: Int!
 
     communityId: ID!
+    requiredForOpportunityIds: [ID!]
 }
 
 input UtilityUpdateInfoInput {
