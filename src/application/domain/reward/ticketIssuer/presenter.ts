@@ -3,7 +3,7 @@ import {
   GqlTicketIssuer,
   GqlTicketIssuersConnection,
 } from "@/types/graphql";
-import { PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssuer/data/type";
+import { PrismaTicketIssuer, PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssuer/data/type";
 
 export default class TicketIssuerPresenter {
   static query(records: GqlTicketIssuer[], hasNextPage: boolean): GqlTicketIssuersConnection {
@@ -30,7 +30,7 @@ export default class TicketIssuerPresenter {
     };
   }
 
-  static issue(r: PrismaTicketIssuerDetail): GqlTicketIssuePayload {
+  static issue(r: PrismaTicketIssuer): GqlTicketIssuePayload {
     return {
       __typename: "TicketIssueSuccess",
       issue: this.get(r),
