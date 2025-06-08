@@ -24,7 +24,9 @@ export default class TicketIssuerConverter {
     return {
       qtyToBeIssued: qty,
       claimLink: {
-        create: { qty },
+        create: {
+          qty: 0,
+        },
       },
       utility: { connect: { id: utilityId } },
       owner: { connect: { id: userId } },
