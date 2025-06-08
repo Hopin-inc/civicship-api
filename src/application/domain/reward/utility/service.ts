@@ -61,11 +61,11 @@ export default class UtilityService implements IUtilityService {
     const currentUserId = getCurrentUserId(ctx);
     const { data, images } = this.converter.create(input, currentUserId);
 
-    const uploadedImages: any[] = await Promise.all(
+    const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
     );
 
-    const createInput: any = {
+    const createInput: Prisma.UtilityCreateInput = {
       ...data,
       images: {
         create: uploadedImages,
@@ -89,11 +89,11 @@ export default class UtilityService implements IUtilityService {
 
     const { data, images } = this.converter.updateInfo(input);
 
-    const uploadedImages: any[] = await Promise.all(
+    const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
     );
 
-    const updateInput: any = {
+    const updateInput: Prisma.UtilityUpdateInput = {
       ...data,
       images: {
         create: uploadedImages,
@@ -117,7 +117,7 @@ export default class UtilityService implements IUtilityService {
 
   private async validateOpportunityOwnership(ctx: IContext, opportunityIds: string[]) {
     const currentUserId = getCurrentUserId(ctx);
-    
+
     const opportunities = await Promise.all(
       opportunityIds.map(id => this.opportunityRepository.find(ctx, id))
     );

@@ -268,14 +268,16 @@ export const WalletFactory = defineWalletFactory.withTransientFields<{
 export const UtilityFactory = defineUtilityFactory.withTransientFields<{
   transientCommunity?: { id: string };
   transientImages?: { id: string }[];
+  transientUser?: { id: string };
 }>({
   transientCommunity: undefined,
   transientImages: undefined,
+  transientUser: undefined,
 })({
-  defaultData: async ({ transientCommunity, transientImages }) => {
+  defaultData: async ({ transientCommunity, transientImages, transientUser }) => {
     const community = transientCommunity ?? (await CommunityFactory.create());
     const images = transientImages ?? (await ImageFactory.createList(3));
-    const user = await UserFactory.create();
+    const user = transientUser ?? (await UserFactory.create());
 
     return {
       name: randAnimal(),
