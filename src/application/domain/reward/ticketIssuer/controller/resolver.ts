@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
-import { PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssuer/data/type";
+import { PrismaTicketIssuer } from "@/application/domain/reward/ticketIssuer/data/type";
 import { GqlQueryTicketIssuerArgs, GqlQueryTicketIssuersArgs } from "@/types/graphql";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 
@@ -21,16 +21,16 @@ export default class TicketIssuerResolver {
   };
 
   TicketIssuer = {
-    utility: (parent: PrismaTicketIssuerDetail, _: unknown, ctx: IContext) => {
-      return parent.utilityId ? ctx.loaders.utility.load(parent.utilityId) : null;
+    utility: (parent: PrismaTicketIssuer, _: unknown, ctx: IContext) => {
+      return parent.utility || (parent.utilityId ? ctx.loaders.utility.load(parent.utilityId) : null);
     },
 
-    owner: (parent: PrismaTicketIssuerDetail, _: unknown, ctx: IContext) => {
-      return parent.ownerId ? ctx.loaders.user.load(parent.ownerId) : null;
+    owner: (parent: PrismaTicketIssuer, _: unknown, ctx: IContext) => {
+      return parent.owner || (parent.ownerId ? ctx.loaders.user.load(parent.ownerId) : null);
     },
 
-    claimLink: (parent: PrismaTicketIssuerDetail, _: unknown, ctx: IContext) => {
-      return parent.claimLinkId ? ctx.loaders.ticketClaimLink.load(parent.claimLinkId) : null;
+    claimLink: (parent: PrismaTicketIssuer, _: unknown, ctx: IContext) => {
+      return parent.claimLink || (parent.claimLinkId ? ctx.loaders.ticketClaimLink.load(parent.claimLinkId) : null);
     },
   };
 }
