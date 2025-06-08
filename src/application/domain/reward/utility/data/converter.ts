@@ -19,8 +19,8 @@ export default class UtilityConverter {
       conditions.push({ publishStatus: { in: filter.publishStatus } });
     if (filter.createdBy) conditions.push({ createdBy: filter.createdBy });
 
-    if (filter.and?.length) conditions.push({ AND: filter.and.map(this.filter) });
-    if (filter.or?.length) conditions.push({ OR: filter.or.map(this.filter) });
+    if (filter.and?.length) conditions.push({ AND: filter.and.map(f => this.filter(f)) });
+    if (filter.or?.length) conditions.push({ OR: filter.or.map(f => this.filter(f)) });
     if (filter.not) conditions.push({ NOT: this.filter(filter.not) });
 
     return conditions.length ? { AND: conditions } : {};
