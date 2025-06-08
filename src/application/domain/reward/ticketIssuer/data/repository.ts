@@ -1,7 +1,7 @@
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { ticketIssuerSelectDetail } from "@/application/domain/reward/ticketIssuer/data/type";
+import { ticketIssuerInclude, ticketIssuerSelectDetail } from "@/application/domain/reward/ticketIssuer/data/type";
 import { ITicketIssuerRepository } from "./interface";
 
 @injectable()
@@ -37,7 +37,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
   create(ctx: IContext, data: Prisma.TicketIssuerCreateInput, tx: Prisma.TransactionClient) {
     return tx.ticketIssuer.create({
       data,
-      select: ticketIssuerSelectDetail,
+      include: ticketIssuerInclude,
     });
   }
 }

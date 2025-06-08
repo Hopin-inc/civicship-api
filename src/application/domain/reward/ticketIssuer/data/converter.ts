@@ -23,6 +23,9 @@ export default class TicketIssuerConverter {
   issue(userId: string, utilityId: string, qty: number): Prisma.TicketIssuerCreateInput {
     return {
       qtyToBeIssued: qty,
+      claimLink: {
+        create: { qty },
+      },
       utility: { connect: { id: utilityId } },
       owner: { connect: { id: userId } },
     };

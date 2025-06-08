@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { PrismaTicketIssuerDetail } from "./type";
+import { PrismaTicketIssuer, PrismaTicketIssuerDetail } from "./type";
 
 export interface ITicketIssuerRepository {
   query(
@@ -15,7 +15,7 @@ export interface ITicketIssuerRepository {
     ctx: IContext,
     data: Prisma.TicketIssuerCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaTicketIssuerDetail>;
+  ): Promise<PrismaTicketIssuer>;
 }
 
 export interface ITicketIssuerService {
@@ -24,5 +24,5 @@ export interface ITicketIssuerService {
     userId: string,
     utilityId: string,
     qtyToBeIssued: number,
-  ): Promise<PrismaTicketIssuerDetail>;
+  ): Promise<PrismaTicketIssuer>;
 }
