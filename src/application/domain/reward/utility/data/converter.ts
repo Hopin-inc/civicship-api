@@ -43,7 +43,7 @@ export default class UtilityConverter {
     };
   }
 
-  create(input: GqlUtilityCreateInput): {
+  create(input: GqlUtilityCreateInput, createdBy: string): {
     data: Omit<Prisma.UtilityCreateInput, "images">;
     images: GqlImageInput[];
   } {
@@ -52,6 +52,7 @@ export default class UtilityConverter {
       data: {
         ...prop,
         community: { connect: { id: communityId } },
+        createdByUser: { connect: { id: createdBy } },
         ...(requiredForOpportunityIds?.length && {
           requiredForOpportunities: {
             connect: requiredForOpportunityIds.map(id => ({ id }))

@@ -29,7 +29,11 @@ export function createRequiredUtilitiesByOpportunityLoader(issuer: PrismaClientI
     const opportunities = await issuer.internal((tx) =>
       tx.opportunity.findMany({
         where: { id: { in: [...opportunityIds] } },
-        include: { requiredUtilities: true },
+        include: { 
+          requiredUtilities: {
+            select: utilitySelectDetail,
+          }
+        },
       }),
     );
 
@@ -49,6 +53,7 @@ export function createUtilitiesByCommunityLoader(issuer: PrismaClientIssuer) {
       return issuer.internal((tx) =>
         tx.utility.findMany({
           where: { communityId: { in: [...communityIds] } },
+          select: utilitySelectDetail,
         }),
       );
     },

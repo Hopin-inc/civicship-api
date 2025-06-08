@@ -58,7 +58,8 @@ export default class UtilityService implements IUtilityService {
       await this.validateOpportunityOwnership(ctx, input.requiredForOpportunityIds);
     }
 
-    const { data, images } = this.converter.create(input);
+    const currentUserId = getCurrentUserId(ctx);
+    const { data, images } = this.converter.create(input, currentUserId);
 
     const uploadedImages: any[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),

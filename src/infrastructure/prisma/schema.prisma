@@ -224,6 +224,7 @@ model User {
   ticketStatusChangedByMe TicketStatusHistory[]
 
   opportunitiesCreatedByMe       Opportunity[]
+  utilitiesCreatedByMe           Utility[]
   reservationsAppliedByMe        Reservation[]
   reservationStatusChangedByMe   ReservationHistory[]
   participations                 Participation[]
@@ -761,6 +762,9 @@ model Utility {
 
   ticketIssuer TicketIssuer[]
   tickets      Ticket[]
+
+  createdBy     String @map("created_by")
+  createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

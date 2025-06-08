@@ -77,6 +77,11 @@ describe("UtilityService", () => {
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
+        createdBy: "user1",
+        createdByUser: {
+          id: "user1",
+          name: "Test User",
+        },
         createdAt: new Date(),
         updatedAt: null,
         community: {
@@ -117,6 +122,11 @@ describe("UtilityService", () => {
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
+        createdBy: "user1",
+        createdByUser: {
+          id: "user1",
+          name: "Test User",
+        },
         createdAt: new Date(),
         updatedAt: null,
         community: {
@@ -186,6 +196,11 @@ describe("UtilityService", () => {
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
+        createdBy: "user1",
+        createdByUser: {
+          id: "user1",
+          name: "Test User",
+        },
         createdAt: new Date(),
         updatedAt: null,
         community: {

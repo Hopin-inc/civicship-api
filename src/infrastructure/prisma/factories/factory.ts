@@ -275,6 +275,7 @@ export const UtilityFactory = defineUtilityFactory.withTransientFields<{
   defaultData: async ({ transientCommunity, transientImages }) => {
     const community = transientCommunity ?? (await CommunityFactory.create());
     const images = transientImages ?? (await ImageFactory.createList(3));
+    const user = await UserFactory.create();
 
     return {
       name: randAnimal(),
@@ -287,6 +288,7 @@ export const UtilityFactory = defineUtilityFactory.withTransientFields<{
         PublishStatus.PRIVATE,
       ]),
       community: { connect: { id: community.id } },
+      createdByUser: { connect: { id: user.id } },
       images: {
         connect: images.map((image) => ({ id: image.id })),
       },

@@ -18,6 +18,8 @@ type Utility {
 
     requiredForOpportunities: [Opportunity!]
 
+    createdByUser: User
+
     createdAt: Datetime
     updatedAt: Datetime
 }

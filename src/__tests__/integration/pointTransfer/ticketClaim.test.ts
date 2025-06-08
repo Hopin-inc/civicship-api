@@ -83,6 +83,7 @@ describe("Ticket Claim Tests", () => {
       name: "Test Utility",
       pointsRequired: testSetup.pointsRequired,
       community: { connect: { id: communityId } },
+      createdByUser: { connect: { id: owner.id } },
     });
 
     const issuer = await TestDataSourceHelper.createTicketIssuer({
@@ -209,6 +210,7 @@ describe("Ticket Claim Tests", () => {
       name: "Test Utility",
       pointsRequired: testSetup.pointsRequired,
       community: { connect: { id: communityId } },
+      createdByUser: { connect: { id: owner.id } },
     });
 
     const issuer = await TestDataSourceHelper.createTicketIssuer({
@@ -293,6 +295,7 @@ describe("Ticket Claim Tests", () => {
       name: "Test Utility",
       pointsRequired: testSetup.pointsRequired,
       community: { connect: { id: communityId } },
+      createdByUser: { connect: { id: owner.id } },
     });
 
     const issuer = await TestDataSourceHelper.createTicketIssuer({
