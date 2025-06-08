@@ -223,6 +223,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Opportunity",
                 relationName: "OpportunityToUser"
             }, {
+                name: "utilitiesCreatedByMe",
+                type: "Utility",
+                relationName: "UserToUtility"
+            }, {
                 name: "reservationsAppliedByMe",
                 type: "Reservation",
                 relationName: "ReservationToUser"
@@ -532,6 +536,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "tickets",
                 type: "Ticket",
                 relationName: "TicketToUtility"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "UserToUtility"
             }]
     }, {
         name: "TicketIssuer",
@@ -1583,6 +1591,7 @@ type UserFactoryDefineInput = {
     ticketIssuedByMe?: Prisma.TicketIssuerCreateNestedManyWithoutOwnerInput;
     ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
     opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
+    utilitiesCreatedByMe?: Prisma.UtilityCreateNestedManyWithoutCreatedByUserInput;
     reservationsAppliedByMe?: Prisma.ReservationCreateNestedManyWithoutCreatedByUserInput;
     reservationStatusChangedByMe?: Prisma.ReservationHistoryCreateNestedManyWithoutCreatedByUserInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutUserInput;
@@ -4065,6 +4074,11 @@ type UtilitycommunityFactory = {
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutUtilitiesInput["create"]>;
 };
 
+type UtilitycreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutUtilitiesCreatedByMeInput["create"]>;
+};
+
 type UtilityFactoryDefineInput = {
     id?: string;
     publishStatus?: PublishStatus;
@@ -4078,6 +4092,7 @@ type UtilityFactoryDefineInput = {
     requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
     ticketIssuer?: Prisma.TicketIssuerCreateNestedManyWithoutUtilityInput;
     tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
+    createdByUser: UtilitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutUtilitiesCreatedByMeInput;
 };
 
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
@@ -4095,6 +4110,10 @@ type UtilityFactoryDefineOptions<TTransients extends Record<string, unknown> = R
 
 function isUtilitycommunityFactory(x: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput | undefined): x is UtilitycommunityFactory {
     return (x as any)?._factoryFor === "Community";
+}
+
+function isUtilitycreatedByUserFactory(x: UtilitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutUtilitiesCreatedByMeInput | undefined): x is UtilitycreatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
 }
 
 type UtilityTraitKeys<TOptions extends UtilityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -4160,7 +4179,10 @@ function defineUtilityFactoryInternal<TTransients extends Record<string, unknown
             const defaultAssociations = {
                 community: isUtilitycommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community
+                } : defaultData.community,
+                createdByUser: isUtilitycreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
             } as Prisma.UtilityCreateInput;
             const data: Prisma.UtilityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
