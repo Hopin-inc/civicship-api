@@ -1,7 +1,7 @@
 import { injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
-import { ticketIssuerSelectDetail } from "@/application/domain/reward/ticketIssuer/data/type";
+import { ticketIssuerInclude } from "@/application/domain/reward/ticketIssuer/data/type";
 import { ITicketIssuerRepository } from "./interface";
 
 @injectable()
@@ -20,7 +20,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
-        select: ticketIssuerSelectDetail,
+        include: ticketIssuerInclude,
       });
     });
   }
@@ -29,7 +29,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.ticketIssuer.findUnique({
         where: { id },
-        select: ticketIssuerSelectDetail,
+        include: ticketIssuerInclude,
       });
     });
   }
@@ -37,7 +37,7 @@ export default class TicketIssuerRepository implements ITicketIssuerRepository {
   create(ctx: IContext, data: Prisma.TicketIssuerCreateInput, tx: Prisma.TransactionClient) {
     return tx.ticketIssuer.create({
       data,
-      select: ticketIssuerSelectDetail,
+      include: ticketIssuerInclude,
     });
   }
 }
