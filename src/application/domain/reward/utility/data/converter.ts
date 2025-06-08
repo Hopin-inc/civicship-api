@@ -17,6 +17,7 @@ export default class UtilityConverter {
     if (filter.communityId) conditions.push({ communityId: filter.communityId });
     if (filter.publishStatus?.length)
       conditions.push({ publishStatus: { in: filter.publishStatus } });
+    if (filter.createdBy) conditions.push({ createdBy: filter.createdBy });
 
     if (filter.and?.length) conditions.push({ AND: filter.and.map(this.filter) });
     if (filter.or?.length) conditions.push({ OR: filter.or.map(this.filter) });
