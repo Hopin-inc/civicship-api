@@ -89,7 +89,7 @@ export default class WalletValidator {
     }
     const { currentPoint } = fromWallet.currentPointView || {};
 
-    if (!currentPoint || currentPoint < transferPoints) {
+    if (currentPoint !== undefined && currentPoint < transferPoints) {
       throw new InsufficientBalanceError(currentPoint ?? 0, transferPoints);
     }
   }
