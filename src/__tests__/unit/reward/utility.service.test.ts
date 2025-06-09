@@ -68,7 +68,7 @@ afterEach(() => {
 describe("UtilityService", () => {
   describe("findUtility", () => {
     it("should return utility if found", async () => {
-      const filter = { communityId: "c1" };
+      const filter = { communityIds: ["c1"] };
       const where = { id: "u1", AND: [{ communityId: "c1" }] };
       const mockUtility = {
         id: "u1",
@@ -148,11 +148,12 @@ describe("UtilityService", () => {
   describe("createUtility", () => {
     it("should convert input and call repository.create", async () => {
       const input: GqlUtilityCreateInput = {
-        communityId: "c1",
         name: "Test Utility",
         pointsRequired: 100,
         images: [],
       };
+      const currentUserId = "u1";
+      const communityId = "c1";
 
       const converted = {
         data: { dummy: true },
@@ -164,7 +165,7 @@ describe("UtilityService", () => {
       mockConverter.create.mockReturnValue(converted);
       mockRepository.create.mockResolvedValue(created);
 
-      const result = await service.createUtility(mockCtx, input, mockTx);
+      const result = await service.createUtility(mockCtx, input, currentUserId, communityId, mockTx);
 
       expect(result).toBe(created);
       expect(mockConverter.create).toHaveBeenCalledWith(input);
