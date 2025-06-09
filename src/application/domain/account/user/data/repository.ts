@@ -16,7 +16,7 @@ export default class UserRepository implements IUserRepository {
     take: number,
     cursor?: string,
   ) {
-    return ctx.issuer.public(ctx, (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
       return tx.user.findMany({
         where,
         orderBy,
@@ -29,7 +29,7 @@ export default class UserRepository implements IUserRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return ctx.issuer.public(ctx, (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
       return tx.user.findUnique({
         where: { id },
         select: userSelectDetail,
