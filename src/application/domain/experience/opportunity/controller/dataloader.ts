@@ -48,7 +48,11 @@ export function createOpportunitiesByUtilityLoader(issuer: PrismaClientIssuer) {
     const utilities = await issuer.internal((tx) =>
       tx.utility.findMany({
         where: { id: { in: [...utilityIds] } },
-        include: { requiredForOpportunities: true },
+        include: { 
+          requiredForOpportunities: {
+            select: opportunitySelectDetail,
+          }
+        },
       }),
     );
 
