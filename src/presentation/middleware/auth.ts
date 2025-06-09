@@ -24,7 +24,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const phoneUid = (req.headers["x-phone-uid"] as string) || "";
   const refreshToken = (req.headers["x-refresh-token"] as string) || "";
   const tokenExpiresAt = (req.headers["x-token-expires-at"] as string) || "";
-  const communityId = (req.headers["x-community-id"] as string) || "";
 
   logger.debug("Request token presence:", {
     path: req.url || "unknown",
@@ -79,7 +78,6 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       tenantId,
       platform,
 
-      communityId,
       currentUser,
       hasPermissions,
 

@@ -37,13 +37,15 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
-  public communityInternal<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    const isMember = ctx.hasPermissions?.memberships.some((m) => m.communityId === ctx.communityId);
-
-    if (isMember) {
-      return this.bypassRls(callback);
+  public onlyBelongingCommunity<T>({ currentUser }: IContext, callback: CallbackFn<T>): Promise<T> {
+    if (currentUser) {
+      return this.client.$transaction(async (tx) => {
+        await this.setRls(tx);
+        await this.setRlsConfigUserId(tx, currentUser.id);
+        return await callback(tx);
+      });
     } else {
-      throw new AuthorizationError("User must be a member of the internal community");
+      throw new Error("No community available!");
     }
   }
 
@@ -56,15 +58,26 @@ export class PrismaClientIssuer {
   }
 
   private bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
-    return this.client.$transaction(
-      async (tx) => {
-        return await callback(tx);
-      },
-      {
-        maxWait: 5000,
-        timeout: 10000,
-      },
+    return this.client.$transaction(async (tx) => {
+      await this.setRls(tx, true);
+      await this.setRlsConfigUserId(tx, null);
+      return await callback(tx);
+    });
+  }
+
+  private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', TRUE) as value;`,
     );
+    return value;
+  }
+
+  private async setRls(tx: Transaction, bypass: boolean = false) {
+    const bypassConfig = bypass ? "on" : "off";
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_bypass', '${bypassConfig}', TRUE) as value;`,
+    );
+    return value;
   }
 }
 
