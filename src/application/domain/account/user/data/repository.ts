@@ -29,7 +29,7 @@ export default class UserRepository implements IUserRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return ctx.issuer.admin(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.user.findUnique({
         where: { id },
         select: userSelectDetail,
