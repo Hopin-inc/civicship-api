@@ -36,6 +36,7 @@ input UtilityCreateInput {
     name: String!
     description: String
     images: [ImageInput!]
+    requiredForOpportunityIds: [String!]
     pointsRequired: Int!
 }
 

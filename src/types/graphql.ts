@@ -2352,6 +2352,7 @@ export type GqlUtilityCreateInput = {
   images?: InputMaybe<Array<GqlImageInput>>;
   name: Scalars['String']['input'];
   pointsRequired: Scalars['Int']['input'];
+  requiredForOpportunityIds?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type GqlUtilityCreatePayload = GqlUtilityCreateSuccess;

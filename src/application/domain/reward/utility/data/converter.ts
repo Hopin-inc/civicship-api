@@ -14,20 +14,20 @@ export default class UtilityConverter {
     if (!filter) return {};
     const conditions: Prisma.UtilityWhereInput[] = [];
 
-    if (Array.isArray(filter.communityIds) && filter.communityIds.length > 0) {
+    if (filter.communityIds && Array.isArray(filter.communityIds) && filter.communityIds.length > 0) {
       conditions.push({ communityId: { in: filter.communityIds } });
     }
-    if (Array.isArray(filter.ownerIds) && filter.ownerIds.length > 0) {
+    if (filter.ownerIds && Array.isArray(filter.ownerIds) && filter.ownerIds.length > 0) {
       conditions.push({ ownerId: { in: filter.ownerIds } });
     }
-    if (Array.isArray(filter.publishStatus) && filter.publishStatus.length > 0) {
+    if (filter.publishStatus && Array.isArray(filter.publishStatus) && filter.publishStatus.length > 0) {
       conditions.push({ publishStatus: { in: filter.publishStatus } });
     }
 
-    if (Array.isArray(filter.and) && filter.and.length > 0) {
+    if (filter.and && Array.isArray(filter.and) && filter.and.length > 0) {
       conditions.push({ AND: filter.and.map((f) => this.filter(f)).filter(Boolean) });
     }
-    if (Array.isArray(filter.or) && filter.or.length > 0) {
+    if (filter.or && Array.isArray(filter.or) && filter.or.length > 0) {
       conditions.push({ OR: filter.or.map((f) => this.filter(f)).filter(Boolean) });
     }
     if (filter.not) {
@@ -66,12 +66,15 @@ export default class UtilityConverter {
     data: Omit<Prisma.UtilityCreateInput, "images">;
     images: GqlImageInput[];
   } {
-    const { images, ...prop } = input;
+    const { images, requiredForOpportunityIds, ...prop } = input;
     return {
       data: {
         ...prop,
         community: { connect: { id: communityId } },
         owner: { connect: { id: currentUserId } },
+        requiredForOpportunities: requiredForOpportunityIds
+          ? { connect: requiredForOpportunityIds.map(id => ({ id })) }
+          : undefined,
       },
       images: images ?? [],
     };
