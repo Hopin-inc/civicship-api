@@ -37,8 +37,18 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
+  public communityInternal<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+    const isMember = ctx.hasPermissions?.memberships.some((m) => m.communityId === ctx.communityId);
+
+    if (isMember) {
+      return this.bypassRls(callback);
+    } else {
+      throw new AuthorizationError("User must be a member of the internal community");
+    }
+  }
+
   public admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    if (ctx.currentUser?.sysRole === 'SYS_ADMIN') {
+    if (ctx.currentUser?.sysRole === "SYS_ADMIN") {
       return this.bypassRls(callback);
     } else {
       throw new AuthorizationError("User must be admin");
