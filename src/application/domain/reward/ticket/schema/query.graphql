@@ -29,9 +29,11 @@ type TicketEdge implements Edge {
 # Ticket Query Input Definitions
 # ------------------------------
 input TicketFilterInput {
+    status: TicketStatus
+
+    ownerId: ID
     walletId: ID
     utilityId: ID
-    status: TicketStatus
 }
 
 input TicketSortInput {

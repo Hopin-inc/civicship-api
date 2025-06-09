@@ -22,7 +22,7 @@ export default class TicketResolver {
     },
 
     ticket: (_: unknown, args: GqlQueryTicketArgs, ctx: IContext) => {
-      return ctx.loaders.ticket.load(args.id);
+      return this.ticketUseCase.visitorViewTicket(ctx, args);
     },
   };
 

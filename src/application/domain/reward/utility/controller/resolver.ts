@@ -20,7 +20,7 @@ export default class UtilityResolver {
     },
 
     utility: (_: unknown, args: GqlQueryUtilityArgs, ctx: IContext) => {
-      return ctx.loaders.utility.load(args.id);
+      return this.utilityUseCase.visitorViewUtility(ctx, args);
     },
   };
 

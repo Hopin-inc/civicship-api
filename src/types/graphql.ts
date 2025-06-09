@@ -1987,6 +1987,7 @@ export type GqlTicketEdge = GqlEdge & {
 };
 
 export type GqlTicketFilterInput = {
+  ownerId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlTicketStatus>;
   utilityId?: InputMaybe<Scalars['ID']['input']>;
   walletId?: InputMaybe<Scalars['ID']['input']>;
@@ -2347,11 +2348,11 @@ export type GqlUtility = {
 };
 
 export type GqlUtilityCreateInput = {
-  communityId: Scalars['ID']['input'];
   description?: InputMaybe<Scalars['String']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
   name: Scalars['String']['input'];
   pointsRequired: Scalars['Int']['input'];
+  requiredForOpportunityIds?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type GqlUtilityCreatePayload = GqlUtilityCreateSuccess;
@@ -2376,9 +2377,10 @@ export type GqlUtilityEdge = GqlEdge & {
 
 export type GqlUtilityFilterInput = {
   and?: InputMaybe<Array<GqlUtilityFilterInput>>;
-  communityId?: InputMaybe<Scalars['ID']['input']>;
+  communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   not?: InputMaybe<GqlUtilityFilterInput>;
   or?: InputMaybe<Array<GqlUtilityFilterInput>>;
+  ownerIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
 };
 

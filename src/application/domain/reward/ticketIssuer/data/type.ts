@@ -19,9 +19,10 @@ export const ticketIssuerSelectDetail = Prisma.validator<Prisma.TicketIssuerSele
   id: true,
   qtyToBeIssued: true,
 
-  claimLinkId: true,
   utilityId: true,
   ownerId: true,
+
+  claimLink: true,
 
   createdAt: true,
   updatedAt: true,

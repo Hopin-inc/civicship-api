@@ -220,6 +220,7 @@ model User {
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
 
+  utiltyOwnedByMe         Utility[]
   ticketIssuedByMe        TicketIssuer[]
   ticketStatusChangedByMe TicketStatusHistory[]
 
@@ -762,6 +763,9 @@ model Utility {
   ticketIssuer TicketIssuer[]
   tickets      Ticket[]
 
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -782,8 +786,7 @@ model TicketIssuer {
   ownerId String @map("owner_id")
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  claimLinkId String?          @unique @map("claim_link_id")
-  claimLink   TicketClaimLink?
+  claimLink TicketClaimLink?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -796,7 +799,7 @@ model TicketClaimLink {
   status ClaimLinkStatus @default(ISSUED)
 
   /// Max number of tickets a user can claim using this link
-  qty Int @default(1)
+  qty Int @default(0)
 
   issuerId String       @unique @map("issuer_id")
   issuer   TicketIssuer @relation(fields: [issuerId], references: [id])
