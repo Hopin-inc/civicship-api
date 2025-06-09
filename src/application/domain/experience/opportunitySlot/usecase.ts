@@ -60,7 +60,7 @@ export default class OpportunitySlotUseCase {
     let cancelledSlot: PrismaOpportunitySlotSetHostingStatus | null = null;
     const currentUserId = getCurrentUserId(ctx);
 
-    const res = await ctx.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input.status, tx);
 
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
@@ -107,7 +107,7 @@ export default class OpportunitySlotUseCase {
     { input }: GqlMutationOpportunitySlotsBulkUpdateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySlotsBulkUpdatePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.service.bulkCreateOpportunitySlots(
         ctx,
         input.opportunityId,

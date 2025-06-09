@@ -80,7 +80,7 @@ export default class OpportunityUseCase {
     { input }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const record = await this.service.createOpportunity(ctx, input, tx);
       return OpportunityPresenter.create(record);
     });
@@ -90,7 +90,7 @@ export default class OpportunityUseCase {
     { id }: GqlMutationOpportunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityDeletePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const record = await this.service.deleteOpportunity(ctx, id, tx);
       return OpportunityPresenter.delete(record);
     });
@@ -100,7 +100,7 @@ export default class OpportunityUseCase {
     { id, input }: GqlMutationOpportunityUpdateContentArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityUpdateContentPayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const record = await this.service.updateOpportunityContent(ctx, id, input, tx);
       return OpportunityPresenter.update(record);
     });
@@ -110,7 +110,7 @@ export default class OpportunityUseCase {
     { id, input }: GqlMutationOpportunitySetPublishStatusArgs,
     ctx: IContext,
   ): Promise<GqlOpportunitySetPublishStatusPayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const record = await this.service.setOpportunityPublishStatus(
         ctx,
         id,
