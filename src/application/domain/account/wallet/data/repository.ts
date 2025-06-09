@@ -13,7 +13,7 @@ export default class WalletRepository implements IWalletRepository {
     take: number,
     cursor?: string,
   ) {
-    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findMany({
         where,
         orderBy,
@@ -26,7 +26,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findUnique({
         where: { id },
         include: walletInclude,
@@ -35,7 +35,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async findCommunityWallet(ctx: IContext, communityId: string) {
-    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, type: WalletType.COMMUNITY },
         select: walletSelectDetail,
@@ -44,7 +44,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async findFirstExistingMemberWallet(ctx: IContext, communityId: string, userId: string) {
-    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.wallet.findFirst({
         where: { communityId, userId, type: WalletType.MEMBER },
         include: walletInclude,
