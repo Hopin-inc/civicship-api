@@ -16,7 +16,7 @@ export default class UserRepository implements IUserRepository {
     take: number,
     cursor?: string,
   ) {
-    return ctx.issuer.public(ctx, (tx) => {
+    return ctx.issuer.admin(ctx, (tx) => {
       return tx.user.findMany({
         where,
         orderBy,

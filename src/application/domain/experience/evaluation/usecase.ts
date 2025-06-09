@@ -1,6 +1,7 @@
 import { inject, injectable } from "tsyringe";
 import {
-  GqlEvaluation, GqlEvaluationBulkCreatePayload,
+  GqlEvaluation,
+  GqlEvaluationBulkCreatePayload,
   GqlEvaluationCreatePayload,
   GqlEvaluationsConnection,
   GqlMutationEvaluationBulkCreateArgs,
@@ -141,7 +142,7 @@ export default class EvaluationUseCase {
     const currentUserId = getCurrentUserId(ctx);
     const evaluations: PrismaEvaluationDetail[] = [];
 
-    const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
+    const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       for (const item of input.evaluations) {
         await this.validateEvaluatable(ctx, item.participationId);
 

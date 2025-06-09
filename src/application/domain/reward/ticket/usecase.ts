@@ -83,7 +83,7 @@ export default class TicketUseCase {
     const { communityId, pointsRequired } = utility;
     const transferPoints = pointsRequired * qtyToBeIssued;
 
-    const tickets = await ctx.issuer.public(ctx, async (tx) => {
+    const tickets = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       const [ownerWallet, claimerWallet] = await Promise.all([
         this.walletService.findMemberWalletOrThrow(ctx, ticketOwnerId, communityId),
@@ -138,7 +138,7 @@ export default class TicketUseCase {
       input.communityId,
     );
 
-    return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
         input.pointsRequired,
         memberWallet,
@@ -168,9 +168,12 @@ export default class TicketUseCase {
     ctx: IContext,
     { id }: GqlMutationTicketUseArgs,
   ): Promise<GqlTicketUsePayload> {
-    const result = await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      return await this.ticketService.useTicket(ctx, id, tx);
-    });
+    const result = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        return await this.ticketService.useTicket(ctx, id, tx);
+      },
+    );
     return TicketPresenter.use(result);
   }
 
@@ -184,7 +187,7 @@ export default class TicketUseCase {
       input.communityId,
     );
 
-    return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
         input.pointsRequired,
         communityWallet,
