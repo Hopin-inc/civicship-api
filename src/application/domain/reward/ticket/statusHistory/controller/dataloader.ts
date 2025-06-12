@@ -81,6 +81,7 @@ export function createTicketStatusHistoriesByParticipationLoader(issuer: PrismaC
       return issuer.internal((tx) =>
         tx.ticketStatusHistory.findMany({
           where: { participationId: { in: [...participationIds] } },
+          select: ticketStatusHistorySelectDetail,
         }),
       );
     },
