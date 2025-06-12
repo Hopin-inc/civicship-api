@@ -43,6 +43,7 @@ export function createTicketStatusHistoriesByTicketLoader(issuer: PrismaClientIs
       return issuer.internal((tx) =>
         tx.ticketStatusHistory.findMany({
           where: { ticketId: { in: [...ticketIds] } },
+          select: ticketStatusHistorySelectDetail,
         }),
       );
     },
@@ -63,6 +64,7 @@ export function createTicketStatusHistoriesByTransactionLoader(issuer: PrismaCli
           where: {
             transactionId: { in: [...transactionIds] },
           },
+          select: ticketStatusHistorySelectDetail,
         }),
       );
     },
