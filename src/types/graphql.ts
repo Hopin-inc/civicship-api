@@ -315,6 +315,11 @@ export type GqlEvaluationBulkCreateSuccess = {
   evaluations: Array<GqlEvaluation>;
 };
 
+export type GqlEvaluationCreateInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
+  participationId: Scalars['ID']['input'];
+};
+
 export type GqlEvaluationEdge = GqlEdge & {
   __typename?: 'EvaluationEdge';
   cursor: Scalars['String']['output'];
@@ -2591,6 +2596,7 @@ export type GqlResolversTypes = ResolversObject<{
   EvaluationBulkCreateInput: GqlEvaluationBulkCreateInput;
   EvaluationBulkCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['EvaluationBulkCreatePayload']>;
   EvaluationBulkCreateSuccess: ResolverTypeWrapper<Omit<GqlEvaluationBulkCreateSuccess, 'evaluations'> & { evaluations: Array<GqlResolversTypes['Evaluation']> }>;
+  EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationEdge: ResolverTypeWrapper<Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Evaluation']> }>;
   EvaluationFilterInput: GqlEvaluationFilterInput;
   EvaluationHistoriesConnection: ResolverTypeWrapper<Omit<GqlEvaluationHistoriesConnection, 'edges'> & { edges: Array<GqlResolversTypes['EvaluationHistoryEdge']> }>;
@@ -2861,6 +2867,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   EvaluationBulkCreateInput: GqlEvaluationBulkCreateInput;
   EvaluationBulkCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['EvaluationBulkCreatePayload'];
   EvaluationBulkCreateSuccess: Omit<GqlEvaluationBulkCreateSuccess, 'evaluations'> & { evaluations: Array<GqlResolversParentTypes['Evaluation']> };
+  EvaluationCreateInput: GqlEvaluationCreateInput;
   EvaluationEdge: Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Evaluation']> };
   EvaluationFilterInput: GqlEvaluationFilterInput;
   EvaluationHistoriesConnection: Omit<GqlEvaluationHistoriesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['EvaluationHistoryEdge']> };

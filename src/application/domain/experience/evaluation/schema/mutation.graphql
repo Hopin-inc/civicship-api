@@ -12,6 +12,11 @@ extend type Mutation {
 # ------------------------------
 # Evaluation Mutation Input Definitions
 # ------------------------------
+input EvaluationCreateInput {
+    participationId: ID!
+    comment: String
+}
+
 input EvaluationItem {
     participationId: ID!
     status: EvaluationStatus!
