@@ -20,8 +20,14 @@ ALIASES=("admin-menu" "user-menu" "public-menu")
 BASE_NAMES=("admin_menu" "user_menu" "public_menu")
 DIRS=("admin" "user" "public")  # 👈 修正ポイント
 
-# 書き出し用 const.ts 初期化
+# 書き出し用 .generated/richmenu.txt 初期化
 CONSTANT_FILE_PATH="$SCRIPT_DIR/../../.generated/richmenu.txt"
+if [ ! -f "$CONSTANT_FILE_PATH" ] ; then
+  touch "$CONSTANT_FILE_PATH"
+fi
+
+# 現在時刻をメモ
+echo "-------- $(date) --------" >> "$CONSTANT_FILE_PATH"
 
 for i in "${!ALIASES[@]}"; do
   alias="${ALIASES[$i]}"
@@ -88,6 +94,8 @@ for i in "${!ALIASES[@]}"; do
   echo "RICH_MENU_ID_$key=$richMenuId" >> "$CONSTANT_FILE_PATH"
   echo "-----------------------------"
 done
+
+echo "" >> "$CONSTANT_FILE_PATH"
 
 # デフォルトメニュー設定
 defaultKey=""

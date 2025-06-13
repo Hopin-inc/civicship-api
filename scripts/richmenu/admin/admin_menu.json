@@ -35,14 +35,14 @@
     },
     {
       "bounds": {
-        "x": 833,
+        "x": 0,
         "y": 843,
         "width": 833,
         "height": 843
       },
       "action": {
         "type": "uri",
-        "label": "応募対応",
+        "label": "予約管理",
         "uri": "${LIFF_BASE_URL}/admin/reservations"
       }
     },
@@ -55,8 +55,8 @@
       },
       "action": {
         "type": "uri",
-        "label": "出欠管理",
-        "uri": "${LIFF_BASE_URL}/admin/slots"
+        "label": "チケット発行",
+        "uri": "${LIFF_BASE_URL}/admin/tickets"
       }
     }
   ]

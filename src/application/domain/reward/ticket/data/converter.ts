@@ -8,9 +8,10 @@ export default class TicketConverter {
   filter(filter: GqlTicketFilterInput): Prisma.TicketWhereInput {
     return {
       AND: [
+        filter?.ownerId ? { wallet: { userId: filter.ownerId } } : {},
+        filter?.status ? { status: filter.status } : {},
         filter?.walletId ? { walletId: filter.walletId } : {},
         filter?.utilityId ? { utilityId: filter.utilityId } : {},
-        filter?.status ? { status: filter.status } : {},
       ],
     };
   }

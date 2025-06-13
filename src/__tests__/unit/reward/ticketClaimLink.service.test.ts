@@ -1,8 +1,9 @@
 import "reflect-metadata";
-import { ClaimLinkStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import TicketClaimLinkService from "@/application/domain/reward/ticketClaimLink/service";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { GqlClaimLinkStatus } from "@/types/graphql";
 
 describe("TicketClaimLinkService", () => {
   // --- Mockクラス ---
@@ -12,8 +13,14 @@ describe("TicketClaimLinkService", () => {
     update = jest.fn();
   }
 
+  class MockTicketClaimLinkConverter {
+    filter = jest.fn();
+    sort = jest.fn();
+  }
+
   // --- モックインスタンス ---
   let mockRepository: MockTicketClaimLinkRepository;
+  let mockConverter: MockTicketClaimLinkConverter;
   let service: TicketClaimLinkService;
 
   const ctx = {} as IContext;
@@ -22,7 +29,8 @@ describe("TicketClaimLinkService", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockRepository = new MockTicketClaimLinkRepository();
-    service = new TicketClaimLinkService(mockRepository);
+    mockConverter = new MockTicketClaimLinkConverter();
+    service = new TicketClaimLinkService(mockRepository, mockConverter);
   });
 
   afterEach(() => {
@@ -32,8 +40,8 @@ describe("TicketClaimLinkService", () => {
   describe("validateBeforeClaim", () => {
     const claimLinkId = "claim-link-id";
 
-    const errorStatuses = [ClaimLinkStatus.CLAIMED, ClaimLinkStatus.EXPIRED];
-    const validStatuses = [ClaimLinkStatus.ISSUED];
+    const errorStatuses = [GqlClaimLinkStatus.Claimed, GqlClaimLinkStatus.Expired];
+    const validStatuses = [GqlClaimLinkStatus.Issued];
 
     it("should throw NotFoundError if link not found", async () => {
       mockRepository.find.mockResolvedValue(null);
@@ -81,7 +89,7 @@ describe("TicketClaimLinkService", () => {
         claimLinkId,
         expect.objectContaining({
           qty,
-          status: ClaimLinkStatus.CLAIMED,
+          status: "CLAIMED",
           claimedAt: expect.any(Date),
         }),
         tx,

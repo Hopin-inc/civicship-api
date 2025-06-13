@@ -43,6 +43,7 @@ export function createTicketStatusHistoriesByTicketLoader(issuer: PrismaClientIs
       return issuer.internal((tx) =>
         tx.ticketStatusHistory.findMany({
           where: { ticketId: { in: [...ticketIds] } },
+          select: ticketStatusHistorySelectDetail,
         }),
       );
     },
@@ -63,6 +64,26 @@ export function createTicketStatusHistoriesByTransactionLoader(issuer: PrismaCli
           where: {
             transactionId: { in: [...transactionIds] },
           },
+          select: ticketStatusHistorySelectDetail,
+        }),
+      );
+    },
+    TicketStatusHistoryPresenter.get,
+  );
+}
+
+export function createTicketStatusHistoriesByParticipationLoader(issuer: PrismaClientIssuer) {
+  return createHasManyLoaderByKey<
+    "participationId",
+    PrismaTicketStatusHistoryDetail,
+    GqlTicketStatusHistory
+  >(
+    "participationId",
+    async (participationIds) => {
+      return issuer.internal((tx) =>
+        tx.ticketStatusHistory.findMany({
+          where: { participationId: { in: [...participationIds] } },
+          select: ticketStatusHistorySelectDetail,
         }),
       );
     },

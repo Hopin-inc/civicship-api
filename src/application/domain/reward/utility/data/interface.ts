@@ -26,10 +26,16 @@ export interface IUtilityService {
   createUtility(
     ctx: IContext,
     input: GqlUtilityCreateInput,
+    currentUserId: string,
+    communityId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaUtilityDetail>;
 
-  deleteUtility(ctx: IContext, id: string, tx: Prisma.TransactionClient): Promise<PrismaUtilityDetail>;
+  deleteUtility(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaUtilityDetail>;
 
   updateUtilityInfo(
     ctx: IContext,
