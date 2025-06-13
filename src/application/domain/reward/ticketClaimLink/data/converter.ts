@@ -9,6 +9,7 @@ export default class TicketClaimLinkConverter {
       AND: [
         filter?.status ? { status: filter.status } : {},
         filter?.issuerId ? { issuerId: filter.issuerId } : {},
+        filter?.hasAvailableTickets ? { tickets: { some: { status: "AVAILABLE" } } } : {},
       ],
     };
   }

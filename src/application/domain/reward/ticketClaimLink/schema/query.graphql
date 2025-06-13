@@ -28,6 +28,7 @@ type TicketClaimLinkEdge implements Edge {
 input TicketClaimLinkFilterInput {
     status: ClaimLinkStatus
     issuerId: ID
+    hasAvailableTickets: Boolean
 }
 
 input TicketClaimLinkSortInput {
