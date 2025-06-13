@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
-import { ValidationError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
@@ -87,7 +87,6 @@ describe("EvaluationService", () => {
         id: "evaluation-1",
         participation: {
           id: "participation-1",
-          communityId: "community-1",
           userId: "user-1",
           reservation: {
             opportunitySlot: {
@@ -101,11 +100,10 @@ describe("EvaluationService", () => {
 
       expect(result.participation.id).toBe("participation-1");
       expect(result.opportunity.id).toBe("opportunity-1");
-      expect(result.communityId).toBe("community-1");
       expect(result.userId).toBe("user-1");
     });
 
-    it("should throw ValidationError if participation is missing", () => {
+    it("should throw NotFoundError if participation is missing", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: null,
@@ -113,10 +111,10 @@ describe("EvaluationService", () => {
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
-      }).toThrow(ValidationError);
+      }).toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError if opportunity is missing", () => {
+    it("should throw NotFoundError if opportunity is missing", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: {
@@ -131,10 +129,10 @@ describe("EvaluationService", () => {
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
-      }).toThrow(ValidationError);
+      }).toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError if communityId is missing", () => {
+    it("should throw NotFoundError if communityId is missing", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: {
@@ -151,10 +149,10 @@ describe("EvaluationService", () => {
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
-      }).toThrow(ValidationError);
+      }).toThrow(NotFoundError);
     });
 
-    it("should throw ValidationError if userId is missing", () => {
+    it("should throw NotFoundError if userId is missing", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: {
@@ -171,7 +169,7 @@ describe("EvaluationService", () => {
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
-      }).toThrow(ValidationError);
+      }).toThrow(NotFoundError);
     });
   });
 });
