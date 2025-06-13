@@ -10,6 +10,7 @@ export default class TicketClaimLinkConverter {
         filter?.status ? { status: filter.status } : {},
         filter?.issuerId ? { issuerId: filter.issuerId } : {},
         filter?.hasAvailableTickets ? { tickets: { some: { status: "AVAILABLE" } } } : {},
+        filter?.issuedTo ? { tickets: { some: { wallet: { userId: filter.issuedTo } } } } : {},
       ],
     };
   }

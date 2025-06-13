@@ -29,6 +29,7 @@ input TicketClaimLinkFilterInput {
     status: ClaimLinkStatus
     issuerId: ID
     hasAvailableTickets: Boolean
+    issuedTo: ID
 }
 
 input TicketClaimLinkSortInput {
