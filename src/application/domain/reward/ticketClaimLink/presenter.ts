@@ -1,5 +1,5 @@
 import { GqlTicketClaimLink, GqlTicketClaimLinksConnection } from "@/types/graphql";
-import { PrismaTicketClaimLink } from "@/application/domain/reward/ticketClaimLink/data/type";
+import { PrismaTicketClaimLink, PrismaTicketClaimLinkDetail } from "@/application/domain/reward/ticketClaimLink/data/type";
 
 export default class TicketClaimLinkPresenter {
   static get(r: PrismaTicketClaimLink): GqlTicketClaimLink {
@@ -9,6 +9,13 @@ export default class TicketClaimLinkPresenter {
       __typename: "TicketClaimLink",
       ...prop,
       issuer,
+    };
+  }
+
+  static getDetail(r: PrismaTicketClaimLinkDetail): GqlTicketClaimLink {
+    return {
+      __typename: "TicketClaimLink",
+      ...r,
     };
   }
 
