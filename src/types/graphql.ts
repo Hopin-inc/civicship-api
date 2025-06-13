@@ -1990,6 +1990,7 @@ export type GqlTicketClaimLinkEdge = GqlEdge & {
 
 export type GqlTicketClaimLinkFilterInput = {
   hasAvailableTickets?: InputMaybe<Scalars['Boolean']['input']>;
+  issuedTo?: InputMaybe<Scalars['ID']['input']>;
   issuerId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlClaimLinkStatus>;
 };
