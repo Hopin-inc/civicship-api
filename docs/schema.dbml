@@ -108,6 +108,8 @@ Table t_users {
   imageId String
   image t_images
   identities t_identities [not null]
+  didIssuanceRequests t_did_issuance_requests [not null]
+  vcIssuanceRequests t_vc_issuance_requests [not null]
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
@@ -135,6 +137,41 @@ Table t_identities {
   authToken String
   refreshToken String
   tokenExpiresAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_did_issuance_requests {
+  id String [pk]
+  status DidIssuanceStatus [not null, default: 'PENDING']
+  jobId String
+  didValue String
+  errorMessage String
+  retryCount Int [not null, default: 0]
+  requestedAt DateTime [default: `now()`, not null]
+  processedAt DateTime
+  completedAt DateTime
+  userId String [not null]
+  user t_users [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_vc_issuance_requests {
+  id String [pk]
+  status VcIssuanceStatus [not null, default: 'PENDING']
+  jobId String
+  vcRecordId String
+  claims Json [not null]
+  credentialFormat String
+  schemaId String
+  errorMessage String
+  retryCount Int [not null, default: 0]
+  requestedAt DateTime [default: `now()`, not null]
+  processedAt DateTime
+  completedAt DateTime
+  userId String [not null]
+  user t_users [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -568,6 +605,20 @@ Enum IdentityPlatform {
   PHONE
 }
 
+Enum DidIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+Enum VcIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 Enum Role {
   OWNER
   MANAGER
@@ -692,6 +743,10 @@ Ref: t_communities.imageId > t_images.id
 Ref: t_users.imageId > t_images.id
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
+
+Ref: t_did_issuance_requests.userId > t_users.id [delete: Cascade]
+
+Ref: t_vc_issuance_requests.userId > t_users.id [delete: Cascade]
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
