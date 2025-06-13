@@ -10,7 +10,7 @@ export const ticketClaimLinkSelectDetail = Prisma.validator<Prisma.TicketClaimLi
   status: true,
 
   issuerId: true,
-  tickets: { select: { id: true, status: true } },
+  tickets: { select: { id: true, status: true, reason: true } },
 
   claimedAt: true,
   createdAt: true,
