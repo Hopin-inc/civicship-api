@@ -83,12 +83,14 @@ registerScalarFieldValueGenerator({
 initialize({ prisma: prismaClient });
 
 const images = [
-  "https://plus.unsplash.com/premium_photo-1673292293042-cafd9c8a3ab3?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  "https://plus.unsplash.com/premium_photo-1673697239981-389164b7b87f?q=80&w=2944&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?q=80&w=3088&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  "https://images.unsplash.com/photo-1505142468610-359e7d316be0?q=80&w=3026&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  "https://images.unsplash.com/photo-1586348943529-beaae6c28db9?q=80&w=3115&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  "https://images.unsplash.com/photo-1530908295418-a12e326966ba?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/s-1588x1189_v-fms_webp_a528454c-c767-484c-94a2-0b4104c23743.webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/%E3%81%9D%E3%81%86%E3%82%81%E3%82%93%E6%B5%81%E3%81%97%E4%BD%93%E9%A8%93%20%E7%AB%B9%E5%88%87%E3%82%8A%20%E7%AB%B9%E5%89%B2%E3%82%8A%20(1).webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/%E3%81%9D%E3%81%86%E3%82%81%E3%82%93%E6%B5%81%E3%81%97%E4%BD%93%E9%A8%93%20%E7%AB%B9%E5%88%87%E3%82%8A%20%E7%AB%B9%E5%89%B2%E3%82%8A.webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/%E5%A7%AB%E8%B7%AFYMCA%20%E3%83%86%E3%82%99%E3%82%A4%E3%82%AD%E3%83%A3%E3%83%B3%E3%83%95%E3%82%9A%E6%A1%88%E5%86%85%20(1).webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/s-2400x1602_v-frms_webp_69727013-9540-40b9-b660-6bdedf0a82c0_regular.webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/%E5%A7%AB%E8%B7%AFYMCA%20%E3%83%86%E3%82%99%E3%82%A4%E3%82%AD%E3%83%A3%E3%83%B3%E3%83%95%E3%82%9A%E6%A1%88%E5%86%85%20(2).webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/%E5%A7%AB%E8%B7%AFYMCA%20%E3%83%86%E3%82%99%E3%82%A4%E3%82%AD%E3%83%A3%E3%83%B3%E3%83%95%E3%82%9A%E6%A1%88%E5%86%85.webp",
+  "https://storage.googleapis.com/kyoso-dev-civicship-storage-public/images/original/2025%20%E5%AD%90%E3%81%A8%E3%82%99%E3%82%82%E4%BC%9A%20%E3%83%86%E3%82%99%E3%82%A4%E3%82%AD%E3%83%A3%E3%83%B3%E3%83%95%E3%82%9A%E6%A1%88%E5%86%85.webp",
 ];
 
 export const ImageFactory = defineImageFactory({
