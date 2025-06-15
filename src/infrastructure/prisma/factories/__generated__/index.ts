@@ -415,6 +415,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Place",
                 relationName: "OpportunityToPlace"
             }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "OpportunityToParticipation"
+            }, {
                 name: "articles",
                 type: "Article",
                 relationName: "t_opportunities_on_articles"
@@ -478,6 +482,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "user",
                 type: "User",
                 relationName: "ParticipationToUser"
+            }, {
+                name: "opportunity",
+                type: "Opportunity",
+                relationName: "OpportunityToParticipation"
             }, {
                 name: "reservation",
                 type: "Reservation",
@@ -3033,6 +3041,7 @@ type OpportunityFactoryDefineInput = {
     accumulatedParticipants?: OpportunityaccumulatedParticipantsFactory | Prisma.OpportunityAccumulatedParticipantsViewCreateNestedOneWithoutOpportunityInput;
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     place?: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
     createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
 };
@@ -3718,6 +3727,11 @@ type ParticipationuserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutParticipationsInput["create"]>;
 };
 
+type ParticipationopportunityFactory = {
+    _factoryFor: "Opportunity";
+    build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutParticipationsInput["create"]>;
+};
+
 type ParticipationreservationFactory = {
     _factoryFor: "Reservation";
     build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutParticipationsInput["create"]>;
@@ -3744,6 +3758,7 @@ type ParticipationFactoryDefineInput = {
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutParticipationsInput;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
+    opportunity?: ParticipationopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
@@ -3767,6 +3782,10 @@ type ParticipationFactoryDefineOptions<TTransients extends Record<string, unknow
 
 function isParticipationuserFactory(x: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationuserFactory {
     return (x as any)?._factoryFor === "User";
+}
+
+function isParticipationopportunityFactory(x: ParticipationopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationopportunityFactory {
+    return (x as any)?._factoryFor === "Opportunity";
 }
 
 function isParticipationreservationFactory(x: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationreservationFactory {
@@ -3844,6 +3863,9 @@ function defineParticipationFactoryInternal<TTransients extends Record<string, u
                 user: isParticipationuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user,
+                opportunity: isParticipationopportunityFactory(defaultData.opportunity) ? {
+                    create: await defaultData.opportunity.build()
+                } : defaultData.opportunity,
                 reservation: isParticipationreservationFactory(defaultData.reservation) ? {
                     create: await defaultData.reservation.build()
                 } : defaultData.reservation,

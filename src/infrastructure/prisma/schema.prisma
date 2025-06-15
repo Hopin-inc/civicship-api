@@ -573,7 +573,8 @@ model Opportunity {
   placeId String? @map("place_id")
   place   Place?  @relation(fields: [placeId], references: [id], onDelete: Restrict)
 
-  articles Article[] @relation("t_opportunities_on_articles")
+  participations Participation[]
+  articles       Article[]       @relation("t_opportunities_on_articles")
 
   createdBy     String @map("created_by")
   createdByUser User   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
@@ -705,6 +706,9 @@ model Participation {
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  opportunityId String?      @map("opportunity_id")
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id])
 
   reservationId         String?               @map("reservation_id")
   reservation           Reservation?          @relation(fields: [reservationId], references: [id], onDelete: Cascade)

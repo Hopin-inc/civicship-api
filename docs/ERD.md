@@ -441,6 +441,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     ParticipationStatusReason reason 
     String description "❓"
     String user_id "❓"
+    String opportunity_id "❓"
     String reservation_id "❓"
     String community_id "❓"
     String evaluation_id "❓"
@@ -711,6 +712,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_opportunities" o{--}o "v_opportunity_accumulated_participants" : "accumulated_participants"
     "t_opportunities" o|--|o "t_communities" : "community"
     "t_opportunities" o|--|o "t_places" : "place"
+    "t_opportunities" o{--}o "t_participations" : "participations"
     "t_opportunities" o{--}o "t_articles" : "articles"
     "t_opportunities" o|--|| "t_users" : "createdByUser"
     "t_opportunity_slots" o|--|| "OpportunitySlotHostingStatus" : "enum:hosting_status"
@@ -730,6 +732,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
     "t_participations" o{--}o "t_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
+    "t_participations" o|--|o "t_opportunities" : "opportunity"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
