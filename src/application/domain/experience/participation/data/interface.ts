@@ -1,5 +1,6 @@
 import { IContext } from "@/types/server";
 import {
+  GqlParticipationBulkCreateInput,
   GqlParticipationCreatePersonalRecordInput,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
@@ -20,6 +21,12 @@ export interface IParticipationService {
   findParticipation(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
 
   findParticipationOrThrow(ctx: IContext, id: string): Promise<PrismaParticipationDetail>;
+
+  bulkCreateParticipations(
+    ctx: IContext,
+    input: GqlParticipationBulkCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaParticipationDetail[]>;
 
   createParticipation(
     ctx: IContext,
