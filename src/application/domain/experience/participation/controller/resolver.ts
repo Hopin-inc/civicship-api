@@ -1,6 +1,8 @@
 import {
+  GqlMutationParticipationBulkCreateArgs,
   GqlMutationParticipationCreatePersonalRecordArgs,
   GqlMutationParticipationDeletePersonalRecordArgs,
+  GqlParticipationBulkCreatePayload,
   GqlParticipationCreatePersonalRecordPayload,
   GqlParticipationDeletePayload,
   GqlQueryParticipationArgs,
@@ -27,6 +29,14 @@ export default class ParticipationResolver {
   };
 
   Mutation = {
+    participationBulkCreate: (
+      _: unknown,
+      args: GqlMutationParticipationBulkCreateArgs,
+      ctx: IContext,
+    ): Promise<GqlParticipationBulkCreatePayload> => {
+      return this.participationUseCase.managerBulkCreateParticipations(args, ctx);
+    },
+
     participationCreatePersonalRecord: (
       _: unknown,
       args: GqlMutationParticipationCreatePersonalRecordArgs,
@@ -62,7 +72,7 @@ export default class ParticipationResolver {
       const evaluation = await ctx.issuer.internal((tx) =>
         tx.evaluation.findUnique({
           where: { participationId: parent.id },
-        })
+        }),
       );
       return evaluation;
     },
