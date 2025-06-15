@@ -1,7 +1,9 @@
 import {
+  GqlMutationParticipationBulkCreateArgs,
   GqlMutationParticipationCreatePersonalRecordArgs,
   GqlMutationParticipationDeletePersonalRecordArgs,
   GqlParticipation,
+  GqlParticipationBulkCreatePayload,
   GqlParticipationCreatePersonalRecordPayload,
   GqlParticipationDeletePayload,
   GqlParticipationsConnection,
@@ -48,6 +50,17 @@ export default class ParticipationUseCase {
       return null;
     }
     return ParticipationPresenter.get(res);
+  }
+
+  async managerBulkCreateParticipations(
+    { input }: GqlMutationParticipationBulkCreateArgs,
+    ctx: IContext,
+  ): Promise<GqlParticipationBulkCreatePayload> {
+    const created = await ctx.issuer.public(ctx, async (tx) => {
+      return await this.service.bulkCreateParticipations(ctx, input, tx);
+    });
+
+    return ParticipationPresenter.bulkCreate(created);
   }
 
   async userCreatePersonalParticipationRecord(
