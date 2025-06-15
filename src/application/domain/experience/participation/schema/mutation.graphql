@@ -2,6 +2,12 @@
 # Participation Mutation Definitions
 # ------------------------------
 extend type Mutation {
+    participationBulkCreate(
+        input: ParticipationBulkCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): ParticipationBulkCreatePayload
+    @authz(rules: [IsCommunityManager])
+
     participationCreatePersonalRecord(
         input: ParticipationCreatePersonalRecordInput!
     ): ParticipationCreatePersonalRecordPayload
@@ -17,6 +23,12 @@ extend type Mutation {
 # ------------------------------
 # Participation Mutation Input Definitions
 # ------------------------------
+input ParticipationBulkCreateInput {
+    userIds: [ID!]!
+    opportunityId: ID!
+    description: String
+}
+
 input ParticipationCreatePersonalRecordInput {
     description: String
     images: [ImageInput!]
@@ -25,6 +37,10 @@ input ParticipationCreatePersonalRecordInput {
 # ------------------------------
 # Participation Mutation Success Type Definitions
 # ------------------------------
+type ParticipationBulkCreateSuccess {
+    participations: [Participation!]!
+}
+
 type ParticipationCreatePersonalRecordSuccess {
     participation: Participation!
 }
@@ -36,6 +52,9 @@ type ParticipationDeleteSuccess {
 # ------------------------------
 # Participation Mutation Union (Payload) Definitions
 # ------------------------------
+union ParticipationBulkCreatePayload =
+    ParticipationBulkCreateSuccess
+
 union ParticipationCreatePersonalRecordPayload =
     ParticipationCreatePersonalRecordSuccess
 
