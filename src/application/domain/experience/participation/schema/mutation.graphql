@@ -25,7 +25,7 @@ extend type Mutation {
 # ------------------------------
 input ParticipationBulkCreateInput {
     userIds: [ID!]!
-    opportunityId: ID!
+    slotId: ID!
     description: String
 }
 

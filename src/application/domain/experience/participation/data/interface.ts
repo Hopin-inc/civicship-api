@@ -24,7 +24,7 @@ export interface IParticipationService {
 
   bulkCreateParticipations(
     ctx: IContext,
-    items: GqlParticipationBulkCreateInput,
+    input: GqlParticipationBulkCreateInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaParticipationDetail[]>;
 

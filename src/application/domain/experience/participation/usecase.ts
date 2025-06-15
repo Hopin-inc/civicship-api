@@ -16,10 +16,14 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { participationInclude } from "@/application/domain/experience/participation/data/type";
 import { inject, injectable } from "tsyringe";
 import { IParticipationService } from "@/application/domain/experience/participation/data/interface";
+import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 
 @injectable()
 export default class ParticipationUseCase {
-  constructor(@inject("ParticipationService") private readonly service: IParticipationService) {}
+  constructor(
+    @inject("ParticipationService") private readonly service: IParticipationService,
+    @inject("OpportunitySlotService") private slotService: OpportunitySlotService,
+  ) {}
 
   async visitorBrowseParticipations(
     { filter, first, sort, cursor }: GqlQueryParticipationsArgs,
@@ -56,6 +60,8 @@ export default class ParticipationUseCase {
     { input }: GqlMutationParticipationBulkCreateArgs,
     ctx: IContext,
   ): Promise<GqlParticipationBulkCreatePayload> {
+    await this.slotService.findOpportunitySlotOrThrow(ctx, input.slotId);
+
     const created = await ctx.issuer.public(ctx, async (tx) => {
       return await this.service.bulkCreateParticipations(ctx, input, tx);
     });

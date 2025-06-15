@@ -415,10 +415,6 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Place",
                 relationName: "OpportunityToPlace"
             }, {
-                name: "participations",
-                type: "Participation",
-                relationName: "OpportunityToParticipation"
-            }, {
                 name: "articles",
                 type: "Article",
                 relationName: "t_opportunities_on_articles"
@@ -441,6 +437,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reservations",
                 type: "Reservation",
                 relationName: "OpportunitySlotToReservation"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "OpportunitySlotToParticipation"
             }]
     }, {
         name: "Reservation",
@@ -483,9 +483,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "User",
                 relationName: "ParticipationToUser"
             }, {
-                name: "opportunity",
-                type: "Opportunity",
-                relationName: "OpportunityToParticipation"
+                name: "opportunitySlot",
+                type: "OpportunitySlot",
+                relationName: "OpportunitySlotToParticipation"
             }, {
                 name: "reservation",
                 type: "Reservation",
@@ -3041,7 +3041,6 @@ type OpportunityFactoryDefineInput = {
     accumulatedParticipants?: OpportunityaccumulatedParticipantsFactory | Prisma.OpportunityAccumulatedParticipantsViewCreateNestedOneWithoutOpportunityInput;
     community?: OpportunitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutOpportunitiesInput;
     place?: OpportunityplaceFactory | Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput;
-    participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunityInput;
     articles?: Prisma.ArticleCreateNestedManyWithoutOpportunitiesInput;
     createdByUser: OpportunitycreatedByUserFactory | Prisma.UserCreateNestedOneWithoutOpportunitiesCreatedByMeInput;
 };
@@ -3239,6 +3238,7 @@ type OpportunitySlotFactoryDefineInput = {
     remainingCapacityView?: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput;
     opportunity: OpportunitySlotopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutSlotsInput;
     reservations?: Prisma.ReservationCreateNestedManyWithoutOpportunitySlotInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunitySlotInput;
 };
 
 type OpportunitySlotTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunitySlotFactoryDefineInput, never>>;
@@ -3727,9 +3727,9 @@ type ParticipationuserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutParticipationsInput["create"]>;
 };
 
-type ParticipationopportunityFactory = {
-    _factoryFor: "Opportunity";
-    build: () => PromiseLike<Prisma.OpportunityCreateNestedOneWithoutParticipationsInput["create"]>;
+type ParticipationopportunitySlotFactory = {
+    _factoryFor: "OpportunitySlot";
+    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput["create"]>;
 };
 
 type ParticipationreservationFactory = {
@@ -3758,7 +3758,7 @@ type ParticipationFactoryDefineInput = {
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutParticipationsInput;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
-    opportunity?: ParticipationopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutParticipationsInput;
+    opportunitySlot?: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
@@ -3784,8 +3784,8 @@ function isParticipationuserFactory(x: ParticipationuserFactory | Prisma.UserCre
     return (x as any)?._factoryFor === "User";
 }
 
-function isParticipationopportunityFactory(x: ParticipationopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationopportunityFactory {
-    return (x as any)?._factoryFor === "Opportunity";
+function isParticipationopportunitySlotFactory(x: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationopportunitySlotFactory {
+    return (x as any)?._factoryFor === "OpportunitySlot";
 }
 
 function isParticipationreservationFactory(x: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationreservationFactory {
@@ -3863,9 +3863,9 @@ function defineParticipationFactoryInternal<TTransients extends Record<string, u
                 user: isParticipationuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user,
-                opportunity: isParticipationopportunityFactory(defaultData.opportunity) ? {
-                    create: await defaultData.opportunity.build()
-                } : defaultData.opportunity,
+                opportunitySlot: isParticipationopportunitySlotFactory(defaultData.opportunitySlot) ? {
+                    create: await defaultData.opportunitySlot.build()
+                } : defaultData.opportunitySlot,
                 reservation: isParticipationreservationFactory(defaultData.reservation) ? {
                     create: await defaultData.reservation.build()
                 } : defaultData.reservation,

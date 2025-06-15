@@ -1216,7 +1216,7 @@ export type GqlParticipation = {
 
 export type GqlParticipationBulkCreateInput = {
   description?: InputMaybe<Scalars['String']['input']>;
-  opportunityId: Scalars['ID']['input'];
+  slotId: Scalars['ID']['input'];
   userIds: Array<Scalars['ID']['input']>;
 };
 

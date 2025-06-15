@@ -265,7 +265,6 @@ Table t_opportunities {
   community t_communities
   placeId String
   place t_places
-  participations t_participations [not null]
   articles t_articles [not null]
   createdBy String [not null]
   createdByUser t_users [not null]
@@ -283,6 +282,7 @@ Table t_opportunity_slots {
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
+  participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -320,8 +320,8 @@ Table t_participations {
   images t_images [not null]
   userId String
   user t_users
-  opportunityId String
-  opportunity t_opportunities
+  opportunitySlotId String
+  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   ticketStatusHistories t_ticket_status_histories [not null]
@@ -785,7 +785,7 @@ Ref: t_reservation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
 
-Ref: t_participations.opportunityId > t_opportunities.id
+Ref: t_participations.opportunitySlotId > t_opportunity_slots.id
 
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
