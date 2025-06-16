@@ -10,6 +10,14 @@ export default class CommunityConfigService {
     private readonly repository: ICommunityConfigRepository,
   ) {}
 
+  async getFirebaseTenantId(ctx: IContext, communityId: string): Promise<string> {
+    const config = await this.repository.getFirebaseConfig(ctx, communityId);
+    if (!config?.tenantId) {
+      throw new NotFoundError("Firebase tenantId not found", { communityId });
+    }
+    return config.tenantId;
+  }
+
   async getLineMessagingConfig(
     ctx: IContext,
     communityId: string,
