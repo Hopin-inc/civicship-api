@@ -37,7 +37,9 @@ router.post("/callback", async (req, res) => {
 
 router.post("/liff-login", async (req, res) => {
   try {
-    const { accessToken, communityId } = req.body;
+    const { accessToken } = req.body;
+    const communityId = req.headers["x-community-id"] as string;
+
     if (!accessToken || !communityId) {
       return res.status(400).json({ error: "accessToken and communityId are required" });
     }
