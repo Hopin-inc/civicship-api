@@ -1,11 +1,21 @@
-import * as line from "@line/bot-sdk";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { IContext } from "@/types/server";
+import { container } from "tsyringe";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { messagingApi, middleware, MiddlewareConfig } from "@line/bot-sdk";
 
-const config: line.MiddlewareConfig = {
-  channelSecret: process.env.LINE_MESSAGING_CHANNEL_SECRET!,
-};
+export async function createLineClientAndMiddleware(communityId: string) {
+  const issuer = new PrismaClientIssuer();
+  const ctx = { issuer } as IContext;
 
-export const lineClient = new line.messagingApi.MessagingApiClient({
-  channelAccessToken: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN!,
-});
+  const configService = container.resolve(CommunityConfigService);
+  const { channelSecret, accessToken } = await configService.getLineMessagingConfig(
+    ctx,
+    communityId,
+  );
 
-export const lineMiddleware = line.middleware(config);
+  const client = new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
+  const mw = middleware({ channelSecret } satisfies MiddlewareConfig);
+
+  return { client, middleware: mw };
+}

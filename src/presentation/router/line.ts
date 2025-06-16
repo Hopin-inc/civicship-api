@@ -1,18 +1,38 @@
 import express from "express";
 import axios from "axios";
-import { lineClient, lineMiddleware } from "@/infrastructure/libs/line";
 import { LIFFAuthUseCase, LIFFLoginRequest } from "@/application/domain/account/auth/liff/usercase";
 import logger from "@/infrastructure/logging";
+import { createLineClientAndMiddleware } from "@/infrastructure/libs/line";
+import { messagingApi, WebhookEvent } from "@line/bot-sdk";
+import { ReplyMessageResponse } from "@line/bot-sdk/dist/messaging-api/model/replyMessageResponse";
 
 const router = express();
 
-router.post("/callback", lineMiddleware, (req, res) => {
-  Promise.all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result))
-    .catch((err) => {
-      logger.error(err);
-      res.status(500).end();
+router.post("/callback", async (req, res) => {
+  try {
+    const communityId = req.headers["x-community-id"] as string;
+    if (!communityId) {
+      res.status(400).json({ error: "Missing communityId" });
+      return;
+    }
+
+    const { client, middleware } = await createLineClientAndMiddleware(communityId);
+
+    middleware(req, res, async () => {
+      try {
+        const result = await Promise.all(
+          req.body.events.map((event) => handleEvent(event, client)),
+        );
+        res.json(result);
+      } catch (err) {
+        logger.error("HandleEvent failed:", err);
+        res.status(500).end();
+      }
     });
+  } catch (err) {
+    logger.error("Callback middleware error:", err);
+    res.status(500).end();
+  }
 });
 
 router.post("/liff-login", async (req, res) => {
@@ -51,22 +71,40 @@ router.post("/liff-login", async (req, res) => {
   }
 });
 
-const handleEvent = (event) => {
+const handleEvent = async (
+  event: WebhookEvent,
+  client: messagingApi.MessagingApiClient,
+): Promise<ReplyMessageResponse | null> => {
   if (event.type !== "message" || event.message.type !== "text" || !event.replyToken) {
-    // ignore non-text-message event
-    return Promise.resolve(null);
+    logger.info("Skipped non-text or invalid event", { type: event.type });
+    return null;
   }
 
-  // use reply API
-  return lineClient.replyMessage({
-    replyToken: event.replyToken,
-    messages: [
-      {
-        type: "textV2",
-        text: event.message.text,
-      },
-    ],
-  });
+  try {
+    const userId = event.source?.userId ?? "unknown";
+    const messageText = event.message.text;
+
+    logger.info("LINE message received", { userId, messageText });
+
+    const res = await client.replyMessage({
+      replyToken: event.replyToken,
+      messages: [
+        {
+          type: "text",
+          text: messageText,
+        },
+      ],
+    });
+
+    logger.info("LINE replyMessage success", { userId, replyToken: event.replyToken });
+    return res;
+  } catch (err) {
+    logger.error("LINE replyMessage failed", {
+      error: err instanceof Error ? err.message : String(err),
+      event,
+    });
+    return null;
+  }
 };
 
 export default router;
