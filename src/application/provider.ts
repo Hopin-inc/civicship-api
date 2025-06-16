@@ -77,6 +77,8 @@ import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/usecase";
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -114,6 +116,9 @@ export function registerProductionDependencies() {
   container.register("CommunityConverter", { useClass: CommunityConverter });
   container.register("CommunityService", { useClass: CommunityService });
   container.register("CommunityUseCase", { useClass: CommunityUseCase });
+
+  container.register("CommunityConfigService", { useClass: CommunityConfigService });
+  container.register("CommunityConfigRepository", { useClass: CommunityConfigRepository });
 
   // 🆔 Identity
   container.register("IdentityService", { useClass: IdentityService });
