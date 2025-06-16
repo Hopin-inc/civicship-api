@@ -249,6 +249,32 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_community_configs" {
+    String id "🗝️"
+    String community_id 
+    String firebase_config_id 
+    String line_config_id 
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
+  "t_firebase_config" {
+    String id "🗝️"
+    String tenant_id 
+    }
+  
+
+  "t_line_config" {
+    String id "🗝️"
+    String channel_id 
+    String channel_secret 
+    String access_token 
+    String liff_id 
+    String liff_base_url 
+    }
+  
+
   "t_users" {
     String id "🗝️"
     String name 
@@ -586,6 +612,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_places" o{--}o "v_place_public_opportunity_count" : "currentPublicOpportunityCount"
     "t_places" o{--}o "v_place_accumulated_participants" : "accumulated_participants"
     "t_communities" o|--|o "t_images" : "image"
+    "t_communities" o{--}o "t_community_configs" : "config"
     "t_communities" o{--}o "t_places" : "places"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
@@ -593,6 +620,11 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
+    "t_community_configs" o|--|| "t_communities" : "community"
+    "t_community_configs" o|--|| "t_firebase_config" : "firebaseConfig"
+    "t_community_configs" o|--|| "t_line_config" : "lineConfig"
+    "t_firebase_config" o{--}o "t_community_configs" : "config"
+    "t_line_config" o{--}o "t_community_configs" : "config"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
