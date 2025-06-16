@@ -16,6 +16,7 @@ import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notific
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { createLineClient } from "@/infrastructure/libs/line";
+import logger from "@/infrastructure/logging";
 dayjs.locale("ja");
 
 export const DEFAULT_HOST_IMAGE_URL =
@@ -39,7 +40,14 @@ export default class NotificationService {
       slot.reservations.flatMap((r) => r.participations),
     );
 
-    if (participantInfos.length === 0) return;
+    if (participantInfos.length === 0) {
+      logger.warn("No LINE UID found in participations", {
+        context: ctx,
+        slotId: slot?.id,
+        participations: slot?.reservations?.flatMap((r) => r.participations),
+      });
+      return;
+    }
 
     const { year, date, time } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const { opportunityId } = slot;
@@ -71,7 +79,13 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser,
     );
-    if (!lineUid) return;
+    if (!lineUid) {
+      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+        reservationId: reservation.id,
+        createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
+      });
+      return;
+    }
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -99,7 +113,13 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser,
     );
-    if (!lineUid) return;
+    if (!lineUid) {
+      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+        reservationId: reservation.id,
+        createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
+      });
+      return;
+    }
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -129,7 +149,14 @@ export default class NotificationService {
     comment?: string,
   ) {
     const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
-    if (participantInfos.length === 0) return;
+    if (participantInfos.length === 0) {
+      logger.warn("No LINE UID found in participations", {
+        context: ctx,
+        reservationId: reservation?.id,
+        participations: reservation.participations?.flatMap((r) => r),
+      });
+      return;
+    }
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -158,7 +185,14 @@ export default class NotificationService {
 
   async pushReservationAcceptedMessage(ctx: IContext, reservation: PrismaReservation) {
     const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
-    if (participantInfos.length === 0) return;
+    if (participantInfos.length === 0) {
+      logger.warn("No LINE UID found in participations", {
+        context: ctx,
+        reservationId: reservation?.id,
+        participations: reservation.participations?.flatMap((r) => r),
+      });
+      return;
+    }
 
     const { year, date, time } = this.formatDateTime(
       reservation.opportunitySlot.startsAt,
@@ -195,7 +229,13 @@ export default class NotificationService {
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;
 
-    if (!lineUid) return;
+    if (!lineUid) {
+      logger.warn("pushReservationAppliedMessage: lineUid is missing", {
+        userId: membership.user.id,
+        communityId: ctx.communityId,
+      });
+      return;
+    }
 
     const client = await createLineClient(ctx.communityId);
 

@@ -3,6 +3,7 @@ import { IContext } from "@/types/server";
 import { container } from "tsyringe";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import { messagingApi, middleware, MiddlewareConfig } from "@line/bot-sdk";
+import logger from "@/infrastructure/logging";
 
 export async function createLineClientAndMiddleware(communityId: string) {
   const [client, mw] = await Promise.all([
@@ -21,6 +22,11 @@ export async function createLineClient(
   const configService = container.resolve(CommunityConfigService);
   const { accessToken } = await configService.getLineMessagingConfig(ctx, communityId);
 
+  logger.info("LINE client created", {
+    communityId,
+    tokenPreview: accessToken.slice(0, 10),
+  });
+
   return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
 }
 
@@ -32,6 +38,11 @@ export async function createLineMiddleware(
 
   const configService = container.resolve(CommunityConfigService);
   const { channelSecret } = await configService.getLineMessagingConfig(ctx, communityId);
+
+  logger.info("LINE middleware created", {
+    communityId,
+    secretPreview: channelSecret.slice(0, 6),
+  });
 
   return middleware({ channelSecret } satisfies MiddlewareConfig);
 }
