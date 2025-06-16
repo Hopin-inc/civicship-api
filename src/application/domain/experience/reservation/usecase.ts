@@ -260,6 +260,7 @@ export default class ReservationUseCase {
 
     if (rejectedReservation) {
       await this.notificationService.pushReservationRejectedMessage(
+        ctx,
         rejectedReservation,
         input.comment,
       );

@@ -15,6 +15,7 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { createLineClient } from "@/infrastructure/libs/line";
 dayjs.locale("ja");
 
 export const DEFAULT_HOST_IMAGE_URL =
@@ -49,6 +50,7 @@ export default class NotificationService {
       ? `${liffBaseUrl}/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
       : `${liffBaseUrl}/activities`;
 
+    const client = await createLineClient(ctx.communityId);
     const message = buildCancelOpportunitySlotMessage({
       title,
       year,
@@ -61,7 +63,7 @@ export default class NotificationService {
     });
 
     for (const { uid } of participantInfos) {
-      await safePushMessage({ to: uid, messages: [message] });
+      await safePushMessage(client, { to: uid, messages: [message] });
     }
   }
 
@@ -78,6 +80,8 @@ export default class NotificationService {
 
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
+
+    const client = await createLineClient(ctx.communityId);
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
       year,
@@ -88,7 +92,7 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: lineUid, messages: [message] });
+    await safePushMessage(client, { to: lineUid, messages: [message] });
   }
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
@@ -104,6 +108,8 @@ export default class NotificationService {
 
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}`;
+
+    const client = await createLineClient(ctx.communityId);
     const message = buildReservationCanceledMessage({
       title: reservation.opportunitySlot.opportunity.title,
       year,
@@ -114,10 +120,14 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: lineUid, messages: [message] });
+    await safePushMessage(client, { to: lineUid, messages: [message] });
   }
 
-  async pushReservationRejectedMessage(reservation: PrismaReservation, comment?: string) {
+  async pushReservationRejectedMessage(
+    ctx: IContext,
+    reservation: PrismaReservation,
+    comment?: string,
+  ) {
     const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
     if (participantInfos.length === 0) return;
 
@@ -128,6 +138,8 @@ export default class NotificationService {
 
     const { title, createdByUser } = reservation.opportunitySlot.opportunity;
     const { name: hostName, image: hostImage } = createdByUser ?? {};
+
+    const client = await createLineClient(ctx.communityId);
 
     for (const { uid } of participantInfos) {
       const message = buildDeclineOpportunitySlotMessage({
@@ -140,7 +152,7 @@ export default class NotificationService {
         comment,
       });
 
-      await safePushMessage({ to: uid, messages: [message] });
+      await safePushMessage(client, { to: uid, messages: [message] });
     }
   }
 
@@ -157,6 +169,8 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
+    const client = await createLineClient(ctx.communityId);
+
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     for (const { uid, participationId } of participantInfos) {
       const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
@@ -172,7 +186,7 @@ export default class NotificationService {
         hostImageUrl: this.safeImageUrl(hostImage?.url, DEFAULT_HOST_IMAGE_URL),
         redirectUrl,
       });
-      await safePushMessage({ to: uid, messages: [message] });
+      await safePushMessage(client, { to: uid, messages: [message] });
     }
   }
 
@@ -183,16 +197,18 @@ export default class NotificationService {
 
     if (!lineUid) return;
 
+    const client = await createLineClient(ctx.communityId);
+
     const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
     const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
-    const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
+    const success = await safeLinkRichMenuIdToUser(client, lineUid, richMenuId);
 
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin`;
 
     //TODO feature flagにしては細かすぎる設定
     if (isAdmin && success && membership.communityId !== "neo88") {
-      await safePushMessage({
+      await safePushMessage(client, {
         to: lineUid,
         messages: [buildAdminGrantedMessage(redirectUrl)],
       });
