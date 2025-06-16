@@ -17,28 +17,28 @@ router.post("/callback", lineMiddleware, (req, res) => {
 
 router.post("/liff-login", async (req, res) => {
   try {
-    const { accessToken } = req.body;
-    if (!accessToken) {
-      return res.status(400).json({ error: "ID token is required" });
+    const { accessToken, communityId } = req.body;
+    if (!accessToken || !communityId) {
+      return res.status(400).json({ error: "accessToken and communityId are required" });
     }
 
-    const loginRequest: LIFFLoginRequest = { accessToken };
+    const loginRequest: LIFFLoginRequest = { accessToken, communityId };
     const result = await LIFFAuthUseCase.login(loginRequest);
 
     const response = await axios.get(
-      `https://api.line.me/oauth2/v2.1/verify?access_token=${accessToken}`
+      `https://api.line.me/oauth2/v2.1/verify?access_token=${accessToken}`,
     );
     const expiryTime = new Date();
     expiryTime.setSeconds(expiryTime.getSeconds() + response.data.expires_in);
     const expiryTimestamp = Math.floor(expiryTime.getTime() / 1000);
 
-    res.setHeader('X-Token-Expires-At', expiryTimestamp.toString());
-    
+    res.setHeader("X-Token-Expires-At", expiryTimestamp.toString());
+
     (req as any).context = {
       uid: result.profile.userId,
-      platform: 'LINE',
+      platform: "LINE",
       idToken: accessToken,
-      refreshToken: accessToken // Using accessToken as refreshToken since actual refreshToken isn't available
+      refreshToken: accessToken, // Using accessToken as refreshToken since actual refreshToken isn't available
     };
 
     return res.status(200).json({
