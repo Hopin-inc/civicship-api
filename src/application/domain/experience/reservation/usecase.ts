@@ -223,7 +223,7 @@ export default class ReservationUseCase {
     });
 
     if (acceptedReservation) {
-      await this.notificationService.pushReservationAcceptedMessage(acceptedReservation);
+      await this.notificationService.pushReservationAcceptedMessage(ctx, acceptedReservation);
     }
 
     return ReservationPresenter.setStatus(reservation);

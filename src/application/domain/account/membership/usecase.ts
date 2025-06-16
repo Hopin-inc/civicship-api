@@ -94,7 +94,7 @@ export default class MembershipUseCase {
       return membership;
     });
 
-    await this.notificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(ctx, membership);
     return MembershipPresenter.setInvitationStatus(membership);
   }
 
@@ -128,7 +128,7 @@ export default class MembershipUseCase {
       return membership;
     });
 
-    await this.notificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(ctx, membership);
     return MembershipPresenter.withdraw(membership);
   }
 
@@ -146,7 +146,7 @@ export default class MembershipUseCase {
       return membership;
     });
 
-    await this.notificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(ctx, membership);
     return MembershipPresenter.remove(membership);
   }
 
@@ -155,7 +155,7 @@ export default class MembershipUseCase {
       return await this.membershipService.setRole(ctx, args.input, Role.OWNER, tx);
     });
 
-    await this.notificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(ctx, membership);
     return MembershipPresenter.setRole(membership);
   }
 
@@ -164,7 +164,7 @@ export default class MembershipUseCase {
       return await this.membershipService.setRole(ctx, args.input, Role.MANAGER, tx);
     });
 
-    await this.notificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(ctx, membership);
     return MembershipPresenter.setRole(membership);
   }
 
@@ -173,7 +173,7 @@ export default class MembershipUseCase {
       return await this.membershipService.setRole(ctx, args.input, Role.MEMBER, tx);
     });
 
-    await this.notificationService.switchRichMenuByRole(membership);
+    await this.notificationService.switchRichMenuByRole(ctx, membership);
     return MembershipPresenter.setRole(membership);
   }
 }

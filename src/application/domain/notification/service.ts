@@ -9,15 +9,14 @@ import { buildReservationCanceledMessage } from "@/application/domain/notificati
 import { IdentityPlatform, Role } from "@prisma/client";
 import { LINE_RICHMENU } from "@/application/domain/notification/presenter/richmenu/const";
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
-import { injectable } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
-import * as process from "node:process";
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
 dayjs.locale("ja");
 
-const liffBaseUrl = process.env.LIFF_BASE_URL;
 export const DEFAULT_HOST_IMAGE_URL =
   "https://storage.googleapis.com/prod-civicship-storage-public/asset/neo88/placeholder.jpg";
 export const DEFAULT_THUMBNAIL =
@@ -25,7 +24,13 @@ export const DEFAULT_THUMBNAIL =
 
 @injectable()
 export default class NotificationService {
+  constructor(
+    @inject("CommunityConfigService")
+    private readonly communityConfigService: CommunityConfigService,
+  ) {}
+
   async pushCancelOpportunitySlotMessage(
+    ctx: IContext,
     slot: PrismaOpportunitySlotSetHostingStatus,
     comment?: string,
   ) {
@@ -39,6 +44,7 @@ export default class NotificationService {
     const { opportunityId } = slot;
     const { communityId, createdByUser, title } = slot.opportunity;
 
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = communityId
       ? `${liffBaseUrl}/reservation/select-date?id=${opportunityId}&community_id=${communityId}`
       : `${liffBaseUrl}/activities`;
@@ -70,6 +76,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
@@ -95,6 +102,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}`;
     const message = buildReservationCanceledMessage({
       title: reservation.opportunitySlot.opportunity.title,
@@ -136,7 +144,7 @@ export default class NotificationService {
     }
   }
 
-  async pushReservationAcceptedMessage(reservation: PrismaReservation) {
+  async pushReservationAcceptedMessage(ctx: IContext, reservation: PrismaReservation) {
     const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
     if (participantInfos.length === 0) return;
 
@@ -149,6 +157,7 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
     const participantCount = `${reservation.participations.length}人`;
 
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     for (const { uid, participationId } of participantInfos) {
       const redirectUrl = `${liffBaseUrl}/participations/${participationId}`;
       const message = buildReservationAcceptedMessage({
@@ -167,7 +176,7 @@ export default class NotificationService {
     }
   }
 
-  async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
+  async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;
@@ -178,6 +187,7 @@ export default class NotificationService {
     const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
     const success = await safeLinkRichMenuIdToUser(lineUid, richMenuId);
 
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin`;
 
     //TODO feature flagにしては細かすぎる設定
