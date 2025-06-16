@@ -20,6 +20,8 @@ export function createRewardLoaders(issuer: PrismaClientIssuer) {
       TicketStatusHistoryLoaders.createTicketStatusHistoriesByTicketLoader(issuer),
     ticketStatusHistoriesByTransaction:
       TicketStatusHistoryLoaders.createTicketStatusHistoriesByTransactionLoader(issuer),
+    ticketStatusHistoriesByParticipation:
+      TicketStatusHistoryLoaders.createTicketStatusHistoriesByParticipationLoader(issuer),
 
     utility: UtilityLoaders.createUtilityLoader(issuer),
     utilitiesByOpportunity: UtilityLoaders.createRequiredUtilitiesByOpportunityLoader(issuer),

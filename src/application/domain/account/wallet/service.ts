@@ -5,12 +5,15 @@ import { NotFoundError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
+import TransactionService from "@/application/domain/transaction/service";
+import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 
 @injectable()
 export default class WalletService {
   constructor(
     @inject("WalletRepository") private readonly repository: IWalletRepository,
     @inject("WalletConverter") private readonly converter: WalletConverter,
+    @inject("TransactionService") private readonly transactionService: TransactionService,
   ) { }
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
@@ -28,12 +31,15 @@ export default class WalletService {
     return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
   }
 
-  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string) {
+  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string, retried: boolean = false) {
     const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
     if (!wallet) {
       throw new NotFoundError("Member wallet", { userId, communityId });
     }
-    return wallet;
+    const refreshed = await this.refreshCurrentPointViewIfNotExist(ctx, wallet);
+    return refreshed && !retried
+      ? await this.findMemberWalletOrThrow(ctx, userId, communityId, true)
+      : wallet;
   }
 
   async findCommunityWalletOrThrow(ctx: IContext, communityId: string) {
@@ -89,5 +95,14 @@ export default class WalletService {
   ) {
     const memberWallet = await this.findMemberWalletOrThrow(ctx, communityId, userId);
     return this.repository.delete(ctx, memberWallet.id, tx);
+  }
+
+  private async refreshCurrentPointViewIfNotExist(ctx: IContext, wallet: PrismaWallet) {
+    if (wallet.currentPointView === null) {
+      await ctx.issuer.public(ctx, tx => {
+        return this.transactionService.refreshCurrentPoint(ctx, tx);
+      });
+      return true;
+    } else return false;
   }
 }

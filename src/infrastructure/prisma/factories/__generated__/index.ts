@@ -223,6 +223,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Wallet",
                 relationName: "UserToWallet"
             }, {
+                name: "utiltyOwnedByMe",
+                type: "Utility",
+                relationName: "UserToUtility"
+            }, {
                 name: "ticketIssuedByMe",
                 type: "TicketIssuer",
                 relationName: "TicketIssuerToUser"
@@ -433,6 +437,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reservations",
                 type: "Reservation",
                 relationName: "OpportunitySlotToReservation"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "OpportunitySlotToParticipation"
             }]
     }, {
         name: "Reservation",
@@ -474,6 +482,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "user",
                 type: "User",
                 relationName: "ParticipationToUser"
+            }, {
+                name: "opportunitySlot",
+                type: "OpportunitySlot",
+                relationName: "OpportunitySlotToParticipation"
             }, {
                 name: "reservation",
                 type: "Reservation",
@@ -558,6 +570,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "tickets",
                 type: "Ticket",
                 relationName: "TicketToUtility"
+            }, {
+                name: "owner",
+                type: "User",
+                relationName: "UserToUtility"
             }]
     }, {
         name: "TicketIssuer",
@@ -1608,6 +1624,7 @@ type UserFactoryDefineInput = {
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
+    utiltyOwnedByMe?: Prisma.UtilityCreateNestedManyWithoutOwnerInput;
     ticketIssuedByMe?: Prisma.TicketIssuerCreateNestedManyWithoutOwnerInput;
     ticketStatusChangedByMe?: Prisma.TicketStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
     opportunitiesCreatedByMe?: Prisma.OpportunityCreateNestedManyWithoutCreatedByUserInput;
@@ -3221,6 +3238,7 @@ type OpportunitySlotFactoryDefineInput = {
     remainingCapacityView?: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput;
     opportunity: OpportunitySlotopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutSlotsInput;
     reservations?: Prisma.ReservationCreateNestedManyWithoutOpportunitySlotInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunitySlotInput;
 };
 
 type OpportunitySlotTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunitySlotFactoryDefineInput, never>>;
@@ -3709,6 +3727,11 @@ type ParticipationuserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutParticipationsInput["create"]>;
 };
 
+type ParticipationopportunitySlotFactory = {
+    _factoryFor: "OpportunitySlot";
+    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput["create"]>;
+};
+
 type ParticipationreservationFactory = {
     _factoryFor: "Reservation";
     build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutParticipationsInput["create"]>;
@@ -3735,6 +3758,7 @@ type ParticipationFactoryDefineInput = {
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutParticipationsInput;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
+    opportunitySlot?: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
@@ -3758,6 +3782,10 @@ type ParticipationFactoryDefineOptions<TTransients extends Record<string, unknow
 
 function isParticipationuserFactory(x: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationuserFactory {
     return (x as any)?._factoryFor === "User";
+}
+
+function isParticipationopportunitySlotFactory(x: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationopportunitySlotFactory {
+    return (x as any)?._factoryFor === "OpportunitySlot";
 }
 
 function isParticipationreservationFactory(x: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationreservationFactory {
@@ -3835,6 +3863,9 @@ function defineParticipationFactoryInternal<TTransients extends Record<string, u
                 user: isParticipationuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user,
+                opportunitySlot: isParticipationopportunitySlotFactory(defaultData.opportunitySlot) ? {
+                    create: await defaultData.opportunitySlot.build()
+                } : defaultData.opportunitySlot,
                 reservation: isParticipationreservationFactory(defaultData.reservation) ? {
                     create: await defaultData.reservation.build()
                 } : defaultData.reservation,
@@ -4414,6 +4445,11 @@ type UtilitycommunityFactory = {
     build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutUtilitiesInput["create"]>;
 };
 
+type UtilityownerFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutUtiltyOwnedByMeInput["create"]>;
+};
+
 type UtilityFactoryDefineInput = {
     id?: string;
     publishStatus?: PublishStatus;
@@ -4427,6 +4463,7 @@ type UtilityFactoryDefineInput = {
     requiredForOpportunities?: Prisma.OpportunityCreateNestedManyWithoutRequiredUtilitiesInput;
     ticketIssuer?: Prisma.TicketIssuerCreateNestedManyWithoutUtilityInput;
     tickets?: Prisma.TicketCreateNestedManyWithoutUtilityInput;
+    owner?: UtilityownerFactory | Prisma.UserCreateNestedOneWithoutUtiltyOwnedByMeInput;
 };
 
 type UtilityTransientFields = Record<string, unknown> & Partial<Record<keyof UtilityFactoryDefineInput, never>>;
@@ -4444,6 +4481,10 @@ type UtilityFactoryDefineOptions<TTransients extends Record<string, unknown> = R
 
 function isUtilitycommunityFactory(x: UtilitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutUtilitiesInput | undefined): x is UtilitycommunityFactory {
     return (x as any)?._factoryFor === "Community";
+}
+
+function isUtilityownerFactory(x: UtilityownerFactory | Prisma.UserCreateNestedOneWithoutUtiltyOwnedByMeInput | undefined): x is UtilityownerFactory {
+    return (x as any)?._factoryFor === "User";
 }
 
 type UtilityTraitKeys<TOptions extends UtilityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -4509,7 +4550,10 @@ function defineUtilityFactoryInternal<TTransients extends Record<string, unknown
             const defaultAssociations = {
                 community: isUtilitycommunityFactory(defaultData.community) ? {
                     create: await defaultData.community.build()
-                } : defaultData.community
+                } : defaultData.community,
+                owner: isUtilityownerFactory(defaultData.owner) ? {
+                    create: await defaultData.owner.build()
+                } : defaultData.owner
             } as Prisma.UtilityCreateInput;
             const data: Prisma.UtilityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -4587,7 +4631,6 @@ type TicketIssuerclaimLinkFactory = {
 type TicketIssuerFactoryDefineInput = {
     id?: string;
     qtyToBeIssued?: number;
-    claimLinkId?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     utility: TicketIssuerutilityFactory | Prisma.UtilityCreateNestedOneWithoutTicketIssuerInput;

@@ -1,4 +1,4 @@
-import { GqlQueryTicketClaimLinkArgs } from "@/types/graphql";
+import { GqlQueryTicketClaimLinkArgs, GqlQueryTicketClaimLinksArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/usecase";
@@ -9,6 +9,10 @@ export default class TicketClaimLinkResolver {
   constructor(@inject("TicketClaimLinkUseCase") private readonly usecase: TicketClaimLinkUseCase) {}
 
   Query = {
+    ticketClaimLinks: (_: unknown, args: GqlQueryTicketClaimLinksArgs, ctx: IContext) => {
+      return this.usecase.visitorBrowseTicketClaimLinks(ctx, args);
+    },
+
     ticketClaimLink: async (_: unknown, args: GqlQueryTicketClaimLinkArgs, ctx: IContext) => {
       if (!ctx.loaders?.ticketClaimLink) {
         return this.usecase.visitorViewTicketClaimLink(ctx, args.id);

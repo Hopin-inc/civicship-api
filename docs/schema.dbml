@@ -113,6 +113,7 @@ Table t_users {
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
+  utiltyOwnedByMe t_utilities [not null]
   ticketIssuedByMe t_ticket_issuers [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
@@ -281,6 +282,7 @@ Table t_opportunity_slots {
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
+  participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -318,6 +320,8 @@ Table t_participations {
   images t_images [not null]
   userId String
   user t_users
+  opportunitySlotId String
+  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   ticketStatusHistories t_ticket_status_histories [not null]
@@ -380,6 +384,8 @@ Table t_utilities {
   requiredForOpportunities t_opportunities [not null]
   ticketIssuer t_ticket_issuers [not null]
   tickets t_tickets [not null]
+  ownerId String
+  owner t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -391,7 +397,6 @@ Table t_ticket_issuers {
   utility t_utilities [not null]
   ownerId String [not null]
   owner t_users [not null]
-  claimLinkId String [unique]
   claimLink t_ticket_claim_links
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -400,7 +405,7 @@ Table t_ticket_issuers {
 Table t_ticket_claim_links {
   id String [pk]
   status ClaimLinkStatus [not null, default: 'ISSUED']
-  qty Int [not null, default: 1, note: 'Max number of tickets a user can claim using this link']
+  qty Int [not null, default: 0, note: 'Max number of tickets a user can claim using this link']
   issuerId String [unique, not null]
   issuer t_ticket_issuers [not null]
   tickets t_tickets [not null]
@@ -780,6 +785,8 @@ Ref: t_reservation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
 
+Ref: t_participations.opportunitySlotId > t_opportunity_slots.id
+
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
 Ref: t_participations.communityId > t_communities.id [delete: Set Null]
@@ -797,6 +804,8 @@ Ref: t_evaluation_histories.evaluationId > t_evaluations.id [delete: Cascade]
 Ref: t_evaluation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_utilities.ownerId > t_users.id [delete: Set Null]
 
 Ref: t_ticket_issuers.utilityId > t_utilities.id
 

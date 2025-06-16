@@ -16,7 +16,7 @@ export default class TicketIssuerResolver {
     },
 
     ticketIssuer: (_: unknown, args: GqlQueryTicketIssuerArgs, ctx: IContext) => {
-      return ctx.loaders.ticketIssuer.load(args.id); // ← N+1 回避の DataLoader 利用
+      return this.ticketIssuerUseCase.visitorViewTicketIssuer(ctx, args);
     },
   };
 
@@ -27,10 +27,6 @@ export default class TicketIssuerResolver {
 
     owner: (parent: PrismaTicketIssuerDetail, _: unknown, ctx: IContext) => {
       return parent.ownerId ? ctx.loaders.user.load(parent.ownerId) : null;
-    },
-
-    claimLink: (parent: PrismaTicketIssuerDetail, _: unknown, ctx: IContext) => {
-      return parent.claimLinkId ? ctx.loaders.ticketClaimLink.load(parent.claimLinkId) : null;
     },
   };
 }

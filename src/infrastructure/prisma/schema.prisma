@@ -222,6 +222,7 @@ model User {
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
 
+  utiltyOwnedByMe         Utility[]
   ticketIssuedByMe        TicketIssuer[]
   ticketStatusChangedByMe TicketStatusHistory[]
 
@@ -621,7 +622,8 @@ model OpportunitySlot {
   opportunityId String      @map("opportunity_id")
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
-  reservations Reservation[]
+  reservations   Reservation[]
+  participations Participation[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -704,6 +706,9 @@ model Participation {
 
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  opportunitySlotId String?          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id])
 
   reservationId         String?               @map("reservation_id")
   reservation           Reservation?          @relation(fields: [reservationId], references: [id], onDelete: Cascade)
@@ -829,6 +834,9 @@ model Utility {
   ticketIssuer TicketIssuer[]
   tickets      Ticket[]
 
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -849,8 +857,7 @@ model TicketIssuer {
   ownerId String @map("owner_id")
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  claimLinkId String?          @unique @map("claim_link_id")
-  claimLink   TicketClaimLink?
+  claimLink TicketClaimLink?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -863,7 +870,7 @@ model TicketClaimLink {
   status ClaimLinkStatus @default(ISSUED)
 
   /// Max number of tickets a user can claim using this link
-  qty Int @default(1)
+  qty Int @default(0)
 
   issuerId String       @unique @map("issuer_id")
   issuer   TicketIssuer @relation(fields: [issuerId], references: [id])

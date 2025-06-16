@@ -62,6 +62,14 @@ export default class ParticipationRepository implements IParticipationRepository
     });
   }
 
+  async createMany(
+    ctx: IContext,
+    data: Prisma.ParticipationCreateInput[],
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.participation.createMany({ data, skipDuplicates: true });
+  }
+
   async update(
     ctx: IContext,
     id: string,

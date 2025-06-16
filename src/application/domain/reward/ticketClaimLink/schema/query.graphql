@@ -1,3 +1,38 @@
 extend type Query {
+    ticketClaimLinks(
+        filter: TicketClaimLinkFilterInput
+        sort: TicketClaimLinkSortInput
+        cursor: String
+        first: Int
+    ): TicketClaimLinksConnection!
     ticketClaimLink(id: ID!): TicketClaimLink
+}
+
+# ------------------------------
+# TicketClaimLink Connection Type Definitions
+# ------------------------------
+type TicketClaimLinksConnection {
+    edges: [TicketClaimLinkEdge]
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type TicketClaimLinkEdge implements Edge {
+    cursor: String!
+    node: TicketClaimLink
+}
+
+# ------------------------------
+# TicketClaimLink Query Input Definitions
+# ------------------------------
+input TicketClaimLinkFilterInput {
+    status: ClaimLinkStatus
+    issuerId: ID
+    hasAvailableTickets: Boolean
+    issuedTo: ID
+}
+
+input TicketClaimLinkSortInput {
+    createdAt: SortDirection
+    status: SortDirection
 }

@@ -441,6 +441,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     ParticipationStatusReason reason 
     String description "❓"
     String user_id "❓"
+    String opportunity_slot_id "❓"
     String reservation_id "❓"
     String community_id "❓"
     String evaluation_id "❓"
@@ -489,6 +490,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String description "❓"
     Int points_required 
     String community_id 
+    String owner_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -499,7 +501,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     Int qty_to_be_issued 
     String utility_id 
     String owner_id 
-    String claim_link_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -655,6 +656,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
+    "t_users" o{--}o "t_utilities" : "utiltyOwnedByMe"
     "t_users" o{--}o "t_ticket_issuers" : "ticketIssuedByMe"
     "t_users" o{--}o "t_ticket_status_histories" : "ticketStatusChangedByMe"
     "t_users" o{--}o "t_opportunities" : "opportunitiesCreatedByMe"
@@ -716,6 +718,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_opportunity_slots" o{--}o "v_slot_remaining_capacity" : "remainingCapacityView"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
+    "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_reservations" o|--|| "t_opportunity_slots" : "opportunitySlot"
     "t_reservations" o|--|| "ReservationStatus" : "enum:status"
     "t_reservations" o{--}o "t_participations" : "participations"
@@ -729,6 +732,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
     "t_participations" o{--}o "t_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
+    "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
@@ -752,6 +756,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_utilities" o{--}o "t_opportunities" : "requiredForOpportunities"
     "t_utilities" o{--}o "t_ticket_issuers" : "ticketIssuer"
     "t_utilities" o{--}o "t_tickets" : "tickets"
+    "t_utilities" o|--|o "t_users" : "owner"
     "t_ticket_issuers" o|--|| "t_utilities" : "utility"
     "t_ticket_issuers" o|--|| "t_users" : "owner"
     "t_ticket_issuers" o{--}o "t_ticket_claim_links" : "claimLink"
