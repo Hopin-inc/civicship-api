@@ -16,11 +16,17 @@ export interface LIFFLoginResponse {
 
 export class LIFFAuthUseCase {
   static async login(request: LIFFLoginRequest): Promise<LIFFLoginResponse> {
-    await LIFFService.verifyAccessToken(request.accessToken);
+    const configService = container.resolve(CommunityConfigService);
+    const issuer = new PrismaClientIssuer();
+
+    const { channelId } = await configService.getLineMessagingConfig(
+      { issuer } as IContext,
+      request.communityId,
+    );
+
+    await LIFFService.verifyAccessToken(request.accessToken, channelId);
     const profile = await LIFFService.getProfile(request.accessToken);
 
-    const issuer = new PrismaClientIssuer();
-    const configService = container.resolve(CommunityConfigService);
     const tenantId = await configService.getFirebaseTenantId(
       { issuer } as IContext,
       request.communityId,
