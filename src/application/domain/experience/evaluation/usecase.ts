@@ -24,7 +24,7 @@ import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
-import { IdentityPlatform, Prisma } from "@prisma/client";
+import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { toVCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
@@ -130,7 +130,11 @@ export default class EvaluationUseCase {
     );
     await this.evaluationService.throwIfExist(ctx, participationId);
 
-    const startsAt = participation.reservation?.opportunitySlot.startsAt;
+    const startsAt =
+      participation.reason === ParticipationStatusReason.PERSONAL_RECORD
+        ? participation.opportunitySlot?.startsAt
+        : participation.reservation?.opportunitySlot?.startsAt;
+
     if (!startsAt) {
       throw new ValidationError("OpportunitySlot startsAt is undefined.");
     }
