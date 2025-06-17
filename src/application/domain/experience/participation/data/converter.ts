@@ -124,7 +124,7 @@ export default class ParticipationConverter {
   createMany(input: GqlParticipationBulkCreateInput): Prisma.ParticipationCreateInput[] {
     return input.userIds.map((userId) => ({
       user: { connect: { id: userId } },
-      slot: { connect: { id: input.slotId } },
+      opportunitySlot: { connect: { id: input.slotId } },
       description: input.description ?? null,
       status: ParticipationStatus.PARTICIPATING,
       reason: ParticipationStatusReason.PERSONAL_RECORD,
