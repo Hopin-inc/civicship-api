@@ -1,6 +1,4 @@
 import { IContext } from "@/types/server";
-import dayjs from "dayjs";
-import "dayjs/locale/ja.js";
 import { buildCancelOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/cancelOpportunitySlotMessage";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/message/acceptReservationMessage";
@@ -15,7 +13,17 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import * as process from "node:process";
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
+import dayjs from "dayjs";
+import "dayjs/locale/ja.js";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import "dayjs/locale/ja";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 dayjs.locale("ja");
+dayjs.tz.setDefault("Asia/Tokyo");
 
 const liffBaseUrl = process.env.LIFF_BASE_URL;
 export const DEFAULT_HOST_IMAGE_URL =
@@ -218,9 +226,12 @@ export default class NotificationService {
   }
 
   private formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
-    const year = dayjs(start).format("YYYY年");
-    const date = dayjs(start).format("M月D日");
-    const time = `${dayjs(start).format("HH:mm")}~${dayjs(end).format("HH:mm")}`;
+    const startJST = dayjs(start).tz();
+    const endJST = dayjs(end).tz();
+
+    const year = startJST.format("YYYY年");
+    const date = startJST.format("M月D日");
+    const time = `${startJST.format("HH:mm")}~${endJST.format("HH:mm")}`;
     return { year, date, time };
   }
 
