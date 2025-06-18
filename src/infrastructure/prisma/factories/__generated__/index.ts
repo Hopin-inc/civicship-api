@@ -5,6 +5,8 @@ import type { Place } from "@prisma/client";
 import type { Community } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Identity } from "@prisma/client";
+import type { DidIssuanceRequest } from "@prisma/client";
+import type { VcIssuanceRequest } from "@prisma/client";
 import type { Membership } from "@prisma/client";
 import type { MembershipHistory } from "@prisma/client";
 import type { Wallet } from "@prisma/client";
@@ -36,6 +38,8 @@ import type { RemainingCapacityView } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
+import type { DidIssuanceStatus } from "@prisma/client";
+import type { VcIssuanceStatus } from "@prisma/client";
 import type { MembershipStatus } from "@prisma/client";
 import type { MembershipStatusReason } from "@prisma/client";
 import type { Role } from "@prisma/client";
@@ -199,6 +203,14 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Identity",
                 relationName: "IdentityToUser"
             }, {
+                name: "didIssuanceRequests",
+                type: "DidIssuanceRequest",
+                relationName: "DidIssuanceRequestToUser"
+            }, {
+                name: "vcIssuanceRequests",
+                type: "VcIssuanceRequest",
+                relationName: "UserToVcIssuanceRequest"
+            }, {
                 name: "memberships",
                 type: "Membership",
                 relationName: "MembershipToUser"
@@ -265,6 +277,20 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "user",
                 type: "User",
                 relationName: "IdentityToUser"
+            }]
+    }, {
+        name: "DidIssuanceRequest",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "DidIssuanceRequestToUser"
+            }]
+    }, {
+        name: "VcIssuanceRequest",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "UserToVcIssuanceRequest"
             }]
     }, {
         name: "Membership",
@@ -411,6 +437,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "reservations",
                 type: "Reservation",
                 relationName: "OpportunitySlotToReservation"
+            }, {
+                name: "participations",
+                type: "Participation",
+                relationName: "OpportunitySlotToParticipation"
             }]
     }, {
         name: "Reservation",
@@ -452,6 +482,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "user",
                 type: "User",
                 relationName: "ParticipationToUser"
+            }, {
+                name: "opportunitySlot",
+                type: "OpportunitySlot",
+                relationName: "OpportunitySlotToParticipation"
             }, {
                 name: "reservation",
                 type: "Reservation",
@@ -1585,6 +1619,8 @@ type UserFactoryDefineInput = {
     updatedAt?: Date | null;
     image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
+    didIssuanceRequests?: Prisma.DidIssuanceRequestCreateNestedManyWithoutUserInput;
+    vcIssuanceRequests?: Prisma.VcIssuanceRequestCreateNestedManyWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
@@ -1899,6 +1935,327 @@ export const defineIdentityFactory = (<TOptions extends IdentityFactoryDefineOpt
 }) as IdentityFactoryBuilder;
 
 defineIdentityFactory.withTransientFields = defaultTransientFieldValues => options => defineIdentityFactoryInternal(options, defaultTransientFieldValues);
+
+type DidIssuanceRequestScalarOrEnumFields = {};
+
+type DidIssuanceRequestuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutDidIssuanceRequestsInput["create"]>;
+};
+
+type DidIssuanceRequestFactoryDefineInput = {
+    id?: string;
+    status?: DidIssuanceStatus;
+    jobId?: string | null;
+    didValue?: string | null;
+    errorMessage?: string | null;
+    retryCount?: number;
+    requestedAt?: Date;
+    processedAt?: Date | null;
+    completedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: DidIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutDidIssuanceRequestsInput;
+};
+
+type DidIssuanceRequestTransientFields = Record<string, unknown> & Partial<Record<keyof DidIssuanceRequestFactoryDefineInput, never>>;
+
+type DidIssuanceRequestFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<DidIssuanceRequestFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<DidIssuanceRequest, Prisma.DidIssuanceRequestCreateInput, TTransients>;
+
+type DidIssuanceRequestFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<DidIssuanceRequestFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: DidIssuanceRequestFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<DidIssuanceRequest, Prisma.DidIssuanceRequestCreateInput, TTransients>;
+
+function isDidIssuanceRequestuserFactory(x: DidIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutDidIssuanceRequestsInput | undefined): x is DidIssuanceRequestuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type DidIssuanceRequestTraitKeys<TOptions extends DidIssuanceRequestFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface DidIssuanceRequestFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "DidIssuanceRequest";
+    build(inputData?: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>): PromiseLike<Prisma.DidIssuanceRequestCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>): PromiseLike<Prisma.DidIssuanceRequestCreateInput>;
+    buildList(list: readonly Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>[]): PromiseLike<Prisma.DidIssuanceRequestCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>): PromiseLike<Prisma.DidIssuanceRequestCreateInput[]>;
+    pickForConnect(inputData: DidIssuanceRequest): Pick<DidIssuanceRequest, "id">;
+    create(inputData?: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>): PromiseLike<DidIssuanceRequest>;
+    createList(list: readonly Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>[]): PromiseLike<DidIssuanceRequest[]>;
+    createList(count: number, item?: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>): PromiseLike<DidIssuanceRequest[]>;
+    createForConnect(inputData?: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>): PromiseLike<Pick<DidIssuanceRequest, "id">>;
+}
+
+export interface DidIssuanceRequestFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends DidIssuanceRequestFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): DidIssuanceRequestFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateDidIssuanceRequestScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): DidIssuanceRequestScalarOrEnumFields {
+    return {};
+}
+
+function defineDidIssuanceRequestFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends DidIssuanceRequestFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): DidIssuanceRequestFactoryInterface<TTransients, DidIssuanceRequestTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly DidIssuanceRequestTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("DidIssuanceRequest", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateDidIssuanceRequestScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<DidIssuanceRequestFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<DidIssuanceRequestFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isDidIssuanceRequestuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.DidIssuanceRequestCreateInput;
+            const data: Prisma.DidIssuanceRequestCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: DidIssuanceRequest) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().didIssuanceRequest.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.DidIssuanceRequestCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.DidIssuanceRequestCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "DidIssuanceRequest" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: DidIssuanceRequestTraitKeys<TOptions>, ...names: readonly DidIssuanceRequestTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface DidIssuanceRequestFactoryBuilder {
+    <TOptions extends DidIssuanceRequestFactoryDefineOptions>(options: TOptions): DidIssuanceRequestFactoryInterface<{}, DidIssuanceRequestTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends DidIssuanceRequestTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends DidIssuanceRequestFactoryDefineOptions<TTransients>>(options: TOptions) => DidIssuanceRequestFactoryInterface<TTransients, DidIssuanceRequestTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link DidIssuanceRequest} model.
+ *
+ * @param options
+ * @returns factory {@link DidIssuanceRequestFactoryInterface}
+ */
+export const defineDidIssuanceRequestFactory = (<TOptions extends DidIssuanceRequestFactoryDefineOptions>(options: TOptions): DidIssuanceRequestFactoryInterface<TOptions> => {
+    return defineDidIssuanceRequestFactoryInternal(options, {});
+}) as DidIssuanceRequestFactoryBuilder;
+
+defineDidIssuanceRequestFactory.withTransientFields = defaultTransientFieldValues => options => defineDidIssuanceRequestFactoryInternal(options, defaultTransientFieldValues);
+
+type VcIssuanceRequestScalarOrEnumFields = {
+    claims: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+};
+
+type VcIssuanceRequestuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput["create"]>;
+};
+
+type VcIssuanceRequestFactoryDefineInput = {
+    id?: string;
+    status?: VcIssuanceStatus;
+    jobId?: string | null;
+    vcRecordId?: string | null;
+    claims?: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
+    credentialFormat?: string | null;
+    schemaId?: string | null;
+    errorMessage?: string | null;
+    retryCount?: number;
+    requestedAt?: Date;
+    processedAt?: Date | null;
+    completedAt?: Date | null;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: VcIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput;
+};
+
+type VcIssuanceRequestTransientFields = Record<string, unknown> & Partial<Record<keyof VcIssuanceRequestFactoryDefineInput, never>>;
+
+type VcIssuanceRequestFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<VcIssuanceRequestFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<VcIssuanceRequest, Prisma.VcIssuanceRequestCreateInput, TTransients>;
+
+type VcIssuanceRequestFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<VcIssuanceRequestFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: VcIssuanceRequestFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<VcIssuanceRequest, Prisma.VcIssuanceRequestCreateInput, TTransients>;
+
+function isVcIssuanceRequestuserFactory(x: VcIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput | undefined): x is VcIssuanceRequestuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type VcIssuanceRequestTraitKeys<TOptions extends VcIssuanceRequestFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface VcIssuanceRequestFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "VcIssuanceRequest";
+    build(inputData?: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>): PromiseLike<Prisma.VcIssuanceRequestCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>): PromiseLike<Prisma.VcIssuanceRequestCreateInput>;
+    buildList(list: readonly Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>[]): PromiseLike<Prisma.VcIssuanceRequestCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>): PromiseLike<Prisma.VcIssuanceRequestCreateInput[]>;
+    pickForConnect(inputData: VcIssuanceRequest): Pick<VcIssuanceRequest, "id">;
+    create(inputData?: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>): PromiseLike<VcIssuanceRequest>;
+    createList(list: readonly Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>[]): PromiseLike<VcIssuanceRequest[]>;
+    createList(count: number, item?: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>): PromiseLike<VcIssuanceRequest[]>;
+    createForConnect(inputData?: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>): PromiseLike<Pick<VcIssuanceRequest, "id">>;
+}
+
+export interface VcIssuanceRequestFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends VcIssuanceRequestFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): VcIssuanceRequestFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateVcIssuanceRequestScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): VcIssuanceRequestScalarOrEnumFields {
+    return {
+        claims: getScalarFieldValueGenerator().Json({ modelName: "VcIssuanceRequest", fieldName: "claims", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineVcIssuanceRequestFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends VcIssuanceRequestFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): VcIssuanceRequestFactoryInterface<TTransients, VcIssuanceRequestTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly VcIssuanceRequestTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("VcIssuanceRequest", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateVcIssuanceRequestScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<VcIssuanceRequestFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<VcIssuanceRequestFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isVcIssuanceRequestuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.VcIssuanceRequestCreateInput;
+            const data: Prisma.VcIssuanceRequestCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: VcIssuanceRequest) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().vcIssuanceRequest.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.VcIssuanceRequestCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.VcIssuanceRequestCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "VcIssuanceRequest" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: VcIssuanceRequestTraitKeys<TOptions>, ...names: readonly VcIssuanceRequestTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface VcIssuanceRequestFactoryBuilder {
+    <TOptions extends VcIssuanceRequestFactoryDefineOptions>(options: TOptions): VcIssuanceRequestFactoryInterface<{}, VcIssuanceRequestTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends VcIssuanceRequestTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends VcIssuanceRequestFactoryDefineOptions<TTransients>>(options: TOptions) => VcIssuanceRequestFactoryInterface<TTransients, VcIssuanceRequestTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link VcIssuanceRequest} model.
+ *
+ * @param options
+ * @returns factory {@link VcIssuanceRequestFactoryInterface}
+ */
+export const defineVcIssuanceRequestFactory = (<TOptions extends VcIssuanceRequestFactoryDefineOptions>(options: TOptions): VcIssuanceRequestFactoryInterface<TOptions> => {
+    return defineVcIssuanceRequestFactoryInternal(options, {});
+}) as VcIssuanceRequestFactoryBuilder;
+
+defineVcIssuanceRequestFactory.withTransientFields = defaultTransientFieldValues => options => defineVcIssuanceRequestFactoryInternal(options, defaultTransientFieldValues);
 
 type MembershipScalarOrEnumFields = {
     status: MembershipStatus;
@@ -2881,6 +3238,7 @@ type OpportunitySlotFactoryDefineInput = {
     remainingCapacityView?: OpportunitySlotremainingCapacityViewFactory | Prisma.RemainingCapacityViewCreateNestedOneWithoutSlotInput;
     opportunity: OpportunitySlotopportunityFactory | Prisma.OpportunityCreateNestedOneWithoutSlotsInput;
     reservations?: Prisma.ReservationCreateNestedManyWithoutOpportunitySlotInput;
+    participations?: Prisma.ParticipationCreateNestedManyWithoutOpportunitySlotInput;
 };
 
 type OpportunitySlotTransientFields = Record<string, unknown> & Partial<Record<keyof OpportunitySlotFactoryDefineInput, never>>;
@@ -3369,6 +3727,11 @@ type ParticipationuserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutParticipationsInput["create"]>;
 };
 
+type ParticipationopportunitySlotFactory = {
+    _factoryFor: "OpportunitySlot";
+    build: () => PromiseLike<Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput["create"]>;
+};
+
 type ParticipationreservationFactory = {
     _factoryFor: "Reservation";
     build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutParticipationsInput["create"]>;
@@ -3395,6 +3758,7 @@ type ParticipationFactoryDefineInput = {
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutParticipationsInput;
     user?: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput;
+    opportunitySlot?: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput;
     reservation?: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput;
     ticketStatusHistories?: Prisma.TicketStatusHistoryCreateNestedManyWithoutParticipationInput;
     community?: ParticipationcommunityFactory | Prisma.CommunityCreateNestedOneWithoutParticipationsInput;
@@ -3418,6 +3782,10 @@ type ParticipationFactoryDefineOptions<TTransients extends Record<string, unknow
 
 function isParticipationuserFactory(x: ParticipationuserFactory | Prisma.UserCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationuserFactory {
     return (x as any)?._factoryFor === "User";
+}
+
+function isParticipationopportunitySlotFactory(x: ParticipationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationopportunitySlotFactory {
+    return (x as any)?._factoryFor === "OpportunitySlot";
 }
 
 function isParticipationreservationFactory(x: ParticipationreservationFactory | Prisma.ReservationCreateNestedOneWithoutParticipationsInput | undefined): x is ParticipationreservationFactory {
@@ -3495,6 +3863,9 @@ function defineParticipationFactoryInternal<TTransients extends Record<string, u
                 user: isParticipationuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user,
+                opportunitySlot: isParticipationopportunitySlotFactory(defaultData.opportunitySlot) ? {
+                    create: await defaultData.opportunitySlot.build()
+                } : defaultData.opportunitySlot,
                 reservation: isParticipationreservationFactory(defaultData.reservation) ? {
                     create: await defaultData.reservation.build()
                 } : defaultData.reservation,

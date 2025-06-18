@@ -1,5 +1,5 @@
 import { container } from "tsyringe";
-import { prismaClient } from "@/infrastructure/prisma/client";
+import { prismaClient, PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import TransactionRepository from "@/application/domain/transaction/data/repository";
 import TransactionConverter from "@/application/domain/transaction/data/converter";
@@ -16,6 +16,7 @@ import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
+import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
 import ArticleUseCase from "@/application/domain/content/article/usecase";
 import ArticleService from "@/application/domain/content/article/service";
 import ArticleRepository from "@/application/domain/content/article/data/repository";
@@ -77,6 +78,10 @@ import WalletUseCase from "@/application/domain/account/wallet/usecase";
 import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/usecase";
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
+import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
+import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -84,6 +89,7 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("prismaClient", { useValue: prismaClient });
+  container.register("prismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
 
   // ------------------------------
@@ -120,6 +126,13 @@ export function registerProductionDependencies() {
   container.register("IdentityUseCase", { useClass: IdentityUseCase });
   container.register("IdentityRepository", { useClass: IdentityRepository });
   container.register("IdentityConverter", { useClass: IdentityConverter });
+
+  // DID?VC
+  container.register("DIDVCServerClient", { useClass: DIDVCServerClient });
+  container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
+  container.register("didIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
+  container.register("VCIssuanceService", { useClass: VCIssuanceService });
+  container.register("vcIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
 
   // ------------------------------
   // 📰 Content

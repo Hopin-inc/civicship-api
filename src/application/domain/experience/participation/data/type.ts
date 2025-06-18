@@ -36,7 +36,9 @@ export type PrismaParticipationDetail = Prisma.ParticipationGetPayload<{
 }>;
 
 export const participationIncludeSlot = Prisma.validator<Prisma.ParticipationSelect>()({
+  reason: true,
   reservation: { select: { opportunitySlot: true } },
+  opportunitySlot: true,
 });
 
 export type PrismaParticipationIncludeSlot = Prisma.ParticipationGetPayload<{

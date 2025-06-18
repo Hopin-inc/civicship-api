@@ -1,8 +1,6 @@
 import {
   GqlQueryEvaluationsArgs,
   GqlQueryEvaluationArgs,
-  GqlMutationEvaluationPassArgs,
-  GqlMutationEvaluationFailArgs,
   GqlMutationEvaluationBulkCreateArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
@@ -20,18 +18,16 @@ export default class EvaluationResolver {
     },
 
     evaluation: (_: unknown, args: GqlQueryEvaluationArgs, ctx: IContext) => {
-      return ctx.loaders.evaluation.load(args.id);
+      return this.evaluationUseCase.visitorViewEvaluation(ctx, args);
     },
   };
 
   Mutation = {
-    evaluationPass: (_: unknown, args: GqlMutationEvaluationPassArgs, ctx: IContext) => {
-      return this.evaluationUseCase.managerPassEvaluation(args, ctx);
-    },
-    evaluationFail: (_: unknown, args: GqlMutationEvaluationFailArgs, ctx: IContext) => {
-      return this.evaluationUseCase.managerFailEvaluation(args, ctx);
-    },
-    evaluationBulkCreate: (_: unknown, args: GqlMutationEvaluationBulkCreateArgs, ctx: IContext) => {
+    evaluationBulkCreate: (
+      _: unknown,
+      args: GqlMutationEvaluationBulkCreateArgs,
+      ctx: IContext,
+    ) => {
       return this.evaluationUseCase.managerBulkCreateEvaluations(args, ctx);
     },
   };
