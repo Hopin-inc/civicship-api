@@ -16,7 +16,6 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import { createLineClient } from "@/infrastructure/libs/line";
 import logger from "@/infrastructure/logging";
 import dayjs from "dayjs";
-import "dayjs/locale/ja.js";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import "dayjs/locale/ja";
