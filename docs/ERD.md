@@ -252,26 +252,30 @@ TICKET_REFUNDED TICKET_REFUNDED
   "t_community_configs" {
     String id "🗝️"
     String community_id 
-    String firebase_config_id 
-    String line_config_id 
     DateTime created_at 
-    DateTime updated_at 
+    DateTime updated_at "❓"
     }
   
 
-  "t_firebase_config" {
+  "t_community_firebase_configs" {
     String id "🗝️"
+    String config_id 
     String tenant_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
-  "t_line_config" {
+  "t_community_line_configs" {
     String id "🗝️"
+    String config_id 
     String channel_id 
     String channel_secret 
     String access_token 
     String liff_id 
     String liff_base_url 
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -621,10 +625,10 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
     "t_community_configs" o|--|| "t_communities" : "community"
-    "t_community_configs" o|--|| "t_firebase_config" : "firebaseConfig"
-    "t_community_configs" o|--|| "t_line_config" : "lineConfig"
-    "t_firebase_config" o{--}o "t_community_configs" : "config"
-    "t_line_config" o{--}o "t_community_configs" : "config"
+    "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
+    "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
+    "t_community_firebase_configs" o|--|o "t_community_configs" : "config"
+    "t_community_line_configs" o|--|o "t_community_configs" : "config"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"

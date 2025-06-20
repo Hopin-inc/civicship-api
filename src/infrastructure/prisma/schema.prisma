@@ -198,29 +198,34 @@ model CommunityConfig {
   communityId String    @unique @map("community_id")
   community   Community @relation(fields: [communityId], references: [id])
 
-  firebaseConfigId String         @unique @map("firebase_config_id")
-  firebaseConfig   FirebaseConfig @relation(fields: [firebaseConfigId], references: [id])
+  firebaseConfig CommunityFirebaseConfig?
+  lineConfig     CommunityLineConfig?
 
-  lineConfigId String     @unique @map("line_config_id")
-  lineConfig   LineConfig @relation(fields: [lineConfigId], references: [id])
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_community_configs")
 }
 
-model FirebaseConfig {
-  id       String @id @default(cuid())
+model CommunityFirebaseConfig {
+  id String @id @default(cuid())
+
+  configId String           @unique @map("config_id")
+  config   CommunityConfig? @relation(fields: [configId], references: [id])
+
   tenantId String @map("tenant_id")
 
-  config CommunityConfig?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@map("t_firebase_config")
+  @@map("t_community_firebase_configs")
 }
 
-model LineConfig {
+model CommunityLineConfig {
   id String @id @default(cuid())
+
+  configId String           @unique @map("config_id")
+  config   CommunityConfig? @relation(fields: [configId], references: [id])
 
   channelId     String @map("channel_id")
   channelSecret String @map("channel_secret")
@@ -229,9 +234,10 @@ model LineConfig {
   liffId      String @map("liff_id")
   liffBaseUrl String @map("liff_base_url")
 
-  config CommunityConfig?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@map("t_line_config")
+  @@map("t_community_line_configs")
 }
 
 // ------------------------------ User Domain ------------------------------
