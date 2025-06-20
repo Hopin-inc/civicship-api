@@ -17,6 +17,7 @@ export const ticketStatusHistorySelectDetail = Prisma.validator<Prisma.TicketSta
     participationId: true,
     createdAt: true,
     updatedAt: true,
+    ticket: true,
   },
 );
 

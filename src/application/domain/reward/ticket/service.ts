@@ -68,7 +68,7 @@ export default class TicketService {
     const currentUserId = getCurrentUserId(ctx);
     if (!ticketIds) throw new ValidationError("Ticket IDs are not provided");
 
-    if (ticketIds.length !== participationIds.length) {
+    if (ticketIds.length > participationIds.length) {
       throw new ValidationError("The number of tickets does not match the number of participants");
     }
 

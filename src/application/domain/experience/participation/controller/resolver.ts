@@ -78,5 +78,9 @@ export default class ParticipationResolver {
     statusHistories: (parent, _: unknown, ctx: IContext) => {
       return ctx.loaders.participationStatusHistoriesByParticipation.load(parent.id);
     },
+
+    ticketStatusHistories: (parent, _: unknown, ctx: IContext) => {
+      return ctx.loaders.ticketStatusHistoriesByParticipation.load(parent.id);
+    },
   };
 }

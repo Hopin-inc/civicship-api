@@ -14,7 +14,7 @@ import {
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { PublishStatus } from "@prisma/client";
-import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
+import { clampFirst, getCurrentUserId, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { IUtilityService } from "./data/interface";
 import UtilityPresenter from "./presenter";
 
@@ -32,34 +32,26 @@ export default class UtilityUseCase {
     const communityIds = ctx.hasPermissions?.memberships?.map((m) => m.communityId) || [];
 
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
-    const allowedPublishStatuses = isManager
-      ? Object.values(PublishStatus)
-      : isMember
-        ? [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL]
-        : [PublishStatus.PUBLIC];
+    const allowedStatuses = getAllowedPublishStatuses(communityIds, isManager, isMember);
 
-    await this.service.validatePublishStatus(allowedPublishStatuses, filter);
+    this.service.validatePublishStatus(allowedStatuses, filter);
 
-    const validatedFilter = validateByMembershipRoles(
-      communityIds,
-      isMember,
-      isManager,
-      currentUserId,
-      filter,
-    );
+    const accessFilter = enforceAccessFilter(currentUserId, communityIds);
+    const finalFilter = accessFilter ? { and: [accessFilter, filter ?? {}] } : (filter ?? {});
+
+    console.dir(finalFilter, { depth: null });
 
     const records = await this.service.fetchUtilities(
       ctx,
       {
         cursor,
-        filter: validatedFilter,
+        filter: finalFilter,
         sort,
       },
       take,
     );
 
     const hasNextPage = records.length > take;
-
     const data = records.slice(0, take).map((record) => UtilityPresenter.get(record));
     return UtilityPresenter.query(data, hasNextPage);
   }
@@ -70,25 +62,34 @@ export default class UtilityUseCase {
   ): Promise<GqlUtility | null> {
     const currentUserId = ctx.currentUser?.id;
     const communityIds = [permission.communityId];
+
     const { isManager, isMember } = getMembershipRolesByCtx(ctx, communityIds, currentUserId);
 
-    const validatedFilter = validateByMembershipRoles(
-      communityIds,
-      isMember,
-      isManager,
-      currentUserId,
-    );
+    const allowedStatuses = getAllowedPublishStatuses(communityIds, isManager, isMember);
 
-    const record = await this.service.findUtility(ctx, id, validatedFilter);
+    const accessFilter: GqlUtilityFilterInput = {
+      communityIds,
+      publishStatus: allowedStatuses,
+    };
+
+    const record = await this.service.findUtility(ctx, id, accessFilter);
     return record ? UtilityPresenter.get(record) : null;
   }
 
   async managerCreateUtility(
     ctx: IContext,
-    { input }: GqlMutationUtilityCreateArgs,
+    { input, permission }: GqlMutationUtilityCreateArgs,
   ): Promise<GqlUtilityCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const res = await this.service.createUtility(ctx, input, tx);
+      const res = await this.service.createUtility(
+        ctx,
+        input,
+        currentUserId,
+        permission.communityId,
+        tx,
+      );
       return UtilityPresenter.create(res);
     });
   }
@@ -114,34 +115,29 @@ export default class UtilityUseCase {
   }
 }
 
-function validateByMembershipRoles(
+function getAllowedPublishStatuses(
   communityIds: string[],
   isManager: Record<string, boolean>,
   isMember: Record<string, boolean>,
-  currentUserId?: string,
-  filter?: GqlUtilityFilterInput,
-): GqlUtilityFilterInput {
-  const orConditions = communityIds.map((communityId) => {
-    if (isManager[communityId]) {
-      return {
-        and: [{ communityId }, ...(filter ? [filter] : [])],
-      };
-    }
-    return {
-      and: [
-        { communityId },
-        {
-          or: [
-            { publishStatus: [PublishStatus.PUBLIC] },
-            ...(isMember[communityId]
-              ? [{ publishStatus: [PublishStatus.COMMUNITY_INTERNAL] }]
-              : []),
-          ],
-        },
-        ...(filter ? [filter] : []),
-      ],
-    };
-  });
+): PublishStatus[] {
+  if (communityIds.some((id) => isManager[id])) {
+    return Object.values(PublishStatus);
+  }
+  if (communityIds.some((id) => isMember[id])) {
+    return [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+  }
+  return [PublishStatus.PUBLIC];
+}
 
-  return orConditions.length > 0 ? { or: orConditions } : {};
+function enforceAccessFilter(
+  currentUserId: string | undefined,
+  communityIds: string[],
+): GqlUtilityFilterInput | undefined {
+  if (communityIds.length === 0) return undefined;
+
+  return {
+    or: communityIds.map((communityId) => ({
+      communityIds: [communityId],
+    })),
+  };
 }

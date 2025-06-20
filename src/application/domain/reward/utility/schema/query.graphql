@@ -32,7 +32,9 @@ type UtilityEdge implements Edge {
 # Input Definitions for Queries
 # ------------------------------
 input UtilityFilterInput {
-    communityId: ID
+    communityIds: [ID!]
+    ownerIds: [ID!]
+
     publishStatus: [PublishStatus!]
 
     and: [UtilityFilterInput!]

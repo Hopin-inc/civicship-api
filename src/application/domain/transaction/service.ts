@@ -113,4 +113,8 @@ export default class TransactionService implements ITransactionService {
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
   }
+
+  async refreshCurrentPoint(ctx: IContext, tx: Prisma.TransactionClient) {
+    return this.repository.refreshCurrentPoints(ctx, tx);
+  }
 }

@@ -80,6 +80,7 @@ Table t_communities {
   website String
   imageId String
   image t_images
+  config t_community_configs
   places t_places [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
@@ -89,6 +90,34 @@ Table t_communities {
   articles t_articles [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_community_configs {
+  id String [pk]
+  communityId String [unique, not null]
+  community t_communities [not null]
+  firebaseConfigId String [unique, not null]
+  firebaseConfig t_firebase_config [not null]
+  lineConfigId String [unique, not null]
+  lineConfig t_line_config [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+}
+
+Table t_firebase_config {
+  id String [pk]
+  tenantId String [not null]
+  config t_community_configs
+}
+
+Table t_line_config {
+  id String [pk]
+  channelId String [not null]
+  channelSecret String [not null]
+  accessToken String [not null]
+  liffId String [not null]
+  liffBaseUrl String [not null]
+  config t_community_configs
 }
 
 Table t_users {
@@ -111,6 +140,7 @@ Table t_users {
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
+  utiltyOwnedByMe t_utilities [not null]
   ticketIssuedByMe t_ticket_issuers [not null]
   ticketStatusChangedByMe t_ticket_status_histories [not null]
   opportunitiesCreatedByMe t_opportunities [not null]
@@ -343,6 +373,8 @@ Table t_utilities {
   requiredForOpportunities t_opportunities [not null]
   ticketIssuer t_ticket_issuers [not null]
   tickets t_tickets [not null]
+  ownerId String
+  owner t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -354,7 +386,6 @@ Table t_ticket_issuers {
   utility t_utilities [not null]
   ownerId String [not null]
   owner t_users [not null]
-  claimLinkId String [unique]
   claimLink t_ticket_claim_links
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -363,7 +394,7 @@ Table t_ticket_issuers {
 Table t_ticket_claim_links {
   id String [pk]
   status ClaimLinkStatus [not null, default: 'ISSUED']
-  qty Int [not null, default: 1, note: 'Max number of tickets a user can claim using this link']
+  qty Int [not null, default: 0, note: 'Max number of tickets a user can claim using this link']
   issuerId String [unique, not null]
   issuer t_ticket_issuers [not null]
   tickets t_tickets [not null]
@@ -687,6 +718,12 @@ Ref: t_places.communityId > t_communities.id [delete: Set Null]
 
 Ref: t_communities.imageId > t_images.id
 
+Ref: t_community_configs.communityId - t_communities.id
+
+Ref: t_community_configs.firebaseConfigId - t_firebase_config.id
+
+Ref: t_community_configs.lineConfigId - t_line_config.id
+
 Ref: t_users.imageId > t_images.id
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
@@ -742,6 +779,8 @@ Ref: t_evaluation_histories.evaluationId > t_evaluations.id [delete: Cascade]
 Ref: t_evaluation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_utilities.communityId > t_communities.id [delete: Cascade]
+
+Ref: t_utilities.ownerId > t_users.id [delete: Set Null]
 
 Ref: t_ticket_issuers.utilityId > t_utilities.id
 

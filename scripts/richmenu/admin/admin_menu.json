@@ -45,6 +45,19 @@
         "label": "予約管理",
         "uri": "${LIFF_BASE_URL}/admin/reservations"
       }
+    },
+    {
+      "bounds": {
+        "x": 1666,
+        "y": 843,
+        "width": 834,
+        "height": 843
+      },
+      "action": {
+        "type": "uri",
+        "label": "チケット発行",
+        "uri": "${LIFF_BASE_URL}/admin/tickets"
+      }
     }
   ]
 }

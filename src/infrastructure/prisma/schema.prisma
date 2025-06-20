@@ -178,6 +178,7 @@ model Community {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
+  config         CommunityConfig?
   places         Place[]
   memberships    Membership[]
   wallets        Wallet[]
@@ -190,6 +191,47 @@ model Community {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_communities")
+}
+
+model CommunityConfig {
+  id          String    @id @default(cuid())
+  communityId String    @unique @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id])
+
+  firebaseConfigId String         @unique @map("firebase_config_id")
+  firebaseConfig   FirebaseConfig @relation(fields: [firebaseConfigId], references: [id])
+
+  lineConfigId String     @unique @map("line_config_id")
+  lineConfig   LineConfig @relation(fields: [lineConfigId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("t_community_configs")
+}
+
+model FirebaseConfig {
+  id       String @id @default(cuid())
+  tenantId String @map("tenant_id")
+
+  config CommunityConfig?
+
+  @@map("t_firebase_config")
+}
+
+model LineConfig {
+  id String @id @default(cuid())
+
+  channelId     String @map("channel_id")
+  channelSecret String @map("channel_secret")
+  accessToken   String @map("access_token")
+
+  liffId      String @map("liff_id")
+  liffBaseUrl String @map("liff_base_url")
+
+  config CommunityConfig?
+
+  @@map("t_line_config")
 }
 
 // ------------------------------ User Domain ------------------------------
@@ -220,6 +262,7 @@ model User {
   membershipChangedByMe MembershipHistory[]
   wallets               Wallet[]
 
+  utiltyOwnedByMe         Utility[]
   ticketIssuedByMe        TicketIssuer[]
   ticketStatusChangedByMe TicketStatusHistory[]
 
@@ -762,6 +805,9 @@ model Utility {
   ticketIssuer TicketIssuer[]
   tickets      Ticket[]
 
+  ownerId String? @map("owner_id")
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
@@ -782,8 +828,7 @@ model TicketIssuer {
   ownerId String @map("owner_id")
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  claimLinkId String?          @unique @map("claim_link_id")
-  claimLink   TicketClaimLink?
+  claimLink TicketClaimLink?
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -796,7 +841,7 @@ model TicketClaimLink {
   status ClaimLinkStatus @default(ISSUED)
 
   /// Max number of tickets a user can claim using this link
-  qty Int @default(1)
+  qty Int @default(0)
 
   issuerId String       @unique @map("issuer_id")
   issuer   TicketIssuer @relation(fields: [issuerId], references: [id])
