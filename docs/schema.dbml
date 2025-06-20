@@ -80,6 +80,7 @@ Table t_communities {
   website String
   imageId String
   image t_images
+  config t_community_configs
   places t_places [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
@@ -87,6 +88,38 @@ Table t_communities {
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   articles t_articles [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_configs {
+  id String [pk]
+  communityId String [unique, not null]
+  community t_communities [not null]
+  firebaseConfig t_community_firebase_configs
+  lineConfig t_community_line_configs
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_firebase_configs {
+  id String [pk]
+  configId String [unique, not null]
+  config t_community_configs
+  tenantId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_line_configs {
+  id String [pk]
+  configId String [unique, not null]
+  config t_community_configs
+  channelId String [not null]
+  channelSecret String [not null]
+  accessToken String [not null]
+  liffId String [not null]
+  liffBaseUrl String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -688,6 +721,12 @@ Ref: t_places.cityCode > m_cities.code [delete: Restrict]
 Ref: t_places.communityId > t_communities.id [delete: Set Null]
 
 Ref: t_communities.imageId > t_images.id
+
+Ref: t_community_configs.communityId - t_communities.id
+
+Ref: t_community_firebase_configs.configId - t_community_configs.id
+
+Ref: t_community_line_configs.configId - t_community_configs.id
 
 Ref: t_users.imageId > t_images.id
 

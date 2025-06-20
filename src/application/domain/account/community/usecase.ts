@@ -63,7 +63,7 @@ export default class CommunityUseCase {
     { id }: GqlMutationCommunityDeleteArgs,
     ctx: IContext,
   ): Promise<GqlCommunityDeletePayload> {
-    const res = await ctx.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.communityService.deleteCommunity(ctx, id, tx);
     });
     return CommunityPresenter.delete(res);
@@ -73,7 +73,7 @@ export default class CommunityUseCase {
     { id, input }: GqlMutationCommunityUpdateProfileArgs,
     ctx: IContext,
   ): Promise<GqlCommunityUpdateProfilePayload> {
-    const res = await ctx.issuer.public(ctx, async (tx) => {
+    const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.communityService.updateCommunityProfile(ctx, id, input, tx);
     });
     return CommunityPresenter.update(res);

@@ -1,11 +1,48 @@
-import * as line from "@line/bot-sdk";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { IContext } from "@/types/server";
+import { container } from "tsyringe";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { messagingApi, middleware, MiddlewareConfig } from "@line/bot-sdk";
+import logger from "@/infrastructure/logging";
 
-const config: line.MiddlewareConfig = {
-  channelSecret: process.env.LINE_MESSAGING_CHANNEL_SECRET!,
-};
+export async function createLineClientAndMiddleware(communityId: string) {
+  const [client, mw] = await Promise.all([
+    createLineClient(communityId),
+    createLineMiddleware(communityId),
+  ]);
+  return { client, middleware: mw };
+}
 
-export const lineClient = new line.messagingApi.MessagingApiClient({
-  channelAccessToken: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN!,
-});
+export async function createLineClient(
+  communityId: string,
+): Promise<messagingApi.MessagingApiClient> {
+  const issuer = new PrismaClientIssuer();
+  const ctx = { issuer } as IContext;
 
-export const lineMiddleware = line.middleware(config);
+  const configService = container.resolve(CommunityConfigService);
+  const { accessToken } = await configService.getLineMessagingConfig(ctx, communityId);
+
+  logger.info("LINE client created", {
+    communityId,
+    tokenPreview: accessToken.slice(0, 10),
+  });
+
+  return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
+}
+
+export async function createLineMiddleware(
+  communityId: string,
+): Promise<ReturnType<typeof middleware>> {
+  const issuer = new PrismaClientIssuer();
+  const ctx = { issuer } as IContext;
+
+  const configService = container.resolve(CommunityConfigService);
+  const { channelSecret } = await configService.getLineMessagingConfig(ctx, communityId);
+
+  logger.info("LINE middleware created", {
+    communityId,
+    secretPreview: channelSecret.slice(0, 6),
+  });
+
+  return middleware({ channelSecret } satisfies MiddlewareConfig);
+}

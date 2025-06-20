@@ -1,7 +1,12 @@
-import { LIFFService, LINEProfile } from './service';
+import { LIFFService, LINEProfile } from "./service";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { container } from "tsyringe";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { IContext } from "@/types/server";
 
 export interface LIFFLoginRequest {
   accessToken: string;
+  communityId: string;
 }
 
 export interface LIFFLoginResponse {
@@ -11,13 +16,22 @@ export interface LIFFLoginResponse {
 
 export class LIFFAuthUseCase {
   static async login(request: LIFFLoginRequest): Promise<LIFFLoginResponse> {
-    await LIFFService.verifyAccessToken(request.accessToken);
+    const configService = container.resolve(CommunityConfigService);
+    const issuer = new PrismaClientIssuer();
+
+    const { channelId } = await configService.getLineMessagingConfig(
+      { issuer } as IContext,
+      request.communityId,
+    );
+
+    await LIFFService.verifyAccessToken(request.accessToken, channelId);
     const profile = await LIFFService.getProfile(request.accessToken);
 
-    const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
-    if (!tenantId) {
-      throw new Error("FIREBASE_AUTH_TENANT_ID not defined.")
-    }
+    const tenantId = await configService.getFirebaseTenantId(
+      { issuer } as IContext,
+      request.communityId,
+    );
+
     const customToken = await LIFFService.createFirebaseCustomToken(profile, tenantId);
 
     return {
