@@ -66,14 +66,17 @@ export default class TransactionUseCase {
       ctx,
       permission.communityId,
     );
-    const res = await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
-      return await this.transactionService.issueCommunityPoint(
-        ctx,
-        input.transferPoints,
-        communityWallet.id,
-        tx,
-      );
-    });
+    const res = await ctx.issuer.onlyBelongingCommunity(
+      ctx,
+      async (tx: Prisma.TransactionClient) => {
+        return await this.transactionService.issueCommunityPoint(
+          ctx,
+          input.transferPoints,
+          communityWallet.id,
+          tx,
+        );
+      },
+    );
     return TransactionPresenter.issueCommunityPoint(res);
   }
 
@@ -88,7 +91,7 @@ export default class TransactionUseCase {
       permission.communityId,
     );
 
-    return await ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    return await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(
         ctx,
         currentUserId,
@@ -128,7 +131,7 @@ export default class TransactionUseCase {
       communityId,
     );
 
-    return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.membershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
 
       const toWallet = await this.walletService.createMemberWalletIfNeeded(

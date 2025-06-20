@@ -56,14 +56,14 @@ export default class MembershipUseCase {
   }
 
   async ownerInviteMember(args: GqlMutationMembershipInviteArgs, ctx: IContext) {
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.membershipService.inviteMember(ctx, args.input, tx);
     });
     return MembershipPresenter.invite(membership);
   }
 
   async ownerCancelInvitation(args: GqlMutationMembershipCancelInvitationArgs, ctx: IContext) {
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.membershipService.setStatus(
         ctx,
         args.input,
@@ -117,7 +117,7 @@ export default class MembershipUseCase {
   async memberWithdrawCommunity(args: GqlMutationMembershipWithdrawArgs, ctx: IContext) {
     const userId = getCurrentUserId(ctx);
 
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const membership = await this.membershipService.deleteMembership(
         ctx,
         tx,
@@ -135,7 +135,7 @@ export default class MembershipUseCase {
   async ownerRemoveMember(args: GqlMutationMembershipRemoveArgs, ctx: IContext) {
     const { userId, communityId } = args.input;
 
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const membership = await this.membershipService.deleteMembership(
         ctx,
         tx,
@@ -151,7 +151,7 @@ export default class MembershipUseCase {
   }
 
   async ownerAssignOwner(args: GqlMutationMembershipAssignOwnerArgs, ctx: IContext) {
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.membershipService.setRole(ctx, args.input, Role.OWNER, tx);
     });
 
@@ -160,7 +160,7 @@ export default class MembershipUseCase {
   }
 
   async managerAssignManager(args: GqlMutationMembershipAssignManagerArgs, ctx: IContext) {
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.membershipService.setRole(ctx, args.input, Role.MANAGER, tx);
     });
 
@@ -169,7 +169,7 @@ export default class MembershipUseCase {
   }
 
   async managerAssignMember(args: GqlMutationMembershipAssignMemberArgs, ctx: IContext) {
-    const membership = await ctx.issuer.public(ctx, async (tx) => {
+    const membership = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return await this.membershipService.setRole(ctx, args.input, Role.MEMBER, tx);
     });
 

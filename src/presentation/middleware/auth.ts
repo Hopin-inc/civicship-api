@@ -77,21 +77,25 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     ]);
 
     return {
+      issuer,
+      loaders,
+
       uid,
       tenantId,
       communityId,
       platform,
+
       currentUser,
       hasPermissions,
-      loaders,
-      issuer,
+
+      phoneUid,
       phoneAuthToken,
       phoneRefreshToken,
       phoneTokenExpiresAt,
-      phoneUid,
+
+      idToken,
       refreshToken,
       tokenExpiresAt,
-      idToken,
     };
   } catch {
     return {
