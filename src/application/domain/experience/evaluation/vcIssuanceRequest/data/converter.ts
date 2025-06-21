@@ -1,6 +1,7 @@
 import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import logger from "@/infrastructure/logging";
+import { ParticipationStatusReason } from "@prisma/client";
 
 export const toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): VCIssuanceRequestInput => {
   const { status, evaluator, participation } = evaluation;
@@ -16,13 +17,12 @@ export const toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): VCIssuan
     throw new Error("Participation user is missing required fields");
   }
 
-  const reservation = participation?.reservation;
-  if (!reservation) {
-    logger.error("Reservation is missing required fields", { reservation });
-    throw new Error("Reservation is missing required fields");
-  }
+  const reason = participation?.reason;
+  const opportunitySlot =
+    reason === ParticipationStatusReason.PERSONAL_RECORD
+      ? participation.opportunitySlot
+      : participation.reservation?.opportunitySlot;
 
-  const opportunitySlot = reservation.opportunitySlot;
   if (!opportunitySlot) {
     logger.error("OpportunitySlot is missing required fields", { opportunitySlot });
     throw new Error("OpportunitySlot is missing required fields");
@@ -46,13 +46,10 @@ export const toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): VCIssuan
         id: user.id,
         name: user.name,
       },
-      reservation: {
-        id: reservation.id,
-        opportunity: {
-          id: opportunity.id,
-          title: opportunity.title,
-          startsAt: opportunitySlot.startsAt.toISOString(),
-        },
+      opportunity: {
+        id: opportunity.id,
+        title: opportunity.title,
+        startsAt: opportunitySlot.startsAt.toISOString(),
       },
     },
     credentialFormat: "JWT",
