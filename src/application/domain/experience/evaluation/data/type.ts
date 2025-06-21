@@ -5,6 +5,11 @@ export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
   evaluator: true,
   participation: {
     include: {
+      opportunitySlot: {
+        include: {
+          opportunity: true,
+        },
+      },
       reservation: {
         include: {
           opportunitySlot: {
