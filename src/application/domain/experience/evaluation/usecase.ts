@@ -139,12 +139,10 @@ export default class EvaluationUseCase {
       throw new ValidationError("OpportunitySlot startsAt is undefined.");
     }
 
-    const nowJSTDate = new Date().toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" });
-    const startsAtJSTDate = new Date(startsAt).toLocaleDateString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-    });
+    const now = new Date();
+    const startsAtDate = new Date(startsAt);
 
-    if (nowJSTDate < startsAtJSTDate) {
+    if (now < startsAtDate) {  // Date オブジェクトとして比較
       throw new CannotEvaluateBeforeOpportunityStartError();
     }
   }
