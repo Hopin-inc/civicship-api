@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "copy-graphql": "copyfiles -u 1 'src/**/*.graphql' 'dist'",
+    "copy-graphql": "find src -name '*.graphql' -exec cp --parents {} dist \\;",
     "build": "tsc && tsc-alias tsconfig.json && pnpm copy-graphql",
     "start": "node -r tsconfig-paths/register dist/index.js",
     "dev": "dotenvx run -f .env --env='NODE_HTTPS=false' -- tsx watch src/index.ts",
