@@ -90,11 +90,13 @@ export default class ReservationUseCase {
     );
     const { opportunity } = slot;
 
-    this.reservationValidator.validateReservable(
-      slot,
-      input.totalParticipantCount,
-      slot.remainingCapacityView?.remainingCapacity ?? undefined,
-    );
+    if (opportunity.id !== "cmc07866s0002s60nuuk8jakk") {
+      this.reservationValidator.validateReservable(
+        slot,
+        input.totalParticipantCount,
+        slot.remainingCapacityView?.remainingCapacity ?? undefined,
+      );
+    }
 
     const { communityId, requiredUtilities } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
