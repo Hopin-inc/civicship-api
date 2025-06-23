@@ -1,6 +1,5 @@
 FROM node:20
-ENV NODE_OPTIONS=--preserve-symlinks
-WORKDIR /tmp
+WORKDIR /app
 COPY package*.json ./
 RUN npm install -g pnpm
 RUN pnpm install

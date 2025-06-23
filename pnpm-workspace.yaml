@@ -1,0 +1,13 @@
+packages:
+  - '.'
+
+onlyBuiltDependencies:
+  - '@apollo/protobufjs'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+  - protobufjs
+  - puppeteer
+  - sharp
+  - vue-demi
