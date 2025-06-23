@@ -18,7 +18,7 @@ import logger from "@/infrastructure/logging";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
-import "dayjs/locale/ja";
+import "dayjs/locale/ja.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
