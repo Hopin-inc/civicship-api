@@ -5,6 +5,5 @@ COPY package*.json ./
 RUN npm install -g pnpm
 RUN pnpm install
 COPY . ./
-RUN pnpm db:generate
 RUN pnpm build
 CMD ["pnpm", "start"]
