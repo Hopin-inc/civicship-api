@@ -12,27 +12,31 @@ generator client {
   binaryTargets   = ["native", "debian-openssl-3.0.x", "linux-arm64-openssl-3.0.x"]
 }
 
-generator erd {
-  provider                  = "prisma-erd-generator"
-  theme                     = "forest"
-  output                    = "../../../docs/ERD.md"
-  includeRelationFromFields = true
-}
+// Disabled for Docker environment due to Prisma 6.6.0 compatibility issues
+// generator erd {
+//   provider                  = "prisma-erd-generator"
+//   theme                     = "forest"
+//   output                    = "../../../docs/ERD.md"
+//   includeRelationFromFields = true
+// }
 
-generator dbml {
-  provider = "prisma-dbml-generator"
-  output   = "../../../docs"
-}
+// Disabled for Docker environment due to Prisma 6.6.0 compatibility issues
+// generator dbml {
+//   provider = "prisma-dbml-generator"
+//   output   = "../../../docs"
+// }
 
-generator fabbrica {
-  provider    = "prisma-fabbrica"
-  output      = "factories/__generated__"
-  noTranspile = true
-}
+// Disabled for Docker environment due to potential compatibility issues
+// generator fabbrica {
+//   provider    = "prisma-fabbrica"
+//   output      = "factories/__generated__"
+//   noTranspile = true
+// }
 
-generator json {
-  provider = "prisma-json-types-generator"
-}
+// Disabled for Docker environment due to potential compatibility issues
+// generator json {
+//   provider = "prisma-json-types-generator"
+// }
 
 datasource db {
   provider = "postgresql"

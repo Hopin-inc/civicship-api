@@ -16,7 +16,7 @@
     "db:pull": "prisma db pull --schema src/infrastructure/prisma/schema.prisma",
     "db:seed-master": "tsx src/infrastructure/prisma/seeds/index.ts -- --master",
     "db:seed-domain": "tsx src/infrastructure/prisma/seeds/index.ts -- --domain",
-    "db:generate": "prisma-case-format --file src/infrastructure/prisma/schema.prisma && prisma format --schema src/infrastructure/prisma/schema.prisma && prisma generate --sql --schema src/infrastructure/prisma/schema.prisma",
+    "db:generate": "prisma format --schema src/infrastructure/prisma/schema.prisma && prisma generate --schema src/infrastructure/prisma/schema.prisma",
     "db:migrate": "prisma migrate dev --schema src/infrastructure/prisma/schema.prisma --create-only",
     "db:deploy": "prisma migrate deploy --schema src/infrastructure/prisma/schema.prisma",
     "db:mark-rolled-back": "prisma migrate resolve --schema src/infrastructure/prisma/schema.prisma --rolled-back",
@@ -73,7 +73,6 @@
     "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.15",
-    "tsconfig-paths": "^4.2.0",
     "tsx": "^4.19.3",
     "tsyringe": "^4.10.0",
     "typedoc-plugin-merge-modules": "^6.1.0",
@@ -82,7 +81,12 @@
   },
   "dependencies": {
     "@apollo/server": "^4.12.0",
+    "@apollo/utils.createhash": "^2.0.2",
+    "@apollo/utils.isnodelike": "^2.0.1",
+    "@apollo/utils.keyvaluecache": "^2.1.1",
+    "@apollo/utils.logger": "^2.0.1",
     "@dotenvx/dotenvx": "^1.41.0",
+    "globby": "^11.1.0",
     "@escape.tech/graphql-armor": "^3.1.3",
     "@escape.tech/graphql-armor-types": "^0.7.0",
     "@google-cloud/logging-winston": "^6.0.0",
@@ -112,9 +116,13 @@
     "graphql-scalars": "^1.24.2",
     "graphql-upload": "^17.0.0",
     "json-stable-stringify": "^1.3.0",
+    "json5": "^2.2.3",
+    "minimist": "^1.2.8",
     "node-fetch": "^3.3.2",
     "sanitize-html": "^2.16.0",
     "sharp": "^0.34.1",
+    "strip-bom": "3.0.0",
+    "tsconfig-paths": "^4.2.0",
     "winston": "^3.17.0"
   }
 }
