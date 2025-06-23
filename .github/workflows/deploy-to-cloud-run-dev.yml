@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - hotfix/*
+      - devin/1750636470-fix-copyfiles-stream-error # TODO: Delete this after debug
 
 jobs:
   deploy:
