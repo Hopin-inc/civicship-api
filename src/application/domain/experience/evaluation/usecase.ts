@@ -14,10 +14,7 @@ import { GqlEvaluationStatus } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
-import {
-  PrismaEvaluation,
-  PrismaEvaluationDetail,
-} from "@/application/domain/experience/evaluation/data/type";
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
@@ -28,6 +25,7 @@ import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/cli
 import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { toVCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import NotificationService from "@/application/domain/notification/service";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -38,6 +36,7 @@ export default class EvaluationUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("VCIssuanceService") private readonly vcIssuanceService: VCIssuanceService,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
   async visitorBrowseEvaluations(
@@ -83,6 +82,10 @@ export default class EvaluationUseCase {
       );
     });
 
+    for (const evaluation of createdEvaluations) {
+      await this.notificationService.pushCertificateIssuedMessage(ctx, evaluation);
+    }
+
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 
@@ -94,7 +97,7 @@ export default class EvaluationUseCase {
       currentUserId: string;
       communityId: string;
     },
-  ): Promise<PrismaEvaluationDetail> {
+  ): Promise<PrismaEvaluation> {
     const { item, currentUserId, communityId } = params;
 
     await this.validateEvaluatable(ctx, item.participationId);
@@ -142,7 +145,8 @@ export default class EvaluationUseCase {
     const now = new Date();
     const startsAtDate = new Date(startsAt);
 
-    if (now < startsAtDate) {  // Date オブジェクトとして比較
+    if (now < startsAtDate) {
+      // Date オブジェクトとして比較
       throw new CannotEvaluateBeforeOpportunityStartError();
     }
   }
