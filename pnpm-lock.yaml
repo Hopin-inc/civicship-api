@@ -35,6 +35,9 @@ importers:
       '@google-cloud/logging-winston':
         specifier: ^6.0.0
         version: 6.0.0(winston@3.17.0)
+      '@google-cloud/paginator':
+        specifier: ^6.0.0
+        version: 6.0.0
       '@google-cloud/storage':
         specifier: ^7.16.0
         version: 7.16.0
@@ -158,6 +161,9 @@ importers:
       object-path:
         specifier: ^0.11.8
         version: 0.11.8
+      resolve-from:
+        specifier: ^5.0.0
+        version: 5.0.0
       sanitize-html:
         specifier: ^2.16.0
         version: 2.16.0
@@ -1662,6 +1668,10 @@ packages:
   '@google-cloud/paginator@5.0.2':
     resolution: {integrity: sha512-DJS3s0OVH4zFDB1PzjxAsHqJT6sKVbRwwML0ZBP9PbU7Yebtu/7SWMRzvO2J3nUi9pRNITCfu4LJeooM2w4pjg==}
     engines: {node: '>=14.0.0'}
+
+  '@google-cloud/paginator@6.0.0':
+    resolution: {integrity: sha512-g5nmMnzC+94kBxOKkLGpK1ikvolTFCC3s2qtE4F+1EuArcJ7HHC23RDQVt3Ra3CqpUYZ+oXNKZ8n5Cn5yug8DA==}
+    engines: {node: '>=18'}
 
   '@google-cloud/precise-date@4.0.0':
     resolution: {integrity: sha512-1TUx3KdaU3cN7nfCdNf+UVqA/PSX29Cjcox3fZZBtINlRrXVTmUkQnCKv2MbBUbCopbK4olAT1IHl76uZyCiVA==}
@@ -10086,6 +10096,10 @@ snapshots:
   '@google-cloud/paginator@5.0.2':
     dependencies:
       arrify: 2.0.1
+      extend: 3.0.2
+
+  '@google-cloud/paginator@6.0.0':
+    dependencies:
       extend: 3.0.2
 
   '@google-cloud/precise-date@4.0.0': {}
