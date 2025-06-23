@@ -50,7 +50,7 @@ export default class ParticipationRepository implements IParticipationRepository
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
-        include: participationIncludeSlot,
+        select: participationIncludeSlot,
       });
     });
   }
