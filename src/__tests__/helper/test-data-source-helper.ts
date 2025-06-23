@@ -1,5 +1,6 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
+import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
@@ -227,7 +228,7 @@ export default class TestDataSourceHelper {
 
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
-    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
+    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
   }
 
   // ========== Participation関連 (不要になれば削除) =========

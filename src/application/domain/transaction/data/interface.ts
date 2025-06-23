@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
+import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 
 export interface ITransactionService {
@@ -75,7 +76,7 @@ export interface ITransactionRepository {
   refreshCurrentPoints(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-  ): Promise<any[]>;
+  ): Promise<refreshMaterializedViewCurrentPoints.Result[]>;
 
   create(
     ctx: IContext,
