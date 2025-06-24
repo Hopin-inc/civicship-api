@@ -4,8 +4,7 @@ import { PrismaReservation } from "@/application/domain/experience/reservation/d
 import { buildReservationAcceptedMessage } from "@/application/domain/notification/presenter/message/acceptReservationMessage";
 import { buildReservationAppliedMessage } from "@/application/domain/notification/presenter/message/applyReservationMessage";
 import { buildReservationCanceledMessage } from "@/application/domain/notification/presenter/message/cancelReservationMessage";
-import { IdentityPlatform, Role } from "@prisma/client";
-import { LINE_RICHMENU } from "@/application/domain/notification/presenter/richmenu/const";
+import { IdentityPlatform, LineRichMenuType, Role } from "@prisma/client";
 import { PrismaMembership } from "@/application/domain/account/membership/data/type";
 import { inject, injectable } from "tsyringe";
 import { safeLinkRichMenuIdToUser, safePushMessage } from "./line";
@@ -247,7 +246,21 @@ export default class NotificationService {
     const client = await createLineClient(ctx.communityId);
 
     const isAdmin = membership.role === Role.OWNER || membership.role === Role.MANAGER;
-    const richMenuId = isAdmin ? LINE_RICHMENU.ADMIN_MANAGE : LINE_RICHMENU.PUBLIC;
+    const richMenuType = isAdmin ? LineRichMenuType.ADMIN : LineRichMenuType.PUBLIC;
+
+    const richMenuId = await this.communityConfigService.getLineRichMenuIdByType(
+      ctx,
+      ctx.communityId,
+      richMenuType,
+    );
+
+    if (!richMenuId) {
+      logger.warn("switchRichMenuByRole: richMenuId is not configured", {
+        communityId: ctx.communityId,
+        type: richMenuType,
+      });
+      return;
+    }
     const success = await safeLinkRichMenuIdToUser(client, lineUid, richMenuId);
 
     const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
