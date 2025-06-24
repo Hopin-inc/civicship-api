@@ -1,9 +1,17 @@
 import { IContext } from "@/types/server";
 import { Prisma, VcIssuanceStatus } from "@prisma/client";
-import { VCIssuanceRequestDetail, VCIssuanceRequestWithUser, VCClaimsData } from "./type";
+import { VCIssuanceRequestWithUser, VCClaimsData, PrismaVCIssuanceRequestDetail } from "./type";
 
 export interface IVCIssuanceRequestRepository {
-  findById(ctx: IContext, id: string): Promise<VCIssuanceRequestDetail | null>;
+  query(
+    ctx: IContext,
+    where: Prisma.VcIssuanceRequestWhereInput,
+    orderBy: Prisma.VcIssuanceRequestOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaVCIssuanceRequestDetail[]>;
+
+  findById(ctx: IContext, id: string): Promise<PrismaVCIssuanceRequestDetail | null>;
 
   findPending(
     ctx: IContext,
@@ -20,7 +28,7 @@ export interface IVCIssuanceRequestRepository {
       schemaId?: string;
       status?: VcIssuanceStatus;
     },
-  ): Promise<VCIssuanceRequestDetail>;
+  ): Promise<PrismaVCIssuanceRequestDetail>;
 
   update(
     ctx: IContext,
@@ -35,5 +43,5 @@ export interface IVCIssuanceRequestRepository {
       retryCount?: number | { increment: number };
     },
     tx?: Prisma.TransactionClient,
-  ): Promise<VCIssuanceRequestDetail>;
+  ): Promise<PrismaVCIssuanceRequestDetail>;
 }
