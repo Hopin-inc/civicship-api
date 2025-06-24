@@ -336,6 +336,9 @@ model VcIssuanceRequest {
   processedAt DateTime? @map("processed_at")
   completedAt DateTime? @map("completed_at")
 
+  evaluationId String     @unique @map("evaluation_id")
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -781,7 +784,8 @@ model Evaluation {
   evaluatorId String @map("evaluator_id")
   evaluator   User   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
 
-  histories EvaluationHistory[]
+  vcIssuanceRequest VcIssuanceRequest?
+  histories         EvaluationHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

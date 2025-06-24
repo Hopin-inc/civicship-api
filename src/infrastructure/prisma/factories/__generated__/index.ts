@@ -288,6 +288,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "VcIssuanceRequest",
         fields: [{
+                name: "evaluation",
+                type: "Evaluation",
+                relationName: "EvaluationToVcIssuanceRequest"
+            }, {
                 name: "user",
                 type: "User",
                 relationName: "UserToVcIssuanceRequest"
@@ -532,6 +536,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "evaluator",
                 type: "User",
                 relationName: "EvaluationToUser"
+            }, {
+                name: "vcIssuanceRequest",
+                type: "VcIssuanceRequest",
+                relationName: "EvaluationToVcIssuanceRequest"
             }, {
                 name: "histories",
                 type: "EvaluationHistory",
@@ -2097,6 +2105,11 @@ type VcIssuanceRequestScalarOrEnumFields = {
     claims: Prisma.JsonNullValueInput | Prisma.InputJsonValue;
 };
 
+type VcIssuanceRequestevaluationFactory = {
+    _factoryFor: "Evaluation";
+    build: () => PromiseLike<Prisma.EvaluationCreateNestedOneWithoutVcIssuanceRequestInput["create"]>;
+};
+
 type VcIssuanceRequestuserFactory = {
     _factoryFor: "User";
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput["create"]>;
@@ -2117,6 +2130,7 @@ type VcIssuanceRequestFactoryDefineInput = {
     completedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date | null;
+    evaluation: VcIssuanceRequestevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutVcIssuanceRequestInput;
     user: VcIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput;
 };
 
@@ -2132,6 +2146,10 @@ type VcIssuanceRequestFactoryDefineOptions<TTransients extends Record<string, un
         [traitName: string | symbol]: VcIssuanceRequestFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<VcIssuanceRequest, Prisma.VcIssuanceRequestCreateInput, TTransients>;
+
+function isVcIssuanceRequestevaluationFactory(x: VcIssuanceRequestevaluationFactory | Prisma.EvaluationCreateNestedOneWithoutVcIssuanceRequestInput | undefined): x is VcIssuanceRequestevaluationFactory {
+    return (x as any)?._factoryFor === "Evaluation";
+}
 
 function isVcIssuanceRequestuserFactory(x: VcIssuanceRequestuserFactory | Prisma.UserCreateNestedOneWithoutVcIssuanceRequestsInput | undefined): x is VcIssuanceRequestuserFactory {
     return (x as any)?._factoryFor === "User";
@@ -2197,6 +2215,9 @@ function defineVcIssuanceRequestFactoryInternal<TTransients extends Record<strin
                 };
             }, resolveValue(resolverInput));
             const defaultAssociations = {
+                evaluation: isVcIssuanceRequestevaluationFactory(defaultData.evaluation) ? {
+                    create: await defaultData.evaluation.build()
+                } : defaultData.evaluation,
                 user: isVcIssuanceRequestuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
                 } : defaultData.user
@@ -4113,6 +4134,11 @@ type EvaluationevaluatorFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput["create"]>;
 };
 
+type EvaluationvcIssuanceRequestFactory = {
+    _factoryFor: "VcIssuanceRequest";
+    build: () => PromiseLike<Prisma.VcIssuanceRequestCreateNestedOneWithoutEvaluationInput["create"]>;
+};
+
 type EvaluationFactoryDefineInput = {
     id?: string;
     status?: EvaluationStatus;
@@ -4123,6 +4149,7 @@ type EvaluationFactoryDefineInput = {
     updatedAt?: Date | null;
     participation: EvaluationparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutEvaluationInput;
     evaluator: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput;
+    vcIssuanceRequest?: EvaluationvcIssuanceRequestFactory | Prisma.VcIssuanceRequestCreateNestedOneWithoutEvaluationInput;
     histories?: Prisma.EvaluationHistoryCreateNestedManyWithoutEvaluationInput;
 };
 
@@ -4145,6 +4172,10 @@ function isEvaluationparticipationFactory(x: EvaluationparticipationFactory | Pr
 
 function isEvaluationevaluatorFactory(x: EvaluationevaluatorFactory | Prisma.UserCreateNestedOneWithoutEvaluationsEvaluatedByMeInput | undefined): x is EvaluationevaluatorFactory {
     return (x as any)?._factoryFor === "User";
+}
+
+function isEvaluationvcIssuanceRequestFactory(x: EvaluationvcIssuanceRequestFactory | Prisma.VcIssuanceRequestCreateNestedOneWithoutEvaluationInput | undefined): x is EvaluationvcIssuanceRequestFactory {
+    return (x as any)?._factoryFor === "VcIssuanceRequest";
 }
 
 type EvaluationTraitKeys<TOptions extends EvaluationFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -4210,7 +4241,10 @@ function defineEvaluationFactoryInternal<TTransients extends Record<string, unkn
                 } : defaultData.participation,
                 evaluator: isEvaluationevaluatorFactory(defaultData.evaluator) ? {
                     create: await defaultData.evaluator.build()
-                } : defaultData.evaluator
+                } : defaultData.evaluator,
+                vcIssuanceRequest: isEvaluationvcIssuanceRequestFactory(defaultData.vcIssuanceRequest) ? {
+                    create: await defaultData.vcIssuanceRequest.build()
+                } : defaultData.vcIssuanceRequest
             } as Prisma.EvaluationCreateInput;
             const data: Prisma.EvaluationCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
