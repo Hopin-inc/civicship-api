@@ -49,7 +49,6 @@ export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
 });
 
 export const userInclude = Prisma.validator<Prisma.UserInclude>()({
-  identities: true,
   image: true,
 });
 
@@ -74,7 +73,7 @@ export const userParticipationPortfolioInclude = Prisma.validator<Prisma.UserInc
   participations: {
     include: {
       images: true,
-      evaluation: true,
+      evaluation: { include: { vcIssuanceRequest: true } },
       reservation: {
         include: {
           opportunitySlot: {
@@ -87,7 +86,18 @@ export const userParticipationPortfolioInclude = Prisma.validator<Prisma.UserInc
               },
             },
           },
-          participations: { include: { user: { include: userInclude } } },
+          participations: { include: { user: { include: { image: true } } } },
+        },
+      },
+      opportunitySlot: {
+        include: {
+          opportunity: {
+            include: {
+              images: true,
+              place: { include: placeInclude },
+            },
+          },
+          participations: { include: { user: { include: { image: true } } } },
         },
       },
     },
