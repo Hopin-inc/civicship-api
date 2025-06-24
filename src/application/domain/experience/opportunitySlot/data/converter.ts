@@ -12,8 +12,8 @@ export default class OpportunitySlotConverter {
   filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
     const slotConditions: Prisma.OpportunitySlotWhereInput[] = [];
 
-    if (filter?.opportunityId) {
-      slotConditions.push({ opportunityId: filter.opportunityId });
+    if (filter?.opportunityIds?.length) {
+      slotConditions.push({ opportunityId: { in: filter.opportunityIds } });
     }
 
     if (filter?.ownerId) {
