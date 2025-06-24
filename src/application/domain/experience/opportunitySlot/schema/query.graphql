@@ -29,7 +29,7 @@ type OpportunitySlotEdge implements Edge {
 # Opportunity Slot Query Input Definitions
 # ------------------------------
 input OpportunitySlotFilterInput {
-    opportunityId: ID
+    opportunityIds: [ID!]
     ownerId: ID
     hostingStatus: OpportunitySlotHostingStatus
     dateRange: DateTimeRangeFilter

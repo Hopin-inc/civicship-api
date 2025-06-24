@@ -1096,7 +1096,7 @@ export type GqlOpportunitySlotEdge = GqlEdge & {
 export type GqlOpportunitySlotFilterInput = {
   dateRange?: InputMaybe<GqlDateTimeRangeFilter>;
   hostingStatus?: InputMaybe<GqlOpportunitySlotHostingStatus>;
-  opportunityId?: InputMaybe<Scalars['ID']['input']>;
+  opportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   ownerId?: InputMaybe<Scalars['ID']['input']>;
 };
 
