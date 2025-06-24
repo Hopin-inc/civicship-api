@@ -16,7 +16,7 @@ export default class ViewPresenter {
   static getFromParticipation(
     p: PrismaUserParticipationPortfolio["participations"][number],
   ): GqlPortfolio | null {
-    const { reservation, images } = p;
+    const { reservation, images, evaluation } = p;
 
     if (!reservation || !reservation.opportunitySlot) {
       return null;
@@ -31,6 +31,7 @@ export default class ViewPresenter {
       source: GqlPortfolioSource.Opportunity,
       category: opportunity.category,
       reservationStatus: reservation?.status,
+      evaluationStatus: evaluation?.status,
       date: startsAt,
       place: place ? PlacePresenter.formatPortfolio(place) : null,
       thumbnailUrl: images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,

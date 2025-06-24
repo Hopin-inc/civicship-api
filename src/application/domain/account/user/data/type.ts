@@ -74,6 +74,7 @@ export const userParticipationPortfolioInclude = Prisma.validator<Prisma.UserInc
   participations: {
     include: {
       images: true,
+      evaluation: true,
       reservation: {
         include: {
           opportunitySlot: {
