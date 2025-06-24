@@ -161,9 +161,10 @@ export default class EvaluationUseCase {
     const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
     const phoneUid = phoneIdentity?.uid;
 
+    // VC発行を試行（失敗しても評価は続行）
     if (phoneUid) {
       const vcRequest: VCIssuanceRequestInput = toVCIssuanceRequestInput(evaluation);
-      await this.vcIssuanceService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
+      // await this.vcIssuanceService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
     }
 
     if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {

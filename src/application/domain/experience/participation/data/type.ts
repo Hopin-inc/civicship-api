@@ -8,6 +8,7 @@ export const participationInclude = Prisma.validator<Prisma.ParticipationInclude
       opportunitySlot: { include: { opportunity: true } },
     },
   },
+  evaluation: true,
   community: true,
   images: true,
 });
