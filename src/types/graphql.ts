@@ -251,6 +251,26 @@ export type GqlDateTimeRangeFilter = {
   lte?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
+export type GqlDidIssuanceRequest = {
+  __typename?: 'DidIssuanceRequest';
+  completedAt?: Maybe<Scalars['Datetime']['output']>;
+  createdAt?: Maybe<Scalars['Datetime']['output']>;
+  didValue?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  processedAt?: Maybe<Scalars['Datetime']['output']>;
+  requestedAt?: Maybe<Scalars['Datetime']['output']>;
+  status: GqlDidIssuanceStatus;
+  updatedAt?: Maybe<Scalars['Datetime']['output']>;
+};
+
+export const GqlDidIssuanceStatus = {
+  Completed: 'COMPLETED',
+  Failed: 'FAILED',
+  Pending: 'PENDING',
+  Processing: 'PROCESSING'
+} as const;
+
+export type GqlDidIssuanceStatus = typeof GqlDidIssuanceStatus[keyof typeof GqlDidIssuanceStatus];
 export type GqlEdge = {
   cursor: Scalars['String']['output'];
 };
@@ -2285,6 +2305,7 @@ export type GqlUser = {
   bio?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   currentPrefecture?: Maybe<GqlCurrentPrefecture>;
+  didIssuanceRequests?: Maybe<Array<GqlDidIssuanceRequest>>;
   evaluationCreatedByMe?: Maybe<Array<GqlEvaluationHistory>>;
   evaluations?: Maybe<Array<GqlEvaluation>>;
   id: Scalars['ID']['output'];
@@ -2707,6 +2728,8 @@ export type GqlResolversTypes = ResolversObject<{
   DateTimeRangeFilter: GqlDateTimeRangeFilter;
   Datetime: ResolverTypeWrapper<Scalars['Datetime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
+  DidIssuanceRequest: ResolverTypeWrapper<GqlDidIssuanceRequest>;
+  DidIssuanceStatus: GqlDidIssuanceStatus;
   Edge: ResolverTypeWrapper<GqlResolversInterfaceTypes<GqlResolversTypes>['Edge']>;
   Error: ResolverTypeWrapper<GqlError>;
   ErrorCode: GqlErrorCode;
@@ -2992,6 +3015,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   DateTimeRangeFilter: GqlDateTimeRangeFilter;
   Datetime: Scalars['Datetime']['output'];
   Decimal: Scalars['Decimal']['output'];
+  DidIssuanceRequest: GqlDidIssuanceRequest;
   Edge: GqlResolversInterfaceTypes<GqlResolversParentTypes>['Edge'];
   Error: GqlError;
   Evaluation: Omit<GqlEvaluation, 'evaluator' | 'histories' | 'participation'> & { evaluator?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<Array<GqlResolversParentTypes['EvaluationHistory']>>, participation?: Maybe<GqlResolversParentTypes['Participation']> };
@@ -3355,6 +3379,18 @@ export interface GqlDatetimeScalarConfig extends GraphQLScalarTypeConfig<GqlReso
 export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['Decimal'], any> {
   name: 'Decimal';
 }
+
+export type GqlDidIssuanceRequestResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['DidIssuanceRequest'] = GqlResolversParentTypes['DidIssuanceRequest']> = ResolversObject<{
+  completedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  didValue?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  processedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  requestedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['DidIssuanceStatus'], ParentType, ContextType>;
+  updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
   __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'VcIssuanceRequestEdge' | 'WalletEdge', ParentType, ContextType>;
@@ -4241,6 +4277,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   bio?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   currentPrefecture?: Resolver<Maybe<GqlResolversTypes['CurrentPrefecture']>, ParentType, ContextType>;
+  didIssuanceRequests?: Resolver<Maybe<Array<GqlResolversTypes['DidIssuanceRequest']>>, ParentType, ContextType>;
   evaluationCreatedByMe?: Resolver<Maybe<Array<GqlResolversTypes['EvaluationHistory']>>, ParentType, ContextType>;
   evaluations?: Resolver<Maybe<Array<GqlResolversTypes['Evaluation']>>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
@@ -4434,6 +4471,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   CurrentUserPayload?: GqlCurrentUserPayloadResolvers<ContextType>;
   Datetime?: GraphQLScalarType;
   Decimal?: GraphQLScalarType;
+  DidIssuanceRequest?: GqlDidIssuanceRequestResolvers<ContextType>;
   Edge?: GqlEdgeResolvers<ContextType>;
   Error?: GqlErrorResolvers<ContextType>;
   Evaluation?: GqlEvaluationResolvers<ContextType>;
