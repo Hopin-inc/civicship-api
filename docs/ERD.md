@@ -16,6 +16,14 @@ EXTERNAL EXTERNAL
     
 
 
+        LineRichMenuType {
+            ADMIN ADMIN
+USER USER
+PUBLIC PUBLIC
+        }
+    
+
+
         SysRole {
             SYS_ADMIN SYS_ADMIN
 USER USER
@@ -274,6 +282,16 @@ TICKET_REFUNDED TICKET_REFUNDED
     String access_token 
     String liff_id 
     String liff_base_url 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_community_line_rich_menus" {
+    String id "🗝️"
+    String config_id 
+    LineRichMenuType type 
+    String rich_menu_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -629,6 +647,9 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
     "t_community_firebase_configs" o|--|o "t_community_configs" : "config"
     "t_community_line_configs" o|--|o "t_community_configs" : "config"
+    "t_community_line_configs" o{--}o "t_community_line_rich_menus" : "richMenus"
+    "t_community_line_rich_menus" o|--|| "t_community_line_configs" : "config"
+    "t_community_line_rich_menus" o|--|| "LineRichMenuType" : "enum:type"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
