@@ -1432,6 +1432,7 @@ export type GqlPortfolio = {
   __typename?: 'Portfolio';
   category: GqlPortfolioCategory;
   date: Scalars['Datetime']['output'];
+  evaluationStatus?: Maybe<GqlEvaluationStatus>;
   id: Scalars['ID']['output'];
   participants?: Maybe<Array<GqlUser>>;
   place?: Maybe<GqlPlace>;
@@ -3824,6 +3825,7 @@ export type GqlPlacesConnectionResolvers<ContextType = any, ParentType extends G
 export type GqlPortfolioResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Portfolio'] = GqlResolversParentTypes['Portfolio']> = ResolversObject<{
   category?: Resolver<GqlResolversTypes['PortfolioCategory'], ParentType, ContextType>;
   date?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  evaluationStatus?: Resolver<Maybe<GqlResolversTypes['EvaluationStatus']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participants?: Resolver<Maybe<Array<GqlResolversTypes['User']>>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
