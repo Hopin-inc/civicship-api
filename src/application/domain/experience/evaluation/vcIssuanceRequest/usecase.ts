@@ -13,7 +13,7 @@ import VCIssuanceRequestPresenter from "@/application/domain/experience/evaluati
 @injectable()
 export default class VCIssuanceRequestUseCase {
   constructor(
-    @inject("VcIssuanceService")
+    @inject("VCIssuanceRequestService")
     private readonly service: VCIssuanceRequestService,
   ) {}
 

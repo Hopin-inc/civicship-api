@@ -5,14 +5,15 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import { PrismaVCIssuanceRequestDetail } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 
 @injectable()
-export default class VcIssuanceRequestResolver {
+export default class VCIssuanceRequestResolver {
   constructor(
-    @inject("VCIssuanceUseCase")
+    @inject("VCIssuanceRequestUseCase")
     private readonly usecase: VCIssuanceRequestUseCase,
   ) {}
 
   Query = {
     vcIssuanceRequests: (_: unknown, args: GqlQueryVcIssuanceRequestsArgs, ctx: IContext) => {
+      console.log(args);
       return this.usecase.visitorBrowseVcIssuanceRequests(ctx, args);
     },
 
