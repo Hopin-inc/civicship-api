@@ -15,6 +15,8 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import * as process from "node:process";
 import { buildDeclineOpportunitySlotMessage } from "@/application/domain/notification/presenter/message/rejectReservationMessage";
 import { buildAdminGrantedMessage } from "@/application/domain/notification/presenter/message/switchRoleMessage";
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
+import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
 dayjs.locale("ja");
 
 const liffBaseUrl = process.env.LIFF_BASE_URL;
@@ -165,6 +167,36 @@ export default class NotificationService {
       });
       await safePushMessage({ to: uid, messages: [message] });
     }
+  }
+
+  async pushCertificateIssuedMessage(ctx: IContext, evaluation: PrismaEvaluation) {
+    const uid = evaluation.participation.user?.identities.find(
+      (identity) => identity.platform === IdentityPlatform.LINE,
+    )?.uid;
+    if (!uid) return;
+
+    const slot = evaluation.participation.opportunitySlot;
+    const opportunity = slot?.opportunity;
+    if (!slot || !opportunity) return;
+
+    const { title } = opportunity;
+
+    const { year } = this.formatDateTime(slot.startsAt, slot.endsAt);
+    const rawDate = evaluation.issuedAt ?? evaluation.updatedAt;
+    const issueDate = rawDate ? dayjs(rawDate).format("YYYY年M月D日") : "日付未定";
+
+    const issuerName = evaluation.evaluator?.name ?? ctx.currentUser?.name ?? "主催者";
+
+    const redirectUrl = `${liffBaseUrl}/participations/${evaluation.participationId}`;
+    const message = buildCertificateIssuedMessage({
+      title,
+      year,
+      issueDate,
+      issuerName,
+      redirectUrl,
+    });
+
+    await safePushMessage({ to: uid, messages: [message] });
   }
 
   async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {

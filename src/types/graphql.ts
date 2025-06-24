@@ -1203,6 +1203,7 @@ export type GqlParticipation = {
   evaluation?: Maybe<GqlEvaluation>;
   id: Scalars['ID']['output'];
   images?: Maybe<Array<Scalars['String']['output']>>;
+  opportunitySlot?: Maybe<GqlOpportunitySlot>;
   reason: GqlParticipationStatusReason;
   reservation?: Maybe<GqlReservation>;
   source?: Maybe<GqlSource>;
@@ -3684,6 +3685,7 @@ export type GqlParticipationResolvers<ContextType = any, ParentType extends GqlR
   evaluation?: Resolver<Maybe<GqlResolversTypes['Evaluation']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   images?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
+  opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['ParticipationStatusReason'], ParentType, ContextType>;
   reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType>;
   source?: Resolver<Maybe<GqlResolversTypes['Source']>, ParentType, ContextType>;

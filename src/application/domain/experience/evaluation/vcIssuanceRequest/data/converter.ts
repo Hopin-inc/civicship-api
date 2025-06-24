@@ -50,6 +50,7 @@ export const toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): VCIssuan
         id: opportunity.id,
         title: opportunity.title,
         startsAt: opportunitySlot.startsAt.toISOString(),
+        endsAt: opportunitySlot.endsAt.toISOString(),
       },
     },
     credentialFormat: "JWT",
