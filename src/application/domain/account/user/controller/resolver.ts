@@ -51,6 +51,10 @@ export default class UserResolver {
       return ctx.loaders.identitiesByUser.load(parent.id);
     },
 
+    didIssuanceRequests: (parent, _, ctx: IContext) => {
+      return ctx.loaders.didIssuanceRequestsByUser.load(parent.id);
+    },
+
     memberships: (parent, _: unknown, ctx: IContext) => {
       return ctx.loaders.membershipsByUser.load(parent.id);
     },
