@@ -5,6 +5,7 @@ import {
   PrismaUserArticlePortfolio,
   PrismaUserParticipationPortfolio,
 } from "@/application/domain/account/user/data/type";
+import { EvaluationStatus, ParticipationStatusReason, VcIssuanceStatus } from "@prisma/client";
 
 export default class ViewPresenter {
   static getFromParticipations(user: PrismaUserParticipationPortfolio): GqlPortfolio[] {
@@ -16,32 +17,10 @@ export default class ViewPresenter {
   static getFromParticipation(
     p: PrismaUserParticipationPortfolio["participations"][number],
   ): GqlPortfolio | null {
-    const { reservation, images, evaluation } = p;
-
-    if (!reservation || !reservation.opportunitySlot) {
-      return null;
+    if (isPersonalRecord(p)) {
+      return buildFromPersonalRecord(p);
     }
-
-    const { opportunity, startsAt } = reservation.opportunitySlot;
-    const place = opportunity.place;
-
-    return {
-      id: p.id,
-      title: opportunity.title,
-      source: GqlPortfolioSource.Opportunity,
-      category: opportunity.category,
-      reservationStatus: reservation?.status,
-      evaluationStatus: evaluation?.status,
-      date: startsAt,
-      place: place ? PlacePresenter.formatPortfolio(place) : null,
-      thumbnailUrl: images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,
-      participants: reservation?.participations
-        ? reservation.participations
-            .map((p) => p.user)
-            .filter((user): user is NonNullable<typeof user> => user !== null)
-            .map((user) => UserPresenter.formatPortfolio(user))
-        : [],
-    };
+    return buildFromReservation(p);
   }
 
   static getFromArticles(user: PrismaUserArticlePortfolio): GqlPortfolio[] {
@@ -67,4 +46,115 @@ export default class ViewPresenter {
       };
     });
   }
+}
+
+function isPersonalRecord(p: PrismaUserParticipationPortfolio["participations"][number]): boolean {
+  return p.reason === ParticipationStatusReason.PERSONAL_RECORD;
+}
+
+function checkVCPassed(
+  evaluation: PrismaUserParticipationPortfolio["participations"][number]["evaluation"],
+): evaluation is NonNullable<typeof evaluation> & {
+  vcIssuanceRequest: { id: string; status: VcIssuanceStatus };
+} {
+  return (
+    !!evaluation &&
+    evaluation.status === EvaluationStatus.PASSED &&
+    evaluation.vcIssuanceRequest?.status === VcIssuanceStatus.COMPLETED
+  );
+}
+
+function buildFromPersonalRecord(
+  p: PrismaUserParticipationPortfolio["participations"][number],
+): GqlPortfolio | null {
+  const opportunity = p.opportunitySlot?.opportunity;
+  const startsAt = p.opportunitySlot?.startsAt;
+  const place = opportunity?.place;
+  const e = p.evaluation;
+
+  if (!opportunity || !startsAt) return null;
+
+  if (checkVCPassed(e)) {
+    return {
+      id: e.vcIssuanceRequest.id,
+      title: opportunity.title,
+      source: GqlPortfolioSource.Opportunity,
+      category: opportunity.category,
+      reservationStatus: null,
+      evaluationStatus: e.status,
+      date: startsAt,
+      place: place ? PlacePresenter.formatPortfolio(place) : null,
+      thumbnailUrl: p.images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,
+      participants:
+        p.reservation?.participations
+          ?.map((p) => p.user)
+          .filter((user): user is NonNullable<typeof user> => !!user)
+          .map((user) => UserPresenter.formatPortfolio(user)) ?? [],
+    };
+  }
+
+  return {
+    id: p.id,
+    title: opportunity.title,
+    source: GqlPortfolioSource.Opportunity,
+    category: opportunity.category,
+    reservationStatus: null,
+    evaluationStatus: e?.status ?? null,
+    date: startsAt,
+    place: place ? PlacePresenter.formatPortfolio(place) : null,
+    thumbnailUrl: p.images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,
+    participants:
+      p.reservation?.participations
+        ?.map((p) => p.user)
+        .filter((user): user is NonNullable<typeof user> => !!user)
+        .map((user) => UserPresenter.formatPortfolio(user)) ?? [],
+  };
+}
+
+function buildFromReservation(
+  p: PrismaUserParticipationPortfolio["participations"][number],
+): GqlPortfolio | null {
+  const slot = p.reservation?.opportunitySlot;
+  const opportunity = slot?.opportunity;
+  const startsAt = slot?.startsAt;
+  const place = opportunity?.place;
+  const e = p.evaluation;
+
+  if (!slot || !opportunity || !startsAt) return null;
+
+  if (checkVCPassed(e)) {
+    return {
+      id: e.vcIssuanceRequest.id,
+      title: opportunity.title,
+      source: GqlPortfolioSource.Opportunity,
+      category: opportunity.category,
+      reservationStatus: p.reservation?.status ?? null,
+      evaluationStatus: e.status,
+      date: startsAt,
+      place: place ? PlacePresenter.formatPortfolio(place) : null,
+      thumbnailUrl: p.images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,
+      participants:
+        p.reservation?.participations
+          ?.map((p) => p.user)
+          .filter((user): user is NonNullable<typeof user> => !!user)
+          .map((user) => UserPresenter.formatPortfolio(user)) ?? [],
+    };
+  }
+
+  return {
+    id: p.id,
+    title: opportunity.title,
+    source: GqlPortfolioSource.Opportunity,
+    category: opportunity.category,
+    reservationStatus: p.reservation?.status ?? null,
+    evaluationStatus: e?.status ?? null,
+    date: startsAt,
+    place: place ? PlacePresenter.formatPortfolio(place) : null,
+    thumbnailUrl: p.images?.[0]?.url ?? opportunity.images?.[0]?.url ?? null,
+    participants:
+      p.reservation?.participations
+        ?.map((p) => p.user)
+        .filter((user): user is NonNullable<typeof user> => !!user)
+        .map((user) => UserPresenter.formatPortfolio(user)) ?? [],
+  };
 }
