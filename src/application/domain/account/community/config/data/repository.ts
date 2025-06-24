@@ -39,10 +39,18 @@ export default class CommunityConfigRepository implements ICommunityConfigReposi
     type: LineRichMenuType,
   ): Promise<CommunityLineRichMenuConfig | null> {
     return await ctx.issuer.public(ctx, async (tx) => {
+      const config = await tx.communityConfig.findUnique({
+        where: { communityId },
+        include: {
+          lineConfig: true,
+        },
+      });
+      if (!config?.lineConfig) return null;
+
       return tx.communityLineRichMenuConfig.findUnique({
         where: {
           configId_type: {
-            configId: communityId,
+            configId: config.lineConfig.id,
             type,
           },
         },
