@@ -1,7 +1,31 @@
 import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import logger from "@/infrastructure/logging";
-import { ParticipationStatusReason } from "@prisma/client";
+import { ParticipationStatusReason, Prisma } from "@prisma/client";
+import { injectable } from "tsyringe";
+import { GqlVcIssuanceRequestFilterInput, GqlVcIssuanceRequestSortInput } from "@/types/graphql";
+
+@injectable()
+export default class VCIssuanceRequestConverter {
+  filter(filter?: GqlVcIssuanceRequestFilterInput): Prisma.VcIssuanceRequestWhereInput {
+    const conditions: Prisma.VcIssuanceRequestWhereInput[] = [];
+
+    if (!filter) return {};
+
+    if (filter.status) conditions.push({ status: filter.status });
+    if (filter.userId) conditions.push({ userId: filter.userId });
+    if (filter.evaluationId) conditions.push({ evaluationId: filter.evaluationId });
+
+    return conditions.length ? { AND: conditions } : {};
+  }
+
+  sort(sort?: GqlVcIssuanceRequestSortInput): Prisma.VcIssuanceRequestOrderByWithRelationInput[] {
+    return [
+      { createdAt: sort?.createdAt ?? Prisma.SortOrder.desc },
+      ...(sort?.updatedAt ? [{ updatedAt: sort.updatedAt }] : []),
+    ];
+  }
+}
 
 export const toVCIssuanceRequestInput = (evaluation: PrismaEvaluation): VCIssuanceRequestInput => {
   const { status, evaluator, participation } = evaluation;

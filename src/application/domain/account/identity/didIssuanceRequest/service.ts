@@ -15,7 +15,7 @@ export class DIDIssuanceService {
     @inject("IdentityService") private readonly identityService: IdentityService,
     @inject("IdentityRepository") private readonly identityRepository: IdentityRepository,
     @inject("DIDVCServerClient") private readonly client: DIDVCServerClient,
-    @inject("didIssuanceRequestRepository")
+    @inject("DIDIssuanceRequestRepository")
     private readonly didIssuanceRequestRepository: IDIDIssuanceRequestRepository,
   ) {}
 
@@ -89,7 +89,6 @@ export class DIDIssuanceService {
       isValid: !isExpired,
     };
   }
-
 
   private async markIssuanceFailed(
     ctx: IContext,

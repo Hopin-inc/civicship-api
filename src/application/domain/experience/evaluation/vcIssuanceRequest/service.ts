@@ -3,23 +3,44 @@ import { VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IVCIssuanceRequestRepository } from "./data/interface";
-import { VCIssuanceRequestInput } from "./data/type";
+import { PrismaVCIssuanceRequestDetail, VCIssuanceRequestInput } from "./data/type";
 import { IDIDIssuanceRequestRepository } from "../../../account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import logger from "@/infrastructure/logging";
+import { GqlQueryVcIssuanceRequestsArgs } from "@/types/graphql";
+import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 
 @injectable()
-export class VCIssuanceService {
+export class VCIssuanceRequestService {
   constructor(
     @inject("IdentityService") private readonly identityService: IdentityService,
     @inject("IdentityRepository") private readonly identityRepository: IdentityRepository,
     @inject("DIDVCServerClient") private readonly client: DIDVCServerClient,
-    @inject("vcIssuanceRequestRepository")
+    @inject("VCIssuanceRequestConverter")
+    private readonly converter: VCIssuanceRequestConverter,
+    @inject("VCIssuanceRequestRepository")
     private readonly vcIssuanceRequestRepository: IVCIssuanceRequestRepository,
-    @inject("didIssuanceRequestRepository")
+    @inject("DIDIssuanceRequestRepository")
     private readonly didIssuanceRequestRepository: IDIDIssuanceRequestRepository,
   ) {}
+
+  async fetchVcIssuanceRequests(
+    ctx: IContext,
+    { cursor, filter, sort }: GqlQueryVcIssuanceRequestsArgs,
+    take: number,
+  ): Promise<PrismaVCIssuanceRequestDetail[]> {
+    const where = this.converter.filter(filter ?? {});
+    const orderBy = this.converter.sort(sort ?? {});
+    return await this.vcIssuanceRequestRepository.query(ctx, where, orderBy, take, cursor);
+  }
+
+  async findVcIssuanceRequest(
+    ctx: IContext,
+    id: string,
+  ): Promise<PrismaVCIssuanceRequestDetail | null> {
+    return await this.vcIssuanceRequestRepository.findById(ctx, id);
+  }
 
   async requestVCIssuance(
     userId: string,
@@ -116,7 +137,6 @@ export class VCIssuanceService {
       isValid: !isExpired,
     };
   }
-
 
   async refreshAuthToken(
     uid: string,

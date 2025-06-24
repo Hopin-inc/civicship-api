@@ -22,7 +22,7 @@ import { ITransactionService } from "@/application/domain/transaction/data/inter
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
 import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/client";
-import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { toVCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import NotificationService from "@/application/domain/notification/service";
@@ -35,7 +35,8 @@ export default class EvaluationUseCase {
     @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
-    @inject("VCIssuanceService") private readonly vcIssuanceService: VCIssuanceService,
+    @inject("VCIssuanceRequestService")
+    private readonly vcIssuanceRequestService: VCIssuanceRequestService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
@@ -168,6 +169,7 @@ export default class EvaluationUseCase {
     // VC発行を試行（失敗しても評価は続行）
     if (phoneUid) {
       const vcRequest: VCIssuanceRequestInput = toVCIssuanceRequestInput(evaluation);
+      await this.vcIssuanceRequestService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
       // await this.vcIssuanceService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
     }
 

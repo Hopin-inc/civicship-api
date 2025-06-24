@@ -1,0 +1,41 @@
+# ------------------------------
+# VcIssuanceRequest Query Definitions
+# ------------------------------
+extend type Query {
+    vcIssuanceRequests(
+        filter: VcIssuanceRequestFilterInput
+        sort: VcIssuanceRequestSortInput
+        cursor: String
+        first: Int
+    ): VcIssuanceRequestsConnection!
+
+    vcIssuanceRequest(id: ID!): VcIssuanceRequest
+}
+
+# ------------------------------
+# VcIssuanceRequest Connection Type
+# ------------------------------
+type VcIssuanceRequestsConnection {
+    edges: [VcIssuanceRequestEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type VcIssuanceRequestEdge implements Edge {
+    cursor: String!
+    node: VcIssuanceRequest
+}
+
+# ------------------------------
+# VcIssuanceRequest Query Inputs
+# ------------------------------
+input VcIssuanceRequestFilterInput {
+    status: VcIssuanceStatus
+    userId: ID
+    evaluationId: ID
+}
+
+input VcIssuanceRequestSortInput {
+    createdAt: SortDirection
+    updatedAt: SortDirection
+}

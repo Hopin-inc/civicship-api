@@ -5,6 +5,7 @@ import * as CommunityLoaders from "@/application/domain/account/community/contro
 import * as MembershipLoaders from "@/application/domain/account/membership/controller/dataloader";
 import * as IdentityLoaders from "@/application/domain/account/identity/controller/dataloader";
 import * as MembershipHistoryLoaders from "@/application/domain/account/membership/history/controller/dataloader";
+import { createDidIssuanceRequestsByUserIdLoader } from "@/application/domain/account/identity/didIssuanceRequest/controller/dataloader";
 
 export function createAccountLoaders(issuer: PrismaClientIssuer) {
   return {
@@ -17,6 +18,8 @@ export function createAccountLoaders(issuer: PrismaClientIssuer) {
 
     identity: IdentityLoaders.createIdentityLoader(issuer),
     identitiesByUser: IdentityLoaders.createIdentitiesByUserLoader(issuer),
+
+    didIssuanceRequestsByUser: createDidIssuanceRequestsByUserIdLoader(issuer),
 
     community: CommunityLoaders.createCommunityLoader(issuer),
 

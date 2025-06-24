@@ -80,8 +80,10 @@ import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLin
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
-import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
+import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation/vcIssuanceRequest/usecase";
+import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -127,12 +129,15 @@ export function registerProductionDependencies() {
   container.register("IdentityRepository", { useClass: IdentityRepository });
   container.register("IdentityConverter", { useClass: IdentityConverter });
 
-  // DID?VC
+  // DID・VC
   container.register("DIDVCServerClient", { useClass: DIDVCServerClient });
   container.register("DIDIssuanceService", { useClass: DIDIssuanceService });
-  container.register("didIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
-  container.register("VCIssuanceService", { useClass: VCIssuanceService });
-  container.register("vcIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
+  container.register("DIDIssuanceRequestRepository", { useClass: DIDIssuanceRequestRepository });
+
+  container.register("VCIssuanceRequestUseCase", { useClass: VCIssuanceRequestUseCase });
+  container.register("VCIssuanceRequestConverter", { useClass: VCIssuanceRequestConverter });
+  container.register("VCIssuanceRequestService", { useClass: VCIssuanceRequestService });
+  container.register("VCIssuanceRequestRepository", { useClass: VCIssuanceRequestRepository });
 
   // ------------------------------
   // 📰 Content

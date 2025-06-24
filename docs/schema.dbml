@@ -170,6 +170,8 @@ Table t_vc_issuance_requests {
   requestedAt DateTime [default: `now()`, not null]
   processedAt DateTime
   completedAt DateTime
+  evaluationId String [unique, not null]
+  evaluation t_evaluations [not null]
   userId String [not null]
   user t_users [not null]
   createdAt DateTime [default: `now()`, not null]
@@ -356,6 +358,7 @@ Table t_evaluations {
   participation t_participations [not null]
   evaluatorId String [not null]
   evaluator t_users [not null]
+  vcIssuanceRequest t_vc_issuance_requests
   histories t_evaluation_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -748,6 +751,8 @@ Ref: t_users.imageId > t_images.id
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 
 Ref: t_did_issuance_requests.userId > t_users.id [delete: Cascade]
+
+Ref: t_vc_issuance_requests.evaluationId - t_evaluations.id
 
 Ref: t_vc_issuance_requests.userId > t_users.id [delete: Cascade]
 

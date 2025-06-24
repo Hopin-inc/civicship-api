@@ -2,7 +2,12 @@ import { injectable, container } from "tsyringe";
 import { Prisma, VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { VCIssuanceRequestDetail, VCIssuanceRequestWithUser, VCClaimsData } from "./type";
+import {
+  VCIssuanceRequestWithUser,
+  VCClaimsData,
+  vcIssuanceRequestSelectDetail,
+  vcIssuanceRequestIncludeWithUser,
+} from "./type";
 import { IVCIssuanceRequestRepository } from "./interface";
 
 @injectable()
@@ -11,11 +16,31 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
     return container.resolve<PrismaClientIssuer>("prismaClientIssuer");
   }
 
-  async findById(ctx: IContext, id: string): Promise<VCIssuanceRequestDetail | null> {
+  async query(
+    ctx: IContext,
+    where: Prisma.VcIssuanceRequestWhereInput,
+    orderBy: Prisma.VcIssuanceRequestOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.vcIssuanceRequest.findMany({
+        where,
+        orderBy,
+        take: take + 1,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+        select: vcIssuanceRequestSelectDetail,
+      });
+    });
+  }
+
+  async findById(ctx: IContext, id: string) {
     const issuer = ctx.issuer || this.getIssuer();
     return issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.findUnique({
         where: { id },
+        select: vcIssuanceRequestSelectDetail,
       });
     });
   }
@@ -23,7 +48,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
   async findPending(
     ctx: IContext,
     maxRetries: number,
-    limit?: number
+    limit?: number,
   ): Promise<VCIssuanceRequestWithUser[]> {
     const issuer = ctx.issuer || this.getIssuer();
     return issuer.public(ctx, (tx) => {
@@ -34,9 +59,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
             lt: maxRetries,
           },
         },
-        include: {
-          user: true,
-        },
+        include: vcIssuanceRequestIncludeWithUser,
         orderBy: {
           requestedAt: "asc",
         },
@@ -49,22 +72,25 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
     ctx: IContext,
     data: {
       userId: string;
+      evaluationId: string;
       claims: VCClaimsData;
       credentialFormat?: string;
       schemaId?: string;
       status?: VcIssuanceStatus;
-    }
-  ): Promise<VCIssuanceRequestDetail> {
+    },
+  ) {
     const issuer = ctx.issuer || this.getIssuer();
     return issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.create({
         data: {
+          evaluationId: data.evaluationId,
           userId: data.userId,
           claims: data.claims,
           credentialFormat: data.credentialFormat,
           schemaId: data.schemaId,
           status: data.status || VcIssuanceStatus.PENDING,
         },
+        select: vcIssuanceRequestSelectDetail,
       });
     });
   }
@@ -81,8 +107,8 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
       completedAt?: Date;
       retryCount?: number | { increment: number };
     },
-    tx?: Prisma.TransactionClient
-  ): Promise<VCIssuanceRequestDetail> {
+    tx?: Prisma.TransactionClient,
+  ) {
     if (tx) {
       return tx.vcIssuanceRequest.update({
         where: { id },
@@ -95,6 +121,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
           completedAt: data.completedAt,
           retryCount: data.retryCount,
         },
+        select: vcIssuanceRequestSelectDetail,
       });
     }
 
@@ -111,6 +138,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
           completedAt: data.completedAt,
           retryCount: data.retryCount,
         },
+        select: vcIssuanceRequestSelectDetail,
       });
     });
   }

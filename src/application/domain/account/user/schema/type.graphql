@@ -21,6 +21,7 @@ type User {
     currentPrefecture: CurrentPrefecture
 
     identities: [Identity!]
+    didIssuanceRequests: [DidIssuanceRequest!]
     portfolios: [Portfolio!]
 
     memberships: [Membership!]

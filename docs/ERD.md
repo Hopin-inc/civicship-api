@@ -328,6 +328,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     DateTime requested_at 
     DateTime processed_at "❓"
     DateTime completed_at "❓"
+    String evaluation_id 
     String user_id 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -673,6 +674,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_did_issuance_requests" o|--|| "DidIssuanceStatus" : "enum:status"
     "t_did_issuance_requests" o|--|| "t_users" : "user"
     "t_vc_issuance_requests" o|--|| "VcIssuanceStatus" : "enum:status"
+    "t_vc_issuance_requests" o|--|| "t_evaluations" : "evaluation"
     "t_vc_issuance_requests" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
@@ -746,6 +748,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_evaluations" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluations" o|--|| "t_participations" : "participation"
     "t_evaluations" o|--|| "t_users" : "evaluator"
+    "t_evaluations" o{--}o "t_vc_issuance_requests" : "vcIssuanceRequest"
     "t_evaluations" o{--}o "t_evaluation_histories" : "histories"
     "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"
