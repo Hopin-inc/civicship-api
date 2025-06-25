@@ -23,9 +23,9 @@ import ParticipationService from "@/application/domain/experience/participation/
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
 import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
-import { VCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
-import { toVCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import { EvaluationCredentialPayload } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import NotificationService from "@/application/domain/notification/service";
+import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -37,6 +37,8 @@ export default class EvaluationUseCase {
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("VCIssuanceRequestService")
     private readonly vcIssuanceRequestService: VCIssuanceRequestService,
+    @inject("VCIssuanceRequestConverter")
+    private readonly vcIssuanceRequestConverter: VCIssuanceRequestConverter,
     @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
@@ -107,7 +109,7 @@ export default class EvaluationUseCase {
       ctx,
       item.participationId,
       GqlParticipationStatus.Participated,
-      GqlParticipationStatusReason.ReservationAccepted,
+      GqlParticipationStatusReason.PersonalRecord,
       tx,
       currentUserId,
     );
@@ -168,7 +170,8 @@ export default class EvaluationUseCase {
 
     // VC発行を試行（失敗しても評価は続行）
     if (phoneUid) {
-      const vcRequest: VCIssuanceRequestInput = toVCIssuanceRequestInput(evaluation);
+      const vcRequest: EvaluationCredentialPayload =
+        this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
       await this.vcIssuanceRequestService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
     }
 
