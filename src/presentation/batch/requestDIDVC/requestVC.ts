@@ -2,9 +2,9 @@ import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IdentityPlatform, EvaluationStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
-import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
-import { toVCIssuanceRequestInput } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
+import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 
 type BatchResult = {
   total: number;
@@ -18,7 +18,8 @@ type BatchResult = {
  */
 export async function createVCRequests(
   issuer: PrismaClientIssuer,
-  vcService: VCIssuanceService,
+  vcService: VCIssuanceRequestService,
+  vcConverter: VCIssuanceRequestConverter,
   ctx: IContext,
 ): Promise<BatchResult> {
   const evaluations = await issuer.public(ctx, async (tx) => {
@@ -57,9 +58,10 @@ export async function createVCRequests(
 
     try {
       const result = await vcService.requestVCIssuance(
+        evaluation.id,
         user.id,
         phoneIdentity.uid,
-        toVCIssuanceRequestInput(evaluation),
+        vcConverter.toVCIssuanceRequestInput(evaluation),
         ctx,
       );
 

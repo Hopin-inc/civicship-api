@@ -4,10 +4,11 @@ import logger from "@/infrastructure/logging";
 import { container } from "tsyringe";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
-import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { createDIDRequests } from "./requestDID";
 import { IContext } from "@/types/server";
 import { createVCRequests } from "@/presentation/batch/requestDIDVC/requestVC";
+import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 
 /**
  * EvaluationとIdentityに基づいて、
@@ -19,7 +20,8 @@ export async function requestDIDVC() {
 
   const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
   const didService = container.resolve<DIDIssuanceService>("DIDIssuanceService");
-  const vcService = container.resolve<VCIssuanceService>("VCIssuanceService");
+  const vcService = container.resolve<VCIssuanceRequestService>("VCIssuanceRequestService");
+  const vcConverter = container.resolve<VCIssuanceRequestConverter>("VCIssuanceRequestConverter");
   const ctx: IContext = {};
 
   try {
@@ -33,7 +35,7 @@ export async function requestDIDVC() {
     );
 
     // --- VC ---
-    const vcResult = await createVCRequests(issuer, vcService, ctx);
+    const vcResult = await createVCRequests(issuer, vcService, vcConverter, ctx);
     logger.info(
       `📦 VC Requests: ${vcResult.total} total, ` +
         `${vcResult.successCount} succeeded, ` +
