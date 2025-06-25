@@ -1,8 +1,6 @@
-import axios from "axios";
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
-import { IDENTUS_API_URL } from "@/consts/utils";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -73,7 +71,7 @@ export class DIDIssuanceService {
     }
   }
 
-  private evaluateTokenValidity(identity: Identity): {
+  evaluateTokenValidity(identity: Identity): {
     token: string | null;
     isValid: boolean;
   } {
@@ -109,24 +107,25 @@ export class DIDIssuanceService {
     refreshToken: string,
   ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
     try {
-      const response = await axios.post(`${IDENTUS_API_URL}/auth/refresh`, {
-        refreshToken,
-      });
+      const response = await this.identityService.fetchNewIdToken(refreshToken);
 
-      const { token, refreshToken: newRefreshToken, expiresIn } = response.data;
+      const expiryTime = new Date(Date.now() + response.expiresIn * 1000);
 
-      const expiryTime = new Date(Date.now() + expiresIn * 1000);
-
-      await this.identityService.storeAuthTokens(uid, token, newRefreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(
+        uid,
+        response.idToken,
+        response.refreshToken,
+        expiryTime,
+      );
 
       return {
-        authToken: token,
-        refreshToken: newRefreshToken,
+        authToken: response.idToken,
+        refreshToken: response.refreshToken,
         expiryTime,
       };
     } catch (error) {
-      logger.error("DIDIssuanceService.refreshAuthToken: failed", error);
-      throw new Error("Failed to refresh authentication token");
+      logger.error(`DIDIssuanceService.refreshAuthToken failed for uid ${uid}:`, error);
+      throw error;
     }
   }
 }
