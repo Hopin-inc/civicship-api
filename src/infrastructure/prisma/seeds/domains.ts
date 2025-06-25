@@ -113,11 +113,14 @@ async function createBaseEntitiesForUsers() {
     return { user, wallet };
   });
 
-  return {
-    community,
-    users: membershipsAndWallets.map((mw) => mw.user),
-    wallets: membershipsAndWallets.map((mw) => mw.wallet),
-  };
+    results.push({
+      community,
+      users: membershipsAndWallets.map((mw) => mw.user),
+      wallets: membershipsAndWallets.map((mw) => mw.wallet),
+    });
+  }
+
+  return results;
 }
 
 // STEP 2
