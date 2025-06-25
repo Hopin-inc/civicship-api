@@ -3,7 +3,7 @@ import { VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IVCIssuanceRequestRepository } from "./data/interface";
-import { PrismaVCIssuanceRequestDetail, VCIssuanceRequestInput } from "./data/type";
+import { EvaluationCredentialPayload, PrismaVCIssuanceRequestDetail } from "./data/type";
 import { IDIDIssuanceRequestRepository } from "../../../account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
@@ -43,9 +43,10 @@ export class VCIssuanceRequestService {
   }
 
   async requestVCIssuance(
+    evaluationId: string,
     userId: string,
     phoneUid: string,
-    vcRequest: VCIssuanceRequestInput,
+    vcRequest: EvaluationCredentialPayload,
     ctx: IContext,
   ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
     const userDid = await this.getUserDid(userId, ctx);
@@ -54,6 +55,7 @@ export class VCIssuanceRequestService {
     }
 
     const vcIssuanceRequest = await this.vcIssuanceRequestRepository.create(ctx, {
+      evaluationId,
       userId,
       claims: vcRequest.claims,
       credentialFormat: vcRequest.credentialFormat,
