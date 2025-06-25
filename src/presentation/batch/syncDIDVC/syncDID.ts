@@ -3,6 +3,7 @@ import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DidIssuanceStatus, IdentityPlatform } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { markFailedRequests } from "@/presentation/batch/syncDIDVC/utils";
+import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 
 type BatchResult = {
   total: number;
@@ -14,11 +15,12 @@ type BatchResult = {
 export async function processDIDRequests(
   issuer: PrismaClientIssuer,
   client: DIDVCServerClient,
+  didService: DIDIssuanceService,
 ): Promise<BatchResult> {
   const requests = await issuer.internal(async (tx) => {
     return tx.didIssuanceRequest.findMany({
       where: {
-        status: DidIssuanceStatus.PROCESSING,
+        status: { not: DidIssuanceStatus.COMPLETED },
         jobId: { not: null },
         retryCount: { lt: 3 },
       },
@@ -47,6 +49,30 @@ export async function processDIDRequests(
       );
       if (!phoneIdentity) {
         logger.warn(`⚠️ No phone identity for user ${request.userId}`);
+        skippedCount++;
+        continue;
+      }
+
+      let { token, isValid } = didService.evaluateTokenValidity(phoneIdentity);
+
+      if (!isValid && phoneIdentity.refreshToken) {
+        try {
+          const refreshed = await didService.refreshAuthToken(
+            phoneIdentity.uid,
+            phoneIdentity.refreshToken,
+          );
+          token = refreshed.authToken;
+          isValid = true;
+        } catch (error) {
+          logger.error(`🔁 Token refresh failed for ${phoneIdentity.uid}`, error);
+          // optional: mark error to DB here
+          failureCount++;
+          continue;
+        }
+      }
+
+      if (!token || !isValid) {
+        logger.warn(`❌ No valid token after refresh for user ${request.userId}`);
         skippedCount++;
         continue;
       }
