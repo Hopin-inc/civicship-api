@@ -6,6 +6,7 @@ import type { Community } from "@prisma/client";
 import type { CommunityConfig } from "@prisma/client";
 import type { CommunityFirebaseConfig } from "@prisma/client";
 import type { CommunityLineConfig } from "@prisma/client";
+import type { CommunityLineRichMenuConfig } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Identity } from "@prisma/client";
 import type { Membership } from "@prisma/client";
@@ -36,6 +37,7 @@ import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
+import type { LineRichMenuType } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
@@ -223,6 +225,17 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "config",
                 type: "CommunityConfig",
                 relationName: "CommunityConfigToCommunityLineConfig"
+            }, {
+                name: "richMenus",
+                type: "CommunityLineRichMenuConfig",
+                relationName: "CommunityLineConfigToCommunityLineRichMenuConfig"
+            }]
+    }, {
+        name: "CommunityLineRichMenuConfig",
+        fields: [{
+                name: "config",
+                type: "CommunityLineConfig",
+                relationName: "CommunityLineConfigToCommunityLineRichMenuConfig"
             }]
     }, {
         name: "User",
@@ -1957,6 +1970,7 @@ type CommunityLineConfigFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     config?: CommunityLineConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutLineConfigInput;
+    richMenus?: Prisma.CommunityLineRichMenuConfigCreateNestedManyWithoutConfigInput;
 };
 
 type CommunityLineConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityLineConfigFactoryDefineInput, never>>;
@@ -2099,6 +2113,163 @@ export const defineCommunityLineConfigFactory = (<TOptions extends CommunityLine
 }) as CommunityLineConfigFactoryBuilder;
 
 defineCommunityLineConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityLineConfigFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type CommunityLineRichMenuConfigScalarOrEnumFields = {
+    type: LineRichMenuType;
+    richMenuId: string;
+};
+
+type CommunityLineRichMenuConfigconfigFactory = {
+    _factoryFor: "CommunityLineConfig";
+    build: () => PromiseLike<Prisma.CommunityLineConfigCreateNestedOneWithoutRichMenusInput["create"]>;
+};
+
+type CommunityLineRichMenuConfigFactoryDefineInput = {
+    id?: string;
+    type?: LineRichMenuType;
+    richMenuId?: string;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    config: CommunityLineRichMenuConfigconfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutRichMenusInput;
+};
+
+type CommunityLineRichMenuConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityLineRichMenuConfigFactoryDefineInput, never>>;
+
+type CommunityLineRichMenuConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityLineRichMenuConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityLineRichMenuConfig, Prisma.CommunityLineRichMenuConfigCreateInput, TTransients>;
+
+type CommunityLineRichMenuConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CommunityLineRichMenuConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CommunityLineRichMenuConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityLineRichMenuConfig, Prisma.CommunityLineRichMenuConfigCreateInput, TTransients>;
+
+function isCommunityLineRichMenuConfigconfigFactory(x: CommunityLineRichMenuConfigconfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutRichMenusInput | undefined): x is CommunityLineRichMenuConfigconfigFactory {
+    return (x as any)?._factoryFor === "CommunityLineConfig";
+}
+
+type CommunityLineRichMenuConfigTraitKeys<TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityLineRichMenuConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityLineRichMenuConfig";
+    build(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput[]>;
+    pickForConnect(inputData: CommunityLineRichMenuConfig): Pick<CommunityLineRichMenuConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<CommunityLineRichMenuConfig>;
+    createList(list: readonly Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>[]): PromiseLike<CommunityLineRichMenuConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<CommunityLineRichMenuConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Pick<CommunityLineRichMenuConfig, "id">>;
+}
+
+export interface CommunityLineRichMenuConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityLineRichMenuConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityLineRichMenuConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityLineRichMenuConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityLineRichMenuConfigScalarOrEnumFields {
+    return {
+        type: "ADMIN",
+        richMenuId: getScalarFieldValueGenerator().String({ modelName: "CommunityLineRichMenuConfig", fieldName: "richMenuId", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityLineRichMenuConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityLineRichMenuConfigFactoryInterface<TTransients, CommunityLineRichMenuConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityLineRichMenuConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityLineRichMenuConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityLineRichMenuConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityLineRichMenuConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityLineRichMenuConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                config: isCommunityLineRichMenuConfigconfigFactory(defaultData.config) ? {
+                    create: await defaultData.config.build()
+                } : defaultData.config
+            } as Prisma.CommunityLineRichMenuConfigCreateInput;
+            const data: Prisma.CommunityLineRichMenuConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityLineRichMenuConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityLineRichMenuConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityLineRichMenuConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityLineRichMenuConfigTraitKeys<TOptions>, ...names: readonly CommunityLineRichMenuConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityLineRichMenuConfigFactoryBuilder {
+    <TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions>(options: TOptions): CommunityLineRichMenuConfigFactoryInterface<{}, CommunityLineRichMenuConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityLineRichMenuConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions<TTransients>>(options: TOptions) => CommunityLineRichMenuConfigFactoryInterface<TTransients, CommunityLineRichMenuConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityLineRichMenuConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityLineRichMenuConfigFactoryInterface}
+ */
+export const defineCommunityLineRichMenuConfigFactory = (<TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions>(options: TOptions): CommunityLineRichMenuConfigFactoryInterface<TOptions> => {
+    return defineCommunityLineRichMenuConfigFactoryInternal(options, {});
+}) as CommunityLineRichMenuConfigFactoryBuilder;
+
+defineCommunityLineRichMenuConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityLineRichMenuConfigFactoryInternal(options, defaultTransientFieldValues);
 
 type UserScalarOrEnumFields = {
     name: string;

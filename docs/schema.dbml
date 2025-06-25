@@ -120,8 +120,23 @@ Table t_community_line_configs {
   accessToken String [not null]
   liffId String [not null]
   liffBaseUrl String [not null]
+  richMenus t_community_line_rich_menus [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_community_line_rich_menus {
+  id String [pk]
+  configId String [not null]
+  config t_community_line_configs [not null]
+  type LineRichMenuType [not null]
+  richMenuId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (configId, type) [unique]
+  }
 }
 
 Table t_users {
@@ -581,6 +596,12 @@ Enum Source {
   EXTERNAL
 }
 
+Enum LineRichMenuType {
+  ADMIN
+  USER
+  PUBLIC
+}
+
 Enum SysRole {
   SYS_ADMIN
   USER
@@ -727,6 +748,8 @@ Ref: t_community_configs.communityId - t_communities.id
 Ref: t_community_firebase_configs.configId - t_community_configs.id
 
 Ref: t_community_line_configs.configId - t_community_configs.id
+
+Ref: t_community_line_rich_menus.configId > t_community_line_configs.id [delete: Cascade]
 
 Ref: t_users.imageId > t_images.id
 

@@ -234,10 +234,33 @@ model CommunityLineConfig {
   liffId      String @map("liff_id")
   liffBaseUrl String @map("liff_base_url")
 
+  richMenus CommunityLineRichMenuConfig[]
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_community_line_configs")
+}
+
+model CommunityLineRichMenuConfig {
+  id       String              @id @default(cuid())
+  configId String              @map("config_id")
+  config   CommunityLineConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  type       LineRichMenuType
+  richMenuId String           @map("rich_menu_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([configId, type])
+  @@map("t_community_line_rich_menus")
+}
+
+enum LineRichMenuType {
+  ADMIN
+  USER
+  PUBLIC
 }
 
 // ------------------------------ User Domain ------------------------------

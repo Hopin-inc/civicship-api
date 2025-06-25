@@ -2,6 +2,7 @@ import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
 import ICommunityConfigRepository from "@/application/domain/account/community/config/data/interface";
+import { LineRichMenuType } from "@prisma/client";
 
 @injectable()
 export default class CommunityConfigService {
@@ -52,5 +53,14 @@ export default class CommunityConfigService {
       liffId: config.liffId,
       liffBaseUrl: config.liffBaseUrl,
     };
+  }
+
+  async getLineRichMenuIdByType(
+    ctx: IContext,
+    communityId: string,
+    type: LineRichMenuType,
+  ): Promise<string | null> {
+    const menu = await this.repository.getLineRichMenuByType(ctx, communityId, type);
+    return menu?.richMenuId ?? null;
   }
 }
