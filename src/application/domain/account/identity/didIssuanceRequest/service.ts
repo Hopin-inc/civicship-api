@@ -25,6 +25,11 @@ export class DIDIssuanceService {
     const identity = await this.identityRepository.find(phoneUid);
     if (!identity) throw new Error("No identity found for DID issuance");
 
+    const didRequest = await this.didIssuanceRequestRepository.create(ctx, {
+      userId,
+      status: DidIssuanceStatus.PENDING,
+    });
+
     let { token, isValid } = this.evaluateTokenValidity(identity);
 
     if (!isValid && identity.refreshToken) {
@@ -34,18 +39,13 @@ export class DIDIssuanceService {
         isValid = true;
       } catch (error) {
         logger.error("DIDIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceFailed(ctx, userId, error);
+        return this.markIssuanceFailed(ctx, didRequest.id, error);
       }
     }
 
     if (!token || !isValid) {
       throw new Error("No valid authentication token available");
     }
-
-    const didRequest = await this.didIssuanceRequestRepository.create(ctx, {
-      userId,
-      status: DidIssuanceStatus.PENDING,
-    });
 
     try {
       const response = await this.client.call<{ jobId: string }>(
