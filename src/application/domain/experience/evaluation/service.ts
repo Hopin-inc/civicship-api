@@ -3,7 +3,7 @@ import { GqlEvaluationCreateInput, GqlQueryEvaluationsArgs } from "@/types/graph
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 import EvaluationConverter from "@/application/domain/experience/evaluation/data/converter";
 import { IContext } from "@/types/server";
-import { EvaluationStatus, Prisma } from "@prisma/client";
+import { EvaluationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { AlreadyEvaluatedError, NotFoundError, ValidationError } from "@/errors/graphql";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
@@ -55,18 +55,25 @@ export default class EvaluationService {
   validateParticipationHasOpportunity(evaluation: PrismaEvaluation): {
     participation: NonNullable<PrismaEvaluation["participation"]>;
     opportunity: NonNullable<
-      NonNullable<PrismaEvaluation["participation"]>["reservation"]
-    >["opportunitySlot"]["opportunity"];
+      | NonNullable<PrismaEvaluation["participation"]>["opportunitySlot"]
+      | NonNullable<PrismaEvaluation["participation"]["reservation"]>["opportunitySlot"]
+    >["opportunity"];
     userId: string;
   } {
     const participation = evaluation.participation;
-    const opportunity = participation?.reservation?.opportunitySlot?.opportunity;
+
+    const opportunity =
+      participation?.reason === ParticipationStatusReason.PERSONAL_RECORD
+        ? participation.opportunitySlot?.opportunity
+        : participation.reservation?.opportunitySlot?.opportunity;
 
     if (!participation || !opportunity) {
-      throw new NotFoundError("Participation or Opportunity", { evaluationId: evaluation.id });
+      throw new NotFoundError("Participation or Opportunity", {
+        evaluationId: evaluation.id,
+      });
     }
 
-    const userId = participation?.userId;
+    const userId = participation.userId;
     if (!userId) {
       throw new NotFoundError("User ID", { evaluationId: evaluation.id });
     }
