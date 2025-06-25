@@ -19,12 +19,12 @@ export class LIFFAuthUseCase {
     const configService = container.resolve(CommunityConfigService);
     const issuer = new PrismaClientIssuer();
 
-    const { channelId } = await configService.getLineMessagingConfig(
+    const { liffId } = await configService.getLiffConfig(
       { issuer } as IContext,
       request.communityId,
     );
 
-    await LIFFService.verifyAccessToken(request.accessToken, channelId);
+    await LIFFService.verifyAccessToken(request.accessToken, liffId);
     const profile = await LIFFService.getProfile(request.accessToken);
 
     const tenantId = await configService.getFirebaseTenantId(
