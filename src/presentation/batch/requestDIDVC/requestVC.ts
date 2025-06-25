@@ -27,7 +27,6 @@ export async function createVCRequests(
       where: {
         status: EvaluationStatus.PASSED,
         participation: {
-          reservation: { isNot: null },
           user: {
             vcIssuanceRequests: { none: {} },
             identities: {
