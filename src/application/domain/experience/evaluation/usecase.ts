@@ -23,9 +23,9 @@ import ParticipationService from "@/application/domain/experience/participation/
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
 import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
-import { EvaluationCredentialPayload } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import NotificationService from "@/application/domain/notification/service";
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -86,6 +86,7 @@ export default class EvaluationUseCase {
     });
 
     for (const evaluation of createdEvaluations) {
+      await this.issueEvaluationVC(ctx, evaluation);
       await this.notificationService.pushCertificateIssuedMessage(ctx, evaluation);
     }
 
@@ -163,17 +164,6 @@ export default class EvaluationUseCase {
   ): Promise<void> {
     const { participation, opportunity, userId } =
       this.evaluationService.validateParticipationHasOpportunity(evaluation);
-    const user = participation.user;
-
-    const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
-    const phoneUid = phoneIdentity?.uid;
-
-    // VC発行を試行（失敗しても評価は続行）
-    if (phoneUid) {
-      const vcRequest: EvaluationCredentialPayload =
-        this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
-      await this.vcIssuanceRequestService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
-    }
 
     if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
       const [fromWallet, toWallet] = await Promise.all([
@@ -196,6 +186,30 @@ export default class EvaluationUseCase {
         fromWalletId,
         toWalletId,
       );
+    }
+  }
+
+  async issueEvaluationVC(ctx: IContext, evaluation: PrismaEvaluation): Promise<void> {
+    try {
+      const { participation, userId } =
+        this.evaluationService.validateParticipationHasOpportunity(evaluation);
+      const user = participation.user;
+      const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
+      const phoneUid = phoneIdentity?.uid;
+
+      if (!phoneUid) return;
+
+      const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
+
+      await this.vcIssuanceRequestService.requestVCIssuance(
+        evaluation.id,
+        userId,
+        phoneUid,
+        vcRequest,
+        ctx,
+      );
+    } catch (error) {
+      logger.warn("tryIssueEvaluationVC failed (non-blocking)", error);
     }
   }
 }
