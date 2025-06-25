@@ -22,6 +22,7 @@ export interface IVCIssuanceRequestRepository {
   create(
     ctx: IContext,
     data: {
+      evaluationId: string;
       userId: string;
       claims: VCClaimsData;
       credentialFormat?: string;
