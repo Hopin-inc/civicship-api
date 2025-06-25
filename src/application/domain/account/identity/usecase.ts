@@ -122,9 +122,11 @@ export default class IdentityUseCase {
   private validateSignupContext(ctx: IContext): void {
     if (!ctx.uid || !ctx.platform) {
       logger.error("Authentication required (uid or platform missing)");
+      throw new Error("Authentication required (uid or platform missing)");
     }
     if (!ctx.phoneAuthToken) {
       logger.error("Phone authentication required for user signup");
+      throw new Error("Phone authentication required for user signup");
     }
   }
 
