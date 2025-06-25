@@ -120,10 +120,7 @@ export class VCIssuanceRequestService {
     return didRequest?.didValue ?? null;
   }
 
-  private evaluateTokenValidity(identity: {
-    authToken: string | null;
-    tokenExpiresAt: Date | null;
-  }): {
+  evaluateTokenValidity(identity: { authToken: string | null; tokenExpiresAt: Date | null }): {
     token: string | null;
     isValid: boolean;
   } {
@@ -145,26 +142,25 @@ export class VCIssuanceRequestService {
     refreshToken: string,
   ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
     try {
-      const response = await this.client.call<{
-        token: string;
-        refreshToken: string;
-        expiresIn: number;
-      }>(uid, refreshToken, "/auth/refresh", "POST");
+      const response = await this.identityService.fetchNewIdToken(refreshToken);
 
-      const { token, refreshToken: newRefreshToken, expiresIn } = response;
+      const expiryTime = new Date(Date.now() + response.expiresIn * 1000);
 
-      const expiryTime = new Date(Date.now() + expiresIn * 1000);
-
-      await this.identityService.storeAuthTokens(uid, token, newRefreshToken, expiryTime);
+      await this.identityService.storeAuthTokens(
+        uid,
+        response.idToken,
+        response.refreshToken,
+        expiryTime,
+      );
 
       return {
-        authToken: token,
-        refreshToken: newRefreshToken,
+        authToken: response.idToken,
+        refreshToken: response.refreshToken,
         expiryTime,
       };
     } catch (error) {
-      logger.error("VCIssuanceService.refreshAuthToken: failed", error);
-      throw new Error("Failed to refresh authentication token");
+      logger.error(`VCIssuanceService.refreshAuthToken failed for uid ${uid}:`, error);
+      throw error;
     }
   }
 
