@@ -170,7 +170,6 @@ export default class EvaluationUseCase {
     if (phoneUid) {
       const vcRequest: VCIssuanceRequestInput = toVCIssuanceRequestInput(evaluation);
       await this.vcIssuanceRequestService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
-      // await this.vcIssuanceService.requestVCIssuance(userId, phoneUid, vcRequest, ctx);
     }
 
     if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {

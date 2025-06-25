@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { userInclude } from "@/application/domain/account/user/data/type";
 
 export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
   evaluator: true,
@@ -19,7 +18,7 @@ export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
           },
         },
       },
-      user: { include: userInclude },
+      user: { include: { identities: true, image: true } },
     },
   },
 });
