@@ -4,6 +4,8 @@ import { IIdentityRepository } from "@/application/domain/account/identity/data/
 import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma, IdentityPlatform, User } from "@prisma/client";
+import logger from "@/infrastructure/logging";
+import { FirebaseTokenRefreshResponse } from "@/application/domain/account/identity/data/type";
 
 @injectable()
 export default class IdentityService {
@@ -91,6 +93,35 @@ export default class IdentityService {
   async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     return tenantedAuth.deleteUser(uid);
+  }
+
+  async fetchNewIdToken(refreshToken: string): Promise<FirebaseTokenRefreshResponse> {
+    const res = await fetch(
+      `https://securetoken.googleapis.com/v1/token?key=${process.env.FIREBASE_TOKEN_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+        }),
+      },
+    );
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      logger.error(`Firebase token refresh failed: ${res.status} ${res.statusText}`, { errorText });
+      throw new Error(`Firebase token refresh failed: ${res.status} ${res.statusText}`);
+    }
+
+    const data = await res.json();
+    return {
+      idToken: data.id_token,
+      refreshToken: data.refresh_token,
+      expiresIn: data.expires_in,
+    };
   }
 
   async storeAuthTokens(
