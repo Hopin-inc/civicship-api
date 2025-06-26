@@ -17,7 +17,6 @@ import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
-import { ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -200,7 +199,11 @@ export default class IdentityUseCase {
     );
 
     if (existingMembership) {
-      throw new ValidationError("このコミュニティには既に参加しています");
+      return {
+        status: GqlPhoneUserStatus.ExistingSameCommunity,
+        user: existingUser,
+        membership: existingMembership,
+      };
     }
 
     const membership = await ctx.issuer.public(ctx, async (tx) => {
