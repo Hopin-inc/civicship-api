@@ -1,7 +1,7 @@
-import { injectable, inject } from "tsyringe";
+いimport { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { 
-  GqlMutationUserSignUpArgs, 
+import {
+  GqlMutationUserSignUpArgs,
   GqlMutationLinkPhoneAuthArgs,
   GqlMutationStorePhoneAuthTokenArgs,
   GqlMutationIdentityCheckPhoneUserArgs
@@ -31,10 +31,10 @@ export default class IdentityResolver {
     },
     storePhoneAuthToken: (_: unknown, args: GqlMutationStorePhoneAuthTokenArgs, ctx: IContext) => {
       return this.usecase.storePhoneAuthToken(
-        ctx, 
-        args.input.phoneUid, 
-        args.input.authToken, 
-        args.input.refreshToken, 
+        ctx,
+        args.input.phoneUid,
+        args.input.authToken,
+        args.input.refreshToken,
         args.input.expiresIn
       );
     },
