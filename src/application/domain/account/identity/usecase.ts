@@ -5,6 +5,9 @@ import {
   GqlUserDeletePayload,
   GqlLinkPhoneAuthPayload,
   GqlStorePhoneAuthTokenPayload,
+  GqlMutationIdentityCheckPhoneUserArgs,
+  GqlIdentityCheckPhoneUserPayload,
+  GqlPhoneUserStatus,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -14,6 +17,7 @@ import WalletService from "@/application/domain/account/wallet/service";
 import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
+import { ValidationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -167,5 +171,51 @@ export default class IdentityUseCase {
         expiresAt: null,
       };
     }
+  }
+
+  async checkPhoneUser(
+    ctx: IContext,
+    args: GqlMutationIdentityCheckPhoneUserArgs,
+  ): Promise<GqlIdentityCheckPhoneUserPayload> {
+    if (!ctx.phoneUid) {
+      throw new Error("Phone authentication required");
+    }
+
+    const { communityId } = args.input;
+    
+    const existingUser = await this.identityService.findUserByIdentity(ctx, ctx.phoneUid);
+    
+    if (!existingUser) {
+      return {
+        status: GqlPhoneUserStatus.NewUser,
+        user: null,
+        membership: null,
+      };
+    }
+
+    const existingMembership = await this.membershipService.findMembership(
+      ctx, 
+      existingUser.id, 
+      communityId
+    );
+
+    if (existingMembership) {
+      throw new ValidationError("このコミュニティには既に参加しています");
+    }
+
+    const membership = await ctx.issuer.public(ctx, async (tx) => {
+      return await this.membershipService.joinIfNeeded(
+        ctx,
+        existingUser.id,
+        communityId,
+        tx
+      );
+    });
+
+    return {
+      status: GqlPhoneUserStatus.ExistingDifferentCommunity,
+      user: existingUser,
+      membership: membership,
+    };
   }
 }
