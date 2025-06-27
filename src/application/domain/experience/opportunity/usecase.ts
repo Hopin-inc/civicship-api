@@ -77,11 +77,11 @@ export default class OpportunityUseCase {
   }
 
   async managerCreateOpportunity(
-    { input }: GqlMutationOpportunityCreateArgs,
+    { input, permission }: GqlMutationOpportunityCreateArgs,
     ctx: IContext,
   ): Promise<GqlOpportunityCreatePayload> {
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const record = await this.service.createOpportunity(ctx, input, tx);
+      const record = await this.service.createOpportunity(ctx, input, permission.communityId, tx);
       return OpportunityPresenter.create(record);
     });
   }
