@@ -21,17 +21,11 @@ export class LIFFService {
   /**
    * Verify LINE access token
    * @param accessToken Access token from LINE LIFF
+   * @param channelId
    * @returns void - throws error if token is invalid
    */
-  static async verifyAccessToken(accessToken: string): Promise<void> {
+  static async verifyAccessToken(accessToken: string, channelId: string): Promise<void> {
     try {
-      const channelId = process.env.LINE_LIFF_CHANNEL_ID;
-
-      if (!channelId) {
-        logger.error("LINE_LIFF_CHANNEL_ID is not defined in environment variables");
-        throw new Error("LINE configuration missing");
-      }
-
       const response = await axios.get(
         `https://api.line.me/oauth2/v2.1/verify?access_token=${accessToken}`,
       );
@@ -91,6 +85,7 @@ export class LIFFService {
   /**
    * Create Firebase custom token based on LINE profile
    * @param profile LINE user profile
+   * @param tenantId
    * @returns Firebase custom token
    */
   static async createFirebaseCustomToken(profile: LINEProfile, tenantId?: string): Promise<string> {
@@ -105,7 +100,7 @@ export class LIFFService {
           language: profile.language,
         },
         provider: SignInProvider["oidc.line"],
-        platform: "LINE"
+        platform: "LINE",
       };
 
       // Create Firebase custom token

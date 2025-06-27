@@ -82,7 +82,7 @@ export default class UtilityUseCase {
   ): Promise<GqlUtilityCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
 
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const res = await this.service.createUtility(
         ctx,
         input,
@@ -98,7 +98,7 @@ export default class UtilityUseCase {
     ctx: IContext,
     { id }: GqlMutationUtilityDeleteArgs,
   ): Promise<GqlUtilityDeletePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const res = await this.service.deleteUtility(ctx, id, tx);
       return UtilityPresenter.delete(res);
     });
@@ -108,7 +108,7 @@ export default class UtilityUseCase {
     ctx: IContext,
     args: GqlMutationUtilityUpdateInfoArgs,
   ): Promise<GqlUtilityUpdateInfoPayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const res = await this.service.updateUtilityInfo(ctx, args, tx);
       return UtilityPresenter.updateInfo(res);
     });

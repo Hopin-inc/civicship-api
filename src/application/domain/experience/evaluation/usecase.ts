@@ -38,7 +38,7 @@ export default class EvaluationUseCase {
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
     @inject("VCIssuanceService") private readonly vcIssuanceService: VCIssuanceService,
-  ) {}
+  ) { }
 
   async visitorBrowseEvaluations(
     ctx: IContext,
@@ -71,7 +71,7 @@ export default class EvaluationUseCase {
     const currentUserId = getCurrentUserId(ctx);
     const communityId = permission.communityId;
 
-    const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
+    const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return Promise.all(
         input.evaluations.map((item) =>
           this.createOneEvaluationWithSideEffects(ctx, tx, {

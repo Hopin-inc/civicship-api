@@ -37,8 +37,20 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
+  public onlyBelongingCommunity<T>({ currentUser }: IContext, callback: CallbackFn<T>): Promise<T> {
+    if (currentUser) {
+      return this.client.$transaction(async (tx) => {
+        await this.setRls(tx);
+        await this.setRlsConfigUserId(tx, currentUser.id);
+        return await callback(tx);
+      });
+    } else {
+      throw new Error("No community available!");
+    }
+  }
+
   public admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    if (ctx.currentUser?.sysRole === 'SYS_ADMIN') {
+    if (ctx.currentUser?.sysRole === "SYS_ADMIN") {
       return this.bypassRls(callback);
     } else {
       throw new AuthorizationError("User must be admin");
@@ -46,15 +58,26 @@ export class PrismaClientIssuer {
   }
 
   private bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
-    return this.client.$transaction(
-      async (tx) => {
-        return await callback(tx);
-      },
-      {
-        maxWait: 5000,
-        timeout: 10000,
-      },
+    return this.client.$transaction(async (tx) => {
+      await this.setRls(tx, true);
+      await this.setRlsConfigUserId(tx, null);
+      return await callback(tx);
+    });
+  }
+
+  private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', TRUE) as value;`,
     );
+    return value;
+  }
+
+  private async setRls(tx: Transaction, bypass: boolean = false) {
+    const bypassConfig = bypass ? "on" : "off";
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_bypass', '${bypassConfig}', TRUE) as value;`,
+    );
+    return value;
   }
 }
 

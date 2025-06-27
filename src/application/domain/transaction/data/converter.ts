@@ -101,6 +101,14 @@ function buildTransactionWhereInput(
 
   const conditions: Prisma.TransactionWhereInput[] = [];
 
+  if (filter.communityId) {
+    conditions.push({
+      OR: [
+        { fromWallet: { community: { id: filter.communityId } } },
+        { toWallet: { community: { id: filter.communityId } } },
+      ],
+    });
+  }
   if (filter.reason) conditions.push({ reason: filter.reason });
   if (filter.fromWalletId) conditions.push({ from: filter.fromWalletId });
   if (filter.toWalletId) conditions.push({ to: filter.toWalletId });

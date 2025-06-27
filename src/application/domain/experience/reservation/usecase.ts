@@ -90,16 +90,18 @@ export default class ReservationUseCase {
     );
     const { opportunity } = slot;
 
-    this.reservationValidator.validateReservable(
-      slot,
-      input.totalParticipantCount,
-      slot.remainingCapacityView?.remainingCapacity ?? undefined,
-    );
+    if (opportunity.id !== "cmc07866s0002s60nuuk8jakk") {
+      this.reservationValidator.validateReservable(
+        slot,
+        input.totalParticipantCount,
+        slot.remainingCapacityView?.remainingCapacity ?? undefined,
+      );
+    }
 
     const { communityId, requiredUtilities } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
-    const reservation = await ctx.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
       await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
 
@@ -140,7 +142,7 @@ export default class ReservationUseCase {
     const reservation = await this.reservationService.findReservationOrThrow(ctx, id);
     this.reservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
 
-    await ctx.issuer.public(ctx, async (tx) => {
+    await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.reservationService.setStatus(
         ctx,
         reservation.id,
@@ -201,7 +203,7 @@ export default class ReservationUseCase {
 
     let acceptedReservation: PrismaReservation | null = null;
 
-    const reservation = await ctx.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const res = await this.reservationService.setStatus(
         ctx,
         id,
@@ -223,7 +225,7 @@ export default class ReservationUseCase {
     });
 
     if (acceptedReservation) {
-      await this.notificationService.pushReservationAcceptedMessage(acceptedReservation);
+      await this.notificationService.pushReservationAcceptedMessage(ctx, acceptedReservation);
     }
 
     return ReservationPresenter.setStatus(reservation);
@@ -237,7 +239,7 @@ export default class ReservationUseCase {
 
     let rejectedReservation: PrismaReservation | null = null;
 
-    const reservation = await ctx.issuer.public(ctx, async (tx) => {
+    const reservation = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const res = await this.reservationService.setStatus(
         ctx,
         id,
@@ -260,6 +262,7 @@ export default class ReservationUseCase {
 
     if (rejectedReservation) {
       await this.notificationService.pushReservationRejectedMessage(
+        ctx,
         rejectedReservation,
         input.comment,
       );

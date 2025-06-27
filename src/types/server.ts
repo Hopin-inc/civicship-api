@@ -7,6 +7,7 @@ export type LoggedInUserInfo = {
   issuer: PrismaClientIssuer;
   uid?: string;
   tenantId?: string;
+  communityId: string;
   platform?: IdentityPlatform;
   currentUser?: PrismaAuthUser | null;
   hasPermissions?: PrismaUserPermission | null;

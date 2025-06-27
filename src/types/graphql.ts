@@ -399,6 +399,17 @@ export type GqlIdentity = {
   user?: Maybe<GqlUser>;
 };
 
+export type GqlIdentityCheckPhoneUserInput = {
+  communityId: Scalars['ID']['input'];
+};
+
+export type GqlIdentityCheckPhoneUserPayload = {
+  __typename?: 'IdentityCheckPhoneUserPayload';
+  membership?: Maybe<GqlMembership>;
+  status: GqlPhoneUserStatus;
+  user?: Maybe<GqlUser>;
+};
+
 export const GqlIdentityPlatform = {
   Facebook: 'FACEBOOK',
   Line: 'LINE',
@@ -595,6 +606,7 @@ export type GqlMutation = {
   communityDelete?: Maybe<GqlCommunityDeletePayload>;
   communityUpdateProfile?: Maybe<GqlCommunityUpdateProfilePayload>;
   evaluationBulkCreate?: Maybe<GqlEvaluationBulkCreatePayload>;
+  identityCheckPhoneUser: GqlIdentityCheckPhoneUserPayload;
   linkPhoneAuth?: Maybe<GqlLinkPhoneAuthPayload>;
   membershipAcceptMyInvitation?: Maybe<GqlMembershipSetInvitationStatusPayload>;
   membershipAssignManager?: Maybe<GqlMembershipSetRolePayload>;
@@ -663,6 +675,11 @@ export type GqlMutationCommunityUpdateProfileArgs = {
 export type GqlMutationEvaluationBulkCreateArgs = {
   input: GqlEvaluationBulkCreateInput;
   permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationIdentityCheckPhoneUserArgs = {
+  input: GqlIdentityCheckPhoneUserInput;
 };
 
 
@@ -1338,6 +1355,13 @@ export type GqlParticipationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export const GqlPhoneUserStatus = {
+  ExistingDifferentCommunity: 'EXISTING_DIFFERENT_COMMUNITY',
+  ExistingSameCommunity: 'EXISTING_SAME_COMMUNITY',
+  NewUser: 'NEW_USER'
+} as const;
+
+export type GqlPhoneUserStatus = typeof GqlPhoneUserStatus[keyof typeof GqlPhoneUserStatus];
 export type GqlPlace = {
   __typename?: 'Place';
   accumulatedParticipants?: Maybe<Scalars['Int']['output']>;
@@ -2668,6 +2692,8 @@ export type GqlResolversTypes = ResolversObject<{
   EvaluationsConnection: ResolverTypeWrapper<Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['EvaluationEdge']> }>;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Identity: ResolverTypeWrapper<Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
+  IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
+  IdentityCheckPhoneUserPayload: ResolverTypeWrapper<Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversTypes['Membership']>, user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityPlatform: GqlIdentityPlatform;
   ImageInput: GqlImageInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
@@ -2761,6 +2787,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusReason: GqlParticipationStatusReason;
   ParticipationType: GqlParticipationType;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
+  PhoneUserStatus: GqlPhoneUserStatus;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
   PlaceCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['PlaceCreatePayload']>;
@@ -2945,6 +2972,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   EvaluationsConnection: Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['EvaluationEdge']> };
   ID: Scalars['ID']['output'];
   Identity: Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
+  IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
+  IdentityCheckPhoneUserPayload: Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversParentTypes['Membership']>, user?: Maybe<GqlResolversParentTypes['User']> };
   ImageInput: GqlImageInput;
   Int: Scalars['Int']['output'];
   JSON: Scalars['JSON']['output'];
@@ -3364,6 +3393,13 @@ export type GqlIdentityResolvers<ContextType = any, ParentType extends GqlResolv
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlIdentityCheckPhoneUserPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['IdentityCheckPhoneUserPayload'] = GqlResolversParentTypes['IdentityCheckPhoneUserPayload']> = ResolversObject<{
+  membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['PhoneUserStatus'], ParentType, ContextType>;
+  user?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export interface GqlJsonScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['JSON'], any> {
   name: 'JSON';
 }
@@ -3495,6 +3531,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'permission'>>;
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
   evaluationBulkCreate?: Resolver<Maybe<GqlResolversTypes['EvaluationBulkCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEvaluationBulkCreateArgs, 'input' | 'permission'>>;
+  identityCheckPhoneUser?: Resolver<GqlResolversTypes['IdentityCheckPhoneUserPayload'], ParentType, ContextType, RequireFields<GqlMutationIdentityCheckPhoneUserArgs, 'input'>>;
   linkPhoneAuth?: Resolver<Maybe<GqlResolversTypes['LinkPhoneAuthPayload']>, ParentType, ContextType, RequireFields<GqlMutationLinkPhoneAuthArgs, 'input' | 'permission'>>;
   membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input' | 'permission'>>;
   membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input' | 'permission'>>;
@@ -4346,6 +4383,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   EvaluationHistoryEdge?: GqlEvaluationHistoryEdgeResolvers<ContextType>;
   EvaluationsConnection?: GqlEvaluationsConnectionResolvers<ContextType>;
   Identity?: GqlIdentityResolvers<ContextType>;
+  IdentityCheckPhoneUserPayload?: GqlIdentityCheckPhoneUserPayloadResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   LinkPhoneAuthPayload?: GqlLinkPhoneAuthPayloadResolvers<ContextType>;
   Membership?: GqlMembershipResolvers<ContextType>;

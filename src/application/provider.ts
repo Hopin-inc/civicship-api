@@ -82,6 +82,8 @@ import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -120,6 +122,9 @@ export function registerProductionDependencies() {
   container.register("CommunityConverter", { useClass: CommunityConverter });
   container.register("CommunityService", { useClass: CommunityService });
   container.register("CommunityUseCase", { useClass: CommunityUseCase });
+
+  container.register("CommunityConfigService", { useClass: CommunityConfigService });
+  container.register("CommunityConfigRepository", { useClass: CommunityConfigRepository });
 
   // 🆔 Identity
   container.register("IdentityService", { useClass: IdentityService });
