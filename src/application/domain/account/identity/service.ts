@@ -31,6 +31,24 @@ export default class IdentityService {
     });
   }
 
+  async addIdentityToUser(
+    ctx: IContext,
+    userId: string,
+    uid: string,
+    platform: IdentityPlatform,
+  ) {
+    await this.identityRepository.create({
+      uid,
+      platform,
+      authToken: ctx.idToken,
+      refreshToken: ctx.refreshToken,
+      tokenExpiresAt: ctx.tokenExpiresAt,
+      user: {
+        connect: { id: userId },
+      },
+    });
+  }
+
   async linkPhoneIdentity(
     ctx: IContext,
     userId: string,

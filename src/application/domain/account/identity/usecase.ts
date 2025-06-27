@@ -18,6 +18,7 @@ import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
+import { AuthenticationError } from "@/errors/graphql";
 
 @injectable()
 export default class IdentityUseCase {
@@ -41,11 +42,11 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
-    
+
     if (!ctx.phoneAuthToken) {
       throw new Error("Phone authentication required for user signup");
     }
-    
+
     const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
@@ -181,9 +182,9 @@ export default class IdentityUseCase {
     }
 
     const { communityId } = args.input;
-    
+
     const existingUser = await this.identityService.findUserByIdentity(ctx, ctx.phoneUid);
-    
+
     if (!existingUser) {
       return {
         status: GqlPhoneUserStatus.NewUser,
@@ -193,8 +194,8 @@ export default class IdentityUseCase {
     }
 
     const existingMembership = await this.membershipService.findMembership(
-      ctx, 
-      existingUser.id, 
+      ctx,
+      existingUser.id,
       communityId
     );
 
@@ -207,6 +208,10 @@ export default class IdentityUseCase {
     }
 
     const membership = await ctx.issuer.public(ctx, async (tx) => {
+      if (!ctx.uid || !ctx.platform) {
+        throw new AuthenticationError();
+      }
+      await this.identityService.addIdentityToUser(ctx, existingUser.id, ctx.uid, ctx.platform);
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
