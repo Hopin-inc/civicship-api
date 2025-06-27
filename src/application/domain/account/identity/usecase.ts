@@ -207,12 +207,19 @@ export default class IdentityUseCase {
     }
 
     const membership = await ctx.issuer.public(ctx, async (tx) => {
-      return await this.membershipService.joinIfNeeded(
+      const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
         communityId,
         tx
       );
+      await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        existingUser.id,
+        communityId,
+        tx
+      );
+      return membership;
     });
 
     return {
