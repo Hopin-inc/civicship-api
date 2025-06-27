@@ -93,10 +93,7 @@ export default class MembershipRepository implements IMembershipRepository {
       tx.membership.findFirst({
         where: {
           communityId,
-          OR: [
-            { user: { name: userKey } },
-            { userId: userKey }
-          ]
+          user: { name: userKey }
         },
         select: membershipSelectDetail
       })
