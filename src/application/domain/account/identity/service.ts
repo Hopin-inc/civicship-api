@@ -37,7 +37,7 @@ export default class IdentityService {
     uid: string,
     platform: IdentityPlatform,
   ) {
-    await this.identityRepository.create({
+    await this.identityRepository.create(ctx, {
       uid,
       platform,
       authToken: ctx.idToken,
