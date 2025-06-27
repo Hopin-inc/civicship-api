@@ -5,6 +5,9 @@ import {
   GqlUserDeletePayload,
   GqlLinkPhoneAuthPayload,
   GqlStorePhoneAuthTokenPayload,
+  GqlMutationIdentityCheckPhoneUserArgs,
+  GqlIdentityCheckPhoneUserPayload,
+  GqlPhoneUserStatus,
 } from "@/types/graphql";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -15,6 +18,7 @@ import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
+import { AuthenticationError } from "@/errors/graphql";
 
 @injectable()
 export default class IdentityUseCase {
@@ -38,11 +42,11 @@ export default class IdentityUseCase {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required (uid or platform missing)");
     }
-    
+
     if (!ctx.phoneAuthToken) {
       throw new Error("Phone authentication required for user signup");
     }
-    
+
     const { data, image, phoneUid } = IdentityConverter.create(args);
 
     const uploadedImage = image
@@ -167,5 +171,66 @@ export default class IdentityUseCase {
         expiresAt: null,
       };
     }
+  }
+
+  async checkPhoneUser(
+    ctx: IContext,
+    args: GqlMutationIdentityCheckPhoneUserArgs,
+  ): Promise<GqlIdentityCheckPhoneUserPayload> {
+    if (!ctx.phoneUid) {
+      throw new Error("Phone authentication required");
+    }
+
+    const { communityId } = args.input;
+
+    const existingUser = await this.identityService.findUserByIdentity(ctx, ctx.phoneUid);
+
+    if (!existingUser) {
+      return {
+        status: GqlPhoneUserStatus.NewUser,
+        user: null,
+        membership: null,
+      };
+    }
+
+    const existingMembership = await this.membershipService.findMembership(
+      ctx,
+      existingUser.id,
+      communityId
+    );
+
+    if (existingMembership) {
+      return {
+        status: GqlPhoneUserStatus.ExistingSameCommunity,
+        user: existingUser,
+        membership: existingMembership,
+      };
+    }
+
+    const membership = await ctx.issuer.public(ctx, async (tx) => {
+      if (!ctx.uid || !ctx.platform) {
+        throw new AuthenticationError();
+      }
+      await this.identityService.addIdentityToUser(ctx, existingUser.id, ctx.uid, ctx.platform);
+      const membership = await this.membershipService.joinIfNeeded(
+        ctx,
+        existingUser.id,
+        communityId,
+        tx
+      );
+      await this.walletService.createMemberWalletIfNeeded(
+        ctx,
+        existingUser.id,
+        communityId,
+        tx
+      );
+      return membership;
+    });
+
+    return {
+      status: GqlPhoneUserStatus.ExistingDifferentCommunity,
+      user: existingUser,
+      membership: membership,
+    };
   }
 }

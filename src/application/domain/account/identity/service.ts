@@ -31,6 +31,27 @@ export default class IdentityService {
     });
   }
 
+  async addIdentityToUser(
+    ctx: IContext,
+    userId: string,
+    uid: string,
+    platform: IdentityPlatform,
+  ) {
+    const expiryTime = ctx.phoneTokenExpiresAt
+      ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
+      : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
+    await this.identityRepository.create(ctx, {
+      uid,
+      platform,
+      authToken: ctx.idToken,
+      refreshToken: ctx.refreshToken,
+      tokenExpiresAt: expiryTime,
+      user: {
+        connect: { id: userId },
+      },
+    });
+  }
+
   async linkPhoneIdentity(
     ctx: IContext,
     userId: string,

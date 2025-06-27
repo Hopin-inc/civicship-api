@@ -1,9 +1,10 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { 
-  GqlMutationUserSignUpArgs, 
+import {
+  GqlMutationUserSignUpArgs,
   GqlMutationLinkPhoneAuthArgs,
-  GqlMutationStorePhoneAuthTokenArgs
+  GqlMutationStorePhoneAuthTokenArgs,
+  GqlMutationIdentityCheckPhoneUserArgs
 } from "@/types/graphql";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { PrismaIdentityDetail } from "@/application/domain/account/identity/data/type";
@@ -30,12 +31,15 @@ export default class IdentityResolver {
     },
     storePhoneAuthToken: (_: unknown, args: GqlMutationStorePhoneAuthTokenArgs, ctx: IContext) => {
       return this.usecase.storePhoneAuthToken(
-        ctx, 
-        args.input.phoneUid, 
-        args.input.authToken, 
-        args.input.refreshToken, 
+        ctx,
+        args.input.phoneUid,
+        args.input.authToken,
+        args.input.refreshToken,
         args.input.expiresIn
       );
+    },
+    identityCheckPhoneUser: (_: unknown, args: GqlMutationIdentityCheckPhoneUserArgs, ctx: IContext) => {
+      return this.usecase.checkPhoneUser(ctx, args);
     },
   };
 
