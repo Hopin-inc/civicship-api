@@ -41,8 +41,9 @@ export const createVcIssuanceRequestsByOpportunitySlotLoader = (issuer: PrismaCl
         // opportunitySlotIdごとにグループ化
         const grouped = vcRequests.reduce((acc, request) => {
             const slotId = request.evaluation.participation.opportunitySlotId;
-            if (slotId && !acc[slotId]) acc[slotId] = [];
-            if (slotId) acc[slotId].push(request);
+            if (slotId) {
+                (acc[slotId] = acc[slotId] || []).push(request);
+            }
             return acc;
         }, {} as Record<string, typeof vcRequests>);
 
