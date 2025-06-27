@@ -43,6 +43,11 @@ export default class IdentityUseCase {
       throw new Error("Authentication required (uid or platform missing)");
     }
 
+    const existingUser = await this.identityService.findUserByIdentity(ctx, ctx.uid);
+    if (existingUser) {
+      throw new Error("User already exists with this identity");
+    }
+
     if (!ctx.phoneAuthToken) {
       throw new Error("Phone authentication required for user signup");
     }
