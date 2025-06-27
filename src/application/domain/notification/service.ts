@@ -22,6 +22,8 @@ import "dayjs/locale/ja.js";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
+import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
 dayjs.locale("ja");
 dayjs.tz.setDefault("Asia/Tokyo");
 
@@ -35,7 +37,7 @@ export default class NotificationService {
   constructor(
     @inject("CommunityConfigService")
     private readonly communityConfigService: CommunityConfigService,
-  ) {}
+  ) { }
 
   async pushCancelOpportunitySlotMessage(
     ctx: IContext,
@@ -230,7 +232,7 @@ export default class NotificationService {
     }
   }
 
-  async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
+  async switchRichMenuByRole(membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
       (identity) => identity.platform === IdentityPlatform.LINE,
     )?.uid;

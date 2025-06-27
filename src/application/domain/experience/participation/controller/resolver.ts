@@ -9,7 +9,7 @@ import {
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import { injectable, inject } from "tsyringe";
+import { inject, injectable } from "tsyringe";
 import ParticipationUseCase from "@/application/domain/experience/participation/usecase";
 
 @injectable()
@@ -67,14 +67,19 @@ export default class ParticipationResolver {
       return parent.reservationId ? ctx.loaders.reservation.load(parent.reservationId) : null;
     },
 
+    opportunitySlot: (parent, _: unknown, ctx: IContext) => {
+      return parent.opportunitySlotId
+        ? ctx.loaders.opportunitySlot.load(parent.opportunitySlotId)
+        : null;
+    },
+
     evaluation: async (parent, _: unknown, ctx: IContext) => {
       // evaluationIdを参照せず、participationIdで直接Evaluationを検索
-      const evaluation = await ctx.issuer.internal((tx) =>
+      return await ctx.issuer.internal((tx) =>
         tx.evaluation.findUnique({
           where: { participationId: parent.id },
         }),
       );
-      return evaluation;
     },
 
     images: (parent, _: unknown, ctx: IContext) => {
