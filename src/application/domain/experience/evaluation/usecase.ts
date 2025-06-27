@@ -86,8 +86,8 @@ export default class EvaluationUseCase {
     });
 
     for (const evaluation of createdEvaluations) {
-      await this.issueEvaluationVC(ctx, evaluation);
       await this.notificationService.pushCertificateIssuedMessage(ctx, evaluation);
+      void this.issueEvaluationVC(ctx, evaluation);
     }
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
@@ -201,7 +201,7 @@ export default class EvaluationUseCase {
 
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
-      await this.vcIssuanceRequestService.requestVCIssuance(
+      void this.vcIssuanceRequestService.requestVCIssuance(
         evaluation.id,
         userId,
         phoneUid,
