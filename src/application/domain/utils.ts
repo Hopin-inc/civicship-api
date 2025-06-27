@@ -2,7 +2,9 @@ import { IContext } from "@/types/server";
 import { Role } from "@prisma/client";
 import { AuthorizationError, RateLimitError } from "@/errors/graphql";
 
-export function getCurrentUserId(ctx: IContext): string {
+export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
+  if (ctx.isAdmin && inputUserId) return inputUserId;
+
   const currentUserId = ctx.currentUser?.id;
   if (!currentUserId) {
     throw new AuthorizationError("User must be logged in");
