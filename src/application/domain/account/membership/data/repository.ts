@@ -106,10 +106,7 @@ export default class MembershipRepository implements IMembershipRepository {
         where: {
           status: "COMPLETED",
           didValue: { not: null },
-          OR: [
-            { user: { name: userKey } },
-            { id: userKey }
-          ]
+          id: userKey
         },
         include: { user: true }
       })
