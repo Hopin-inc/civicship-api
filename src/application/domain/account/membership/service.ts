@@ -13,6 +13,7 @@ import { NotFoundError } from "@/errors/graphql";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import MembershipConverter from "@/application/domain/account/membership/data/converter";
 import { inject, injectable } from "tsyringe";
+import { PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
 
 @injectable()
 export default class MembershipService {
@@ -36,7 +37,7 @@ export default class MembershipService {
     return this.repository.findDetail(ctx, { userId_communityId: { userId, communityId } });
   }
 
-  async findMembership(ctx: IContext, communityId: string, userKey: string) {
+  async findMembership(ctx: IContext, communityId: string, userKey: string): Promise<PrismaMembershipDetail | null> {
     return this.repository.findFlexible(ctx, communityId, userKey);
   }
 

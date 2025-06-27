@@ -85,7 +85,7 @@ export default class MembershipRepository implements IMembershipRepository {
 
   async findFlexible(ctx: IContext, communityId: string, userKey: string) {
     // 1. userIdとして検索
-    let membership = await this.find(ctx, { userId_communityId: { userId: userKey, communityId } });
+    let membership = await this.findDetail(ctx, { userId_communityId: { userId: userKey, communityId } });
     if (membership) return membership;
 
     // 2. userNameとして検索
@@ -98,7 +98,7 @@ export default class MembershipRepository implements IMembershipRepository {
             { userId: userKey }
           ]
         },
-        include: membershipInclude
+        select: membershipSelectDetail
       })
     );
     if (membership) return membership;
@@ -118,7 +118,7 @@ export default class MembershipRepository implements IMembershipRepository {
       })
     );
     if (didRequest?.user) {
-      membership = await this.find(ctx, { userId_communityId: { userId: didRequest.user.id, communityId } });
+      membership = await this.findDetail(ctx, { userId_communityId: { userId: didRequest.user.id, communityId } });
       if (membership) return membership;
     }
     return null;

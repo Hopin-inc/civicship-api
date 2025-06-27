@@ -14,7 +14,10 @@ export interface IMembershipRepository {
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
   ): Promise<PrismaMembershipDetail[]>;
 
-  find(ctx: IContext, where: Prisma.MembershipWhereUniqueInput): Promise<PrismaMembership | null>;
+  find(
+    ctx: IContext,
+    where: Prisma.MembershipWhereUniqueInput,
+  ): Promise<PrismaMembership | null>;
 
   findDetail(
     ctx: IContext,
@@ -44,5 +47,5 @@ export interface IMembershipRepository {
     ctx: IContext,
     communityId: string,
     userKey: string
-  ): Promise<PrismaMembership | null>;
+  ): Promise<PrismaMembershipDetail | null>;
 }
