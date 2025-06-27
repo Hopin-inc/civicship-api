@@ -14,7 +14,9 @@ export default class MembershipConverter {
         filter?.userNames && filter.userNames.length
           ? {
             user: {
-              name: { contains: filter.userNames.join(" ") }
+              AND: filter.userNames.map((name) => ({
+                name: { contains: name },
+              })),
             }
           }
           : {},
