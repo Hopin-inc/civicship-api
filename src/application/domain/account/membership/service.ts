@@ -36,12 +36,12 @@ export default class MembershipService {
     return this.repository.findDetail(ctx, { userId_communityId: { userId, communityId } });
   }
 
-  async findMembership(ctx: IContext, userId: string, communityId: string) {
-    return this.repository.find(ctx, { userId_communityId: { userId, communityId } });
+  async findMembership(ctx: IContext, communityId: string, userKey: string) {
+    return this.repository.findFlexible(ctx, communityId, userKey);
   }
 
   async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string) {
-    const membership = await this.findMembership(ctx, userId, communityId);
+    const membership = await this.findMembership(ctx, communityId, userId);
     if (!membership) {
       throw new NotFoundError("Membership", { userId, communityId });
     }

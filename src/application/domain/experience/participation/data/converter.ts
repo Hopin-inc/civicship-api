@@ -77,7 +77,12 @@ export default class ParticipationConverter {
         filter?.status ? { status: filter.status } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.opportunityId
-          ? { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } }
+          ? {
+            OR: [
+              { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } },
+              { opportunitySlot: { opportunityId: filter.opportunityId } },
+            ],
+          }
           : {},
         filter?.opportunitySlotId
           ? { reservation: { opportunitySlotId: filter.opportunitySlotId } }

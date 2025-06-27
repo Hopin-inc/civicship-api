@@ -12,7 +12,7 @@ export default class EvaluationService {
   constructor(
     @inject("EvaluationRepository") private readonly repository: IEvaluationRepository,
     @inject("EvaluationConverter") private readonly converter: EvaluationConverter,
-  ) {}
+  ) { }
 
   async fetchEvaluations(
     ctx: IContext,

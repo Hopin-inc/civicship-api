@@ -43,16 +43,8 @@ export default class MembershipUseCase {
     return MembershipPresenter.query(data, hasNextPage);
   }
 
-  async visitorViewMembership(
-    args: GqlQueryMembershipArgs,
-    ctx: IContext,
-  ): Promise<GqlMembership | null> {
-    const membership = await this.membershipService.findMembershipDetail(
-      ctx,
-      args.userId,
-      args.communityId,
-    );
-    return membership ? MembershipPresenter.get(membership) : null;
+  async visitorViewMembership(args: { communityId: string, userKey: string }, ctx: IContext) {
+    return await this.membershipService.findMembership(ctx, args.communityId, args.userKey);
   }
 
   async ownerInviteMember(args: GqlMutationMembershipInviteArgs, ctx: IContext) {

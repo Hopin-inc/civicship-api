@@ -23,7 +23,7 @@ export default class MembershipResolver {
   Query = {
     memberships: (_: unknown, args: GqlQueryMembershipsArgs, ctx: IContext) =>
       this.useCase.visitorBrowseMemberships(args, ctx),
-    membership: (_: unknown, args: GqlQueryMembershipArgs, ctx: IContext) => {
+    membership: (_: unknown, args: { communityId: string, userKey: string }, ctx: IContext) => {
       return this.useCase.visitorViewMembership(args, ctx);
     },
   };

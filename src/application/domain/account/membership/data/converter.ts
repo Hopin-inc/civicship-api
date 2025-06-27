@@ -11,6 +11,13 @@ export default class MembershipConverter {
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.status ? { status: filter.status } : {},
         filter?.role ? { role: filter.role } : {},
+        filter?.userNames && filter.userNames.length
+          ? {
+            user: {
+              name: { contains: filter.userNames.join(" ") }
+            }
+          }
+          : {},
       ],
     };
   }

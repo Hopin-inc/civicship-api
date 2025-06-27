@@ -2,37 +2,38 @@
 # Membership Query Definitions
 # ------------------------------
 extend type Query {
-    memberships(
-        filter: MembershipFilterInput
-        sort: MembershipSortInput
-        cursor: MembershipCursorInput
-        first: Int
-    ): MembershipsConnection!
-    membership(userId: ID!, communityId: ID!): Membership
+  memberships(
+    filter: MembershipFilterInput
+    sort: MembershipSortInput
+    cursor: MembershipCursorInput
+    first: Int
+  ): MembershipsConnection!
+  membership(userKey: String!, communityId: ID!): Membership
 }
 
 # ------------------------------
 # Membership Connection Type Definitions
 # ------------------------------
 type MembershipsConnection {
-    edges: [MembershipEdge]
-    pageInfo: PageInfo!
-    totalCount: Int!
+  edges: [MembershipEdge]
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type MembershipEdge implements Edge {
-    cursor: String!
-    node: Membership
+  cursor: String!
+  node: Membership
 }
 
 # ------------------------------
 # Membership Query Input Definitions
 # ------------------------------
 input MembershipFilterInput {
-    userId: ID
-    communityId: ID
-    status: MembershipStatus
-    role: Role
+  userId: ID
+  communityId: ID
+  status: MembershipStatus
+  role: Role
+  userNames: [String!]
 }
 
 input MembershipSortInput {

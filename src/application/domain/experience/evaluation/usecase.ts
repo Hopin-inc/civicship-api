@@ -40,7 +40,7 @@ export default class EvaluationUseCase {
     @inject("VCIssuanceRequestConverter")
     private readonly vcIssuanceRequestConverter: VCIssuanceRequestConverter,
     @inject("NotificationService") private readonly notificationService: NotificationService,
-  ) {}
+  ) { }
 
   async visitorBrowseEvaluations(
     ctx: IContext,
@@ -202,11 +202,11 @@ export default class EvaluationUseCase {
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
       await this.vcIssuanceRequestService.requestVCIssuance(
-        evaluation.id,
         userId,
         phoneUid,
         vcRequest,
         ctx,
+        evaluation.id,
       );
     } catch (error) {
       logger.warn("tryIssueEvaluationVC failed (non-blocking)", error);

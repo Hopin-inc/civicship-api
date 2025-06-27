@@ -39,4 +39,10 @@ export interface IMembershipRepository {
     where: Prisma.MembershipWhereUniqueInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaMembership>;
+
+  findFlexible(
+    ctx: IContext,
+    communityId: string,
+    userKey: string
+  ): Promise<PrismaMembership | null>;
 }
