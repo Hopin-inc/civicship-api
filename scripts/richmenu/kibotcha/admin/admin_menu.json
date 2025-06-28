@@ -30,7 +30,7 @@
       "action": {
         "type": "uri",
         "label": "管理者ホーム",
-        "uri": "${LIFF_BASE_URL}/admin"
+        "uri": "${LIFF_BASE_URL}/admin/wallet"
       }
     },
     {
