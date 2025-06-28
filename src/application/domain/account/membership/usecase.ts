@@ -43,15 +43,8 @@ export default class MembershipUseCase {
     return MembershipPresenter.query(data, hasNextPage);
   }
 
-  async visitorViewMembership(
-    args: GqlQueryMembershipArgs,
-    ctx: IContext,
-  ): Promise<GqlMembership | null> {
-    const membership = await this.membershipService.findMembershipDetail(
-      ctx,
-      args.userId,
-      args.communityId,
-    );
+  async visitorViewMembership(args: GqlQueryMembershipArgs, ctx: IContext) {
+    const membership = await this.membershipService.findMembership(ctx, args.communityId, args.userKey);
     return membership ? MembershipPresenter.get(membership) : null;
   }
 

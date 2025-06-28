@@ -50,6 +50,7 @@ export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
 
 export const userInclude = Prisma.validator<Prisma.UserInclude>()({
   image: true,
+  identities: true,
 });
 
 export const userArticlePortfolioInclude = Prisma.validator<Prisma.UserInclude>()({

@@ -82,4 +82,39 @@ export default class MembershipRepository implements IMembershipRepository {
       include: membershipInclude,
     });
   }
+
+  async findFlexible(ctx: IContext, communityId: string, userKey: string) {
+    // 1. userIdとして検索
+    let membership = await this.findDetail(ctx, { userId_communityId: { userId: userKey, communityId } });
+    if (membership) return membership;
+
+    // 2. userNameとして検索
+    membership = await ctx.issuer.public(ctx, (tx) =>
+      tx.membership.findFirst({
+        where: {
+          communityId,
+          user: { name: userKey }
+        },
+        select: membershipSelectDetail
+      })
+    );
+    if (membership) return membership;
+
+    // 3. didIdとして検索
+    const didRequest = await ctx.issuer.public(ctx, (tx) =>
+      tx.didIssuanceRequest.findFirst({
+        where: {
+          status: "COMPLETED",
+          didValue: { not: null },
+          id: userKey
+        },
+        include: { user: true }
+      })
+    );
+    if (didRequest?.user) {
+      membership = await this.findDetail(ctx, { userId_communityId: { userId: didRequest.user.id, communityId } });
+      if (membership) return membership;
+    }
+    return null;
+  }
 }

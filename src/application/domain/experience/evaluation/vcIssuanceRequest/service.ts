@@ -43,11 +43,11 @@ export class VCIssuanceRequestService {
   }
 
   async requestVCIssuance(
-    evaluationId: string,
     userId: string,
     phoneUid: string,
     vcRequest: EvaluationCredentialPayload,
     ctx: IContext,
+    evaluationId: string,
   ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
     const userDid = await this.getUserDid(userId, ctx);
     if (!userDid) {

@@ -41,6 +41,10 @@ export default class EvaluationResolver {
       return parent.participationId ? ctx.loaders.participation.load(parent.participationId) : null;
     },
 
+    vcIssuanceRequest: (parent: PrismaEvaluationDetail, _: unknown, ctx: IContext) => {
+      return ctx.loaders.vcIssuanceRequestByEvaluation.load(parent.id);
+    },
+
     histories: (parent: PrismaEvaluationDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.evaluationHistoriesByEvaluation.load(parent.id);
     },

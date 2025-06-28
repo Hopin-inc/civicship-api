@@ -202,11 +202,11 @@ export default class EvaluationUseCase {
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
       void this.vcIssuanceRequestService.requestVCIssuance(
-        evaluation.id,
         userId,
         phoneUid,
         vcRequest,
         ctx,
+        evaluation.id,
       );
     } catch (error) {
       logger.warn("tryIssueEvaluationVC failed (non-blocking)", error);
