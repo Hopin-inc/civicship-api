@@ -94,6 +94,8 @@ const IsCommunityMember = preExecRule({
 const IsOpportunityOwner = preExecRule({
   error: new AuthorizationError("User must be opportunity owner"),
 })((context: IContext, args: { permission?: { opportunityId?: string } }) => {
+  if (context.isAdmin) return true;
+
   const user = context.currentUser;
   const opportunityId = args?.permission?.opportunityId;
 
