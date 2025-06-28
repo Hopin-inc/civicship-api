@@ -23,6 +23,7 @@ import type { TicketClaimLink } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
+import type { ApiKey } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -624,6 +625,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
             }]
+    }, {
+        name: "ApiKey",
+        fields: []
     }, {
         name: "PlacePublicOpportunityCountView",
         fields: [{
@@ -1575,6 +1579,7 @@ type UserFactoryDefineInput = {
     sysRole?: SysRole;
     currentPrefecture?: CurrentPrefecture;
     phoneNumber?: string | null;
+    walletAddress?: string | null;
     urlWebsite?: string | null;
     urlX?: string | null;
     urlFacebook?: string | null;
@@ -5134,6 +5139,150 @@ export const defineTransactionFactory = (<TOptions extends TransactionFactoryDef
 }) as TransactionFactoryBuilder;
 
 defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type ApiKeyScalarOrEnumFields = {
+    key: string;
+    name: string;
+};
+
+type ApiKeyFactoryDefineInput = {
+    id?: string;
+    key?: string;
+    name?: string;
+    isActive?: boolean;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+
+type ApiKeyTransientFields = Record<string, unknown> & Partial<Record<keyof ApiKeyFactoryDefineInput, never>>;
+
+type ApiKeyFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ApiKeyFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ApiKey, Prisma.ApiKeyCreateInput, TTransients>;
+
+type ApiKeyFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ApiKeyFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ApiKeyFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ApiKey, Prisma.ApiKeyCreateInput, TTransients>;
+
+type ApiKeyTraitKeys<TOptions extends ApiKeyFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ApiKeyFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ApiKey";
+    build(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Prisma.ApiKeyCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Prisma.ApiKeyCreateInput>;
+    buildList(list: readonly Partial<Prisma.ApiKeyCreateInput & TTransients>[]): PromiseLike<Prisma.ApiKeyCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Prisma.ApiKeyCreateInput[]>;
+    pickForConnect(inputData: ApiKey): Pick<ApiKey, "id">;
+    create(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<ApiKey>;
+    createList(list: readonly Partial<Prisma.ApiKeyCreateInput & TTransients>[]): PromiseLike<ApiKey[]>;
+    createList(count: number, item?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<ApiKey[]>;
+    createForConnect(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Pick<ApiKey, "id">>;
+}
+
+export interface ApiKeyFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ApiKeyFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ApiKeyFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateApiKeyScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ApiKeyScalarOrEnumFields {
+    return {
+        key: getScalarFieldValueGenerator().String({ modelName: "ApiKey", fieldName: "key", isId: false, isUnique: true, seq }),
+        name: getScalarFieldValueGenerator().String({ modelName: "ApiKey", fieldName: "name", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineApiKeyFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ApiKeyFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ApiKeyFactoryInterface<TTransients, ApiKeyTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ApiKeyTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ApiKey", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ApiKeyCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateApiKeyScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ApiKeyFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ApiKeyFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.ApiKeyCreateInput;
+            const data: Prisma.ApiKeyCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ApiKeyCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ApiKey) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ApiKeyCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().apiKey.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ApiKeyCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ApiKeyCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ApiKey" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ApiKeyTraitKeys<TOptions>, ...names: readonly ApiKeyTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ApiKeyFactoryBuilder {
+    <TOptions extends ApiKeyFactoryDefineOptions>(options?: TOptions): ApiKeyFactoryInterface<{}, ApiKeyTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ApiKeyTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ApiKeyFactoryDefineOptions<TTransients>>(options?: TOptions) => ApiKeyFactoryInterface<TTransients, ApiKeyTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ApiKey} model.
+ *
+ * @param options
+ * @returns factory {@link ApiKeyFactoryInterface}
+ */
+export const defineApiKeyFactory = (<TOptions extends ApiKeyFactoryDefineOptions>(options?: TOptions): ApiKeyFactoryInterface<TOptions> => {
+    return defineApiKeyFactoryInternal(options ?? {}, {});
+}) as ApiKeyFactoryBuilder;
+
+defineApiKeyFactory.withTransientFields = defaultTransientFieldValues => options => defineApiKeyFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;

@@ -257,6 +257,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     SysRole sys_role 
     CurrentPrefecture current_prefecture 
     String phone_number "❓"
+    String wallet_address "❓"
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"
@@ -497,6 +498,16 @@ TICKET_REFUNDED TICKET_REFUNDED
     String participation_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
+    }
+  
+
+  "t_api_keys" {
+    String id "🗝️"
+    String key 
+    String name 
+    Boolean is_active 
+    DateTime created_at 
+    DateTime updated_at 
     }
   
 
