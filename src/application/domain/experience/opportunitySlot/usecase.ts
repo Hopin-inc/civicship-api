@@ -118,7 +118,7 @@ export default class OpportunitySlotUseCase {
       await this.service.bulkDeleteOpportunitySlots(ctx, input.delete ?? [], tx);
 
       const rows = await this.service.fetchAllSlotByOpportunityId(ctx, {
-        opportunityId: input.opportunityId,
+        opportunityIds: [input.opportunityId],
       });
       return OpportunitySlotPresenter.bulkUpdate(rows.map((r) => OpportunitySlotPresenter.get(r)));
     });
