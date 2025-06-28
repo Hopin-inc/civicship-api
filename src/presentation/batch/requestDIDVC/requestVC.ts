@@ -57,11 +57,11 @@ export async function createVCRequests(
 
     try {
       const result = await vcService.requestVCIssuance(
-        evaluation.id,
         user.id,
         phoneIdentity.uid,
         vcConverter.toVCIssuanceRequestInput(evaluation),
         ctx,
+        evaluation.id,
       );
 
       if (result.success) {
