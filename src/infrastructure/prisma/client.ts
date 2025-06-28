@@ -67,7 +67,7 @@ export class PrismaClientIssuer {
 
   private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
     const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
-      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', TRUE) as value;`,
+      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,
     );
     return value;
   }
@@ -75,7 +75,7 @@ export class PrismaClientIssuer {
   private async setRls(tx: Transaction, bypass: boolean = false) {
     const bypassConfig = bypass ? "on" : "off";
     const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
-      `SELECT set_config('app.rls_bypass', '${bypassConfig}', TRUE) as value;`,
+      `SELECT set_config('app.rls_bypass', '${bypassConfig}', FALSE) as value;`,
     );
     return value;
   }
