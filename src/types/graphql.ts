@@ -476,7 +476,6 @@ export type GqlMembershipFilterInput = {
   role?: InputMaybe<GqlRole>;
   status?: InputMaybe<GqlMembershipStatus>;
   userId?: InputMaybe<Scalars['ID']['input']>;
-  userNames?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
 export type GqlMembershipHistory = {
@@ -1103,7 +1102,7 @@ export type GqlOpportunitySlot = {
   reservations?: Maybe<Array<GqlReservation>>;
   startsAt: Scalars['Datetime']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-  vcIssuanceRequests: Array<GqlVcIssuanceRequest>;
+  vcIssuanceRequests?: Maybe<Array<GqlVcIssuanceRequest>>;
 };
 
 export type GqlOpportunitySlotCreateInput = {
@@ -1599,7 +1598,7 @@ export type GqlQueryEvaluationsArgs = {
 
 export type GqlQueryMembershipArgs = {
   communityId: Scalars['ID']['input'];
-  userKey: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 
@@ -3733,7 +3732,7 @@ export type GqlOpportunitySlotResolvers<ContextType = any, ParentType extends Gq
   reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
   startsAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
-  vcIssuanceRequests?: Resolver<Array<GqlResolversTypes['VcIssuanceRequest']>, ParentType, ContextType>;
+  vcIssuanceRequests?: Resolver<Maybe<Array<GqlResolversTypes['VcIssuanceRequest']>>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3961,7 +3960,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   evaluationHistories?: Resolver<GqlResolversTypes['EvaluationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationHistoriesArgs>>;
   evaluationHistory?: Resolver<Maybe<GqlResolversTypes['EvaluationHistory']>, ParentType, ContextType, RequireFields<GqlQueryEvaluationHistoryArgs, 'id'>>;
   evaluations?: Resolver<GqlResolversTypes['EvaluationsConnection'], ParentType, ContextType, Partial<GqlQueryEvaluationsArgs>>;
-  membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType, RequireFields<GqlQueryMembershipArgs, 'communityId' | 'userKey'>>;
+  membership?: Resolver<Maybe<GqlResolversTypes['Membership']>, ParentType, ContextType, RequireFields<GqlQueryMembershipArgs, 'communityId' | 'userId'>>;
   memberships?: Resolver<GqlResolversTypes['MembershipsConnection'], ParentType, ContextType, Partial<GqlQueryMembershipsArgs>>;
   opportunities?: Resolver<GqlResolversTypes['OpportunitiesConnection'], ParentType, ContextType, Partial<GqlQueryOpportunitiesArgs>>;
   opportunity?: Resolver<Maybe<GqlResolversTypes['Opportunity']>, ParentType, ContextType, RequireFields<GqlQueryOpportunityArgs, 'id' | 'permission'>>;

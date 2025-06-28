@@ -16,7 +16,7 @@ type OpportunitySlot {
   reservations: [Reservation!]
 
   # VC Issuance Requests
-  vcIssuanceRequests: [VcIssuanceRequest!]!
+  vcIssuanceRequests: [VcIssuanceRequest!]
 
   # Evaluation statistics
   isFullyEvaluated: Boolean
