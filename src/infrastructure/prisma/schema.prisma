@@ -203,7 +203,6 @@ model User {
   sysRole           SysRole           @default(USER) @map("sys_role")
   currentPrefecture CurrentPrefecture @map("current_prefecture")
   phoneNumber       String?           @map("phone_number")
-  walletAddress     String?           @map("wallet_address")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")
@@ -216,6 +215,7 @@ model User {
   image   Image?  @relation(fields: [imageId], references: [id])
 
   identities Identity[]
+  nftWallet  NFTWallet?
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
@@ -942,4 +942,16 @@ model ApiKey {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("t_api_keys")
+}
+
+model NFTWallet {
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  walletAddress String   @map("wallet_address")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("t_nft_wallets")
 }

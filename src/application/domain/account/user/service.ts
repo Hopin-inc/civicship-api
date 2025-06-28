@@ -56,16 +56,4 @@ export default class UserService {
     return this.repository.update(ctx, ctx.currentUser.id, userUpdateInput, tx);
   }
 
-  async updateWalletAddress(
-    ctx: IContext,
-    userId: string,
-    walletAddress: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    const userUpdateInput: Prisma.UserUpdateInput = {
-      walletAddress,
-    };
-
-    return this.repository.update(ctx, userId, userUpdateInput, tx);
-  }
 }

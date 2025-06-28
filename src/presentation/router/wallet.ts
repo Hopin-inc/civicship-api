@@ -1,6 +1,6 @@
 import express from 'express';
 import { container } from 'tsyringe';
-import UserService from '@/application/domain/account/user/service';
+import NFTWalletService from '@/application/domain/account/nft-wallet/service';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
 import { validateFirebasePhoneAuth } from '@/presentation/middleware/firebase-phone-auth';
 import { walletRateLimit } from '@/presentation/middleware/rate-limit';
@@ -27,10 +27,10 @@ router.put('/wallet-address',
       }
       
       const issuer = new PrismaClientIssuer();
-      const userService = container.resolve(UserService);
+      const nftWalletService = container.resolve(NFTWalletService);
       
       await issuer.public({} as any, async (tx) => {
-        await userService.updateWalletAddress({} as any, user.id, walletAddress, tx);
+        await nftWalletService.createOrUpdateWalletAddress({} as any, user.id, walletAddress, tx);
       });
       
       logger.info(`Updated wallet address for user ${user.id}`);
