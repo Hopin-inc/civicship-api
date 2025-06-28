@@ -87,7 +87,7 @@ export const userParticipationPortfolioInclude = Prisma.validator<Prisma.UserInc
               },
             },
           },
-          participations: { include: { user: { include: { image: true } } } },
+          participations: { include: { user: { include: userInclude } } },
         },
       },
       opportunitySlot: {
@@ -98,7 +98,7 @@ export const userParticipationPortfolioInclude = Prisma.validator<Prisma.UserInc
               place: { include: placeInclude },
             },
           },
-          participations: { include: { user: { include: { image: true } } } },
+          participations: { include: { user: { include: userInclude } } },
         },
       },
     },

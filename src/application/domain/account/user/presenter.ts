@@ -34,10 +34,11 @@ export default class UserPresenter {
   }
 
   static formatPortfolio(r: PrismaUser): GqlUser {
-    const { image, ...prop } = r;
+    const { image, identities, ...prop } = r;
     return {
       __typename: "User",
       ...prop,
+      identities,
       image: image?.url,
     };
   }
