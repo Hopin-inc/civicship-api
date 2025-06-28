@@ -203,6 +203,7 @@ model User {
   sysRole           SysRole           @default(USER) @map("sys_role")
   currentPrefecture CurrentPrefecture @map("current_prefecture")
   phoneNumber       String?           @map("phone_number")
+  walletAddress     String?           @map("wallet_address")
 
   urlWebsite   String? @map("url_website")
   urlX         String? @map("url_x")
@@ -928,4 +929,17 @@ enum TransactionReason {
 
   TICKET_PURCHASED
   TICKET_REFUNDED
+}
+
+// ------------------------------ API Key Domain ------------------------------
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("t_api_keys")
 }

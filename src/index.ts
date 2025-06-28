@@ -7,6 +7,7 @@ import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
+import walletRouter from "@/presentation/router/wallet";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -51,6 +52,7 @@ async function startServer() {
 
   app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);
+  app.use("/api", walletRouter);
 
   server.listen(port, () => {
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
