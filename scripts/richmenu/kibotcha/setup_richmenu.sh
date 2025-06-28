@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-ENV_PATH="$SCRIPT_DIR/../../.env"
+ENV_PATH="$SCRIPT_DIR/../../../.env"
 
 if [ ! -f "$ENV_PATH" ]; then
   echo "❌ .env file not found at $ENV_PATH"
@@ -9,7 +9,7 @@ if [ ! -f "$ENV_PATH" ]; then
 fi
 
 set -a
-# shellcheck source=../../.env
+# shellcheck source=../../../.env
 source "$ENV_PATH"
 set +a
 
@@ -21,7 +21,7 @@ BASE_NAMES=("admin_menu" "user_menu" "public_menu")
 DIRS=("admin" "user" "public")  # 👈 修正ポイント
 
 # 書き出し用 .generated/richmenu.txt 初期化
-CONSTANT_FILE_PATH="$SCRIPT_DIR/../../.generated/richmenu.txt"
+CONSTANT_FILE_PATH="$SCRIPT_DIR/../../../.generated/richmenu.txt"
 if [ ! -f "$CONSTANT_FILE_PATH" ] ; then
   touch "$CONSTANT_FILE_PATH"
 fi
@@ -108,7 +108,7 @@ elif [ "$DEFAULT_ALIAS" = "public-menu" ]; then
 fi
 
 if [ -n "$defaultKey" ]; then
-  defaultRichMenuId=$(grep "$defaultKey" "$CONSTANT_FILE_PATH" | cut -d "'" -f2)
+  defaultRichMenuId=$(grep "$defaultKey" "$CONSTANT_FILE_PATH" | cut -d '=' -f2)
 
   if [ -n "$defaultRichMenuId" ]; then
     curl -s -X POST "https://api.line.me/v2/bot/user/all/richmenu/${defaultRichMenuId}" \
@@ -120,3 +120,9 @@ if [ -n "$defaultKey" ]; then
 else
   echo "⚠️ DEFAULT_ALIAS=$DEFAULT_ALIAS に対応する const key が不明です"
 fi
+
+echo ""
+echo "📦 全ユーザーに設定されているデフォルトリッチメニュー:"
+curl -s -X GET "https://api.line.me/v2/bot/user/all/richmenu" \
+  -H "Authorization: Bearer $LINE_MESSAGING_CHANNEL_ACCESS_TOKEN" \
+  | jq
