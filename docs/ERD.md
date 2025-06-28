@@ -257,7 +257,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     SysRole sys_role 
     CurrentPrefecture current_prefecture 
     String phone_number "❓"
-    String wallet_address "❓"
     String url_website "❓"
     String url_x "❓"
     String url_facebook "❓"
@@ -511,6 +510,15 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_nft_wallets" {
+    String id "🗝️"
+    String user_id 
+    String wallet_address 
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 
@@ -608,6 +616,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
+    "t_users" o{--}o "t_nft_wallets" : "nftWallet"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
@@ -729,6 +738,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
+    "t_nft_wallets" o|--|| "t_users" : "user"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
