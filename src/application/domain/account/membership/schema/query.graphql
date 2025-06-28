@@ -29,6 +29,7 @@ type MembershipEdge implements Edge {
 # Membership Query Input Definitions
 # ------------------------------
 input MembershipFilterInput {
+    keyword: String
     userId: ID
     communityId: ID
     status: MembershipStatus
