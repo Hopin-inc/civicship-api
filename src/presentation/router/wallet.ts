@@ -9,7 +9,7 @@ import logger from '@/infrastructure/logging';
 
 const router = express();
 
-router.put('/wallet-address', 
+router.post('/wallet-address', 
   walletRateLimit,
   apiKeyAuthMiddleware,
   validateFirebasePhoneAuth,
