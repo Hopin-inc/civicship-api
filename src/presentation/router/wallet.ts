@@ -3,12 +3,14 @@ import { container } from 'tsyringe';
 import UserService from '@/application/domain/account/user/service';
 import { apiKeyAuthMiddleware } from '@/presentation/middleware/api-key-auth';
 import { validateFirebasePhoneAuth } from '@/presentation/middleware/firebase-phone-auth';
+import { walletRateLimit } from '@/presentation/middleware/rate-limit';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
 
 const router = express();
 
 router.put('/wallet-address', 
+  walletRateLimit,
   apiKeyAuthMiddleware,
   validateFirebasePhoneAuth,
   async (req, res) => {
