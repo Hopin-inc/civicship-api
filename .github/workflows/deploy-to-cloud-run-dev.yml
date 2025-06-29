@@ -102,13 +102,14 @@ jobs:
       run: |
         docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
 
-    - name: Deploy to Cloud Run
+    - name: Deploy Internal API to Cloud Run
       id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
         service: ${{ env.APPLICATION_NAME }}
         image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
         region: ${{ env.GCP_REGION }}
+        flags: '--no-allow-unauthenticated --port=3000'
 
     - name: Build Docker image for batch job
       run: |

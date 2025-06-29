@@ -1,4 +1,4 @@
-name: Deploy to Cloud Run （prd）
+name: Deploy External API to Cloud Run (prd)
 
 on:
   push:
@@ -12,24 +12,15 @@ jobs:
     timeout-minutes: 30
 
     env:
-      # stage
-      STAGE: dev
-      # GCP settings
+      STAGE: prd
       GCP_REGION: ${{ secrets.GCP_REGION }}
-      # GCP service account credentials
       SERVICE_ACCOUNT_CREDENTIAL_JSON: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
-      # DB credentials
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_NAME: ${{ secrets.DB_NAME }}
       CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
-      # application settings
       ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
-      APPLICATION_NAME: ${{ secrets.APPLICATION_NAME }}
-      # batch settings
-      BATCH_ARTIFACT_REGISTRY: ${{ secrets.BATCH_ARTIFACT_REGISTRY }}
-      BATCH_NAME: ${{ secrets.BATCH_NAME }}
-      # Jumpbox settings
+      EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
       JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
       JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
 
@@ -47,8 +38,7 @@ jobs:
         cache: 'pnpm'
 
     - name: Install dependencies
-      run: |
-          pnpm install
+      run: pnpm install
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
@@ -77,9 +67,6 @@ jobs:
         echo "Killing SSH tunnel"
         kill $SSH_PID
 
-    - name: pnpm gql:generate
-      run: pnpm gql:generate
-
     - name: pnpm build
       run: pnpm build
 
@@ -88,51 +75,34 @@ jobs:
         gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
         gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
-    - name: Build Docker image
+    - name: Build External API Docker image
       run: |
-        pnpm dotenvx run -- docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest .
+        docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest -f Dockerfile.external .
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
-
-    - name: Push Docker image to Artifact Registry
+    - name: Push External API Docker image to Artifact Registry
       run: |
-        docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+        docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
 
-    - name: Deploy Internal API to Cloud Run
+    - name: Deploy External API to Cloud Run
       id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
-        service: ${{ env.APPLICATION_NAME }}
-        image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
+        service: ${{ env.EXTERNAL_API_NAME }}
+        image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
         region: ${{ env.GCP_REGION }}
-        flags: '--no-allow-unauthenticated --port=3000'
+        flags: '--allow-unauthenticated --port=3000'
 
-    - name: Build Docker image for batch job
+    - name: Create Git tag for External API
       run: |
-        docker build -t ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest -f Dockerfile.batch .
-
-    - name: Push Docker image for batch job to Artifact Registry
-      run: |
-        docker push ${{ env.BATCH_ARTIFACT_REGISTRY }}/${{ env.BATCH_NAME }}:latest
-
-    - name: Create Git tag
-      run: |
-        # Install tzdata to use Japan timezone
         sudo apt-get update && sudo apt-get install -y tzdata
         sudo ln -fs /usr/share/zoneinfo/Asia/Tokyo /etc/localtime
         sudo dpkg-reconfigure -f noninteractive tzdata
         
-        # Generate timestamp in yyyymmddhhmmss format
-        TAG_NAME=$(date +"%Y%m%d%H%M%S")
+        TAG_NAME="external-api-$(date +"%Y%m%d%H%M%S")"
         
-        # Configure Git user info (required inside GitHub Actions)
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
         
-        # Create and push tag
         git tag $TAG_NAME
         git push origin $TAG_NAME
 
