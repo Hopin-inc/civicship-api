@@ -24,7 +24,7 @@ export default class ReservationValidator {
     remainingCapacity: number | undefined,
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
-    this.validateSlotAtLeast7DaysAhead(slot.startsAt);
+    this.validateSlotAtLeast1DayAhead(slot.startsAt);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
       throw new ReservationFullError(remainingCapacity, participantCount);
@@ -74,10 +74,10 @@ export default class ReservationValidator {
     }
   }
 
-  private validateSlotAtLeast7DaysAhead(startsAt: Date) {
+  private validateSlotAtLeast1DayAhead(startsAt: Date) {
     const now = new Date();
-    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    if (startsAt.getTime() < sevenDaysLater.getTime()) {
+    const oneDayLater = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000);
+    if (startsAt.getTime() < oneDayLater.getTime()) {
       throw new ReservationAdvanceBookingRequiredError();
     }
   }
