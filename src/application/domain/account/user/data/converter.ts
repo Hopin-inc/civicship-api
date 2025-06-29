@@ -10,7 +10,7 @@ import { injectable } from "tsyringe";
 @injectable()
 export default class UserConverter {
   filter(filter: GqlUserFilterInput): Prisma.UserWhereInput {
-    const keywordConditions = filter?.keywords && filter.keywords.length > 0
+    const keywordConditions = filter?.keywords && Array.isArray(filter.keywords) && filter.keywords.length > 0
       ? {
         OR: filter.keywords.flatMap(keyword => [
           { name: { contains: keyword } },
@@ -23,7 +23,7 @@ export default class UserConverter {
       AND: [
         filter?.sysRole ? { sysRole: filter.sysRole } : {},
         keywordConditions,
-        filter?.ids && filter.ids.length > 0 ? { id: { in: filter.ids } } : {},
+        filter?.ids && Array.isArray(filter.ids) && filter.ids.length > 0 ? { id: { in: filter.ids } } : {},
       ],
     };
   }
