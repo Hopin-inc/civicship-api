@@ -76,7 +76,7 @@ function buildFromPersonalRecord(
 
   if (checkVCPassed(e)) {
     return {
-      id: e.vcIssuanceRequest.id,
+      id: e.participationId,
       title: opportunity.title,
       source: GqlPortfolioSource.Opportunity,
       category: opportunity.category,
