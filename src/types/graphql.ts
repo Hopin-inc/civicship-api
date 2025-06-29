@@ -2350,7 +2350,8 @@ export type GqlUserEdge = GqlEdge & {
 };
 
 export type GqlUserFilterInput = {
-  keyword?: InputMaybe<Scalars['String']['input']>;
+  ids?: InputMaybe<Array<Scalars['ID']['input']>>;
+  keywords?: InputMaybe<Array<Scalars['String']['input']>>;
   sysRole?: InputMaybe<GqlSysRole>;
 };
 

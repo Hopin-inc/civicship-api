@@ -29,8 +29,9 @@ type UserEdge implements Edge {
 # User Query Input Definitions
 # ------------------------------
 input UserFilterInput {
-    keyword: String
+    keywords: [String!]
     sysRole: SysRole
+    ids: [ID!]
 }
 
 input UserSortInput {

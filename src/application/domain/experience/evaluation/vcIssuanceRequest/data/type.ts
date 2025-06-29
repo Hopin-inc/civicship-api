@@ -56,9 +56,9 @@ export const vcIssuanceRequestSelectDetail = Prisma.validator<Prisma.VcIssuanceR
   id: true,
   status: true,
 
+  completedAt: true,
   evaluationId: true,
   userId: true,
-
   createdAt: true,
   updatedAt: true,
 });
