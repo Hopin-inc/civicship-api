@@ -5,20 +5,14 @@ import logger from "@/infrastructure/logging";
 
 export async function validateFirebasePhoneAuth(req: Request, res: Response, next: NextFunction) {
   const idToken = req.headers['authorization']?.replace(/^Bearer\s+/, '');
-  
+
   if (!idToken) {
     res.status(401).json({ error: 'Firebase ID token is required' });
     return;
   }
 
   try {
-    const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
-    if (!tenantId) {
-      throw new Error("FIREBASE_AUTH_TENANT_ID not defined.");
-    }
-
-    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
-    const decoded = await tenantedAuth.verifyIdToken(idToken);
+    const decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
 
     const issuer = new PrismaClientIssuer();
