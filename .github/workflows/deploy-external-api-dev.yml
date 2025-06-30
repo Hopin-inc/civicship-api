@@ -5,6 +5,7 @@ on:
     branches:
       - develop
       - hotfix/*
+      - devin/1751096348-api-key-wallet-address # For debug
 
 jobs:
   deploy:
