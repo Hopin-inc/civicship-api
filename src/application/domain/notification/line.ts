@@ -1,5 +1,5 @@
 import { logLineApiError, logLineApiSuccess } from "./logger";
-import { messagingApi } from "@line/bot-sdk";
+import { LINE_REQUEST_ID_HTTP_HEADER_NAME, messagingApi } from "@line/bot-sdk";
 
 export async function safeLinkRichMenuIdToUser(
   client: messagingApi.MessagingApiClient,
@@ -7,6 +7,11 @@ export async function safeLinkRichMenuIdToUser(
   richMenuId: string,
 ): Promise<boolean> {
   const endpoint = `https://api.line.me/v2/bot/user/${userId}/richmenu/${richMenuId}`;
+
+  const profile = await safeGetUserProfile(client, userId);
+  if (!profile) {
+    return false;
+  }
 
   try {
     const response = await client.linkRichMenuIdToUserWithHttpInfo(userId, richMenuId);
@@ -34,6 +39,11 @@ export async function safePushMessage(
   const endpoint = "https://api.line.me/v2/bot/message/push";
   const { to, messages } = params;
 
+  const profile = await safeGetUserProfile(client, to);
+  if (!profile) {
+    return false;
+  }
+
   try {
     await client.validatePushWithHttpInfo({ messages });
     const response = await client.pushMessageWithHttpInfo({ to, messages });
@@ -42,5 +52,28 @@ export async function safePushMessage(
   } catch (error) {
     logLineApiError("pushMessage", endpoint, error, params.to, undefined, params);
     return false;
+  }
+}
+
+async function safeGetUserProfile(
+  client: messagingApi.MessagingApiClient,
+  userId: string,
+): Promise<messagingApi.UserProfileResponse | null> {
+  const endpoint = `https://api.line.me/v2/bot/profile/${userId}`;
+  try {
+    const response = await client.getProfile(userId);
+    logLineApiSuccess(
+      "getProfile",
+      endpoint,
+      {
+        status: 200,
+        headers: new Headers({ [LINE_REQUEST_ID_HTTP_HEADER_NAME]: "N/A" }),
+      } as Response,
+      userId,
+    );
+    return response;
+  } catch (error) {
+    logLineApiError("getProfile", endpoint, error, userId);
+    return null;
   }
 }
