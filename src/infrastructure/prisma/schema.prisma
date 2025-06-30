@@ -215,7 +215,7 @@ model User {
   image   Image?  @relation(fields: [imageId], references: [id])
 
   identities Identity[]
-  nftWallet  NFTWallet?
+  nftWallet  NftWallet?
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
@@ -944,7 +944,7 @@ model ApiKey {
   @@map("t_api_keys")
 }
 
-model NFTWallet {
+model NftWallet {
   id            String   @id @default(cuid())
   userId        String   @unique @map("user_id")
   walletAddress String   @map("wallet_address")

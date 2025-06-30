@@ -10,7 +10,7 @@ export default class NFTWalletService {
     walletAddress: string,
     tx: Prisma.TransactionClient,
   ) {
-    return tx.nFTWallet.upsert({
+    return tx.nftWallet.upsert({
       where: { userId },
       update: { walletAddress },
       create: {
@@ -26,15 +26,15 @@ export default class NFTWalletService {
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
-      return tx.nFTWallet.findUnique({
+      return tx.nftWallet.findUnique({
         where: { userId },
       });
     }
-    
+
     const { PrismaClientIssuer } = await import("@/infrastructure/prisma/client");
     const issuer = new PrismaClientIssuer();
     return issuer.internal(async (client) => {
-      return client.nFTWallet.findUnique({
+      return client.nftWallet.findUnique({
         where: { userId },
       });
     });
