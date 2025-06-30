@@ -52,6 +52,10 @@ async function startServer() {
   app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);
 
+  app.get("/health", (req, res) => {
+    res.status(200).json({ status: "healthy", service: "internal-api" });
+  });
+
   server.listen(port, () => {
     const protocol = process.env.NODE_HTTPS === "true" ? "https" : "http";
     const host = "localhost";

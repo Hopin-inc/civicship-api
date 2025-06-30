@@ -55,4 +55,5 @@ export default class UserService {
 
     return this.repository.update(ctx, ctx.currentUser.id, userUpdateInput, tx);
   }
+
 }

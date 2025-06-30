@@ -101,7 +101,7 @@ jobs:
       run: |
         docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.APPLICATION_NAME }}:latest
 
-    - name: Deploy to Cloud Run
+    - name: Deploy Internal API to Cloud Run
       id: 'deploy'
       uses: 'google-github-actions/deploy-cloudrun@v2'
       with:
