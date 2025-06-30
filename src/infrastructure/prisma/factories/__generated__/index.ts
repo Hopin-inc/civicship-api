@@ -5175,7 +5175,7 @@ type ApiKeyFactoryDefineInput = {
     name?: string;
     isActive?: boolean;
     createdAt?: Date;
-    updatedAt?: Date;
+    updatedAt?: Date | null;
 };
 
 type ApiKeyTransientFields = Record<string, unknown> & Partial<Record<keyof ApiKeyFactoryDefineInput, never>>;
@@ -5321,7 +5321,7 @@ type NftWalletFactoryDefineInput = {
     id?: string;
     walletAddress?: string;
     createdAt?: Date;
-    updatedAt?: Date;
+    updatedAt?: Date | null;
     user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletInput;
 };
 

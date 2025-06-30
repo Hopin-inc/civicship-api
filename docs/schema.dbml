@@ -421,13 +421,13 @@ Table t_transactions {
   updatedAt DateTime
 }
 
-Table t_api_keys {
+Table m_api_keys {
   id String [pk]
   key String [unique, not null]
   name String [not null]
   isActive Boolean [not null, default: true]
   createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime [not null]
+  updatedAt DateTime
 }
 
 Table t_nft_wallets {
@@ -435,7 +435,7 @@ Table t_nft_wallets {
   userId String [unique, not null]
   walletAddress String [not null]
   createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime [not null]
+  updatedAt DateTime
   user t_users [not null]
 }
 

@@ -500,13 +500,13 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
-  "t_api_keys" {
+  "m_api_keys" {
     String id "🗝️"
     String key 
     String name 
     Boolean is_active 
     DateTime created_at 
-    DateTime updated_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -515,7 +515,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String user_id 
     String wallet_address 
     DateTime created_at 
-    DateTime updated_at 
+    DateTime updated_at "❓"
     }
   
 
