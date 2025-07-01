@@ -60,6 +60,7 @@ export default class IdentityUseCase {
       },
       ctx.uid,
       ctx.platform,
+      ctx.communityId,
       phoneUid,
     );
 
@@ -75,16 +76,19 @@ export default class IdentityUseCase {
           ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
           : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
 
-        const refreshToken = IdentityConverter.create(args).phoneRefreshToken || ctx.phoneRefreshToken || "";
+        const refreshToken =
+          IdentityConverter.create(args).phoneRefreshToken || ctx.phoneRefreshToken || "";
 
         await this.identityService.storeAuthTokens(
           phoneUid,
           ctx.phoneAuthToken,
           refreshToken,
-          expiryTime
+          expiryTime,
         );
 
-        logger.debug(`Stored phone auth tokens during user signup for ${phoneUid}, expires at ${expiryTime.toISOString()}`);
+        logger.debug(
+          `Stored phone auth tokens during user signup for ${phoneUid}, expires at ${expiryTime.toISOString()}`,
+        );
       } catch (error) {
         logger.error("Failed to store phone auth tokens during user signup:", error);
       }
@@ -96,16 +100,14 @@ export default class IdentityUseCase {
           ? new Date(parseInt(ctx.tokenExpiresAt, 10))
           : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
 
-        const refreshToken = IdentityConverter.create(args).lineRefreshToken || ctx.refreshToken || "";
+        const refreshToken =
+          IdentityConverter.create(args).lineRefreshToken || ctx.refreshToken || "";
 
-        await this.identityService.storeAuthTokens(
-          ctx.uid,
-          ctx.idToken,
-          refreshToken,
-          expiryTime
+        await this.identityService.storeAuthTokens(ctx.uid, ctx.idToken, refreshToken, expiryTime);
+
+        logger.debug(
+          `Stored LINE auth tokens during user signup for ${ctx.uid}, expires at ${expiryTime.toISOString()}`,
         );
-
-        logger.debug(`Stored LINE auth tokens during user signup for ${ctx.uid}, expires at ${expiryTime.toISOString()}`);
       } catch (error) {
         logger.error("Failed to store LINE auth tokens during user signup:", error);
       }
@@ -148,7 +150,7 @@ export default class IdentityUseCase {
     phoneUid: string,
     authToken: string,
     refreshToken: string,
-    expiresIn: number
+    expiresIn: number,
   ): Promise<GqlStorePhoneAuthTokenPayload> {
     if (!ctx.uid || !ctx.platform) {
       throw new Error("Authentication required");
@@ -196,7 +198,7 @@ export default class IdentityUseCase {
     const existingMembership = await this.membershipService.findMembership(
       ctx,
       existingUser.id,
-      communityId
+      communityId,
     );
 
     if (existingMembership) {
@@ -216,14 +218,9 @@ export default class IdentityUseCase {
         ctx,
         existingUser.id,
         communityId,
-        tx
+        tx,
       );
-      await this.walletService.createMemberWalletIfNeeded(
-        ctx,
-        existingUser.id,
-        communityId,
-        tx
-      );
+      await this.walletService.createMemberWalletIfNeeded(ctx, existingUser.id, communityId, tx);
       return membership;
     });
 

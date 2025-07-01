@@ -15,7 +15,7 @@ export const reservationInclude = Prisma.validator<Prisma.ReservationInclude>()(
   participations: {
     include: {
       user: {
-        include: { identities: true },
+        include: { identities: { include: { community: true } } },
       },
       evaluation: true,
     },

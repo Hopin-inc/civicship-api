@@ -2,10 +2,23 @@ import { Prisma } from "@prisma/client";
 
 export const opportunitySlotSetHostingStatusInclude =
   Prisma.validator<Prisma.OpportunitySlotInclude>()({
-    opportunity: { include: { createdByUser: { include: { image: true } } } },
+    opportunity: {
+      include: {
+        createdByUser: { include: { image: true } },
+      },
+    },
     reservations: {
       include: {
-        participations: { include: { user: { include: { image: true, identities: true } } } },
+        participations: {
+          include: {
+            user: {
+              include: {
+                image: true,
+                identities: { include: { community: true } },
+              },
+            },
+          },
+        },
       },
     },
   });

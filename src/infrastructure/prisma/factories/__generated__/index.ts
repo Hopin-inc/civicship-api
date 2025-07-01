@@ -173,6 +173,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Place",
                 relationName: "CommunityToPlace"
             }, {
+                name: "identities",
+                type: "Identity",
+                relationName: "CommunityToIdentity"
+            }, {
                 name: "memberships",
                 type: "Membership",
                 relationName: "CommunityToMembership"
@@ -314,6 +318,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "user",
                 type: "User",
                 relationName: "IdentityToUser"
+            }, {
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToIdentity"
             }]
     }, {
         name: "Membership",
@@ -1465,6 +1473,7 @@ type CommunityFactoryDefineInput = {
     image?: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput;
     config?: CommunityconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput;
     places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
+    identities?: Prisma.IdentityCreateNestedManyWithoutCommunityInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
@@ -2466,6 +2475,11 @@ type IdentityuserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIdentitiesInput["create"]>;
 };
 
+type IdentitycommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutIdentitiesInput["create"]>;
+};
+
 type IdentityFactoryDefineInput = {
     uid?: string;
     platform?: IdentityPlatform;
@@ -2475,6 +2489,7 @@ type IdentityFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     user: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput;
+    community?: IdentitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutIdentitiesInput;
 };
 
 type IdentityTransientFields = Record<string, unknown> & Partial<Record<keyof IdentityFactoryDefineInput, never>>;
@@ -2492,6 +2507,10 @@ type IdentityFactoryDefineOptions<TTransients extends Record<string, unknown> = 
 
 function isIdentityuserFactory(x: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput | undefined): x is IdentityuserFactory {
     return (x as any)?._factoryFor === "User";
+}
+
+function isIdentitycommunityFactory(x: IdentitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutIdentitiesInput | undefined): x is IdentitycommunityFactory {
+    return (x as any)?._factoryFor === "Community";
 }
 
 type IdentityTraitKeys<TOptions extends IdentityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -2557,7 +2576,10 @@ function defineIdentityFactoryInternal<TTransients extends Record<string, unknow
             const defaultAssociations = {
                 user: isIdentityuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
-                } : defaultData.user
+                } : defaultData.user,
+                community: isIdentitycommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
             } as Prisma.IdentityCreateInput;
             const data: Prisma.IdentityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
