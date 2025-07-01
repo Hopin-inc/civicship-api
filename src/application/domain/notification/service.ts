@@ -111,7 +111,6 @@ export default class NotificationService {
       ctx.communityId,
     );
 
-    console.log("🟡 lineUid", lineUid);
     if (!lineUid) {
       logger.warn("pushReservationAppliedMessage: lineUid is missing", {
         reservationId: reservation.id,
@@ -375,7 +374,7 @@ export default class NotificationService {
           identities?: {
             platform: IdentityPlatform;
             uid: string;
-            communityId?: string; // ← これが入ってる前提
+            communityId?: string;
           }[];
         }
       | null
