@@ -321,6 +321,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String uid "🗝️"
     IdentityPlatform platform 
     String user_id 
+    String community_id "❓"
     String auth_token "❓"
     String refresh_token "❓"
     DateTime token_expires_at "❓"
@@ -636,6 +637,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_communities" o|--|o "t_images" : "image"
     "t_communities" o{--}o "t_community_configs" : "config"
     "t_communities" o{--}o "t_places" : "places"
+    "t_communities" o{--}o "t_identities" : "identities"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
     "t_communities" o{--}o "t_utilities" : "utilities"
@@ -671,6 +673,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
+    "t_identities" o|--|o "t_communities" : "community"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"

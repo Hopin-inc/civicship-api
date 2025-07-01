@@ -178,10 +178,13 @@ model Community {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  config         CommunityConfig?
-  places         Place[]
-  memberships    Membership[]
-  wallets        Wallet[]
+  config CommunityConfig?
+  places Place[]
+
+  identities  Identity[]
+  memberships Membership[]
+  wallets     Wallet[]
+
   utilities      Utility[]
   opportunities  Opportunity[]
   participations Participation[]
@@ -332,6 +335,9 @@ model Identity {
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id])
 
   authToken      String?   @map("auth_token") @db.Text
   refreshToken   String?   @map("refresh_token") @db.Text

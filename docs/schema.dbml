@@ -82,6 +82,7 @@ Table t_communities {
   image t_images
   config t_community_configs
   places t_places [not null]
+  identities t_identities [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
   utilities t_utilities [not null]
@@ -180,6 +181,8 @@ Table t_identities {
   platform IdentityPlatform [not null]
   userId String [not null]
   user t_users [not null]
+  communityId String
+  community t_communities
   authToken String
   refreshToken String
   tokenExpiresAt DateTime
@@ -754,6 +757,8 @@ Ref: t_community_line_rich_menus.configId > t_community_line_configs.id [delete:
 Ref: t_users.imageId > t_images.id
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
+
+Ref: t_identities.communityId > t_communities.id
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
