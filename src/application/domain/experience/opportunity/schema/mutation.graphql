@@ -52,7 +52,7 @@ input OpportunityCreateInput {
     placeId: ID
 
     # for isAdmin
-    createdBy: String
+    createdBy: ID
 }
 
 input OpportunityUpdateContentInput {
