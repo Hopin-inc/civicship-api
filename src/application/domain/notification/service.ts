@@ -43,7 +43,21 @@ export default class NotificationService {
     comment?: string,
   ) {
     const participantInfos = this.extractLineUidsFromParticipations(
-      slot.reservations.flatMap((r) => r.participations),
+      slot.reservations.flatMap((r) =>
+        r.participations.map((p) => ({
+          id: p.id,
+          user: p.user
+            ? {
+                identities: p.user.identities.map((identity) => ({
+                  platform: identity.platform,
+                  uid: identity.uid,
+                  communityId: identity.communityId ?? undefined,
+                })),
+              }
+            : null,
+        })),
+      ),
+      ctx.communityId,
     );
 
     if (participantInfos.length === 0) {
@@ -83,8 +97,21 @@ export default class NotificationService {
 
   async pushReservationAppliedMessage(ctx: IContext, reservation: PrismaReservation) {
     const lineUid = this.extractLineUidFromCreator(
-      reservation.opportunitySlot.opportunity.createdByUser,
+      reservation.opportunitySlot.opportunity.createdByUser
+        ? {
+            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+              (identity) => ({
+                platform: identity.platform,
+                uid: identity.uid,
+                communityId: identity.communityId ?? undefined,
+              }),
+            ),
+          }
+        : null,
+      ctx.communityId,
     );
+
+    console.log("🟡 lineUid", lineUid);
     if (!lineUid) {
       logger.warn("pushReservationAppliedMessage: lineUid is missing", {
         reservationId: reservation.id,
@@ -102,6 +129,7 @@ export default class NotificationService {
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
 
     const client = await createLineClient(ctx.communityId);
+
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
       year,
@@ -117,8 +145,20 @@ export default class NotificationService {
 
   async pushReservationCanceledMessage(ctx: IContext, reservation: PrismaReservation) {
     const lineUid = this.extractLineUidFromCreator(
-      reservation.opportunitySlot.opportunity.createdByUser,
+      reservation.opportunitySlot.opportunity.createdByUser
+        ? {
+            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+              (identity) => ({
+                platform: identity.platform,
+                uid: identity.uid,
+                communityId: identity.communityId ?? undefined,
+              }),
+            ),
+          }
+        : null,
+      ctx.communityId,
     );
+
     if (!lineUid) {
       logger.warn("pushReservationAppliedMessage: lineUid is missing", {
         reservationId: reservation.id,
@@ -154,7 +194,21 @@ export default class NotificationService {
     reservation: PrismaReservation,
     comment?: string,
   ) {
-    const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
+    const participantInfos = this.extractLineUidsFromParticipations(
+      reservation.participations.map((p) => ({
+        id: p.id,
+        user: p.user
+          ? {
+              identities: p.user.identities.map((i) => ({
+                platform: i.platform,
+                uid: i.uid,
+                communityId: i.communityId ?? undefined,
+              })),
+            }
+          : null,
+      })),
+      ctx.communityId,
+    );
     if (participantInfos.length === 0) {
       logger.warn("No LINE UID found in participations", {
         context: ctx,
@@ -190,7 +244,22 @@ export default class NotificationService {
   }
 
   async pushReservationAcceptedMessage(ctx: IContext, reservation: PrismaReservation) {
-    const participantInfos = this.extractLineUidsFromParticipations(reservation.participations);
+    const participantInfos = this.extractLineUidsFromParticipations(
+      reservation.participations.map((p) => ({
+        id: p.id,
+        user: p.user
+          ? {
+              identities: p.user.identities.map((i) => ({
+                platform: i.platform,
+                uid: i.uid,
+                communityId: i.communityId ?? undefined,
+              })),
+            }
+          : null,
+      })),
+      ctx.communityId,
+    );
+
     if (participantInfos.length === 0) {
       logger.warn("No LINE UID found in participations", {
         context: ctx,
@@ -284,13 +353,16 @@ export default class NotificationService {
         identities: {
           platform: IdentityPlatform;
           uid: string;
+          communityId?: string;
         }[];
       } | null;
     }[],
+    communityId: string,
   ): { uid: string; participationId: string }[] {
     return participations.flatMap((p) => {
       const uid = p.user?.identities.find(
-        (identity) => identity.platform === IdentityPlatform.LINE,
+        (identity) =>
+          identity.platform === IdentityPlatform.LINE && identity.communityId === communityId,
       )?.uid;
 
       return uid ? [{ uid, participationId: p.id }] : [];
@@ -298,9 +370,22 @@ export default class NotificationService {
   }
 
   private extractLineUidFromCreator(
-    user: { identities?: { platform: IdentityPlatform; uid: string }[] } | null | undefined,
+    user:
+      | {
+          identities?: {
+            platform: IdentityPlatform;
+            uid: string;
+            communityId?: string; // ← これが入ってる前提
+          }[];
+        }
+      | null
+      | undefined,
+    communityId: string,
   ): string | undefined {
-    return user?.identities?.find((identity) => identity.platform === IdentityPlatform.LINE)?.uid;
+    return user?.identities?.find(
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === communityId,
+    )?.uid;
   }
 
   private formatDateTime(start: Date, end: Date): { year: string; date: string; time: string } {
