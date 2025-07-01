@@ -42,6 +42,7 @@ describe("IdentityService", () => {
   let service: IdentityService;
 
   const TEST_USER_ID = "user-1";
+  const TEST_COMMUNITY_ID = "community-1";
   const TEST_USER_DATA = {
     name: "Test User",
     email: "test@example.com",
@@ -57,6 +58,7 @@ describe("IdentityService", () => {
     userId: TEST_USER_ID,
     uid: "test-uid",
     tenantId: "test-tenant-id",
+    communityId: TEST_COMMUNITY_ID,
     platform: IdentityPlatform.LINE,
   };
 
@@ -85,7 +87,7 @@ describe("IdentityService", () => {
       const uid = "test-uid";
       const platform = IdentityPlatform.FACEBOOK;
 
-      const result = await service.createUserAndIdentity(TEST_USER_DATA, uid, platform);
+      const result = await service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID);
 
       expect(mockUserRepository.create).toHaveBeenCalledWith({
         ...TEST_USER_DATA,
@@ -102,7 +104,7 @@ describe("IdentityService", () => {
       const error = new Error("User creation failed");
       mockUserRepository.create.mockRejectedValue(error);
 
-      await expect(service.createUserAndIdentity(TEST_USER_DATA, uid, platform)).rejects.toThrow(
+      await expect(service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID)).rejects.toThrow(
         "User creation failed",
       );
     });
