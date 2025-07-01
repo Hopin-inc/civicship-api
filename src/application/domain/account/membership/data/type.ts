@@ -1,7 +1,13 @@
 import { Prisma } from "@prisma/client";
 
 export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
-  user: { include: { identities: true } },
+  user: {
+    include: {
+      identities: {
+        include: { community: true },
+      },
+    },
+  },
 });
 
 export const membershipSelectDetail = Prisma.validator<Prisma.MembershipSelect>()({
