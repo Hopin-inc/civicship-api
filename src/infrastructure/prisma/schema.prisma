@@ -289,6 +289,7 @@ model User {
   image   Image?  @relation(fields: [imageId], references: [id])
 
   identities Identity[]
+  nftWallet  NftWallet?
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
@@ -1005,4 +1006,29 @@ enum TransactionReason {
 
   TICKET_PURCHASED
   TICKET_REFUNDED
+}
+
+// ------------------------------ API Key Domain ------------------------------
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  name      String
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("m_api_keys")
+}
+
+model NftWallet {
+  id            String    @id @default(cuid())
+  userId        String    @unique @map("user_id")
+  walletAddress String    @map("wallet_address")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("t_nft_wallets")
 }
