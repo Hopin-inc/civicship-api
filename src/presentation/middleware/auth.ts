@@ -47,21 +47,31 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     hasAdminApiKey: !!adminApiKey,
   });
 
-  // ✅ 特権APIキーによる認証バイパス
-  if (adminApiKey && adminApiKey === expectedAdminKey) {
-    return {
-      issuer,
-      loaders,
-      communityId,
-      isAdmin: true,
+  if (adminApiKey && expectedAdminKey === undefined) {
+    logger.warn("Admin API key is present, but expected key is undefined!");
+  }
 
-      phoneAuthToken,
-      phoneRefreshToken,
-      phoneTokenExpiresAt,
-      phoneUid,
-      refreshToken,
-      tokenExpiresAt,
-    };
+  if (adminApiKey) {
+    if (adminApiKey === expectedAdminKey) {
+      logger.info("Admin access via API key");
+      return {
+        issuer,
+        loaders,
+        communityId,
+        isAdmin: true,
+
+        phoneAuthToken,
+        phoneRefreshToken,
+        phoneTokenExpiresAt,
+        phoneUid,
+        refreshToken,
+        tokenExpiresAt,
+      };
+    } else {
+      logger.warn("Admin API key provided but does not match expected value", {
+        received: adminApiKey,
+      });
+    }
   }
 
   if (!idToken) {
