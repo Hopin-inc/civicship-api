@@ -1,0 +1,12 @@
+extend type Query {
+  cities(input: CitiesInput): [City!]!
+  states(input: StatesInput): [State!]!
+}
+
+input CitiesInput {
+  name: String
+}
+
+input StatesInput {
+  name: String
+}

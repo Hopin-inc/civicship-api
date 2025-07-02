@@ -125,6 +125,10 @@ export type GqlCheckOpportunityPermissionInput = {
   opportunityId: Scalars['ID']['input'];
 };
 
+export type GqlCitiesInput = {
+  name?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type GqlCity = {
   __typename?: 'City';
   code: Scalars['ID']['output'];
@@ -1030,7 +1034,7 @@ export type GqlOpportunityCategory = typeof GqlOpportunityCategory[keyof typeof 
 export type GqlOpportunityCreateInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   category: GqlOpportunityCategory;
-  createdBy?: InputMaybe<Scalars['String']['input']>;
+  createdBy?: InputMaybe<Scalars['ID']['input']>;
   description: Scalars['String']['input'];
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
@@ -1551,7 +1555,7 @@ export type GqlQueryArticlesArgs = {
 
 
 export type GqlQueryCitiesArgs = {
-  name?: InputMaybe<Scalars['String']['input']>;
+  input?: InputMaybe<GqlCitiesInput>;
 };
 
 
@@ -1701,7 +1705,7 @@ export type GqlQueryReservationsArgs = {
 
 
 export type GqlQueryStatesArgs = {
-  name?: InputMaybe<Scalars['String']['input']>;
+  input?: InputMaybe<GqlStatesInput>;
 };
 
 
@@ -1956,6 +1960,10 @@ export type GqlState = {
   code: Scalars['ID']['output'];
   countryCode: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+export type GqlStatesInput = {
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type GqlStorePhoneAuthTokenInput = {
@@ -2650,6 +2658,7 @@ export type GqlResolversTypes = ResolversObject<{
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
+  CitiesInput: GqlCitiesInput;
   City: ResolverTypeWrapper<City>;
   ClaimLinkStatus: GqlClaimLinkStatus;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
@@ -2828,6 +2837,7 @@ export type GqlResolversTypes = ResolversObject<{
   SortDirection: GqlSortDirection;
   Source: GqlSource;
   State: ResolverTypeWrapper<State>;
+  StatesInput: GqlStatesInput;
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
   StorePhoneAuthTokenPayload: ResolverTypeWrapper<GqlStorePhoneAuthTokenPayload>;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -2933,6 +2943,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
+  CitiesInput: GqlCitiesInput;
   City: City;
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
@@ -3090,6 +3101,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationSortInput: GqlReservationSortInput;
   ReservationsConnection: Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ReservationEdge']> };
   State: State;
+  StatesInput: GqlStatesInput;
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
   StorePhoneAuthTokenPayload: GqlStorePhoneAuthTokenPayload;
   String: Scalars['String']['output'];

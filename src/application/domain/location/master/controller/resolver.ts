@@ -9,10 +9,10 @@ export default class MasterResolver {
 
   Query = {
     cities: async (_: unknown, args: GqlQueryCitiesArgs, ctx: IContext) => {
-      return this.useCase.getCities(args, ctx);
+      return this.useCase.getCities(args.input, ctx);
     },
     states: async (_: unknown, args: GqlQueryStatesArgs, ctx: IContext) => {
-      return this.useCase.getStates(args, ctx);
+      return this.useCase.getStates(args.input, ctx);
     },
   };
 }
