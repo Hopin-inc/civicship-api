@@ -14,20 +14,34 @@ export default class MasterService {
     @inject("MasterConverter") private readonly converter: MasterConverter,
   ) {}
 
-  async getCities(input: GqlCitiesInput | undefined, ctx: IContext) {
-    const where = this.converter.citiesFilter(input);
+  async getCities(filter: GqlCitiesInput | undefined, cursor: string | undefined, first: number | undefined, ctx: IContext) {
+    const where = this.converter.citiesFilter(filter);
     const orderBy = this.converter.citiesSort();
     
-    const cities = await this.repository.findCities(ctx, where, orderBy);
-    return cities.map((city) => MasterPresenter.get(city));
+    const take = first || 20;
+    const skip = cursor ? 1 : 0;
+    
+    const cities = await this.repository.findCities(ctx, where, orderBy, take + 1, skip);
+    const hasNextPage = cities.length > take;
+    const resultCities = hasNextPage ? cities.slice(0, take) : cities;
+    
+    const cityNodes = resultCities.map((city) => MasterPresenter.get(city));
+    return MasterPresenter.citiesQuery(cityNodes, hasNextPage);
   }
 
-  async getStates(input: GqlStatesInput | undefined, ctx: IContext) {
-    const where = this.converter.statesFilter(input);
+  async getStates(filter: GqlStatesInput | undefined, cursor: string | undefined, first: number | undefined, ctx: IContext) {
+    const where = this.converter.statesFilter(filter);
     const orderBy = this.converter.statesSort();
     
-    const states = await this.repository.findStates(ctx, where, orderBy);
-    return states.map((state) => this.converter.stateToGraphQL(state));
+    const take = first || 20;
+    const skip = cursor ? 1 : 0;
+    
+    const states = await this.repository.findStates(ctx, where, orderBy, take + 1, skip);
+    const hasNextPage = states.length > take;
+    const resultStates = hasNextPage ? states.slice(0, take) : states;
+    
+    const stateNodes = resultStates.map((state) => this.converter.stateToGraphQL(state));
+    return MasterPresenter.statesQuery(stateNodes, hasNextPage);
   }
 
   static async checkIfCityExists(id: string) {

@@ -125,6 +125,13 @@ export type GqlCheckOpportunityPermissionInput = {
   opportunityId: Scalars['ID']['input'];
 };
 
+export type GqlCitiesConnection = {
+  __typename?: 'CitiesConnection';
+  edges: Array<GqlCityEdge>;
+  pageInfo: GqlPageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
 export type GqlCitiesInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
@@ -134,6 +141,12 @@ export type GqlCity = {
   code: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   state?: Maybe<GqlState>;
+};
+
+export type GqlCityEdge = GqlEdge & {
+  __typename?: 'CityEdge';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<GqlCity>;
 };
 
 export const GqlClaimLinkStatus = {
@@ -1495,7 +1508,7 @@ export type GqlQuery = {
   __typename?: 'Query';
   article?: Maybe<GqlArticle>;
   articles: GqlArticlesConnection;
-  cities: Array<GqlCity>;
+  cities: GqlCitiesConnection;
   communities: GqlCommunitiesConnection;
   community?: Maybe<GqlCommunity>;
   currentUser?: Maybe<GqlCurrentUserPayload>;
@@ -1520,7 +1533,7 @@ export type GqlQuery = {
   reservationHistories: GqlReservationHistoriesConnection;
   reservationHistory?: Maybe<GqlReservationHistory>;
   reservations: GqlReservationsConnection;
-  states: Array<GqlState>;
+  states: GqlStatesConnection;
   ticket?: Maybe<GqlTicket>;
   ticketClaimLink?: Maybe<GqlTicketClaimLink>;
   ticketClaimLinks: GqlTicketClaimLinksConnection;
@@ -1555,7 +1568,9 @@ export type GqlQueryArticlesArgs = {
 
 
 export type GqlQueryCitiesArgs = {
-  input?: InputMaybe<GqlCitiesInput>;
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlCitiesInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1705,7 +1720,9 @@ export type GqlQueryReservationsArgs = {
 
 
 export type GqlQueryStatesArgs = {
-  input?: InputMaybe<GqlStatesInput>;
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  filter?: InputMaybe<GqlStatesInput>;
+  first?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -1960,6 +1977,19 @@ export type GqlState = {
   code: Scalars['ID']['output'];
   countryCode: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+export type GqlStateEdge = GqlEdge & {
+  __typename?: 'StateEdge';
+  cursor: Scalars['String']['output'];
+  node?: Maybe<GqlState>;
+};
+
+export type GqlStatesConnection = {
+  __typename?: 'StatesConnection';
+  edges: Array<GqlStateEdge>;
+  pageInfo: GqlPageInfo;
+  totalCount: Scalars['Int']['output'];
 };
 
 export type GqlStatesInput = {
@@ -2639,7 +2669,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
 
 /** Mapping of interface types */
 export type GqlResolversInterfaceTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
-  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
+  Edge: ( Omit<GqlArticleEdge, 'node'> & { node?: Maybe<_RefType['Article']> } ) | ( Omit<GqlCityEdge, 'node'> & { node?: Maybe<_RefType['City']> } ) | ( Omit<GqlCommunityEdge, 'node'> & { node?: Maybe<_RefType['Community']> } ) | ( Omit<GqlEvaluationEdge, 'node'> & { node?: Maybe<_RefType['Evaluation']> } ) | ( Omit<GqlEvaluationHistoryEdge, 'node'> & { node?: Maybe<_RefType['EvaluationHistory']> } ) | ( Omit<GqlMembershipEdge, 'node'> & { node?: Maybe<_RefType['Membership']> } ) | ( Omit<GqlOpportunityEdge, 'node'> & { node?: Maybe<_RefType['Opportunity']> } ) | ( Omit<GqlOpportunitySlotEdge, 'node'> & { node?: Maybe<_RefType['OpportunitySlot']> } ) | ( Omit<GqlParticipationEdge, 'node'> & { node?: Maybe<_RefType['Participation']> } ) | ( Omit<GqlParticipationStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['ParticipationStatusHistory']> } ) | ( Omit<GqlPlaceEdge, 'node'> & { node?: Maybe<_RefType['Place']> } ) | ( Omit<GqlReservationEdge, 'node'> & { node?: Maybe<_RefType['Reservation']> } ) | ( Omit<GqlReservationHistoryEdge, 'node'> & { node?: Maybe<_RefType['ReservationHistory']> } ) | ( Omit<GqlStateEdge, 'node'> & { node?: Maybe<_RefType['State']> } ) | ( Omit<GqlTicketClaimLinkEdge, 'node'> & { node?: Maybe<_RefType['TicketClaimLink']> } ) | ( Omit<GqlTicketEdge, 'node'> & { node?: Maybe<_RefType['Ticket']> } ) | ( Omit<GqlTicketIssuerEdge, 'node'> & { node?: Maybe<_RefType['TicketIssuer']> } ) | ( Omit<GqlTicketStatusHistoryEdge, 'node'> & { node?: Maybe<_RefType['TicketStatusHistory']> } ) | ( Omit<GqlTransactionEdge, 'node'> & { node?: Maybe<_RefType['Transaction']> } ) | ( Omit<GqlUserEdge, 'node'> & { node?: Maybe<_RefType['User']> } ) | ( Omit<GqlUtilityEdge, 'node'> & { node?: Maybe<_RefType['Utility']> } ) | ( Omit<GqlWalletEdge, 'node'> & { node?: Maybe<_RefType['Wallet']> } );
 }>;
 
 /** Mapping between all available schema types and the resolvers types */
@@ -2658,8 +2688,10 @@ export type GqlResolversTypes = ResolversObject<{
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
+  CitiesConnection: ResolverTypeWrapper<Omit<GqlCitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['CityEdge']> }>;
   CitiesInput: GqlCitiesInput;
   City: ResolverTypeWrapper<City>;
+  CityEdge: ResolverTypeWrapper<Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversTypes['City']> }>;
   ClaimLinkStatus: GqlClaimLinkStatus;
   CommunitiesConnection: ResolverTypeWrapper<Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversTypes['CommunityEdge']>> }>;
   Community: ResolverTypeWrapper<Community>;
@@ -2837,6 +2869,8 @@ export type GqlResolversTypes = ResolversObject<{
   SortDirection: GqlSortDirection;
   Source: GqlSource;
   State: ResolverTypeWrapper<State>;
+  StateEdge: ResolverTypeWrapper<Omit<GqlStateEdge, 'node'> & { node?: Maybe<GqlResolversTypes['State']> }>;
+  StatesConnection: ResolverTypeWrapper<Omit<GqlStatesConnection, 'edges'> & { edges: Array<GqlResolversTypes['StateEdge']> }>;
   StatesInput: GqlStatesInput;
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
   StorePhoneAuthTokenPayload: ResolverTypeWrapper<GqlStorePhoneAuthTokenPayload>;
@@ -2943,8 +2977,10 @@ export type GqlResolversParentTypes = ResolversObject<{
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
   CheckOpportunityPermissionInput: GqlCheckOpportunityPermissionInput;
+  CitiesConnection: Omit<GqlCitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['CityEdge']> };
   CitiesInput: GqlCitiesInput;
   City: City;
+  CityEdge: Omit<GqlCityEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['City']> };
   CommunitiesConnection: Omit<GqlCommunitiesConnection, 'edges'> & { edges?: Maybe<Array<GqlResolversParentTypes['CommunityEdge']>> };
   Community: Community;
   CommunityCreateInput: GqlCommunityCreateInput;
@@ -3101,6 +3137,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   ReservationSortInput: GqlReservationSortInput;
   ReservationsConnection: Omit<GqlReservationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['ReservationEdge']> };
   State: State;
+  StateEdge: Omit<GqlStateEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['State']> };
+  StatesConnection: Omit<GqlStatesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['StateEdge']> };
   StatesInput: GqlStatesInput;
   StorePhoneAuthTokenInput: GqlStorePhoneAuthTokenInput;
   StorePhoneAuthTokenPayload: GqlStorePhoneAuthTokenPayload;
@@ -3238,10 +3276,23 @@ export type GqlArticlesConnectionResolvers<ContextType = any, ParentType extends
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlCitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CitiesConnection'] = GqlResolversParentTypes['CitiesConnection']> = ResolversObject<{
+  edges?: Resolver<Array<GqlResolversTypes['CityEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlCityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['City'] = GqlResolversParentTypes['City']> = ResolversObject<{
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   state?: Resolver<Maybe<GqlResolversTypes['State']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlCityEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CityEdge'] = GqlResolversParentTypes['CityEdge']> = ResolversObject<{
+  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<Maybe<GqlResolversTypes['City']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3325,7 +3376,7 @@ export interface GqlDecimalScalarConfig extends GraphQLScalarTypeConfig<GqlResol
 }
 
 export type GqlEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Edge'] = GqlResolversParentTypes['Edge']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'ArticleEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'ArticleEdge' | 'CityEdge' | 'CommunityEdge' | 'EvaluationEdge' | 'EvaluationHistoryEdge' | 'MembershipEdge' | 'OpportunityEdge' | 'OpportunitySlotEdge' | 'ParticipationEdge' | 'ParticipationStatusHistoryEdge' | 'PlaceEdge' | 'ReservationEdge' | 'ReservationHistoryEdge' | 'StateEdge' | 'TicketClaimLinkEdge' | 'TicketEdge' | 'TicketIssuerEdge' | 'TicketStatusHistoryEdge' | 'TransactionEdge' | 'UserEdge' | 'UtilityEdge' | 'WalletEdge', ParentType, ContextType>;
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
 }>;
 
@@ -3884,7 +3935,7 @@ export type GqlPortfolioResolvers<ContextType = any, ParentType extends GqlResol
 export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Query'] = GqlResolversParentTypes['Query']> = ResolversObject<{
   article?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType, RequireFields<GqlQueryArticleArgs, 'id' | 'permission'>>;
   articles?: Resolver<GqlResolversTypes['ArticlesConnection'], ParentType, ContextType, Partial<GqlQueryArticlesArgs>>;
-  cities?: Resolver<Array<GqlResolversTypes['City']>, ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
+  cities?: Resolver<GqlResolversTypes['CitiesConnection'], ParentType, ContextType, Partial<GqlQueryCitiesArgs>>;
   communities?: Resolver<GqlResolversTypes['CommunitiesConnection'], ParentType, ContextType, Partial<GqlQueryCommunitiesArgs>>;
   community?: Resolver<Maybe<GqlResolversTypes['Community']>, ParentType, ContextType, RequireFields<GqlQueryCommunityArgs, 'id'>>;
   currentUser?: Resolver<Maybe<GqlResolversTypes['CurrentUserPayload']>, ParentType, ContextType>;
@@ -3909,7 +3960,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
   reservationHistory?: Resolver<Maybe<GqlResolversTypes['ReservationHistory']>, ParentType, ContextType, RequireFields<GqlQueryReservationHistoryArgs, 'id'>>;
   reservations?: Resolver<GqlResolversTypes['ReservationsConnection'], ParentType, ContextType, Partial<GqlQueryReservationsArgs>>;
-  states?: Resolver<Array<GqlResolversTypes['State']>, ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
+  states?: Resolver<GqlResolversTypes['StatesConnection'], ParentType, ContextType, Partial<GqlQueryStatesArgs>>;
   ticket?: Resolver<Maybe<GqlResolversTypes['Ticket']>, ParentType, ContextType, RequireFields<GqlQueryTicketArgs, 'id'>>;
   ticketClaimLink?: Resolver<Maybe<GqlResolversTypes['TicketClaimLink']>, ParentType, ContextType, RequireFields<GqlQueryTicketClaimLinkArgs, 'id'>>;
   ticketClaimLinks?: Resolver<GqlResolversTypes['TicketClaimLinksConnection'], ParentType, ContextType, Partial<GqlQueryTicketClaimLinksArgs>>;
@@ -3998,6 +4049,19 @@ export type GqlStateResolvers<ContextType = any, ParentType extends GqlResolvers
   code?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   countryCode?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlStateEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['StateEdge'] = GqlResolversParentTypes['StateEdge']> = ResolversObject<{
+  cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<Maybe<GqlResolversTypes['State']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlStatesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['StatesConnection'] = GqlResolversParentTypes['StatesConnection']> = ResolversObject<{
+  edges?: Resolver<Array<GqlResolversTypes['StateEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4368,7 +4432,9 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Article?: GqlArticleResolvers<ContextType>;
   ArticleEdge?: GqlArticleEdgeResolvers<ContextType>;
   ArticlesConnection?: GqlArticlesConnectionResolvers<ContextType>;
+  CitiesConnection?: GqlCitiesConnectionResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
+  CityEdge?: GqlCityEdgeResolvers<ContextType>;
   CommunitiesConnection?: GqlCommunitiesConnectionResolvers<ContextType>;
   Community?: GqlCommunityResolvers<ContextType>;
   CommunityCreatePayload?: GqlCommunityCreatePayloadResolvers<ContextType>;
@@ -4469,6 +4535,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ReservationSetStatusSuccess?: GqlReservationSetStatusSuccessResolvers<ContextType>;
   ReservationsConnection?: GqlReservationsConnectionResolvers<ContextType>;
   State?: GqlStateResolvers<ContextType>;
+  StateEdge?: GqlStateEdgeResolvers<ContextType>;
+  StatesConnection?: GqlStatesConnectionResolvers<ContextType>;
   StorePhoneAuthTokenPayload?: GqlStorePhoneAuthTokenPayloadResolvers<ContextType>;
   Ticket?: GqlTicketResolvers<ContextType>;
   TicketClaimLink?: GqlTicketClaimLinkResolvers<ContextType>;

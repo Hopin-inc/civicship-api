@@ -1,6 +1,36 @@
 extend type Query {
-  cities(input: CitiesInput): [City!]!
-  states(input: StatesInput): [State!]!
+  cities(
+    filter: CitiesInput
+    cursor: String
+    first: Int
+  ): CitiesConnection!
+  states(
+    filter: StatesInput
+    cursor: String
+    first: Int
+  ): StatesConnection!
+}
+
+type CitiesConnection {
+  edges: [CityEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type CityEdge implements Edge {
+  cursor: String!
+  node: City
+}
+
+type StatesConnection {
+  edges: [StateEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type StateEdge implements Edge {
+  cursor: String!
+  node: State
 }
 
 input CitiesInput {
