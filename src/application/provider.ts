@@ -46,6 +46,7 @@ import PlaceUseCase from "@/application/domain/location/place/usecase";
 import PlaceService from "@/application/domain/location/place/service";
 import PlaceRepository from "@/application/domain/location/place/data/repository";
 import PlaceConverter from "@/application/domain/location/place/data/converter";
+import MasterUseCase from "@/application/domain/location/master/usecase";
 import ViewUseCase from "@/application/view/usecase";
 import MembershipConverter from "@/application/domain/account/membership/data/converter";
 import { getCurrentUserId } from "@/application/domain/utils";
@@ -227,6 +228,8 @@ export function registerProductionDependencies() {
   container.register("PlaceService", { useClass: PlaceService });
   container.register("PlaceRepository", { useClass: PlaceRepository });
   container.register("PlaceConverter", { useClass: PlaceConverter });
+
+  container.register("MasterUseCase", { useClass: MasterUseCase });
 
   // ------------------------------
   // 💸 Transaction
