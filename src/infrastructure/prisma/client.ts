@@ -38,17 +38,20 @@ export class PrismaClientIssuer {
   }
 
   public onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
-    if (ctx.currentUser || ctx.isAdmin) {
+    if (ctx.isAdmin) {
+      return this.public(ctx, callback);
+    }
+
+    const user = ctx.currentUser;
+    if (user) {
       return this.client.$transaction(async (tx) => {
         await this.setRls(tx);
-        if (ctx.currentUser) {
-          await this.setRlsConfigUserId(tx, ctx.currentUser.id);
-        }
+        await this.setRlsConfigUserId(tx, user.id);
         return await callback(tx);
       });
-    } else {
-      throw new Error("No community available!");
     }
+
+    throw new AuthorizationError("Not authenticated");
   }
 
   public admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
