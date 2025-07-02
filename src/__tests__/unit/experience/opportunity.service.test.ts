@@ -59,7 +59,7 @@ describe("OpportunityService", () => {
       mockImageService.uploadPublicImage.mockResolvedValue({ id: "uploaded-image" });
       mockRepository.create.mockResolvedValue({ id: "created-opportunity" });
 
-      const result = await service.createOpportunity(mockCtx, input, mockTx);
+      const result = await service.createOpportunity(mockCtx, input, "community-id", mockTx);
 
       expect(mockConverter.create).toHaveBeenCalled();
       expect(mockImageService.uploadPublicImage).toHaveBeenCalled();
