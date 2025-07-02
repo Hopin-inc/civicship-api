@@ -38,6 +38,11 @@ export class PrismaClientIssuer {
   }
 
   public onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+    logger.debug("onlyBelongingCommunity invoked", {
+      isAdmin: ctx.isAdmin,
+      hasCurrentUser: !!ctx.currentUser,
+    });
+
     if (ctx.isAdmin) {
       return this.public(ctx, callback);
     }
