@@ -21,7 +21,11 @@ export default class OpportunitySlotConverter {
     }
 
     if (filter?.hostingStatus) {
-      slotConditions.push({ hostingStatus: filter.hostingStatus });
+      if (Array.isArray(filter.hostingStatus) && filter.hostingStatus.length > 0) {
+        slotConditions.push({ hostingStatus: { in: filter.hostingStatus } });
+      } else if (!Array.isArray(filter.hostingStatus)) {
+        slotConditions.push({ hostingStatus: filter.hostingStatus });
+      }
     }
 
     const range = filter?.dateRange;
