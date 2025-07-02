@@ -3,6 +3,10 @@ import type { State } from "@prisma/client";
 import type { City } from "@prisma/client";
 import type { Place } from "@prisma/client";
 import type { Community } from "@prisma/client";
+import type { CommunityConfig } from "@prisma/client";
+import type { CommunityFirebaseConfig } from "@prisma/client";
+import type { CommunityLineConfig } from "@prisma/client";
+import type { CommunityLineRichMenuConfig } from "@prisma/client";
 import type { User } from "@prisma/client";
 import type { Identity } from "@prisma/client";
 import type { Membership } from "@prisma/client";
@@ -23,6 +27,8 @@ import type { TicketClaimLink } from "@prisma/client";
 import type { Ticket } from "@prisma/client";
 import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
+import type { ApiKey } from "@prisma/client";
+import type { NftWallet } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
 import type { PlaceAccumulatedParticipantsView } from "@prisma/client";
 import type { MembershipParticipationGeoView } from "@prisma/client";
@@ -33,6 +39,7 @@ import type { AccumulatedPointView } from "@prisma/client";
 import type { EarliestReservableSlotView } from "@prisma/client";
 import type { OpportunityAccumulatedParticipantsView } from "@prisma/client";
 import type { RemainingCapacityView } from "@prisma/client";
+import type { LineRichMenuType } from "@prisma/client";
 import type { SysRole } from "@prisma/client";
 import type { CurrentPrefecture } from "@prisma/client";
 import type { IdentityPlatform } from "@prisma/client";
@@ -160,9 +167,17 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "Image",
                 relationName: "CommunityToImage"
             }, {
+                name: "config",
+                type: "CommunityConfig",
+                relationName: "CommunityToCommunityConfig"
+            }, {
                 name: "places",
                 type: "Place",
                 relationName: "CommunityToPlace"
+            }, {
+                name: "identities",
+                type: "Identity",
+                relationName: "CommunityToIdentity"
             }, {
                 name: "memberships",
                 type: "Membership",
@@ -189,6 +204,46 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "ArticleToCommunity"
             }]
     }, {
+        name: "CommunityConfig",
+        fields: [{
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToCommunityConfig"
+            }, {
+                name: "firebaseConfig",
+                type: "CommunityFirebaseConfig",
+                relationName: "CommunityConfigToCommunityFirebaseConfig"
+            }, {
+                name: "lineConfig",
+                type: "CommunityLineConfig",
+                relationName: "CommunityConfigToCommunityLineConfig"
+            }]
+    }, {
+        name: "CommunityFirebaseConfig",
+        fields: [{
+                name: "config",
+                type: "CommunityConfig",
+                relationName: "CommunityConfigToCommunityFirebaseConfig"
+            }]
+    }, {
+        name: "CommunityLineConfig",
+        fields: [{
+                name: "config",
+                type: "CommunityConfig",
+                relationName: "CommunityConfigToCommunityLineConfig"
+            }, {
+                name: "richMenus",
+                type: "CommunityLineRichMenuConfig",
+                relationName: "CommunityLineConfigToCommunityLineRichMenuConfig"
+            }]
+    }, {
+        name: "CommunityLineRichMenuConfig",
+        fields: [{
+                name: "config",
+                type: "CommunityLineConfig",
+                relationName: "CommunityLineConfigToCommunityLineRichMenuConfig"
+            }]
+    }, {
         name: "User",
         fields: [{
                 name: "image",
@@ -198,6 +253,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "identities",
                 type: "Identity",
                 relationName: "IdentityToUser"
+            }, {
+                name: "nftWallet",
+                type: "NftWallet",
+                relationName: "NftWalletToUser"
             }, {
                 name: "memberships",
                 type: "Membership",
@@ -265,6 +324,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "user",
                 type: "User",
                 relationName: "IdentityToUser"
+            }, {
+                name: "community",
+                type: "Community",
+                relationName: "CommunityToIdentity"
             }]
     }, {
         name: "Membership",
@@ -623,6 +686,16 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "ticketStatusHistory",
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
+            }]
+    }, {
+        name: "ApiKey",
+        fields: []
+    }, {
+        name: "NftWallet",
+        fields: [{
+                name: "user",
+                type: "User",
+                relationName: "NftWalletToUser"
             }]
     }, {
         name: "PlacePublicOpportunityCountView",
@@ -1399,6 +1472,11 @@ type CommunityimageFactory = {
     build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutCommunitiesInput["create"]>;
 };
 
+type CommunityconfigFactory = {
+    _factoryFor: "CommunityConfig";
+    build: () => PromiseLike<Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput["create"]>;
+};
+
 type CommunityFactoryDefineInput = {
     id?: string;
     name?: string;
@@ -1409,7 +1487,9 @@ type CommunityFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     image?: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput;
+    config?: CommunityconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput;
     places?: Prisma.PlaceCreateNestedManyWithoutCommunityInput;
+    identities?: Prisma.IdentityCreateNestedManyWithoutCommunityInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutCommunityInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutCommunityInput;
     utilities?: Prisma.UtilityCreateNestedManyWithoutCommunityInput;
@@ -1433,6 +1513,10 @@ type CommunityFactoryDefineOptions<TTransients extends Record<string, unknown> =
 
 function isCommunityimageFactory(x: CommunityimageFactory | Prisma.ImageCreateNestedOneWithoutCommunitiesInput | undefined): x is CommunityimageFactory {
     return (x as any)?._factoryFor === "Image";
+}
+
+function isCommunityconfigFactory(x: CommunityconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutCommunityInput | undefined): x is CommunityconfigFactory {
+    return (x as any)?._factoryFor === "CommunityConfig";
 }
 
 type CommunityTraitKeys<TOptions extends CommunityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1498,7 +1582,10 @@ function defineCommunityFactoryInternal<TTransients extends Record<string, unkno
             const defaultAssociations = {
                 image: isCommunityimageFactory(defaultData.image) ? {
                     create: await defaultData.image.build()
-                } : defaultData.image
+                } : defaultData.image,
+                config: isCommunityconfigFactory(defaultData.config) ? {
+                    create: await defaultData.config.build()
+                } : defaultData.config
             } as Prisma.CommunityCreateInput;
             const data: Prisma.CommunityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1556,6 +1643,659 @@ export const defineCommunityFactory = (<TOptions extends CommunityFactoryDefineO
 
 defineCommunityFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
+type CommunityConfigScalarOrEnumFields = {};
+
+type CommunityConfigcommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutConfigInput["create"]>;
+};
+
+type CommunityConfigfirebaseConfigFactory = {
+    _factoryFor: "CommunityFirebaseConfig";
+    build: () => PromiseLike<Prisma.CommunityFirebaseConfigCreateNestedOneWithoutConfigInput["create"]>;
+};
+
+type CommunityConfiglineConfigFactory = {
+    _factoryFor: "CommunityLineConfig";
+    build: () => PromiseLike<Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput["create"]>;
+};
+
+type CommunityConfigFactoryDefineInput = {
+    id?: string;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    community: CommunityConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutConfigInput;
+    firebaseConfig?: CommunityConfigfirebaseConfigFactory | Prisma.CommunityFirebaseConfigCreateNestedOneWithoutConfigInput;
+    lineConfig?: CommunityConfiglineConfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput;
+};
+
+type CommunityConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityConfigFactoryDefineInput, never>>;
+
+type CommunityConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityConfig, Prisma.CommunityConfigCreateInput, TTransients>;
+
+type CommunityConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CommunityConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CommunityConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityConfig, Prisma.CommunityConfigCreateInput, TTransients>;
+
+function isCommunityConfigcommunityFactory(x: CommunityConfigcommunityFactory | Prisma.CommunityCreateNestedOneWithoutConfigInput | undefined): x is CommunityConfigcommunityFactory {
+    return (x as any)?._factoryFor === "Community";
+}
+
+function isCommunityConfigfirebaseConfigFactory(x: CommunityConfigfirebaseConfigFactory | Prisma.CommunityFirebaseConfigCreateNestedOneWithoutConfigInput | undefined): x is CommunityConfigfirebaseConfigFactory {
+    return (x as any)?._factoryFor === "CommunityFirebaseConfig";
+}
+
+function isCommunityConfiglineConfigFactory(x: CommunityConfiglineConfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutConfigInput | undefined): x is CommunityConfiglineConfigFactory {
+    return (x as any)?._factoryFor === "CommunityLineConfig";
+}
+
+type CommunityConfigTraitKeys<TOptions extends CommunityConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityConfig";
+    build(inputData?: Partial<Prisma.CommunityConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityConfigCreateInput[]>;
+    pickForConnect(inputData: CommunityConfig): Pick<CommunityConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunityConfigCreateInput & TTransients>): PromiseLike<CommunityConfig>;
+    createList(list: readonly Partial<Prisma.CommunityConfigCreateInput & TTransients>[]): PromiseLike<CommunityConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityConfigCreateInput & TTransients>): PromiseLike<CommunityConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityConfigCreateInput & TTransients>): PromiseLike<Pick<CommunityConfig, "id">>;
+}
+
+export interface CommunityConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityConfigScalarOrEnumFields {
+    return {};
+}
+
+function defineCommunityConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityConfigFactoryInterface<TTransients, CommunityConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                community: isCommunityConfigcommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community,
+                firebaseConfig: isCommunityConfigfirebaseConfigFactory(defaultData.firebaseConfig) ? {
+                    create: await defaultData.firebaseConfig.build()
+                } : defaultData.firebaseConfig,
+                lineConfig: isCommunityConfiglineConfigFactory(defaultData.lineConfig) ? {
+                    create: await defaultData.lineConfig.build()
+                } : defaultData.lineConfig
+            } as Prisma.CommunityConfigCreateInput;
+            const data: Prisma.CommunityConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityConfigTraitKeys<TOptions>, ...names: readonly CommunityConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityConfigFactoryBuilder {
+    <TOptions extends CommunityConfigFactoryDefineOptions>(options: TOptions): CommunityConfigFactoryInterface<{}, CommunityConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityConfigFactoryDefineOptions<TTransients>>(options: TOptions) => CommunityConfigFactoryInterface<TTransients, CommunityConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityConfigFactoryInterface}
+ */
+export const defineCommunityConfigFactory = (<TOptions extends CommunityConfigFactoryDefineOptions>(options: TOptions): CommunityConfigFactoryInterface<TOptions> => {
+    return defineCommunityConfigFactoryInternal(options, {});
+}) as CommunityConfigFactoryBuilder;
+
+defineCommunityConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityConfigFactoryInternal(options, defaultTransientFieldValues);
+
+type CommunityFirebaseConfigScalarOrEnumFields = {
+    tenantId: string;
+};
+
+type CommunityFirebaseConfigconfigFactory = {
+    _factoryFor: "CommunityConfig";
+    build: () => PromiseLike<Prisma.CommunityConfigCreateNestedOneWithoutFirebaseConfigInput["create"]>;
+};
+
+type CommunityFirebaseConfigFactoryDefineInput = {
+    id?: string;
+    tenantId?: string;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    config?: CommunityFirebaseConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutFirebaseConfigInput;
+};
+
+type CommunityFirebaseConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityFirebaseConfigFactoryDefineInput, never>>;
+
+type CommunityFirebaseConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityFirebaseConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityFirebaseConfig, Prisma.CommunityFirebaseConfigCreateInput, TTransients>;
+
+type CommunityFirebaseConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<CommunityFirebaseConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: CommunityFirebaseConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityFirebaseConfig, Prisma.CommunityFirebaseConfigCreateInput, TTransients>;
+
+function isCommunityFirebaseConfigconfigFactory(x: CommunityFirebaseConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutFirebaseConfigInput | undefined): x is CommunityFirebaseConfigconfigFactory {
+    return (x as any)?._factoryFor === "CommunityConfig";
+}
+
+type CommunityFirebaseConfigTraitKeys<TOptions extends CommunityFirebaseConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityFirebaseConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityFirebaseConfig";
+    build(inputData?: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityFirebaseConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityFirebaseConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityFirebaseConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityFirebaseConfigCreateInput[]>;
+    pickForConnect(inputData: CommunityFirebaseConfig): Pick<CommunityFirebaseConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>): PromiseLike<CommunityFirebaseConfig>;
+    createList(list: readonly Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>[]): PromiseLike<CommunityFirebaseConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>): PromiseLike<CommunityFirebaseConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>): PromiseLike<Pick<CommunityFirebaseConfig, "id">>;
+}
+
+export interface CommunityFirebaseConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityFirebaseConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityFirebaseConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityFirebaseConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityFirebaseConfigScalarOrEnumFields {
+    return {
+        tenantId: getScalarFieldValueGenerator().String({ modelName: "CommunityFirebaseConfig", fieldName: "tenantId", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityFirebaseConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityFirebaseConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityFirebaseConfigFactoryInterface<TTransients, CommunityFirebaseConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityFirebaseConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityFirebaseConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityFirebaseConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityFirebaseConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityFirebaseConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                config: isCommunityFirebaseConfigconfigFactory(defaultData.config) ? {
+                    create: await defaultData.config.build()
+                } : defaultData.config
+            } as Prisma.CommunityFirebaseConfigCreateInput;
+            const data: Prisma.CommunityFirebaseConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityFirebaseConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityFirebaseConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityFirebaseConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityFirebaseConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityFirebaseConfigTraitKeys<TOptions>, ...names: readonly CommunityFirebaseConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityFirebaseConfigFactoryBuilder {
+    <TOptions extends CommunityFirebaseConfigFactoryDefineOptions>(options?: TOptions): CommunityFirebaseConfigFactoryInterface<{}, CommunityFirebaseConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityFirebaseConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityFirebaseConfigFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityFirebaseConfigFactoryInterface<TTransients, CommunityFirebaseConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityFirebaseConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityFirebaseConfigFactoryInterface}
+ */
+export const defineCommunityFirebaseConfigFactory = (<TOptions extends CommunityFirebaseConfigFactoryDefineOptions>(options?: TOptions): CommunityFirebaseConfigFactoryInterface<TOptions> => {
+    return defineCommunityFirebaseConfigFactoryInternal(options ?? {}, {});
+}) as CommunityFirebaseConfigFactoryBuilder;
+
+defineCommunityFirebaseConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityFirebaseConfigFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type CommunityLineConfigScalarOrEnumFields = {
+    channelId: string;
+    channelSecret: string;
+    accessToken: string;
+    liffId: string;
+    liffBaseUrl: string;
+};
+
+type CommunityLineConfigconfigFactory = {
+    _factoryFor: "CommunityConfig";
+    build: () => PromiseLike<Prisma.CommunityConfigCreateNestedOneWithoutLineConfigInput["create"]>;
+};
+
+type CommunityLineConfigFactoryDefineInput = {
+    id?: string;
+    channelId?: string;
+    channelSecret?: string;
+    accessToken?: string;
+    liffId?: string;
+    liffBaseUrl?: string;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    config?: CommunityLineConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutLineConfigInput;
+    richMenus?: Prisma.CommunityLineRichMenuConfigCreateNestedManyWithoutConfigInput;
+};
+
+type CommunityLineConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityLineConfigFactoryDefineInput, never>>;
+
+type CommunityLineConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityLineConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityLineConfig, Prisma.CommunityLineConfigCreateInput, TTransients>;
+
+type CommunityLineConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<CommunityLineConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: CommunityLineConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityLineConfig, Prisma.CommunityLineConfigCreateInput, TTransients>;
+
+function isCommunityLineConfigconfigFactory(x: CommunityLineConfigconfigFactory | Prisma.CommunityConfigCreateNestedOneWithoutLineConfigInput | undefined): x is CommunityLineConfigconfigFactory {
+    return (x as any)?._factoryFor === "CommunityConfig";
+}
+
+type CommunityLineConfigTraitKeys<TOptions extends CommunityLineConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityLineConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityLineConfig";
+    build(inputData?: Partial<Prisma.CommunityLineConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityLineConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityLineConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityLineConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityLineConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineConfigCreateInput[]>;
+    pickForConnect(inputData: CommunityLineConfig): Pick<CommunityLineConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunityLineConfigCreateInput & TTransients>): PromiseLike<CommunityLineConfig>;
+    createList(list: readonly Partial<Prisma.CommunityLineConfigCreateInput & TTransients>[]): PromiseLike<CommunityLineConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityLineConfigCreateInput & TTransients>): PromiseLike<CommunityLineConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityLineConfigCreateInput & TTransients>): PromiseLike<Pick<CommunityLineConfig, "id">>;
+}
+
+export interface CommunityLineConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityLineConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityLineConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityLineConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityLineConfigScalarOrEnumFields {
+    return {
+        channelId: getScalarFieldValueGenerator().String({ modelName: "CommunityLineConfig", fieldName: "channelId", isId: false, isUnique: false, seq }),
+        channelSecret: getScalarFieldValueGenerator().String({ modelName: "CommunityLineConfig", fieldName: "channelSecret", isId: false, isUnique: false, seq }),
+        accessToken: getScalarFieldValueGenerator().String({ modelName: "CommunityLineConfig", fieldName: "accessToken", isId: false, isUnique: false, seq }),
+        liffId: getScalarFieldValueGenerator().String({ modelName: "CommunityLineConfig", fieldName: "liffId", isId: false, isUnique: false, seq }),
+        liffBaseUrl: getScalarFieldValueGenerator().String({ modelName: "CommunityLineConfig", fieldName: "liffBaseUrl", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityLineConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityLineConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityLineConfigFactoryInterface<TTransients, CommunityLineConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityLineConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityLineConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityLineConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityLineConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityLineConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityLineConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                config: isCommunityLineConfigconfigFactory(defaultData.config) ? {
+                    create: await defaultData.config.build()
+                } : defaultData.config
+            } as Prisma.CommunityLineConfigCreateInput;
+            const data: Prisma.CommunityLineConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityLineConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityLineConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityLineConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityLineConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityLineConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityLineConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityLineConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityLineConfigTraitKeys<TOptions>, ...names: readonly CommunityLineConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityLineConfigFactoryBuilder {
+    <TOptions extends CommunityLineConfigFactoryDefineOptions>(options?: TOptions): CommunityLineConfigFactoryInterface<{}, CommunityLineConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityLineConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityLineConfigFactoryDefineOptions<TTransients>>(options?: TOptions) => CommunityLineConfigFactoryInterface<TTransients, CommunityLineConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityLineConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityLineConfigFactoryInterface}
+ */
+export const defineCommunityLineConfigFactory = (<TOptions extends CommunityLineConfigFactoryDefineOptions>(options?: TOptions): CommunityLineConfigFactoryInterface<TOptions> => {
+    return defineCommunityLineConfigFactoryInternal(options ?? {}, {});
+}) as CommunityLineConfigFactoryBuilder;
+
+defineCommunityLineConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityLineConfigFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type CommunityLineRichMenuConfigScalarOrEnumFields = {
+    type: LineRichMenuType;
+    richMenuId: string;
+};
+
+type CommunityLineRichMenuConfigconfigFactory = {
+    _factoryFor: "CommunityLineConfig";
+    build: () => PromiseLike<Prisma.CommunityLineConfigCreateNestedOneWithoutRichMenusInput["create"]>;
+};
+
+type CommunityLineRichMenuConfigFactoryDefineInput = {
+    id?: string;
+    type?: LineRichMenuType;
+    richMenuId?: string;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    config: CommunityLineRichMenuConfigconfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutRichMenusInput;
+};
+
+type CommunityLineRichMenuConfigTransientFields = Record<string, unknown> & Partial<Record<keyof CommunityLineRichMenuConfigFactoryDefineInput, never>>;
+
+type CommunityLineRichMenuConfigFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<CommunityLineRichMenuConfigFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<CommunityLineRichMenuConfig, Prisma.CommunityLineRichMenuConfigCreateInput, TTransients>;
+
+type CommunityLineRichMenuConfigFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<CommunityLineRichMenuConfigFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: CommunityLineRichMenuConfigFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<CommunityLineRichMenuConfig, Prisma.CommunityLineRichMenuConfigCreateInput, TTransients>;
+
+function isCommunityLineRichMenuConfigconfigFactory(x: CommunityLineRichMenuConfigconfigFactory | Prisma.CommunityLineConfigCreateNestedOneWithoutRichMenusInput | undefined): x is CommunityLineRichMenuConfigconfigFactory {
+    return (x as any)?._factoryFor === "CommunityLineConfig";
+}
+
+type CommunityLineRichMenuConfigTraitKeys<TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface CommunityLineRichMenuConfigFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "CommunityLineRichMenuConfig";
+    build(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput>;
+    buildList(list: readonly Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>[]): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Prisma.CommunityLineRichMenuConfigCreateInput[]>;
+    pickForConnect(inputData: CommunityLineRichMenuConfig): Pick<CommunityLineRichMenuConfig, "id">;
+    create(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<CommunityLineRichMenuConfig>;
+    createList(list: readonly Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>[]): PromiseLike<CommunityLineRichMenuConfig[]>;
+    createList(count: number, item?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<CommunityLineRichMenuConfig[]>;
+    createForConnect(inputData?: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>): PromiseLike<Pick<CommunityLineRichMenuConfig, "id">>;
+}
+
+export interface CommunityLineRichMenuConfigFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends CommunityLineRichMenuConfigFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): CommunityLineRichMenuConfigFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateCommunityLineRichMenuConfigScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): CommunityLineRichMenuConfigScalarOrEnumFields {
+    return {
+        type: "ADMIN",
+        richMenuId: getScalarFieldValueGenerator().String({ modelName: "CommunityLineRichMenuConfig", fieldName: "richMenuId", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineCommunityLineRichMenuConfigFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): CommunityLineRichMenuConfigFactoryInterface<TTransients, CommunityLineRichMenuConfigTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly CommunityLineRichMenuConfigTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("CommunityLineRichMenuConfig", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateCommunityLineRichMenuConfigScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<CommunityLineRichMenuConfigFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<CommunityLineRichMenuConfigFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                config: isCommunityLineRichMenuConfigconfigFactory(defaultData.config) ? {
+                    create: await defaultData.config.build()
+                } : defaultData.config
+            } as Prisma.CommunityLineRichMenuConfigCreateInput;
+            const data: Prisma.CommunityLineRichMenuConfigCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: CommunityLineRichMenuConfig) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().communityLineRichMenuConfig.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.CommunityLineRichMenuConfigCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "CommunityLineRichMenuConfig" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: CommunityLineRichMenuConfigTraitKeys<TOptions>, ...names: readonly CommunityLineRichMenuConfigTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface CommunityLineRichMenuConfigFactoryBuilder {
+    <TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions>(options: TOptions): CommunityLineRichMenuConfigFactoryInterface<{}, CommunityLineRichMenuConfigTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends CommunityLineRichMenuConfigTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions<TTransients>>(options: TOptions) => CommunityLineRichMenuConfigFactoryInterface<TTransients, CommunityLineRichMenuConfigTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link CommunityLineRichMenuConfig} model.
+ *
+ * @param options
+ * @returns factory {@link CommunityLineRichMenuConfigFactoryInterface}
+ */
+export const defineCommunityLineRichMenuConfigFactory = (<TOptions extends CommunityLineRichMenuConfigFactoryDefineOptions>(options: TOptions): CommunityLineRichMenuConfigFactoryInterface<TOptions> => {
+    return defineCommunityLineRichMenuConfigFactoryInternal(options, {});
+}) as CommunityLineRichMenuConfigFactoryBuilder;
+
+defineCommunityLineRichMenuConfigFactory.withTransientFields = defaultTransientFieldValues => options => defineCommunityLineRichMenuConfigFactoryInternal(options, defaultTransientFieldValues);
+
 type UserScalarOrEnumFields = {
     name: string;
     slug: string;
@@ -1565,6 +2305,11 @@ type UserScalarOrEnumFields = {
 type UserimageFactory = {
     _factoryFor: "Image";
     build: () => PromiseLike<Prisma.ImageCreateNestedOneWithoutUsersInput["create"]>;
+};
+
+type UsernftWalletFactory = {
+    _factoryFor: "NftWallet";
+    build: () => PromiseLike<Prisma.NftWalletCreateNestedOneWithoutUserInput["create"]>;
 };
 
 type UserFactoryDefineInput = {
@@ -1585,6 +2330,7 @@ type UserFactoryDefineInput = {
     updatedAt?: Date | null;
     image?: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput;
     identities?: Prisma.IdentityCreateNestedManyWithoutUserInput;
+    nftWallet?: UsernftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutUserInput;
     memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput;
     membershipChangedByMe?: Prisma.MembershipHistoryCreateNestedManyWithoutCreatedByUserInput;
     wallets?: Prisma.WalletCreateNestedManyWithoutUserInput;
@@ -1617,6 +2363,10 @@ type UserFactoryDefineOptions<TTransients extends Record<string, unknown> = Reco
 
 function isUserimageFactory(x: UserimageFactory | Prisma.ImageCreateNestedOneWithoutUsersInput | undefined): x is UserimageFactory {
     return (x as any)?._factoryFor === "Image";
+}
+
+function isUsernftWalletFactory(x: UsernftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutUserInput | undefined): x is UsernftWalletFactory {
+    return (x as any)?._factoryFor === "NftWallet";
 }
 
 type UserTraitKeys<TOptions extends UserFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1683,7 +2433,10 @@ function defineUserFactoryInternal<TTransients extends Record<string, unknown>, 
             const defaultAssociations = {
                 image: isUserimageFactory(defaultData.image) ? {
                     create: await defaultData.image.build()
-                } : defaultData.image
+                } : defaultData.image,
+                nftWallet: isUsernftWalletFactory(defaultData.nftWallet) ? {
+                    create: await defaultData.nftWallet.build()
+                } : defaultData.nftWallet
             } as Prisma.UserCreateInput;
             const data: Prisma.UserCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -1751,6 +2504,11 @@ type IdentityuserFactory = {
     build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutIdentitiesInput["create"]>;
 };
 
+type IdentitycommunityFactory = {
+    _factoryFor: "Community";
+    build: () => PromiseLike<Prisma.CommunityCreateNestedOneWithoutIdentitiesInput["create"]>;
+};
+
 type IdentityFactoryDefineInput = {
     uid?: string;
     platform?: IdentityPlatform;
@@ -1760,6 +2518,7 @@ type IdentityFactoryDefineInput = {
     createdAt?: Date;
     updatedAt?: Date | null;
     user: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput;
+    community?: IdentitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutIdentitiesInput;
 };
 
 type IdentityTransientFields = Record<string, unknown> & Partial<Record<keyof IdentityFactoryDefineInput, never>>;
@@ -1777,6 +2536,10 @@ type IdentityFactoryDefineOptions<TTransients extends Record<string, unknown> = 
 
 function isIdentityuserFactory(x: IdentityuserFactory | Prisma.UserCreateNestedOneWithoutIdentitiesInput | undefined): x is IdentityuserFactory {
     return (x as any)?._factoryFor === "User";
+}
+
+function isIdentitycommunityFactory(x: IdentitycommunityFactory | Prisma.CommunityCreateNestedOneWithoutIdentitiesInput | undefined): x is IdentitycommunityFactory {
+    return (x as any)?._factoryFor === "Community";
 }
 
 type IdentityTraitKeys<TOptions extends IdentityFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -1842,7 +2605,10 @@ function defineIdentityFactoryInternal<TTransients extends Record<string, unknow
             const defaultAssociations = {
                 user: isIdentityuserFactory(defaultData.user) ? {
                     create: await defaultData.user.build()
-                } : defaultData.user
+                } : defaultData.user,
+                community: isIdentitycommunityFactory(defaultData.community) ? {
+                    create: await defaultData.community.build()
+                } : defaultData.community
             } as Prisma.IdentityCreateInput;
             const data: Prisma.IdentityCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
@@ -5134,6 +5900,304 @@ export const defineTransactionFactory = (<TOptions extends TransactionFactoryDef
 }) as TransactionFactoryBuilder;
 
 defineTransactionFactory.withTransientFields = defaultTransientFieldValues => options => defineTransactionFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type ApiKeyScalarOrEnumFields = {
+    key: string;
+    name: string;
+};
+
+type ApiKeyFactoryDefineInput = {
+    id?: string;
+    key?: string;
+    name?: string;
+    isActive?: boolean;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+};
+
+type ApiKeyTransientFields = Record<string, unknown> & Partial<Record<keyof ApiKeyFactoryDefineInput, never>>;
+
+type ApiKeyFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<ApiKeyFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<ApiKey, Prisma.ApiKeyCreateInput, TTransients>;
+
+type ApiKeyFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<ApiKeyFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: ApiKeyFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<ApiKey, Prisma.ApiKeyCreateInput, TTransients>;
+
+type ApiKeyTraitKeys<TOptions extends ApiKeyFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface ApiKeyFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "ApiKey";
+    build(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Prisma.ApiKeyCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Prisma.ApiKeyCreateInput>;
+    buildList(list: readonly Partial<Prisma.ApiKeyCreateInput & TTransients>[]): PromiseLike<Prisma.ApiKeyCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Prisma.ApiKeyCreateInput[]>;
+    pickForConnect(inputData: ApiKey): Pick<ApiKey, "id">;
+    create(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<ApiKey>;
+    createList(list: readonly Partial<Prisma.ApiKeyCreateInput & TTransients>[]): PromiseLike<ApiKey[]>;
+    createList(count: number, item?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<ApiKey[]>;
+    createForConnect(inputData?: Partial<Prisma.ApiKeyCreateInput & TTransients>): PromiseLike<Pick<ApiKey, "id">>;
+}
+
+export interface ApiKeyFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends ApiKeyFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): ApiKeyFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateApiKeyScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): ApiKeyScalarOrEnumFields {
+    return {
+        key: getScalarFieldValueGenerator().String({ modelName: "ApiKey", fieldName: "key", isId: false, isUnique: true, seq }),
+        name: getScalarFieldValueGenerator().String({ modelName: "ApiKey", fieldName: "name", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineApiKeyFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ApiKeyFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ApiKeyFactoryInterface<TTransients, ApiKeyTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly ApiKeyTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("ApiKey", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.ApiKeyCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateApiKeyScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<ApiKeyFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<ApiKeyFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.ApiKeyCreateInput;
+            const data: Prisma.ApiKeyCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ApiKeyCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: ApiKey) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.ApiKeyCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().apiKey.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.ApiKeyCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.ApiKeyCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "ApiKey" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: ApiKeyTraitKeys<TOptions>, ...names: readonly ApiKeyTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface ApiKeyFactoryBuilder {
+    <TOptions extends ApiKeyFactoryDefineOptions>(options?: TOptions): ApiKeyFactoryInterface<{}, ApiKeyTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends ApiKeyTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends ApiKeyFactoryDefineOptions<TTransients>>(options?: TOptions) => ApiKeyFactoryInterface<TTransients, ApiKeyTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link ApiKey} model.
+ *
+ * @param options
+ * @returns factory {@link ApiKeyFactoryInterface}
+ */
+export const defineApiKeyFactory = (<TOptions extends ApiKeyFactoryDefineOptions>(options?: TOptions): ApiKeyFactoryInterface<TOptions> => {
+    return defineApiKeyFactoryInternal(options ?? {}, {});
+}) as ApiKeyFactoryBuilder;
+
+defineApiKeyFactory.withTransientFields = defaultTransientFieldValues => options => defineApiKeyFactoryInternal(options ?? {}, defaultTransientFieldValues);
+
+type NftWalletScalarOrEnumFields = {
+    walletAddress: string;
+};
+
+type NftWalletuserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutNftWalletInput["create"]>;
+};
+
+type NftWalletFactoryDefineInput = {
+    id?: string;
+    walletAddress?: string;
+    createdAt?: Date;
+    updatedAt?: Date | null;
+    user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletInput;
+};
+
+type NftWalletTransientFields = Record<string, unknown> & Partial<Record<keyof NftWalletFactoryDefineInput, never>>;
+
+type NftWalletFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<NftWalletFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<NftWallet, Prisma.NftWalletCreateInput, TTransients>;
+
+type NftWalletFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData: Resolver<NftWalletFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: string | symbol]: NftWalletFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<NftWallet, Prisma.NftWalletCreateInput, TTransients>;
+
+function isNftWalletuserFactory(x: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletInput | undefined): x is NftWalletuserFactory {
+    return (x as any)?._factoryFor === "User";
+}
+
+type NftWalletTraitKeys<TOptions extends NftWalletFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface NftWalletFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "NftWallet";
+    build(inputData?: Partial<Prisma.NftWalletCreateInput & TTransients>): PromiseLike<Prisma.NftWalletCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.NftWalletCreateInput & TTransients>): PromiseLike<Prisma.NftWalletCreateInput>;
+    buildList(list: readonly Partial<Prisma.NftWalletCreateInput & TTransients>[]): PromiseLike<Prisma.NftWalletCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.NftWalletCreateInput & TTransients>): PromiseLike<Prisma.NftWalletCreateInput[]>;
+    pickForConnect(inputData: NftWallet): Pick<NftWallet, "id">;
+    create(inputData?: Partial<Prisma.NftWalletCreateInput & TTransients>): PromiseLike<NftWallet>;
+    createList(list: readonly Partial<Prisma.NftWalletCreateInput & TTransients>[]): PromiseLike<NftWallet[]>;
+    createList(count: number, item?: Partial<Prisma.NftWalletCreateInput & TTransients>): PromiseLike<NftWallet[]>;
+    createForConnect(inputData?: Partial<Prisma.NftWalletCreateInput & TTransients>): PromiseLike<Pick<NftWallet, "id">>;
+}
+
+export interface NftWalletFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends NftWalletFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): NftWalletFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateNftWalletScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): NftWalletScalarOrEnumFields {
+    return {
+        walletAddress: getScalarFieldValueGenerator().String({ modelName: "NftWallet", fieldName: "walletAddress", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineNftWalletFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends NftWalletFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): NftWalletFactoryInterface<TTransients, NftWalletTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly NftWalletTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("NftWallet", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.NftWalletCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateNftWalletScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<NftWalletFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<NftWalletFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {
+                user: isNftWalletuserFactory(defaultData.user) ? {
+                    create: await defaultData.user.build()
+                } : defaultData.user
+            } as Prisma.NftWalletCreateInput;
+            const data: Prisma.NftWalletCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftWalletCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: NftWallet) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.NftWalletCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().nftWallet.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftWalletCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.NftWalletCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "NftWallet" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: NftWalletTraitKeys<TOptions>, ...names: readonly NftWalletTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface NftWalletFactoryBuilder {
+    <TOptions extends NftWalletFactoryDefineOptions>(options: TOptions): NftWalletFactoryInterface<{}, NftWalletTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends NftWalletTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftWalletFactoryDefineOptions<TTransients>>(options: TOptions) => NftWalletFactoryInterface<TTransients, NftWalletTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link NftWallet} model.
+ *
+ * @param options
+ * @returns factory {@link NftWalletFactoryInterface}
+ */
+export const defineNftWalletFactory = (<TOptions extends NftWalletFactoryDefineOptions>(options: TOptions): NftWalletFactoryInterface<TOptions> => {
+    return defineNftWalletFactoryInternal(options, {});
+}) as NftWalletFactoryBuilder;
+
+defineNftWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineNftWalletFactoryInternal(options, defaultTransientFieldValues);
 
 type PlacePublicOpportunityCountViewScalarOrEnumFields = {
     currentPublicCount: number;

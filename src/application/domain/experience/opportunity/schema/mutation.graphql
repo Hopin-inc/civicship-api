@@ -39,19 +39,20 @@ input OpportunityCreateInput {
     images: [ImageInput!]
 
     category: OpportunityCategory!
+
     publishStatus: PublishStatus!
     requireApproval: Boolean!
-
     requiredUtilityIds: [ID!]
-    capacity: Int
+
     pointsToEarn: Int
     feeRequired: Int
 
-    place: NestedPlaceConnectOrCreateInput
-    startsAt: Datetime
-    endsAt: Datetime
+    slots: [OpportunitySlotCreateInput!]
+    relatedArticleIds: [ID!]
+    placeId: ID
 
-    communityId: ID!
+    # for isAdmin
+    createdBy: ID
 }
 
 input OpportunityUpdateContentInput {

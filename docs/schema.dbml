@@ -80,7 +80,9 @@ Table t_communities {
   website String
   imageId String
   image t_images
+  config t_community_configs
   places t_places [not null]
+  identities t_identities [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
   utilities t_utilities [not null]
@@ -89,6 +91,53 @@ Table t_communities {
   articles t_articles [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_community_configs {
+  id String [pk]
+  communityId String [unique, not null]
+  community t_communities [not null]
+  firebaseConfig t_community_firebase_configs
+  lineConfig t_community_line_configs
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_firebase_configs {
+  id String [pk]
+  configId String [unique, not null]
+  config t_community_configs
+  tenantId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_line_configs {
+  id String [pk]
+  configId String [unique, not null]
+  config t_community_configs
+  channelId String [not null]
+  channelSecret String [not null]
+  accessToken String [not null]
+  liffId String [not null]
+  liffBaseUrl String [not null]
+  richMenus t_community_line_rich_menus [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_line_rich_menus {
+  id String [pk]
+  configId String [not null]
+  config t_community_line_configs [not null]
+  type LineRichMenuType [not null]
+  richMenuId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (configId, type) [unique]
+  }
 }
 
 Table t_users {
@@ -108,6 +157,7 @@ Table t_users {
   imageId String
   image t_images
   identities t_identities [not null]
+  nftWallet t_nft_wallets
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
@@ -132,6 +182,8 @@ Table t_identities {
   platform IdentityPlatform [not null]
   userId String [not null]
   user t_users [not null]
+  communityId String
+  community t_communities
   authToken String
   refreshToken String
   tokenExpiresAt DateTime
@@ -420,6 +472,24 @@ Table t_transactions {
   updatedAt DateTime
 }
 
+Table m_api_keys {
+  id String [pk]
+  key String [unique, not null]
+  name String [not null]
+  isActive Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_nft_wallets {
+  id String [pk]
+  userId String [unique, not null]
+  walletAddress String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  user t_users [not null]
+}
+
 Table v_place_public_opportunity_count {
   placeId String [pk]
   place t_places [not null]
@@ -546,6 +616,12 @@ Enum PublishStatus {
 Enum Source {
   INTERNAL
   EXTERNAL
+}
+
+Enum LineRichMenuType {
+  ADMIN
+  USER
+  PUBLIC
 }
 
 Enum SysRole {
@@ -689,9 +765,19 @@ Ref: t_places.communityId > t_communities.id [delete: Set Null]
 
 Ref: t_communities.imageId > t_images.id
 
+Ref: t_community_configs.communityId - t_communities.id
+
+Ref: t_community_firebase_configs.configId - t_community_configs.id
+
+Ref: t_community_line_configs.configId - t_community_configs.id
+
+Ref: t_community_line_rich_menus.configId > t_community_line_configs.id [delete: Cascade]
+
 Ref: t_users.imageId > t_images.id
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
+
+Ref: t_identities.communityId > t_communities.id
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
@@ -772,6 +858,8 @@ Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
+
+Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
 
 Ref: v_place_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 

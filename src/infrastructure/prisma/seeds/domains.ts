@@ -1,5 +1,6 @@
 import {
   ArticleFactory,
+  CommunityConfigFactory,
   CommunityFactory,
   MembershipFactory,
   OpportunityFactory,
@@ -102,6 +103,7 @@ export async function seedUsecase() {
 // STEP 1
 async function createBaseEntitiesForUsers() {
   const community = await CommunityFactory.create({ id: "neo88" });
+  await CommunityConfigFactory.create({ transientCommunity: community });
   const users = await UserFactory.createList(10);
 
   const membershipsAndWallets = await processInBatches(users, BATCH_SIZE, async (user) => {

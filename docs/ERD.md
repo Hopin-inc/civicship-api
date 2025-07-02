@@ -16,6 +16,14 @@ EXTERNAL EXTERNAL
     
 
 
+        LineRichMenuType {
+            ADMIN ADMIN
+USER USER
+PUBLIC PUBLIC
+        }
+    
+
+
         SysRole {
             SYS_ADMIN SYS_ADMIN
 USER USER
@@ -249,6 +257,46 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_community_configs" {
+    String id "🗝️"
+    String community_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_community_firebase_configs" {
+    String id "🗝️"
+    String config_id 
+    String tenant_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_community_line_configs" {
+    String id "🗝️"
+    String config_id 
+    String channel_id 
+    String channel_secret 
+    String access_token 
+    String liff_id 
+    String liff_base_url 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_community_line_rich_menus" {
+    String id "🗝️"
+    String config_id 
+    LineRichMenuType type 
+    String rich_menu_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_users" {
     String id "🗝️"
     String name 
@@ -273,6 +321,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String uid "🗝️"
     IdentityPlatform platform 
     String user_id 
+    String community_id "❓"
     String auth_token "❓"
     String refresh_token "❓"
     DateTime token_expires_at "❓"
@@ -500,6 +549,25 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "m_api_keys" {
+    String id "🗝️"
+    String key 
+    String name 
+    Boolean is_active 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_nft_wallets" {
+    String id "🗝️"
+    String user_id 
+    String wallet_address 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 
@@ -586,17 +654,28 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_places" o{--}o "v_place_public_opportunity_count" : "currentPublicOpportunityCount"
     "t_places" o{--}o "v_place_accumulated_participants" : "accumulated_participants"
     "t_communities" o|--|o "t_images" : "image"
+    "t_communities" o{--}o "t_community_configs" : "config"
     "t_communities" o{--}o "t_places" : "places"
+    "t_communities" o{--}o "t_identities" : "identities"
     "t_communities" o{--}o "t_memberships" : "memberships"
     "t_communities" o{--}o "t_wallets" : "wallets"
     "t_communities" o{--}o "t_utilities" : "utilities"
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
+    "t_community_configs" o|--|| "t_communities" : "community"
+    "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
+    "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
+    "t_community_firebase_configs" o|--|o "t_community_configs" : "config"
+    "t_community_line_configs" o|--|o "t_community_configs" : "config"
+    "t_community_line_configs" o{--}o "t_community_line_rich_menus" : "richMenus"
+    "t_community_line_rich_menus" o|--|| "t_community_line_configs" : "config"
+    "t_community_line_rich_menus" o|--|| "LineRichMenuType" : "enum:type"
     "t_users" o|--|| "SysRole" : "enum:sys_role"
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
+    "t_users" o{--}o "t_nft_wallets" : "nftWallet"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
@@ -614,6 +693,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
+    "t_identities" o|--|o "t_communities" : "community"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
@@ -718,6 +798,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
+    "t_nft_wallets" o|--|| "t_users" : "user"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

@@ -107,6 +107,7 @@ export default class ReservationConverter {
     userIdsIfExists: string[],
     { reservationStatus, participationStatus, participationStatusReason }: ReservationStatuses,
     comment?: string,
+    communityId?: string,
   ): Prisma.ReservationCreateInput {
     const userIds = [currentUserId, ...userIdsIfExists];
 
@@ -116,6 +117,7 @@ export default class ReservationConverter {
       participantCount,
       participationStatus,
       participationStatusReason,
+      communityId,
     );
 
     return {
@@ -152,11 +154,12 @@ function createParticipations(
   count: number,
   status: ParticipationStatus,
   reason: ParticipationStatusReason,
+  communityId?: string,
 ): Prisma.ParticipationCreateWithoutReservationInput[] {
   const results: Prisma.ParticipationCreateWithoutReservationInput[] = [];
 
   for (let i = 0; i < count; i++) {
-    results.push(createParticipationInput(currentUserId, userIds[i], status, reason));
+    results.push(createParticipationInput(currentUserId, userIds[i], status, reason, communityId));
   }
 
   return results;
@@ -167,12 +170,16 @@ function createParticipationInput(
   userId: string | undefined,
   status: ParticipationStatus,
   reason: ParticipationStatusReason,
+  communityId?: string,
 ): Prisma.ParticipationCreateWithoutReservationInput {
   return {
     status,
     reason,
     ...(userId && {
       user: { connect: { id: userId } },
+    }),
+    ...(communityId && {
+      community: { connect: { id: communityId } },
     }),
     statusHistories: {
       create: {

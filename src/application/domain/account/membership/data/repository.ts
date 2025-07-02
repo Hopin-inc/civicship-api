@@ -16,7 +16,7 @@ export default class MembershipRepository implements IMembershipRepository {
     take: number,
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
   ) {
-    return ctx.issuer.public(ctx, (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
       return tx.membership.findMany({
         where,
         orderBy,

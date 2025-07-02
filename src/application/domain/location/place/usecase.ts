@@ -46,7 +46,7 @@ export default class PlaceUseCase {
     { input }: GqlMutationPlaceCreateArgs,
     ctx: IContext,
   ): Promise<GqlPlaceCreatePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const place = await this.service.createPlace(ctx, input, tx);
       return PlacePresenter.create(place);
     });
@@ -56,7 +56,7 @@ export default class PlaceUseCase {
     { id, input }: GqlMutationPlaceUpdateArgs,
     ctx: IContext,
   ): Promise<GqlPlaceUpdatePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const place = await this.service.updatePlace(ctx, id, input, tx);
       return PlacePresenter.update(place);
     });
@@ -66,7 +66,7 @@ export default class PlaceUseCase {
     { id }: GqlMutationPlaceDeleteArgs,
     ctx: IContext,
   ): Promise<GqlPlaceDeletePayload> {
-    return ctx.issuer.public(ctx, async (tx) => {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const deletedPlace = await this.service.deletePlace(ctx, id, tx);
       return PlacePresenter.delete(deletedPlace);
     });

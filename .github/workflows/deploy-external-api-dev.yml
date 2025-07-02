@@ -1,0 +1,98 @@
+name: Deploy External API to Cloud Run (dev)
+
+on:
+  push:
+    branches:
+      - develop
+      - hotfix/*
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+    timeout-minutes: 30
+
+    env:
+      STAGE: dev
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      SERVICE_ACCOUNT_CREDENTIAL_JSON: ${{ secrets.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      CLOUD_SQL_CONNECTION_NAME: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+      ARTIFACT_REGISTRY: ${{ secrets.ARTIFACT_REGISTRY }}
+      EXTERNAL_API_NAME: ${{ secrets.EXTERNAL_API_NAME }}
+      JUMPBOX_INSTANCE_NAME: ${{ secrets.JUMPBOX_INSTANCE_NAME }}
+      JUMPBOX_ZONE: ${{ secrets.JUMPBOX_ZONE }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ env.SERVICE_ACCOUNT_CREDENTIAL_JSON }}
+
+    - name: pnpm db:generate
+      env:
+        DATABASE_URL: postgresql://${{ env.DB_USER }}:${{ env.DB_PASSWORD }}@localhost:5432/${{ env.DB_NAME }}
+      run: |
+        echo "--- Connecting to DB via jumpbox ---"
+        gcloud compute ssh ${{ env.JUMPBOX_INSTANCE_NAME }} \
+          --tunnel-through-iap \
+          --zone=${{ env.JUMPBOX_ZONE }} \
+          --quiet -- -N -L 5432:localhost:5432 &
+        SSH_PID=$!
+        sleep 60
+        for i in {1..5}; do
+          pg_isready -h localhost -p 5432 -d ${{ env.DB_NAME }} && break
+          sleep 60
+        done
+
+        echo "--- Running prisma generate ---"
+        pnpm db:generate
+
+        echo "Killing SSH tunnel"
+        kill $SSH_PID
+
+    - name: pnpm build
+      run: pnpm build
+
+    - name: Configure Docker for GCP Artifact Registry
+      run: |
+        gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
+        gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+    - name: Build External API Docker image
+      run: |
+        docker build --no-cache -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest -f Dockerfile.external .
+
+    - name: Push External API Docker image to Artifact Registry
+      run: |
+        docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
+
+    - name: Deploy External API to Cloud Run
+      id: 'deploy'
+      uses: 'google-github-actions/deploy-cloudrun@v2'
+      with:
+        service: ${{ env.EXTERNAL_API_NAME }}
+        image: ${{ env.ARTIFACT_REGISTRY }}/${{ env.EXTERNAL_API_NAME }}:latest
+        region: ${{ env.GCP_REGION }}
+        flags: '--allow-unauthenticated --port=3000'
+
+    - name: Cleanup SSH Key
+      if: always()
+      run: rm -f ~/.ssh/google_compute_engine ~/.ssh/google_compute_engine.pub

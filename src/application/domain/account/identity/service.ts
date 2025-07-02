@@ -19,15 +19,37 @@ export default class IdentityService {
     data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
+    communityId: string,
     phoneUid?: string,
   ) {
     const identityCreate = phoneUid
-      ? { create: [{ uid, platform }, { uid: phoneUid, platform: IdentityPlatform.PHONE }] }
-      : { create: { uid, platform } };
+      ? {
+          create: [
+            { uid, platform, communityId },
+            { uid: phoneUid, platform: IdentityPlatform.PHONE },
+          ],
+        }
+      : { create: { uid, platform, communityId } };
 
     return this.userRepository.create({
       ...data,
       identities: identityCreate,
+    });
+  }
+
+  async addIdentityToUser(ctx: IContext, userId: string, uid: string, platform: IdentityPlatform) {
+    const expiryTime = ctx.phoneTokenExpiresAt
+      ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
+      : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
+    await this.identityRepository.create(ctx, {
+      uid,
+      platform,
+      authToken: ctx.idToken,
+      refreshToken: ctx.refreshToken,
+      tokenExpiresAt: expiryTime,
+      user: {
+        connect: { id: userId },
+      },
     });
   }
 
@@ -37,16 +59,21 @@ export default class IdentityService {
     phoneUid: string,
     tx: {
       user: {
-        findUnique: (args: { where: { id: string }, select: { id: boolean } }) => Promise<{ id: string } | null>
-      },
+        findUnique: (args: {
+          where: { id: string };
+          select: { id: boolean };
+        }) => Promise<{ id: string } | null>;
+      };
       identity: {
-        create: (args: { data: { uid: string, platform: IdentityPlatform, userId: string } }) => Promise<unknown>
-      }
+        create: (args: {
+          data: { uid: string; platform: IdentityPlatform; userId: string };
+        }) => Promise<unknown>;
+      };
     },
   ) {
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!user) {
@@ -57,8 +84,8 @@ export default class IdentityService {
       data: {
         uid: phoneUid,
         platform: IdentityPlatform.PHONE,
-        userId: userId
-      }
+        userId: userId,
+      },
     });
 
     return this.userRepository.find(ctx, userId);
@@ -121,11 +148,14 @@ export default class IdentityService {
 
     return {
       token: identity.authToken,
-      isValid: !isExpired
+      isValid: !isExpired,
     };
   }
 
-  async refreshAuthToken(uid: string, refreshToken: string): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
+  async refreshAuthToken(
+    uid: string,
+    refreshToken: string,
+  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
     try {
       const response = await axios.post(`${IDENTUS_API_URL}/auth/refresh`, {
         refreshToken,
@@ -152,7 +182,7 @@ export default class IdentityService {
   async callDIDVCServer(
     uid: string,
     endpoint: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: "GET" | "POST" | "PUT" | "DELETE",
     data?: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     const { token, isValid } = await this.getAuthToken(uid);
@@ -165,21 +195,21 @@ export default class IdentityService {
       const url = `${IDENTUS_API_URL}${endpoint}`;
       const headers = {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       };
 
       let response;
       switch (method) {
-        case 'GET':
+        case "GET":
           response = await axios.get(url, { headers });
           break;
-        case 'POST':
+        case "POST":
           response = await axios.post(url, data, { headers });
           break;
-        case 'PUT':
+        case "PUT":
           response = await axios.put(url, data, { headers });
           break;
-        case 'DELETE':
+        case "DELETE":
           response = await axios.delete(url, { headers });
           break;
       }

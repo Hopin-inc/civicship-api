@@ -33,6 +33,7 @@ input OpportunitySlotsBulkUpdateInput {
 }
 
 input OpportunitySlotCreateInput {
+    capacity: Int!
     startsAt: Datetime!
     endsAt: Datetime!
 }
