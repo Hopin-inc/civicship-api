@@ -213,7 +213,13 @@ export default class IdentityUseCase {
       if (!ctx.uid || !ctx.platform) {
         throw new AuthenticationError();
       }
-      await this.identityService.addIdentityToUser(ctx, existingUser.id, ctx.uid, ctx.platform);
+      await this.identityService.addIdentityToUser(
+        ctx,
+        existingUser.id,
+        ctx.uid,
+        ctx.platform,
+        ctx.communityId,
+      );
       const membership = await this.membershipService.joinIfNeeded(
         ctx,
         existingUser.id,
