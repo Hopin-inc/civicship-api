@@ -15,10 +15,17 @@ function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
   return idToken?.replace(/^Bearer\s+/, "");
 }
 
+function getAdminApiKeyFromRequest(req: http.IncomingMessage): string | undefined {
+  const key = req.headers["x-civicship-admin-api-key"];
+  return typeof key === "string" ? key : undefined;
+}
+
 export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const issuer = new PrismaClientIssuer();
   const loaders: Loaders = createLoaders(issuer);
   const idToken = getIdTokenFromRequest(req);
+  const adminApiKey = getAdminApiKeyFromRequest(req);
+  const expectedAdminKey = process.env.CIVICSHIP_ADMIN_API_KEY;
 
   const phoneAuthToken = (req.headers["x-phone-auth-token"] as string) || "";
   const phoneRefreshToken = (req.headers["x-phone-refresh-token"] as string) || "";
@@ -26,7 +33,8 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
   const phoneUid = (req.headers["x-phone-uid"] as string) || "";
   const refreshToken = (req.headers["x-refresh-token"] as string) || "";
   const tokenExpiresAt = (req.headers["x-token-expires-at"] as string) || "";
-  const communityId = req.headers["x-community-id"] as string;
+  const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID;
+
   if (!communityId) {
     throw new Error("Missing required header: x-community-id");
   }
@@ -36,7 +44,25 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     hasIdToken: !!idToken,
     hasRefreshToken: !!refreshToken,
     hasPhoneToken: !!phoneAuthToken,
+    hasAdminApiKey: !!adminApiKey,
   });
+
+  // ✅ 特権APIキーによる認証バイパス
+  if (adminApiKey && adminApiKey === expectedAdminKey) {
+    return {
+      issuer,
+      loaders,
+      communityId,
+      isAdmin: true,
+
+      phoneAuthToken,
+      phoneRefreshToken,
+      phoneTokenExpiresAt,
+      phoneUid,
+      refreshToken,
+      tokenExpiresAt,
+    };
+  }
 
   if (!idToken) {
     return {

@@ -5,17 +5,21 @@ import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 
 export type LoggedInUserInfo = {
   issuer: PrismaClientIssuer;
-  uid?: string;
+  loaders: Loaders;
+
   tenantId?: string;
   communityId: string;
   platform?: IdentityPlatform;
+  uid?: string;
+  phoneUid?: string;
+
   currentUser?: PrismaAuthUser | null;
   hasPermissions?: PrismaUserPermission | null;
-  loaders: Loaders;
+  isAdmin?: boolean;
+
   phoneAuthToken?: string;
   phoneRefreshToken?: string;
   phoneTokenExpiresAt?: string;
-  phoneUid?: string;
   refreshToken?: string;
   tokenExpiresAt?: string;
   idToken?: string;

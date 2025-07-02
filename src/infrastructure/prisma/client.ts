@@ -37,11 +37,13 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
-  public onlyBelongingCommunity<T>({ currentUser }: IContext, callback: CallbackFn<T>): Promise<T> {
-    if (currentUser) {
+  public onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+    if (ctx.currentUser || ctx.isAdmin) {
       return this.client.$transaction(async (tx) => {
         await this.setRls(tx);
-        await this.setRlsConfigUserId(tx, currentUser.id);
+        if (ctx.currentUser) {
+          await this.setRlsConfigUserId(tx, ctx.currentUser.id);
+        }
         return await callback(tx);
       });
     } else {

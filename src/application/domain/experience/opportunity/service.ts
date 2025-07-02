@@ -58,12 +58,12 @@ export default class OpportunityService {
   async createOpportunity(
     ctx: IContext,
     input: GqlOpportunityCreateInput,
+    communityId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = getCurrentUserId(ctx, input.createdBy);
 
-    validatePlaceInput(input.place);
-    const { data, images } = this.converter.create(input, currentUserId);
+    const { data, images } = this.converter.create(input, communityId, currentUserId);
 
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = await Promise.all(
       images.map((img) => this.imageService.uploadPublicImage(img, "opportunities")),

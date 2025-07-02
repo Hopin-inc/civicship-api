@@ -1029,19 +1029,18 @@ export const GqlOpportunityCategory = {
 export type GqlOpportunityCategory = typeof GqlOpportunityCategory[keyof typeof GqlOpportunityCategory];
 export type GqlOpportunityCreateInput = {
   body?: InputMaybe<Scalars['String']['input']>;
-  capacity?: InputMaybe<Scalars['Int']['input']>;
   category: GqlOpportunityCategory;
-  communityId: Scalars['ID']['input'];
+  createdBy?: InputMaybe<Scalars['String']['input']>;
   description: Scalars['String']['input'];
-  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
-  place?: InputMaybe<GqlNestedPlaceConnectOrCreateInput>;
+  placeId?: InputMaybe<Scalars['ID']['input']>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
+  relatedArticleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   requireApproval: Scalars['Boolean']['input'];
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  slots?: InputMaybe<Array<GqlOpportunitySlotCreateInput>>;
   title: Scalars['String']['input'];
 };
 
@@ -1114,6 +1113,7 @@ export type GqlOpportunitySlot = {
 };
 
 export type GqlOpportunitySlotCreateInput = {
+  capacity: Scalars['Int']['input'];
   endsAt: Scalars['Datetime']['input'];
   startsAt: Scalars['Datetime']['input'];
 };
