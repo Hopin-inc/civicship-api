@@ -41,7 +41,7 @@ export default class MembershipService {
   }
 
   async findMembershipOrThrow(ctx: IContext, userId: string, communityId: string) {
-    const membership = await this.findMembership(ctx, communityId, userId);
+    const membership = await this.findMembership(ctx, userId, communityId);
     if (!membership) {
       throw new NotFoundError("Membership", { userId, communityId });
     }
