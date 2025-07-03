@@ -111,6 +111,7 @@ export type GqlArticleUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
   category: GqlArticleCategory;
   introduction: Scalars['String']['input'];
+  publishStatus: GqlPublishStatus;
   publishedAt?: InputMaybe<Scalars['Datetime']['input']>;
   relatedOpportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;

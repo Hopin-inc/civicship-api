@@ -45,6 +45,8 @@ input ArticleUpdateContentInput {
     thumbnail: ImageInput
     category: ArticleCategory!
 
+    publishStatus: PublishStatus!
+
     authorIds: [ID!]!
     relatedUserIds: [ID!]
     relatedOpportunityIds: [ID!]
