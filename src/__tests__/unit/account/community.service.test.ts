@@ -1,13 +1,36 @@
 import "reflect-metadata";
 import { IContext } from "@/types/server";
-import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
 import CommunityService from "@/application/domain/account/community/service";
 import { NotFoundError } from "@/errors/graphql";
 import { MockImageService } from "@/__tests__/helper/mock-helper";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
-import { GqlCommunityCreateInput, GqlCommunityUpdateProfileInput } from "@/types/graphql";
+import { GqlCommunityCreateInput, GqlCommunityUpdateProfileInput, GqlSortDirection } from "@/types/graphql";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
+
+enum MembershipStatus {
+  PENDING = "PENDING",
+  JOINED = "JOINED",
+  LEFT = "LEFT",
+}
+
+enum MembershipStatusReason {
+  CREATED_COMMUNITY = "CREATED_COMMUNITY",
+  INVITED = "INVITED",
+  CANCELED_INVITATION = "CANCELED_INVITATION",
+  ACCEPTED_INVITATION = "ACCEPTED_INVITATION",
+  DECLINED_INVITATION = "DECLINED_INVITATION",
+  WITHDRAWN = "WITHDRAWN",
+  REMOVED = "REMOVED",
+  ASSIGNED = "ASSIGNED",
+}
+
+enum Role {
+  OWNER = "OWNER",
+  MANAGER = "MANAGER",
+  MEMBER = "MEMBER",
+}
 
 describe("CommunityService", () => {
   class MockCommunityRepository implements ICommunityRepository {
@@ -50,8 +73,9 @@ describe("CommunityService", () => {
     it("should fetch communities with filter and sort", async () => {
       const args = {
         cursor: "cursor-123",
-        filter: { name: "test" },
-        sort: { name: "ASC" },
+        filter: { keyword: "test" },
+        sort: { createdAt: GqlSortDirection.Asc },
+        first: 10,
       };
       const take = 10;
       const mockWhere = { name: { contains: "test" } };
@@ -90,7 +114,7 @@ describe("CommunityService", () => {
     });
 
     it("should handle repository query errors", async () => {
-      const args = { cursor: "cursor-123" };
+      const args = { cursor: "cursor-123", first: 10 };
       const take = 10;
       const error = new Error("Database query failed");
 
@@ -102,7 +126,7 @@ describe("CommunityService", () => {
     });
 
     it("should handle zero take parameter", async () => {
-      const args = { cursor: "cursor-456" };
+      const args = { cursor: "cursor-456", first: 0 };
       const take = 0;
       const mockResult = [];
 
@@ -484,7 +508,17 @@ describe("CommunityService", () => {
         pointName: "Updated Points",
         places: {
           connectOrCreate: [
-            { where: { id: "place-1" }, create: { name: "New Place" } }
+            { 
+              where: "place-1", 
+              create: { 
+                name: "New Place",
+                address: "123 Test St",
+                cityCode: "12345",
+                isManual: true,
+                latitude: "35.6762",
+                longitude: "139.6503"
+              } 
+            }
           ],
           disconnect: undefined
         },
@@ -524,7 +558,7 @@ describe("CommunityService", () => {
         pointName: "Updated Points",
         places: {
           connectOrCreate: [
-            { where: { id: "place-1" }, create: undefined }
+            { where: "place-1", create: undefined }
           ],
           disconnect: undefined
         },
@@ -552,7 +586,17 @@ describe("CommunityService", () => {
         pointName: "Updated Points",
         places: {
           connectOrCreate: [
-            { where: undefined, create: { name: "New Place" } }
+            { 
+              where: undefined, 
+              create: { 
+                name: "New Place",
+                address: "456 Test Ave",
+                cityCode: "67890",
+                isManual: false,
+                latitude: "35.6895",
+                longitude: "139.6917"
+              } 
+            }
           ],
           disconnect: undefined
         },
@@ -604,7 +648,10 @@ describe("CommunityService", () => {
       const updateInput: GqlCommunityUpdateProfileInput = {
         name: "Updated Community",
         pointName: "Updated Points",
-        places: undefined,
+        places: {
+          connectOrCreate: [],
+          disconnect: undefined
+        },
       };
 
       const mockCommunity = { id: "community-1" };

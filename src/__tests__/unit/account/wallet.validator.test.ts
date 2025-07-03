@@ -1,5 +1,20 @@
 import "reflect-metadata";
-import { Prisma, TransactionReason, WalletType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+
+enum TransactionReason {
+  GRANT = "GRANT",
+  ONBOARDING = "ONBOARDING",
+  DONATION = "DONATION",
+  REWARD = "REWARD",
+  POINT_REWARD = "POINT_REWARD",
+  TICKET_PURCHASED = "TICKET_PURCHASED",
+  TICKET_REFUNDED = "TICKET_REFUNDED",
+}
+
+enum WalletType {
+  COMMUNITY = "COMMUNITY",
+  MEMBER = "MEMBER",
+}
 import { container } from "tsyringe";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";

@@ -1,7 +1,11 @@
 import "reflect-metadata";
-import { CurrentPrefecture, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { GqlMutationUserUpdateMyProfileArgs } from "@/types/graphql";
+import { GqlMutationUserUpdateMyProfileArgs, GqlQueryUsersArgs, GqlSortDirection } from "@/types/graphql";
+
+enum CurrentPrefecture {
+  KAGAWA = "KAGAWA",
+}
 import { container } from "tsyringe";
 import UserService from "@/application/domain/account/user/service";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
@@ -67,10 +71,10 @@ describe("UserService", () => {
 
   describe("fetchUsers", () => {
     it("should fetch users with filter and sort", async () => {
-      const args = {
+      const args: GqlQueryUsersArgs = {
         cursor: "cursor-123",
-        filter: { name: "test" },
-        sort: { name: "ASC" },
+        filter: { keywords: ["test"] },
+        sort: { createdAt: GqlSortDirection.Asc },
       };
       const take = 10;
       const mockWhere = { name: { contains: "test" } };
@@ -123,10 +127,10 @@ describe("UserService", () => {
 
   describe("fetchCommunityMembers", () => {
     it("should fetch community members with filter and sort", async () => {
-      const args = {
+      const args: GqlQueryUsersArgs = {
         cursor: "cursor-456",
-        filter: { role: "MEMBER" },
-        sort: { createdAt: "DESC" },
+        filter: { keywords: ["MEMBER"] },
+        sort: { createdAt: GqlSortDirection.Desc },
       };
       const take = 20;
       const mockWhere = { role: "MEMBER" };
@@ -284,7 +288,7 @@ describe("UserService", () => {
     it("should throw error when uid is missing", async () => {
       const ctxWithoutUid = { currentUser: { id: TEST_USER_ID } } as IContext;
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { name: "Test" },
+        input: { name: "Test", slug: "test" },
         permission: { userId: "" },
       };
 
@@ -296,7 +300,7 @@ describe("UserService", () => {
     it("should throw error when currentUser is missing", async () => {
       const ctxWithoutCurrentUser = { uid: TEST_USER_ID } as IContext;
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { name: "Test" },
+        input: { name: "Test", slug: "test" },
         permission: { userId: "" },
       };
 
@@ -308,7 +312,7 @@ describe("UserService", () => {
     it("should throw error when both uid and currentUser are missing", async () => {
       const ctxWithoutAuth = {} as IContext;
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { name: "Test" },
+        input: { name: "Test", slug: "test" },
         permission: { userId: "" },
       };
 
@@ -319,7 +323,7 @@ describe("UserService", () => {
 
     it("should handle empty name input", async () => {
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { name: "" },
+        input: { name: "", slug: "empty" },
         permission: { userId: "" },
       };
       const updatedData = { name: "" };
@@ -335,7 +339,7 @@ describe("UserService", () => {
 
     it("should handle empty slug input", async () => {
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { slug: "" },
+        input: { name: "Test User", slug: "" },
         permission: { userId: "" },
       };
       const updatedData = { slug: "" };
@@ -351,7 +355,7 @@ describe("UserService", () => {
 
     it("should handle image upload failure", async () => {
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { name: "Test User" },
+        input: { name: "Test User", slug: "test-user" },
         permission: { userId: "" },
       };
       const mockImage = { file: "mock-file" };
@@ -365,7 +369,7 @@ describe("UserService", () => {
 
     it("should handle repository update failure", async () => {
       const input: GqlMutationUserUpdateMyProfileArgs = {
-        input: { name: "Test User" },
+        input: { name: "Test User", slug: "test-user" },
         permission: { userId: "" },
       };
       const error = new Error("Database update failed");

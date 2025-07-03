@@ -1,11 +1,34 @@
 import "reflect-metadata";
-import { MembershipStatus, MembershipStatusReason, Prisma, Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
 import MembershipService from "@/application/domain/account/membership/service";
 import { IContext } from "@/types/server";
 import { NotFoundError } from "@/errors/graphql";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import MembershipConverter from "@/application/domain/account/membership/data/converter";
+
+enum MembershipStatus {
+  PENDING = "PENDING",
+  JOINED = "JOINED",
+  LEFT = "LEFT",
+}
+
+enum MembershipStatusReason {
+  CREATED_COMMUNITY = "CREATED_COMMUNITY",
+  INVITED = "INVITED",
+  CANCELED_INVITATION = "CANCELED_INVITATION",
+  ACCEPTED_INVITATION = "ACCEPTED_INVITATION",
+  DECLINED_INVITATION = "DECLINED_INVITATION",
+  WITHDRAWN = "WITHDRAWN",
+  REMOVED = "REMOVED",
+  ASSIGNED = "ASSIGNED",
+}
+
+enum Role {
+  OWNER = "OWNER",
+  MANAGER = "MANAGER",
+  MEMBER = "MEMBER",
+}
 
 // --- Mockクラス ---
 class MockMembershipRepository implements IMembershipRepository {
@@ -190,7 +213,7 @@ describe("MembershipService", () => {
         await service.findMembershipOrThrow(mockCtx, userId, communityId);
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundError);
-        expect(error.message).toContain("Membership");
+        expect((error as NotFoundError).message).toContain("Membership");
       }
     });
   });
@@ -338,8 +361,8 @@ describe("MembershipService", () => {
       expect(result).toEqual(updated);
     });
 
-    it("should update membership with INVITED status to JOINED", async () => {
-      const existing = { userId, communityId, status: MembershipStatus.INVITED, role: Role.MEMBER };
+    it("should update membership with PENDING status to JOINED", async () => {
+      const existing = { userId, communityId, status: MembershipStatus.PENDING, role: Role.MEMBER };
       mockRepository.find.mockResolvedValue(existing);
 
       const mockInput = {};
@@ -448,7 +471,7 @@ describe("MembershipService", () => {
     });
 
     it("should set membership status to JOINED with ACCEPTED_INVITATION reason", async () => {
-      const existing = { userId, communityId, status: MembershipStatus.INVITED, role: Role.MEMBER };
+      const existing = { userId, communityId, status: MembershipStatus.PENDING, role: Role.MEMBER };
       mockRepository.find.mockResolvedValue(existing);
 
       const mockInput = {};
@@ -478,21 +501,21 @@ describe("MembershipService", () => {
       mockRepository.find.mockResolvedValue(existing);
 
       const mockInput = {};
-      const updated = { ...existing, status: MembershipStatus.BANNED };
+      const updated = { ...existing, status: MembershipStatus.LEFT };
       mockConverter.update.mockReturnValue(mockInput);
       mockRepository.update.mockResolvedValue(updated);
 
       const result = await service.setStatus(
         mockCtx,
         { userId, communityId },
-        MembershipStatus.BANNED,
-        MembershipStatusReason.VIOLATION,
+        MembershipStatus.LEFT,
+        MembershipStatusReason.REMOVED,
         mockTx,
       );
 
       expect(mockConverter.update).toHaveBeenCalledWith(
-        MembershipStatus.BANNED,
-        MembershipStatusReason.VIOLATION,
+        MembershipStatus.LEFT,
+        MembershipStatusReason.REMOVED,
         existing.role,
         "admin-user"
       );
@@ -512,13 +535,13 @@ describe("MembershipService", () => {
         mockCtx,
         { userId, communityId },
         MembershipStatus.PENDING,
-        MembershipStatusReason.REQUESTED,
+        MembershipStatusReason.INVITED,
         mockTx,
       );
 
       expect(mockConverter.update).toHaveBeenCalledWith(
         MembershipStatus.PENDING,
-        MembershipStatusReason.REQUESTED,
+        MembershipStatusReason.INVITED,
         existing.role,
         "admin-user"
       );
