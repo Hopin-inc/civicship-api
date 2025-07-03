@@ -158,6 +158,8 @@ Table t_users {
   image t_images
   identities t_identities [not null]
   nftWallet t_nft_wallets
+  didIssuanceRequests t_did_issuance_requests [not null]
+  vcIssuanceRequests t_vc_issuance_requests [not null]
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
@@ -187,6 +189,43 @@ Table t_identities {
   authToken String
   refreshToken String
   tokenExpiresAt DateTime
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_did_issuance_requests {
+  id String [pk]
+  status DidIssuanceStatus [not null, default: 'PENDING']
+  jobId String
+  didValue String
+  errorMessage String
+  retryCount Int [not null, default: 0]
+  requestedAt DateTime [default: `now()`, not null]
+  processedAt DateTime
+  completedAt DateTime
+  userId String [not null]
+  user t_users [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_vc_issuance_requests {
+  id String [pk]
+  status VcIssuanceStatus [not null, default: 'PENDING']
+  jobId String
+  vcRecordId String
+  claims Json [not null]
+  credentialFormat String
+  schemaId String
+  errorMessage String
+  retryCount Int [not null, default: 0]
+  requestedAt DateTime [default: `now()`, not null]
+  processedAt DateTime
+  completedAt DateTime
+  evaluationId String [unique, not null]
+  evaluation t_evaluations [not null]
+  userId String [not null]
+  user t_users [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -297,6 +336,7 @@ Table t_opportunity_slots {
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
+  participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -334,6 +374,8 @@ Table t_participations {
   images t_images [not null]
   userId String
   user t_users
+  opportunitySlotId String
+  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   ticketStatusHistories t_ticket_status_histories [not null]
@@ -368,6 +410,7 @@ Table t_evaluations {
   participation t_participations [not null]
   evaluatorId String [not null]
   evaluator t_users [not null]
+  vcIssuanceRequest t_vc_issuance_requests
   histories t_evaluation_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -644,6 +687,20 @@ Enum IdentityPlatform {
   PHONE
 }
 
+Enum DidIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+Enum VcIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 Enum Role {
   OWNER
   MANAGER
@@ -779,6 +836,12 @@ Ref: t_identities.userId > t_users.id [delete: Cascade]
 
 Ref: t_identities.communityId > t_communities.id
 
+Ref: t_did_issuance_requests.userId > t_users.id [delete: Cascade]
+
+Ref: t_vc_issuance_requests.evaluationId - t_evaluations.id
+
+Ref: t_vc_issuance_requests.userId > t_users.id [delete: Cascade]
+
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
 Ref: t_memberships.communityId > t_communities.id [delete: Cascade]
@@ -812,6 +875,8 @@ Ref: t_reservation_histories.reservationId > t_reservations.id [delete: Cascade]
 Ref: t_reservation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
+
+Ref: t_participations.opportunitySlotId > t_opportunity_slots.id
 
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 

@@ -50,6 +50,24 @@ PHONE PHONE
     
 
 
+        DIDIssuanceStatus {
+            PENDING PENDING
+PROCESSING PROCESSING
+COMPLETED COMPLETED
+FAILED FAILED
+        }
+    
+
+
+        VCIssuanceStatus {
+            PENDING PENDING
+PROCESSING PROCESSING
+COMPLETED COMPLETED
+FAILED FAILED
+        }
+    
+
+
         Role {
             OWNER OWNER
 MANAGER MANAGER
@@ -330,6 +348,42 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_did_issuance_requests" {
+    String id "🗝️"
+    DidIssuanceStatus status 
+    String job_id "❓"
+    String did_value "❓"
+    String error_message "❓"
+    Int retry_count 
+    DateTime requested_at 
+    DateTime processed_at "❓"
+    DateTime completed_at "❓"
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_vc_issuance_requests" {
+    String id "🗝️"
+    VcIssuanceStatus status 
+    String job_id "❓"
+    String vc_record_id "❓"
+    Json claims 
+    String credential_format "❓"
+    String schema_id "❓"
+    String error_message "❓"
+    Int retry_count 
+    DateTime requested_at 
+    DateTime processed_at "❓"
+    DateTime completed_at "❓"
+    String evaluation_id 
+    String user_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_memberships" {
     String user_id 
     String community_id 
@@ -437,6 +491,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     ParticipationStatusReason reason 
     String description "❓"
     String user_id "❓"
+    String opportunity_slot_id "❓"
     String reservation_id "❓"
     String community_id "❓"
     String evaluation_id "❓"
@@ -676,6 +731,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
     "t_users" o{--}o "t_nft_wallets" : "nftWallet"
+    "t_users" o{--}o "t_did_issuance_requests" : "didIssuanceRequests"
+    "t_users" o{--}o "t_vc_issuance_requests" : "vcIssuanceRequests"
     "t_users" o{--}o "t_memberships" : "memberships"
     "t_users" o{--}o "t_membership_histories" : "membershipChangedByMe"
     "t_users" o{--}o "t_wallets" : "wallets"
@@ -694,6 +751,11 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_identities" o|--|o "t_communities" : "community"
+    "t_did_issuance_requests" o|--|| "DidIssuanceStatus" : "enum:status"
+    "t_did_issuance_requests" o|--|| "t_users" : "user"
+    "t_vc_issuance_requests" o|--|| "VcIssuanceStatus" : "enum:status"
+    "t_vc_issuance_requests" o|--|| "t_evaluations" : "evaluation"
+    "t_vc_issuance_requests" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_users" : "user"
     "t_memberships" o|--|| "t_communities" : "community"
     "t_memberships" o|--|| "MembershipStatus" : "enum:status"
@@ -738,6 +800,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_opportunity_slots" o{--}o "v_slot_remaining_capacity" : "remainingCapacityView"
     "t_opportunity_slots" o|--|| "t_opportunities" : "opportunity"
     "t_opportunity_slots" o{--}o "t_reservations" : "reservations"
+    "t_opportunity_slots" o{--}o "t_participations" : "participations"
     "t_reservations" o|--|| "t_opportunity_slots" : "opportunitySlot"
     "t_reservations" o|--|| "ReservationStatus" : "enum:status"
     "t_reservations" o{--}o "t_participations" : "participations"
@@ -751,6 +814,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_participations" o|--|| "ParticipationStatusReason" : "enum:reason"
     "t_participations" o{--}o "t_images" : "images"
     "t_participations" o|--|o "t_users" : "user"
+    "t_participations" o|--|o "t_opportunity_slots" : "opportunitySlot"
     "t_participations" o|--|o "t_reservations" : "reservation"
     "t_participations" o{--}o "t_ticket_status_histories" : "ticketStatusHistories"
     "t_participations" o|--|o "t_communities" : "community"
@@ -764,6 +828,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_evaluations" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluations" o|--|| "t_participations" : "participation"
     "t_evaluations" o|--|| "t_users" : "evaluator"
+    "t_evaluations" o{--}o "t_vc_issuance_requests" : "vcIssuanceRequest"
     "t_evaluations" o{--}o "t_evaluation_histories" : "histories"
     "t_evaluation_histories" o|--|| "EvaluationStatus" : "enum:status"
     "t_evaluation_histories" o|--|| "t_evaluations" : "evaluation"

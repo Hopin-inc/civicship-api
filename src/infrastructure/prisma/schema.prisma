@@ -288,8 +288,8 @@ model User {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  identities Identity[]
-  nftWallet  NftWallet?
+  identities          Identity[]
+  nftWallet           NftWallet?
   didIssuanceRequests DidIssuanceRequest[]
   vcIssuanceRequests  VcIssuanceRequest[]
 
