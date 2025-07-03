@@ -33,7 +33,7 @@ export default class UserResolver {
       const viewerId = ctx.currentUser?.id;
       if (!viewerId || !parent.id) return null;
 
-      const canView = await this.userUseCase.canCurrentUserViewPhoneNumber(parent.id, viewerId);
+      const canView = await this.userUseCase.canCurrentUserViewPhoneNumber(ctx, parent.id, viewerId);
       return canView ? parent.phoneNumber : null;
     },
 
