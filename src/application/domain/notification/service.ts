@@ -300,7 +300,8 @@ export default class NotificationService {
 
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
-      (identity) => identity.platform === IdentityPlatform.LINE,
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
     )?.uid;
 
     if (!lineUid) {
