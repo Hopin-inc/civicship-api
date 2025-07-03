@@ -4,6 +4,12 @@ import {
   GqlArticlesConnection,
   GqlQueryArticleArgs,
   GqlQueryArticlesArgs,
+  GqlMutationArticleCreateArgs,
+  GqlMutationArticleUpdateContentArgs,
+  GqlMutationArticleDeleteArgs,
+  GqlArticleCreatePayload,
+  GqlArticleUpdateContentPayload,
+  GqlArticleDeletePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import ArticleService from "@/application/domain/content/article/service";
@@ -76,6 +82,36 @@ export default class ArticleUseCase {
 
     const record = await this.service.findArticle(ctx, id, validatedFilter);
     return record ? ArticlePresenter.get(record) : null;
+  }
+
+  async managerCreateArticle(
+    { input, permission }: GqlMutationArticleCreateArgs,
+    ctx: IContext,
+  ): Promise<GqlArticleCreatePayload> {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      const record = await this.service.createArticle(ctx, input, permission.communityId, tx);
+      return ArticlePresenter.create(record);
+    });
+  }
+
+  async managerUpdateArticleContent(
+    { id, input }: GqlMutationArticleUpdateContentArgs,
+    ctx: IContext,
+  ): Promise<GqlArticleUpdateContentPayload> {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      const record = await this.service.updateArticleContent(ctx, id, input, tx);
+      return ArticlePresenter.update(record);
+    });
+  }
+
+  async managerDeleteArticle(
+    { id }: GqlMutationArticleDeleteArgs,
+    ctx: IContext,
+  ): Promise<GqlArticleDeletePayload> {
+    return ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      const record = await this.service.deleteArticle(ctx, id, tx);
+      return ArticlePresenter.delete(record);
+    });
   }
 }
 

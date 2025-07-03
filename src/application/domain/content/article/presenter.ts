@@ -1,4 +1,10 @@
-import { GqlArticlesConnection, GqlArticle } from "@/types/graphql";
+import { 
+  GqlArticlesConnection, 
+  GqlArticle,
+  GqlArticleCreatePayload,
+  GqlArticleUpdateContentPayload,
+  GqlArticleDeletePayload
+} from "@/types/graphql";
 import { PrismaArticleDetail } from "@/application/domain/content/article/data/type";
 
 export default class ArticlePresenter {
@@ -23,6 +29,27 @@ export default class ArticlePresenter {
     return {
       __typename: "Article",
       ...r,
+    };
+  }
+
+  static create(record: PrismaArticleDetail): GqlArticleCreatePayload {
+    return {
+      __typename: "ArticleCreateSuccess",
+      article: this.get(record),
+    };
+  }
+
+  static update(record: PrismaArticleDetail): GqlArticleUpdateContentPayload {
+    return {
+      __typename: "ArticleUpdateContentSuccess", 
+      article: this.get(record),
+    };
+  }
+
+  static delete(record: PrismaArticleDetail): GqlArticleDeletePayload {
+    return {
+      __typename: "ArticleDeleteSuccess",
+      articleId: record.id,
     };
   }
 }

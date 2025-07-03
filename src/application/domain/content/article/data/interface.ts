@@ -16,4 +16,23 @@ export interface IArticleRepository {
     ctx: IContext,
     where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
   ): Promise<PrismaArticle | null>;
+
+  create(
+    ctx: IContext,
+    data: Prisma.ArticleCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaArticle>;
+
+  update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.ArticleUpdateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaArticle>;
+
+  delete(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaArticle>;
 }

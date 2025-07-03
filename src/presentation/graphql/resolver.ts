@@ -69,6 +69,7 @@ const resolvers = {
     ...user.Mutation,
     ...community.Mutation,
     ...membership.Mutation,
+    ...article.Mutation,
     ...opportunity.Mutation,
     ...opportunitySlot.Mutation,
     ...reservation.Mutation,
