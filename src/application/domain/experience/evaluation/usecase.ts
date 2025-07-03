@@ -106,6 +106,7 @@ export default class EvaluationUseCase {
 
     await this.validateEvaluatable(ctx, item.participationId);
 
+    // TODO 予約あればPersonal Recordじゃないように修正
     await this.participationService.setStatus(
       ctx,
       item.participationId,

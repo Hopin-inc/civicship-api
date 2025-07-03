@@ -178,9 +178,13 @@ model Community {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  places         Place[]
-  memberships    Membership[]
-  wallets        Wallet[]
+  config CommunityConfig?
+  places Place[]
+
+  identities  Identity[]
+  memberships Membership[]
+  wallets     Wallet[]
+
   utilities      Utility[]
   opportunities  Opportunity[]
   participations Participation[]
@@ -190,6 +194,76 @@ model Community {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_communities")
+}
+
+model CommunityConfig {
+  id          String    @id @default(cuid())
+  communityId String    @unique @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id])
+
+  firebaseConfig CommunityFirebaseConfig?
+  lineConfig     CommunityLineConfig?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_community_configs")
+}
+
+model CommunityFirebaseConfig {
+  id String @id @default(cuid())
+
+  configId String           @unique @map("config_id")
+  config   CommunityConfig? @relation(fields: [configId], references: [id])
+
+  tenantId String @map("tenant_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_community_firebase_configs")
+}
+
+model CommunityLineConfig {
+  id String @id @default(cuid())
+
+  configId String           @unique @map("config_id")
+  config   CommunityConfig? @relation(fields: [configId], references: [id])
+
+  channelId     String @map("channel_id")
+  channelSecret String @map("channel_secret")
+  accessToken   String @map("access_token")
+
+  liffId      String @map("liff_id")
+  liffBaseUrl String @map("liff_base_url")
+
+  richMenus CommunityLineRichMenuConfig[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_community_line_configs")
+}
+
+model CommunityLineRichMenuConfig {
+  id       String              @id @default(cuid())
+  configId String              @map("config_id")
+  config   CommunityLineConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  type       LineRichMenuType
+  richMenuId String           @map("rich_menu_id")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@unique([configId, type])
+  @@map("t_community_line_rich_menus")
+}
+
+enum LineRichMenuType {
+  ADMIN
+  USER
+  PUBLIC
 }
 
 // ------------------------------ User Domain ------------------------------
@@ -214,7 +288,8 @@ model User {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  identities          Identity[]
+  identities Identity[]
+  nftWallet  NftWallet?
   didIssuanceRequests DidIssuanceRequest[]
   vcIssuanceRequests  VcIssuanceRequest[]
 
@@ -263,6 +338,9 @@ model Identity {
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  communityId String?    @map("community_id")
+  community   Community? @relation(fields: [communityId], references: [id])
 
   authToken      String?   @map("auth_token") @db.Text
   refreshToken   String?   @map("refresh_token") @db.Text
@@ -1003,4 +1081,29 @@ enum TransactionReason {
 
   TICKET_PURCHASED
   TICKET_REFUNDED
+}
+
+// ------------------------------ API Key Domain ------------------------------
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  name      String
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("m_api_keys")
+}
+
+model NftWallet {
+  id            String    @id @default(cuid())
+  userId        String    @unique @map("user_id")
+  walletAddress String    @map("wallet_address")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime? @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("t_nft_wallets")
 }

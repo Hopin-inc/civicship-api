@@ -67,36 +67,38 @@ export default class OpportunityConverter {
 
   create(
     input: GqlOpportunityCreateInput,
+    communityId: string,
     currentUserId: string,
   ): {
     data: Omit<Prisma.OpportunityCreateInput, "images">;
     images: GqlImageInput[];
   } {
-    const { images, place, communityId, ...prop } = input;
-
-    let finalPlace: Prisma.PlaceCreateNestedOneWithoutOpportunitiesInput | undefined;
-
-    if (place) {
-      finalPlace = place.where
-        ? { connect: { id: place.where } }
-        : (() => {
-          const { cityCode, communityId, ...restCreate } = place.create!;
-          return {
-            create: {
-              ...restCreate,
-              city: { connect: { code: cityCode } },
-              community: { connect: { id: communityId } },
-            },
-          };
-        })();
-    }
+    const { images, placeId, createdBy, slots, requiredUtilityIds, relatedArticleIds, ...prop } =
+      input;
 
     return {
       data: {
         ...prop,
         community: { connect: { id: communityId } },
         createdByUser: { connect: { id: currentUserId } },
-        ...(finalPlace ? { place: finalPlace } : {}),
+        ...(placeId && {
+          place: { connect: { id: placeId } },
+        }),
+        ...(slots && {
+          slots: {
+            create: slots.map((slot) => ({ ...slot })),
+          },
+        }),
+        ...(requiredUtilityIds?.length && {
+          requiredUtilities: {
+            connect: requiredUtilityIds.map((id) => ({ id })),
+          },
+        }),
+        ...(relatedArticleIds?.length && {
+          articles: {
+            connect: relatedArticleIds.map((id) => ({ id })),
+          },
+        }),
       },
       images: images ?? [],
     };
@@ -114,15 +116,15 @@ export default class OpportunityConverter {
       finalPlace = place.where
         ? { connect: { id: place.where } }
         : (() => {
-          const { cityCode, communityId, ...restCreate } = place.create!;
-          return {
-            create: {
-              ...restCreate,
-              city: { connect: { code: cityCode } },
-              community: { connect: { id: communityId } },
-            },
-          };
-        })();
+            const { cityCode, communityId, ...restCreate } = place.create!;
+            return {
+              create: {
+                ...restCreate,
+                city: { connect: { code: cityCode } },
+                community: { connect: { id: communityId } },
+              },
+            };
+          })();
     }
 
     return {
@@ -140,23 +142,23 @@ export default class OpportunityConverter {
     if (filter.keyword) {
       conditions.push({
         OR: [
-          { title: { contains: filter.keyword, mode: 'insensitive' } },
+          { title: { contains: filter.keyword, mode: "insensitive" } },
           {
             place: {
               OR: [
-                { name: { contains: filter.keyword, mode: 'insensitive' } },
+                { name: { contains: filter.keyword, mode: "insensitive" } },
                 {
                   city: {
                     OR: [
-                      { name: { contains: filter.keyword, mode: 'insensitive' } },
-                      { state: { name: { contains: filter.keyword, mode: 'insensitive' } } },
+                      { name: { contains: filter.keyword, mode: "insensitive" } },
+                      { state: { name: { contains: filter.keyword, mode: "insensitive" } } },
                     ],
                   },
                 },
               ],
             },
           },
-          { createdByUser: { name: { contains: filter.keyword, mode: 'insensitive' } } },
+          { createdByUser: { name: { contains: filter.keyword, mode: "insensitive" } } },
         ],
       });
     }

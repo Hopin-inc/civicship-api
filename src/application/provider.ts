@@ -12,6 +12,7 @@ import WalletValidator from "@/application/domain/account/wallet/validator";
 import CommunityService from "@/application/domain/account/community/service";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
 import UserService from "@/application/domain/account/user/service";
+import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
@@ -84,6 +85,8 @@ import { VCIssuanceRequestService } from "@/application/domain/experience/evalua
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
 import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation/vcIssuanceRequest/usecase";
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -115,6 +118,7 @@ export function registerProductionDependencies() {
   container.register("UserRepository", { useClass: UserRepository });
   container.register("UserConverter", { useClass: UserConverter });
   container.register("UserService", { useClass: UserService });
+  container.register("NFTWalletService", { useClass: NFTWalletService });
   container.register("UserUseCase", { useClass: UserUseCase });
 
   // 🏘️ Community
@@ -122,6 +126,9 @@ export function registerProductionDependencies() {
   container.register("CommunityConverter", { useClass: CommunityConverter });
   container.register("CommunityService", { useClass: CommunityService });
   container.register("CommunityUseCase", { useClass: CommunityUseCase });
+
+  container.register("CommunityConfigService", { useClass: CommunityConfigService });
+  container.register("CommunityConfigRepository", { useClass: CommunityConfigRepository });
 
   // 🆔 Identity
   container.register("IdentityService", { useClass: IdentityService });

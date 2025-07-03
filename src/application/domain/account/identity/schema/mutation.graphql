@@ -16,6 +16,10 @@ extend type Mutation {
 
     storePhoneAuthToken(input: StorePhoneAuthTokenInput!): StorePhoneAuthTokenPayload
     @authz(rules: [IsSelf])
+
+    identityCheckPhoneUser(
+        input: IdentityCheckPhoneUserInput!
+    ): IdentityCheckPhoneUserPayload!
 }
 
 # ------------------------------
@@ -46,6 +50,10 @@ input StorePhoneAuthTokenInput {
     expiresIn: Int!
 }
 
+input IdentityCheckPhoneUserInput {
+    communityId: ID!
+}
+
 # ------------------------------
 # User Account Type Definitions
 # ------------------------------
@@ -60,4 +68,16 @@ type UserDeletePayload {
 type StorePhoneAuthTokenPayload {
     success: Boolean!
     expiresAt: Datetime
+}
+
+type IdentityCheckPhoneUserPayload {
+    status: PhoneUserStatus!
+    user: User
+    membership: Membership
+}
+
+enum PhoneUserStatus {
+    NEW_USER
+    EXISTING_SAME_COMMUNITY
+    EXISTING_DIFFERENT_COMMUNITY
 }

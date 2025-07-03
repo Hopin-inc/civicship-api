@@ -3,6 +3,7 @@ import { IIdentityRepository } from "@/application/domain/account/identity/data/
 import { injectable, inject } from "tsyringe";
 import { identitySelectDetail } from "@/application/domain/account/identity/data/type";
 import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
 
 @injectable()
 export default class IdentityRepository implements IIdentityRepository {
@@ -12,6 +13,15 @@ export default class IdentityRepository implements IIdentityRepository {
     return this.db.identity.findUnique({
       where: { uid },
       select: identitySelectDetail,
+    });
+  }
+
+  async create(ctx: IContext, data: Prisma.IdentityCreateInput) {
+    return ctx.issuer.internal(async tx => {
+      return tx.identity.create({
+        data,
+        select: identitySelectDetail,
+      });
     });
   }
 

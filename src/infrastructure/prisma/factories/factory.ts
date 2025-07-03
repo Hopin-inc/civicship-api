@@ -39,6 +39,7 @@ import {
 import {
   defineArticleFactory,
   defineCityFactory,
+  defineCommunityConfigFactory,
   defineCommunityFactory,
   defineEvaluationFactory,
   defineImageFactory,
@@ -59,6 +60,7 @@ import {
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { randomEnum } from "@/infrastructure/prisma/factories/helper";
 import { registerScalarFieldValueGenerator } from "@quramy/prisma-fabbrica";
+import * as process from "node:process";
 
 registerScalarFieldValueGenerator({
   Decimal: ({ modelName, fieldName }) => {
@@ -106,6 +108,34 @@ export const CommunityFactory = defineCommunityFactory({
     name: randAnimal(),
     pointName: randAirportName(),
   }),
+});
+
+export const CommunityConfigFactory = defineCommunityConfigFactory.withTransientFields<{
+  transientCommunity?: { id: string };
+}>({
+  transientCommunity: undefined,
+})({
+  defaultData: async ({ transientCommunity }) => {
+    const community = transientCommunity ?? (await CommunityFactory.create());
+
+    return {
+      community: { connect: { id: community.id } },
+      firebaseConfig: {
+        create: {
+          tenantId: process.env.FIREBASE_AUTH_TENANT_ID ?? "",
+        },
+      },
+      lineConfig: {
+        create: {
+          channelId: process.env.LINE_LIFF_CHANNEL_ID ?? "",
+          channelSecret: process.env.LINE_MESSAGING_CHANNEL_SECRET ?? "",
+          accessToken: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN ?? "",
+          liffId: process.env.LIFF_ID ?? "",
+          liffBaseUrl: process.env.LIFF_BASE_URL ?? "",
+        },
+      },
+    };
+  },
 });
 
 export const UserFactory = defineUserFactory.withTransientFields<{

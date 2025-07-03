@@ -6,40 +6,91 @@ import { userAuthInclude, userAuthSelect } from "@/application/domain/account/us
 import { createLoaders, Loaders } from "@/presentation/graphql/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { auth } from "@/infrastructure/libs/firebase";
-import logger from '@/infrastructure/logging';
+import logger from "@/infrastructure/logging";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { container } from "tsyringe";
 
 function getIdTokenFromRequest(req: http.IncomingMessage): string | undefined {
   const idToken: string | undefined = req.headers["authorization"];
   return idToken?.replace(/^Bearer\s+/, "");
 }
 
+function getAdminApiKeyFromRequest(req: http.IncomingMessage): string | undefined {
+  const key = req.headers["x-civicship-admin-api-key"];
+  return typeof key === "string" ? key : undefined;
+}
+
 export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
   const issuer = new PrismaClientIssuer();
   const loaders: Loaders = createLoaders(issuer);
   const idToken = getIdTokenFromRequest(req);
-  
-  const phoneAuthToken = req.headers['x-phone-auth-token'] as string || '';
-  const phoneRefreshToken = req.headers['x-phone-refresh-token'] as string || '';
-  const phoneTokenExpiresAt = req.headers['x-phone-token-expires-at'] as string || '';
-  const phoneUid = req.headers['x-phone-uid'] as string || '';
-  const refreshToken = req.headers['x-refresh-token'] as string || '';
-  const tokenExpiresAt = req.headers['x-token-expires-at'] as string || '';
-  
-  logger.debug('Request token presence:', {
-    path: req.url || 'unknown',
+  const adminApiKey = getAdminApiKeyFromRequest(req);
+  const expectedAdminKey = process.env.CIVICSHIP_ADMIN_API_KEY;
+
+  const phoneAuthToken = (req.headers["x-phone-auth-token"] as string) || "";
+  const phoneRefreshToken = (req.headers["x-phone-refresh-token"] as string) || "";
+  const phoneTokenExpiresAt = (req.headers["x-phone-token-expires-at"] as string) || "";
+  const phoneUid = (req.headers["x-phone-uid"] as string) || "";
+  const refreshToken = (req.headers["x-refresh-token"] as string) || "";
+  const tokenExpiresAt = (req.headers["x-token-expires-at"] as string) || "";
+  const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID;
+
+  if (!communityId) {
+    throw new Error("Missing required header: x-community-id");
+  }
+
+  logger.debug("Request token presence:", {
+    path: req.url || "unknown",
     hasIdToken: !!idToken,
     hasRefreshToken: !!refreshToken,
     hasPhoneToken: !!phoneAuthToken,
+    hasAdminApiKey: !!adminApiKey,
   });
 
-  if (!idToken) {
-    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, phoneUid, refreshToken, tokenExpiresAt };
+  if (adminApiKey && expectedAdminKey === undefined) {
+    logger.warn("Admin API key is present, but expected key is undefined!");
   }
 
-  const tenantId = process.env.FIREBASE_AUTH_TENANT_ID;
-  if (!tenantId) {
-    throw new Error("FIREBASE_AUTH_TENANT_ID not defined.");
+  if (adminApiKey) {
+    if (adminApiKey === expectedAdminKey) {
+      logger.info("Admin access via API key");
+      return {
+        issuer,
+        loaders,
+        communityId,
+        isAdmin: true,
+
+        phoneAuthToken,
+        phoneRefreshToken,
+        phoneTokenExpiresAt,
+        phoneUid,
+        refreshToken,
+        tokenExpiresAt,
+      };
+    } else {
+      logger.warn("Admin API key provided but does not match expected value", {
+        received: adminApiKey,
+      });
+    }
   }
+
+  if (!idToken) {
+    return {
+      issuer,
+      loaders,
+      phoneAuthToken,
+      phoneRefreshToken,
+      phoneTokenExpiresAt,
+      phoneUid,
+      refreshToken,
+      tokenExpiresAt,
+      communityId,
+    };
+  }
+
+  const configService = container.resolve(CommunityConfigService);
+  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+
   try {
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     const decoded = await tenantedAuth.verifyIdToken(idToken);
@@ -62,23 +113,38 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     ]);
 
     return {
+      issuer,
+      loaders,
+
       uid,
       tenantId,
+      communityId,
       platform,
+
       currentUser,
       hasPermissions,
-      loaders,
+
+      phoneUid,
+      phoneAuthToken,
+      phoneRefreshToken,
+      phoneTokenExpiresAt,
+
+      idToken,
+      refreshToken,
+      tokenExpiresAt,
+    };
+  } catch {
+    return {
+      communityId,
       issuer,
+      loaders,
       phoneAuthToken,
       phoneRefreshToken,
       phoneTokenExpiresAt,
       phoneUid,
       refreshToken,
       tokenExpiresAt,
-      idToken
     };
-  } catch {
-    return { issuer, loaders, phoneAuthToken, phoneRefreshToken, phoneTokenExpiresAt, phoneUid, refreshToken, tokenExpiresAt };
   }
 }
 

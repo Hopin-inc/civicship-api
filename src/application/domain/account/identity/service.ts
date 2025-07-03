@@ -18,20 +18,46 @@ export default class IdentityService {
     data: Prisma.UserCreateInput,
     uid: string,
     platform: IdentityPlatform,
+    communityId: string,
     phoneUid?: string,
   ) {
     const identityCreate = phoneUid
       ? {
           create: [
-            { uid, platform },
+            { uid, platform, communityId },
             { uid: phoneUid, platform: IdentityPlatform.PHONE },
           ],
         }
-      : { create: { uid, platform } };
+      : { create: { uid, platform, communityId } };
 
     return this.userRepository.create({
       ...data,
       identities: identityCreate,
+    });
+  }
+
+  async addIdentityToUser(
+    ctx: IContext,
+    userId: string,
+    uid: string,
+    platform: IdentityPlatform,
+    communityId: string,
+  ) {
+    const expiryTime = ctx.phoneTokenExpiresAt
+      ? new Date(parseInt(ctx.phoneTokenExpiresAt, 10))
+      : new Date(Date.now() + 60 * 60 * 1000); // Default 1 hour expiry
+    await this.identityRepository.create(ctx, {
+      uid,
+      platform,
+      authToken: ctx.idToken,
+      refreshToken: ctx.refreshToken,
+      tokenExpiresAt: expiryTime,
+      user: {
+        connect: { id: userId },
+      },
+      community: {
+        connect: { id: communityId },
+      },
     });
   }
 

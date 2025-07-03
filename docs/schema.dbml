@@ -80,7 +80,9 @@ Table t_communities {
   website String
   imageId String
   image t_images
+  config t_community_configs
   places t_places [not null]
+  identities t_identities [not null]
   memberships t_memberships [not null]
   wallets t_wallets [not null]
   utilities t_utilities [not null]
@@ -89,6 +91,53 @@ Table t_communities {
   articles t_articles [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table t_community_configs {
+  id String [pk]
+  communityId String [unique, not null]
+  community t_communities [not null]
+  firebaseConfig t_community_firebase_configs
+  lineConfig t_community_line_configs
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_firebase_configs {
+  id String [pk]
+  configId String [unique, not null]
+  config t_community_configs
+  tenantId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_line_configs {
+  id String [pk]
+  configId String [unique, not null]
+  config t_community_configs
+  channelId String [not null]
+  channelSecret String [not null]
+  accessToken String [not null]
+  liffId String [not null]
+  liffBaseUrl String [not null]
+  richMenus t_community_line_rich_menus [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_community_line_rich_menus {
+  id String [pk]
+  configId String [not null]
+  config t_community_line_configs [not null]
+  type LineRichMenuType [not null]
+  richMenuId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (configId, type) [unique]
+  }
 }
 
 Table t_users {
@@ -108,8 +157,7 @@ Table t_users {
   imageId String
   image t_images
   identities t_identities [not null]
-  didIssuanceRequests t_did_issuance_requests [not null]
-  vcIssuanceRequests t_vc_issuance_requests [not null]
+  nftWallet t_nft_wallets
   memberships t_memberships [not null]
   membershipChangedByMe t_membership_histories [not null]
   wallets t_wallets [not null]
@@ -134,46 +182,11 @@ Table t_identities {
   platform IdentityPlatform [not null]
   userId String [not null]
   user t_users [not null]
+  communityId String
+  community t_communities
   authToken String
   refreshToken String
   tokenExpiresAt DateTime
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table t_did_issuance_requests {
-  id String [pk]
-  status DidIssuanceStatus [not null, default: 'PENDING']
-  jobId String
-  didValue String
-  errorMessage String
-  retryCount Int [not null, default: 0]
-  requestedAt DateTime [default: `now()`, not null]
-  processedAt DateTime
-  completedAt DateTime
-  userId String [not null]
-  user t_users [not null]
-  createdAt DateTime [default: `now()`, not null]
-  updatedAt DateTime
-}
-
-Table t_vc_issuance_requests {
-  id String [pk]
-  status VcIssuanceStatus [not null, default: 'PENDING']
-  jobId String
-  vcRecordId String
-  claims Json [not null]
-  credentialFormat String
-  schemaId String
-  errorMessage String
-  retryCount Int [not null, default: 0]
-  requestedAt DateTime [default: `now()`, not null]
-  processedAt DateTime
-  completedAt DateTime
-  evaluationId String [unique, not null]
-  evaluation t_evaluations [not null]
-  userId String [not null]
-  user t_users [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -284,7 +297,6 @@ Table t_opportunity_slots {
   opportunityId String [not null]
   opportunity t_opportunities [not null]
   reservations t_reservations [not null]
-  participations t_participations [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -322,8 +334,6 @@ Table t_participations {
   images t_images [not null]
   userId String
   user t_users
-  opportunitySlotId String
-  opportunitySlot t_opportunity_slots
   reservationId String
   reservation t_reservations
   ticketStatusHistories t_ticket_status_histories [not null]
@@ -358,7 +368,6 @@ Table t_evaluations {
   participation t_participations [not null]
   evaluatorId String [not null]
   evaluator t_users [not null]
-  vcIssuanceRequest t_vc_issuance_requests
   histories t_evaluation_histories [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -461,6 +470,24 @@ Table t_transactions {
   ticketStatusHistory t_ticket_status_histories
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+}
+
+Table m_api_keys {
+  id String [pk]
+  key String [unique, not null]
+  name String [not null]
+  isActive Boolean [not null, default: true]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+}
+
+Table t_nft_wallets {
+  id String [pk]
+  userId String [unique, not null]
+  walletAddress String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  user t_users [not null]
 }
 
 Table v_place_public_opportunity_count {
@@ -591,6 +618,12 @@ Enum Source {
   EXTERNAL
 }
 
+Enum LineRichMenuType {
+  ADMIN
+  USER
+  PUBLIC
+}
+
 Enum SysRole {
   SYS_ADMIN
   USER
@@ -609,20 +642,6 @@ Enum IdentityPlatform {
   LINE
   FACEBOOK
   PHONE
-}
-
-Enum DidIssuanceStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-Enum VcIssuanceStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
 }
 
 Enum Role {
@@ -746,15 +765,19 @@ Ref: t_places.communityId > t_communities.id [delete: Set Null]
 
 Ref: t_communities.imageId > t_images.id
 
+Ref: t_community_configs.communityId - t_communities.id
+
+Ref: t_community_firebase_configs.configId - t_community_configs.id
+
+Ref: t_community_line_configs.configId - t_community_configs.id
+
+Ref: t_community_line_rich_menus.configId > t_community_line_configs.id [delete: Cascade]
+
 Ref: t_users.imageId > t_images.id
 
 Ref: t_identities.userId > t_users.id [delete: Cascade]
 
-Ref: t_did_issuance_requests.userId > t_users.id [delete: Cascade]
-
-Ref: t_vc_issuance_requests.evaluationId - t_evaluations.id
-
-Ref: t_vc_issuance_requests.userId > t_users.id [delete: Cascade]
+Ref: t_identities.communityId > t_communities.id
 
 Ref: t_memberships.userId > t_users.id [delete: Cascade]
 
@@ -789,8 +812,6 @@ Ref: t_reservation_histories.reservationId > t_reservations.id [delete: Cascade]
 Ref: t_reservation_histories.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_participations.userId > t_users.id [delete: Set Null]
-
-Ref: t_participations.opportunitySlotId > t_opportunity_slots.id
 
 Ref: t_participations.reservationId > t_reservations.id [delete: Cascade]
 
@@ -837,6 +858,8 @@ Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
+
+Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
 
 Ref: v_place_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 

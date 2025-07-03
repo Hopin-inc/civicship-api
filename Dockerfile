@@ -1,5 +1,5 @@
 FROM node:20
-WORKDIR /tmp
+WORKDIR /app
 COPY package*.json ./
 RUN npm install -g pnpm
 RUN pnpm install
