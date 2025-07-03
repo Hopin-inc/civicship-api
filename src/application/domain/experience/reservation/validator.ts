@@ -18,8 +18,6 @@ import {
 
 @injectable()
 export default class ReservationValidator {
-  private static readonly RESERVATION_THRESHOLD_DAYS = 1;
-
   validateReservable(
     slot: PrismaOpportunitySlotReserve,
     participantCount: number,
@@ -57,8 +55,11 @@ export default class ReservationValidator {
 
   validateCancellable(slotStartAt: Date) {
     const now = new Date();
+
+    // Create a deadline date which is the day before the event at 23:59 JST
     const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setDate(cancelLimit.getDate() - 1);
+    cancelLimit.setDate(cancelLimit.getDate() - 1); // Set to the day before
+    cancelLimit.setHours(23, 59, 59, 999); // Set to 23:59:59.999 JST
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();
@@ -78,9 +79,17 @@ export default class ReservationValidator {
 
   private validateSlotAdvanceBookingThreshold(startsAt: Date) {
     const now = new Date();
-    const thresholdDate = new Date();
-    thresholdDate.setDate(now.getDate() + ReservationValidator.RESERVATION_THRESHOLD_DAYS);
-    if (startsAt.getTime() < thresholdDate.getTime()) {
+
+    // Get the date of the event
+    const eventDate = new Date(startsAt);
+
+    // Create a deadline date which is the day before the event at 23:59 JST
+    const deadlineDate = new Date(eventDate);
+    deadlineDate.setDate(deadlineDate.getDate() - 1); // Set to the day before
+    deadlineDate.setHours(23, 59, 59, 999); // Set to 23:59:59.999 JST
+
+    // Check if current time is past the deadline
+    if (now > deadlineDate) {
       throw new ReservationAdvanceBookingRequiredError();
     }
   }
