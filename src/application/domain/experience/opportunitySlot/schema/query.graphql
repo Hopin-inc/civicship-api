@@ -31,7 +31,7 @@ type OpportunitySlotEdge implements Edge {
 input OpportunitySlotFilterInput {
     opportunityIds: [ID!]
     ownerId: ID
-    hostingStatus: OpportunitySlotHostingStatus
+    hostingStatus: [OpportunitySlotHostingStatus!]
     dateRange: DateTimeRangeFilter
 }
 
