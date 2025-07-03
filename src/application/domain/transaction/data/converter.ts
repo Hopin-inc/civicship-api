@@ -12,13 +12,17 @@ export default class TransactionConverter {
     return [{ createdAt: sort?.createdAt ?? Prisma.SortOrder.desc }];
   }
 
-  issueCommunityPoint(toWalletId: string, transferPoints: number, createdBy: string): Prisma.TransactionCreateInput {
+  issueCommunityPoint(
+    toWalletId: string,
+    transferPoints: number,
+    createdBy: string,
+  ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_ISSUED,
       toWallet: { connect: { id: toWalletId } },
       fromPointChange: transferPoints,
       toPointChange: transferPoints,
-      createdBy,
+      createdByUser: { connect: { id: createdBy } },
     };
   }
 
@@ -34,7 +38,7 @@ export default class TransactionConverter {
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
-      createdBy,
+      createdByUser: { connect: { id: createdBy } },
     };
   }
 
@@ -50,7 +54,7 @@ export default class TransactionConverter {
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
-      createdBy,
+      createdByUser: { connect: { id: createdBy } },
     };
   }
 
@@ -68,7 +72,7 @@ export default class TransactionConverter {
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
       participation: { connect: { id: participationId } },
-      createdBy,
+      createdByUser: { connect: { id: createdBy } },
     };
   }
 
@@ -84,7 +88,7 @@ export default class TransactionConverter {
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
-      createdBy,
+      createdByUser: { connect: { id: createdBy } },
     };
   }
 
@@ -100,7 +104,7 @@ export default class TransactionConverter {
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
-      createdBy,
+      createdByUser: { connect: { id: createdBy } },
     };
   }
 }
