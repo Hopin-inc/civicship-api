@@ -8,7 +8,7 @@ type Article {
     title: String!
     introduction: String!
     body: String
-    thumbnail: JSON
+    thumbnail: String
 
     publishStatus: PublishStatus!
     publishedAt: Datetime

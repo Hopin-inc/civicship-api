@@ -1,0 +1,81 @@
+# ------------------------------
+# Article Mutation Definitions
+# ------------------------------
+extend type Mutation {
+    articleCreate(
+        input: ArticleCreateInput!
+        permission: CheckCommunityPermissionInput!
+    ): ArticleCreatePayload
+    @authz(rules: [IsCommunityManager])
+
+    articleUpdateContent(
+        id: ID!
+        input: ArticleUpdateContentInput!
+        permission: CheckCommunityPermissionInput!
+    ): ArticleUpdateContentPayload
+    @authz(rules: [IsCommunityManager])
+
+    articleDelete(
+        id: ID!
+        permission: CheckCommunityPermissionInput!
+    ): ArticleDeletePayload
+    @authz(rules: [IsCommunityManager])
+}
+
+# ------------------------------
+# Article Mutation Input Definitions
+# ------------------------------
+input ArticleCreateInput {
+    title: String!
+    introduction: String!
+    body: String
+    thumbnail: ImageInput
+    category: ArticleCategory!
+    publishStatus: PublishStatus!
+
+    authorIds: [ID!]!
+    relatedUserIds: [ID!]
+    relatedOpportunityIds: [ID!]
+}
+
+input ArticleUpdateContentInput {
+    title: String!
+    introduction: String!
+    body: String
+    thumbnail: ImageInput
+    category: ArticleCategory!
+
+    publishStatus: PublishStatus!
+
+    authorIds: [ID!]!
+    relatedUserIds: [ID!]
+    relatedOpportunityIds: [ID!]
+
+    publishedAt: Datetime
+}
+
+# ------------------------------
+# Article Mutation Success Type Definitions
+# ------------------------------
+type ArticleCreateSuccess {
+    article: Article!
+}
+
+type ArticleUpdateContentSuccess {
+    article: Article!
+}
+
+type ArticleDeleteSuccess {
+    articleId: ID!
+}
+# ------------------------------
+# Article Mutation Union (Payload) Definitions
+# ------------------------------
+union ArticleCreatePayload =
+    ArticleCreateSuccess
+
+union ArticleUpdateContentPayload =
+    ArticleUpdateContentSuccess
+
+union ArticleDeletePayload =
+    ArticleDeleteSuccess

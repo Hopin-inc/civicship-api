@@ -17,6 +17,7 @@ import UtilityResolver from "@/application/domain/reward/utility/controller/reso
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
+import MasterResolver from "@/application/domain/location/master/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -33,6 +34,7 @@ const participation = container.resolve(ParticipationResolver);
 const evaluation = container.resolve(EvaluationResolver);
 
 const place = container.resolve(PlaceResolver);
+const master = container.resolve(MasterResolver);
 
 const ticket = container.resolve(TicketResolver);
 const ticketIssuer = container.resolve(TicketIssuerResolver);
@@ -55,6 +57,7 @@ const resolvers = {
     ...participation.Query,
     ...evaluation.Query,
     ...place.Query,
+    ...master.Query,
     ...utility.Query,
     ...ticket.Query,
     ...ticketIssuer.Query,
@@ -66,6 +69,7 @@ const resolvers = {
     ...user.Mutation,
     ...community.Mutation,
     ...membership.Mutation,
+    ...article.Mutation,
     ...opportunity.Mutation,
     ...opportunitySlot.Mutation,
     ...reservation.Mutation,

@@ -45,10 +45,6 @@ interface Edge {
 # ------------------------------------------------
 # Query Extensions
 # ------------------------------------------------
-extend type Query {
-    cities(name: String): [City!]!
-    states(name: String): [State!]!
-}
 
 # ------------------------------------------------
 # Directives
