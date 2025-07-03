@@ -9,17 +9,13 @@ export default class MasterRepository implements IMasterRepository {
   async findCities(
     ctx: IContext,
     where: Prisma.CityWhereInput,
-    orderBy: Prisma.CityOrderByWithRelationInput[],
-    take?: number,
-    skip?: number
+    orderBy: Prisma.CityOrderByWithRelationInput[]
   ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.city.findMany({
         where,
         select: citySelectDetail,
         orderBy,
-        take,
-        skip,
       });
     });
   }
@@ -27,9 +23,7 @@ export default class MasterRepository implements IMasterRepository {
   async findStates(
     ctx: IContext,
     where: Prisma.StateWhereInput,
-    orderBy: Prisma.StateOrderByWithRelationInput[],
-    take?: number,
-    skip?: number
+    orderBy: Prisma.StateOrderByWithRelationInput[]
   ) {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.state.findMany({
@@ -40,8 +34,6 @@ export default class MasterRepository implements IMasterRepository {
           countryCode: true,
         },
         orderBy,
-        take,
-        skip,
       });
     });
   }

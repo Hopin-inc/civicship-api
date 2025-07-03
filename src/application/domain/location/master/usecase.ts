@@ -7,11 +7,11 @@ import MasterService from "@/application/domain/location/master/service";
 export default class MasterUseCase {
   constructor(@inject("MasterService") private readonly service: MasterService) {}
 
-  async getCities(filter: GqlCitiesInput | undefined, cursor: string | undefined, first: number | undefined, ctx: IContext) {
-    return this.service.getCities(filter, cursor, first, ctx);
+  async getCities(filter: GqlCitiesInput | undefined, ctx: IContext) {
+    return this.service.getCities(filter, ctx);
   }
 
-  async getStates(filter: GqlStatesInput | undefined, cursor: string | undefined, first: number | undefined, ctx: IContext) {
-    return this.service.getStates(filter, cursor, first, ctx);
+  async getStates(filter: GqlStatesInput | undefined, ctx: IContext) {
+    return this.service.getStates(filter, ctx);
   }
 }
