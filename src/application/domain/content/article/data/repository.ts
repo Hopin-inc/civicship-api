@@ -40,4 +40,39 @@ export default class ArticleRepository {
       });
     });
   }
+
+  async create(
+    ctx: IContext,
+    data: Prisma.ArticleCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.article.create({
+      data,
+      select: articleSelectDetail,
+    });
+  }
+
+  async update(
+    ctx: IContext,
+    id: string,
+    data: Prisma.ArticleUpdateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.article.update({
+      where: { id },
+      data,
+      select: articleSelectDetail,
+    });
+  }
+
+  async delete(
+    ctx: IContext,
+    id: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.article.delete({
+      where: { id },
+      select: articleSelectDetail,
+    });
+  }
 }
