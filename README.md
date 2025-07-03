@@ -1,4 +1,5 @@
 # civicship-api
+
 ![logo.svg](./docs/asset/logo.svg)
 
 ## Overview
@@ -69,6 +70,28 @@ Seed the database with necessary initial data.
 ```bash
 pnpm db:seed
 ```
+
+### Create a New Community
+
+You can create a new community with a minimal set of required records using the create-community script.
+
+```bash
+# Basic usage (creates community with default admin)
+node scripts/create-community.js community_id
+
+# With custom admin name
+node scripts/create-community.js community_id "Admin Name"
+
+# With custom admin name and email
+node scripts/create-community.js community_id "Admin Name" "admin@example.com"
+```
+
+This script creates:
+
+- A new community with the specified ID
+- An admin user
+- A wallet for the admin
+- A membership record connecting the admin to the community
 
 ### Perform Migrations
 
