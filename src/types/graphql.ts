@@ -41,7 +41,7 @@ export type GqlArticle = {
   publishStatus: GqlPublishStatus;
   publishedAt?: Maybe<Scalars['Datetime']['output']>;
   relatedUsers?: Maybe<Array<GqlUser>>;
-  thumbnail?: Maybe<Scalars['JSON']['output']>;
+  thumbnail?: Maybe<Scalars['String']['output']>;
   title: Scalars['String']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
 };
@@ -52,6 +52,34 @@ export const GqlArticleCategory = {
 } as const;
 
 export type GqlArticleCategory = typeof GqlArticleCategory[keyof typeof GqlArticleCategory];
+export type GqlArticleCreateInput = {
+  authorIds: Array<Scalars['ID']['input']>;
+  body?: InputMaybe<Scalars['String']['input']>;
+  category: GqlArticleCategory;
+  communityId: Scalars['ID']['input'];
+  introduction: Scalars['String']['input'];
+  publishStatus: GqlPublishStatus;
+  publishedAt?: InputMaybe<Scalars['Datetime']['input']>;
+  relatedOpportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  thumbnail?: InputMaybe<GqlImageInput>;
+  title: Scalars['String']['input'];
+};
+
+export type GqlArticleCreatePayload = GqlArticleCreateSuccess;
+
+export type GqlArticleCreateSuccess = {
+  __typename?: 'ArticleCreateSuccess';
+  article: GqlArticle;
+};
+
+export type GqlArticleDeletePayload = GqlArticleDeleteSuccess;
+
+export type GqlArticleDeleteSuccess = {
+  __typename?: 'ArticleDeleteSuccess';
+  articleId: Scalars['ID']['output'];
+};
+
 export type GqlArticleEdge = GqlEdge & {
   __typename?: 'ArticleEdge';
   cursor: Scalars['String']['output'];
@@ -74,10 +102,40 @@ export type GqlArticleFilterInput = {
   stateCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
+export type GqlArticleSetPublishStatusInput = {
+  publishStatus: GqlPublishStatus;
+};
+
+export type GqlArticleSetPublishStatusPayload = GqlArticleSetPublishStatusSuccess;
+
+export type GqlArticleSetPublishStatusSuccess = {
+  __typename?: 'ArticleSetPublishStatusSuccess';
+  article: GqlArticle;
+};
+
 export type GqlArticleSortInput = {
   createdAt?: InputMaybe<GqlSortDirection>;
   publishedAt?: InputMaybe<GqlSortDirection>;
   startsAt?: InputMaybe<GqlSortDirection>;
+};
+
+export type GqlArticleUpdateContentInput = {
+  authorIds: Array<Scalars['ID']['input']>;
+  body?: InputMaybe<Scalars['String']['input']>;
+  category: GqlArticleCategory;
+  introduction: Scalars['String']['input'];
+  publishedAt?: InputMaybe<Scalars['Datetime']['input']>;
+  relatedOpportunityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  relatedUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  thumbnail?: InputMaybe<GqlImageInput>;
+  title: Scalars['String']['input'];
+};
+
+export type GqlArticleUpdateContentPayload = GqlArticleUpdateContentSuccess;
+
+export type GqlArticleUpdateContentSuccess = {
+  __typename?: 'ArticleUpdateContentSuccess';
+  article: GqlArticle;
 };
 
 export type GqlArticlesConnection = {
@@ -626,6 +684,10 @@ export type GqlMembershipsConnection = {
 
 export type GqlMutation = {
   __typename?: 'Mutation';
+  articleCreate?: Maybe<GqlArticleCreatePayload>;
+  articleDelete?: Maybe<GqlArticleDeletePayload>;
+  articleSetPublishStatus?: Maybe<GqlArticleSetPublishStatusPayload>;
+  articleUpdateContent?: Maybe<GqlArticleUpdateContentPayload>;
   communityCreate?: Maybe<GqlCommunityCreatePayload>;
   communityDelete?: Maybe<GqlCommunityDeletePayload>;
   communityUpdateProfile?: Maybe<GqlCommunityUpdateProfilePayload>;
@@ -676,6 +738,32 @@ export type GqlMutation = {
   utilityDelete?: Maybe<GqlUtilityDeletePayload>;
   utilitySetPublishStatus?: Maybe<GqlUtilitySetPublishStatusPayload>;
   utilityUpdateInfo?: Maybe<GqlUtilityUpdateInfoPayload>;
+};
+
+
+export type GqlMutationArticleCreateArgs = {
+  input: GqlArticleCreateInput;
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationArticleDeleteArgs = {
+  id: Scalars['ID']['input'];
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationArticleSetPublishStatusArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlArticleSetPublishStatusInput;
+  permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationArticleUpdateContentArgs = {
+  id: Scalars['ID']['input'];
+  input: GqlArticleUpdateContentInput;
+  permission: GqlCheckCommunityPermissionInput;
 };
 
 
@@ -2629,6 +2717,10 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping of union types */
 export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = ResolversObject<{
+  ArticleCreatePayload: ( Omit<GqlArticleCreateSuccess, 'article'> & { article: _RefType['Article'] } );
+  ArticleDeletePayload: ( GqlArticleDeleteSuccess );
+  ArticleSetPublishStatusPayload: ( Omit<GqlArticleSetPublishStatusSuccess, 'article'> & { article: _RefType['Article'] } );
+  ArticleUpdateContentPayload: ( Omit<GqlArticleUpdateContentSuccess, 'article'> & { article: _RefType['Article'] } );
   CommunityCreatePayload: ( Omit<GqlCommunityCreateSuccess, 'community'> & { community: _RefType['Community'] } );
   CommunityDeletePayload: ( GqlCommunityDeleteSuccess );
   CommunityUpdateProfilePayload: ( Omit<GqlCommunityUpdateProfileSuccess, 'community'> & { community: _RefType['Community'] } );
@@ -2677,9 +2769,20 @@ export type GqlResolversTypes = ResolversObject<{
   AccumulatedPointView: ResolverTypeWrapper<AccumulatedPointView>;
   Article: ResolverTypeWrapper<Article>;
   ArticleCategory: GqlArticleCategory;
+  ArticleCreateInput: GqlArticleCreateInput;
+  ArticleCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ArticleCreatePayload']>;
+  ArticleCreateSuccess: ResolverTypeWrapper<Omit<GqlArticleCreateSuccess, 'article'> & { article: GqlResolversTypes['Article'] }>;
+  ArticleDeletePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ArticleDeletePayload']>;
+  ArticleDeleteSuccess: ResolverTypeWrapper<GqlArticleDeleteSuccess>;
   ArticleEdge: ResolverTypeWrapper<Omit<GqlArticleEdge, 'node'> & { node?: Maybe<GqlResolversTypes['Article']> }>;
   ArticleFilterInput: GqlArticleFilterInput;
+  ArticleSetPublishStatusInput: GqlArticleSetPublishStatusInput;
+  ArticleSetPublishStatusPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ArticleSetPublishStatusPayload']>;
+  ArticleSetPublishStatusSuccess: ResolverTypeWrapper<Omit<GqlArticleSetPublishStatusSuccess, 'article'> & { article: GqlResolversTypes['Article'] }>;
   ArticleSortInput: GqlArticleSortInput;
+  ArticleUpdateContentInput: GqlArticleUpdateContentInput;
+  ArticleUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['ArticleUpdateContentPayload']>;
+  ArticleUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlArticleUpdateContentSuccess, 'article'> & { article: GqlResolversTypes['Article'] }>;
   ArticlesConnection: ResolverTypeWrapper<Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversTypes['ArticleEdge']>>> }>;
   AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
   AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
@@ -2967,9 +3070,20 @@ export type GqlResolversTypes = ResolversObject<{
 export type GqlResolversParentTypes = ResolversObject<{
   AccumulatedPointView: AccumulatedPointView;
   Article: Article;
+  ArticleCreateInput: GqlArticleCreateInput;
+  ArticleCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ArticleCreatePayload'];
+  ArticleCreateSuccess: Omit<GqlArticleCreateSuccess, 'article'> & { article: GqlResolversParentTypes['Article'] };
+  ArticleDeletePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ArticleDeletePayload'];
+  ArticleDeleteSuccess: GqlArticleDeleteSuccess;
   ArticleEdge: Omit<GqlArticleEdge, 'node'> & { node?: Maybe<GqlResolversParentTypes['Article']> };
   ArticleFilterInput: GqlArticleFilterInput;
+  ArticleSetPublishStatusInput: GqlArticleSetPublishStatusInput;
+  ArticleSetPublishStatusPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ArticleSetPublishStatusPayload'];
+  ArticleSetPublishStatusSuccess: Omit<GqlArticleSetPublishStatusSuccess, 'article'> & { article: GqlResolversParentTypes['Article'] };
   ArticleSortInput: GqlArticleSortInput;
+  ArticleUpdateContentInput: GqlArticleUpdateContentInput;
+  ArticleUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['ArticleUpdateContentPayload'];
+  ArticleUpdateContentSuccess: Omit<GqlArticleUpdateContentSuccess, 'article'> & { article: GqlResolversParentTypes['Article'] };
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
   AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
   AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
@@ -3257,15 +3371,51 @@ export type GqlArticleResolvers<ContextType = any, ParentType extends GqlResolve
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   publishedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   relatedUsers?: Resolver<Maybe<Array<GqlResolversTypes['User']>>, ParentType, ContextType>;
-  thumbnail?: Resolver<Maybe<GqlResolversTypes['JSON']>, ParentType, ContextType>;
+  thumbnail?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   title?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlArticleCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleCreatePayload'] = GqlResolversParentTypes['ArticleCreatePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'ArticleCreateSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlArticleCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleCreateSuccess'] = GqlResolversParentTypes['ArticleCreateSuccess']> = ResolversObject<{
+  article?: Resolver<GqlResolversTypes['Article'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlArticleDeletePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleDeletePayload'] = GqlResolversParentTypes['ArticleDeletePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'ArticleDeleteSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlArticleDeleteSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleDeleteSuccess'] = GqlResolversParentTypes['ArticleDeleteSuccess']> = ResolversObject<{
+  articleId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type GqlArticleEdgeResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleEdge'] = GqlResolversParentTypes['ArticleEdge']> = ResolversObject<{
   cursor?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<Maybe<GqlResolversTypes['Article']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlArticleSetPublishStatusPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleSetPublishStatusPayload'] = GqlResolversParentTypes['ArticleSetPublishStatusPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'ArticleSetPublishStatusSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlArticleSetPublishStatusSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleSetPublishStatusSuccess'] = GqlResolversParentTypes['ArticleSetPublishStatusSuccess']> = ResolversObject<{
+  article?: Resolver<GqlResolversTypes['Article'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlArticleUpdateContentPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleUpdateContentPayload'] = GqlResolversParentTypes['ArticleUpdateContentPayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'ArticleUpdateContentSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlArticleUpdateContentSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['ArticleUpdateContentSuccess'] = GqlResolversParentTypes['ArticleUpdateContentSuccess']> = ResolversObject<{
+  article?: Resolver<GqlResolversTypes['Article'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -3597,6 +3747,10 @@ export type GqlMembershipsConnectionResolvers<ContextType = any, ParentType exte
 }>;
 
 export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Mutation'] = GqlResolversParentTypes['Mutation']> = ResolversObject<{
+  articleCreate?: Resolver<Maybe<GqlResolversTypes['ArticleCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleCreateArgs, 'input' | 'permission'>>;
+  articleDelete?: Resolver<Maybe<GqlResolversTypes['ArticleDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleDeleteArgs, 'id' | 'permission'>>;
+  articleSetPublishStatus?: Resolver<Maybe<GqlResolversTypes['ArticleSetPublishStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleSetPublishStatusArgs, 'id' | 'input' | 'permission'>>;
+  articleUpdateContent?: Resolver<Maybe<GqlResolversTypes['ArticleUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationArticleUpdateContentArgs, 'id' | 'input' | 'permission'>>;
   communityCreate?: Resolver<Maybe<GqlResolversTypes['CommunityCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityCreateArgs, 'input'>>;
   communityDelete?: Resolver<Maybe<GqlResolversTypes['CommunityDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityDeleteArgs, 'id' | 'permission'>>;
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
@@ -4430,7 +4584,15 @@ export type GqlWalletsConnectionResolvers<ContextType = any, ParentType extends 
 export type GqlResolvers<ContextType = any> = ResolversObject<{
   AccumulatedPointView?: GqlAccumulatedPointViewResolvers<ContextType>;
   Article?: GqlArticleResolvers<ContextType>;
+  ArticleCreatePayload?: GqlArticleCreatePayloadResolvers<ContextType>;
+  ArticleCreateSuccess?: GqlArticleCreateSuccessResolvers<ContextType>;
+  ArticleDeletePayload?: GqlArticleDeletePayloadResolvers<ContextType>;
+  ArticleDeleteSuccess?: GqlArticleDeleteSuccessResolvers<ContextType>;
   ArticleEdge?: GqlArticleEdgeResolvers<ContextType>;
+  ArticleSetPublishStatusPayload?: GqlArticleSetPublishStatusPayloadResolvers<ContextType>;
+  ArticleSetPublishStatusSuccess?: GqlArticleSetPublishStatusSuccessResolvers<ContextType>;
+  ArticleUpdateContentPayload?: GqlArticleUpdateContentPayloadResolvers<ContextType>;
+  ArticleUpdateContentSuccess?: GqlArticleUpdateContentSuccessResolvers<ContextType>;
   ArticlesConnection?: GqlArticlesConnectionResolvers<ContextType>;
   CitiesConnection?: GqlCitiesConnectionResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
