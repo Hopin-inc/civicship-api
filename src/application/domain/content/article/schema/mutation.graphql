@@ -20,13 +20,6 @@ extend type Mutation {
         permission: CheckCommunityPermissionInput!
     ): ArticleDeletePayload
     @authz(rules: [IsCommunityManager])
-
-    articleSetPublishStatus(
-        id: ID!
-        input: ArticleSetPublishStatusInput!
-        permission: CheckCommunityPermissionInput!
-    ): ArticleSetPublishStatusPayload
-    @authz(rules: [IsCommunityManager])
 }
 
 # ------------------------------
@@ -43,10 +36,6 @@ input ArticleCreateInput {
     authorIds: [ID!]!
     relatedUserIds: [ID!]
     relatedOpportunityIds: [ID!]
-
-    communityId: ID!
-
-    publishedAt: Datetime
 }
 
 input ArticleUpdateContentInput {
@@ -63,10 +52,6 @@ input ArticleUpdateContentInput {
     publishedAt: Datetime
 }
 
-input ArticleSetPublishStatusInput {
-    publishStatus: PublishStatus!
-}
-
 # ------------------------------
 # Article Mutation Success Type Definitions
 # ------------------------------
@@ -81,11 +66,6 @@ type ArticleUpdateContentSuccess {
 type ArticleDeleteSuccess {
     articleId: ID!
 }
-
-type ArticleSetPublishStatusSuccess {
-    article: Article!
-}
-
 # ------------------------------
 # Article Mutation Union (Payload) Definitions
 # ------------------------------
@@ -97,6 +77,3 @@ union ArticleUpdateContentPayload =
 
 union ArticleDeletePayload =
     ArticleDeleteSuccess
-
-union ArticleSetPublishStatusPayload =
-    ArticleSetPublishStatusSuccess
