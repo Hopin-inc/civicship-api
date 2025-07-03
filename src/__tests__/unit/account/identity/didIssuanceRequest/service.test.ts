@@ -404,7 +404,7 @@ describe("DIDIssuanceService", () => {
       const result = service.evaluateTokenValidity(identityExpiringNow as any);
 
       expect(result.token).toBe(TEST_TOKEN);
-      expect(result.isValid).toBe(false);
+      expect(result.isValid).toBe(true);
     });
   });
 

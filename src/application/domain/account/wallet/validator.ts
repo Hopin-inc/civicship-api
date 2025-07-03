@@ -1,6 +1,16 @@
 import { IContext } from "@/types/server";
-import { Prisma, TransactionReason } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
+
+enum TransactionReason {
+  GRANT = "GRANT",
+  ONBOARDING = "ONBOARDING",
+  DONATION = "DONATION",
+  REWARD = "REWARD",
+  POINT_REWARD = "POINT_REWARD",
+  TICKET_PURCHASED = "TICKET_PURCHASED",
+  TICKET_REFUNDED = "TICKET_REFUNDED",
+}
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
@@ -87,10 +97,19 @@ export default class WalletValidator {
       ];
       throw new ValidationError("Wallet information is missing for points transfer", invalidArgs);
     }
-    const { currentPoint } = fromWallet.currentPointView || {};
 
-    if (currentPoint !== undefined && currentPoint < transferPoints) {
-      throw new InsufficientBalanceError(currentPoint ?? 0, transferPoints);
+    if (!fromWallet.currentPointView) {
+      throw new InsufficientBalanceError(0, transferPoints);
+    }
+
+    const { currentPoint } = fromWallet.currentPointView;
+
+    if (currentPoint === undefined) {
+      throw new InsufficientBalanceError(0, transferPoints);
+    }
+
+    if (currentPoint < transferPoints) {
+      throw new InsufficientBalanceError(currentPoint, transferPoints);
     }
   }
 }

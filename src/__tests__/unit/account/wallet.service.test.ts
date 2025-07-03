@@ -1,6 +1,11 @@
 import "reflect-metadata";
-import { Prisma, WalletType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
+
+enum WalletType {
+  COMMUNITY = "COMMUNITY",
+  MEMBER = "MEMBER",
+}
 import WalletService from "@/application/domain/account/wallet/service";
 import { NotFoundError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
@@ -57,8 +62,14 @@ describe("WalletService", () => {
     mockRepository = new MockWalletRepository();
     mockConverter = new MockWalletConverter();
 
+    const mockTransactionService = {
+      createTransaction: jest.fn(),
+      findTransactions: jest.fn(),
+    };
+
     container.register("WalletRepository", { useValue: mockRepository });
     container.register("WalletConverter", { useValue: mockConverter });
+    container.register("TransactionService", { useValue: mockTransactionService });
 
     walletService = container.resolve(WalletService);
   });

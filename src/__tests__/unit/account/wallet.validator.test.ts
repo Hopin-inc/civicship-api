@@ -247,11 +247,15 @@ describe("WalletValidator", () => {
       const fromWallet = {
         id: "wallet-from",
         currentPointView: {},
-      } as PrismaWallet;
+        community: { name: "test", id: "comm-1", createdAt: new Date(), updatedAt: null, bio: null, imageId: null, pointName: "points", establishedAt: null, website: null },
+        user: null,
+      } as unknown as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
         currentPointView: { currentPoint: 0 },
-      } as PrismaWallet;
+        community: { name: "test", id: "comm-1", createdAt: new Date(), updatedAt: null, bio: null, imageId: null, pointName: "points", establishedAt: null, website: null },
+        user: null,
+      } as unknown as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
         InsufficientBalanceError,
@@ -325,11 +329,15 @@ describe("WalletValidator", () => {
       const fromWallet = {
         id: "wallet-from",
         currentPointView: null,
-      } as PrismaWallet;
+        community: { name: "test", id: "comm-1", createdAt: new Date(), updatedAt: null, bio: null, imageId: null, pointName: "points", establishedAt: null, website: null },
+        user: null,
+      } as unknown as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
         currentPointView: { currentPoint: 0 },
-      } as PrismaWallet;
+        community: { name: "test", id: "comm-1", createdAt: new Date(), updatedAt: null, bio: null, imageId: null, pointName: "points", establishedAt: null, website: null },
+        user: null,
+      } as unknown as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
         InsufficientBalanceError,
@@ -340,11 +348,15 @@ describe("WalletValidator", () => {
       const fromWallet = {
         id: "wallet-from",
         currentPointView: undefined,
-      } as PrismaWallet;
+        community: { name: "test", id: "comm-1", createdAt: new Date(), updatedAt: null, bio: null, imageId: null, pointName: "points", establishedAt: null, website: null },
+        user: null,
+      } as unknown as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
         currentPointView: { currentPoint: 0 },
-      } as PrismaWallet;
+        community: { name: "test", id: "comm-1", createdAt: new Date(), updatedAt: null, bio: null, imageId: null, pointName: "points", establishedAt: null, website: null },
+        user: null,
+      } as unknown as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
         InsufficientBalanceError,
