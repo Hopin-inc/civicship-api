@@ -297,10 +297,10 @@ export default class NotificationService {
     }
   }
 
-  // TODO 修正
   async pushCertificateIssuedMessage(ctx: IContext, evaluation: PrismaEvaluation) {
     const uid = evaluation.participation.user?.identities.find(
-      (identity) => identity.platform === IdentityPlatform.LINE,
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
     )?.uid;
     if (!uid) return;
 
@@ -313,10 +313,12 @@ export default class NotificationService {
     const { year } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const rawDate = evaluation.issuedAt ?? evaluation.updatedAt;
     const issueDate = rawDate ? dayjs(rawDate).format("YYYY年M月D日") : "日付未定";
-
     const issuerName = evaluation.evaluator?.name ?? ctx.currentUser?.name ?? "主催者";
 
-    const redirectUrl = `${liffBaseUrl}/participations/${evaluation.participationId}`;
+    const client = await createLineClient(ctx.communityId);
+
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+    const redirectUrl = `${liffBaseUrl}/credentials/${evaluation.participationId}`;
     const message = buildCertificateIssuedMessage({
       title,
       year,
@@ -325,12 +327,13 @@ export default class NotificationService {
       redirectUrl,
     });
 
-    await safePushMessage({ to: uid, messages: [message] });
+    await safePushMessage(client, { to: uid, messages: [message] });
   }
 
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {
     const lineUid = membership.user?.identities.find(
-      (identity) => identity.platform === IdentityPlatform.LINE,
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
     )?.uid;
 
     if (!lineUid) {
