@@ -42,7 +42,10 @@ export function createSlotsByOpportunityLoader(issuer: PrismaClientIssuer) {
           where: { id: opportunityId },
           include: {
             slots: {
-              where: filter,
+              where: {
+                ...filter,
+                hostingStatus: filter.hostingStatus ? { in: filter.hostingStatus } : undefined,
+              },
               orderBy: sort,
               include: { remainingCapacityView: true },
             },
