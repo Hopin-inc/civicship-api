@@ -106,22 +106,26 @@ export default class EvaluationUseCase {
 
     await this.validateEvaluatable(ctx, item.participationId);
 
-    // TODO 予約あればPersonal Recordじゃないように修正
-    await this.participationService.setStatus(
-      ctx,
-      item.participationId,
-      GqlParticipationStatus.Participated,
-      GqlParticipationStatusReason.PersonalRecord,
-      tx,
-      currentUserId,
-    );
-
     const evaluation = await this.evaluationService.createEvaluation(
       ctx,
       currentUserId,
       { participationId: item.participationId, comment: item.comment },
       item.status,
       tx,
+    );
+
+    const reason =
+      evaluation.participation.reservation != null
+        ? GqlParticipationStatusReason.ReservationAccepted
+        : GqlParticipationStatusReason.PersonalRecord;
+
+    await this.participationService.setStatus(
+      ctx,
+      item.participationId,
+      GqlParticipationStatus.Participated,
+      reason,
+      tx,
+      currentUserId,
     );
 
     if (item.status === GqlEvaluationStatus.Passed) {
