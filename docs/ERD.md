@@ -544,6 +544,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String to "❓"
     Int to_point_change 
     String participation_id "❓"
+    String created_by "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -689,6 +690,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_users" o{--}o "t_participation_status_histories" : "participationStatusChangedByMe"
     "t_users" o{--}o "t_evaluations" : "evaluationsEvaluatedByMe"
     "t_users" o{--}o "t_evaluation_histories" : "evaluationCreatedByMe"
+    "t_users" o{--}o "t_transactions" : "transactionsCreatedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
@@ -798,6 +800,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
+    "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"

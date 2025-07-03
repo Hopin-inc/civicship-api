@@ -310,6 +310,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "EvaluationHistory",
                 relationName: "EvaluationHistoryToUser"
             }, {
+                name: "transactionsCreatedByMe",
+                type: "Transaction",
+                relationName: "TransactionToUser"
+            }, {
                 name: "articlesWrittenByMe",
                 type: "Article",
                 relationName: "t_author_users_on_articles"
@@ -686,6 +690,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "ticketStatusHistory",
                 type: "TicketStatusHistory",
                 relationName: "TicketStatusHistoryToTransaction"
+            }, {
+                name: "createdByUser",
+                type: "User",
+                relationName: "TransactionToUser"
             }]
     }, {
         name: "ApiKey",
@@ -2344,6 +2352,7 @@ type UserFactoryDefineInput = {
     participationStatusChangedByMe?: Prisma.ParticipationStatusHistoryCreateNestedManyWithoutCreatedByUserInput;
     evaluationsEvaluatedByMe?: Prisma.EvaluationCreateNestedManyWithoutEvaluatorInput;
     evaluationCreatedByMe?: Prisma.EvaluationHistoryCreateNestedManyWithoutCreatedByUserInput;
+    transactionsCreatedByMe?: Prisma.TransactionCreateNestedManyWithoutCreatedByUserInput;
     articlesWrittenByMe?: Prisma.ArticleCreateNestedManyWithoutAuthorsInput;
     articlesAboutMe?: Prisma.ArticleCreateNestedManyWithoutRelatedUsersInput;
 };
@@ -5728,6 +5737,11 @@ type TransactionticketStatusHistoryFactory = {
     build: () => PromiseLike<Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput["create"]>;
 };
 
+type TransactioncreatedByUserFactory = {
+    _factoryFor: "User";
+    build: () => PromiseLike<Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput["create"]>;
+};
+
 type TransactionFactoryDefineInput = {
     id?: string;
     reason?: TransactionReason;
@@ -5739,6 +5753,7 @@ type TransactionFactoryDefineInput = {
     toWallet?: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput;
     participation?: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
+    createdByUser?: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput;
 };
 
 type TransactionTransientFields = Record<string, unknown> & Partial<Record<keyof TransactionFactoryDefineInput, never>>;
@@ -5768,6 +5783,10 @@ function isTransactionparticipationFactory(x: TransactionparticipationFactory | 
 
 function isTransactionticketStatusHistoryFactory(x: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput | undefined): x is TransactionticketStatusHistoryFactory {
     return (x as any)?._factoryFor === "TicketStatusHistory";
+}
+
+function isTransactioncreatedByUserFactory(x: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput | undefined): x is TransactioncreatedByUserFactory {
+    return (x as any)?._factoryFor === "User";
 }
 
 type TransactionTraitKeys<TOptions extends TransactionFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
@@ -5843,7 +5862,10 @@ function defineTransactionFactoryInternal<TTransients extends Record<string, unk
                 } : defaultData.participation,
                 ticketStatusHistory: isTransactionticketStatusHistoryFactory(defaultData.ticketStatusHistory) ? {
                     create: await defaultData.ticketStatusHistory.build()
-                } : defaultData.ticketStatusHistory
+                } : defaultData.ticketStatusHistory,
+                createdByUser: isTransactioncreatedByUserFactory(defaultData.createdByUser) ? {
+                    create: await defaultData.createdByUser.build()
+                } : defaultData.createdByUser
             } as Prisma.TransactionCreateInput;
             const data: Prisma.TransactionCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
