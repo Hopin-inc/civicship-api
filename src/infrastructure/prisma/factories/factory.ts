@@ -107,6 +107,11 @@ export const CommunityFactory = defineCommunityFactory({
   defaultData: () => ({
     name: randAnimal(),
     pointName: randAirportName(),
+    wallets: {
+      create: {
+        type: WalletType.COMMUNITY,
+      },
+    },
   }),
 });
 
@@ -292,7 +297,7 @@ export const WalletFactory = defineWalletFactory.withTransientFields<{
     return {
       user: { connect: { id: user.id } },
       community: { connect: { id: community.id } },
-      type: transientType ?? randomEnum(WalletType),
+      type: transientType ?? WalletType.MEMBER,
     };
   },
 });
