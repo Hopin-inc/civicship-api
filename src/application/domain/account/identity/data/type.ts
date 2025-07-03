@@ -11,6 +11,7 @@ export const identitySelectDetail = Prisma.validator<Prisma.IdentitySelect>()({
   platform: true,
 
   userId: true,
+  communityId: true,
 
   authToken: true,
   refreshToken: true,
