@@ -18,6 +18,7 @@ import TransactionResolver from "@/application/domain/transaction/controller/res
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
+import MasterResolver from "@/application/domain/location/master/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -35,6 +36,7 @@ const evaluation = container.resolve(EvaluationResolver);
 const vcIssuanceRequest = container.resolve(VCIssuanceRequestResolver);
 
 const place = container.resolve(PlaceResolver);
+const master = container.resolve(MasterResolver);
 
 const ticket = container.resolve(TicketResolver);
 const ticketIssuer = container.resolve(TicketIssuerResolver);
@@ -58,6 +60,7 @@ const resolvers = {
     ...evaluation.Query,
     ...vcIssuanceRequest.Query,
     ...place.Query,
+    ...master.Query,
     ...utility.Query,
     ...ticket.Query,
     ...ticketIssuer.Query,
