@@ -65,6 +65,160 @@ describe("UserService", () => {
     jest.restoreAllMocks();
   });
 
+  describe("fetchUsers", () => {
+    it("should fetch users with filter and sort", async () => {
+      const args = {
+        cursor: "cursor-123",
+        filter: { name: "test" },
+        sort: { name: "ASC" },
+      };
+      const take = 10;
+      const mockWhere = { name: { contains: "test" } };
+      const mockOrderBy = { name: "asc" };
+      const mockResult = [TEST_USER];
+
+      mockConverter.filter.mockReturnValue(mockWhere);
+      mockConverter.sort.mockReturnValue(mockOrderBy);
+      mockRepository.query.mockResolvedValue(mockResult);
+
+      const result = await service.fetchUsers(mockCtx, args, take);
+
+      expect(mockConverter.filter).toHaveBeenCalledWith(args.filter);
+      expect(mockConverter.sort).toHaveBeenCalledWith(args.sort);
+      expect(mockRepository.query).toHaveBeenCalledWith(mockCtx, mockWhere, mockOrderBy, take, args.cursor);
+      expect(result).toEqual(mockResult);
+    });
+
+    it("should fetch users with empty filter and sort when not provided", async () => {
+      const args = { cursor: "cursor-123" };
+      const take = 10;
+      const mockWhere = {};
+      const mockOrderBy = {};
+      const mockResult = [TEST_USER];
+
+      mockConverter.filter.mockReturnValue(mockWhere);
+      mockConverter.sort.mockReturnValue(mockOrderBy);
+      mockRepository.query.mockResolvedValue(mockResult);
+
+      const result = await service.fetchUsers(mockCtx, args, take);
+
+      expect(mockConverter.filter).toHaveBeenCalledWith({});
+      expect(mockConverter.sort).toHaveBeenCalledWith({});
+      expect(mockRepository.query).toHaveBeenCalledWith(mockCtx, mockWhere, mockOrderBy, take, args.cursor);
+      expect(result).toEqual(mockResult);
+    });
+
+    it("should handle repository query errors", async () => {
+      const args = { cursor: "cursor-123" };
+      const take = 10;
+      const error = new Error("Database query failed");
+
+      mockConverter.filter.mockReturnValue({});
+      mockConverter.sort.mockReturnValue({});
+      mockRepository.query.mockRejectedValue(error);
+
+      await expect(service.fetchUsers(mockCtx, args, take)).rejects.toThrow("Database query failed");
+    });
+  });
+
+  describe("fetchCommunityMembers", () => {
+    it("should fetch community members with filter and sort", async () => {
+      const args = {
+        cursor: "cursor-456",
+        filter: { role: "MEMBER" },
+        sort: { createdAt: "DESC" },
+      };
+      const take = 20;
+      const mockWhere = { role: "MEMBER" };
+      const mockOrderBy = { createdAt: "desc" };
+      const mockResult = [TEST_USER];
+
+      mockConverter.filter.mockReturnValue(mockWhere);
+      mockConverter.sort.mockReturnValue(mockOrderBy);
+      mockRepository.query.mockResolvedValue(mockResult);
+
+      const result = await service.fetchCommunityMembers(mockCtx, args, take);
+
+      expect(mockConverter.filter).toHaveBeenCalledWith(args.filter);
+      expect(mockConverter.sort).toHaveBeenCalledWith(args.sort);
+      expect(mockRepository.query).toHaveBeenCalledWith(mockCtx, mockWhere, mockOrderBy, take, args.cursor);
+      expect(result).toEqual(mockResult);
+    });
+
+    it("should fetch community members with default parameters", async () => {
+      const args = {};
+      const take = 50;
+      const mockWhere = {};
+      const mockOrderBy = {};
+      const mockResult = [];
+
+      mockConverter.filter.mockReturnValue(mockWhere);
+      mockConverter.sort.mockReturnValue(mockOrderBy);
+      mockRepository.query.mockResolvedValue(mockResult);
+
+      const result = await service.fetchCommunityMembers(mockCtx, args, take);
+
+      expect(mockConverter.filter).toHaveBeenCalledWith({});
+      expect(mockConverter.sort).toHaveBeenCalledWith({});
+      expect(result).toEqual(mockResult);
+    });
+
+    it("should handle zero take parameter", async () => {
+      const args = { cursor: "cursor-789" };
+      const take = 0;
+      const mockResult = [];
+
+      mockConverter.filter.mockReturnValue({});
+      mockConverter.sort.mockReturnValue({});
+      mockRepository.query.mockResolvedValue(mockResult);
+
+      const result = await service.fetchCommunityMembers(mockCtx, args, take);
+
+      expect(mockRepository.query).toHaveBeenCalledWith(mockCtx, {}, {}, 0, args.cursor);
+      expect(result).toEqual(mockResult);
+    });
+  });
+
+  describe("findUser", () => {
+    it("should find user by id successfully", async () => {
+      const userId = "user-123";
+      mockRepository.find.mockResolvedValue(TEST_USER);
+
+      const result = await service.findUser(mockCtx, userId);
+
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, userId);
+      expect(result).toEqual(TEST_USER);
+    });
+
+    it("should return null when user is not found", async () => {
+      const userId = "nonexistent-user";
+      mockRepository.find.mockResolvedValue(null);
+
+      const result = await service.findUser(mockCtx, userId);
+
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, userId);
+      expect(result).toBeNull();
+    });
+
+    it("should handle empty user id", async () => {
+      const userId = "";
+      mockRepository.find.mockResolvedValue(null);
+
+      const result = await service.findUser(mockCtx, userId);
+
+      expect(mockRepository.find).toHaveBeenCalledWith(mockCtx, "");
+      expect(result).toBeNull();
+    });
+
+    it("should handle repository errors", async () => {
+      const userId = "user-123";
+      const error = new Error("Database connection failed");
+      mockRepository.find.mockRejectedValue(error);
+
+      await expect(service.findUser(mockCtx, userId)).rejects.toThrow("Database connection failed");
+    });
+  });
+
   describe("updateProfile", () => {
     it("should update profile successfully", async () => {
       const input: GqlMutationUserUpdateMyProfileArgs = {
@@ -91,7 +245,7 @@ describe("UserService", () => {
       expect(mockConverter.update).toHaveBeenCalledWith(input.input);
       expect(mockRepository.update).toHaveBeenCalledWith(
         mockCtx,
-        mockCtx.uid,
+        mockCtx.currentUser.id,
         expect.objectContaining(updatedData),
         mockTx,
       );
@@ -122,9 +276,104 @@ describe("UserService", () => {
 
       const result = await service.updateProfile(mockCtx, input, mockTx);
 
-      expect(mockImageService.uploadPublicImage).toHaveBeenCalled();
+      expect(mockImageService.uploadPublicImage).toHaveBeenCalledWith(mockImage, "users");
       expect(mockRepository.update).toHaveBeenCalled();
       expect(result).toEqual(TEST_USER);
+    });
+
+    it("should throw error when uid is missing", async () => {
+      const ctxWithoutUid = { currentUser: { id: TEST_USER_ID } } as IContext;
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { name: "Test" },
+        permission: { userId: "" },
+      };
+
+      await expect(service.updateProfile(ctxWithoutUid, input, mockTx)).rejects.toThrow(
+        "Authentication required (uid or platform missing)",
+      );
+    });
+
+    it("should throw error when currentUser is missing", async () => {
+      const ctxWithoutCurrentUser = { uid: TEST_USER_ID } as IContext;
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { name: "Test" },
+        permission: { userId: "" },
+      };
+
+      await expect(service.updateProfile(ctxWithoutCurrentUser, input, mockTx)).rejects.toThrow(
+        "Authentication required (uid or platform missing)",
+      );
+    });
+
+    it("should throw error when both uid and currentUser are missing", async () => {
+      const ctxWithoutAuth = {} as IContext;
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { name: "Test" },
+        permission: { userId: "" },
+      };
+
+      await expect(service.updateProfile(ctxWithoutAuth, input, mockTx)).rejects.toThrow(
+        "Authentication required (uid or platform missing)",
+      );
+    });
+
+    it("should handle empty name input", async () => {
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { name: "" },
+        permission: { userId: "" },
+      };
+      const updatedData = { name: "" };
+
+      mockConverter.update.mockReturnValue({ data: updatedData, image: undefined });
+      mockRepository.update.mockResolvedValue(TEST_USER);
+
+      const result = await service.updateProfile(mockCtx, input, mockTx);
+
+      expect(mockConverter.update).toHaveBeenCalledWith(input.input);
+      expect(result).toEqual(TEST_USER);
+    });
+
+    it("should handle empty slug input", async () => {
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { slug: "" },
+        permission: { userId: "" },
+      };
+      const updatedData = { slug: "" };
+
+      mockConverter.update.mockReturnValue({ data: updatedData, image: undefined });
+      mockRepository.update.mockResolvedValue(TEST_USER);
+
+      const result = await service.updateProfile(mockCtx, input, mockTx);
+
+      expect(mockConverter.update).toHaveBeenCalledWith(input.input);
+      expect(result).toEqual(TEST_USER);
+    });
+
+    it("should handle image upload failure", async () => {
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { name: "Test User" },
+        permission: { userId: "" },
+      };
+      const mockImage = { file: "mock-file" };
+      const error = new Error("Image upload failed");
+
+      mockConverter.update.mockReturnValue({ data: { name: "Test User" }, image: mockImage });
+      mockImageService.uploadPublicImage.mockRejectedValue(error);
+
+      await expect(service.updateProfile(mockCtx, input, mockTx)).rejects.toThrow("Image upload failed");
+    });
+
+    it("should handle repository update failure", async () => {
+      const input: GqlMutationUserUpdateMyProfileArgs = {
+        input: { name: "Test User" },
+        permission: { userId: "" },
+      };
+      const error = new Error("Database update failed");
+
+      mockConverter.update.mockReturnValue({ data: { name: "Test User" }, image: undefined });
+      mockRepository.update.mockRejectedValue(error);
+
+      await expect(service.updateProfile(mockCtx, input, mockTx)).rejects.toThrow("Database update failed");
     });
   });
 });
