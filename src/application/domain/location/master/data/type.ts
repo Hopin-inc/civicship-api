@@ -1,19 +1,15 @@
-import { Prisma } from "@prisma/client";
-
-export const cityInclude = Prisma.validator<Prisma.CityInclude>()({
+export const cityInclude = {
   state: true,
-});
+};
 
-export const citySelectDetail = Prisma.validator<Prisma.CitySelect>()({
+export const citySelectDetail = {
   name: true,
   code: true,
   stateCode: true,
-});
+};
 
-export type PrismaCity = Prisma.CityGetPayload<{
-  include: typeof cityInclude;
-}>;
-
-export type PrismaCityDetail = Prisma.CityGetPayload<{
-  select: typeof citySelectDetail;
-}>;
+export type PrismaCityDetail = {
+  name: string;
+  code: string;
+  stateCode: string;
+};
