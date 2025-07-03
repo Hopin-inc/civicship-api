@@ -2541,7 +2541,7 @@ export type GqlVcIssuanceRequestEdge = GqlEdge & {
 export type GqlVcIssuanceRequestFilterInput = {
   evaluationId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlVcIssuanceStatus>;
-  userId?: InputMaybe<Scalars['ID']['input']>;
+  userIds?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type GqlVcIssuanceRequestSortInput = {
