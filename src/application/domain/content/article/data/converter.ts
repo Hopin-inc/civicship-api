@@ -116,11 +116,13 @@ export default class ArticleConverter {
     data: Omit<Prisma.ArticleCreateInput, "thumbnail">;
     thumbnail?: GqlImageInput;
   } {
-    const { thumbnail, authorIds, relatedUserIds, relatedOpportunityIds, ...prop } = input;
+    const { thumbnail, authorIds, relatedUserIds, relatedOpportunityIds, body, ...prop } = input;
 
     return {
       data: {
         ...prop,
+        body: body || "",
+        publishedAt: new Date(),
         community: { connect: { id: communityId } },
         ...(authorIds?.length && {
           authors: {
