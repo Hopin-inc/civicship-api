@@ -63,6 +63,80 @@ describe("ReservationValidator", () => {
         validator.validateReservable(slot, 10, 5);
       }).toThrow(ValidationError);
     });
+
+    it("should pass if event is the day after tomorrow", () => {
+      const slot = {
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        startsAt: futureDateWithTime(2, 10, 0), // 2日後の午前10時
+      } as any;
+      const participantCount = 2;
+      const remainingCapacity = 5;
+
+      expect(() => {
+        validator.validateReservable(slot, participantCount, remainingCapacity);
+      }).not.toThrow();
+    });
+
+    it("should pass if event is tomorrow and current time is before 23:59", () => {
+      // Mock current time to be 12:00 today
+      const realDate = Date;
+      const mockDate = new Date();
+      mockDate.setHours(12, 0, 0, 0);
+      global.Date = class extends Date {
+        constructor() {
+          super();
+          return mockDate;
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as any;
+
+      const slot = {
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        startsAt: futureDateWithTime(1, 10, 0), // 1日後の午前10時
+      } as any;
+      const participantCount = 2;
+      const remainingCapacity = 5;
+
+      expect(() => {
+        validator.validateReservable(slot, participantCount, remainingCapacity);
+      }).not.toThrow();
+
+      // Restore original Date
+      global.Date = realDate;
+    });
+
+    it("should throw if current time is past 23:59 the day before the event", () => {
+      // Mock current time to be 00:01 on the day of the event
+      const realDate = Date;
+      const mockDate = new Date();
+      mockDate.setDate(mockDate.getDate() + 1); // Set to tomorrow
+      mockDate.setHours(0, 1, 0, 0); // 00:01
+      global.Date = class extends Date {
+        constructor() {
+          super();
+          return mockDate;
+        }
+        static now() {
+          return mockDate.getTime();
+        }
+      } as any;
+
+      const slot = {
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        startsAt: futureDateWithTime(1, 10, 0), // 1日後の午前10時 (same day as mock date)
+      } as any;
+      const participantCount = 2;
+      const remainingCapacity = 5;
+
+      expect(() => {
+        validator.validateReservable(slot, participantCount, remainingCapacity);
+      }).toThrow(ValidationError);
+
+      // Restore original Date
+      global.Date = realDate;
+    });
   });
 
   describe("validateJoinable", () => {
@@ -146,15 +220,15 @@ describe("ReservationValidator", () => {
   });
 
   describe("validateCancellable", () => {
-    it("should pass if cancellation is before 24 hours", () => {
-      const slotStartAt = futureDate(2); // 2日後
+    it("should pass if cancellation is before 23:59 the day before the event", () => {
+      const slotStartAt = futureDateWithTime(2, 10, 0); // 2日後の午前10時
       expect(() => {
         validator.validateCancellable(slotStartAt);
       }).not.toThrow();
     });
 
-    it("should throw if cancellation is within 24 hours", () => {
-      const slotStartAt = futureDate(0.5); // 半日後
+    it("should throw if cancellation is on or after the day of the event", () => {
+      const slotStartAt = futureDateWithTime(1, 0, 0); // 1日後の午前0時
       expect(() => {
         validator.validateCancellable(slotStartAt);
       }).toThrow(ValidationError);
@@ -166,6 +240,13 @@ describe("ReservationValidator", () => {
 function futureDate(days = 1): Date {
   const date = new Date();
   date.setDate(date.getDate() + days);
+  return date;
+}
+
+function futureDateWithTime(days = 1, hours = 0, minutes = 0): Date {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(hours, minutes, 0, 0);
   return date;
 }
 
