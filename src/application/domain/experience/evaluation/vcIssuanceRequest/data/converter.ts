@@ -13,7 +13,7 @@ export default class VCIssuanceRequestConverter {
     if (!filter) return {};
 
     if (filter.status) conditions.push({ status: filter.status });
-    if (filter.userIds && Array.isArray(filter.userIds) && filter.userIds.length > 0) {
+    if (filter.userIds?.length) {
       conditions.push({ userId: { in: filter.userIds } });
     }
     if (filter.evaluationId) conditions.push({ evaluationId: filter.evaluationId });
