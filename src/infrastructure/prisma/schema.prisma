@@ -306,6 +306,7 @@ model User {
   participationStatusChangedByMe ParticipationStatusHistory[]
   evaluationsEvaluatedByMe       Evaluation[]
   evaluationCreatedByMe          EvaluationHistory[]
+  transactionsCreatedByMe        Transaction[]
 
   articlesWrittenByMe Article[] @relation("t_author_users_on_articles")
   articlesAboutMe     Article[] @relation("t_related_users_on_articles")
@@ -988,6 +989,9 @@ model Transaction {
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
 
   ticketStatusHistory TicketStatusHistory?
+
+  createdBy     String? @map("created_by")
+  createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

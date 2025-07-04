@@ -7,6 +7,7 @@ import {
 import TransactionConverter from "@/application/domain/transaction/data/converter";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
+import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -37,7 +38,8 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.issueCommunityPoint(toWalletId, transferPoints);
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.issueCommunityPoint(toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
@@ -50,7 +52,8 @@ export default class TransactionService implements ITransactionService {
     memberWalletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId);
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.grantCommunityPoint(fromWalletId, transferPoints, memberWalletId, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
@@ -63,7 +66,8 @@ export default class TransactionService implements ITransactionService {
     transferPoints: number,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints);
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId);
     const transaction = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return transaction;
@@ -77,11 +81,13 @@ export default class TransactionService implements ITransactionService {
     fromWalletId: string,
     toWalletId: string,
   ): Promise<PrismaTransactionDetail> {
+    const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.giveRewardPoint(
       fromWalletId,
       toWalletId,
       participationId,
       transferPoints,
+      currentUserId,
     );
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
@@ -95,7 +101,8 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
     transferPoints: number,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.purchaseTicket(fromWalletId, toWalletId, transferPoints);
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.purchaseTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
@@ -108,7 +115,8 @@ export default class TransactionService implements ITransactionService {
     toWalletId: string,
     transferPoints: number,
   ): Promise<PrismaTransactionDetail> {
-    const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints);
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.refundTicket(fromWalletId, toWalletId, transferPoints, currentUserId);
     const res = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return res;
