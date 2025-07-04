@@ -73,7 +73,7 @@ export default class EvaluationUseCase {
     const currentUserId = getCurrentUserId(ctx);
     const communityId = permission.communityId;
 
-    const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
+    const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return Promise.all(
         input.evaluations.map((item) =>
           this.createOneEvaluationWithSideEffects(ctx, tx, {
