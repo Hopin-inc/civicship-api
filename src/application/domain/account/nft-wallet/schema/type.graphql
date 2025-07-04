@@ -1,9 +1,0 @@
-# ------------------------------
-# NftWallet Object Type Definitions
-# ------------------------------
-type NftWallet {
-    id: ID!
-    walletAddress: String!
-    createdAt: Datetime
-    updatedAt: Datetime
-}

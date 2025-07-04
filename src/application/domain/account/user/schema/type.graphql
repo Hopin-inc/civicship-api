@@ -28,7 +28,6 @@ type User {
     membershipChangedByMe: [MembershipHistory!]
 
     wallets: [Wallet!]
-    nftWallet: NftWallet
 
     opportunitiesCreatedByMe: [Opportunity!]
     reservations: [Reservation!]
