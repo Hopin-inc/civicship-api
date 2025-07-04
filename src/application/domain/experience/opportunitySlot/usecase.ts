@@ -58,7 +58,7 @@ export default class OpportunitySlotUseCase {
     ctx: IContext,
   ): Promise<GqlOpportunitySlotSetHostingStatusPayload> {
     let cancelledSlot: PrismaOpportunitySlotSetHostingStatus | null = null;
-    const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = getCurrentUserId(ctx, input.createdBy);
 
     const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input.status, tx);
@@ -77,6 +77,7 @@ export default class OpportunitySlotUseCase {
           this.participationStatusHistoryService.bulkCreateStatusHistoriesForCancelledOpportunitySlot(
             ctx,
             participationIds,
+            currentUserId,
             tx,
           ),
           ...reservationIds.map((reservationId) =>
