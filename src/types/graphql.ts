@@ -2378,13 +2378,17 @@ export type GqlTransactionEdge = GqlEdge & {
 export type GqlTransactionFilterInput = {
   and?: InputMaybe<Array<GqlTransactionFilterInput>>;
   communityId?: InputMaybe<Scalars['ID']['input']>;
+  fromDidValue?: InputMaybe<Scalars['String']['input']>;
   fromUserId?: InputMaybe<Scalars['ID']['input']>;
+  fromUserName?: InputMaybe<Scalars['String']['input']>;
   fromWalletId?: InputMaybe<Scalars['ID']['input']>;
   fromWalletType?: InputMaybe<GqlWalletType>;
   not?: InputMaybe<GqlTransactionFilterInput>;
   or?: InputMaybe<Array<GqlTransactionFilterInput>>;
   reason?: InputMaybe<GqlTransactionReason>;
+  toDidValue?: InputMaybe<Scalars['String']['input']>;
   toUserId?: InputMaybe<Scalars['ID']['input']>;
+  toUserName?: InputMaybe<Scalars['String']['input']>;
   toWalletId?: InputMaybe<Scalars['ID']['input']>;
   toWalletType?: InputMaybe<GqlWalletType>;
 };
