@@ -22,6 +22,9 @@ extend type Mutation {
 input OpportunitySlotSetHostingStatusInput{
     status: OpportunitySlotHostingStatus!
     comment: String
+
+    # for admin
+    createdBy: ID
 }
 
 input OpportunitySlotsBulkUpdateInput {

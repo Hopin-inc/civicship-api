@@ -1,4 +1,11 @@
-import { GqlArticleCategory, GqlArticleFilterInput, GqlArticleSortInput } from "@/types/graphql";
+import {
+  GqlArticleCategory,
+  GqlArticleFilterInput,
+  GqlArticleSortInput,
+  GqlArticleCreateInput,
+  GqlArticleUpdateContentInput,
+  GqlImageInput,
+} from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 
@@ -99,6 +106,73 @@ export default class ArticleConverter {
     return {
       id,
       ...(safeFilter.AND ? { AND: safeFilter.AND } : {}),
+    };
+  }
+
+  //TODO 作成されると公開日が必ず入力される/DB変更必要性あり
+  create(
+    input: GqlArticleCreateInput,
+    communityId: string,
+  ): {
+    data: Omit<Prisma.ArticleCreateInput, "thumbnail">;
+    thumbnail?: GqlImageInput;
+  } {
+    const { thumbnail, authorIds, relatedUserIds, relatedOpportunityIds, body, ...prop } = input;
+
+    return {
+      data: {
+        ...prop,
+        body: body || "",
+        publishedAt: new Date(),
+        community: { connect: { id: communityId } },
+        ...(authorIds?.length && {
+          authors: {
+            connect: authorIds.map((id) => ({ id })),
+          },
+        }),
+        ...(relatedUserIds?.length && {
+          relatedUsers: {
+            connect: relatedUserIds.map((id) => ({ id })),
+          },
+        }),
+        ...(relatedOpportunityIds?.length && {
+          opportunities: {
+            connect: relatedOpportunityIds.map((id) => ({ id })),
+          },
+        }),
+      },
+      thumbnail,
+    };
+  }
+
+  //TODO 作成されると公開日が必ず入力される/DB変更必要性あり
+  update(input: GqlArticleUpdateContentInput): {
+    data: Omit<Prisma.ArticleUpdateInput, "thumbnail">;
+    thumbnail?: GqlImageInput;
+  } {
+    const { thumbnail, authorIds, relatedUserIds, relatedOpportunityIds, ...prop } = input;
+
+    return {
+      data: {
+        ...prop,
+        publishedAt: new Date(),
+        ...(authorIds?.length && {
+          authors: {
+            set: authorIds.map((id) => ({ id })),
+          },
+        }),
+        ...(relatedUserIds?.length && {
+          relatedUsers: {
+            set: relatedUserIds.map((id) => ({ id })),
+          },
+        }),
+        ...(relatedOpportunityIds?.length && {
+          opportunities: {
+            set: relatedOpportunityIds.map((id) => ({ id })),
+          },
+        }),
+      },
+      thumbnail,
     };
   }
 }

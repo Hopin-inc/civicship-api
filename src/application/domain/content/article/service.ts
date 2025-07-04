@@ -1,16 +1,23 @@
 import ArticleConverter from "@/application/domain/content/article/data/converter";
 import { Prisma, PublishStatus } from "@prisma/client";
-import { ValidationError } from "@/errors/graphql";
+import { ValidationError, NotFoundError } from "@/errors/graphql";
 import { IArticleRepository } from "@/application/domain/content/article/data/interface";
 import { IContext } from "@/types/server";
-import { GqlArticleFilterInput, GqlQueryArticlesArgs } from "@/types/graphql";
+import { 
+  GqlArticleFilterInput, 
+  GqlQueryArticlesArgs,
+  GqlArticleCreateInput,
+  GqlArticleUpdateContentInput
+} from "@/types/graphql";
 import { injectable, inject } from "tsyringe";
+import ImageService from "@/application/domain/content/image/service";
 
 @injectable()
 export default class ArticleService {
   constructor(
     @inject("ArticleRepository") private readonly repository: IArticleRepository,
     @inject("ArticleConverter") private readonly converter: ArticleConverter,
+    @inject("ImageService") private readonly imageService: ImageService,
   ) {}
 
   async fetchArticles<T extends Prisma.ArticleInclude>(
@@ -44,5 +51,70 @@ export default class ArticleService {
         [JSON.stringify(filter?.publishStatus)],
       );
     }
+  }
+
+  async createArticle(
+    ctx: IContext,
+    input: GqlArticleCreateInput,
+    communityId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const { data, thumbnail } = this.converter.create(input, communityId);
+
+    let thumbnailData: Prisma.ImageCreateWithoutArticlesInput | undefined;
+    if (thumbnail) {
+      thumbnailData = await this.imageService.uploadPublicImage(thumbnail, "articles");
+    }
+
+    const createInput: Prisma.ArticleCreateInput = {
+      ...data,
+      ...(thumbnailData && {
+        thumbnail: {
+          create: thumbnailData,
+        },
+      }),
+    };
+
+    return await this.repository.create(ctx, createInput, tx);
+  }
+
+  async updateArticleContent(
+    ctx: IContext,
+    id: string,
+    input: GqlArticleUpdateContentInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    await this.findArticleOrThrow(ctx, id);
+
+    const { data, thumbnail } = this.converter.update(input);
+
+    let thumbnailData: Prisma.ImageCreateWithoutArticlesInput | undefined;
+    if (thumbnail) {
+      thumbnailData = await this.imageService.uploadPublicImage(thumbnail, "articles");
+    }
+
+    const updateInput: Prisma.ArticleUpdateInput = {
+      ...data,
+      ...(thumbnailData && {
+        thumbnail: {
+          create: thumbnailData,
+        },
+      }),
+    };
+
+    return await this.repository.update(ctx, id, updateInput, tx);
+  }
+
+  async deleteArticle(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
+    await this.findArticleOrThrow(ctx, id);
+    return await this.repository.delete(ctx, id, tx);
+  }
+
+  async findArticleOrThrow(ctx: IContext, articleId: string) {
+    const article = await this.repository.findAccessible(ctx, { id: articleId });
+    if (!article) {
+      throw new NotFoundError("Article", { articleId });
+    }
+    return article;
   }
 }

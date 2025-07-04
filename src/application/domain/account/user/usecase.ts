@@ -11,7 +11,6 @@ import UserPresenter from "@/application/domain/account/user/presenter";
 import { IContext } from "@/types/server";
 import { clampFirst } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
-import { prismaClient } from "@/infrastructure/prisma/client";
 
 @injectable()
 export default class UserUseCase {
@@ -47,35 +46,38 @@ export default class UserUseCase {
 
   //TODO あとでドメイン分割修正の必要性あり
   async canCurrentUserViewPhoneNumber(
+    ctx: IContext,
     targetUserId: string,
     viewerUserId: string,
   ): Promise<boolean> {
     if (viewerUserId === targetUserId) return true;
 
-    const hasReservationInTheirOpportunity = await prismaClient.reservation.findFirst({
-      where: {
-        createdBy: viewerUserId,
-        opportunitySlot: { opportunity: { createdByUser: { id: targetUserId } } },
-      },
-      select: { id: true },
-    });
-    if (hasReservationInTheirOpportunity) return true;
+    return await ctx.issuer.internal(async (tx) => {
+      const hasReservationInTheirOpportunity = await tx.reservation.findFirst({
+        where: {
+          createdBy: viewerUserId,
+          opportunitySlot: { opportunity: { createdByUser: { id: targetUserId } } },
+        },
+        select: { id: true },
+      });
+      if (hasReservationInTheirOpportunity) return true;
 
-    const isMyParticipant = await prismaClient.opportunity.findFirst({
-      where: {
-        createdBy: viewerUserId,
-        slots: {
-          some: {
-            reservations: {
-              some: {
-                createdBy: targetUserId,
+      const isMyParticipant = await tx.opportunity.findFirst({
+        where: {
+          createdBy: viewerUserId,
+          slots: {
+            some: {
+              reservations: {
+                some: {
+                  createdBy: targetUserId,
+                },
               },
             },
           },
         },
-      },
-      select: { id: true },
+        select: { id: true },
+      });
+      return !!isMyParticipant;
     });
-    return !!isMyParticipant;
   }
 }
