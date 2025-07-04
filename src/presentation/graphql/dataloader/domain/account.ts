@@ -5,6 +5,7 @@ import * as CommunityLoaders from "@/application/domain/account/community/contro
 import * as MembershipLoaders from "@/application/domain/account/membership/controller/dataloader";
 import * as IdentityLoaders from "@/application/domain/account/identity/controller/dataloader";
 import * as MembershipHistoryLoaders from "@/application/domain/account/membership/history/controller/dataloader";
+import * as NftWalletLoaders from "@/application/domain/account/nft-wallet/controller/dataloader";
 import { createDidIssuanceRequestsByUserIdLoader } from "@/application/domain/account/identity/didIssuanceRequest/controller/dataloader";
 
 export function createAccountLoaders(issuer: PrismaClientIssuer) {
@@ -35,5 +36,7 @@ export function createAccountLoaders(issuer: PrismaClientIssuer) {
       MembershipHistoryLoaders.createMembershipHistoriesCreatedByUserLoader(issuer),
     membershipHistoriesByMembership:
       MembershipHistoryLoaders.createMembershipStatusHistoriesByMembershipLoader(issuer),
+
+    nftWalletByUserId: NftWalletLoaders.createNftWalletByUserIdLoader(issuer),
   };
 }
