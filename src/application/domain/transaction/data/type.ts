@@ -4,6 +4,7 @@ export const transactionInclude = Prisma.validator<Prisma.TransactionInclude>()(
   fromWallet: true,
   toWallet: true,
   participation: true,
+  createdByUser: true,
 });
 
 export const transactionSelectDetail = Prisma.validator<Prisma.TransactionSelect>()({
@@ -15,6 +16,8 @@ export const transactionSelectDetail = Prisma.validator<Prisma.TransactionSelect
   from: true,
   to: true,
   participationId: true,
+
+  createdBy: true,
 
   createdAt: true,
   updatedAt: true,

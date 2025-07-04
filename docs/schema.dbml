@@ -171,6 +171,7 @@ Table t_users {
   participationStatusChangedByMe t_participation_status_histories [not null]
   evaluationsEvaluatedByMe t_evaluations [not null]
   evaluationCreatedByMe t_evaluation_histories [not null]
+  transactionsCreatedByMe t_transactions [not null]
   articlesWrittenByMe t_articles [not null]
   articlesAboutMe t_articles [not null]
   createdAt DateTime [default: `now()`, not null]
@@ -468,6 +469,8 @@ Table t_transactions {
   participationId String
   participation t_participations
   ticketStatusHistory t_ticket_status_histories
+  createdBy String
+  createdByUser t_users
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -858,6 +861,8 @@ Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
+
+Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
 
