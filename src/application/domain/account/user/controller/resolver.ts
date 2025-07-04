@@ -98,5 +98,9 @@ export default class UserResolver {
     articlesAboutMe: (parent, _, ctx: IContext) => {
       return ctx.loaders.articlesAboutMe.load(parent.id);
     },
+
+    nftWallet: (parent, _, ctx: IContext) => {
+      return ctx.loaders.nftWalletByUserId.load(parent.id);
+    },
   };
 }
