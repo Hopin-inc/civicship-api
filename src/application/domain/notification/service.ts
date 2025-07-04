@@ -18,10 +18,10 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
 import "dayjs/locale/ja.js";
-
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
+import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
 dayjs.locale("ja");
 dayjs.tz.setDefault("Asia/Tokyo");
 
@@ -226,7 +226,6 @@ export default class NotificationService {
     const { name: hostName, image: hostImage } = createdByUser ?? {};
 
     const client = await createLineClient(ctx.communityId);
-
     for (const { uid } of participantInfos) {
       const message = buildDeclineOpportunitySlotMessage({
         title,
@@ -296,6 +295,39 @@ export default class NotificationService {
       });
       await safePushMessage(client, { to: uid, messages: [message] });
     }
+  }
+
+  async pushCertificateIssuedMessage(ctx: IContext, evaluation: PrismaEvaluation) {
+    const uid = evaluation.participation.user?.identities.find(
+      (identity) =>
+        identity.platform === IdentityPlatform.LINE && identity.communityId === ctx.communityId,
+    )?.uid;
+    if (!uid) return;
+
+    const slot = evaluation.participation.opportunitySlot;
+    const opportunity = slot?.opportunity;
+    if (!slot || !opportunity) return;
+
+    const { title } = opportunity;
+
+    const { year } = this.formatDateTime(slot.startsAt, slot.endsAt);
+    const rawDate = evaluation.issuedAt ?? evaluation.updatedAt;
+    const issueDate = rawDate ? dayjs(rawDate).format("YYYY年M月D日") : "日付未定";
+    const issuerName = evaluation.evaluator?.name ?? ctx.currentUser?.name ?? "主催者";
+
+    const client = await createLineClient(ctx.communityId);
+
+    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+    const redirectUrl = `${liffBaseUrl}/credentials/${evaluation.participationId}`;
+    const message = buildCertificateIssuedMessage({
+      title,
+      year,
+      issueDate,
+      issuerName,
+      redirectUrl,
+    });
+
+    await safePushMessage(client, { to: uid, messages: [message] });
   }
 
   async switchRichMenuByRole(ctx: IContext, membership: PrismaMembership): Promise<void> {

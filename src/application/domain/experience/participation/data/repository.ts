@@ -50,7 +50,7 @@ export default class ParticipationRepository implements IParticipationRepository
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
-        include: participationIncludeSlot,
+        select: participationIncludeSlot,
       });
     });
   }
@@ -60,6 +60,14 @@ export default class ParticipationRepository implements IParticipationRepository
       data,
       select: participationSelectDetail,
     });
+  }
+
+  async createMany(
+    ctx: IContext,
+    data: Prisma.ParticipationCreateInput[],
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.participation.createMany({ data, skipDuplicates: true });
   }
 
   async update(

@@ -8,6 +8,7 @@ export const participationInclude = Prisma.validator<Prisma.ParticipationInclude
       opportunitySlot: { include: { opportunity: true } },
     },
   },
+  evaluation: true,
   community: true,
   images: true,
 });
@@ -26,6 +27,7 @@ export const participationSelectDetail = Prisma.validator<Prisma.ParticipationSe
   communityId: true,
   reservationId: true,
   evaluationId: true,
+  opportunitySlotId: true,
 
   createdAt: true,
   updatedAt: true,
@@ -36,7 +38,9 @@ export type PrismaParticipationDetail = Prisma.ParticipationGetPayload<{
 }>;
 
 export const participationIncludeSlot = Prisma.validator<Prisma.ParticipationSelect>()({
+  reason: true,
   reservation: { select: { opportunitySlot: true } },
+  opportunitySlot: true,
 });
 
 export type PrismaParticipationIncludeSlot = Prisma.ParticipationGetPayload<{

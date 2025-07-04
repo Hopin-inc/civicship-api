@@ -2,11 +2,9 @@ import { inject, injectable } from "tsyringe";
 import {
   GqlEvaluation,
   GqlEvaluationBulkCreatePayload,
-  GqlEvaluationCreatePayload,
+  GqlEvaluationItem,
   GqlEvaluationsConnection,
   GqlMutationEvaluationBulkCreateArgs,
-  GqlMutationEvaluationFailArgs,
-  GqlMutationEvaluationPassArgs,
   GqlParticipationStatus,
   GqlParticipationStatusReason,
   GqlQueryEvaluationArgs,
@@ -16,13 +14,18 @@ import { GqlEvaluationStatus } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import EvaluationPresenter from "@/application/domain/experience/evaluation/presenter";
-import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
+import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/client";
+import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import NotificationService from "@/application/domain/notification/service";
+import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class EvaluationUseCase {
@@ -32,6 +35,11 @@ export default class EvaluationUseCase {
     @inject("TransactionService") private readonly transactionService: ITransactionService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
+    @inject("VCIssuanceRequestService")
+    private readonly vcIssuanceRequestService: VCIssuanceRequestService,
+    @inject("VCIssuanceRequestConverter")
+    private readonly vcIssuanceRequestConverter: VCIssuanceRequestConverter,
+    @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
   async visitorBrowseEvaluations(
@@ -58,147 +66,73 @@ export default class EvaluationUseCase {
     return evaluation ? EvaluationPresenter.get(evaluation) : null;
   }
 
-  async managerPassEvaluation(
-    { input }: GqlMutationEvaluationPassArgs,
-    ctx: IContext,
-  ): Promise<GqlEvaluationCreatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
-    await this.validateEvaluatable(ctx, input.participationId);
-
-    const evaluation = await ctx.issuer.public(ctx, async (tx) => {
-      //TODO 理由に評価されたからを追加する
-      await this.participationService.setStatus(
-        ctx,
-        input.participationId,
-        GqlParticipationStatus.Participated,
-        GqlParticipationStatusReason.ReservationAccepted,
-        tx,
-        currentUserId,
-      );
-      const evaluation = await this.evaluationService.createEvaluation(
-        ctx,
-        currentUserId,
-        input,
-        GqlEvaluationStatus.Passed,
-        tx,
-      );
-
-      const { participation, opportunity, communityId, userId } =
-        this.evaluationService.validateParticipationHasOpportunity(evaluation);
-
-      if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
-        const [fromWallet, toWallet] = await Promise.all([
-          this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
-          this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
-        ]);
-
-        const { fromWalletId, toWalletId } =
-          await this.walletValidator.validateTransferMemberToMember(
-            fromWallet,
-            toWallet,
-            opportunity.pointsToEarn,
-          );
-
-        await this.transactionService.giveRewardPoint(
-          ctx,
-          tx,
-          participation.id,
-          opportunity.pointsToEarn,
-          fromWalletId,
-          toWalletId,
-        );
-      }
-
-      return evaluation;
-    });
-
-    return EvaluationPresenter.create(evaluation);
-  }
-
-  async managerFailEvaluation(
-    { input }: GqlMutationEvaluationFailArgs,
-    ctx: IContext,
-  ): Promise<GqlEvaluationCreatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
-    await this.validateEvaluatable(ctx, input.participationId);
-
-    const evaluation = await ctx.issuer.public(ctx, async (tx) => {
-      return await this.evaluationService.createEvaluation(
-        ctx,
-        currentUserId,
-        input,
-        GqlEvaluationStatus.Failed,
-        tx,
-      );
-    });
-
-    return EvaluationPresenter.create(evaluation);
-  }
-
   async managerBulkCreateEvaluations(
-    { input }: GqlMutationEvaluationBulkCreateArgs,
+    { input, permission }: GqlMutationEvaluationBulkCreateArgs,
     ctx: IContext,
   ): Promise<GqlEvaluationBulkCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const evaluations: PrismaEvaluationDetail[] = [];
+    const communityId = permission.communityId;
 
-    const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      for (const item of input.evaluations) {
-        await this.validateEvaluatable(ctx, item.participationId);
-
-        //TODO 理由に評価されたからを追加する
-        await this.participationService.setStatus(
-          ctx,
-          item.participationId,
-          GqlParticipationStatus.Participated,
-          GqlParticipationStatusReason.ReservationAccepted,
-          tx,
-          currentUserId,
-        );
-
-        const evaluation = await this.evaluationService.createEvaluation(
-          ctx,
-          currentUserId,
-          { participationId: item.participationId, comment: item.comment },
-          item.status,
-          tx,
-        );
-
-        if (item.status === GqlEvaluationStatus.Passed) {
-          const { participation, opportunity, communityId, userId } =
-            this.evaluationService.validateParticipationHasOpportunity(evaluation);
-
-          if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
-            const [fromWallet, toWallet] = await Promise.all([
-              this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
-              this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
-            ]);
-
-            const { fromWalletId, toWalletId } =
-              await this.walletValidator.validateTransferMemberToMember(
-                fromWallet,
-                toWallet,
-                opportunity.pointsToEarn,
-              );
-
-            await this.transactionService.giveRewardPoint(
-              ctx,
-              tx,
-              participation.id,
-              opportunity.pointsToEarn,
-              fromWalletId,
-              toWalletId,
-            );
-          }
-        }
-
-        evaluations.push(evaluation);
-      }
-
-      return evaluations;
+    const createdEvaluations = await ctx.issuer.public(ctx, async (tx) => {
+      return Promise.all(
+        input.evaluations.map((item) =>
+          this.createOneEvaluationWithSideEffects(ctx, tx, {
+            item,
+            currentUserId,
+            communityId,
+          }),
+        ),
+      );
     });
 
+    for (const evaluation of createdEvaluations) {
+      await this.notificationService.pushCertificateIssuedMessage(ctx, evaluation);
+      void this.issueEvaluationVC(ctx, evaluation);
+    }
+
     return EvaluationPresenter.bulkCreate(createdEvaluations);
+  }
+
+  private async createOneEvaluationWithSideEffects(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    params: {
+      item: GqlEvaluationItem;
+      currentUserId: string;
+      communityId: string;
+    },
+  ): Promise<PrismaEvaluation> {
+    const { item, currentUserId, communityId } = params;
+
+    await this.validateEvaluatable(ctx, item.participationId);
+
+    const evaluation = await this.evaluationService.createEvaluation(
+      ctx,
+      currentUserId,
+      { participationId: item.participationId, comment: item.comment },
+      item.status,
+      tx,
+    );
+
+    const reason =
+      evaluation.participation.reservation != null
+        ? GqlParticipationStatusReason.ReservationAccepted
+        : GqlParticipationStatusReason.PersonalRecord;
+
+    await this.participationService.setStatus(
+      ctx,
+      item.participationId,
+      GqlParticipationStatus.Participated,
+      reason,
+      tx,
+      currentUserId,
+    );
+
+    if (item.status === GqlEvaluationStatus.Passed) {
+      await this.handlePassedEvaluationSideEffects(ctx, tx, evaluation, currentUserId, communityId);
+    }
+
+    return evaluation;
   }
 
   private async validateEvaluatable(ctx: IContext, participationId: string) {
@@ -208,16 +142,79 @@ export default class EvaluationUseCase {
     );
     await this.evaluationService.throwIfExist(ctx, participationId);
 
-    const startsAt = participation.reservation?.opportunitySlot.startsAt;
+    const startsAt =
+      participation.reason === ParticipationStatusReason.PERSONAL_RECORD
+        ? participation.opportunitySlot?.startsAt
+        : participation.reservation?.opportunitySlot?.startsAt;
+
     if (!startsAt) {
       throw new ValidationError("OpportunitySlot startsAt is undefined.");
     }
 
-    const jstStartsAt = new Date(startsAt).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
-    const nowJST = new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+    const now = new Date();
+    const startsAtDate = new Date(startsAt);
 
-    if (new Date(nowJST) < new Date(jstStartsAt)) {
+    if (now < startsAtDate) {
+      // Date オブジェクトとして比較
       throw new CannotEvaluateBeforeOpportunityStartError();
+    }
+  }
+
+  private async handlePassedEvaluationSideEffects(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    evaluation: PrismaEvaluation,
+    currentUserId: string,
+    communityId: string,
+  ): Promise<void> {
+    const { participation, opportunity, userId } =
+      this.evaluationService.validateParticipationHasOpportunity(evaluation);
+
+    if (opportunity.pointsToEarn && opportunity.pointsToEarn > 0) {
+      const [fromWallet, toWallet] = await Promise.all([
+        this.walletService.findMemberWalletOrThrow(ctx, currentUserId, communityId),
+        this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx),
+      ]);
+
+      const { fromWalletId, toWalletId } =
+        await this.walletValidator.validateTransferMemberToMember(
+          fromWallet,
+          toWallet,
+          opportunity.pointsToEarn,
+        );
+
+      await this.transactionService.giveRewardPoint(
+        ctx,
+        tx,
+        participation.id,
+        opportunity.pointsToEarn,
+        fromWalletId,
+        toWalletId,
+      );
+    }
+  }
+
+  async issueEvaluationVC(ctx: IContext, evaluation: PrismaEvaluation): Promise<void> {
+    try {
+      const { participation, userId } =
+        this.evaluationService.validateParticipationHasOpportunity(evaluation);
+      const user = participation.user;
+      const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
+      const phoneUid = phoneIdentity?.uid;
+
+      if (!phoneUid) return;
+
+      const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
+
+      void this.vcIssuanceRequestService.requestVCIssuance(
+        userId,
+        phoneUid,
+        vcRequest,
+        ctx,
+        evaluation.id,
+      );
+    } catch (error) {
+      logger.warn("tryIssueEvaluationVC failed (non-blocking)", error);
     }
   }
 }
