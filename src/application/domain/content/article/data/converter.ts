@@ -1,10 +1,10 @@
-import { 
-  GqlArticleCategory, 
-  GqlArticleFilterInput, 
+import {
+  GqlArticleCategory,
+  GqlArticleFilterInput,
   GqlArticleSortInput,
   GqlArticleCreateInput,
   GqlArticleUpdateContentInput,
-  GqlImageInput
+  GqlImageInput,
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
@@ -109,6 +109,7 @@ export default class ArticleConverter {
     };
   }
 
+  //TODO 作成されると公開日が必ず入力される/DB変更必要性あり
   create(
     input: GqlArticleCreateInput,
     communityId: string,
@@ -144,6 +145,7 @@ export default class ArticleConverter {
     };
   }
 
+  //TODO 作成されると公開日が必ず入力される/DB変更必要性あり
   update(input: GqlArticleUpdateContentInput): {
     data: Omit<Prisma.ArticleUpdateInput, "thumbnail">;
     thumbnail?: GqlImageInput;
@@ -153,6 +155,7 @@ export default class ArticleConverter {
     return {
       data: {
         ...prop,
+        publishedAt: new Date(),
         ...(authorIds?.length && {
           authors: {
             set: authorIds.map((id) => ({ id })),
