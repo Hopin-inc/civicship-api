@@ -40,6 +40,12 @@ input TransactionFilterInput {
     fromUserId: ID
     toUserId: ID
 
+    fromUserName: String
+    toUserName: String
+
+    fromDidValue: String
+    toDidValue: String
+
     and: [TransactionFilterInput!]
     or: [TransactionFilterInput!]
     not: TransactionFilterInput
