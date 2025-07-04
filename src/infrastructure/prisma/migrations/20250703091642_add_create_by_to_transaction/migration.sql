@@ -1,3 +1,6 @@
+SET app.rls_bypass = 'true';
+SET app.rls_config.user_id = '';
+
 -- AlterTable
 ALTER TABLE "t_transactions" ADD COLUMN     "created_by" TEXT;
 
