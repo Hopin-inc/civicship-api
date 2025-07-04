@@ -17,9 +17,9 @@ export default class ParticipationStatusHistoryService {
   async bulkCreateStatusHistoriesForCancelledOpportunitySlot(
     ctx: IContext,
     participationIds: string[],
+    currentUserId: string,
     tx: Prisma.TransactionClient,
   ) {
-    const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.createMany(
       participationIds,
       currentUserId,
