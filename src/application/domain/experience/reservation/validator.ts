@@ -15,6 +15,10 @@ import {
   GqlOpportunitySlotHostingStatus as OpportunitySlotHostingStatus,
   GqlReservationStatus as ReservationStatus,
 } from "@/types/graphql";
+import {
+  getStartOfDayInJST,
+  isAfterInJST,
+} from "@/utils/date";
 
 @injectable()
 export default class ReservationValidator {
@@ -61,7 +65,12 @@ export default class ReservationValidator {
     cancelLimit.setDate(cancelLimit.getDate() - 1); // Set to the day before
     cancelLimit.setHours(23, 59, 59, 999); // Set to 23:59:59.999 JST
 
-    if (now > cancelLimit) {
+    // Check if the current date is on or after the event date using JST timezone
+    const eventDateStart = getStartOfDayInJST(slotStartAt);
+    const nowDateStart = getStartOfDayInJST(now);
+
+    // キャンセル不可条件：現在日がイベント日以降、または現在時刻がキャンセル期限を過ぎている
+    if (nowDateStart >= eventDateStart || isAfterInJST(now, cancelLimit)) {
       throw new ReservationCancellationTimeoutError();
     }
   }
@@ -80,16 +89,16 @@ export default class ReservationValidator {
   private validateSlotAdvanceBookingThreshold(startsAt: Date) {
     const now = new Date();
 
-    // Get the date of the event
-    const eventDate = new Date(startsAt);
+    // Get the date of the event in JST
+    const eventDateStart = getStartOfDayInJST(startsAt);
 
     // Create a deadline date which is the day before the event at 23:59 JST
-    const deadlineDate = new Date(eventDate);
+    const deadlineDate = new Date(eventDateStart);
     deadlineDate.setDate(deadlineDate.getDate() - 1); // Set to the day before
     deadlineDate.setHours(23, 59, 59, 999); // Set to 23:59:59.999 JST
 
-    // Check if current time is past the deadline
-    if (now > deadlineDate) {
+    // Check if current time is past the deadline using JST timezone
+    if (isAfterInJST(now, deadlineDate)) {
       throw new ReservationAdvanceBookingRequiredError();
     }
   }
