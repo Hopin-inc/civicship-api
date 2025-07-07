@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import {
   participationIncludeSlot,
+  participationPortfolioInclude,
   participationSelectDetail,
   PrismaParticipationDetail,
 } from "@/application/domain/experience/participation/data/type";
@@ -25,6 +26,25 @@ export default class ParticipationRepository implements IParticipationRepository
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,
         select: participationSelectDetail,
+      }),
+    );
+  }
+
+  async queryForPortfolio(
+    ctx: IContext,
+    where: Prisma.ParticipationWhereInput,
+    orderBy: Prisma.ParticipationOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ) {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.participation.findMany({
+        where,
+        orderBy,
+        take: take + 1,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+        include: participationPortfolioInclude,
       }),
     );
   }
