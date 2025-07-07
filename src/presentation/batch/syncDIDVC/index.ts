@@ -8,6 +8,7 @@ import { processDIDRequests } from "@/presentation/batch/syncDIDVC/syncDID";
 import { processVCRequests } from "@/presentation/batch/syncDIDVC/syncVC";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import NotificationService from "@/application/domain/notification/service";
 
 export async function syncDIDVC() {
   logger.info("🚀 Starting DID/VC synchronization batch");
@@ -16,6 +17,7 @@ export async function syncDIDVC() {
   const client = container.resolve<DIDVCServerClient>("DIDVCServerClient");
   const didService = container.resolve<DIDIssuanceService>("DIDIssuanceService");
   const vcService = container.resolve<VCIssuanceRequestService>("VCIssuanceRequestService");
+  const notificationService = container.resolve<NotificationService>("NotificationService");
 
   try {
     logger.info("🔄 Processing DID issuance requests...");
@@ -28,7 +30,7 @@ export async function syncDIDVC() {
     );
 
     logger.info("🔄 Processing VC issuance requests...");
-    const vcResult = await processVCRequests(issuer, client, vcService);
+    const vcResult = await processVCRequests(issuer, client, vcService, notificationService);
     logger.info(
       `📦 VC Results: ${vcResult.total} total, ` +
         `${vcResult.successCount} succeeded, ` +

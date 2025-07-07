@@ -4,6 +4,9 @@ import { IdentityPlatform, VcIssuanceStatus } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { markFailedRequests } from "@/presentation/batch/syncDIDVC/utils";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
+import NotificationService from "@/application/domain/notification/service";
+import { evaluationInclude } from "@/application/domain/experience/evaluation/data/type";
+import { IContext } from "@/types/server";
 
 type BatchResult = {
   total: number;
@@ -16,6 +19,7 @@ export async function processVCRequests(
   issuer: PrismaClientIssuer,
   client: DIDVCServerClient,
   vcService: VCIssuanceRequestService,
+  notificationService: NotificationService,
 ): Promise<BatchResult> {
   const requests = await issuer.internal(async (tx) => {
     return tx.vcIssuanceRequest.findMany({
@@ -88,8 +92,8 @@ export async function processVCRequests(
       );
 
       if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
-        await issuer.internal(async (tx) => {
-          await tx.vcIssuanceRequest.update({
+        const vc = await issuer.internal(async (tx) => {
+          return tx.vcIssuanceRequest.update({
             where: { id: request.id },
             data: {
               status: VcIssuanceStatus.COMPLETED,
@@ -99,6 +103,28 @@ export async function processVCRequests(
           });
         });
         logger.info(`✅ VC completed: ${request.id}`);
+
+        const evaluation = await issuer.internal(async (tx) => {
+          return tx.evaluation.findUnique({
+            where: { id: vc.evaluationId },
+            include: evaluationInclude,
+          });
+        });
+
+        if (!evaluation) {
+          logger.warn(`⚠️ Evaluation not found for request: ${request.id}`);
+          continue;
+        }
+
+        if (!evaluation.participation.communityId) {
+          logger.warn(`⚠️ missing communityId for request: ${request.id}`);
+          continue;
+        }
+        const communityId = evaluation?.participation.communityId;
+        const ctx = { communityId, issuer } as IContext;
+
+        await notificationService.pushCertificateIssuedMessage(ctx, evaluation);
+
         successCount++;
       } else if (jobStatus?.status === "failed") {
         await issuer.internal(async (tx) => {
