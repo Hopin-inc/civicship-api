@@ -78,11 +78,11 @@ export default class ParticipationConverter {
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.opportunityId
           ? {
-            OR: [
-              { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } },
-              { opportunitySlot: { opportunityId: filter.opportunityId } },
-            ],
-          }
+              OR: [
+                { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } },
+                { opportunitySlot: { opportunityId: filter.opportunityId } },
+              ],
+            }
           : {},
         filter?.opportunitySlotId
           ? { reservation: { opportunitySlotId: filter.opportunitySlotId } }
@@ -126,9 +126,13 @@ export default class ParticipationConverter {
     };
   }
 
-  createMany(input: GqlParticipationBulkCreateInput): Prisma.ParticipationCreateInput[] {
+  createMany(
+    input: GqlParticipationBulkCreateInput,
+    communityId: string,
+  ): Prisma.ParticipationCreateInput[] {
     return input.userIds.map((userId) => ({
       user: { connect: { id: userId } },
+      community: { connect: { id: communityId } },
       opportunitySlot: { connect: { id: input.slotId } },
       description: input.description ?? null,
       status: ParticipationStatus.PARTICIPATING,

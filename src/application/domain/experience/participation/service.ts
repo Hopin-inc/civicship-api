@@ -59,7 +59,7 @@ export default class ParticipationService implements IParticipationService {
     input: GqlParticipationBulkCreateInput,
     tx: Prisma.TransactionClient,
   ) {
-    const createInputs = this.converter.createMany(input);
+    const createInputs = this.converter.createMany(input, ctx.communityId);
     return await Promise.all(createInputs.map((d) => this.repository.create(ctx, d, tx)));
   }
 
