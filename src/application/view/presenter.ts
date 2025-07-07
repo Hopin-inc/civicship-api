@@ -1,59 +1,43 @@
 import { GqlPortfolio, GqlPortfolioSource } from "@/types/graphql";
 import PlacePresenter from "@/application/domain/location/place/presenter";
 import UserPresenter from "@/application/domain/account/user/presenter";
-import {
-  PrismaUserArticlePortfolio,
-  PrismaUserParticipationPortfolio,
-} from "@/application/domain/account/user/data/type";
 import { EvaluationStatus, ParticipationStatusReason, VcIssuanceStatus } from "@prisma/client";
+import { PrismaParticipationForPortfolioInclude } from "@/application/domain/experience/participation/data/type";
+import { PrismaArticleForPortfolio } from "@/application/domain/content/article/data/type";
 
 export default class ViewPresenter {
-  static getFromParticipations(user: PrismaUserParticipationPortfolio): GqlPortfolio[] {
-    return (user.participations ?? [])
-      .map((p) => ViewPresenter.getFromParticipation(p))
-      .filter((portfolio): portfolio is GqlPortfolio => portfolio !== null);
-  }
-
-  static getFromParticipation(
-    p: PrismaUserParticipationPortfolio["participations"][number],
-  ): GqlPortfolio | null {
+  static getFromParticipation(p: PrismaParticipationForPortfolioInclude): GqlPortfolio | null {
     if (isPersonalRecord(p)) {
       return buildFromPersonalRecord(p);
     }
     return buildFromReservation(p);
   }
 
-  static getFromArticles(user: PrismaUserArticlePortfolio): GqlPortfolio[] {
-    const { articlesAboutMe, articlesWrittenByMe } = user;
+  static getFromArticle(article: PrismaArticleForPortfolio): GqlPortfolio {
+    const { relatedUsers, authors } = article;
+    const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
 
-    const allArticles = [...(articlesAboutMe ?? []), ...(articlesWrittenByMe ?? [])];
-
-    return allArticles.map((article): GqlPortfolio => {
-      const { relatedUsers, authors } = article;
-      const participations = [...(authors ?? []), ...(relatedUsers ?? [])];
-
-      const thumbnailUrl = article.thumbnail?.url ?? null;
-      return {
-        id: article.id,
-        title: article.title,
-        source: GqlPortfolioSource.Article,
-        category: article.category,
-        date: article.publishedAt,
-        thumbnailUrl,
-        participants: participations
-          .filter((user): user is NonNullable<typeof user> => user !== null)
-          .map((user) => UserPresenter.formatPortfolio(user)),
-      };
-    });
+    const thumbnailUrl = article.thumbnail?.url ?? null;
+    return {
+      id: article.id,
+      title: article.title,
+      source: GqlPortfolioSource.Article,
+      category: article.category,
+      date: article.publishedAt,
+      thumbnailUrl,
+      participants: participations
+        .filter((user): user is NonNullable<typeof user> => user !== null)
+        .map((user) => UserPresenter.formatPortfolio(user)),
+    };
   }
 }
 
-function isPersonalRecord(p: PrismaUserParticipationPortfolio["participations"][number]): boolean {
+function isPersonalRecord(p: PrismaParticipationForPortfolioInclude): boolean {
   return p.reason === ParticipationStatusReason.PERSONAL_RECORD;
 }
 
 function checkVCPassed(
-  evaluation: PrismaUserParticipationPortfolio["participations"][number]["evaluation"],
+  evaluation: PrismaParticipationForPortfolioInclude["evaluation"],
 ): evaluation is NonNullable<typeof evaluation> & {
   vcIssuanceRequest: { id: string; status: VcIssuanceStatus };
 } {
@@ -64,9 +48,7 @@ function checkVCPassed(
   );
 }
 
-function buildFromPersonalRecord(
-  p: PrismaUserParticipationPortfolio["participations"][number],
-): GqlPortfolio | null {
+function buildFromPersonalRecord(p: PrismaParticipationForPortfolioInclude): GqlPortfolio | null {
   const opportunity = p.opportunitySlot?.opportunity;
   const startsAt = p.opportunitySlot?.startsAt;
   const place = opportunity?.place;
@@ -111,9 +93,7 @@ function buildFromPersonalRecord(
   };
 }
 
-function buildFromReservation(
-  p: PrismaUserParticipationPortfolio["participations"][number],
-): GqlPortfolio | null {
+function buildFromReservation(p: PrismaParticipationForPortfolioInclude): GqlPortfolio | null {
   const slot = p.reservation?.opportunitySlot;
   const opportunity = slot?.opportunity;
   const startsAt = slot?.startsAt;
