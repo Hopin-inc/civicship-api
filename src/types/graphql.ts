@@ -1599,20 +1599,12 @@ export type GqlPortfolioEdge = GqlEdge & {
 };
 
 export type GqlPortfolioFilterInput = {
-  and?: InputMaybe<Array<GqlPortfolioFilterInput>>;
-  category?: InputMaybe<Array<GqlPortfolioCategory>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   dateRange?: InputMaybe<GqlDateTimeRangeFilter>;
-  evaluationStatus?: InputMaybe<Array<GqlEvaluationStatus>>;
   keyword?: InputMaybe<Scalars['String']['input']>;
-  not?: InputMaybe<GqlPortfolioFilterInput>;
-  or?: InputMaybe<Array<GqlPortfolioFilterInput>>;
-  reservationStatus?: InputMaybe<Array<GqlReservationStatus>>;
-  source?: InputMaybe<Array<GqlPortfolioSource>>;
 };
 
 export type GqlPortfolioSortInput = {
-  createdAt?: InputMaybe<GqlSortDirection>;
   date?: InputMaybe<GqlSortDirection>;
 };
 
@@ -1661,7 +1653,7 @@ export type GqlQuery = {
   participations: GqlParticipationsConnection;
   place?: Maybe<GqlPlace>;
   places: GqlPlacesConnection;
-  portfolios: GqlPortfoliosConnection;
+  portfolios?: Maybe<Array<GqlPortfolio>>;
   reservation?: Maybe<GqlReservation>;
   reservationHistories: GqlReservationHistoriesConnection;
   reservationHistory?: Maybe<GqlReservationHistory>;
@@ -1829,7 +1821,6 @@ export type GqlQueryPlacesArgs = {
 
 
 export type GqlQueryPortfoliosArgs = {
-  cursor?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<GqlPortfolioFilterInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
   sort?: InputMaybe<GqlPortfolioSortInput>;
@@ -2507,7 +2498,7 @@ export type GqlUser = {
   participationStatusChangedByMe?: Maybe<Array<GqlParticipationStatusHistory>>;
   participations?: Maybe<Array<GqlParticipation>>;
   phoneNumber?: Maybe<Scalars['String']['output']>;
-  portfolios?: Maybe<GqlPortfoliosConnection>;
+  portfolios?: Maybe<Array<GqlPortfolio>>;
   reservationStatusChangedByMe?: Maybe<Array<GqlReservationHistory>>;
   reservations?: Maybe<Array<GqlReservation>>;
   slug?: Maybe<Scalars['String']['output']>;
@@ -4284,7 +4275,7 @@ export type GqlQueryResolvers<ContextType = any, ParentType extends GqlResolvers
   participations?: Resolver<GqlResolversTypes['ParticipationsConnection'], ParentType, ContextType, Partial<GqlQueryParticipationsArgs>>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType, RequireFields<GqlQueryPlaceArgs, 'id'>>;
   places?: Resolver<GqlResolversTypes['PlacesConnection'], ParentType, ContextType, Partial<GqlQueryPlacesArgs>>;
-  portfolios?: Resolver<GqlResolversTypes['PortfoliosConnection'], ParentType, ContextType, Partial<GqlQueryPortfoliosArgs>>;
+  portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType, Partial<GqlQueryPortfoliosArgs>>;
   reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType, RequireFields<GqlQueryReservationArgs, 'id'>>;
   reservationHistories?: Resolver<GqlResolversTypes['ReservationHistoriesConnection'], ParentType, ContextType, Partial<GqlQueryReservationHistoriesArgs>>;
   reservationHistory?: Resolver<Maybe<GqlResolversTypes['ReservationHistory']>, ParentType, ContextType, RequireFields<GqlQueryReservationHistoryArgs, 'id'>>;
@@ -4625,7 +4616,7 @@ export type GqlUserResolvers<ContextType = any, ParentType extends GqlResolversP
   participationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ParticipationStatusHistory']>>, ParentType, ContextType>;
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   phoneNumber?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  portfolios?: Resolver<Maybe<GqlResolversTypes['PortfoliosConnection']>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
+  portfolios?: Resolver<Maybe<Array<GqlResolversTypes['Portfolio']>>, ParentType, ContextType, Partial<GqlUserPortfoliosArgs>>;
   reservationStatusChangedByMe?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
   reservations?: Resolver<Maybe<Array<GqlResolversTypes['Reservation']>>, ParentType, ContextType>;
   slug?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;

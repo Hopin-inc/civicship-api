@@ -27,7 +27,7 @@ type User {
         sort: PortfolioSortInput
         cursor: String
         first: Int
-    ): PortfoliosConnection
+    ): [Portfolio!]
 
     memberships: [Membership!]
     membershipChangedByMe: [MembershipHistory!]
