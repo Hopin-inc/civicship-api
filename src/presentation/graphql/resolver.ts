@@ -19,15 +19,12 @@ import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
-import ViewResolver from "@/application/view/controller/resolver";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
 const wallet = container.resolve(WalletResolver);
 const membership = container.resolve(MembershipResolver);
 const community = container.resolve(CommunityResolver);
-
-const view = container.resolve(ViewResolver);
 
 const article = container.resolve(ArticleResolver);
 
@@ -55,7 +52,6 @@ const resolvers = {
     ...community.Query,
     ...membership.Query,
     ...wallet.Query,
-    ...view.Query,
     ...article.Query,
     ...opportunity.Query,
     ...opportunitySlot.Query,
