@@ -1,0 +1,51 @@
+# ------------------------------
+# Portfolio Query Definitions
+# ------------------------------
+extend type Query {
+    portfolios(
+        filter: PortfolioFilterInput
+        sort: PortfolioSortInput
+        cursor: String
+        first: Int
+    ): PortfoliosConnection!
+}
+
+# ------------------------------
+# Portfolio Connection Type Definitions
+# ------------------------------
+type PortfoliosConnection {
+    edges: [PortfolioEdge!]!
+    pageInfo: PageInfo!
+    totalCount: Int!
+}
+
+type PortfolioEdge implements Edge {
+    cursor: String!
+    node: Portfolio
+}
+
+# ------------------------------
+# Portfolio Query Input Definitions
+# ------------------------------
+input PortfolioFilterInput {
+    keyword: String
+
+    category: [PortfolioCategory!]
+    source: [PortfolioSource!]
+
+    reservationStatus: [ReservationStatus!]
+    evaluationStatus: [EvaluationStatus!]
+
+    communityIds: [ID!]
+
+    dateRange: DateTimeRangeFilter
+
+    and: [PortfolioFilterInput!]
+    or: [PortfolioFilterInput!]
+    not: PortfolioFilterInput
+}
+
+input PortfolioSortInput {
+    date: SortDirection
+    createdAt: SortDirection
+}
