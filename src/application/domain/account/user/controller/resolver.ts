@@ -43,6 +43,7 @@ export default class UserResolver {
     },
 
     portfolios: async (parent, args: GqlUserPortfoliosArgs, ctx: IContext) => {
+      if (!parent.id) return [];
       return await this.viewUseCase.visitorBrowsePortfolios(parent, args, ctx);
     },
 
