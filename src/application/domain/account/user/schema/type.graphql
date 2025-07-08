@@ -22,7 +22,12 @@ type User {
 
     identities: [Identity!]
     didIssuanceRequests: [DidIssuanceRequest!]
-    portfolios: [Portfolio!]
+    portfolios(
+        filter: PortfolioFilterInput
+        sort: PortfolioSortInput
+        cursor: String
+        first: Int
+    ): [Portfolio!]
 
     memberships: [Membership!]
     membershipChangedByMe: [MembershipHistory!]
