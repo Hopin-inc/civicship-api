@@ -14,7 +14,7 @@ export default class WalletService {
     @inject("WalletRepository") private readonly repository: IWalletRepository,
     @inject("WalletConverter") private readonly converter: WalletConverter,
     @inject("TransactionService") private readonly transactionService: TransactionService,
-  ) { }
+  ) {}
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
     const where = this.converter.filter(filter ?? {});
@@ -31,7 +31,12 @@ export default class WalletService {
     return this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
   }
 
-  async findMemberWalletOrThrow(ctx: IContext, userId: string, communityId: string, retried: boolean = false) {
+  async findMemberWalletOrThrow(
+    ctx: IContext,
+    userId: string,
+    communityId: string,
+    retried: boolean = false,
+  ) {
     const wallet = await this.repository.findFirstExistingMemberWallet(ctx, communityId, userId);
     if (!wallet) {
       throw new NotFoundError("Member wallet", { userId, communityId });
@@ -99,9 +104,7 @@ export default class WalletService {
 
   private async refreshCurrentPointViewIfNotExist(ctx: IContext, wallet: PrismaWallet) {
     if (wallet.currentPointView === null) {
-      await ctx.issuer.public(ctx, tx => {
-        return this.transactionService.refreshCurrentPoint(ctx, tx);
-      });
+      await this.transactionService.refreshCurrentPoint(ctx);
       return true;
     } else return false;
   }
