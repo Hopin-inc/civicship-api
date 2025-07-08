@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { placeInclude } from "@/application/domain/location/place/data/type";
 
 export const userAuthSelect = Prisma.validator<Prisma.UserSelect>()({
   memberships: {
@@ -49,48 +48,8 @@ export const userAuthInclude = Prisma.validator<Prisma.UserInclude>()({
 });
 
 export const userInclude = Prisma.validator<Prisma.UserInclude>()({
-  identities: true,
   image: true,
-});
-
-export const userArticlePortfolioInclude = Prisma.validator<Prisma.UserInclude>()({
-  articlesAboutMe: {
-    include: {
-      thumbnail: true,
-      relatedUsers: { include: userInclude },
-      authors: { include: userInclude },
-    },
-  },
-  articlesWrittenByMe: {
-    include: {
-      thumbnail: true,
-      relatedUsers: { include: userInclude },
-      authors: { include: userInclude },
-    },
-  },
-});
-
-export const userParticipationPortfolioInclude = Prisma.validator<Prisma.UserInclude>()({
-  participations: {
-    include: {
-      images: true,
-      reservation: {
-        include: {
-          opportunitySlot: {
-            include: {
-              opportunity: {
-                include: {
-                  images: true,
-                  place: { include: placeInclude },
-                },
-              },
-            },
-          },
-          participations: { include: { user: { include: userInclude } } },
-        },
-      },
-    },
-  },
+  identities: true,
 });
 
 export const userSelectDetail = Prisma.validator<Prisma.UserSelect>()({
@@ -124,12 +83,4 @@ export type PrismaUser = Prisma.UserGetPayload<{
 
 export type PrismaUserDetail = Prisma.UserGetPayload<{
   select: typeof userSelectDetail;
-}>;
-
-export type PrismaUserArticlePortfolio = Prisma.UserGetPayload<{
-  include: typeof userArticlePortfolioInclude;
-}>;
-
-export type PrismaUserParticipationPortfolio = Prisma.UserGetPayload<{
-  include: typeof userParticipationPortfolioInclude;
 }>;

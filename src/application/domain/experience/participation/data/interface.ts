@@ -1,11 +1,13 @@
 import { IContext } from "@/types/server";
 import {
+  GqlParticipationBulkCreateInput,
   GqlParticipationCreatePersonalRecordInput,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import {
   PrismaParticipationDetail,
+  PrismaParticipationForPortfolioInclude,
   PrismaParticipationIncludeSlot,
 } from "@/application/domain/experience/participation/data/type";
 
@@ -20,6 +22,12 @@ export interface IParticipationService {
   findParticipation(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
 
   findParticipationOrThrow(ctx: IContext, id: string): Promise<PrismaParticipationDetail>;
+
+  bulkCreateParticipations(
+    ctx: IContext,
+    input: GqlParticipationBulkCreateInput,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaParticipationDetail[]>;
 
   createParticipation(
     ctx: IContext,
@@ -68,6 +76,14 @@ export interface IParticipationRepository {
     take: number,
     cursor?: string,
   ): Promise<PrismaParticipationDetail[]>;
+
+  queryForPortfolio(
+    ctx: IContext,
+    where: Prisma.ParticipationWhereInput,
+    orderBy: Prisma.ParticipationOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaParticipationForPortfolioInclude[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
   findWithSlot(ctx: IContext, id: string): Promise<PrismaParticipationIncludeSlot | null>;

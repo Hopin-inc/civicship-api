@@ -17,7 +17,9 @@ import UtilityResolver from "@/application/domain/reward/utility/controller/reso
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
+import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
+import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -32,6 +34,7 @@ const opportunitySlot = container.resolve(OpportunitySlotResolver);
 const reservation = container.resolve(ReservationResolver);
 const participation = container.resolve(ParticipationResolver);
 const evaluation = container.resolve(EvaluationResolver);
+const vcIssuanceRequest = container.resolve(VCIssuanceRequestResolver);
 
 const place = container.resolve(PlaceResolver);
 const master = container.resolve(MasterResolver);
@@ -56,6 +59,7 @@ const resolvers = {
     ...reservation.Query,
     ...participation.Query,
     ...evaluation.Query,
+    ...vcIssuanceRequest.Query,
     ...place.Query,
     ...master.Query,
     ...utility.Query,
@@ -93,6 +97,7 @@ const resolvers = {
   Reservation: reservation.Reservation,
   Participation: participation.Participation,
   Evaluation: evaluation.Evaluation,
+  VcIssuanceRequest: vcIssuanceRequest.VcIssuanceRequest,
 
   Place: place.Place,
 
@@ -102,6 +107,8 @@ const resolvers = {
   Utility: utility.Utility,
 
   Transaction: transaction.Transaction,
+
+  ...scalarResolvers,
 };
 
 export default resolvers;

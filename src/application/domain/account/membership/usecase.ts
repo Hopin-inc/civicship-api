@@ -10,8 +10,8 @@ import {
   GqlMutationMembershipAssignOwnerArgs,
   GqlMutationMembershipAssignManagerArgs,
   GqlMutationMembershipAssignMemberArgs,
-  GqlMembership,
   GqlQueryMembershipArgs,
+  GqlMembership,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { MembershipStatus, MembershipStatusReason, Role } from "@prisma/client";

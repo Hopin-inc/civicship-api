@@ -25,9 +25,36 @@ const DecimalScalar = new GraphQLScalarType({
   },
 });
 
+const BigIntScalar = new GraphQLScalarType({
+  name: "BigInt",
+  description: "Custom scalar for bigint (serialized as string)",
+
+  parseValue(value: unknown) {
+    if (typeof value === "string" || typeof value === "number") {
+      return BigInt(value);
+    }
+    throw new Error("Invalid BigInt");
+  },
+
+  serialize(value: unknown) {
+    if (typeof value === "bigint") {
+      return value.toString(); // GraphQLは bigint を直接返せないため string 化
+    }
+    throw new Error("Expected bigint for serialization");
+  },
+
+  parseLiteral(ast) {
+    if (ast.kind === Kind.INT || ast.kind === Kind.STRING) {
+      return BigInt(ast.value);
+    }
+    throw new Error("Invalid BigInt literal");
+  },
+});
+
 const scalarResolvers = {
   Decimal: DecimalScalar,
   Upload: GraphQLUpload,
+  BigInt: BigIntScalar,
 };
 
 export default scalarResolvers;
