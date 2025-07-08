@@ -1,5 +1,5 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { IdentityPlatform, EvaluationStatus } from "@prisma/client";
+import { IdentityPlatform, EvaluationStatus, VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
@@ -28,12 +28,34 @@ export async function createVCRequests(
         status: EvaluationStatus.PASSED,
         participation: {
           user: {
-            vcIssuanceRequests: { none: {} },
             identities: {
               some: { platform: IdentityPlatform.PHONE },
             },
           },
         },
+        OR: [
+          {
+            participation: {
+              user: {
+                vcIssuanceRequests: {
+                  some: {
+                    status: VcIssuanceStatus.PENDING,
+                    jobId: null,
+                  },
+                },
+              },
+            },
+          },
+          {
+            participation: {
+              user: {
+                vcIssuanceRequests: {
+                  none: {},
+                },
+              },
+            },
+          },
+        ],
       },
       include: evaluationInclude,
     });
@@ -48,9 +70,15 @@ export async function createVCRequests(
   for (const evaluation of evaluations) {
     const user = evaluation.participation.user;
     const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
+    const vcRequest = evaluation.vcIssuanceRequest;
 
     if (!user?.id || !phoneIdentity?.uid) {
       logger.warn(`⚠️ Missing identity info: user=${user?.id}`);
+      skippedCount++;
+      continue;
+    }
+
+    if (vcRequest && (vcRequest.status !== VcIssuanceStatus.PENDING || vcRequest.jobId !== null)) {
       skippedCount++;
       continue;
     }
@@ -62,6 +90,7 @@ export async function createVCRequests(
         vcConverter.toVCIssuanceRequestInput(evaluation),
         ctx,
         evaluation.id,
+        vcRequest?.id,
       );
 
       if (result.success) {
