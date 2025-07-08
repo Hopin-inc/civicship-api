@@ -14,7 +14,6 @@ generates:
       inputMaybeValue: T | undefined
       strictScalars: true
       scalars:
-        BigInt: number
         Datetime: Date
         Decimal: string
         BigInt: bigint
