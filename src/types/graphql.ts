@@ -16,6 +16,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
+  BigInt: { input: bigint; output: bigint; }
   Datetime: { input: Date; output: Date; }
   Decimal: { input: string; output: string; }
   JSON: { input: any; output: any; }
@@ -2765,6 +2766,7 @@ export type GqlResolversTypes = ResolversObject<{
   AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
   AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
   AuthZRules: GqlAuthZRules;
+  BigInt: ResolverTypeWrapper<Scalars['BigInt']['output']>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
@@ -3062,6 +3064,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   ArticlesConnection: Omit<GqlArticlesConnection, 'edges'> & { edges?: Maybe<Array<Maybe<GqlResolversParentTypes['ArticleEdge']>>> };
   AuthZDirectiveCompositeRulesInput: GqlAuthZDirectiveCompositeRulesInput;
   AuthZDirectiveDeepCompositeRulesInput: GqlAuthZDirectiveDeepCompositeRulesInput;
+  BigInt: Scalars['BigInt']['output'];
   Boolean: Scalars['Boolean']['output'];
   CheckCommunityPermissionInput: GqlCheckCommunityPermissionInput;
   CheckIsSelfPermissionInput: GqlCheckIsSelfPermissionInput;
@@ -3391,6 +3394,10 @@ export type GqlArticlesConnectionResolvers<ContextType = any, ParentType extends
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
+
+export interface GqlBigIntScalarConfig extends GraphQLScalarTypeConfig<GqlResolversTypes['BigInt'], any> {
+  name: 'BigInt';
+}
 
 export type GqlCitiesConnectionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['CitiesConnection'] = GqlResolversParentTypes['CitiesConnection']> = ResolversObject<{
   edges?: Resolver<Array<GqlResolversTypes['CityEdge']>, ParentType, ContextType>;
@@ -4558,6 +4565,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   ArticleUpdateContentPayload?: GqlArticleUpdateContentPayloadResolvers<ContextType>;
   ArticleUpdateContentSuccess?: GqlArticleUpdateContentSuccessResolvers<ContextType>;
   ArticlesConnection?: GqlArticlesConnectionResolvers<ContextType>;
+  BigInt?: GraphQLScalarType;
   CitiesConnection?: GqlCitiesConnectionResolvers<ContextType>;
   City?: GqlCityResolvers<ContextType>;
   CityEdge?: GqlCityEdgeResolvers<ContextType>;
