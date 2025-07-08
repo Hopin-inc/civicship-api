@@ -611,13 +611,13 @@ TICKET_REFUNDED TICKET_REFUNDED
 
   "mv_current_points" {
     String walletId "🗝️"
-    Int currentPoint 
+    BigInt currentPoint 
     }
   
 
   "mv_accumulated_points" {
     String walletId "🗝️"
-    Int accumulatedPoint 
+    BigInt accumulatedPoint 
     }
   
 

@@ -83,13 +83,13 @@ describe("WalletValidator", () => {
       const fromWallet = {
         ...memberWallet,
         id: "wallet-from",
-        currentPointView: { currentPoint: 500 },
+        currentPointView: { currentPoint: BigInt(500) },
       } as PrismaWallet;
 
       const toWallet = {
         ...memberWallet,
         id: "wallet-to",
-        currentPointView: { currentPoint: 0 },
+        currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       const result = await validator.validateTransferMemberToMember(fromWallet, toWallet, 100);
@@ -104,12 +104,12 @@ describe("WalletValidator", () => {
       const fromWallet = {
         ...memberWallet,
         id: "wallet-from",
-        currentPointView: { currentPoint: 50 },
+        currentPointView: { currentPoint: BigInt(50) },
       } as PrismaWallet;
       const toWallet = {
         ...memberWallet,
         id: "wallet-to",
-        currentPointView: { currentPoint: 0 },
+        currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       await expect(
@@ -122,11 +122,11 @@ describe("WalletValidator", () => {
     it("should pass if currentPoint is sufficient", async () => {
       const fromWallet = {
         id: "wallet-from",
-        currentPointView: { currentPoint: 500 },
+        currentPointView: { currentPoint: BigInt(500) },
       } as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
-        currentPointView: { currentPoint: 0 },
+        currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).resolves.not.toThrow();
@@ -135,7 +135,7 @@ describe("WalletValidator", () => {
     it("should throw ValidationError if fromWallet is null", async () => {
       const toWallet = {
         id: "wallet-to",
-        currentPointView: { currentPoint: 0 },
+        currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, null, toWallet)).rejects.toThrow(
@@ -146,7 +146,7 @@ describe("WalletValidator", () => {
     it("should throw ValidationError if toWallet is null", async () => {
       const fromWallet = {
         id: "wallet-from",
-        currentPointView: { currentPoint: 500 },
+        currentPointView: { currentPoint: BigInt(500) },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, null)).rejects.toThrow(
@@ -161,7 +161,7 @@ describe("WalletValidator", () => {
       } as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
-        currentPointView: { currentPoint: 0 },
+        currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
@@ -172,11 +172,11 @@ describe("WalletValidator", () => {
     it("should throw InsufficientBalanceError if currentPoint is insufficient", async () => {
       const fromWallet = {
         id: "wallet-from",
-        currentPointView: { currentPoint: 50 },
+        currentPointView: { currentPoint: BigInt(50) },
       } as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
-        currentPointView: { currentPoint: 0 },
+        currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
