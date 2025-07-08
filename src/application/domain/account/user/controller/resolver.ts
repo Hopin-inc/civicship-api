@@ -2,6 +2,7 @@ import {
   GqlQueryUsersArgs,
   GqlQueryUserArgs,
   GqlMutationUserUpdateMyProfileArgs,
+  GqlUserPortfoliosArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
@@ -33,12 +34,17 @@ export default class UserResolver {
       const viewerId = ctx.currentUser?.id;
       if (!viewerId || !parent.id) return null;
 
-      const canView = await this.userUseCase.canCurrentUserViewPhoneNumber(ctx, parent.id, viewerId);
+      const canView = await this.userUseCase.canCurrentUserViewPhoneNumber(
+        ctx,
+        parent.id,
+        viewerId,
+      );
       return canView ? parent.phoneNumber : null;
     },
 
-    portfolios: async (parent, _: unknown, ctx: IContext) => {
-      return await this.viewUseCase.visitorBrowsePortfolios(parent, ctx);
+    portfolios: async (parent, args: GqlUserPortfoliosArgs, ctx: IContext) => {
+      if (!parent.id) return [];
+      return await this.viewUseCase.visitorBrowsePortfolios(parent, args, ctx);
     },
 
     image: async (parent, _: unknown, ctx: IContext) => {

@@ -7,6 +7,7 @@ import {
 import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import {
   PrismaParticipationDetail,
+  PrismaParticipationForPortfolioInclude,
   PrismaParticipationIncludeSlot,
 } from "@/application/domain/experience/participation/data/type";
 
@@ -75,6 +76,14 @@ export interface IParticipationRepository {
     take: number,
     cursor?: string,
   ): Promise<PrismaParticipationDetail[]>;
+
+  queryForPortfolio(
+    ctx: IContext,
+    where: Prisma.ParticipationWhereInput,
+    orderBy: Prisma.ParticipationOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaParticipationForPortfolioInclude[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaParticipationDetail | null>;
   findWithSlot(ctx: IContext, id: string): Promise<PrismaParticipationIncludeSlot | null>;
