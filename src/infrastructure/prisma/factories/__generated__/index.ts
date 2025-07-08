@@ -7404,7 +7404,7 @@ export const defineMembershipHostedOpportunityCountViewFactory = (<TOptions exte
 defineMembershipHostedOpportunityCountViewFactory.withTransientFields = defaultTransientFieldValues => options => defineMembershipHostedOpportunityCountViewFactoryInternal(options, defaultTransientFieldValues);
 
 type CurrentPointViewScalarOrEnumFields = {
-    currentPoint: number;
+    currentPoint: (bigint | number);
 };
 
 type CurrentPointViewwalletFactory = {
@@ -7413,7 +7413,7 @@ type CurrentPointViewwalletFactory = {
 };
 
 type CurrentPointViewFactoryDefineInput = {
-    currentPoint?: number;
+    currentPoint?: (bigint | number);
     wallet: CurrentPointViewwalletFactory | Prisma.WalletCreateNestedOneWithoutCurrentPointViewInput;
 };
 
@@ -7457,7 +7457,7 @@ function autoGenerateCurrentPointViewScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): CurrentPointViewScalarOrEnumFields {
     return {
-        currentPoint: getScalarFieldValueGenerator().Int({ modelName: "CurrentPointView", fieldName: "currentPoint", isId: false, isUnique: false, seq })
+        currentPoint: getScalarFieldValueGenerator().BigInt({ modelName: "CurrentPointView", fieldName: "currentPoint", isId: false, isUnique: false, seq })
     };
 }
 
@@ -7555,7 +7555,7 @@ export const defineCurrentPointViewFactory = (<TOptions extends CurrentPointView
 defineCurrentPointViewFactory.withTransientFields = defaultTransientFieldValues => options => defineCurrentPointViewFactoryInternal(options, defaultTransientFieldValues);
 
 type AccumulatedPointViewScalarOrEnumFields = {
-    accumulatedPoint: number;
+    accumulatedPoint: (bigint | number);
 };
 
 type AccumulatedPointViewwalletFactory = {
@@ -7564,7 +7564,7 @@ type AccumulatedPointViewwalletFactory = {
 };
 
 type AccumulatedPointViewFactoryDefineInput = {
-    accumulatedPoint?: number;
+    accumulatedPoint?: (bigint | number);
     wallet: AccumulatedPointViewwalletFactory | Prisma.WalletCreateNestedOneWithoutAccumulatedPointViewInput;
 };
 
@@ -7608,7 +7608,7 @@ function autoGenerateAccumulatedPointViewScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): AccumulatedPointViewScalarOrEnumFields {
     return {
-        accumulatedPoint: getScalarFieldValueGenerator().Int({ modelName: "AccumulatedPointView", fieldName: "accumulatedPoint", isId: false, isUnique: false, seq })
+        accumulatedPoint: getScalarFieldValueGenerator().BigInt({ modelName: "AccumulatedPointView", fieldName: "accumulatedPoint", isId: false, isUnique: false, seq })
     };
 }
 
