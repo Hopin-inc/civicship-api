@@ -2306,6 +2306,7 @@ export type GqlTicketsConnection = {
 export type GqlTransaction = {
   __typename?: 'Transaction';
   createdAt?: Maybe<Scalars['Datetime']['output']>;
+  createdByUser?: Maybe<GqlUser>;
   fromPointChange?: Maybe<Scalars['Int']['output']>;
   fromWallet?: Maybe<GqlWallet>;
   id: Scalars['ID']['output'];
@@ -4342,6 +4343,7 @@ export type GqlTicketsConnectionResolvers<ContextType = any, ParentType extends 
 
 export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Transaction'] = GqlResolversParentTypes['Transaction']> = ResolversObject<{
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   fromPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   fromWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
