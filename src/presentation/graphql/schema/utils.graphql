@@ -60,6 +60,7 @@ scalar Datetime
 scalar JSON
 scalar Decimal
 scalar Upload
+scalar BigInt
 
 # ------------------------------------------------
 # Input Types
