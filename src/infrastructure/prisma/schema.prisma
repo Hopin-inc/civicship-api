@@ -575,7 +575,7 @@ view CurrentPointView {
   walletId String @id @map("wallet_id")
   wallet   Wallet @relation(fields: [walletId], references: [id])
 
-  currentPoint BigInt @map("current_point") @db.BigInt
+  currentPoint Int @map("current_point")
 
   @@map("mv_current_points")
 }
@@ -584,7 +584,7 @@ view AccumulatedPointView {
   walletId String @id @map("wallet_id")
   wallet   Wallet @relation(fields: [walletId], references: [id])
 
-  accumulatedPoint BigInt @map("accumulated_point") @db.BigInt
+  accumulatedPoint Int @map("accumulated_point")
 
   @@map("mv_accumulated_points")
 }
