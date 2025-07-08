@@ -49,11 +49,16 @@ export class PrismaClientIssuer {
 
     const user = ctx.currentUser;
     if (user) {
-      return this.client.$transaction(async (tx) => {
-        await this.setRls(tx);
-        await this.setRlsConfigUserId(tx, user.id);
-        return await callback(tx);
-      });
+      return this.client.$transaction(
+        async (tx) => {
+          await this.setRls(tx);
+          await this.setRlsConfigUserId(tx, user.id);
+          return await callback(tx);
+        },
+        {
+          timeout: 10000,
+        },
+      );
     }
 
     throw new AuthorizationError("Not authenticated");
@@ -68,11 +73,16 @@ export class PrismaClientIssuer {
   }
 
   private bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
-    return this.client.$transaction(async (tx) => {
-      await this.setRls(tx, true);
-      await this.setRlsConfigUserId(tx, null);
-      return await callback(tx);
-    });
+    return this.client.$transaction(
+      async (tx) => {
+        await this.setRls(tx, true);
+        await this.setRlsConfigUserId(tx, null);
+        return await callback(tx);
+      },
+      {
+        timeout: 10000,
+      },
+    );
   }
 
   private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
