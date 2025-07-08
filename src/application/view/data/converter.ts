@@ -24,10 +24,11 @@ export default class ViewConverter {
     }
 
     if (filter?.keyword) {
+      const titleCondition = { contains: filter.keyword, mode: "insensitive" as const };
       conditions.push({
         OR: [
-          { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } },
-          { reservation: { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } } }
+          { opportunitySlot: { opportunity: { title: titleCondition } } },
+          { reservation: { opportunitySlot: { opportunity: { title: titleCondition } } } }
         ]
       });
     }
@@ -51,7 +52,8 @@ export default class ViewConverter {
     }
 
     if (filter?.keyword) {
-      conditions.push({ title: { contains: filter.keyword, mode: "insensitive" } });
+      const titleCondition = { contains: filter.keyword, mode: "insensitive" as const };
+      conditions.push({ title: titleCondition });
     }
 
     return { AND: conditions };
