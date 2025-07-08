@@ -49,7 +49,7 @@ export class PrismaClientIssuer {
     return this.bypassRls(callback);
   }
 
-  public onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+  public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
     logger.debug("onlyBelongingCommunity invoked", {
       isAdmin: ctx.isAdmin,
       hasCurrentUser: !!ctx.currentUser,
@@ -61,16 +61,26 @@ export class PrismaClientIssuer {
 
     const user = ctx.currentUser;
     if (user) {
-      return this.client.$transaction(
-        async (tx) => {
-          await this.setRls(tx);
-          await this.setRlsConfigUserId(tx, user.id);
-          return await callback(tx);
-        },
-        {
-          timeout: 10000,
-        },
-      );
+      const startedAt = Date.now();
+      try {
+        return await this.client.$transaction(
+          async (tx) => {
+            await this.setRls(tx);
+            await this.setRlsConfigUserId(tx, user.id);
+            return await callback(tx);
+          },
+          {
+            timeout: 10000,
+          },
+        );
+      } finally {
+        const duration = Date.now() - startedAt;
+        if (duration > 3000) {
+          logger.warn("Slow transaction (onlyBelongingCommunity)", { duration });
+        } else {
+          logger.debug("Transaction completed (onlyBelongingCommunity)", { duration });
+        }
+      }
     }
 
     throw new AuthorizationError("Not authenticated");
@@ -84,17 +94,27 @@ export class PrismaClientIssuer {
     }
   }
 
-  private bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
-    return this.client.$transaction(
-      async (tx) => {
-        await this.setRls(tx, true);
-        await this.setRlsConfigUserId(tx, null);
-        return await callback(tx);
-      },
-      {
-        timeout: 10000,
-      },
-    );
+  private async bypassRls<T>(callback: CallbackFn<T>): Promise<T> {
+    const startedAt = Date.now();
+    try {
+      return await this.client.$transaction(
+        async (tx) => {
+          await this.setRls(tx, true);
+          await this.setRlsConfigUserId(tx, null);
+          return await callback(tx);
+        },
+        {
+          timeout: 10000,
+        },
+      );
+    } finally {
+      const duration = Date.now() - startedAt;
+      if (duration > 3000) {
+        logger.warn("Slow transaction (bypassRls)", { duration });
+      } else {
+        logger.debug("Transaction completed (bypassRls)", { duration });
+      }
+    }
   }
 
   private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
