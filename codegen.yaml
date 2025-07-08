@@ -16,6 +16,7 @@ generates:
       scalars:
         Datetime: Date
         Decimal: string
+        BigInt: bigint
         JSON: any
         Upload: "typeof import('graphql-upload/GraphQLUpload.mjs')"
       enumsAsConst: true

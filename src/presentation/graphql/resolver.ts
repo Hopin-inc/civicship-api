@@ -19,6 +19,7 @@ import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
+import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
@@ -106,6 +107,8 @@ const resolvers = {
   Utility: utility.Utility,
 
   Transaction: transaction.Transaction,
+
+  ...scalarResolvers,
 };
 
 export default resolvers;

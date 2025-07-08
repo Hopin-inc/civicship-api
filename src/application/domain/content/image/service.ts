@@ -4,6 +4,13 @@ import { gcsBucketName, storage } from "@/infrastructure/libs/storage";
 import path from "path";
 import { injectable } from "tsyringe";
 
+type FileUpload = {
+  filename: string;
+  mimetype: string;
+  encoding: string;
+  createReadStream: () => NodeJS.ReadableStream;
+};
+
 @injectable()
 export default class ImageService {
   async uploadPublicImage(
@@ -11,10 +18,9 @@ export default class ImageService {
     folderPath: string,
   ): Promise<Prisma.ImageCreateWithoutUsersInput> {
     const { file, alt, caption } = image;
-    const {
-      // @ts-expect-error Library type definition is not compatible with the original library
-      file: { createReadStream, filename: rawFilename, mimetype: mime },
-    } = await file;
+    const uploadFile = (await file) as unknown as FileUpload;
+
+    const { createReadStream, filename: rawFilename, mimetype: mime } = uploadFile;
 
     const ext = path.extname(rawFilename);
     const filename = `${Date.now()}_${rawFilename}`;

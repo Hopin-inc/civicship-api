@@ -69,10 +69,10 @@ export class RateLimitError extends ApolloError {
 
 // Wallet
 export class InsufficientBalanceError extends ApolloError {
-  public currentBalance: number;
+  public currentBalance: string;
   public requestedAmount: number;
 
-  constructor(currentBalance: number, requestedAmount: number) {
+  constructor(currentBalance: string, requestedAmount: number) {
     const message = `Insufficient balance: current balance ${currentBalance} is less than requested amount ${requestedAmount}`;
     super(message, "INSUFFICIENT_BALANCE");
     this.currentBalance = currentBalance;
