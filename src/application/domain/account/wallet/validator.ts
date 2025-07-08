@@ -93,7 +93,7 @@ export default class WalletValidator {
       throw new DatabaseError("Invalid point type: expected bigint");
     }
     if (currentPoint < BigInt(transferPoints)) {
-      throw new InsufficientBalanceError(Number(currentPoint), transferPoints);
+throw new InsufficientBalanceError(currentPoint.toString(), transferPoints);
     }
   }
 }
