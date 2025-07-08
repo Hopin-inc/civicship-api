@@ -16,7 +16,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean; }
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
-  BigInt: { input: number; output: number; }
+  BigInt: { input: bigint; output: bigint; }
   Datetime: { input: Date; output: Date; }
   Decimal: { input: string; output: string; }
   JSON: { input: any; output: any; }
