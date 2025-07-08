@@ -84,12 +84,7 @@ export async function processVCRequests(
       const jobStatus = await client.call<{
         status: string;
         result?: { recordId: string };
-      }>(
-        phoneIdentity.uid,
-        phoneIdentity.authToken || "",
-        `/vc/jobs/connectionless/${request.jobId}`,
-        "GET",
-      );
+      }>(phoneIdentity.uid, token || "", `/vc/jobs/connectionless/${request.jobId}`, "GET");
 
       if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
         const vc = await issuer.internal(async (tx) => {

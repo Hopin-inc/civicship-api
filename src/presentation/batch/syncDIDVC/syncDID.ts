@@ -80,7 +80,7 @@ export async function processDIDRequests(
       const jobStatus = await client.call<{
         status: string;
         result?: { did: string };
-      }>(phoneIdentity.uid, phoneIdentity.authToken || "", `/did/jobs/${request.jobId}`, "GET");
+      }>(phoneIdentity.uid, token || "", `/did/jobs/${request.jobId}`, "GET");
 
       logger.debug(`jobStatus: ${JSON.stringify(jobStatus, null, 2)}`);
 
