@@ -26,6 +26,7 @@ export async function processVCRequests(
       where: {
         status: { not: VcIssuanceStatus.COMPLETED },
         jobId: { not: null },
+        vcRecordId: null,
         retryCount: { lt: 3 },
       },
       include: {
