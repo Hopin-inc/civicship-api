@@ -13,7 +13,7 @@ export default class WalletRepository implements IWalletRepository {
     take: number,
     cursor?: string,
   ) {
-    return ctx.issuer.public(ctx, (tx) => {
+    return ctx.issuer.internal((tx) => {
       return tx.wallet.findMany({
         where,
         orderBy,
@@ -26,7 +26,7 @@ export default class WalletRepository implements IWalletRepository {
   }
 
   async find(ctx: IContext, id: string) {
-    return ctx.issuer.public(ctx, (tx) => {
+    return ctx.issuer.internal((tx) => {
       return tx.wallet.findUnique({
         where: { id },
         include: walletInclude,
