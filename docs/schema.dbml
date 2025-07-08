@@ -548,13 +548,13 @@ Table v_membership_hosted_opportunity_count {
 Table mv_current_points {
   walletId String [pk]
   wallet t_wallets [not null]
-  currentPoint Int [not null]
+  currentPoint BigInt [not null]
 }
 
 Table mv_accumulated_points {
   walletId String [pk]
   wallet t_wallets [not null]
-  accumulatedPoint Int [not null]
+  accumulatedPoint BigInt [not null]
 }
 
 Table v_earliest_reservable_slot {
