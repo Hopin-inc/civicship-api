@@ -1,4 +1,5 @@
 import { container } from "tsyringe";
+import scalarResolvers from "@/presentation/graphql/scalar";
 
 import IdentityResolver from "@/application/domain/account/identity/controller/resolver";
 import UserResolver from "@/application/domain/account/user/controller/resolver";
@@ -102,6 +103,8 @@ const resolvers = {
   Utility: utility.Utility,
 
   Transaction: transaction.Transaction,
+
+  ...scalarResolvers,
 };
 
 export default resolvers;
