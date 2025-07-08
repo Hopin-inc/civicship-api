@@ -118,7 +118,14 @@ export async function processVCRequests(
         const communityId = evaluation?.participation.communityId;
         const ctx = { communityId, issuer } as IContext;
 
-        await notificationService.pushCertificateIssuedMessage(ctx, evaluation);
+        try {
+          await notificationService.pushCertificateIssuedMessage(ctx, evaluation);
+        } catch (error) {
+          logger.error(
+            `Failed to send certificate issued notification for request ${request.id}`,
+            error,
+          );
+        }
 
         successCount++;
       } else if (jobStatus?.status === "failed") {
