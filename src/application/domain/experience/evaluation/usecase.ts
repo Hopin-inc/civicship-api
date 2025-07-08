@@ -23,7 +23,6 @@ import ParticipationService from "@/application/domain/experience/participation/
 import { CannotEvaluateBeforeOpportunityStartError, ValidationError } from "@/errors/graphql";
 import { IdentityPlatform, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
-import NotificationService from "@/application/domain/notification/service";
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import logger from "@/infrastructure/logging";
 
@@ -39,7 +38,6 @@ export default class EvaluationUseCase {
     private readonly vcIssuanceRequestService: VCIssuanceRequestService,
     @inject("VCIssuanceRequestConverter")
     private readonly vcIssuanceRequestConverter: VCIssuanceRequestConverter,
-    @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
 
   async visitorBrowseEvaluations(
@@ -86,7 +84,6 @@ export default class EvaluationUseCase {
     });
 
     for (const evaluation of createdEvaluations) {
-      await this.notificationService.pushCertificateIssuedMessage(ctx, evaluation);
       void this.issueEvaluationVC(ctx, evaluation);
     }
 

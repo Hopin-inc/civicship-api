@@ -107,7 +107,7 @@ function buildCertificateDetailTable(params: CertificateIssuedParams): messaging
         contents: [
           {
             type: "text",
-            text: "発行者",
+            text: "主催者",
             color: "#555555",
             size: "sm",
             flex: 2,

@@ -313,7 +313,7 @@ export default class NotificationService {
     const { year } = this.formatDateTime(slot.startsAt, slot.endsAt);
     const rawDate = evaluation.issuedAt ?? evaluation.updatedAt;
     const issueDate = rawDate ? dayjs(rawDate).format("YYYY年M月D日") : "日付未定";
-    const issuerName = evaluation.evaluator?.name ?? ctx.currentUser?.name ?? "主催者";
+    const issuerName = evaluation.evaluator?.name ?? "主催者";
 
     const client = await createLineClient(ctx.communityId);
 
