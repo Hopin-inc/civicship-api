@@ -57,6 +57,8 @@ function buildFromPersonalRecord(p: PrismaParticipationForPortfolioInclude): Gql
   if (!opportunity || !startsAt) return null;
 
   if (checkVCPassed(e)) {
+    if (e.vcIssuanceRequest.status !== VcIssuanceStatus.COMPLETED) return null;
+
     return {
       id: p.id,
       title: opportunity.title,
