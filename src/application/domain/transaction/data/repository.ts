@@ -39,7 +39,9 @@ export default class TransactionRepository implements ITransactionRepository {
     ctx: IContext,
     tx: Prisma.TransactionClient,
   ): Promise<refreshMaterializedViewCurrentPoints.Result[]> {
-    return tx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return ctx.issuer.internal((internalTx) => {
+      return internalTx.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    });
   }
 
   async create(

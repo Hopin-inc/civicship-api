@@ -99,7 +99,7 @@ export default class WalletService {
 
   private async refreshCurrentPointViewIfNotExist(ctx: IContext, wallet: PrismaWallet) {
     if (wallet.currentPointView === null) {
-      await ctx.issuer.public(ctx, tx => {
+      await ctx.issuer.internal(tx => {
         return this.transactionService.refreshCurrentPoint(ctx, tx);
       });
       return true;
