@@ -48,20 +48,31 @@ export class VCIssuanceRequestService {
     vcRequest: EvaluationCredentialPayload,
     ctx: IContext,
     evaluationId: string,
+    existingRequestId?: string,
   ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
-    const userDid = await this.getUserDid(userId, ctx);
-    if (!userDid) {
-      throw new Error("User DID not found. DID must be issued before VC issuance.");
-    }
+    let vcIssuanceRequest: PrismaVCIssuanceRequestDetail | null = null;
 
-    const vcIssuanceRequest = await this.vcIssuanceRequestRepository.create(ctx, {
-      evaluationId,
-      userId,
-      claims: vcRequest.claims,
-      credentialFormat: vcRequest.credentialFormat,
-      schemaId: vcRequest.schemaId,
-      status: VcIssuanceStatus.PENDING,
-    });
+    if (existingRequestId) {
+      const existing = await this.vcIssuanceRequestRepository.findById(ctx, existingRequestId);
+      if (!existing) {
+        logger.warn("VCIssuanceService: missing existingRequestId, skipping");
+        return this.markIssuanceStatus(
+          ctx,
+          existingRequestId,
+          "VCIssuanceService: missing existingRequestId, skipping",
+        );
+      }
+      vcIssuanceRequest = existing;
+    } else {
+      vcIssuanceRequest = await this.vcIssuanceRequestRepository.create(ctx, {
+        evaluationId,
+        userId,
+        claims: vcRequest.claims,
+        credentialFormat: vcRequest.credentialFormat,
+        schemaId: vcRequest.schemaId,
+        status: VcIssuanceStatus.PENDING,
+      });
+    }
 
     const identity = await this.identityRepository.find(phoneUid);
     if (!identity) throw new Error("No identity found for VC issuance");
@@ -75,12 +86,35 @@ export class VCIssuanceRequestService {
         isValid = true;
       } catch (error) {
         logger.error("VCIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceFailed(ctx, vcIssuanceRequest.id, error);
+        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
       }
     }
 
     if (!token || !isValid) {
-      throw new Error("No valid authentication token available");
+      logger.warn("No valid authentication token available");
+      return this.markIssuanceStatus(
+        ctx,
+        vcIssuanceRequest.id,
+        "No valid authentication token available",
+      );
+    }
+
+    const userDid = await this.getUserDid(userId, ctx).catch((err) => {
+      logger.warn("VCIssuanceService: DID not found. VC issuance will be postponed.", {
+        userId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+    if (!userDid) {
+      return this.markIssuanceStatus(
+        ctx,
+        vcIssuanceRequest.id,
+        "User DID not found. VC issuance postponed.",
+        VcIssuanceStatus.PENDING,
+      ).then(() => ({
+        success: false,
+        requestId: vcIssuanceRequest.id,
+      }));
     }
 
     try {
@@ -108,7 +142,7 @@ export class VCIssuanceRequestService {
       return { success: true, requestId: vcIssuanceRequest.id };
     } catch (error) {
       logger.error("VCIssuanceService.requestVCIssuance: failed", error);
-      return this.markIssuanceFailed(ctx, vcIssuanceRequest.id, error);
+      return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
     }
   }
 
@@ -164,18 +198,25 @@ export class VCIssuanceRequestService {
     }
   }
 
-  private async markIssuanceFailed(
+  private async markIssuanceStatus(
     ctx: IContext,
     requestId: string,
     error: unknown,
+    status: VcIssuanceStatus = VcIssuanceStatus.FAILED,
   ): Promise<{ success: boolean; requestId: string }> {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (status === VcIssuanceStatus.PENDING) {
+      logger.warn(`Issuance ${requestId} marked as PENDING. Cause: ${errorMessage}`);
+    }
 
     await this.vcIssuanceRequestRepository.update(ctx, requestId, {
-      status: VcIssuanceStatus.FAILED,
-      errorMessage,
+      status,
       processedAt: new Date(),
-      retryCount: { increment: 1 },
+      ...(status === VcIssuanceStatus.FAILED && {
+        errorMessage,
+        retryCount: { increment: 1 },
+      }),
     });
 
     return { success: false, requestId };

@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
+  vcIssuanceRequest: true,
   evaluator: true,
   participation: {
     include: {
