@@ -49,11 +49,6 @@ export class VCIssuanceRequestService {
     ctx: IContext,
     evaluationId: string,
   ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
-    const userDid = await this.getUserDid(userId, ctx);
-    if (!userDid) {
-      throw new Error("User DID not found. DID must be issued before VC issuance.");
-    }
-
     const vcIssuanceRequest = await this.vcIssuanceRequestRepository.create(ctx, {
       evaluationId,
       userId,
@@ -75,12 +70,28 @@ export class VCIssuanceRequestService {
         isValid = true;
       } catch (error) {
         logger.error("VCIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceFailed(ctx, vcIssuanceRequest.id, error);
+        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
       }
     }
 
     if (!token || !isValid) {
       throw new Error("No valid authentication token available");
+    }
+
+    const userDid = await this.getUserDid(userId, ctx).catch((err) => {
+      logger.warn("VCIssuanceService: DID not found. VC issuance will be postponed.", {
+        userId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return null;
+    });
+    if (!userDid) {
+      return this.markIssuanceStatus(
+        ctx,
+        vcIssuanceRequest.id,
+        "User DID not found. VC issuance postponed.",
+        VcIssuanceStatus.PENDING,
+      );
     }
 
     try {
@@ -108,7 +119,7 @@ export class VCIssuanceRequestService {
       return { success: true, requestId: vcIssuanceRequest.id };
     } catch (error) {
       logger.error("VCIssuanceService.requestVCIssuance: failed", error);
-      return this.markIssuanceFailed(ctx, vcIssuanceRequest.id, error);
+      return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
     }
   }
 
@@ -164,15 +175,16 @@ export class VCIssuanceRequestService {
     }
   }
 
-  private async markIssuanceFailed(
+  private async markIssuanceStatus(
     ctx: IContext,
     requestId: string,
     error: unknown,
+    status: VcIssuanceStatus = VcIssuanceStatus.FAILED,
   ): Promise<{ success: boolean; requestId: string }> {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
     await this.vcIssuanceRequestRepository.update(ctx, requestId, {
-      status: VcIssuanceStatus.FAILED,
+      status,
       errorMessage,
       processedAt: new Date(),
       retryCount: { increment: 1 },
