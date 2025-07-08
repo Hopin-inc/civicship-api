@@ -15,8 +15,20 @@ export const prismaClient = new PrismaClient({
     { level: "warn", emit: "stdout" },
   ],
 });
-prismaClient.$on("query", async ({ query, params }) => {
-  logger.debug("Prisma: Query issued.", { query, params });
+prismaClient.$on("query", async ({ query, params, duration }) => {
+  logger.debug("Prisma query executed", {
+    query,
+    params,
+    duration,
+  });
+
+  if (duration > 1000) {
+    logger.warn("Slow query detected", {
+      query,
+      params,
+      duration,
+    });
+  }
 });
 prismaClient.$on("error", async ({ message, target }) => {
   logger.error("Prisma: Error occurred.", { message, target });
