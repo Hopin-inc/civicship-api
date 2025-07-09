@@ -1,5 +1,5 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { DidIssuanceStatus, IdentityPlatform } from "@prisma/client";
+import { IdentityPlatform } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
@@ -32,7 +32,7 @@ export async function createDIDRequests(
           {
             didIssuanceRequests: {
               some: {
-                status: DidIssuanceStatus.PENDING,
+                // status: DidIssuanceStatus.PENDING,
                 jobId: null,
               },
             },
@@ -60,9 +60,7 @@ export async function createDIDRequests(
       continue;
     }
 
-    const existingRequest = user.didIssuanceRequests?.find(
-      (r) => r.status === "PENDING" && r.jobId === null,
-    );
+    const existingRequest = user.didIssuanceRequests?.find((r) => r.jobId === null);
 
     try {
       const result = await didService.requestDIDIssuance(
