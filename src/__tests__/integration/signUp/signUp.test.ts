@@ -50,6 +50,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
+    await container.resolve<PrismaClientIssuer>("PrismaClientIssuer").disconnect();
   });
 
   it("should create user, join community, and create wallet", async () => {
