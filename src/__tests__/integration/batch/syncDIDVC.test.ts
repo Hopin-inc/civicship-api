@@ -146,18 +146,39 @@ describe("syncDIDVC Batch Processing Integration Tests", () => {
       community: { connect: { id: community.id } },
     });
 
+    const opportunity = await TestDataSourceHelper.createOpportunity({
+      title: "VC Test Opportunity",
+      description: "Test opportunity for VC issuance",
+      community: { connect: { id: community.id } },
+    });
+
+    const opportunitySlot = await TestDataSourceHelper.createOpportunitySlot({
+      opportunity: { connect: { id: opportunity.id } },
+      startsAt: new Date(Date.now() + 86400000),
+      endsAt: new Date(Date.now() + 90000000),
+      capacity: 10,
+    });
+
+    const reservation = await TestDataSourceHelper.createReservation({
+      opportunitySlot: { connect: { id: opportunitySlot.id } },
+    });
+
     const participation = await TestDataSourceHelper.createParticipation({
       user: { connect: { id: user.id } },
       community: { connect: { id: community.id } },
+      reservation: { connect: { id: reservation.id } },
       status: "PARTICIPATING",
+      reason: "RESERVATION_JOINED",
     });
 
     const evaluation = await TestDataSourceHelper.createTempEvaluation(participation.id, user.id);
 
     await TestDataSourceHelper.createVCIssuanceRequest({
       evaluation: { connect: { id: evaluation.id } },
+      user: { connect: { id: user.id } },
       status: VcIssuanceStatus.PROCESSING,
       jobId: "vc-test-job-id",
+      claims: {},
     });
 
     mockDIDVCClient.call.mockResolvedValue(null);

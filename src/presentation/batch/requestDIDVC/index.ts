@@ -50,8 +50,10 @@ export async function requestDIDVC() {
 }
 
 requestDIDVC()
-  .then(() => process.exit(0))
+  .then(() => {
+    // process.exit(0) // Commented out for testing
+  })
   .catch((err) => {
     console.error("❌ Unhandled error:", err);
-    process.exit(1);
+    // process.exit(1); // Commented out for testing
   });

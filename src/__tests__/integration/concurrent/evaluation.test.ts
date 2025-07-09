@@ -61,6 +61,8 @@ describe("Concurrent Evaluation Integration Tests", () => {
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: opportunityOwnerUser.id } },
       community: { connect: { id: communityId } },
+      status: "JOINED",
+      reason: "INVITED",
     });
 
     await TestDataSourceHelper.createWallet({
@@ -106,6 +108,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
         status: "JOINED",
+        reason: "INVITED",
       });
 
       await TestDataSourceHelper.createWallet({
@@ -140,6 +143,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
         community: { connect: { id: communityId } },
         reservation: { connect: { id: reservation.id } },
         status: "PARTICIPATING",
+        reason: "RESERVATION_JOINED",
       });
 
       participations.push({
@@ -207,6 +211,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
         status: "JOINED",
+        reason: "INVITED",
       });
 
       await TestDataSourceHelper.createWallet({
@@ -241,6 +246,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
         community: { connect: { id: communityId } },
         reservation: { connect: { id: reservation.id } },
         status: "PARTICIPATING",
+        reason: "RESERVATION_JOINED",
       });
 
       participations.push({
@@ -312,6 +318,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
         status: "JOINED",
+        reason: "INVITED",
       });
 
       await TestDataSourceHelper.createWallet({
@@ -346,6 +353,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
         community: { connect: { id: communityId } },
         reservation: { connect: { id: reservation.id } },
         status: "PARTICIPATING",
+        reason: "RESERVATION_JOINED",
       });
 
       participations.push({
