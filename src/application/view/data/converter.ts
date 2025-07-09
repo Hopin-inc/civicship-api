@@ -24,11 +24,10 @@ export default class ViewConverter {
     }
 
     if (filter?.keyword) {
-      const titleCondition = { contains: filter.keyword, mode: "insensitive" as const };
       conditions.push({
         OR: [
-          { opportunitySlot: { opportunity: { title: titleCondition } } },
-          { reservation: { opportunitySlot: { opportunity: { title: titleCondition } } } }
+          { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } },
+          { reservation: { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } } }
         ]
       });
     }
