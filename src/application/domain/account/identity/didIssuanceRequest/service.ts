@@ -5,7 +5,7 @@ import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IDIDIssuanceRequestRepository } from "@/application/domain/account/identity/didIssuanceRequest/data/interface";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
-import { DidIssuanceStatus, Identity } from "@prisma/client";
+import { DidIssuanceRequest, DidIssuanceStatus, Identity } from "@prisma/client";
 
 @injectable()
 export class DIDIssuanceService {
@@ -21,14 +21,29 @@ export class DIDIssuanceService {
     userId: string,
     phoneUid: string,
     ctx: IContext,
+    existingRequestId?: string,
   ): Promise<{ success: boolean; requestId: string; jobId?: string }> {
     const identity = await this.identityRepository.find(phoneUid);
     if (!identity) throw new Error("No identity found for DID issuance");
 
-    const didRequest = await this.didIssuanceRequestRepository.create(ctx, {
-      userId,
-      status: DidIssuanceStatus.PENDING,
-    });
+    let didRequest: DidIssuanceRequest | null = null;
+
+    if (existingRequestId) {
+      const existing = await this.didIssuanceRequestRepository.findById(ctx, existingRequestId);
+      if (!existing) {
+        logger.warn("DIDIssuanceService: missing existingRequestId, skipping");
+        return {
+          success: false,
+          requestId: existingRequestId,
+        };
+      }
+      didRequest = existing;
+    } else {
+      didRequest = await this.didIssuanceRequestRepository.create(ctx, {
+        userId,
+        status: DidIssuanceStatus.PENDING,
+      });
+    }
 
     let { token, isValid } = this.evaluateTokenValidity(identity);
 
@@ -70,7 +85,9 @@ export class DIDIssuanceService {
       }
 
       if (response === null) {
-        logger.warn(`DID issuance external API call failed for user ${userId}, keeping PENDING status`);
+        logger.warn(
+          `DID issuance external API call failed for user ${userId}, keeping PENDING status`,
+        );
         await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
           errorMessage: "External API call failed",
           retryCount: { increment: 1 },
@@ -146,7 +163,10 @@ export class DIDIssuanceService {
         expiryTime,
       };
     } catch (error) {
-      logger.warn(`DIDIssuanceService.refreshAuthToken failed for uid ${uid} (non-blocking):`, error);
+      logger.warn(
+        `DIDIssuanceService.refreshAuthToken failed for uid ${uid} (non-blocking):`,
+        error,
+      );
       return null;
     }
   }
