@@ -80,22 +80,21 @@ export class VCIssuanceRequestService {
     let { token, isValid } = this.evaluateTokenValidity(identity);
 
     if (!isValid && identity.refreshToken) {
-      try {
-        const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
-      } catch (error) {
-        logger.error("VCIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceStatus(ctx, vcIssuanceRequest.id, error);
+      } else {
+        logger.warn("Token refresh failed, proceeding with existing token");
       }
     }
 
-    if (!token || !isValid) {
-      logger.warn("No valid authentication token available");
+    if (!token) {
+      logger.warn(`No authentication token available for user ${userId}, skipping VC issuance`);
       return this.markIssuanceStatus(
         ctx,
         vcIssuanceRequest.id,
-        "No valid authentication token available",
+        "No authentication token available",
       );
     }
 
@@ -139,6 +138,15 @@ export class VCIssuanceRequestService {
         return { success: true, requestId: vcIssuanceRequest.id, jobId: response.jobId };
       }
 
+      if (response === null) {
+        logger.warn(`VC issuance external API call failed for evaluation ${evaluationId}, keeping PENDING status`);
+        await this.vcIssuanceRequestRepository.update(ctx, vcIssuanceRequest.id, {
+          errorMessage: "External API call failed",
+          retryCount: { increment: 1 },
+        });
+        return { success: true, requestId: vcIssuanceRequest.id };
+      }
+
       return { success: true, requestId: vcIssuanceRequest.id };
     } catch (error) {
       logger.error("VCIssuanceService.requestVCIssuance: failed", error);
@@ -174,9 +182,14 @@ export class VCIssuanceRequestService {
   async refreshAuthToken(
     uid: string,
     refreshToken: string,
-  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
+  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date } | null> {
     try {
       const response = await this.identityService.fetchNewIdToken(refreshToken);
+
+      if (!response) {
+        logger.warn(`Token refresh failed for uid ${uid}, continuing without refresh`);
+        return null;
+      }
 
       const expiryTime = new Date(Date.now() + response.expiresIn * 1000);
 
@@ -193,8 +206,8 @@ export class VCIssuanceRequestService {
         expiryTime,
       };
     } catch (error) {
-      logger.error(`VCIssuanceService.refreshAuthToken failed for uid ${uid}:`, error);
-      throw error;
+      logger.warn(`VCIssuanceService.refreshAuthToken failed for uid ${uid} (non-blocking):`, error);
+      return null;
     }
   }
 

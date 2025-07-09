@@ -1,6 +1,5 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
-import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
@@ -23,6 +22,11 @@ export default class TestDataSourceHelper {
     await this.db.image.deleteMany();
 
     await this.db.participationStatusHistory.deleteMany();
+
+    await this.db.vcIssuanceRequest.deleteMany();
+    await this.db.didIssuanceRequest.deleteMany();
+
+    await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 
     await this.db.reservation.deleteMany();
@@ -35,15 +39,17 @@ export default class TestDataSourceHelper {
     await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
 
-    await this.db.participationStatusHistory.deleteMany();
-    await this.db.participation.deleteMany();
-
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
     await this.db.membership.deleteMany();
     await this.db.opportunitySlot.deleteMany();
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
+
+    await this.db.communityFirebaseConfig.deleteMany();
+    await this.db.communityLineConfig.deleteMany();
+    await this.db.communityConfig.deleteMany();
+
     await this.db.community.deleteMany();
     await this.db.user.deleteMany();
     await this.db.place.deleteMany();
@@ -228,7 +234,7 @@ export default class TestDataSourceHelper {
 
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
-    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
   // ========== Participation関連 (不要になれば削除) =========
@@ -248,5 +254,89 @@ export default class TestDataSourceHelper {
 
   static async findAllParticipation() {
     return this.db.participation.findMany({});
+  }
+
+  // ======== Identity =========
+  static async createIdentity(data: Prisma.IdentityCreateInput) {
+    return this.db.identity.create({
+      data,
+    });
+  }
+
+  static async findIdentity(uid: string) {
+    return this.db.identity.findFirst({
+      where: { uid },
+    });
+  }
+
+  static async updateIdentity(uid: string, data: Prisma.IdentityUpdateInput) {
+    return this.db.identity.update({
+      where: { uid },
+      data,
+    });
+  }
+
+  // ======== DID Issuance Request =========
+  static async findDIDIssuanceRequest(userId: string) {
+    return this.db.didIssuanceRequest.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  static async findAllDIDIssuanceRequests() {
+    return this.db.didIssuanceRequest.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  static async createDIDIssuanceRequest(data: Prisma.DidIssuanceRequestCreateInput) {
+    return this.db.didIssuanceRequest.create({
+      data,
+    });
+  }
+
+  // ======== VC Issuance Request =========
+  static async findVCIssuanceRequest(evaluationId: string) {
+    return this.db.vcIssuanceRequest.findFirst({
+      where: { evaluationId },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  static async findAllVCIssuanceRequests() {
+    return this.db.vcIssuanceRequest.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  static async createVCIssuanceRequest(data: Prisma.VcIssuanceRequestCreateInput) {
+    return this.db.vcIssuanceRequest.create({
+      data,
+    });
+  }
+
+  static async updateVCIssuanceRequest(id: string, data: Prisma.VcIssuanceRequestUpdateInput) {
+    return this.db.vcIssuanceRequest.update({
+      where: { id },
+      data,
+    });
+  }
+
+  static async createTempEvaluation(participationId: string, evaluatorId: string) {
+    return this.db.evaluation.create({
+      data: {
+        participation: { connect: { id: participationId } },
+        evaluator: { connect: { id: evaluatorId } },
+        status: "PASSED",
+        comment: "temp evaluation for VC request",
+      },
+    });
+  }
+
+  static async deleteTempEvaluation(id: string) {
+    return this.db.evaluation.delete({
+      where: { id },
+    });
   }
 }

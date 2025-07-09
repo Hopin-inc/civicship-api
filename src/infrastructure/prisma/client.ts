@@ -41,6 +41,10 @@ export class PrismaClientIssuer {
     this.client = prismaClient;
   }
 
+  public async disconnect() {
+    await this.client.$disconnect();
+  }
+
   public internal<T>(callback: CallbackFn<T>): Promise<T> {
     return this.bypassRls(callback);
   }

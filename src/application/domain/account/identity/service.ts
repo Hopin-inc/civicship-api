@@ -117,37 +117,46 @@ export default class IdentityService {
   }
 
   async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
+    if (!auth) {
+      logger.warn("Firebase auth not initialized, skipping user deletion");
+      return;
+    }
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     return tenantedAuth.deleteUser(uid);
   }
 
-  async fetchNewIdToken(refreshToken: string): Promise<FirebaseTokenRefreshResponse> {
-    const res = await fetch(
-      `https://securetoken.googleapis.com/v1/token?key=${process.env.FIREBASE_TOKEN_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+  async fetchNewIdToken(refreshToken: string): Promise<FirebaseTokenRefreshResponse | null> {
+    try {
+      const res = await fetch(
+        `https://securetoken.googleapis.com/v1/token?key=${process.env.FIREBASE_TOKEN_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+          }),
         },
-        body: JSON.stringify({
-          grant_type: "refresh_token",
-          refresh_token: refreshToken,
-        }),
-      },
-    );
+      );
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      logger.error(`Firebase token refresh failed: ${res.status} ${res.statusText}`, { errorText });
-      throw new Error(`Firebase token refresh failed: ${res.status} ${res.statusText}`);
+      if (!res.ok) {
+        const errorText = await res.text();
+        logger.warn(`Firebase token refresh failed (non-blocking): ${res.status} ${res.statusText}`, { errorText });
+        return null;
+      }
+
+      const data = await res.json();
+      return {
+        idToken: data.id_token,
+        refreshToken: data.refresh_token,
+        expiresIn: data.expires_in,
+      };
+    } catch (error) {
+      logger.warn("Firebase token refresh failed (non-blocking):", error);
+      return null;
     }
-
-    const data = await res.json();
-    return {
-      idToken: data.id_token,
-      refreshToken: data.refresh_token,
-      expiresIn: data.expires_in,
-    };
   }
 
   async storeAuthTokens(

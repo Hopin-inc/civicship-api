@@ -1,7 +1,6 @@
-import { injectable, container } from "tsyringe";
+import { injectable } from "tsyringe";
 import { Prisma, VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import {
   VCIssuanceRequestWithUser,
   VCClaimsData,
@@ -12,10 +11,6 @@ import { IVCIssuanceRequestRepository } from "./interface";
 
 @injectable()
 export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository {
-  private getIssuer(): PrismaClientIssuer {
-    return container.resolve<PrismaClientIssuer>("prismaClientIssuer");
-  }
-
   async query(
     ctx: IContext,
     where: Prisma.VcIssuanceRequestWhereInput,
@@ -36,8 +31,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
   }
 
   async findById(ctx: IContext, id: string) {
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.findUnique({
         where: { id },
         select: vcIssuanceRequestSelectDetail,
@@ -50,8 +44,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
     maxRetries: number,
     limit?: number,
   ): Promise<VCIssuanceRequestWithUser[]> {
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.findMany({
         where: {
           status: VcIssuanceStatus.PENDING,
@@ -79,8 +72,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
       status?: VcIssuanceStatus;
     },
   ) {
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.create({
         data: {
           evaluationId: data.evaluationId,
@@ -125,8 +117,7 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
       });
     }
 
-    const issuer = ctx.issuer || this.getIssuer();
-    return issuer.public(ctx, (tx) => {
+    return ctx.issuer.public(ctx, (tx) => {
       return tx.vcIssuanceRequest.update({
         where: { id },
         data: {
