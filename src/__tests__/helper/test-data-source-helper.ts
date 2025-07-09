@@ -22,10 +22,11 @@ export default class TestDataSourceHelper {
     await this.db.image.deleteMany();
 
     await this.db.participationStatusHistory.deleteMany();
-    
+
     await this.db.vcIssuanceRequest.deleteMany();
     await this.db.didIssuanceRequest.deleteMany();
-    
+
+    await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 
     await this.db.reservation.deleteMany();
@@ -44,11 +45,11 @@ export default class TestDataSourceHelper {
     await this.db.opportunitySlot.deleteMany();
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
-    
+
     await this.db.communityFirebaseConfig.deleteMany();
     await this.db.communityLineConfig.deleteMany();
     await this.db.communityConfig.deleteMany();
-    
+
     await this.db.community.deleteMany();
     await this.db.user.deleteMany();
     await this.db.place.deleteMany();
@@ -279,13 +280,13 @@ export default class TestDataSourceHelper {
   static async findDIDIssuanceRequest(userId: string) {
     return this.db.didIssuanceRequest.findFirst({
       where: { userId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
   static async findAllDIDIssuanceRequests() {
     return this.db.didIssuanceRequest.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -299,13 +300,13 @@ export default class TestDataSourceHelper {
   static async findVCIssuanceRequest(evaluationId: string) {
     return this.db.vcIssuanceRequest.findFirst({
       where: { evaluationId },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
   static async findAllVCIssuanceRequests() {
     return this.db.vcIssuanceRequest.findMany({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   }
 
