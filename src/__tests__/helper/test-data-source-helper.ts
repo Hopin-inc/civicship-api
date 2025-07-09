@@ -23,6 +23,10 @@ export default class TestDataSourceHelper {
     await this.db.image.deleteMany();
 
     await this.db.participationStatusHistory.deleteMany();
+    
+    await this.db.vcIssuanceRequest.deleteMany();
+    await this.db.didIssuanceRequest.deleteMany();
+    
     await this.db.participation.deleteMany();
 
     await this.db.reservation.deleteMany();
@@ -34,9 +38,6 @@ export default class TestDataSourceHelper {
 
     await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
-
-    await this.db.participationStatusHistory.deleteMany();
-    await this.db.participation.deleteMany();
 
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
