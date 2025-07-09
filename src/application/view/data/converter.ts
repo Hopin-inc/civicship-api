@@ -51,8 +51,7 @@ export default class ViewConverter {
     }
 
     if (filter?.keyword) {
-      const titleCondition = { contains: filter.keyword, mode: "insensitive" as const };
-      conditions.push({ title: titleCondition });
+      conditions.push({ title: { contains: filter.keyword, mode: "insensitive" } });
     }
 
     return { AND: conditions };
