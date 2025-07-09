@@ -22,7 +22,7 @@ export async function processDIDRequests(
       where: {
         status: { not: DidIssuanceStatus.COMPLETED },
         jobId: { not: null },
-        retryCount: { lt: 3 },
+        retryCount: { lt: 5 },
       },
       include: {
         user: {
@@ -60,7 +60,7 @@ export async function processDIDRequests(
           phoneIdentity.uid,
           phoneIdentity.refreshToken,
         );
-        
+
         if (refreshed) {
           token = refreshed.authToken;
           isValid = true;
@@ -86,13 +86,15 @@ export async function processDIDRequests(
       logger.debug(`jobStatus: ${JSON.stringify(jobStatus, null, 2)}`);
 
       if (jobStatus === null) {
-        logger.warn(`External API call failed for DID job ${request.jobId}, keeping PENDING status`);
+        logger.warn(
+          `External API call failed for DID job ${request.jobId}, keeping PENDING status`,
+        );
         await issuer.internal(async (tx) => {
           await tx.didIssuanceRequest.update({
             where: { id: request.id },
-            data: { 
+            data: {
               errorMessage: "External API call failed during sync",
-              retryCount: { increment: 1 } 
+              retryCount: { increment: 1 },
             },
           });
         });
