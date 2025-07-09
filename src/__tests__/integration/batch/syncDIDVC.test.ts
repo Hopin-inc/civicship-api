@@ -149,12 +149,12 @@ describe("syncDIDVC Batch Processing Integration Tests", () => {
     const participation = await TestDataSourceHelper.createParticipation({
       user: { connect: { id: user.id } },
       community: { connect: { id: community.id } },
+      status: "PARTICIPATING",
     });
 
     const evaluation = await TestDataSourceHelper.createTempEvaluation(participation.id, user.id);
 
     await TestDataSourceHelper.createVCIssuanceRequest({
-      user: { connect: { id: user.id } },
       evaluation: { connect: { id: evaluation.id } },
       status: VcIssuanceStatus.PROCESSING,
       jobId: "vc-test-job-id",
