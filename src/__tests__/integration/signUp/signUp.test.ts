@@ -7,22 +7,44 @@ import { registerProductionDependencies } from "@/application/provider";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import waitForExpect from "wait-for-expect";
 
 describe("IdentityUseCase.userCreateAccount", () => {
   let useCase: IdentityUseCase;
   let mockDIDVCClient: jest.Mocked<DIDVCServerClient>;
+  let mockDIDIssuanceService: { requestDIDIssuance: jest.Mock };
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
     container.reset();
+
+    mockDIDVCClient = { call: jest.fn() } as any;
+
+    mockDIDIssuanceService = {
+      requestDIDIssuance: jest.fn().mockImplementation(async (...args) => {
+        await mockDIDVCClient.call(
+          "issuer-id",
+          "issuer-secret",
+          "/did/jobs/create-and-publish",
+          "POST",
+          { userId: args[0] },
+        );
+      }),
+    };
+
+    // 1. 本番依存関係の登録
     registerProductionDependencies();
 
-    mockDIDVCClient = {
-      call: jest.fn(),
-    } as any;
-
+    // 2. モックで上書き（!!）
+    container.register("PrismaClientIssuer", {
+      useValue: new PrismaClientIssuer(),
+    });
     container.register("DIDVCServerClient", { useValue: mockDIDVCClient });
+    container.register("DIDIssuanceService", { useValue: mockDIDIssuanceService });
+
+    // 3. useCase の解決
     useCase = container.resolve(IdentityUseCase);
   });
 
@@ -41,7 +63,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
       platform: IdentityPlatform.LINE,
       phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
-      issuer: container.resolve("prismaClientIssuer"),
+      issuer: container.resolve("PrismaClientIssuer"),
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
@@ -86,7 +108,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
       platform: IdentityPlatform.PHONE,
       phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
-      issuer: container.resolve("prismaClientIssuer"),
+      issuer: container.resolve("PrismaClientIssuer"),
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
@@ -126,8 +148,16 @@ describe("IdentityUseCase.userCreateAccount", () => {
       "POST",
       expect.objectContaining({
         userId: result.user!.id,
-      })
+      }),
     );
+
+    await waitForExpect(() => {
+      expect(mockDIDIssuanceService.requestDIDIssuance).toHaveBeenCalledWith(
+        result.user!.id,
+        "test-phone-uid",
+        expect.any(Object),
+      );
+    });
   });
 
   it("should create user successfully when DID external API times out", async () => {
@@ -141,7 +171,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
       platform: IdentityPlatform.PHONE,
       phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
-      issuer: container.resolve("prismaClientIssuer"),
+      issuer: container.resolve("PrismaClientIssuer"),
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
@@ -177,5 +207,13 @@ describe("IdentityUseCase.userCreateAccount", () => {
 
     const wallet = await TestDataSourceHelper.findMemberWallet(result.user!.id, community.id);
     expect(wallet).toBeDefined();
+
+    await waitForExpect(() => {
+      expect(mockDIDIssuanceService.requestDIDIssuance).toHaveBeenCalledWith(
+        result.user!.id,
+        "test-phone-uid",
+        expect.any(Object),
+      );
+    });
   });
 });
