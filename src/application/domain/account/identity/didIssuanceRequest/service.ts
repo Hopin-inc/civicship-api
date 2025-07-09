@@ -33,13 +33,12 @@ export class DIDIssuanceService {
     let { token, isValid } = this.evaluateTokenValidity(identity);
 
     if (!isValid && identity.refreshToken) {
-      try {
-        const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      const refreshed = await this.refreshAuthToken(phoneUid, identity.refreshToken);
+      if (refreshed) {
         token = refreshed.authToken;
         isValid = true;
-      } catch (error) {
-        logger.error("DIDIssuanceService.refreshAuthToken failed", error);
-        return this.markIssuanceFailed(ctx, didRequest.id, error);
+      } else {
+        logger.warn("Token refresh failed, proceeding with existing token");
       }
     }
 
@@ -63,6 +62,15 @@ export class DIDIssuanceService {
         });
 
         return { success: true, requestId: didRequest.id, jobId: response.jobId };
+      }
+
+      if (response === null) {
+        logger.warn(`DID issuance external API call failed for user ${userId}, keeping PENDING status`);
+        await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
+          errorMessage: "External API call failed",
+          retryCount: { increment: 1 },
+        });
+        return { success: true, requestId: didRequest.id };
       }
 
       return { success: true, requestId: didRequest.id };
@@ -105,9 +113,14 @@ export class DIDIssuanceService {
   async refreshAuthToken(
     uid: string,
     refreshToken: string,
-  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date }> {
+  ): Promise<{ authToken: string; refreshToken: string; expiryTime: Date } | null> {
     try {
       const response = await this.identityService.fetchNewIdToken(refreshToken);
+
+      if (!response) {
+        logger.warn(`Token refresh failed for uid ${uid}, continuing without refresh`);
+        return null;
+      }
 
       const expiryTime = new Date(Date.now() + response.expiresIn * 1000);
 
@@ -124,8 +137,8 @@ export class DIDIssuanceService {
         expiryTime,
       };
     } catch (error) {
-      logger.error(`DIDIssuanceService.refreshAuthToken failed for uid ${uid}:`, error);
-      throw error;
+      logger.warn(`DIDIssuanceService.refreshAuthToken failed for uid ${uid} (non-blocking):`, error);
+      return null;
     }
   }
 }
