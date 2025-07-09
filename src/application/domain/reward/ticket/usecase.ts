@@ -94,7 +94,7 @@ export default class TicketUseCase {
         await this.walletValidator.validateTransferMemberToMember(
           ownerWallet,
           claimerWallet,
-          transferPoints,
+          BigInt(transferPoints),
         );
 
       await this.transactionService.donateSelfPoint(
@@ -140,7 +140,7 @@ export default class TicketUseCase {
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
-        input.pointsRequired,
+        BigInt(input.pointsRequired),
         memberWallet,
         communityWallet,
       );
@@ -189,7 +189,7 @@ export default class TicketUseCase {
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       await this.walletValidator.validateTransfer(
-        input.pointsRequired,
+        BigInt(input.pointsRequired),
         communityWallet,
         memberWallet,
       );

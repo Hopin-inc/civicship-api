@@ -177,14 +177,14 @@ export default class EvaluationUseCase {
         await this.walletValidator.validateTransferMemberToMember(
           fromWallet,
           toWallet,
-          opportunity.pointsToEarn,
+          BigInt(opportunity.pointsToEarn),
         );
 
       await this.transactionService.giveRewardPoint(
         ctx,
         tx,
         participation.id,
-        opportunity.pointsToEarn,
+        BigInt(opportunity.pointsToEarn),
         fromWalletId,
         toWalletId,
       );

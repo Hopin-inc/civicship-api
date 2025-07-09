@@ -25,7 +25,6 @@ export default class TestDataSourceHelper {
 
     await this.db.vcIssuanceRequest.deleteMany();
     await this.db.didIssuanceRequest.deleteMany();
-
     await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 

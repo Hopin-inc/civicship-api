@@ -35,7 +35,7 @@ export default class WalletValidator {
       createIfNeeded,
     );
 
-    await this.validateTransfer(transferPoints, from, to);
+    await this.validateTransfer(BigInt(transferPoints), from, to);
     return { fromWalletId: from.id, toWalletId: to.id };
   }
 
@@ -65,7 +65,7 @@ export default class WalletValidator {
   async validateTransferMemberToMember(
     fromWallet: PrismaWallet,
     toWallet: PrismaWallet,
-    transferPoints: number,
+    transferPoints: bigint,
   ) {
     await this.validateTransfer(transferPoints, fromWallet, toWallet);
 
@@ -76,7 +76,7 @@ export default class WalletValidator {
   }
 
   async validateTransfer(
-    transferPoints: number,
+    transferPoints: bigint,
     fromWallet: Pick<PrismaWallet, "currentPointView"> | null,
     toWallet: Pick<PrismaWallet, "currentPointView"> | null,
   ) {
@@ -92,8 +92,8 @@ export default class WalletValidator {
     if (typeof currentPoint !== "bigint") {
       throw new DatabaseError("Invalid point type: expected bigint");
     }
-    if (currentPoint < BigInt(transferPoints)) {
-      throw new InsufficientBalanceError(currentPoint.toString(), transferPoints);
+    if (currentPoint < transferPoints) {
+      throw new InsufficientBalanceError(currentPoint.toString(), Number(transferPoints));
     }
   }
 }

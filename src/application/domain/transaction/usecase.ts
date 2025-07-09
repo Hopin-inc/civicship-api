@@ -144,7 +144,7 @@ export default class TransactionUseCase {
       const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
         fromWallet,
         toWallet,
-        transferPoints,
+        BigInt(transferPoints),
       );
 
       const transaction = await this.transactionService.donateSelfPoint(
