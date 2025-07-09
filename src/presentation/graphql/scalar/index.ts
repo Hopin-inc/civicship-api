@@ -40,7 +40,7 @@ const BigIntScalar = new GraphQLScalarType({
     if (typeof value === "bigint") {
       return value.toString(); // GraphQLは bigint を直接返せないため string 化
     }
-    throw new Error("Expected bigint, number, or string for serialization");
+    throw new Error("Expected bigint for serialization");
   },
 
   parseLiteral(ast) {
