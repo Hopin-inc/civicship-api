@@ -106,7 +106,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
       await TestDataSourceHelper.createMembership({
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
-        status: "JOINED",
       });
 
       await TestDataSourceHelper.createWallet({
@@ -140,7 +139,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
         reservation: { connect: { id: reservation.id } },
-        status: "PARTICIPATING",
       });
 
       participations.push({
@@ -152,7 +150,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
     mockDIDVCClient.call.mockResolvedValue({ jobId: "concurrent-vc-job" });
 
     const evaluationPromises = participations.map(({ participation }) =>
-      useCase.evaluatePassParticipation(ctx, {
+      useCase.evaluateParticipation(ctx, {
         participationId: participation.id,
         status: GqlEvaluationStatus.Passed,
         comment: "Concurrent evaluation test",
@@ -207,7 +205,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
       await TestDataSourceHelper.createMembership({
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
-        status: "JOINED",
       });
 
       await TestDataSourceHelper.createWallet({
@@ -241,7 +238,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
         reservation: { connect: { id: reservation.id } },
-        status: "PARTICIPATING",
       });
 
       participations.push({
@@ -256,7 +252,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
       .mockResolvedValueOnce({ jobId: "mixed-vc-job-3" });
 
     const evaluationPromises = participations.map(({ participation }) =>
-      useCase.evaluatePassParticipation(ctx, {
+      useCase.evaluateParticipation(ctx, {
         participationId: participation.id,
         status: GqlEvaluationStatus.Passed,
         comment: "Mixed concurrent evaluation test",
@@ -312,7 +308,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
       await TestDataSourceHelper.createMembership({
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
-        status: "JOINED",
       });
 
       await TestDataSourceHelper.createWallet({
@@ -346,7 +341,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
         user: { connect: { id: participationUser.id } },
         community: { connect: { id: communityId } },
         reservation: { connect: { id: reservation.id } },
-        status: "PARTICIPATING",
       });
 
       participations.push({
@@ -358,7 +352,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
     mockDIDVCClient.call.mockResolvedValue(null);
 
     const evaluationPromises = participations.map(({ participation }) =>
-      useCase.evaluatePassParticipation(ctx, {
+      useCase.evaluateParticipation(ctx, {
         participationId: participation.id,
         status: GqlEvaluationStatus.Passed,
         comment: "Consistency evaluation test",
