@@ -1,6 +1,5 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
-import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
@@ -234,7 +233,7 @@ export default class TestDataSourceHelper {
 
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
-    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
   // ========== Participation関連 (不要になれば削除) =========
@@ -254,5 +253,65 @@ export default class TestDataSourceHelper {
 
   static async findAllParticipation() {
     return this.db.participation.findMany({});
+  }
+
+  // ======== Identity =========
+  static async createIdentity(data: Prisma.IdentityCreateInput) {
+    return this.db.identity.create({
+      data,
+    });
+  }
+
+  static async findIdentity(uid: string) {
+    return this.db.identity.findFirst({
+      where: { uid },
+    });
+  }
+
+  static async updateIdentity(uid: string, data: Prisma.IdentityUpdateInput) {
+    return this.db.identity.update({
+      where: { uid },
+      data,
+    });
+  }
+
+  // ======== DID Issuance Request =========
+  static async findDIDIssuanceRequest(userId: string) {
+    return this.db.didIssuanceRequest.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  static async findAllDIDIssuanceRequests() {
+    return this.db.didIssuanceRequest.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  static async createDIDIssuanceRequest(data: Prisma.DidIssuanceRequestCreateInput) {
+    return this.db.didIssuanceRequest.create({
+      data,
+    });
+  }
+
+  // ======== VC Issuance Request =========
+  static async findVCIssuanceRequest(evaluationId: string) {
+    return this.db.vcIssuanceRequest.findFirst({
+      where: { evaluationId },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  static async findAllVCIssuanceRequests() {
+    return this.db.vcIssuanceRequest.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  static async createVCIssuanceRequest(data: Prisma.VcIssuanceRequestCreateInput) {
+    return this.db.vcIssuanceRequest.create({
+      data,
+    });
   }
 }
