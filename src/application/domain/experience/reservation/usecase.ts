@@ -91,7 +91,7 @@ export default class ReservationUseCase {
       slot.remainingCapacityView?.remainingCapacity ?? undefined,
     );
 
-    const { communityId, requiredUtilities } = opportunity;
+    const { communityId, requiredUtilities, requireApproval } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
     const reservation = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
@@ -121,6 +121,10 @@ export default class ReservationUseCase {
     });
 
     await this.notificationService.pushReservationAppliedMessage(ctx, reservation);
+    if (!requireApproval) {
+      await this.notificationService.pushReservationAcceptedMessage(ctx, reservation);
+    }
+
     return ReservationPresenter.create(reservation);
   }
 
