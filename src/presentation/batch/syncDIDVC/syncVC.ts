@@ -27,7 +27,7 @@ export async function processVCRequests(
         status: { not: VcIssuanceStatus.COMPLETED },
         jobId: { not: null },
         vcRecordId: null,
-        retryCount: { lt: 3 },
+        retryCount: { lt: 5 },
       },
       include: {
         user: {
@@ -65,7 +65,7 @@ export async function processVCRequests(
           phoneIdentity.uid,
           phoneIdentity.refreshToken,
         );
-        
+
         if (refreshed) {
           token = refreshed.authToken;
           isValid = true;
@@ -93,9 +93,9 @@ export async function processVCRequests(
         await issuer.internal(async (tx) => {
           await tx.vcIssuanceRequest.update({
             where: { id: request.id },
-            data: { 
+            data: {
               errorMessage: "External API call failed during sync",
-              retryCount: { increment: 1 } 
+              retryCount: { increment: 1 },
             },
           });
         });
