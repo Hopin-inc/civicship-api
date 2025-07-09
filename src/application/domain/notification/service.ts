@@ -137,6 +137,7 @@ export default class NotificationService {
       participantCount: `${reservation.participations.length}人`,
       applicantName: ctx.currentUser?.name ?? "要確認",
       redirectUrl,
+      requireApproval: reservation.opportunitySlot.opportunity.requireApproval,
     });
 
     await safePushMessage(client, { to: lineUid, messages: [message] });
