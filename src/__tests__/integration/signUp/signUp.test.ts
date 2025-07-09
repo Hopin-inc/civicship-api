@@ -95,6 +95,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
         slug: "test-user",
         currentPrefecture: CurrentPrefecture.KAGAWA,
         communityId: community.id,
+        phoneUid: "test-phone-uid",
       },
     };
 
@@ -149,6 +150,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
         slug: "test-user",
         currentPrefecture: CurrentPrefecture.KAGAWA,
         communityId: community.id,
+        phoneUid: "test-phone-uid",
       },
     };
 
