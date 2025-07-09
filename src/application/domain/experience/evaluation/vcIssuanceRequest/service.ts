@@ -89,12 +89,12 @@ export class VCIssuanceRequestService {
       }
     }
 
-    if (!token || !isValid) {
-      logger.warn("No valid authentication token available");
+    if (!token) {
+      logger.warn(`No authentication token available for user ${userId}, skipping VC issuance`);
       return this.markIssuanceStatus(
         ctx,
         vcIssuanceRequest.id,
-        "No valid authentication token available",
+        "No authentication token available",
       );
     }
 

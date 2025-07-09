@@ -42,8 +42,13 @@ export class DIDIssuanceService {
       }
     }
 
-    if (!token || !isValid) {
-      throw new Error("No valid authentication token available");
+    if (!token) {
+      logger.warn(`No authentication token available for user ${userId}, skipping DID issuance`);
+      await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
+        errorMessage: "No authentication token available",
+        retryCount: { increment: 1 },
+      });
+      return { success: true, requestId: didRequest.id };
     }
 
     try {
@@ -83,8 +88,12 @@ export class DIDIssuanceService {
     token: string | null;
     isValid: boolean;
   } {
-    if (!identity.authToken || !identity.tokenExpiresAt) {
+    if (!identity.authToken) {
       return { token: null, isValid: false };
+    }
+
+    if (!identity.tokenExpiresAt) {
+      return { token: identity.authToken, isValid: false };
     }
 
     const now = new Date();
