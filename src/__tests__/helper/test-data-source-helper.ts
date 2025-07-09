@@ -314,4 +314,28 @@ export default class TestDataSourceHelper {
       data,
     });
   }
+
+  static async updateVCIssuanceRequest(id: string, data: Prisma.VcIssuanceRequestUpdateInput) {
+    return this.db.vcIssuanceRequest.update({
+      where: { id },
+      data,
+    });
+  }
+
+  static async createTempEvaluation(participationId: string, evaluatorId: string) {
+    return this.db.evaluation.create({
+      data: {
+        participation: { connect: { id: participationId } },
+        evaluator: { connect: { id: evaluatorId } },
+        status: "PASSED",
+        comment: "temp evaluation for VC request",
+      },
+    });
+  }
+
+  static async deleteTempEvaluation(id: string) {
+    return this.db.evaluation.delete({
+      where: { id },
+    });
+  }
 }

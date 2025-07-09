@@ -117,6 +117,10 @@ export default class IdentityService {
   }
 
   async deleteFirebaseAuthUser(uid: string, tenantId: string): Promise<void> {
+    if (!auth) {
+      logger.warn("Firebase auth not initialized, skipping user deletion");
+      return;
+    }
     const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
     return tenantedAuth.deleteUser(uid);
   }
