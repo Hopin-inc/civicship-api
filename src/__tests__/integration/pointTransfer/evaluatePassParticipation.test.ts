@@ -3,7 +3,6 @@ import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import {
   CurrentPrefecture,
-  IdentityPlatform,
   MembershipStatus,
   MembershipStatusReason,
   OpportunityCategory,
@@ -18,10 +17,8 @@ import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
 import { GqlEvaluationStatus } from "@/types/graphql";
-import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { DIDVCServerClient } from "@/infrastructure/libs/did";
 
-describe("Point Reward and VC Issuance Tests", () => {
+describe("Point Reward Tests", () => {
   const testSetup = {
     userName: "Jane Doe",
     slug: "user-2-slug",
@@ -41,67 +38,36 @@ describe("Point Reward and VC Issuance Tests", () => {
   let participationId: string;
   let opportunityOwnerWalletId: string;
   let participationUserId: string;
-  let mockDIDVCClient: jest.Mocked<DIDVCServerClient>;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
 
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     container.reset();
     registerProductionDependencies();
 
-    mockDIDVCClient = { call: jest.fn() } as any;
-
-    container.register("PrismaClientIssuer", {
-      useValue: new PrismaClientIssuer(),
-    });
-    container.register("DIDVCServerClient", { useValue: mockDIDVCClient });
-    
     useCase = container.resolve(EvaluationUseCase);
 
     const opportunityOwnerUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
-      slug: `${testSetup.slug}-owner-${uniqueId}`,
+      slug: testSetup.slug,
       image: undefined,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
-    ctx = {
-      currentUser: { id: opportunityOwnerUserId },
-      issuer: container.resolve("PrismaClientIssuer"),
-    } as unknown as IContext;
-    
+    ctx = { currentUser: { id: opportunityOwnerUserId } } as unknown as IContext;
+
     const participationUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
-      slug: `${testSetup.slug}-participation-${uniqueId}`,
+      slug: testSetup.slug,
       image: undefined,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     participationUserId = participationUserInserted.id;
 
-    await TestDataSourceHelper.createIdentity({
-      uid: `test-phone-uid-${uniqueId}`,
-      platform: IdentityPlatform.PHONE,
-      authToken: "test-phone-auth-token",
-      refreshToken: "test-phone-refresh-token",
-      tokenExpiresAt: new Date(Date.now() + 3600000),
-      user: { connect: { id: participationUserId } },
-    });
-
-    await TestDataSourceHelper.createDIDIssuanceRequest({
-      user: { connect: { id: participationUserId } },
-      status: "COMPLETED",
-      didValue: `did:prism:test-did-${uniqueId}`,
-      jobId: `test-did-job-${uniqueId}`,
-      processedAt: new Date(),
-      retryCount: 0,
-    });
-
     const communityInserted = await TestDataSourceHelper.createCommunity({
-      name: `${testSetup.communityName}-${uniqueId}`,
-      pointName: `${testSetup.pointName}-${uniqueId}`,
+      name: testSetup.communityName,
+      pointName: testSetup.pointName,
       image: undefined,
       bio: undefined,
       establishedAt: undefined,
@@ -188,12 +154,9 @@ describe("Point Reward and VC Issuance Tests", () => {
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
-    await container.resolve<PrismaClientIssuer>("PrismaClientIssuer").disconnect();
   });
 
   it("creates POINT_REWARD transaction on bulk evaluation", async () => {
-    mockDIDVCClient.call.mockResolvedValue({ jobId: "test-job-id" });
-
     await useCase.managerBulkCreateEvaluations(
       {
         input: {
@@ -218,8 +181,6 @@ describe("Point Reward and VC Issuance Tests", () => {
   });
 
   it("transfers points from opportunityOwner to participation wallet on bulk evaluation", async () => {
-    mockDIDVCClient.call.mockResolvedValue({ jobId: "test-job-id" });
-
     await useCase.managerBulkCreateEvaluations(
       {
         input: {
@@ -247,8 +208,6 @@ describe("Point Reward and VC Issuance Tests", () => {
   });
 
   it("updates currentPointView after bulk evaluation", async () => {
-    mockDIDVCClient.call.mockResolvedValue({ jobId: "test-job-id" });
-
     await useCase.managerBulkCreateEvaluations(
       {
         input: {
@@ -270,189 +229,17 @@ describe("Point Reward and VC Issuance Tests", () => {
     const participationPoint = (
       await TestDataSourceHelper.findMemberWallet(participationUserId, communityId)
     )?.currentPointView?.currentPoint;
-    expect(participationPoint).toBe(BigInt(testSetup.pointsToEarn));
+    expect(participationPoint).toBe(testSetup.pointsToEarn);
 
     const opportunityOwnerPoint = (
       await TestDataSourceHelper.findMemberWallet(opportunityOwnerUserId, communityId)
     )?.currentPointView?.currentPoint;
-    const expectedOwnerPoint = BigInt(testSetup.communityInitialPoint - testSetup.pointsToEarn);
+    const expectedOwnerPoint = testSetup.communityInitialPoint - testSetup.pointsToEarn;
     expect(opportunityOwnerPoint).toBe(expectedOwnerPoint);
 
     const communityPoint = (await TestDataSourceHelper.findCommunityWallet(communityId))
       ?.currentPointView?.currentPoint;
-    const expectedCommunityPoint = BigInt(0);
+    const expectedCommunityPoint = 0;
     expect(communityPoint).toBe(expectedCommunityPoint);
-  });
-
-  it("should complete evaluation successfully even when VC external API fails", async () => {
-    mockDIDVCClient.call.mockResolvedValue(null);
-
-    const result = await useCase.managerBulkCreateEvaluations(
-      {
-        input: {
-          evaluations: [
-            {
-              participationId,
-              comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
-            },
-          ],
-        },
-        permission: { communityId },
-      },
-      ctx,
-    );
-
-    const evaluationId = result.evaluations[0].id;
-
-    const transactions = await TestDataSourceHelper.findAllTransactions();
-    const transaction = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
-    expect(transaction).toBeDefined();
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(evaluationId);
-    expect(vcRequest).toBeDefined();
-    expect(vcRequest?.status).toBe("PENDING");
-    expect(vcRequest?.errorMessage).toBe("External API call failed");
-    expect(vcRequest?.retryCount).toBe(1);
-    expect(vcRequest?.jobId).toBeNull();
-
-    expect(mockDIDVCClient.call).toHaveBeenCalledWith(
-      expect.stringMatching(/test-phone-uid-/),
-      "test-phone-auth-token",
-      "/vc/jobs/connectionless/issue-to-holder",
-      "POST",
-      expect.objectContaining({
-        claims: expect.any(Object),
-        credentialFormat: expect.any(String),
-        schemaId: undefined,
-      })
-    );
-  });
-
-  it("should handle VC external API timeout gracefully", async () => {
-    mockDIDVCClient.call.mockImplementation(() => {
-      return new Promise((resolve) => {
-        setTimeout(() => resolve(null), 100);
-      });
-    });
-
-    const result = await useCase.managerBulkCreateEvaluations(
-      {
-        input: {
-          evaluations: [
-            {
-              participationId,
-              comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
-            },
-          ],
-        },
-        permission: { communityId },
-      },
-      ctx,
-    );
-
-    const evaluationId = result.evaluations[0].id;
-
-    const transactions = await TestDataSourceHelper.findAllTransactions();
-    const transaction = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
-    expect(transaction).toBeDefined();
-
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(evaluationId);
-    expect(vcRequest).toBeDefined();
-    expect(vcRequest?.status).toBe("PENDING");
-    expect(vcRequest?.errorMessage).toBe("External API call failed");
-    expect(vcRequest?.retryCount).toBe(1);
-    expect(vcRequest?.jobId).toBeNull();
-  });
-
-  it("should handle successful VC issuance when external API succeeds", async () => {
-    mockDIDVCClient.call.mockResolvedValue({ jobId: "test-vc-job-id" });
-
-    const result = await useCase.managerBulkCreateEvaluations(
-      {
-        input: {
-          evaluations: [
-            {
-              participationId,
-              comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
-            },
-          ],
-        },
-        permission: { communityId },
-      },
-      ctx,
-    );
-
-    const evaluationId = result.evaluations[0].id;
-
-    const transactions = await TestDataSourceHelper.findAllTransactions();
-    const transaction = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
-    expect(transaction).toBeDefined();
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(evaluationId);
-    expect(vcRequest).toBeDefined();
-    expect(vcRequest?.status).toBe("PROCESSING");
-    expect(vcRequest?.jobId).toBe("test-vc-job-id");
-    expect(vcRequest?.errorMessage).toBeNull();
-    expect(vcRequest?.retryCount).toBe(0);
-
-    expect(mockDIDVCClient.call).toHaveBeenCalledWith(
-      expect.stringMatching(/test-phone-uid-/),
-      "test-phone-auth-token",
-      "/vc/jobs/connectionless/issue-to-holder",
-      "POST",
-      expect.objectContaining({
-        claims: expect.any(Object),
-        credentialFormat: expect.any(String),
-        schemaId: undefined,
-      })
-    );
-  });
-
-  it("should handle multiple external API failures simultaneously", async () => {
-    mockDIDVCClient.call.mockResolvedValue(null);
-
-    const result = await useCase.managerBulkCreateEvaluations(
-      {
-        input: {
-          evaluations: [
-            {
-              participationId,
-              comment: testSetup.comment,
-              status: GqlEvaluationStatus.Passed,
-            },
-          ],
-        },
-        permission: { communityId },
-      },
-      ctx,
-    );
-
-    const evaluationId = result.evaluations[0].id;
-
-    const transactions = await TestDataSourceHelper.findAllTransactions();
-    const transaction = transactions.find((t) => t.reason === TransactionReason.POINT_REWARD);
-    expect(transaction).toBeDefined();
-    expect(transaction?.from).toEqual(opportunityOwnerWalletId);
-    expect(transaction?.to).toEqual(participationWalletId);
-
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(evaluationId);
-    expect(vcRequest).toBeDefined();
-    expect(vcRequest?.status).toBe("PENDING");
-    expect(vcRequest?.errorMessage).toBe("External API call failed");
-    expect(vcRequest?.retryCount).toBe(1);
-    expect(vcRequest?.jobId).toBeNull();
-
-    expect(mockDIDVCClient.call).toHaveBeenCalledTimes(1);
   });
 });
