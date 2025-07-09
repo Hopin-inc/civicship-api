@@ -95,7 +95,7 @@ export default class ReservationUseCase {
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
     const reservation = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const statuses = resolveReservationStatuses(opportunity.requireApproval);
+      const statuses = resolveReservationStatuses(requireApproval);
       const reservation = await this.reservationService.createReservation(
         ctx,
         input.opportunitySlotId,
