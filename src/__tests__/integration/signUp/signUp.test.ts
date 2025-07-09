@@ -39,6 +39,9 @@ describe("IdentityUseCase.userCreateAccount", () => {
     const ctx: IContext = {
       uid: "uid-abc",
       platform: IdentityPlatform.LINE,
+      phoneAuthToken: "test-phone-auth-token",
+      communityId: community.id,
+      issuer: container.resolve("prismaClientIssuer"),
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
@@ -81,6 +84,9 @@ describe("IdentityUseCase.userCreateAccount", () => {
     const ctx: IContext = {
       uid: "uid-abc",
       platform: IdentityPlatform.PHONE,
+      phoneAuthToken: "test-phone-auth-token",
+      communityId: community.id,
+      issuer: container.resolve("prismaClientIssuer"),
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
@@ -132,6 +138,9 @@ describe("IdentityUseCase.userCreateAccount", () => {
     const ctx: IContext = {
       uid: "uid-abc",
       platform: IdentityPlatform.PHONE,
+      phoneAuthToken: "test-phone-auth-token",
+      communityId: community.id,
+      issuer: container.resolve("prismaClientIssuer"),
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
