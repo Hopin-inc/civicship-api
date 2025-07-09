@@ -155,7 +155,16 @@ describe("Concurrent Evaluation Integration Tests", () => {
     mockDIDVCClient.call.mockResolvedValue({ jobId: "concurrent-vc-job" });
 
     const evaluationPromises = participations.map(({ participation }) =>
-      useCase.evaluatePassParticipation(ctx, {
+      useCase.managerBulkCreateEvaluations({
+        input: {
+          evaluations: [{
+            participationId: participation.id,
+            status: GqlEvaluationStatus.Passed,
+            comment: "Concurrent evaluation test",
+          }]
+        },
+        permission: { communityId: community.id }
+      }, ctx).then(result => result.evaluations[0])
         participationId: participation.id,
         status: GqlEvaluationStatus.Passed,
         comment: "Concurrent evaluation test",
@@ -261,7 +270,16 @@ describe("Concurrent Evaluation Integration Tests", () => {
       .mockResolvedValueOnce({ jobId: "mixed-vc-job-3" });
 
     const evaluationPromises = participations.map(({ participation }) =>
-      useCase.evaluatePassParticipation(ctx, {
+      useCase.managerBulkCreateEvaluations({
+        input: {
+          evaluations: [{
+            participationId: participation.id,
+            status: GqlEvaluationStatus.Passed,
+            comment: "Concurrent evaluation test",
+          }]
+        },
+        permission: { communityId: community.id }
+      }, ctx).then(result => result.evaluations[0])
         participationId: participation.id,
         status: GqlEvaluationStatus.Passed,
         comment: "Mixed concurrent evaluation test",
@@ -365,7 +383,16 @@ describe("Concurrent Evaluation Integration Tests", () => {
     mockDIDVCClient.call.mockResolvedValue(null);
 
     const evaluationPromises = participations.map(({ participation }) =>
-      useCase.evaluatePassParticipation(ctx, {
+      useCase.managerBulkCreateEvaluations({
+        input: {
+          evaluations: [{
+            participationId: participation.id,
+            status: GqlEvaluationStatus.Passed,
+            comment: "Concurrent evaluation test",
+          }]
+        },
+        permission: { communityId: community.id }
+      }, ctx).then(result => result.evaluations[0])
         participationId: participation.id,
         status: GqlEvaluationStatus.Passed,
         comment: "Consistency evaluation test",

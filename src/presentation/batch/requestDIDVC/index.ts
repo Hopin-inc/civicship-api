@@ -15,7 +15,7 @@ import VCIssuanceRequestConverter from "@/application/domain/experience/evaluati
  * - 未リクエストのDIDを送信
  * - Evaluation(PASSED)だがVCリクエスト未発行のユーザーにVCを送信
  */
-export async function requestDIDVC() {
+export async function requestDIDVC(): Promise<string> {
   logger.info("🚀 Starting DID & VC request batch");
 
   const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
@@ -27,6 +27,7 @@ export async function requestDIDVC() {
   try {
     // --- DID ---
     const didResult = await createDIDRequests(issuer, didService, ctx);
+    const didMessage = `DID requests sent: success: ${didResult.successCount}, failure: ${didResult.failureCount}, skipped: ${didResult.skippedCount}`;
     logger.info(
       `📦 DID Requests: ${didResult.total} total, ` +
         `${didResult.successCount} succeeded, ` +
@@ -36,6 +37,7 @@ export async function requestDIDVC() {
 
     // --- VC ---
     const vcResult = await createVCRequests(issuer, vcService, vcConverter, ctx);
+    const vcMessage = `VC requests sent: success: ${vcResult.successCount}, failure: ${vcResult.failureCount}, skipped: ${vcResult.skippedCount}`;
     logger.info(
       `📦 VC Requests: ${vcResult.total} total, ` +
         `${vcResult.successCount} succeeded, ` +
@@ -44,8 +46,10 @@ export async function requestDIDVC() {
     );
 
     logger.info("✅ DID & VC request batch completed");
+    return `${didMessage}\n${vcMessage}`;
   } catch (error) {
     logger.error("💥 Error in DID/VC request batch", error);
+    return "Batch processing failed";
   }
 }
 
