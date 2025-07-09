@@ -148,8 +148,10 @@ describe("syncDIDVC Batch Processing Integration Tests", () => {
 
     const opportunity = await TestDataSourceHelper.createOpportunity({
       title: "VC Test Opportunity",
+      category: "ACTIVITY",
       description: "Test opportunity for VC issuance",
       community: { connect: { id: community.id } },
+      createdByUser: { connect: { id: user.id } },
     });
 
     const opportunitySlot = await TestDataSourceHelper.createOpportunitySlot({
