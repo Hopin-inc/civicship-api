@@ -78,8 +78,7 @@
     "tsyringe": "^4.10.0",
     "typedoc-plugin-merge-modules": "^6.1.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.31.0",
-    "wait-for-expect": "^3.0.2"
+    "typescript-eslint": "^8.31.0"
   },
   "dependencies": {
     "@apollo/server": "^4.12.0",

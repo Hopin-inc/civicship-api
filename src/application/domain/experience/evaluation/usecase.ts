@@ -203,7 +203,7 @@ export default class EvaluationUseCase {
 
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
-      await this.vcIssuanceRequestService.requestVCIssuance(
+      void this.vcIssuanceRequestService.requestVCIssuance(
         userId,
         phoneUid,
         vcRequest,
