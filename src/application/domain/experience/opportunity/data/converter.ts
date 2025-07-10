@@ -108,29 +108,24 @@ export default class OpportunityConverter {
     data: Omit<Prisma.OpportunityUpdateInput, "images">;
     images: GqlImageInput[];
   } {
-    const { place, images, ...prop } = input;
-
-    let finalPlace: Prisma.PlaceUpdateOneWithoutOpportunitiesNestedInput | undefined = undefined;
-
-    if (place) {
-      finalPlace = place.where
-        ? { connect: { id: place.where } }
-        : (() => {
-            const { cityCode, communityId, ...restCreate } = place.create!;
-            return {
-              create: {
-                ...restCreate,
-                city: { connect: { code: cityCode } },
-                community: { connect: { id: communityId } },
-              },
-            };
-          })();
-    }
+    const { images, placeId, requiredUtilityIds, relatedArticleIds, ...prop } = input;
 
     return {
       data: {
         ...prop,
-        ...(finalPlace ? { place: finalPlace } : {}),
+        ...(placeId && {
+          place: { connect: { id: placeId } },
+        }),
+        ...(requiredUtilityIds?.length && {
+          requiredUtilities: {
+            connect: requiredUtilityIds.map((id) => ({ id })),
+          },
+        }),
+        ...(relatedArticleIds?.length && {
+          articles: {
+            connect: relatedArticleIds.map((id) => ({ id })),
+          },
+        }),
       },
       images: images ?? [],
     };
