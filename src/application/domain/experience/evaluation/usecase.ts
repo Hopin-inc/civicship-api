@@ -74,14 +74,19 @@ export default class EvaluationUseCase {
     const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       return Promise.all(
         input.evaluations.map((item) =>
-          this.createOneEvaluationWithSideEffects(ctx, tx, {
+          this.createEvaluationOnly(ctx, tx, {
             item,
             currentUserId,
-            communityId,
           }),
         ),
       );
     });
+
+    for (const evaluation of createdEvaluations) {
+      if (evaluation.status === GqlEvaluationStatus.Passed) {
+        await this.handlePointTransferSeparately(ctx, evaluation, currentUserId, communityId);
+      }
+    }
 
     for (const evaluation of createdEvaluations) {
       void this.issueEvaluationVC(ctx, evaluation);
@@ -90,16 +95,15 @@ export default class EvaluationUseCase {
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 
-  private async createOneEvaluationWithSideEffects(
+  private async createEvaluationOnly(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     params: {
       item: GqlEvaluationItem;
       currentUserId: string;
-      communityId: string;
     },
   ): Promise<PrismaEvaluation> {
-    const { item, currentUserId, communityId } = params;
+    const { item, currentUserId } = params;
 
     await this.validateEvaluatable(ctx, item.participationId);
 
@@ -125,11 +129,25 @@ export default class EvaluationUseCase {
       currentUserId,
     );
 
-    if (item.status === GqlEvaluationStatus.Passed) {
-      await this.handlePassedEvaluationSideEffects(ctx, tx, evaluation, currentUserId, communityId);
-    }
-
     return evaluation;
+  }
+
+  private async handlePointTransferSeparately(
+    ctx: IContext,
+    evaluation: PrismaEvaluation,
+    currentUserId: string,
+    communityId: string,
+  ): Promise<void> {
+    try {
+      await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+        await this.handlePassedEvaluationSideEffects(ctx, tx, evaluation, currentUserId, communityId);
+      });
+    } catch (error) {
+      logger.warn("Point transfer failed for evaluation", {
+        evaluationId: evaluation.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private async validateEvaluatable(ctx: IContext, participationId: string) {

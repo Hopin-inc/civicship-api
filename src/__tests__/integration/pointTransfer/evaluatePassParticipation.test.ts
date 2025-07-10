@@ -17,6 +17,7 @@ import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
 import { GqlEvaluationStatus } from "@/types/graphql";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Reward Tests", () => {
   const testSetup = {
@@ -46,6 +47,10 @@ describe("Point Reward Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    container.register("PrismaClientIssuer", {
+      useValue: new PrismaClientIssuer(),
+    });
+
     useCase = container.resolve(EvaluationUseCase);
 
     const opportunityOwnerUserInserted = await TestDataSourceHelper.createUser({
@@ -55,7 +60,10 @@ describe("Point Reward Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
-    ctx = { currentUser: { id: opportunityOwnerUserId } } as unknown as IContext;
+    ctx = {
+      currentUser: { id: opportunityOwnerUserId },
+      issuer: container.resolve("PrismaClientIssuer"),
+    } as unknown as IContext;
 
     const participationUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
@@ -229,17 +237,17 @@ describe("Point Reward Tests", () => {
     const participationPoint = (
       await TestDataSourceHelper.findMemberWallet(participationUserId, communityId)
     )?.currentPointView?.currentPoint;
-    expect(participationPoint).toBe(testSetup.pointsToEarn);
+    expect(participationPoint).toBe(BigInt(testSetup.pointsToEarn));
 
     const opportunityOwnerPoint = (
       await TestDataSourceHelper.findMemberWallet(opportunityOwnerUserId, communityId)
     )?.currentPointView?.currentPoint;
     const expectedOwnerPoint = testSetup.communityInitialPoint - testSetup.pointsToEarn;
-    expect(opportunityOwnerPoint).toBe(expectedOwnerPoint);
+    expect(opportunityOwnerPoint).toBe(BigInt(expectedOwnerPoint));
 
     const communityPoint = (await TestDataSourceHelper.findCommunityWallet(communityId))
       ?.currentPointView?.currentPoint;
     const expectedCommunityPoint = 0;
-    expect(communityPoint).toBe(expectedCommunityPoint);
+    expect(communityPoint).toBe(BigInt(expectedCommunityPoint));
   });
 });
