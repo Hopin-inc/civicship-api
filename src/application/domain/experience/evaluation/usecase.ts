@@ -177,14 +177,14 @@ export default class EvaluationUseCase {
         await this.walletValidator.validateTransferMemberToMember(
           fromWallet,
           toWallet,
-          BigInt(opportunity.pointsToEarn),
+          opportunity.pointsToEarn,
         );
 
       await this.transactionService.giveRewardPoint(
         ctx,
         tx,
         participation.id,
-        BigInt(opportunity.pointsToEarn),
+        opportunity.pointsToEarn,
         fromWalletId,
         toWalletId,
       );
@@ -203,7 +203,7 @@ export default class EvaluationUseCase {
 
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
-      await this.vcIssuanceRequestService.requestVCIssuance(
+      void this.vcIssuanceRequestService.requestVCIssuance(
         userId,
         phoneUid,
         vcRequest,

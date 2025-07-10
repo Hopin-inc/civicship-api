@@ -1,6 +1,6 @@
 import axios from "axios";
 import { injectable } from "tsyringe";
-import { IDENTUS_API_URL, IDENTUS_API_TIMEOUT } from "@/consts/utils";
+import { IDENTUS_API_URL } from "@/consts/utils";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -11,8 +11,7 @@ export class DIDVCServerClient {
     endpoint: string,
     method: "GET" | "POST" | "PUT" | "DELETE",
     data?: Record<string, unknown>,
-    timeout: number = IDENTUS_API_TIMEOUT,
-  ): Promise<T | null> {
+  ): Promise<T> {
     const url = `${IDENTUS_API_URL}${endpoint}`;
     const headers = {
       "x-api-key": process.env.API_KEY,
@@ -24,31 +23,25 @@ export class DIDVCServerClient {
 
     try {
       let response;
-      const config = { headers, timeout };
-      
       switch (method) {
         case "GET":
-          response = await axios.get(url, config);
+          response = await axios.get(url, { headers });
           break;
         case "POST":
-          response = await axios.post(url, data, config);
+          response = await axios.post(url, data, { headers });
           break;
         case "PUT":
-          response = await axios.put(url, data, config);
+          response = await axios.put(url, data, { headers });
           break;
         case "DELETE":
-          response = await axios.delete(url, config);
+          response = await axios.delete(url, { headers });
           break;
       }
 
       return response?.data as T;
     } catch (error) {
-      logger.warn(`[DIDVCClient] External API call failed (non-blocking): ${method} ${endpoint}`, {
-        uid,
-        endpoint,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return null;
+      logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
+      throw error;
     }
   }
 }

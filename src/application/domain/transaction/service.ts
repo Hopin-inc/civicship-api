@@ -77,7 +77,7 @@ export default class TransactionService implements ITransactionService {
     ctx: IContext,
     tx: Prisma.TransactionClient,
     participationId: string,
-    transferPoints: bigint,
+    transferPoints: number,
     fromWalletId: string,
     toWalletId: string,
   ): Promise<PrismaTransactionDetail> {
@@ -86,7 +86,7 @@ export default class TransactionService implements ITransactionService {
       fromWalletId,
       toWalletId,
       participationId,
-      Number(transferPoints),
+      transferPoints,
       currentUserId,
     );
     const res = await this.repository.create(ctx, data, tx);

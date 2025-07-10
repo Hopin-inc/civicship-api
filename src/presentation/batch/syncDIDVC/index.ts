@@ -47,9 +47,9 @@ export async function syncDIDVC() {
 syncDIDVC()
   .then(() => {
     console.log("✅ Done.");
-    // process.exit(0); // Commented out for testing
+    process.exit(0);
   })
   .catch((err) => {
     console.error("❌ Error occurred:", err);
-    // process.exit(1); // Commented out for testing
+    process.exit(1);
   });

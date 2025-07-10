@@ -1,5 +1,5 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { DidIssuanceStatus, IdentityPlatform } from "@prisma/client";
+import { IdentityPlatform } from "@prisma/client";
 import logger from "@/infrastructure/logging";
 import { IContext } from "@/types/server";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
@@ -23,25 +23,10 @@ export async function createDIDRequests(
     return tx.user.findMany({
       where: {
         identities: { some: { platform: IdentityPlatform.PHONE } },
-        OR: [
-          {
-            didIssuanceRequests: {
-              none: {},
-            },
-          },
-          {
-            didIssuanceRequests: {
-              some: {
-                status: DidIssuanceStatus.PENDING,
-                jobId: null,
-              },
-            },
-          },
-        ],
+        didIssuanceRequests: { none: {} },
       },
       include: {
         identities: { where: { platform: IdentityPlatform.PHONE } },
-        didIssuanceRequests: true,
       },
     });
   });
@@ -60,17 +45,8 @@ export async function createDIDRequests(
       continue;
     }
 
-    const existingRequest = user.didIssuanceRequests?.find(
-      (r) => r.status === "PENDING" && r.jobId === null,
-    );
-
     try {
-      const result = await didService.requestDIDIssuance(
-        user.id,
-        phoneIdentity.uid,
-        ctx,
-        existingRequest?.id,
-      );
+      const result = await didService.requestDIDIssuance(user.id, phoneIdentity.uid, ctx);
 
       if (result.success) {
         logger.info(`✅ DID request created: user=${user.id}, request=${result.requestId}`);
