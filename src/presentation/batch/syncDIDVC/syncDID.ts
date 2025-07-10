@@ -22,7 +22,7 @@ export async function processDIDRequests(
       where: {
         status: { not: DidIssuanceStatus.COMPLETED },
         jobId: { not: null },
-        retryCount: { lt: 3 },
+        retryCount: { lt: 5 },
       },
       include: {
         user: {
@@ -56,15 +56,16 @@ export async function processDIDRequests(
       let { token, isValid } = didService.evaluateTokenValidity(phoneIdentity);
 
       if (!isValid && phoneIdentity.refreshToken) {
-        try {
-          const refreshed = await didService.refreshAuthToken(
-            phoneIdentity.uid,
-            phoneIdentity.refreshToken,
-          );
+        const refreshed = await didService.refreshAuthToken(
+          phoneIdentity.uid,
+          phoneIdentity.refreshToken,
+        );
+
+        if (refreshed) {
           token = refreshed.authToken;
           isValid = true;
-        } catch (error) {
-          logger.error(`🔁 Token refresh failed for ${phoneIdentity.uid}`, error);
+        } else {
+          logger.warn(`Token refresh failed for ${phoneIdentity.uid}, skipping request`);
           // optional: mark error to DB here
           failureCount++;
           continue;
@@ -83,6 +84,23 @@ export async function processDIDRequests(
       }>(phoneIdentity.uid, token || "", `/did/jobs/${request.jobId}`, "GET");
 
       logger.debug(`jobStatus: ${JSON.stringify(jobStatus, null, 2)}`);
+
+      if (jobStatus === null) {
+        logger.warn(
+          `External API call failed for DID job ${request.jobId}, keeping PENDING status`,
+        );
+        await issuer.internal(async (tx) => {
+          await tx.didIssuanceRequest.update({
+            where: { id: request.id },
+            data: {
+              errorMessage: "External API call failed during sync",
+              retryCount: { increment: 1 },
+            },
+          });
+        });
+        skippedCount++;
+        continue;
+      }
 
       if (jobStatus?.status === "completed" && jobStatus.result?.did) {
         await issuer.internal(async (tx) => {
