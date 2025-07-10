@@ -88,10 +88,6 @@ export default class EvaluationUseCase {
       }
     }
 
-    for (const evaluation of createdEvaluations) {
-      void this.issueEvaluationVC(ctx, evaluation);
-    }
-
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 
