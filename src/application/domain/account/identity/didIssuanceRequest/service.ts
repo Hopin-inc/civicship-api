@@ -75,27 +75,21 @@ export class DIDIssuanceService {
         { userId, requestId: didRequest.id },
       );
 
-      if (response?.jobId) {
+      if (!response?.jobId) {
+        logger.warn(`DID issuance failed: no jobId returned for user ${userId}`);
         await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
-          status: DidIssuanceStatus.PROCESSING,
-          jobId: response.jobId,
-        });
-
-        return { success: true, requestId: didRequest.id, jobId: response.jobId };
-      }
-
-      if (response === null) {
-        logger.warn(
-          `DID issuance external API call failed for user ${userId}, keeping PENDING status`,
-        );
-        await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
-          errorMessage: "External API call failed",
+          errorMessage: "External API call returned no jobId",
           retryCount: { increment: 1 },
         });
-        return { success: true, requestId: didRequest.id };
+        return { success: false, requestId: didRequest.id };
       }
 
-      return { success: true, requestId: didRequest.id };
+      await this.didIssuanceRequestRepository.update(ctx, didRequest.id, {
+        status: DidIssuanceStatus.PROCESSING,
+        jobId: response.jobId,
+      });
+
+      return { success: true, requestId: didRequest.id, jobId: response.jobId };
     } catch (error) {
       return this.markIssuanceFailed(ctx, didRequest.id, error);
     }
