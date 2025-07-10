@@ -140,7 +140,13 @@ export default class EvaluationUseCase {
   ): Promise<void> {
     try {
       await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-        await this.handlePassedEvaluationSideEffects(ctx, tx, evaluation, currentUserId, communityId);
+        await this.handlePassedEvaluationSideEffects(
+          ctx,
+          tx,
+          evaluation,
+          currentUserId,
+          communityId,
+        );
       });
     } catch (error) {
       logger.warn("Point transfer failed for evaluation", {
@@ -221,7 +227,7 @@ export default class EvaluationUseCase {
 
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
-      void this.vcIssuanceRequestService.requestVCIssuance(
+      await this.vcIssuanceRequestService.requestVCIssuance(
         userId,
         phoneUid,
         vcRequest,

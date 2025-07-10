@@ -22,7 +22,6 @@ import logger from "@/infrastructure/logging";
 import { AuthenticationError } from "@/errors/graphql";
 import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 import { Prisma, User } from "@prisma/client";
-import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 
 @injectable()
 export default class IdentityUseCase {
@@ -31,7 +30,6 @@ export default class IdentityUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("ImageService") private readonly imageService: ImageService,
-    @inject("DIDIssuanceService") private readonly didIssuanceService: DIDIssuanceService,
   ) {}
 
   async userViewCurrentAccount(context: IContext): Promise<GqlCurrentUserPayload> {
@@ -116,10 +114,6 @@ export default class IdentityUseCase {
     }
 
     await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
-
-    if (phoneUid) {
-      void this.didIssuanceService.requestDIDIssuance(user.id, phoneUid, ctx);
-    }
     return IdentityPresenter.create(res);
   }
 
@@ -174,17 +168,17 @@ export default class IdentityUseCase {
       });
 
       if (!ctx.uid) {
-        logger.error("uidが見つかりません");
+        logger.error("Missing uid in context");
         return null;
       }
       const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
       if (!user) {
-        logger.error(`[initializeUserAssets] ユーザーが見つかりません: userId=${userId}`);
+        logger.error(`User not found after initialization: userId=${userId}`);
       }
 
       return user;
     } catch (error) {
-      logger.error("[initializeUserAssets] ユーザー資産の初期化中にエラーが発生しました", {
+      logger.error("Failed to initialize user assets", {
         userId,
         communityId,
         error,
