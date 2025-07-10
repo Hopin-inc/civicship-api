@@ -22,7 +22,7 @@ export async function requestDIDVC() {
   const didService = container.resolve<DIDIssuanceService>("DIDIssuanceService");
   const vcService = container.resolve<VCIssuanceRequestService>("VCIssuanceRequestService");
   const vcConverter = container.resolve<VCIssuanceRequestConverter>("VCIssuanceRequestConverter");
-  const ctx = { issuer } as IContext;
+  const ctx: IContext = {};
 
   try {
     // --- DID ---
