@@ -65,44 +65,42 @@ export default class OpportunityConverter {
     };
   }
 
-  create(
+  create = (
     input: GqlOpportunityCreateInput,
     communityId: string,
-    currentUserId: string,
+    userId: string,
   ): {
     data: Omit<Prisma.OpportunityCreateInput, "images">;
     images: GqlImageInput[];
-  } {
-    const { images, placeId, createdBy, slots, requiredUtilityIds, relatedArticleIds, ...prop } =
+  } => {
+    const { images, placeId, slots, createdBy, requiredUtilityIds, relatedArticleIds, ...rest } =
       input;
 
     return {
       data: {
-        ...prop,
+        ...rest,
         community: { connect: { id: communityId } },
-        createdByUser: { connect: { id: currentUserId } },
+        createdByUser: { connect: { id: userId } },
         ...(placeId && {
           place: { connect: { id: placeId } },
         }),
-        ...(slots && {
-          slots: {
-            create: slots.map((slot) => ({ ...slot })),
-          },
+        ...(slots?.length && {
+          slots: { create: slots },
         }),
         ...(requiredUtilityIds?.length && {
           requiredUtilities: {
-            connect: requiredUtilityIds.map((id) => ({ id })),
+            connect: requiredUtilityIds.filter(Boolean).map((id) => ({ id })),
           },
         }),
         ...(relatedArticleIds?.length && {
           articles: {
-            connect: relatedArticleIds.map((id) => ({ id })),
+            connect: relatedArticleIds.filter(Boolean).map((id) => ({ id })),
           },
         }),
       },
       images: images ?? [],
     };
-  }
+  };
 
   update(input: GqlOpportunityUpdateContentInput): {
     data: Omit<Prisma.OpportunityUpdateInput, "images">;
