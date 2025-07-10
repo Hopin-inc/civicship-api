@@ -1294,18 +1294,16 @@ export type GqlOpportunitySortInput = {
 
 export type GqlOpportunityUpdateContentInput = {
   body?: InputMaybe<Scalars['String']['input']>;
-  capacity?: InputMaybe<Scalars['Int']['input']>;
   category: GqlOpportunityCategory;
   description: Scalars['String']['input'];
-  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
   feeRequired?: InputMaybe<Scalars['Int']['input']>;
   images?: InputMaybe<Array<GqlImageInput>>;
-  place?: InputMaybe<GqlNestedPlaceConnectOrCreateInput>;
+  placeId?: InputMaybe<Scalars['ID']['input']>;
   pointsToEarn?: InputMaybe<Scalars['Int']['input']>;
   publishStatus: GqlPublishStatus;
+  relatedArticleIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   requireApproval: Scalars['Boolean']['input'];
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
   title: Scalars['String']['input'];
 };
 
