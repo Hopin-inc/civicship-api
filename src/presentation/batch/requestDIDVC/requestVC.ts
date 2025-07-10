@@ -1,5 +1,5 @@
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
-import { IdentityPlatform, EvaluationStatus } from "@prisma/client";
+import { IdentityPlatform, EvaluationStatus, VcIssuanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
@@ -39,7 +39,7 @@ export async function createVCRequests(
               user: {
                 vcIssuanceRequests: {
                   some: {
-                    // status: VcIssuanceStatus.PENDING,
+                    status: VcIssuanceStatus.PENDING,
                     jobId: null,
                   },
                 },
@@ -78,7 +78,7 @@ export async function createVCRequests(
       continue;
     }
 
-    if (vcRequest && vcRequest.jobId !== null) {
+    if (vcRequest && (vcRequest.status !== VcIssuanceStatus.PENDING || vcRequest.jobId !== null)) {
       skippedCount++;
       continue;
     }

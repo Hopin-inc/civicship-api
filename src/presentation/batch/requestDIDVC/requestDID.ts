@@ -23,25 +23,10 @@ export async function createDIDRequests(
     return tx.user.findMany({
       where: {
         identities: { some: { platform: IdentityPlatform.PHONE } },
-        OR: [
-          {
-            didIssuanceRequests: {
-              none: {},
-            },
-          },
-          {
-            didIssuanceRequests: {
-              some: {
-                // status: DidIssuanceStatus.PENDING,
-                jobId: null,
-              },
-            },
-          },
-        ],
+        didIssuanceRequests: { none: {} },
       },
       include: {
         identities: { where: { platform: IdentityPlatform.PHONE } },
-        didIssuanceRequests: true,
       },
     });
   });
@@ -60,15 +45,8 @@ export async function createDIDRequests(
       continue;
     }
 
-    const existingRequest = user.didIssuanceRequests?.find((r) => r.jobId === null);
-
     try {
-      const result = await didService.requestDIDIssuance(
-        user.id,
-        phoneIdentity.uid,
-        ctx,
-        existingRequest?.id,
-      );
+      const result = await didService.requestDIDIssuance(user.id, phoneIdentity.uid, ctx);
 
       if (result.success) {
         logger.info(`✅ DID request created: user=${user.id}, request=${result.requestId}`);
