@@ -79,7 +79,6 @@ describe("Concurrent Evaluation Integration Tests", () => {
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
-    await container.resolve<PrismaClientIssuer>("PrismaClientIssuer").disconnect();
   });
 
   it("should handle concurrent evaluations with VC issuance successfully", async () => {
@@ -163,20 +162,16 @@ describe("Concurrent Evaluation Integration Tests", () => {
             comment: "Concurrent evaluation test",
           }]
         },
-        permission: { communityId: community.id }
+        permission: { communityId: communityId }
       }, ctx).then(result => result.evaluations[0])
-        participationId: participation.id,
-        status: GqlEvaluationStatus.Passed,
-        comment: "Concurrent evaluation test",
-      })
     );
 
     const results = await Promise.all(evaluationPromises);
 
     results.forEach((result, index) => {
-      expect(result.evaluation).toBeDefined();
-      expect(result.evaluation?.status).toBe("PASSED");
-      expect(result.evaluation?.comment).toBe("Concurrent evaluation test");
+      expect(result).toBeDefined();
+      expect(result.status).toBe("PASSED");
+      expect(result.comment).toBe("Concurrent evaluation test");
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
@@ -185,7 +180,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
       const participationWallet = await TestDataSourceHelper.findMemberWallet(userId, communityId);
       expect(participationWallet?.currentPointView?.currentPoint).toBe(BigInt(100));
 
-      const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(results[index].evaluation!.id);
+      const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(results[index].id);
       expect(vcRequest).toBeDefined();
       expect(vcRequest?.status).toBe("PROCESSING");
       expect(vcRequest?.jobId).toBe("concurrent-vc-job");
@@ -275,37 +270,33 @@ describe("Concurrent Evaluation Integration Tests", () => {
           evaluations: [{
             participationId: participation.id,
             status: GqlEvaluationStatus.Passed,
-            comment: "Concurrent evaluation test",
+            comment: "Mixed concurrent evaluation test",
           }]
         },
-        permission: { communityId: community.id }
+        permission: { communityId: communityId }
       }, ctx).then(result => result.evaluations[0])
-        participationId: participation.id,
-        status: GqlEvaluationStatus.Passed,
-        comment: "Mixed concurrent evaluation test",
-      })
     );
 
     const results = await Promise.all(evaluationPromises);
 
     results.forEach((result, index) => {
-      expect(result.evaluation).toBeDefined();
-      expect(result.evaluation?.status).toBe("PASSED");
-      expect(result.evaluation?.comment).toBe("Mixed concurrent evaluation test");
+      expect(result).toBeDefined();
+      expect(result.status).toBe("PASSED");
+      expect(result.comment).toBe("Mixed concurrent evaluation test");
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const vcRequest1 = await TestDataSourceHelper.findVCIssuanceRequest(results[0].evaluation!.id);
+    const vcRequest1 = await TestDataSourceHelper.findVCIssuanceRequest(results[0].id);
     expect(vcRequest1?.status).toBe("PROCESSING");
     expect(vcRequest1?.jobId).toBe("mixed-vc-job-1");
 
-    const vcRequest2 = await TestDataSourceHelper.findVCIssuanceRequest(results[1].evaluation!.id);
+    const vcRequest2 = await TestDataSourceHelper.findVCIssuanceRequest(results[1].id);
     expect(vcRequest2?.status).toBe("PENDING");
     expect(vcRequest2?.errorMessage).toBe("External API call failed");
     expect(vcRequest2?.jobId).toBeNull();
 
-    const vcRequest3 = await TestDataSourceHelper.findVCIssuanceRequest(results[2].evaluation!.id);
+    const vcRequest3 = await TestDataSourceHelper.findVCIssuanceRequest(results[2].id);
     expect(vcRequest3?.status).toBe("PROCESSING");
     expect(vcRequest3?.jobId).toBe("mixed-vc-job-3");
   });
@@ -388,23 +379,19 @@ describe("Concurrent Evaluation Integration Tests", () => {
           evaluations: [{
             participationId: participation.id,
             status: GqlEvaluationStatus.Passed,
-            comment: "Concurrent evaluation test",
+            comment: "Consistency evaluation test",
           }]
         },
-        permission: { communityId: community.id }
+        permission: { communityId: communityId }
       }, ctx).then(result => result.evaluations[0])
-        participationId: participation.id,
-        status: GqlEvaluationStatus.Passed,
-        comment: "Consistency evaluation test",
-      })
     );
 
     const results = await Promise.all(evaluationPromises);
 
     results.forEach((result, index) => {
-      expect(result.evaluation).toBeDefined();
-      expect(result.evaluation?.status).toBe("PASSED");
-      expect(result.evaluation?.comment).toBe("Consistency evaluation test");
+      expect(result).toBeDefined();
+      expect(result.status).toBe("PASSED");
+      expect(result.comment).toBe("Consistency evaluation test");
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
@@ -413,7 +400,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
       const participationWallet = await TestDataSourceHelper.findMemberWallet(userId, communityId);
       expect(participationWallet?.currentPointView?.currentPoint).toBe(BigInt(100));
 
-      const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(results[index].evaluation!.id);
+      const vcRequest = await TestDataSourceHelper.findVCIssuanceRequest(results[index].id);
       expect(vcRequest).toBeDefined();
       expect(vcRequest?.status).toBe("PENDING");
       expect(vcRequest?.errorMessage).toBe("External API call failed");
@@ -424,7 +411,7 @@ describe("Concurrent Evaluation Integration Tests", () => {
     const allVCRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
     expect(allVCRequests).toHaveLength(concurrentEvaluations);
 
-    const evaluationIds = results.map(r => r.evaluation!.id);
+    const evaluationIds = results.map(r => r.id);
     const uniqueEvaluationIds = new Set(evaluationIds);
     expect(uniqueEvaluationIds.size).toBe(concurrentEvaluations);
   });
