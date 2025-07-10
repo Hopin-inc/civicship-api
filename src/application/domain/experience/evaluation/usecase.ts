@@ -89,7 +89,7 @@ export default class EvaluationUseCase {
     }
 
     for (const evaluation of createdEvaluations) {
-      await this.issueEvaluationVC(ctx, evaluation);
+      await this.sendPendingDidRequests(ctx, evaluation);
     }
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
@@ -215,7 +215,7 @@ export default class EvaluationUseCase {
     }
   }
 
-  async issueEvaluationVC(ctx: IContext, evaluation: PrismaEvaluation): Promise<void> {
+  async sendPendingDidRequests(ctx: IContext, evaluation: PrismaEvaluation): Promise<void> {
     try {
       const { participation, userId } =
         this.evaluationService.validateParticipationHasOpportunity(evaluation);
@@ -227,12 +227,11 @@ export default class EvaluationUseCase {
 
       const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
 
-      await this.vcIssuanceRequestService.requestVCIssuance(
+      await this.vcIssuanceRequestService.preparePendingVCIssuanceRequest(
         userId,
-        phoneUid,
+        evaluation.id,
         vcRequest,
         ctx,
-        evaluation.id,
       );
     } catch (error) {
       logger.warn("tryIssueEvaluationVC failed (non-blocking)", error);
