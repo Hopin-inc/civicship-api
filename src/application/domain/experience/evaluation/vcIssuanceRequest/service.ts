@@ -42,6 +42,22 @@ export class VCIssuanceRequestService {
     return await this.vcIssuanceRequestRepository.findById(ctx, id);
   }
 
+  async preparePendingVCIssuanceRequest(
+    userId: string,
+    evaluationId: string,
+    vcRequest: EvaluationCredentialPayload,
+    ctx: IContext,
+  ): Promise<PrismaVCIssuanceRequestDetail> {
+    return await this.vcIssuanceRequestRepository.create(ctx, {
+      evaluationId,
+      userId,
+      claims: vcRequest.claims,
+      credentialFormat: vcRequest.credentialFormat,
+      schemaId: vcRequest.schemaId,
+      status: VcIssuanceStatus.PENDING,
+    });
+  }
+
   async requestVCIssuance(
     userId: string,
     phoneUid: string,
