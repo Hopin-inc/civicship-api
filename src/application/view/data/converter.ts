@@ -25,9 +25,10 @@ export default class ViewConverter {
 
     if (filter?.keyword) {
       conditions.push({
-        opportunitySlot: {
-          opportunity: { title: { contains: filter.keyword, mode: "insensitive" } },
-        },
+        OR: [
+          { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } },
+          { reservation: { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } } }
+        ]
       });
     }
 
@@ -78,7 +79,10 @@ export default class ViewConverter {
     if (range.lt) condition.lt = range.lt;
 
     return {
-      opportunitySlot: { startsAt: condition },
+      OR: [
+        { opportunitySlot: { startsAt: condition } },
+        { reservation: { opportunitySlot: { startsAt: condition } } }
+      ]
     };
   }
 

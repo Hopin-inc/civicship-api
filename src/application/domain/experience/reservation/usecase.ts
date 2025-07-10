@@ -36,8 +36,6 @@ import { ITransactionService } from "@/application/domain/transaction/data/inter
 import { groupBy } from "graphql/jsutils/groupBy";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
-import WalletService from "@/application/domain/account/wallet/service";
-import MembershipService from "@/application/domain/account/membership/service";
 import WalletValidator from "@/application/domain/account/wallet/validator";
 import NotificationService from "@/application/domain/notification/service";
 import { IParticipationService } from "@/application/domain/experience/participation/data/interface";
@@ -50,9 +48,7 @@ export default class ReservationUseCase {
   constructor(
     @inject("ReservationService") private readonly reservationService: IReservationService,
     @inject("ReservationValidator") private readonly reservationValidator: ReservationValidator,
-    @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
-    @inject("WalletService") private readonly walletService: WalletService,
     @inject("OpportunitySlotService")
     private readonly opportunitySlotService: OpportunitySlotService,
     @inject("ParticipationService") private readonly participationService: IParticipationService,
@@ -83,29 +79,23 @@ export default class ReservationUseCase {
     { input }: GqlMutationReservationCreateArgs,
     ctx: IContext,
   ): Promise<GqlReservationCreatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
     const slot = await this.opportunitySlotService.findOpportunitySlotOrThrow(
       ctx,
       input.opportunitySlotId,
     );
     const { opportunity } = slot;
 
-    if (opportunity.id !== "cmc07866s0002s60nuuk8jakk") {
-      this.reservationValidator.validateReservable(
-        slot,
-        input.totalParticipantCount,
-        slot.remainingCapacityView?.remainingCapacity ?? undefined,
-      );
-    }
+    this.reservationValidator.validateReservable(
+      slot,
+      input.totalParticipantCount,
+      slot.remainingCapacityView?.remainingCapacity ?? undefined,
+    );
 
-    const { communityId, requiredUtilities } = opportunity;
+    const { communityId, requiredUtilities, requireApproval } = opportunity;
     if (!communityId) throw new NotFoundError("Community id not found", { communityId });
 
     const reservation = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      await this.membershipService.joinIfNeeded(ctx, currentUserId, communityId, tx);
-      await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, communityId, tx);
-
-      const statuses = resolveReservationStatuses(opportunity.requireApproval);
+      const statuses = resolveReservationStatuses(requireApproval);
       const reservation = await this.reservationService.createReservation(
         ctx,
         input.opportunitySlotId,
@@ -131,6 +121,10 @@ export default class ReservationUseCase {
     });
 
     await this.notificationService.pushReservationAppliedMessage(ctx, reservation);
+    if (!requireApproval) {
+      await this.notificationService.pushReservationAcceptedMessage(ctx, reservation);
+    }
+
     return ReservationPresenter.create(reservation);
   }
 
