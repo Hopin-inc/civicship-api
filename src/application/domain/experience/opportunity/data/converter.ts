@@ -116,14 +116,14 @@ export default class OpportunityConverter {
         ...(placeId && {
           place: { connect: { id: placeId } },
         }),
-        ...(requiredUtilityIds?.length && {
+        ...(requiredUtilityIds !== undefined && {
           requiredUtilities: {
-            connect: requiredUtilityIds.map((id) => ({ id })),
+            set: requiredUtilityIds.map((id) => ({ id }))
           },
         }),
-        ...(relatedArticleIds?.length && {
+        ...(relatedArticleIds !== undefined && {
           articles: {
-            connect: relatedArticleIds.map((id) => ({ id })),
+            set: relatedArticleIds.map((id) => ({ id }))
           },
         }),
       },
