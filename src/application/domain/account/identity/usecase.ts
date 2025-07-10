@@ -118,7 +118,7 @@ export default class IdentityUseCase {
     await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
 
     if (phoneUid) {
-      await this.didIssuanceService.requestDIDIssuance(user.id, phoneUid, ctx);
+      void this.didIssuanceService.requestDIDIssuance(user.id, phoneUid, ctx);
     }
     return IdentityPresenter.create(res);
   }

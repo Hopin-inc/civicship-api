@@ -27,7 +27,7 @@ export async function processVCRequests(
         status: { not: VcIssuanceStatus.COMPLETED },
         jobId: { not: null },
         vcRecordId: null,
-        retryCount: { lt: 5 },
+        retryCount: { lt: 3 },
       },
       include: {
         user: {
@@ -61,16 +61,15 @@ export async function processVCRequests(
       let { token, isValid } = vcService.evaluateTokenValidity(phoneIdentity);
 
       if (!isValid && phoneIdentity.refreshToken) {
-        const refreshed = await vcService.refreshAuthToken(
-          phoneIdentity.uid,
-          phoneIdentity.refreshToken,
-        );
-
-        if (refreshed) {
+        try {
+          const refreshed = await vcService.refreshAuthToken(
+            phoneIdentity.uid,
+            phoneIdentity.refreshToken,
+          );
           token = refreshed.authToken;
           isValid = true;
-        } else {
-          logger.warn(`Token refresh failed for ${phoneIdentity.uid}, skipping request`);
+        } catch (error) {
+          logger.error(`🔁 Token refresh failed for ${phoneIdentity.uid}`, error);
           // optional: mark error to DB here
           failureCount++;
           continue;
@@ -87,21 +86,6 @@ export async function processVCRequests(
         status: string;
         result?: { recordId: string };
       }>(phoneIdentity.uid, token || "", `/vc/jobs/connectionless/${request.jobId}`, "GET");
-
-      if (jobStatus === null) {
-        logger.warn(`External API call failed for VC job ${request.jobId}, keeping PENDING status`);
-        await issuer.internal(async (tx) => {
-          await tx.vcIssuanceRequest.update({
-            where: { id: request.id },
-            data: {
-              errorMessage: "External API call failed during sync",
-              retryCount: { increment: 1 },
-            },
-          });
-        });
-        skippedCount++;
-        continue;
-      }
 
       if (jobStatus?.status === "completed" && jobStatus.result?.recordId) {
         const vc = await issuer.internal(async (tx) => {
