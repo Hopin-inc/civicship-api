@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { Prisma } from "@prisma/client";
+import { Prisma, WalletType } from "@prisma/client";
 import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import { NotFoundError } from "@/errors/graphql";
@@ -28,8 +28,8 @@ describe("WalletService", () => {
   let mockConverter: MockWalletConverter;
   let walletService: WalletService;
 
-  const mockCtx = { 
-    issuer: { public: jest.fn((ctx, callback) => callback({})) } 
+  const mockCtx = {
+    issuer: { public: jest.fn((ctx, callback) => callback({})) },
   } as unknown as IContext;
   const mockTx = {} as Prisma.TransactionClient;
   const walletId = "wallet-123";
@@ -44,11 +44,11 @@ describe("WalletService", () => {
     updatedAt: null,
   };
 
-  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: "MEMBER" as any };
+  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: WalletType.MEMBER };
   const communityWallet = {
     ...baseWallet,
     id: "community-wallet-111",
-    type: "COMMUNITY" as any,
+    type: WalletType.COMMUNITY,
     userId: null,
   };
 
@@ -167,7 +167,7 @@ describe("WalletService", () => {
   describe("createCommunityWallet", () => {
     it("should create a community wallet", async () => {
       const createInput = {
-        type: "COMMUNITY" as any,
+        type: WalletType.COMMUNITY,
         community: { connect: { id: communityId } },
       };
       mockConverter.createCommunityWallet.mockReturnValue(createInput);
@@ -202,7 +202,7 @@ describe("WalletService", () => {
 
     it("should create new member wallet if not exists", async () => {
       const createInput = {
-        type: "MEMBER" as any,
+        type: WalletType.MEMBER,
         community: { connect: { id: communityId } },
         user: { connect: { id: userId } },
       };

@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import IdentityService from "@/application/domain/account/identity/service";
 import { auth } from "@/infrastructure/libs/firebase";
+import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 
 jest.mock("@/infrastructure/libs/firebase", () => {
   const mockDeleteUser = jest.fn();
@@ -46,7 +47,7 @@ describe("IdentityService", () => {
     name: "Test User",
     email: "test@example.com",
     slug: "test-user",
-    currentPrefecture: "KAGAWA" as any,
+    currentPrefecture: CurrentPrefecture.KAGAWA,
   };
   const TEST_USER = {
     id: TEST_USER_ID,
@@ -58,7 +59,7 @@ describe("IdentityService", () => {
     uid: "test-uid",
     tenantId: "test-tenant-id",
     communityId: TEST_COMMUNITY_ID,
-    platform: "LINE" as any,
+    platform: IdentityPlatform.LINE,
   };
 
   const mockTenantedAuth = {
@@ -84,9 +85,14 @@ describe("IdentityService", () => {
       mockUserRepository.create.mockResolvedValue(TEST_USER);
 
       const uid = "test-uid";
-      const platform = "FACEBOOK" as any;
+      const platform = IdentityPlatform.FACEBOOK;
 
-      const result = await service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID);
+      const result = await service.createUserAndIdentity(
+        TEST_USER_DATA,
+        uid,
+        platform,
+        TEST_COMMUNITY_ID,
+      );
 
       expect(mockUserRepository.create).toHaveBeenCalledWith({
         ...TEST_USER_DATA,
@@ -99,13 +105,13 @@ describe("IdentityService", () => {
 
     it("should throw an error when user creation fails", async () => {
       const uid = "test-uid";
-      const platform = "FACEBOOK" as any;
+      const platform = IdentityPlatform.FACEBOOK;
       const error = new Error("User creation failed");
       mockUserRepository.create.mockRejectedValue(error);
 
-      await expect(service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID)).rejects.toThrow(
-        "User creation failed",
-      );
+      await expect(
+        service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID),
+      ).rejects.toThrow("User creation failed");
     });
   });
 
