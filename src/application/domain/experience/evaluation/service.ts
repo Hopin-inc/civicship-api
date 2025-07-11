@@ -12,7 +12,7 @@ export default class EvaluationService {
   constructor(
     @inject("EvaluationRepository") private readonly repository: IEvaluationRepository,
     @inject("EvaluationConverter") private readonly converter: EvaluationConverter,
-  ) { }
+  ) {}
 
   async fetchEvaluations(
     ctx: IContext,
@@ -61,6 +61,12 @@ export default class EvaluationService {
     userId: string;
   } {
     const participation = evaluation.participation;
+
+    if (!participation) {
+      throw new NotFoundError("Participation or Opportunity", {
+        evaluationId: evaluation.id,
+      });
+    }
 
     const opportunity =
       participation?.reason === ParticipationStatusReason.PERSONAL_RECORD
