@@ -1,142 +1,108 @@
 # civicship-api
 ![logo.svg](./docs/asset/logo.svg)
 
-## Overview
+## 概要
 
-`civicship-api` is a GraphQL API server built with TypeScript. It is designed based on Domain-Driven Design (DDD) principles and uses Prisma ORM for database interaction. It emphasizes clear layer separation and explicit transaction management.
+`civicship-api` は TypeScript で構築された GraphQL API サーバーで、**ドメイン駆動設計（DDD）** と **クリーンアーキテクチャ** の原則に従っています。ポイントベースの報酬システム、機会管理、LINE メッセージング統合を備えた包括的なコミュニティエンゲージメントプラットフォームを提供します。
 
-## Features
+**主要機能:**
+- 👤 ユーザー・コミュニティ管理
+- 🎯 機会・参加追跡システム
+- 🎫 ポイントベース報酬システム
+- 📱 LINE 統合・通知機能
+- 📝 コンテンツ・メディア管理
 
-civicship-api offers the following business-oriented features:
+詳細な機能については、[FEATURES.md](./docs/FEATURES.md) をご覧ください。
 
-- 👤 User Account Management (signup, profile update, deletion)
-- 🏘️ Community Management (create, update, delete communities)
-- 👥 Member Invitation and Role Management
-- 🎯 Opportunity and Slot Management (design and scheduling of opportunities)
-- 📅 Reservation and Participation Tracking
-- ✍️ Post-Participation Evaluation (VC issuance)
-- 🎫 Ticket Issuance and Usage
-- 💸 Point System and Transaction Management
-- 🛠️ Utility Management
-- 📍 Place (Opportunity Location) Management
+## クイックスタート
 
-For a detailed feature list, see [FEATURES.md](./docs/FEATURES.md).
+### 前提条件
+- Node.js 20+, pnpm, Docker
 
-## Getting Started
-
-### Installation
-
-Install the dependencies.
-
+### セットアップコマンド
 ```bash
+# 1. 依存関係をインストール
 pnpm install
-```
 
-### Environment Setup
-
-Set the DATABASE_URL in your .env file.
-
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/database_name
-```
-
-### Start the Development Server
-
-💡 If you haven't already started the database container, run pnpm container:up
-
-```bash
+# 2. PostgreSQL コンテナを起動（ポート 15432）
 pnpm container:up
-```
 
-Then, start the development server.
+# 3. データベースを初期化
+pnpm db:generate
+pnpm db:seed-master
+pnpm db:seed-domain
 
-```bash
+# 4. GraphQL 型を生成してサーバーを起動
+pnpm gql:generate
 pnpm dev:https
 ```
 
-To view the database contents in your browser, launch Prisma Studio.
+🚀 **API 利用可能:** ポート 3000 の GraphQL エンドポイント
 
-```bash
-pnpm db:studio
+### 環境設定
+
+必要な環境変数を含む `.env` ファイルを作成してください:
+
+```env
+# コア設定
+DATABASE_URL=postgresql://user:password@host:15432/civicship_dev
+ENV=LOCAL
+NODE_ENV=development
+PORT=3000
+
+# Firebase 認証（必須）
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_service_account@project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+
+# Google Cloud Storage（必須）
+GCS_SERVICE_ACCOUNT_BASE64=base64_encoded_service_account_json
+GCS_BUCKET_NAME=your_bucket_name
+GCP_PROJECT_ID=your_gcp_project_id
 ```
 
-## Preparing the Database
+## アーキテクチャ概要
 
-### Insert Initial Data
+このプロジェクトは **ドメイン駆動設計（DDD）** と **クリーンアーキテクチャ** の原則に従っています。
 
-Seed the database with necessary initial data.
-
-```bash
-pnpm db:seed
+### 高レベル構造
+```
+src/
+├── application/domain/     # 🏗️ ビジネスロジック（7つのコアドメイン）
+├── infrastructure/        # 🔌 データベース・外部サービス
+├── presentation/         # 🌐 GraphQL API・ミドルウェア
+└── types/               # 📝 共有型定義
 ```
 
-### Perform Migrations
+### コアビジネスドメイン
+- **account/** - ユーザー、コミュニティ、メンバーシップ、ウォレット管理
+- **experience/** - 機会、予約、参加追跡
+- **content/** - 記事、メディア管理
+- **reward/** - ユーティリティ、チケット、ポイントベース報酬
+- **transaction/** - ポイント転送、金融操作
+- **notification/** - LINE メッセージング統合
+- **location/** - 地理データ管理
 
-When changing the database schema, follow these steps:
+## 📖 ドキュメント
 
-First, update type definitions.
+### 🚀 はじめに
+- 🔧 [セットアップガイド](./docs/SETUP.md) - 完全なインストール・設定手順
+- 🌍 [環境変数設定](./docs/ENVIRONMENT.md) - 設定リファレンス
+- 🔍 [トラブルシューティング](./docs/TROUBLESHOOTING.md) - よくある問題と解決方法
 
-```bash
-pnpm db:generate
-```
+### 🏗️ アーキテクチャ・開発
+- 🏗️ [アーキテクチャガイド](./docs/ARCHITECTURE.md) - システム設計・パターン
+- 🎯 [ドメイン詳細](./docs/DOMAINS.md) - ビジネスロジック・ドメイン構造
+- ⚡ [実装パターン](./docs/PATTERNS.md) - コードパターン・ベストプラクティス
+- 👨‍💻 [開発ワークフロー](./docs/DEVELOPMENT.md) - 日常的な開発手順
 
-Then, create a migration file.
+### 📊 リファレンス
+- ✨ [機能一覧](./docs/FEATURES.md) - 完全な機能概要
+- 🗄️ [データベーススキーマ](./docs/ERD.md) - エンティティ関係図
+- 🧪 [テスト](./docs/TESTING.md) - テスト戦略・実行方法
+- 🚀 [デプロイメント](./docs/DEPLOYMENT.md) - 本番環境デプロイガイド
 
-```bash
-pnpm db:migrate
-```
+## ライセンス
 
-Finally, apply the migration to the database.
-
-```bash
-pnpm db:deploy
-```
-
-## Managing GraphQL Schema
-
-If you update the GraphQL schema, regenerate the type definitions.
-
-```bash
-pnpm gql:generate
-```
-
-## Running Tests
-
-For a detailed test report, see [docs/test](./docs/test).
-
-### Run Tests
-
-💡 Make sure the database container is running
-
-```bash
-pnpm test
-```
-
-### Generate a Coverage Report
-
-If you want to check the test coverage, generate a coverage report.
-
-```bash
-pnpm test:coverage
-```
-
-## Directory Structure
-
-This project is organized following Domain-Driven Design (DDD) principles.
-
-```
-.
-┣━━ __tests__/       ┃ Unit, integration, and E2E tests
-┣━━ application/     ┃ Business logic and use cases for each domain
-┣━━ infrastructure/  ┃ Database (Prisma) and external services integration
-┣━━ presentation/    ┃ GraphQL server, middleware, and external interfaces
-┣━━ types/           ┃ Shared type definitions across the project
-┗━━ ...
-```
-
-💡 Each domain (`account`, `experience`, `reward`, etc.) is further organized under `application/domain/`.
-
-## License
-
-This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
-See [GNU GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.html) for more details.
+このプロジェクトは GNU General Public License v3.0 (GPL-3.0) の下でライセンスされています。
+詳細については [GNU GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.html) をご覧ください。
