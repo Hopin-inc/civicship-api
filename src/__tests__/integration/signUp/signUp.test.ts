@@ -6,9 +6,11 @@ import { GqlMutationUserSignUpArgs } from "@/types/graphql";
 import { registerProductionDependencies } from "@/application/provider";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("IdentityUseCase.userCreateAccount", () => {
   let useCase: IdentityUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -16,6 +18,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(IdentityUseCase);
   });
 
@@ -32,6 +35,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
     const ctx: IContext = {
       uid: "uid-abc",
       platform: IdentityPlatform.LINE,
+      issuer,
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
