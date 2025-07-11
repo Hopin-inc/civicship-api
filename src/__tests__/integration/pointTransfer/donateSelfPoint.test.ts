@@ -6,10 +6,12 @@ import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Donate Tests", () => {
   const DONATION_POINTS = 100;
   let transactionUseCase: TransactionUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -18,6 +20,7 @@ describe("Point Donate Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     transactionUseCase = container.resolve(TransactionUseCase);
   });
 
@@ -43,7 +46,7 @@ describe("Point Donate Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ctx = { currentUser: { id: fromUser.id } } as IContext;
+    const ctx = { currentUser: { id: fromUser.id }, issuer } as IContext;
 
     const fromWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
@@ -110,7 +113,7 @@ describe("Point Donate Tests", () => {
       user: { connect: { id: fromUser.id } },
     });
 
-    const ctx = { currentUser: { id: fromUser.id } } as IContext;
+    const ctx = { currentUser: { id: fromUser.id }, issuer } as IContext;
 
     const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,

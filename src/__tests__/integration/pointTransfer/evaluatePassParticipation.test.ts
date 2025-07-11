@@ -16,6 +16,7 @@ import {
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Reward Tests", () => {
   const testSetup = {
@@ -29,6 +30,7 @@ describe("Point Reward Tests", () => {
   };
 
   let ctx: IContext;
+  let issuer: PrismaClientIssuer;
   let useCase: EvaluationUseCase;
   let opportunityOwnerUserId: string;
   let communityId: string;
@@ -45,6 +47,7 @@ describe("Point Reward Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(EvaluationUseCase);
 
     const opportunityOwnerUserInserted = await TestDataSourceHelper.createUser({
@@ -54,7 +57,7 @@ describe("Point Reward Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
-    ctx = { currentUser: { id: opportunityOwnerUserId } } as unknown as IContext;
+    ctx = { currentUser: { id: opportunityOwnerUserId }, issuer } as unknown as IContext;
 
     const participationUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,

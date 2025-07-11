@@ -12,6 +12,7 @@ import {
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Ticket Claim Tests", () => {
   const testSetup = {
@@ -33,6 +34,7 @@ describe("Ticket Claim Tests", () => {
   let ownerWalletId: string;
   let memberWalletId: string;
   let ticketClaimLinkId: string;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -41,6 +43,7 @@ describe("Ticket Claim Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(TicketUseCase);
 
     const user = await TestDataSourceHelper.createUser({
@@ -49,7 +52,7 @@ describe("Ticket Claim Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     userId = user.id;
-    ctx = { currentUser: { id: userId } } as unknown as IContext;
+    ctx = { currentUser: { id: userId }, issuer } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: testSetup.communityName,
@@ -85,14 +88,14 @@ describe("Ticket Claim Tests", () => {
       community: { connect: { id: communityId } },
     });
 
-    const issuer = await TestDataSourceHelper.createTicketIssuer({
+    const ticketIssuer = await TestDataSourceHelper.createTicketIssuer({
       utility: { connect: { id: utility.id } },
       owner: { connect: { id: owner.id } },
       qtyToBeIssued: testSetup.qtyToBeIssued,
     });
 
     const claimLink = await TestDataSourceHelper.createTicketClaimLink({
-      issuer: { connect: { id: issuer.id } },
+      issuer: { connect: { id: ticketIssuer.id } },
     });
     ticketClaimLinkId = claimLink.id;
 
