@@ -7,6 +7,7 @@ import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 class MockWalletService implements Partial<WalletService> {
   createMemberWalletIfNeeded = jest.fn();
@@ -20,6 +21,7 @@ describe("Membership Integration: Accept Invitation", () => {
   let membershipUseCase: MembershipUseCase;
   let walletServiceMock: MockWalletService;
   let notificationServiceMock: MockNotificationService;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -34,6 +36,7 @@ describe("Membership Integration: Accept Invitation", () => {
     container.register("NotificationService", { useValue: notificationServiceMock });
 
     membershipUseCase = container.resolve(MembershipUseCase);
+    issuer = container.resolve(PrismaClientIssuer);
   });
 
   afterAll(async () => {
@@ -48,9 +51,7 @@ describe("Membership Integration: Accept Invitation", () => {
     });
     const ctx = { 
       currentUser: { id: user.id },
-      issuer: {
-        public: jest.fn().mockImplementation((_, callback) => callback()),
-      }
+      issuer,
     } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
@@ -119,9 +120,7 @@ describe("Membership Integration: Accept Invitation", () => {
     });
     const ctx = { 
       currentUser: { id: user.id },
-      issuer: {
-        public: jest.fn().mockImplementation((_, callback) => callback()),
-      }
+      issuer,
     } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
@@ -155,9 +154,7 @@ describe("Membership Integration: Accept Invitation", () => {
     });
     const ctx = { 
       currentUser: { id: user.id },
-      issuer: {
-        public: jest.fn().mockImplementation((_, callback) => callback()),
-      }
+      issuer,
     } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({

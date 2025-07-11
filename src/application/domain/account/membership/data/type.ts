@@ -8,6 +8,7 @@ export const membershipInclude = Prisma.validator<Prisma.MembershipInclude>()({
       },
     },
   },
+  community: true,
 });
 
 export const membershipSelectDetail = Prisma.validator<Prisma.MembershipSelect>()({
