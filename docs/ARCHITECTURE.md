@@ -1,16 +1,15 @@
 # アーキテクチャガイド
 
-このガイドでは、civicship-api システムのアーキテクチャ、設計パターン、実装原則について包括的に説明します。
+このガイドでは、civicship-api システムのアーキテクチャ、設計パターン、実装原則について説明します。
 
 ## 概要
 
-Civicship API は **ドメイン駆動設計（DDD）** と **クリーンアーキテクチャ** の原則に従い、3つの主要レイヤーで関心事を明確に分離しています。このシステムは、ポイントベースの報酬システムとLINEメッセージング統合を備えたコミュニティエンゲージメントプラットフォームをサポートするよう設計されています。
+civicship API は **ドメイン駆動設計（DDD）** と **クリーンアーキテクチャ** の原則に従い、3つの主要レイヤーで関心事を明確に分離しています。
 
 ## アーキテクチャ原則
 
 ### 1. ドメイン駆動設計（DDD）
 - **ドメイン中心アプローチ:** コアドメインを中心としたビジネスロジックの整理
-- **ユビキタス言語:** コードとドキュメント全体での一貫した用語使用
 - **境界づけられたコンテキスト:** 異なるビジネス領域間の明確な境界
 - **ドメインサービス:** ドメイン固有の操作のカプセル化
 
@@ -19,13 +18,6 @@ Civicship API は **ドメイン駆動設計（DDD）** と **クリーンアー
 - **レイヤー分離:** プレゼンテーション、アプリケーション、インフラストラクチャ間の明確な境界
 - **テスタビリティ:** ビジネスロジックを独立してテストしやすい
 - **フレームワーク独立性:** 外部フレームワークに依存しないビジネスロジック
-
-### 3. SOLID原則
-- **単一責任原則:** 各クラスは変更する理由を1つだけ持つ
-- **開放閉鎖原則:** 拡張に対して開いており、修正に対して閉じている
-- **リスコフ置換原則:** サブタイプは基底タイプで置換可能でなければならない
-- **インターフェース分離原則:** クライアントは使用しないインターフェースに依存すべきでない
-- **依存性逆転原則:** 具象ではなく抽象に依存する
 
 ## レイヤーアーキテクチャ
 
@@ -55,11 +47,11 @@ application/
 │   ├── reward/         # インセンティブシステム
 │   │   ├── utility/    # 交換可能な特典
 │   │   └── ticket/     # ポイントベースチケット
-│   ├── transaction/    # ポイント転送・金融操作
-│   ├── notification/   # LINEメッセージング・リッチメニュー
-│   └── location/       # 地理データ管理
-├── provider.ts         # 依存性注入設定
-└── utils.ts           # 共有ユーティリティ
+│   ├── transaction/    # ポイント転送
+│   ├── notification/   # 通知
+│   └── location/       # 地理情報
+├── provider.ts         # 依存性注入
+└── utils.ts           # 共有関数
 ```
 
 **主要特徴:**
@@ -79,8 +71,8 @@ infrastructure/
 │   ├── migrations/    # データベースバージョン管理
 │   ├── seeds/         # 初期データ投入
 │   │   ├── index.ts   # シード処理オーケストレーション
-│   │   ├── master/    # マスターデータ（都市、州）
-│   │   └── domain/    # ビジネスデータ（ユーザー、コミュニティ）
+│   │   ├── master.ts  # マスターデータ（都市、州）
+│   │   └── domain.ts  # ビジネスデータ（ユーザー、コミュニティ）
 │   ├── factories/     # テストデータ生成
 │   └── client.ts      # Prismaクライアント設定
 └── libs/              # 外部サービス統合
@@ -101,18 +93,18 @@ infrastructure/
 
 ```
 presentation/
-├── graphql/           # GraphQL API
+├── graphql/          
 │   ├── schema/       # GraphQLスキーマ定義
 │   ├── resolver/     # クエリ・ミューテーションリゾルバー
 │   ├── dataloader/   # パフォーマンス最適化
 │   ├── rule.ts       # 認可ルール
 │   └── server.ts     # Apollo Server設定
-├── middleware/       # リクエスト処理
+├── middleware/       
 │   ├── auth.ts      # 認証・コンテキスト作成
 │   ├── cors.ts      # クロスオリジンリソース共有
 │   └── logger.ts    # リクエストログ
 └── router/          # RESTエンドポイント
-    └── line-webhook.ts  # LINEメッセージングWebhook
+    └── line.ts  # LINE Webhook
 ```
 
 **主要特徴:**
@@ -247,7 +239,7 @@ export class UserService {
 - 集中化された依存関係設定
 - インターフェースベースプログラミングのサポート
 
-### 3. 行レベルセキュリティ（PrismaClientIssuer）
+### 3. RLS（PrismaClientIssuer）
 
 **目的:** ユーザー権限に基づくデータ分離
 **実装ファイル:** `src/infrastructure/prisma/client.ts`
@@ -287,6 +279,12 @@ export class PrismaClientIssuer {
     });
   }
 }
+
+// 使用例: ユーザーコンテキストに基づく自動フィルタリング
+const issuer = new PrismaClientIssuer();
+const communities = await issuer.onlyBelongingCommunity((tx) => 
+  tx.community.findMany()
+); // ユーザーアクセスで自動フィルタリング
 ```
 
 **利点:**
@@ -362,13 +360,12 @@ export const rules = {
 - **NFT Wallets:** NFT機能統合
 
 #### エクスペリエンスシステム
-- **Opportunities:** イベント、活動、ボランティア機会
-- **OpportunitySlots:** 容量制限付きの特定時間枠
-- **Reservations:** 機会スロットのユーザー予約
-- **Participations:** 実際の参加追跡とステータス
+- **Opportunities:** イベント、活動、ボランティア募集
+- **OpportunitySlots:** 開催枠
+- **Reservations:** 募集開催枠の予約
+- **Participations:** 実際の活動
 
 #### 報酬システム
-- **Wallets:** ポイントコンテナ（コミュニティまたはメンバー所有）
 - **Transactions:** ウォレット間のポイント転送
 - **Utilities:** コミュニティが提供する交換可能な特典
 - **Tickets:** ユーティリティ交換用ポイントベースチケット
@@ -376,11 +373,10 @@ export const rules = {
 #### コンテンツ管理
 - **Articles:** コミュニティ公開コンテンツ
 - **Images:** GCS統合メディアファイル
-- **Places:** 機会の地理的位置
+- **Places:** 募集の地理的位置
 
-#### 通知システム
+#### 基盤システム
 - **Community Configs:** LINEチャンネルとLIFF設定
-- **Rich Menus:** ロールベースLINEインターフェースカスタマイゼーション
 
 ### パフォーマンス最適化
 
@@ -482,11 +478,11 @@ export const permissions = shield({
 });
 ```
 
-#### 2. 行レベルセキュリティ（データベースレベル）
+#### 2. RLS（データベースレベル）
 ```typescript
 // ユーザーコンテキストに基づく自動データフィルタリング
 const issuer = new PrismaClientIssuer(context.currentUser);
-const communities = await issuer.community.findMany(); // アクセス可能なコミュニティのみ
+const communities = await issuer.onlyBelongingCommunity.community.findMany(); // アクセス可能なコミュニティのみ
 ```
 
 #### 3. ビジネスロジック（ドメイン固有）
