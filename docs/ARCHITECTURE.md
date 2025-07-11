@@ -1,177 +1,177 @@
-# Architecture Guide
+# アーキテクチャガイド
 
-This guide provides a comprehensive overview of the civicship-api system architecture, design patterns, and implementation principles.
+このガイドでは、civicship-api システムのアーキテクチャ、設計パターン、実装原則について包括的に説明します。
 
-## Overview
+## 概要
 
-Civicship API follows **Domain-Driven Design (DDD)** and **Clean Architecture** principles with clear separation of concerns across three main layers. The system is designed to support community engagement platforms with integrated point-based rewards and LINE messaging integration.
+Civicship API は **ドメイン駆動設計（DDD）** と **クリーンアーキテクチャ** の原則に従い、3つの主要レイヤーで関心事を明確に分離しています。このシステムは、ポイントベースの報酬システムとLINEメッセージング統合を備えたコミュニティエンゲージメントプラットフォームをサポートするよう設計されています。
 
-## Architectural Principles
+## アーキテクチャ原則
 
-### 1. Domain-Driven Design (DDD)
-- **Domain-centric approach:** Business logic organized around core domains
-- **Ubiquitous language:** Consistent terminology across code and documentation
-- **Bounded contexts:** Clear boundaries between different business areas
-- **Domain services:** Encapsulation of domain-specific operations
+### 1. ドメイン駆動設計（DDD）
+- **ドメイン中心アプローチ:** コアドメインを中心としたビジネスロジックの整理
+- **ユビキタス言語:** コードとドキュメント全体での一貫した用語使用
+- **境界づけられたコンテキスト:** 異なるビジネス領域間の明確な境界
+- **ドメインサービス:** ドメイン固有の操作のカプセル化
 
-### 2. Clean Architecture
-- **Dependency inversion:** High-level modules don't depend on low-level modules
-- **Layer separation:** Clear boundaries between presentation, application, and infrastructure
-- **Testability:** Easy to test business logic in isolation
-- **Framework independence:** Business logic independent of external frameworks
+### 2. クリーンアーキテクチャ
+- **依存性逆転:** 高レベルモジュールは低レベルモジュールに依存しない
+- **レイヤー分離:** プレゼンテーション、アプリケーション、インフラストラクチャ間の明確な境界
+- **テスタビリティ:** ビジネスロジックを独立してテストしやすい
+- **フレームワーク独立性:** 外部フレームワークに依存しないビジネスロジック
 
-### 3. SOLID Principles
-- **Single Responsibility:** Each class has one reason to change
-- **Open/Closed:** Open for extension, closed for modification
-- **Liskov Substitution:** Subtypes must be substitutable for base types
-- **Interface Segregation:** Clients shouldn't depend on unused interfaces
-- **Dependency Inversion:** Depend on abstractions, not concretions
+### 3. SOLID原則
+- **単一責任原則:** 各クラスは変更する理由を1つだけ持つ
+- **開放閉鎖原則:** 拡張に対して開いており、修正に対して閉じている
+- **リスコフ置換原則:** サブタイプは基底タイプで置換可能でなければならない
+- **インターフェース分離原則:** クライアントは使用しないインターフェースに依存すべきでない
+- **依存性逆転原則:** 具象ではなく抽象に依存する
 
-## Layer Architecture
+## レイヤーアーキテクチャ
 
-### 1. Application Layer (`src/application/`)
+### 1. アプリケーション層 (`src/application/`)
 
-**Purpose:** Business logic and domain operations
+**目的:** ビジネスロジックとドメイン操作
 
 ```
 application/
-├── domain/              # Domain-specific business logic
-│   ├── account/        # User & community management
-│   │   ├── user/       # User profiles, authentication
-│   │   ├── community/  # Community creation, management
-│   │   ├── membership/ # User-community relationships
-│   │   ├── wallet/     # Point-based wallet system
-│   │   └── identity/   # Multi-platform identity management
-│   ├── experience/     # Opportunities & participation
-│   │   ├── opportunity/    # Event/activity creation
-│   │   ├── reservation/    # Booking system
-│   │   ├── participation/  # Attendance tracking
-│   │   └── evaluation/     # Post-participation assessment
-│   ├── content/        # Content management
-│   │   ├── article/    # Community articles
-│   │   └── image/      # Media upload & storage
-│   ├── reward/         # Incentive system
-│   │   ├── utility/    # Redeemable benefits
-│   │   └── ticket/     # Point-based tickets
-│   ├── transaction/    # Point transfers & financial operations
-│   ├── notification/   # LINE messaging & rich menus
-│   └── location/       # Geographic data management
-├── provider.ts         # Dependency injection configuration
-└── utils.ts           # Shared utilities
+├── domain/              # ドメイン固有のビジネスロジック
+│   ├── account/        # ユーザー・コミュニティ管理
+│   │   ├── user/       # ユーザープロファイル、認証
+│   │   ├── community/  # コミュニティ作成、管理
+│   │   ├── membership/ # ユーザー・コミュニティ関係
+│   │   ├── wallet/     # ポイントベースウォレットシステム
+│   │   └── identity/   # マルチプラットフォーム認証管理
+│   ├── experience/     # 機会・参加管理
+│   │   ├── opportunity/    # イベント・活動作成
+│   │   ├── reservation/    # 予約システム
+│   │   ├── participation/  # 出席追跡
+│   │   └── evaluation/     # 参加後評価
+│   ├── content/        # コンテンツ管理
+│   │   ├── article/    # コミュニティ記事
+│   │   └── image/      # メディアアップロード・保存
+│   ├── reward/         # インセンティブシステム
+│   │   ├── utility/    # 交換可能な特典
+│   │   └── ticket/     # ポイントベースチケット
+│   ├── transaction/    # ポイント転送・金融操作
+│   ├── notification/   # LINEメッセージング・リッチメニュー
+│   └── location/       # 地理データ管理
+├── provider.ts         # 依存性注入設定
+└── utils.ts           # 共有ユーティリティ
 ```
 
-**Key Characteristics:**
-- Contains pure business logic
-- Independent of external frameworks
-- Defines interfaces for infrastructure dependencies
-- Implements use cases and domain services
+**主要特徴:**
+- 純粋なビジネスロジックを含む
+- 外部フレームワークから独立
+- インフラストラクチャ依存関係のインターフェースを定義
+- ユースケースとドメインサービスを実装
 
-### 2. Infrastructure Layer (`src/infrastructure/`)
+### 2. インフラストラクチャ層 (`src/infrastructure/`)
 
-**Purpose:** External systems integration and data persistence
+**目的:** 外部システム統合とデータ永続化
 
 ```
 infrastructure/
-├── prisma/             # Database layer
-│   ├── schema.prisma  # Database schema definition
-│   ├── migrations/    # Database version control
-│   ├── seeds/         # Initial data population
-│   │   ├── index.ts   # Seeding orchestration
-│   │   ├── master/    # Master data (cities, states)
-│   │   └── domain/    # Business data (users, communities)
-│   ├── factories/     # Test data generation
-│   └── client.ts      # Prisma client configuration
-└── libs/              # External service integrations
-    ├── firebase.ts    # Firebase Authentication
+├── prisma/             # データベース層
+│   ├── schema.prisma  # データベーススキーマ定義
+│   ├── migrations/    # データベースバージョン管理
+│   ├── seeds/         # 初期データ投入
+│   │   ├── index.ts   # シード処理オーケストレーション
+│   │   ├── master/    # マスターデータ（都市、州）
+│   │   └── domain/    # ビジネスデータ（ユーザー、コミュニティ）
+│   ├── factories/     # テストデータ生成
+│   └── client.ts      # Prismaクライアント設定
+└── libs/              # 外部サービス統合
+    ├── firebase.ts    # Firebase認証
     ├── storage.ts     # Google Cloud Storage
-    └── did.ts         # Decentralized Identity (IDENTUS)
+    └── did.ts         # 分散ID（IDENTUS）
 ```
 
-**Key Characteristics:**
-- Implements infrastructure interfaces defined in application layer
-- Handles external API integrations
-- Manages data persistence and retrieval
-- Contains framework-specific code
+**主要特徴:**
+- アプリケーション層で定義されたインフラストラクチャインターフェースを実装
+- 外部API統合を処理
+- データ永続化と取得を管理
+- フレームワーク固有のコードを含む
 
-### 3. Presentation Layer (`src/presentation/`)
+### 3. プレゼンテーション層 (`src/presentation/`)
 
-**Purpose:** API endpoints and request/response handling
+**目的:** APIエンドポイントとリクエスト・レスポンス処理
 
 ```
 presentation/
 ├── graphql/           # GraphQL API
-│   ├── schema/       # GraphQL schema definitions
-│   ├── resolver/     # Query/Mutation resolvers
-│   ├── dataloader/   # Performance optimization
-│   ├── rule.ts       # Authorization rules
-│   └── server.ts     # Apollo Server configuration
-├── middleware/       # Request processing
-│   ├── auth.ts      # Authentication & context creation
-│   ├── cors.ts      # Cross-origin resource sharing
-│   └── logger.ts    # Request logging
-└── router/          # REST endpoints
-    └── line-webhook.ts  # LINE messaging webhooks
+│   ├── schema/       # GraphQLスキーマ定義
+│   ├── resolver/     # クエリ・ミューテーションリゾルバー
+│   ├── dataloader/   # パフォーマンス最適化
+│   ├── rule.ts       # 認可ルール
+│   └── server.ts     # Apollo Server設定
+├── middleware/       # リクエスト処理
+│   ├── auth.ts      # 認証・コンテキスト作成
+│   ├── cors.ts      # クロスオリジンリソース共有
+│   └── logger.ts    # リクエストログ
+└── router/          # RESTエンドポイント
+    └── line-webhook.ts  # LINEメッセージングWebhook
 ```
 
-**Key Characteristics:**
-- Handles HTTP requests and responses
-- Implements GraphQL resolvers
-- Manages authentication and authorization
-- Provides REST endpoints for webhooks
+**主要特徴:**
+- HTTPリクエストとレスポンスを処理
+- GraphQLリゾルバーを実装
+- 認証と認可を管理
+- Webhook用RESTエンドポイントを提供
 
-## Domain Structure Pattern
+## ドメイン構造パターン
 
-Each domain follows a consistent layered structure that promotes maintainability and testability:
+各ドメインは保守性とテスタビリティを促進する一貫したレイヤー構造に従います：
 
 ```
 domain/
 ├── controller/
-│   ├── resolver.ts      # GraphQL API endpoints
-│   └── dataloader.ts    # Efficient data loading (N+1 prevention)
-├── usecase.ts          # Business logic orchestration
-├── service.ts          # Core domain operations
+│   ├── resolver.ts      # GraphQL APIエンドポイント
+│   └── dataloader.ts    # 効率的なデータ読み込み（N+1問題防止）
+├── usecase.ts          # ビジネスロジックオーケストレーション
+├── service.ts          # コアドメイン操作
 ├── data/
-│   ├── repository.ts   # Data access implementation
-│   ├── interface.ts    # Repository contracts
-│   ├── converter.ts    # GraphQL ↔ Prisma data transformation
-│   └── type.ts         # Domain-specific types
-├── schema/             # GraphQL schema definitions
-└── presenter.ts        # Response formatting
+│   ├── repository.ts   # データアクセス実装
+│   ├── interface.ts    # リポジトリ契約
+│   ├── converter.ts    # GraphQL ↔ Prisma データ変換
+│   └── type.ts         # ドメイン固有型
+├── schema/             # GraphQLスキーマ定義
+└── presenter.ts        # レスポンス整形
 ```
 
-### Layer Responsibilities
+### レイヤー責務
 
-#### Controller Layer
-- **resolver.ts:** GraphQL query/mutation handlers
-- **dataloader.ts:** Batch data loading for performance optimization
+#### コントローラー層
+- **resolver.ts:** GraphQLクエリ・ミューテーションハンドラー
+- **dataloader.ts:** パフォーマンス最適化のためのバッチデータ読み込み
 
-#### Use Case Layer
-- **usecase.ts:** Orchestrates business operations
-- Coordinates between services and repositories
-- Implements authorization checks
-- Manages transaction boundaries
+#### ユースケース層
+- **usecase.ts:** ビジネス操作のオーケストレーション
+- サービスとリポジトリ間の調整
+- 認可チェックの実装
+- トランザクション境界の管理
 
-#### Service Layer
-- **service.ts:** Core domain business logic
-- Implements domain rules and validations
-- Handles complex business operations
-- Independent of data access concerns
+#### サービス層
+- **service.ts:** コアドメインビジネスロジック
+- ドメインルールと検証の実装
+- 複雑なビジネス操作の処理
+- データアクセス関心事から独立
 
-#### Data Layer
-- **repository.ts:** Data access implementation
-- **interface.ts:** Repository contracts (dependency inversion)
-- **converter.ts:** Data transformation between layers
-- **type.ts:** Domain-specific type definitions
+#### データ層
+- **repository.ts:** データアクセス実装
+- **interface.ts:** リポジトリ契約（依存性逆転）
+- **converter.ts:** レイヤー間のデータ変換
+- **type.ts:** ドメイン固有型定義
 
-## Key Architectural Patterns
+## 主要アーキテクチャパターン
 
-### 1. DataLoader Pattern
+### 1. DataLoaderパターン
 
-**Purpose:** Prevent N+1 query problems in GraphQL
+**目的:** GraphQLでのN+1クエリ問題の防止
 
-**Implementation:**
+**実装:**
 ```typescript
-// Example: src/application/domain/account/user/controller/dataloader.ts
+// 例: src/application/domain/account/user/controller/dataloader.ts
 export const userLoader = new DataLoader<string, User>(
   async (userIds) => {
     const users = await prisma.user.findMany({
@@ -182,18 +182,18 @@ export const userLoader = new DataLoader<string, User>(
 );
 ```
 
-**Benefits:**
-- Batches multiple database queries into single requests
-- Caches results within single request lifecycle
-- Significantly improves GraphQL query performance
+**利点:**
+- 複数のデータベースクエリを単一リクエストにバッチ処理
+- 単一リクエストライフサイクル内での結果キャッシュ
+- GraphQLクエリパフォーマンスの大幅改善
 
-### 2. Dependency Injection (tsyringe)
+### 2. 依存性注入（tsyringe）
 
-**Purpose:** Clean dependency management and testability
+**目的:** クリーンな依存関係管理とテスタビリティ
 
-**Implementation:**
+**実装:**
 ```typescript
-// Example: src/application/domain/account/user/service.ts
+// 例: src/application/domain/account/user/service.ts
 @injectable()
 export class UserService {
   constructor(
@@ -202,36 +202,36 @@ export class UserService {
 }
 ```
 
-**Benefits:**
-- Loose coupling between components
-- Easy to mock dependencies for testing
-- Centralized dependency configuration
-- Supports interface-based programming
+**利点:**
+- コンポーネント間の疎結合
+- テスト用の依存関係モックが容易
+- 集中化された依存関係設定
+- インターフェースベースプログラミングのサポート
 
-### 3. Row-Level Security (PrismaClientIssuer)
+### 3. 行レベルセキュリティ（PrismaClientIssuer）
 
-**Purpose:** Data isolation based on user permissions
+**目的:** ユーザー権限に基づくデータ分離
 
-**Implementation:**
+**実装:**
 ```typescript
-// Example: Automatic filtering based on user context
+// 例: ユーザーコンテキストに基づく自動フィルタリング
 const issuer = new PrismaClientIssuer();
-const communities = await issuer.community.findMany(); // Auto-filtered by user access
+const communities = await issuer.community.findMany(); // ユーザーアクセスで自動フィルタリング
 ```
 
-**Benefits:**
-- Automatic data filtering based on user context
-- Prevents unauthorized data access
-- Simplifies authorization logic
-- Consistent security across all queries
+**利点:**
+- ユーザーコンテキストに基づく自動データフィルタリング
+- 不正なデータアクセスの防止
+- 認可ロジックの簡素化
+- 全クエリでの一貫したセキュリティ
 
-### 4. Authorization Rules
+### 4. 認可ルール
 
-**Purpose:** GraphQL-level permission checking
+**目的:** GraphQLレベルでの権限チェック
 
-**Implementation:**
+**実装:**
 ```typescript
-// Example: src/presentation/graphql/rule.ts
+// 例: src/presentation/graphql/rule.ts
 export const IsUser = rule({ cache: "contextual" })(
   async (parent, args, context) => {
     return !!context.currentUser;
@@ -249,83 +249,83 @@ export const IsCommunityOwner = rule({ cache: "contextual" })(
 );
 ```
 
-**Benefits:**
-- Declarative authorization rules
-- Composable permission checks
-- Caching for performance
-- Clear separation of concerns
+**利点:**
+- 宣言的認可ルール
+- 組み合わせ可能な権限チェック
+- パフォーマンス向上のためのキャッシュ
+- 関心事の明確な分離
 
-## Database Architecture
+## データベースアーキテクチャ
 
-### Schema Organization
+### スキーマ構成
 
-The database schema is organized around core business entities:
+データベーススキーマはコアビジネスエンティティを中心に構成されています：
 
-#### User Management
-- **Users:** Individual user profiles and authentication
-- **Communities:** Organizations that host opportunities
-- **Memberships:** User-community relationships with roles
-- **Identities:** Multi-platform authentication (LINE, Firebase, Phone)
+#### ユーザー管理
+- **Users:** 個人ユーザープロファイルと認証
+- **Communities:** 機会をホストする組織
+- **Memberships:** ロール付きユーザー・コミュニティ関係
+- **Identities:** マルチプラットフォーム認証（LINE、Firebase、電話）
 
-#### Experience System
-- **Opportunities:** Events, activities, or volunteering opportunities
-- **OpportunitySlots:** Specific time slots with capacity limits
-- **Reservations:** User bookings for opportunity slots
-- **Participations:** Actual participation tracking and status
+#### エクスペリエンスシステム
+- **Opportunities:** イベント、活動、ボランティア機会
+- **OpportunitySlots:** 容量制限付きの特定時間枠
+- **Reservations:** 機会スロットのユーザー予約
+- **Participations:** 実際の参加追跡とステータス
 
-#### Reward System
-- **Wallets:** Point containers (community or member-owned)
-- **Transactions:** Point transfers between wallets
-- **Utilities:** Redeemable benefits offered by communities
-- **Tickets:** Point-based tickets for utility redemption
+#### 報酬システム
+- **Wallets:** ポイントコンテナ（コミュニティまたはメンバー所有）
+- **Transactions:** ウォレット間のポイント転送
+- **Utilities:** コミュニティが提供する交換可能な特典
+- **Tickets:** ユーティリティ交換用ポイントベースチケット
 
-#### Content Management
-- **Articles:** Community-published content
-- **Images:** Media files with GCS integration
-- **Places:** Geographic locations for opportunities
+#### コンテンツ管理
+- **Articles:** コミュニティ公開コンテンツ
+- **Images:** GCS統合メディアファイル
+- **Places:** 機会の地理的位置
 
-#### Notification System
-- **Community Configs:** LINE channel and LIFF configurations
-- **Rich Menus:** Role-based LINE interface customization
+#### 通知システム
+- **Community Configs:** LINEチャンネルとLIFF設定
+- **Rich Menus:** ロールベースLINEインターフェースカスタマイゼーション
 
-### Performance Optimizations
+### パフォーマンス最適化
 
-#### Materialized Views
+#### マテリアライズドビュー
 ```sql
--- Current point balances (updated via triggers)
+-- 現在のポイント残高（トリガーで更新）
 CREATE MATERIALIZED VIEW mv_current_points AS
 SELECT wallet_id, SUM(point_change) as current_point
 FROM t_transactions
 GROUP BY wallet_id;
 
--- Accumulated point totals
+-- 累積ポイント合計
 CREATE MATERIALIZED VIEW mv_accumulated_points AS
 SELECT wallet_id, SUM(CASE WHEN point_change > 0 THEN point_change ELSE 0 END) as accumulated_point
 FROM t_transactions
 GROUP BY wallet_id;
 ```
 
-#### Database Indexes
-- Optimized for common query patterns
-- Composite indexes for complex filters
-- Partial indexes for conditional queries
-- Foreign key indexes for join performance
+#### データベースインデックス
+- 一般的なクエリパターンに最適化
+- 複雑なフィルター用の複合インデックス
+- 条件付きクエリ用の部分インデックス
+- 結合パフォーマンス用の外部キーインデックス
 
-#### Connection Pooling
-- Prisma connection management
-- Configurable pool size based on environment
-- Connection lifecycle monitoring
+#### コネクションプーリング
+- Prismaコネクション管理
+- 環境に基づく設定可能なプールサイズ
+- コネクションライフサイクル監視
 
-### Query Optimization
+### クエリ最適化
 
-#### DataLoader Pattern Implementation
-- Batches N+1 queries into single database calls
-- Implements per-request caching
-- Reduces database load significantly
+#### DataLoaderパターン実装
+- N+1クエリを単一データベース呼び出しにバッチ処理
+- リクエスト毎のキャッシュ実装
+- データベース負荷の大幅削減
 
-#### Efficient Pagination
+#### 効率的なページネーション
 ```typescript
-// Cursor-based pagination for large datasets
+// 大規模データセット用のカーソルベースページネーション
 const opportunities = await prisma.opportunity.findMany({
   take: limit,
   skip: cursor ? 1 : 0,
@@ -334,36 +334,36 @@ const opportunities = await prisma.opportunity.findMany({
 });
 ```
 
-## Security Architecture
+## セキュリティアーキテクチャ
 
-### Authentication Flow
+### 認証フロー
 
-1. **Token Validation** → `presentation/middleware/auth.ts`
-   - Firebase JWT token verification
-   - Multi-tenant support for communities
-   - Token expiration and refresh handling
+1. **トークン検証** → `presentation/middleware/auth.ts`
+   - Firebase JWTトークン検証
+   - コミュニティ向けマルチテナントサポート
+   - トークン有効期限と更新処理
 
-2. **User Context Creation** → Database user lookup
-   - Load user profile and permissions
-   - Create request context with user data
-   - Initialize data loaders for request
+2. **ユーザーコンテキスト作成** → データベースユーザー検索
+   - ユーザープロファイルと権限の読み込み
+   - ユーザーデータでリクエストコンテキスト作成
+   - リクエスト用データローダーの初期化
 
-3. **Permission Assignment** → Role-based permissions
-   - Community-specific role assignment
-   - System-level admin permissions
-   - Context-aware permission checking
+3. **権限割り当て** → ロールベース権限
+   - コミュニティ固有のロール割り当て
+   - システムレベル管理者権限
+   - コンテキスト対応権限チェック
 
-4. **Request Context** → Available throughout request lifecycle
-   - Current user information
-   - Permission flags
-   - Database issuer for RLS
-   - Data loaders for performance
+4. **リクエストコンテキスト** → リクエストライフサイクル全体で利用可能
+   - 現在のユーザー情報
+   - 権限フラグ
+   - RLS用データベース発行者
+   - パフォーマンス用データローダー
 
-### Authorization Layers
+### 認可レイヤー
 
-#### 1. GraphQL Rules (Pre/Post-execution)
+#### 1. GraphQLルール（実行前・実行後）
 ```typescript
-// Pre-execution permission checks
+// 実行前権限チェック
 export const permissions = shield({
   Query: {
     communities: IsUser,
@@ -376,28 +376,28 @@ export const permissions = shield({
 });
 ```
 
-#### 2. Row-Level Security (Database-level)
+#### 2. 行レベルセキュリティ（データベースレベル）
 ```typescript
-// Automatic data filtering based on user context
+// ユーザーコンテキストに基づく自動データフィルタリング
 const issuer = new PrismaClientIssuer(context.currentUser);
-const communities = await issuer.community.findMany(); // Only accessible communities
+const communities = await issuer.community.findMany(); // アクセス可能なコミュニティのみ
 ```
 
-#### 3. Business Logic (Domain-specific)
+#### 3. ビジネスロジック（ドメイン固有）
 ```typescript
-// Domain-specific access controls
+// ドメイン固有アクセス制御
 export class CommunityService {
   async updateCommunity(id: string, data: UpdateCommunityInput) {
-    // Check if user has permission to update this community
+    // ユーザーがこのコミュニティを更新する権限があるかチェック
     await this.validateUpdatePermission(id);
     return this.repository.update(id, data);
   }
 }
 ```
 
-#### 4. API Key Authentication (Admin endpoints)
+#### 4. APIキー認証（管理者エンドポイント）
 ```typescript
-// Admin endpoint protection
+// 管理者エンドポイント保護
 export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
   const apiKey = req.headers['x-api-key'];
   if (apiKey !== process.env.CIVICSHIP_ADMIN_API_KEY) {
@@ -407,33 +407,33 @@ export const adminAuth = (req: Request, res: Response, next: NextFunction) => {
 };
 ```
 
-## Testing Architecture
+## テストアーキテクチャ
 
-### Test Organization
+### テスト構成
 
 ```
 __tests__/
-├── unit/              # Individual function tests
-│   ├── services/     # Business logic tests
-│   ├── repositories/ # Data access tests
-│   └── utils/        # Utility function tests
-├── integration/       # Database integration tests
-│   ├── graphql/      # GraphQL resolver tests
-│   ├── auth/         # Authentication flow tests
-│   └── database/     # Database operation tests
-├── e2e/              # End-to-end API tests
-│   ├── user-flows/   # Complete user journey tests
-│   └── admin-flows/  # Admin operation tests
-└── fixtures/         # Test data and utilities
-    ├── factories/    # Test data generation
-    └── helpers/      # Test utility functions
+├── unit/              # 個別関数テスト
+│   ├── services/     # ビジネスロジックテスト
+│   ├── repositories/ # データアクセステスト
+│   └── utils/        # ユーティリティ関数テスト
+├── integration/       # データベース統合テスト
+│   ├── graphql/      # GraphQLリゾルバーテスト
+│   ├── auth/         # 認証フローテスト
+│   └── database/     # データベース操作テスト
+├── e2e/              # エンドツーエンドAPIテスト
+│   ├── user-flows/   # 完全なユーザージャーニーテスト
+│   └── admin-flows/  # 管理者操作テスト
+└── fixtures/         # テストデータとユーティリティ
+    ├── factories/    # テストデータ生成
+    └── helpers/      # テストユーティリティ関数
 ```
 
-### Testing Patterns
+### テストパターン
 
-#### Factory Pattern (Test Data Generation)
+#### ファクトリーパターン（テストデータ生成）
 ```typescript
-// Example: User factory for consistent test data
+// 例: 一貫したテストデータ用ユーザーファクトリー
 export const createUser = (overrides?: Partial<User>): User => ({
   id: faker.datatype.uuid(),
   name: faker.name.fullName(),
@@ -443,9 +443,9 @@ export const createUser = (overrides?: Partial<User>): User => ({
 });
 ```
 
-#### Repository Mocking (Unit Test Isolation)
+#### リポジトリモック（ユニットテスト分離）
 ```typescript
-// Example: Mock repository for service testing
+// 例: サービステスト用モックリポジトリ
 const mockUserRepository = {
   findById: jest.fn(),
   create: jest.fn(),
@@ -454,25 +454,25 @@ const mockUserRepository = {
 };
 ```
 
-#### Database Transactions (Test Data Cleanup)
+#### データベーストランザクション（テストデータクリーンアップ）
 ```typescript
-// Example: Automatic test data cleanup
+// 例: 自動テストデータクリーンアップ
 beforeEach(async () => {
   await prisma.$transaction(async (tx) => {
-    // Test setup with transaction
+    // トランザクションでテストセットアップ
   });
 });
 
 afterEach(async () => {
   await prisma.$transaction(async (tx) => {
-    // Cleanup test data
+    // テストデータクリーンアップ
   });
 });
 ```
 
-#### GraphQL Testing (End-to-end API Validation)
+#### GraphQLテスト（エンドツーエンドAPI検証）
 ```typescript
-// Example: GraphQL mutation testing
+// 例: GraphQLミューテーションテスト
 const CREATE_COMMUNITY = gql`
   mutation CreateCommunity($input: CreateCommunityInput!) {
     createCommunity(input: $input) {
@@ -492,73 +492,73 @@ test('should create community', async () => {
 });
 ```
 
-## Deployment Architecture
+## デプロイメントアーキテクチャ
 
-### Multi-Service Deployment
+### マルチサービスデプロイメント
 
-The application supports multiple deployment configurations:
+アプリケーションは複数のデプロイメント構成をサポートします：
 
-#### 1. Internal API (Main Service)
-- **Entry Point:** `src/index.ts`
-- **Purpose:** Main GraphQL API server
+#### 1. 内部API（メインサービス）
+- **エントリーポイント:** `src/index.ts`
+- **目的:** メインGraphQL APIサーバー
 - **Dockerfile:** `Dockerfile`
-- **Deployment:** Google Cloud Run
+- **デプロイメント:** Google Cloud Run
 
-#### 2. External API (Public Wallet Operations)
-- **Entry Point:** `src/external-api.ts`
-- **Purpose:** Public wallet operations and external integrations
+#### 2. 外部API（パブリックウォレット操作）
+- **エントリーポイント:** `src/external-api.ts`
+- **目的:** パブリックウォレット操作と外部統合
 - **Dockerfile:** `Dockerfile.external`
-- **Deployment:** Google Cloud Run (separate service)
+- **デプロイメント:** Google Cloud Run（別サービス）
 
-#### 3. Batch Processing (Background Jobs)
-- **Entry Point:** `src/batch.ts`
-- **Purpose:** Background job processing
+#### 3. バッチ処理（バックグラウンドジョブ）
+- **エントリーポイント:** `src/batch.ts`
+- **目的:** バックグラウンドジョブ処理
 - **Dockerfile:** `Dockerfile.batch`
-- **Deployment:** Google Cloud Run Jobs
+- **デプロイメント:** Google Cloud Run Jobs
 
-### Infrastructure Components
+### インフラストラクチャコンポーネント
 
 #### Google Cloud Run
-- **Auto-scaling:** Based on request volume
-- **Container Registry:** Artifact Registry for Docker images
-- **Environment Variables:** Managed through Cloud Run configuration
-- **Health Checks:** Built-in health monitoring
+- **自動スケーリング:** リクエスト量に基づく
+- **コンテナレジストリ:** DockerイメージのArtifact Registry
+- **環境変数:** Cloud Run設定を通じて管理
+- **ヘルスチェック:** 組み込みヘルス監視
 
-#### Database Access
-- **SSH Tunnel:** Secure database access through jumpbox during builds
-- **Connection Pooling:** Prisma connection management
-- **SSL/TLS:** Encrypted database connections
+#### データベースアクセス
+- **SSHトンネル:** ビルド時のジャンプボックス経由セキュアデータベースアクセス
+- **コネクションプーリング:** Prismaコネクション管理
+- **SSL/TLS:** 暗号化データベース接続
 
-#### CI/CD Pipeline
-- **GitHub Actions:** Automated build and deployment
-- **Multi-environment:** Separate dev/staging/prod deployments
-- **Security Scanning:** Container vulnerability scanning
-- **Automated Testing:** Unit, integration, and E2E tests
+#### CI/CDパイプライン
+- **GitHub Actions:** 自動ビルドとデプロイメント
+- **マルチ環境:** 開発・ステージング・本番の分離デプロイメント
+- **セキュリティスキャン:** コンテナ脆弱性スキャン
+- **自動テスト:** ユニット・統合・E2Eテスト
 
-## Performance Considerations
+## パフォーマンス考慮事項
 
-### Query Optimization
-- **DataLoader Pattern:** Batch and cache database queries
-- **Materialized Views:** Pre-computed aggregations
-- **Database Indexes:** Optimized for common query patterns
-- **Connection Pooling:** Efficient database connection management
+### クエリ最適化
+- **DataLoaderパターン:** データベースクエリのバッチ処理とキャッシュ
+- **マテリアライズドビュー:** 事前計算された集計
+- **データベースインデックス:** 一般的なクエリパターンに最適化
+- **コネクションプーリング:** 効率的なデータベース接続管理
 
-### Caching Strategy
-- **Request-level Caching:** DataLoader caches within single request
-- **Application-level Caching:** Redis for session and temporary data
-- **Database-level Caching:** PostgreSQL query result caching
-- **CDN Caching:** Static asset delivery through GCS
+### キャッシュ戦略
+- **リクエストレベルキャッシュ:** 単一リクエスト内のDataLoaderキャッシュ
+- **アプリケーションレベルキャッシュ:** セッションと一時データ用Redis
+- **データベースレベルキャッシュ:** PostgreSQLクエリ結果キャッシュ
+- **CDNキャッシュ:** GCS経由の静的アセット配信
 
-### Monitoring and Observability
-- **Application Metrics:** Custom metrics for business operations
-- **Database Monitoring:** Query performance and connection metrics
-- **Error Tracking:** Comprehensive error logging and alerting
-- **Performance Monitoring:** Request latency and throughput tracking
+### 監視と可観測性
+- **アプリケーションメトリクス:** ビジネス操作用カスタムメトリクス
+- **データベース監視:** クエリパフォーマンスと接続メトリクス
+- **エラー追跡:** 包括的なエラーログとアラート
+- **パフォーマンス監視:** リクエスト遅延とスループット追跡
 
-## Related Documentation
+## 関連ドキュメント
 
-- [Domain Details](./DOMAINS.md) - Detailed domain structure and business logic
-- [Implementation Patterns](./PATTERNS.md) - Code patterns and best practices
-- [Setup Guide](./SETUP.md) - Development environment setup
-- [Development Workflow](./DEVELOPMENT.md) - Daily development procedures
-- [Testing Guide](./TESTING.md) - Testing strategy and execution
+- [ドメイン詳細](./DOMAINS.md) - 詳細なドメイン構造とビジネスロジック
+- [実装パターン](./PATTERNS.md) - コードパターンとベストプラクティス
+- [セットアップガイド](./SETUP.md) - 開発環境セットアップ
+- [開発ワークフロー](./DEVELOPMENT.md) - 日常開発手順
+- [テストガイド](./TESTING.md) - テスト戦略と実行

@@ -1,242 +1,242 @@
-# Development Workflow
+# 開発ワークフロー
 
-This guide covers daily development procedures, best practices, and workflows for contributing to civicship-api.
+このガイドでは、civicship-apiへの貢献のための日常的な開発手順、ベストプラクティス、ワークフローについて説明します。
 
-## Daily Development Commands
+## 日常開発コマンド
 
-### Starting Development
+### 開発開始
 
 ```bash
-# Start your development session
+# 開発セッションを開始
 cd civicship-api
 
-# Ensure you're on the latest develop branch
+# 最新のdevelopブランチにいることを確認
 git checkout develop
 git pull origin develop
 
-# Start database container (if not running)
+# データベースコンテナを開始（実行されていない場合）
 pnpm container:up
 
-# Start development server with hot reload
+# ホットリロード付き開発サーバーを開始
 pnpm dev:https
 ```
 
-### Code Quality Checks
+### コード品質チェック
 
 ```bash
-# Run linting (fix automatically where possible)
+# リンティング実行（可能な場合は自動修正）
 pnpm lint
 pnpm lint:graphql
 
-# Run type checking
+# 型チェック実行
 pnpm type-check
 
-# Run tests
+# テスト実行
 pnpm test
 
-# Run tests with coverage
+# カバレッジ付きテスト実行
 pnpm test:coverage
 
-# Run tests in watch mode (during development)
+# ウォッチモードでテスト実行（開発中）
 pnpm test:watch
 ```
 
-### Database Operations
+### データベース操作
 
 ```bash
-# View database contents
+# データベース内容を表示
 pnpm db:studio
 
-# Generate Prisma client after schema changes
+# スキーマ変更後のPrismaクライアント生成
 pnpm db:generate
 
-# Create new migration
+# 新しいマイグレーション作成
 pnpm db:migrate dev --name your-migration-name
 
-# Reset database (careful - deletes all data!)
+# データベースリセット（注意 - 全データ削除！）
 pnpm db:reset
 
-# Seed database with fresh data
+# 新しいデータでデータベースをシード
 pnpm db:seed-master
 pnpm db:seed-domain
 ```
 
-### GraphQL Operations
+### GraphQL操作
 
 ```bash
-# Generate GraphQL types after schema changes
+# スキーマ変更後のGraphQL型生成
 pnpm gql:generate
 
-# Validate GraphQL schema
+# GraphQLスキーマ検証
 pnpm gql:validate
 
-# Check GraphQL schema for breaking changes
+# GraphQLスキーマの破壊的変更チェック
 pnpm gql:diff
 ```
 
-## Development Workflow
+## 開発ワークフロー
 
-### 1. Feature Development
+### 1. 機能開発
 
-#### Creating a New Feature Branch
+#### 新しい機能ブランチの作成
 
 ```bash
-# Create feature branch from develop
+# developから機能ブランチを作成
 git checkout develop
 git pull origin develop
 git checkout -b feature/your-feature-name
 
-# Or for bug fixes
+# またはバグ修正の場合
 git checkout -b fix/your-bug-fix-name
 ```
 
-#### Development Process
+#### 開発プロセス
 
-1. **Plan your changes:**
-   - Understand the requirements
-   - Identify affected domains
-   - Plan database schema changes if needed
+1. **変更を計画:**
+   - 要件を理解する
+   - 影響を受けるドメインを特定する
+   - 必要に応じてデータベーススキーマ変更を計画する
 
-2. **Implement changes:**
-   - Follow domain-driven design principles
-   - Maintain consistent layer structure
-   - Write tests as you develop
+2. **変更を実装:**
+   - ドメイン駆動設計の原則に従う
+   - 一貫したレイヤー構造を維持する
+   - 開発しながらテストを書く
 
-3. **Test your changes:**
+3. **変更をテスト:**
    ```bash
-   # Run relevant tests
+   # 関連テストを実行
    pnpm test -- --testPathPattern=your-feature
    
-   # Run integration tests
+   # 統合テストを実行
    pnpm test:integration
    
-   # Test GraphQL endpoints
-   # Use GraphQL Playground at https://localhost:3000/graphql
+   # GraphQLエンドポイントをテスト
+   # https://localhost:3000/graphql でGraphQL Playgroundを使用
    ```
 
-4. **Code quality checks:**
+4. **コード品質チェック:**
    ```bash
-   # Fix linting issues
+   # リンティング問題を修正
    pnpm lint --fix
    
-   # Check types
+   # 型をチェック
    pnpm type-check
    
-   # Ensure all tests pass
+   # 全テストが通ることを確認
    pnpm test
    ```
 
-### 2. Database Schema Changes
+### 2. データベーススキーマ変更
 
-#### Making Schema Changes
+#### スキーマ変更の実行
 
-1. **Update Prisma schema:**
+1. **Prismaスキーマを更新:**
    ```bash
-   # Edit src/infrastructure/prisma/schema.prisma
+   # src/infrastructure/prisma/schema.prismaを編集
    nano src/infrastructure/prisma/schema.prisma
    ```
 
-2. **Generate migration:**
+2. **マイグレーションを生成:**
    ```bash
-   # Create migration file
+   # マイグレーションファイルを作成
    pnpm db:migrate dev --name add-new-field
    ```
 
-3. **Update application code:**
+3. **アプリケーションコードを更新:**
    ```bash
-   # Regenerate Prisma client
+   # Prismaクライアントを再生成
    pnpm db:generate
    
-   # Update TypeScript types
+   # TypeScript型を更新
    pnpm gql:generate
    ```
 
-4. **Update seeds if necessary:**
+4. **必要に応じてシードを更新:**
    ```bash
-   # Edit seed files
+   # シードファイルを編集
    nano src/infrastructure/prisma/seeds/domain/your-domain.ts
    
-   # Test seeding
+   # シードをテスト
    pnpm db:reset
    pnpm db:seed-master
    pnpm db:seed-domain
    ```
 
-#### Migration Best Practices
+#### マイグレーションのベストプラクティス
 
-- **Always review generated migrations** before applying
-- **Test migrations on sample data** before production
-- **Create rollback plan** for complex migrations
-- **Update documentation** for schema changes
+- **適用前に生成されたマイグレーションを必ず確認**
+- **本番前にサンプルデータでマイグレーションをテスト**
+- **複雑なマイグレーションのロールバック計画を作成**
+- **スキーマ変更のドキュメントを更新**
 
-### 3. GraphQL Schema Changes
+### 3. GraphQLスキーマ変更
 
-#### Adding New Types/Fields
+#### 新しい型/フィールドの追加
 
-1. **Define GraphQL schema:**
+1. **GraphQLスキーマを定義:**
    ```bash
-   # Edit domain-specific schema files
+   # ドメイン固有のスキーマファイルを編集
    nano src/application/domain/your-domain/schema/your-type.graphql
    ```
 
-2. **Generate types:**
+2. **型を生成:**
    ```bash
    pnpm gql:generate
    ```
 
-3. **Implement resolvers:**
+3. **リゾルバーを実装:**
    ```typescript
    // src/application/domain/your-domain/controller/resolver.ts
    export const yourResolver = {
      Query: {
        yourQuery: async (parent, args, context) => {
-         // Implementation
+         // 実装
        }
      }
    };
    ```
 
-4. **Add DataLoaders if needed:**
+4. **必要に応じてDataLoaderを追加:**
    ```typescript
    // src/application/domain/your-domain/controller/dataloader.ts
    export const yourDataLoader = new DataLoader(async (ids) => {
-     // Batch loading implementation
+     // バッチローディング実装
    });
    ```
 
-#### GraphQL Best Practices
+#### GraphQLのベストプラクティス
 
-- **Use DataLoaders** to prevent N+1 queries
-- **Implement proper authorization** rules
-- **Follow naming conventions** (camelCase for fields)
-- **Add proper error handling**
-- **Document complex queries** with comments
+- **N+1クエリを防ぐためにDataLoaderを使用**
+- **適切な認可ルールを実装**
+- **命名規則に従う**（フィールドはcamelCase）
+- **適切なエラーハンドリングを追加**
+- **複雑なクエリにコメントを記述**
 
-### 4. Testing Strategy
+### 4. テスト戦略
 
-#### Test Types
+#### テストタイプ
 
-1. **Unit Tests:**
+1. **ユニットテスト:**
    ```bash
-   # Test individual functions/services
+   # 個別の関数/サービスをテスト
    pnpm test -- --testPathPattern=unit
    ```
 
-2. **Integration Tests:**
+2. **統合テスト:**
    ```bash
-   # Test database interactions
+   # データベース相互作用をテスト
    pnpm test -- --testPathPattern=integration
    ```
 
-3. **End-to-End Tests:**
+3. **エンドツーエンドテスト:**
    ```bash
-   # Test complete API flows
+   # 完全なAPIフローをテスト
    pnpm test -- --testPathPattern=e2e
    ```
 
-#### Writing Tests
+#### テストの記述
 
-1. **Service Tests:**
+1. **サービステスト:**
    ```typescript
    // __tests__/unit/services/user.service.test.ts
    describe('UserService', () => {
@@ -256,7 +256,7 @@ git checkout -b fix/your-bug-fix-name
    });
    ```
 
-2. **GraphQL Tests:**
+2. **GraphQLテスト:**
    ```typescript
    // __tests__/integration/graphql/user.test.ts
    describe('User GraphQL', () => {
@@ -285,9 +285,9 @@ git checkout -b fix/your-bug-fix-name
    });
    ```
 
-#### Test Data Management
+#### テストデータ管理
 
-1. **Use Factories:**
+1. **ファクトリーを使用:**
    ```typescript
    // __tests__/fixtures/factories/user.factory.ts
    export const createUser = (overrides?: Partial<User>): User => ({
@@ -298,7 +298,7 @@ git checkout -b fix/your-bug-fix-name
    });
    ```
 
-2. **Clean Up Test Data:**
+2. **テストデータのクリーンアップ:**
    ```typescript
    afterEach(async () => {
      await prisma.$transaction([
@@ -309,123 +309,123 @@ git checkout -b fix/your-bug-fix-name
    });
    ```
 
-### 5. Code Review Process
+### 5. コードレビュープロセス
 
-#### Before Submitting PR
+#### PR提出前
 
-1. **Self-review checklist:**
-   - [ ] All tests pass
-   - [ ] Linting passes
-   - [ ] Type checking passes
-   - [ ] Documentation updated
-   - [ ] No console.log statements
-   - [ ] Proper error handling
-   - [ ] Security considerations addressed
+1. **セルフレビューチェックリスト:**
+   - [ ] 全テストが通る
+   - [ ] リンティングが通る
+   - [ ] 型チェックが通る
+   - [ ] ドキュメントが更新されている
+   - [ ] console.log文がない
+   - [ ] 適切なエラーハンドリング
+   - [ ] セキュリティ考慮事項が対応されている
 
-2. **Performance checklist:**
-   - [ ] DataLoaders used for related data
-   - [ ] Database queries optimized
-   - [ ] No N+1 query problems
-   - [ ] Proper indexing for new queries
+2. **パフォーマンスチェックリスト:**
+   - [ ] 関連データにDataLoaderを使用
+   - [ ] データベースクエリが最適化されている
+   - [ ] N+1クエリ問題がない
+   - [ ] 新しいクエリに適切なインデックス
 
-3. **Code quality checklist:**
-   - [ ] Follows domain-driven design
-   - [ ] Consistent with existing patterns
-   - [ ] Proper separation of concerns
-   - [ ] Clear variable/function names
-   - [ ] Appropriate comments for complex logic
+3. **コード品質チェックリスト:**
+   - [ ] ドメイン駆動設計に従っている
+   - [ ] 既存パターンと一貫している
+   - [ ] 適切な関心の分離
+   - [ ] 明確な変数/関数名
+   - [ ] 複雑なロジックに適切なコメント
 
-#### Creating Pull Request
+#### プルリクエスト作成
 
 ```bash
-# Ensure all changes are committed
+# 全変更がコミットされていることを確認
 git add .
 git commit -m "feat: add new feature description"
 
-# Push to remote
+# リモートにプッシュ
 git push origin feature/your-feature-name
 
-# Create PR using GitHub CLI or web interface
+# GitHub CLIまたはWebインターフェースでPR作成
 gh pr create --title "Add new feature" --body "Description of changes"
 ```
 
-#### PR Description Template
+#### PR説明テンプレート
 
 ```markdown
-## Description
-Brief description of changes made.
+## 説明
+実施した変更の簡潔な説明。
 
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
+## 変更タイプ
+- [ ] バグ修正
+- [ ] 新機能
+- [ ] 破壊的変更
+- [ ] ドキュメント更新
 
-## Testing
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Manual testing completed
+## テスト
+- [ ] ユニットテスト追加/更新
+- [ ] 統合テスト追加/更新
+- [ ] 手動テスト完了
 
-## Checklist
-- [ ] Code follows project style guidelines
-- [ ] Self-review completed
-- [ ] Tests pass locally
-- [ ] Documentation updated
+## チェックリスト
+- [ ] コードがプロジェクトスタイルガイドラインに従っている
+- [ ] セルフレビュー完了
+- [ ] ローカルでテストが通る
+- [ ] ドキュメント更新済み
 ```
 
-## Code Organization Patterns
+## コード構成パターン
 
-### Domain Structure
+### ドメイン構造
 
-Follow the established domain pattern:
+確立されたドメインパターンに従う:
 
 ```
 src/application/domain/your-domain/
 ├── controller/
-│   ├── resolver.ts      # GraphQL resolvers
-│   └── dataloader.ts    # Data loading optimization
-├── usecase.ts          # Business logic orchestration
-├── service.ts          # Core domain operations
+│   ├── resolver.ts      # GraphQLリゾルバー
+│   └── dataloader.ts    # データローディング最適化
+├── usecase.ts          # ビジネスロジック統制
+├── service.ts          # コアドメイン操作
 ├── data/
-│   ├── repository.ts   # Data access implementation
-│   ├── interface.ts    # Repository contracts
-│   ├── converter.ts    # Data transformation
-│   └── type.ts         # Domain types
-├── schema/             # GraphQL schema files
-└── presenter.ts        # Response formatting
+│   ├── repository.ts   # データアクセス実装
+│   ├── interface.ts    # リポジトリ契約
+│   ├── converter.ts    # データ変換
+│   └── type.ts         # ドメイン型
+├── schema/             # GraphQLスキーマファイル
+└── presenter.ts        # レスポンス整形
 ```
 
-### Naming Conventions
+### 命名規則
 
-#### Files and Directories
-- **Files:** kebab-case (`user-service.ts`)
-- **Directories:** kebab-case (`user-management/`)
-- **Test files:** `*.test.ts` or `*.spec.ts`
+#### ファイルとディレクトリ
+- **ファイル:** kebab-case (`user-service.ts`)
+- **ディレクトリ:** kebab-case (`user-management/`)
+- **テストファイル:** `*.test.ts` または `*.spec.ts`
 
-#### Code Elements
-- **Variables/Functions:** camelCase (`getUserById`)
-- **Classes:** PascalCase (`UserService`)
-- **Constants:** UPPER_SNAKE_CASE (`MAX_RETRY_COUNT`)
-- **Interfaces:** PascalCase with 'I' prefix (`IUserRepository`)
-- **Types:** PascalCase (`UserCreateInput`)
+#### コード要素
+- **変数/関数:** camelCase (`getUserById`)
+- **クラス:** PascalCase (`UserService`)
+- **定数:** UPPER_SNAKE_CASE (`MAX_RETRY_COUNT`)
+- **インターフェース:** 'I'プレフィックス付きPascalCase (`IUserRepository`)
+- **型:** PascalCase (`UserCreateInput`)
 
-#### GraphQL Schema
-- **Types:** PascalCase (`User`, `Community`)
-- **Fields:** camelCase (`firstName`, `createdAt`)
-- **Enums:** UPPER_SNAKE_CASE (`USER_ROLE`)
-- **Input types:** PascalCase with suffix (`CreateUserInput`)
+#### GraphQLスキーマ
+- **型:** PascalCase (`User`, `Community`)
+- **フィールド:** camelCase (`firstName`, `createdAt`)
+- **列挙型:** UPPER_SNAKE_CASE (`USER_ROLE`)
+- **入力型:** サフィックス付きPascalCase (`CreateUserInput`)
 
-### Error Handling
+### エラーハンドリング
 
-#### Service Layer
+#### サービス層
 ```typescript
 export class UserService {
   async createUser(data: CreateUserInput): Promise<User> {
     try {
-      // Validate input
+      // 入力を検証
       await this.validateUserData(data);
       
-      // Business logic
+      // ビジネスロジック
       const user = await this.repository.create(data);
       
       return user;
@@ -434,7 +434,7 @@ export class UserService {
         throw new UserInputError(error.message);
       }
       
-      // Log unexpected errors
+      // 予期しないエラーをログ
       logger.error('Failed to create user', { error, data });
       throw new InternalServerError('User creation failed');
     }
@@ -442,7 +442,7 @@ export class UserService {
 }
 ```
 
-#### GraphQL Resolvers
+#### GraphQLリゾルバー
 ```typescript
 export const userResolver = {
   Mutation: {
@@ -450,7 +450,7 @@ export const userResolver = {
       try {
         return await context.services.user.createUser(args.input);
       } catch (error) {
-        // Let GraphQL error handling middleware handle it
+        // GraphQLエラーハンドリングミドルウェアに処理を委ねる
         throw error;
       }
     }
@@ -458,66 +458,66 @@ export const userResolver = {
 };
 ```
 
-### Logging
+### ログ記録
 
-#### Development Logging
+#### 開発時ログ記録
 ```typescript
 import { logger } from '../infrastructure/logger';
 
-// Different log levels
+// 異なるログレベル
 logger.debug('Debug information', { userId, action });
 logger.info('User created successfully', { userId });
 logger.warn('Deprecated API used', { endpoint });
 logger.error('Database connection failed', { error });
 ```
 
-#### Production Logging
-- **Avoid logging sensitive data** (passwords, tokens)
-- **Use structured logging** with consistent fields
-- **Include correlation IDs** for request tracking
-- **Log performance metrics** for monitoring
+#### 本番環境ログ記録
+- **機密データのログ記録を避ける**（パスワード、トークン）
+- **一貫したフィールドで構造化ログを使用**
+- **リクエスト追跡のための相関IDを含める**
+- **監視のためのパフォーマンスメトリクスをログ**
 
-## Environment Management
+## 環境管理
 
-### Development Environment
+### 開発環境
 
 ```bash
-# Use development-specific settings
+# 開発固有の設定を使用
 NODE_ENV=development
 DEBUG=prisma:query,graphql:*
 LOG_LEVEL=debug
 ```
 
-### Testing Environment
+### テスト環境
 
 ```bash
-# Use test database and mocked services
+# テストデータベースとモックサービスを使用
 NODE_ENV=test
 DATABASE_URL=postgresql://test:test@localhost:15432/civicship_test
 ```
 
-### Production Environment
+### 本番環境
 
 ```bash
-# Use production settings
+# 本番設定を使用
 NODE_ENV=production
 LOG_LEVEL=info
-# All secrets from environment variables
+# 全シークレットは環境変数から
 ```
 
-## Performance Optimization
+## パフォーマンス最適化
 
-### Database Optimization
+### データベース最適化
 
-1. **Use DataLoaders:**
+1. **DataLoaderを使用:**
    ```typescript
-   // Batch related queries
+   // 関連クエリをバッチ処理
    const users = await context.dataloaders.user.loadMany(userIds);
    ```
 
-2. **Optimize queries:**
+2. **クエリを最適化:**
    ```typescript
-   // Include related data in single query
+   // 単一クエリで関連データを含める
    const user = await prisma.user.findUnique({
      where: { id },
      include: {
@@ -530,7 +530,7 @@ LOG_LEVEL=info
    });
    ```
 
-3. **Use database indexes:**
+3. **データベースインデックスを使用:**
    ```prisma
    model User {
      id    String @id
@@ -541,9 +541,9 @@ LOG_LEVEL=info
    }
    ```
 
-### GraphQL Optimization
+### GraphQL最適化
 
-1. **Implement field-level caching:**
+1. **フィールドレベルキャッシングを実装:**
    ```typescript
    const resolvers = {
      User: {
@@ -554,7 +554,7 @@ LOG_LEVEL=info
    };
    ```
 
-2. **Use query complexity analysis:**
+2. **クエリ複雑度分析を使用:**
    ```typescript
    const server = new ApolloServer({
      typeDefs,
@@ -566,68 +566,68 @@ LOG_LEVEL=info
    });
    ```
 
-## Security Best Practices
+## セキュリティベストプラクティス
 
-### Authentication
-- **Always validate JWT tokens**
-- **Check token expiration**
-- **Verify token issuer**
-- **Handle token refresh properly**
+### 認証
+- **JWTトークンを常に検証**
+- **トークンの有効期限をチェック**
+- **トークン発行者を検証**
+- **トークンリフレッシュを適切に処理**
 
-### Authorization
-- **Implement role-based access control**
-- **Use GraphQL shield for declarative rules**
-- **Apply row-level security**
-- **Validate user permissions at multiple layers**
+### 認可
+- **ロールベースアクセス制御を実装**
+- **宣言的ルールにGraphQL shieldを使用**
+- **行レベルセキュリティを適用**
+- **複数レイヤーでユーザー権限を検証**
 
-### Data Protection
-- **Never log sensitive data**
-- **Sanitize user inputs**
-- **Use parameterized queries**
-- **Implement rate limiting**
+### データ保護
+- **機密データをログに記録しない**
+- **ユーザー入力をサニタイズ**
+- **パラメータ化クエリを使用**
+- **レート制限を実装**
 
-### API Security
-- **Validate all inputs**
-- **Implement CORS properly**
-- **Use HTTPS in production**
-- **Monitor for suspicious activity**
+### APIセキュリティ
+- **全入力を検証**
+- **CORSを適切に実装**
+- **本番環境でHTTPSを使用**
+- **不審な活動を監視**
 
-## Monitoring and Debugging
+## 監視とデバッグ
 
-### Local Debugging
+### ローカルデバッグ
 
-1. **Use debugger:**
+1. **デバッガーを使用:**
    ```bash
-   # Start with debugger
+   # デバッガーで開始
    node --inspect-brk dist/index.js
    ```
 
-2. **Enable debug logging:**
+2. **デバッグログを有効化:**
    ```bash
    DEBUG=* pnpm dev:https
    ```
 
-3. **Use GraphQL Playground:**
-   - Test queries and mutations
-   - Inspect network requests
-   - Check response times
+3. **GraphQL Playgroundを使用:**
+   - クエリとミューテーションをテスト
+   - ネットワークリクエストを検査
+   - レスポンス時間をチェック
 
-### Performance Monitoring
+### パフォーマンス監視
 
-1. **Database query monitoring:**
+1. **データベースクエリ監視:**
    ```bash
    DEBUG=prisma:query pnpm dev:https
    ```
 
-2. **Memory usage monitoring:**
+2. **メモリ使用量監視:**
    ```bash
    node --inspect pnpm dev:https
-   # Open chrome://inspect
+   # chrome://inspectを開く
    ```
 
-3. **Request tracing:**
+3. **リクエストトレーシング:**
    ```typescript
-   // Add request timing middleware
+   // リクエストタイミングミドルウェアを追加
    app.use((req, res, next) => {
      const start = Date.now();
      res.on('finish', () => {
@@ -643,36 +643,36 @@ LOG_LEVEL=info
    });
    ```
 
-## Deployment Preparation
+## デプロイメント準備
 
-### Pre-deployment Checklist
+### デプロイ前チェックリスト
 
-- [ ] All tests pass
-- [ ] Linting passes
-- [ ] Type checking passes
-- [ ] Database migrations tested
-- [ ] Environment variables configured
-- [ ] Security review completed
-- [ ] Performance testing done
-- [ ] Documentation updated
+- [ ] 全テストが通る
+- [ ] リンティングが通る
+- [ ] 型チェックが通る
+- [ ] データベースマイグレーションがテスト済み
+- [ ] 環境変数が設定済み
+- [ ] セキュリティレビューが完了
+- [ ] パフォーマンステストが完了
+- [ ] ドキュメントが更新済み
 
-### Build Process
+### ビルドプロセス
 
 ```bash
-# Clean build
+# クリーンビルド
 rm -rf dist/
 pnpm build
 
-# Test production build
+# 本番ビルドをテスト
 NODE_ENV=production node dist/index.js
 
-# Run production tests
+# 本番テストを実行
 NODE_ENV=production pnpm test
 ```
 
-## Related Documentation
+## 関連ドキュメント
 
-- [Setup Guide](./SETUP.md) - Initial environment setup
-- [Architecture Guide](./ARCHITECTURE.md) - System design overview
-- [Testing Guide](./TESTING.md) - Testing strategy and execution
-- [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
+- [セットアップガイド](./SETUP.md) - 初期環境セットアップ
+- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
+- [テストガイド](./TESTING.md) - テスト戦略と実行
+- [トラブルシューティング](./TROUBLESHOOTING.md) - よくある問題と解決方法
