@@ -147,12 +147,6 @@ civicship-api の開発中に遭遇する可能性のある一般的な問題と
    Authorization: Bearer <firebase_jwt_token>
    ```
 
-2. **トークン発行者/対象者を確認:**
-   ```env
-   FIREBASE_ISSUER=https://securetoken.google.com/your_project_id
-   FIREBASE_AUDIENCE=your_project_id
-   ```
-
 ## Google Cloud Storage 問題
 
 ### ファイルアップロード失敗
@@ -232,6 +226,16 @@ civicship-api の開発中に遭遇する可能性のある一般的な問題と
    pnpm dev
    ```
 
+3. **証明書が機能しない場合の再生成手順：**
+   - 以下の Qiita 記事を参考に自己署名証明書を生成  
+     [自己認証局の作成と証明書リストへの追加 - Qiita](https://qiita.com/k_kind/items/b87777efa3d29dcc4467#%E8%87%AA%E5%B7%B1%E8%AA%8D%E8%A8%BC%E5%B1%80%E3%81%AE%E4%BD%9C%E6%88%90%E8%A8%BC%E6%98%8E%E6%9B%B8%E3%83%AA%E3%82%B9%E3%83%88%E3%81%B8%E3%81%AE%E8%BF%BD%E5%8A%A0)
+   - 生成された 2 つの鍵ファイル：
+     - `-----BEGIN CERTIFICATE-----` を含むファイル → `localhost.pem`
+     - `-----BEGIN PRIVATE KEY-----` を含むファイル → `localhost-key.pem`
+   - 上記 2 ファイルを `.certificates/` 配下に設置し直す
+   - サーバーを再起動し、HTTPS が正しく動作するか確認
+
+
 ## GraphQL 問題
 
 ### スキーマ生成エラー
@@ -245,7 +249,7 @@ civicship-api の開発中に遭遇する可能性のある一般的な問題と
 
 1. **生成されたファイルをクリア:**
    ```bash
-   rm -rf src/types/generated/
+   rm -rf src/types/graphql.ts
    pnpm gql:generate
    ```
 
@@ -274,8 +278,8 @@ civicship-api の開発中に遭遇する可能性のある一般的な問題と
 
 2. **テストデータベースをリセット:**
    ```bash
-   NODE_ENV=test pnpm db:reset
-   NODE_ENV=test pnpm db:seed-master
+   NODE_ENV=TEST pnpm db:reset
+   NODE_ENV=TEST pnpm db:seed-master
    ```
 
 ## パフォーマンス問題
