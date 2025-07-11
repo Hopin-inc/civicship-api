@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
-import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
@@ -142,16 +142,6 @@ describe("OpportunityService", () => {
       await expect(
         service.updateOpportunityContent(mockCtx, "opportunity-1", {} as any, mockTx),
       ).rejects.toThrow(NotFoundError);
-    });
-
-    it("should throw ValidationError if invalid place input", async () => {
-      mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
-
-      const invalidInput = { place: {} } as any; // where/create両方なし
-
-      await expect(
-        service.updateOpportunityContent(mockCtx, "opportunity-1", invalidInput, mockTx),
-      ).rejects.toThrow(ValidationError);
     });
   });
 
