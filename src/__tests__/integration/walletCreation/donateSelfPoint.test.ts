@@ -7,11 +7,13 @@ import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import CommunityConverter from "@/application/domain/account/community/data/converter";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Transaction DonateSelfPoint Integration Tests", () => {
   jest.setTimeout(30_000);
   let useCase: TransactionUseCase;
   let communityConverter: CommunityConverter;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -22,6 +24,7 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
 
     useCase = container.resolve(TransactionUseCase);
     communityConverter = container.resolve(CommunityConverter);
+    issuer = container.resolve(PrismaClientIssuer);
   });
 
   afterAll(async () => {
@@ -46,6 +49,7 @@ describe("Transaction DonateSelfPoint Integration Tests", () => {
     const ctx = {
       uid: fromUserId,
       currentUser: { id: fromUserId },
+      issuer,
     } as unknown as IContext;
 
     const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
