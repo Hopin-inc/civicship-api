@@ -31,6 +31,7 @@ describe("Point Reward Tests", () => {
   };
 
   let ctx: IContext;
+  let issuer: PrismaClientIssuer;
   let useCase: EvaluationUseCase;
   let opportunityOwnerUserId: string;
   let communityId: string;
@@ -47,10 +48,7 @@ describe("Point Reward Tests", () => {
     container.reset();
     registerProductionDependencies();
 
-    container.register("PrismaClientIssuer", {
-      useValue: new PrismaClientIssuer(),
-    });
-
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(EvaluationUseCase);
 
     const opportunityOwnerUserInserted = await TestDataSourceHelper.createUser({
@@ -62,7 +60,7 @@ describe("Point Reward Tests", () => {
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
     ctx = {
       currentUser: { id: opportunityOwnerUserId },
-      issuer: container.resolve("PrismaClientIssuer"),
+      issuer,
     } as unknown as IContext;
 
     const participationUserInserted = await TestDataSourceHelper.createUser({
