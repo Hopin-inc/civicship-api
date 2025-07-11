@@ -6,10 +6,12 @@ import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Transaction GrantCommunityPoint Integration Tests", () => {
   jest.setTimeout(30_000);
   let useCase: TransactionUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -18,6 +20,7 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(TransactionUseCase);
   });
 
@@ -43,6 +46,7 @@ describe("Transaction GrantCommunityPoint Integration Tests", () => {
     const ctx = {
       uid: userId,
       currentUser: { id: userId },
+      issuer,
     } as unknown as IContext;
 
     const communityName = "community-1";

@@ -6,11 +6,13 @@ import { GqlReservationCreateInput, GqlReservationPaymentMethod } from "@/types/
 import ReservationUseCase from "@/application/domain/experience/reservation/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Reservation Integration Tests", () => {
   jest.setTimeout(30_000);
 
   let useCase: ReservationUseCase;
+  let issuer: PrismaClientIssuer;
   let startsAt: Date;
   let endsAt: Date;
 
@@ -23,6 +25,7 @@ describe("Reservation Integration Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(ReservationUseCase);
   });
 
@@ -41,7 +44,7 @@ describe("Reservation Integration Tests", () => {
         currentPrefecture: CurrentPrefecture.KAGAWA,
       });
       const userId = userInserted.id;
-      const ctx = { currentUser: { id: userId } } as unknown as IContext;
+      const ctx = { uid: userId, currentUser: { id: userId }, issuer } as unknown as IContext;
 
       const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
       const pointName = `${communityName}-point`;
@@ -120,7 +123,7 @@ describe("Reservation Integration Tests", () => {
         currentPrefecture: CurrentPrefecture.KAGAWA,
       });
       const userId = userInserted.id;
-      const ctx = { currentUser: { id: userId } } as unknown as IContext;
+      const ctx = { uid: userId, currentUser: { id: userId }, issuer } as unknown as IContext;
 
       const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
       const pointName = `${communityName}-point`;

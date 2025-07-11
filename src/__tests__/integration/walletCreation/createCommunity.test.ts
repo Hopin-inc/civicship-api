@@ -6,10 +6,12 @@ import { CurrentPrefecture } from "@prisma/client";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Community Integration Tests", () => {
   jest.setTimeout(30_000);
   let useCase: CommunityUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -18,6 +20,7 @@ describe("Community Integration Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(CommunityUseCase);
   });
 
@@ -41,7 +44,7 @@ describe("Community Integration Tests", () => {
       const userInserted = await TestDataSourceHelper.createUser(createUserInput);
       const userId = userInserted.id;
 
-      const ctx = { currentUser: { id: userId } } as unknown as IContext;
+      const ctx = { currentUser: { id: userId }, issuer } as unknown as IContext;
 
       //////////////////////////////////////////////////
       // construct request
