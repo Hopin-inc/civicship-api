@@ -5,26 +5,26 @@ import { GraphQLArmorConfig } from "@escape.tech/graphql-armor-types/dist/declar
 const config: GraphQLArmorConfig = {
   costLimit: {
     enabled: true,
-    maxCost: 200, // Aligned with portal ESLint cost-limit rule (was 5000)
-    objectCost: 2, // Keep same as portal ESLint rule
-    scalarCost: 1, // Keep same as portal ESLint rule
-    depthCostFactor: 1.5, // Keep same as portal ESLint rule
+    maxCost: 5000, // GraphQL Armor plugin default
+    objectCost: 2, // GraphQL Armor plugin default
+    scalarCost: 1, // GraphQL Armor plugin default
+    depthCostFactor: 1.5, // GraphQL Armor plugin default
   },
   maxDepth: {
     enabled: true,
-    n: 9, // Aligned with portal ESLint selection-set-depth rule (was 20)
+    n: 9, // Keep portal-aligned value for depth limit
   },
   maxAliases: {
     enabled: true,
-    n: 1, // Aligned with portal ESLint max-aliases rule (was 15)
+    n: 15, // GraphQL Armor plugin default
   },
   maxDirectives: {
     enabled: true,
-    n: 10, // Aligned with portal ESLint max-directives rule (was 50)
+    n: 50, // GraphQL Armor plugin default
   },
   maxTokens: {
     enabled: true,
-    n: 600, // Aligned with portal ESLint max-tokens rule (was 15000)
+    n: 1000, // GraphQL Armor plugin default
   },
   blockFieldSuggestion: {
     enabled: true, // Keep field suggestion blocking enabled
