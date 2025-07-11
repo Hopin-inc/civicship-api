@@ -4,6 +4,8 @@ import TicketService from "@/application/domain/reward/ticket/service";
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { ValidationError, NotFoundError } from "@/errors/graphql";
+import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
+import { PrismaTicketClaimLink } from "@/application/domain/reward/ticketClaimLink/data/type";
 
 class MockTicketRepository {
   create = jest.fn();
@@ -44,7 +46,7 @@ describe("TicketService", () => {
 
   describe("claimTicketsByIssuerId", () => {
     it("should create multiple tickets", async () => {
-      const issuedTicket = { qtyToBeIssued: 3 } as any;
+      const issuedTicket = { qtyToBeIssued: 3 } as PrismaTicketClaimLink["issuer"];
       mockConverter.claim.mockReturnValue({ created: true });
       mockRepository.create.mockResolvedValue({ id: "ticket" });
 
@@ -70,9 +72,9 @@ describe("TicketService", () => {
       );
     });
 
-    it("should throw ValidationError if ticketIds and participationIds mismatch", async () => {
+    it("should throw ValidationError if ticketIds are more than participationIds", async () => {
       await expect(
-        service.reserveManyTickets(mockCtx, ["pid1", "pid2"], mockTx, ["tid1"]),
+        service.reserveManyTickets(mockCtx, ["pid1"], mockTx, ["tid1", "tid2"]),
       ).rejects.toThrow(ValidationError);
     });
 
@@ -96,7 +98,7 @@ describe("TicketService", () => {
       const tickets = [
         { id: "1", status: "DISABLED", reason: "RESERVED" },
         { id: "2", status: "ACTIVE", reason: "USED" },
-      ] as any[];
+      ] as PrismaTicket[];
 
       mockConverter.cancelReserved.mockReturnValue({ cancelled: true });
 
@@ -114,7 +116,7 @@ describe("TicketService", () => {
 
       await service.refundTickets(
         mockCtx,
-        [{ id: "t1" }, { id: "t2" }] as any[],
+        [{ id: "t1" }, { id: "t2" }] as PrismaTicket[],
         "user-id",
         "tx-id",
         mockTx,

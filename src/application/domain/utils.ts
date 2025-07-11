@@ -10,9 +10,6 @@ export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
     throw new AuthorizationError("User must be logged in");
   }
 
-  if (process.env.ENV === "LOCAL") {
-    console.warn("LOCAL 環境: getCurrentUserId →", currentUserId);
-  }
 
   return currentUserId;
 }

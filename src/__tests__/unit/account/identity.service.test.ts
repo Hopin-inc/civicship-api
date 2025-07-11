@@ -1,7 +1,7 @@
 import "reflect-metadata";
-import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 import IdentityService from "@/application/domain/account/identity/service";
 import { auth } from "@/infrastructure/libs/firebase";
+import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 
 jest.mock("@/infrastructure/libs/firebase", () => {
   const mockDeleteUser = jest.fn();
@@ -87,12 +87,17 @@ describe("IdentityService", () => {
       const uid = "test-uid";
       const platform = IdentityPlatform.FACEBOOK;
 
-      const result = await service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID);
+      const result = await service.createUserAndIdentity(
+        TEST_USER_DATA,
+        uid,
+        platform,
+        TEST_COMMUNITY_ID,
+      );
 
       expect(mockUserRepository.create).toHaveBeenCalledWith({
         ...TEST_USER_DATA,
         identities: {
-          create: { uid, platform },
+          create: { uid, platform, communityId: TEST_COMMUNITY_ID },
         },
       });
       expect(result).toEqual(TEST_USER);
@@ -104,9 +109,9 @@ describe("IdentityService", () => {
       const error = new Error("User creation failed");
       mockUserRepository.create.mockRejectedValue(error);
 
-      await expect(service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID)).rejects.toThrow(
-        "User creation failed",
-      );
+      await expect(
+        service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID),
+      ).rejects.toThrow("User creation failed");
     });
   });
 
@@ -159,6 +164,119 @@ describe("IdentityService", () => {
       await expect(
         service.deleteFirebaseAuthUser(TEST_IDENTITY.uid, TEST_IDENTITY.tenantId),
       ).rejects.toThrow("Firebase user deletion failed");
+    });
+  });
+
+  describe("fetchNewIdToken", () => {
+    beforeEach(() => {
+      global.fetch = jest.fn();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("should successfully fetch new ID token", async () => {
+      const mockResponse = {
+        id_token: "new-id-token",
+        refresh_token: "new-refresh-token", 
+        expires_in: "3600",
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue(mockResponse),
+      });
+
+      const result = await service.fetchNewIdToken("test-refresh-token");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        `https://securetoken.googleapis.com/v1/token?key=${process.env.FIREBASE_TOKEN_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            grant_type: "refresh_token",
+            refresh_token: "test-refresh-token",
+          }),
+        },
+      );
+
+      expect(result).toEqual({
+        idToken: "new-id-token",
+        refreshToken: "new-refresh-token",
+        expiresIn: "3600",
+      });
+    });
+
+    it("should throw error when HTTP request fails", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: jest.fn().mockResolvedValue("Invalid refresh token"),
+      });
+
+      await expect(
+        service.fetchNewIdToken("invalid-refresh-token")
+      ).rejects.toThrow("Firebase token refresh failed: 400 Bad Request");
+    });
+
+    it("should handle network errors", async () => {
+      (global.fetch as jest.Mock).mockRejectedValue(new Error("Network error"));
+
+      await expect(
+        service.fetchNewIdToken("test-refresh-token")
+      ).rejects.toThrow("Network error");
+    });
+
+    it("should handle JSON parsing errors", async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockRejectedValue(new Error("Invalid JSON")),
+      });
+
+      await expect(
+        service.fetchNewIdToken("test-refresh-token")
+      ).rejects.toThrow("Invalid JSON");
+    });
+
+    it("should handle different HTTP error codes", async () => {
+      const errorCodes = [401, 403, 500, 503];
+      
+      for (const code of errorCodes) {
+        (global.fetch as jest.Mock).mockResolvedValue({
+          ok: false,
+          status: code,
+          statusText: `Error ${code}`,
+          text: jest.fn().mockResolvedValue(`Server error ${code}`),
+        });
+
+        await expect(
+          service.fetchNewIdToken("test-refresh-token")
+        ).rejects.toThrow(`Firebase token refresh failed: ${code} Error ${code}`);
+      }
+    });
+
+    it("should handle missing environment variable", async () => {
+      const originalEnv = process.env.FIREBASE_TOKEN_API_KEY;
+      delete process.env.FIREBASE_TOKEN_API_KEY;
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({}),
+      });
+
+      await service.fetchNewIdToken("test-refresh-token");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "https://securetoken.googleapis.com/v1/token?key=undefined",
+        expect.any(Object),
+      );
+
+      process.env.FIREBASE_TOKEN_API_KEY = originalEnv;
     });
   });
 });
