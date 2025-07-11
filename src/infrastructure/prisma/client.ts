@@ -3,6 +3,7 @@ import { IContext } from "@/types/server";
 import { ITXClientDenyList } from "@prisma/client/runtime/library";
 import { AuthorizationError } from "@/errors/graphql";
 import logger from "@/infrastructure/logging";
+import { injectable } from "tsyringe";
 
 type Transaction = Omit<PrismaClient, ITXClientDenyList>;
 type CallbackFn<T> = (prisma: Transaction) => Promise<T>;
@@ -34,6 +35,7 @@ prismaClient.$on("error", async ({ message, target }) => {
   logger.error("Prisma: Error occurred.", { message, target });
 });
 
+@injectable()
 export class PrismaClientIssuer {
   private readonly client: PrismaClient;
 

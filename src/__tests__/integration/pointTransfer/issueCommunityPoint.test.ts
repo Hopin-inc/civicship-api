@@ -6,10 +6,12 @@ import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Issue Tests", () => {
   const ISSUE_POINTS = 100;
   let transactionUseCase: TransactionUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -18,6 +20,7 @@ describe("Point Issue Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     transactionUseCase = container.resolve(TransactionUseCase);
   });
 
@@ -31,7 +34,10 @@ describe("Point Issue Tests", () => {
       slug: "issuer-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id } } as unknown as IContext;
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+    } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-issue",
