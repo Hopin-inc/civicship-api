@@ -250,5 +250,53 @@ describe("OpportunityService", () => {
         service.validatePublishStatus(allowedStatuses, filter),
       ).resolves.not.toThrow();
     });
+
+    it("should handle null and undefined edge cases", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      
+      await expect(
+        service.validatePublishStatus(allowedStatuses, null as any),
+      ).resolves.not.toThrow();
+      
+      await expect(
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle empty allowed statuses array", async () => {
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      
+      await expect(
+        service.validatePublishStatus([], filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of");
+    });
+
+    it("should handle very large arrays", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
+      const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
+      const filter = { publishStatus: largeArray } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should validate error message format", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC, COMMUNITY_INTERNAL");
+    });
+
+    it("should handle mixed valid and invalid statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS", PublishStatus.PRIVATE] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
+    });
   });
 });

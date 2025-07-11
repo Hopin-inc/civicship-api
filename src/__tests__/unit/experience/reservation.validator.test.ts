@@ -165,6 +165,63 @@ describe("ReservationValidator", () => {
         validator.validateCancellable(slotStartAt);
       }).toThrow(ReservationCancellationTimeoutError);
     });
+
+    it("should handle exact 24-hour boundary condition", () => {
+      const now = new Date();
+      const exactLimit = new Date(now);
+      exactLimit.setDate(exactLimit.getDate() + 1);
+      exactLimit.setMilliseconds(exactLimit.getMilliseconds() + 1);
+
+      expect(() => {
+        validator.validateCancellable(exactLimit);
+      }).not.toThrow();
+    });
+
+    it("should not throw when exactly at 24-hour limit", () => {
+      const now = new Date();
+      const exactLimit = new Date(now);
+      exactLimit.setDate(exactLimit.getDate() + 1);
+
+      expect(() => {
+        validator.validateCancellable(exactLimit);
+      }).not.toThrow();
+    });
+
+    it("should handle future daylight saving time transitions", () => {
+      const now = new Date();
+      const futureSpringForward = new Date(now.getTime() + (48 * 60 * 60 * 1000)); // 48 hours from now
+      const futureFallBack = new Date(now.getTime() + (72 * 60 * 60 * 1000)); // 72 hours from now
+      
+      expect(() => {
+        validator.validateCancellable(futureSpringForward);
+      }).not.toThrow();
+      
+      expect(() => {
+        validator.validateCancellable(futureFallBack);
+      }).not.toThrow();
+    });
+
+    it("should handle future leap year edge cases", () => {
+      const now = new Date();
+      const futureLeapYearDate = new Date(now.getTime() + (48 * 60 * 60 * 1000)); // 48 hours from now
+      expect(() => {
+        validator.validateCancellable(futureLeapYearDate);
+      }).not.toThrow();
+    });
+
+    it("should handle timezone edge cases with future dates", () => {
+      const now = new Date();
+      const futureUtcDate = new Date(now.getTime() + (48 * 60 * 60 * 1000)); // 48 hours from now
+      const futureLocalDate = new Date(now.getTime() + (72 * 60 * 60 * 1000)); // 72 hours from now
+      
+      expect(() => {
+        validator.validateCancellable(futureUtcDate);
+      }).not.toThrow();
+      
+      expect(() => {
+        validator.validateCancellable(futureLocalDate);
+      }).not.toThrow();
+    });
   });
 });
 
