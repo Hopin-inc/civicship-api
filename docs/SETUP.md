@@ -1,6 +1,6 @@
 # 詳細セットアップガイド
 
-このガイドでは、civicship-api の開発環境をゼロから設定するための包括的な手順を提供します。
+このガイドでは、civicship-api の開発環境をゼロから設定するための手順を提供します。
 
 ## 前提条件
 
@@ -47,10 +47,6 @@ pnpm install
 ```bash
 # 環境ファイルを作成
 cp .env.example .env
-
-# 設定で .env ファイルを編集
-# お好みのエディタを使用（nano、vim、code など）
-nano .env
 ```
 
 **必要な設定:**
@@ -101,26 +97,9 @@ pnpm db:generate
 pnpm db:seed-master
 ```
 
-**期待される出力:**
-```
-✅ マスターデータシーディング完了
-   - 都道府県: 47 レコード
-   - 市区町村: 1,741 レコード
-   - 国: 195 レコード
-```
-
 ```bash
 # ステップ2: ドメインデータをシード（ユーザー、コミュニティ、機会）
 pnpm db:seed-domain
-```
-
-**期待される出力:**
-```
-✅ ドメインデータシーディング完了
-   - ユーザー: 10 レコード
-   - コミュニティ: 5 レコード
-   - 機会: 15 レコード
-   - メンバーシップ: 25 レコード
 ```
 
 **シーディングの確認:**
@@ -137,14 +116,8 @@ pnpm gql:generate
 ```
 
 **期待される出力:**
-- GraphQL 型が `src/types/generated/` に生成される
+- GraphQL 型が `src/types/` に生成される
 - スキーマファイルが正常に処理される
-
-**生成されたファイルの確認:**
-```bash
-# 生成されたファイルが存在することを確認
-ls -la src/types/generated/
-```
 
 ### 6. ビルドと開発サーバーの起動
 
@@ -164,8 +137,7 @@ pnpm dev:https
 
 **期待される出力:**
 ```
-🚀 サーバー準備完了: https://localhost:3000/graphql
-📊 GraphQL Playground: https://localhost:3000/graphql
+🚀 GraphQL Playground: https://localhost:3000/graphql
 🔍 ヘルスチェック: https://localhost:3000/health
 ```
 
