@@ -1,7 +1,6 @@
 import { ApolloArmor } from "@escape.tech/graphql-armor";
 import { GraphQLArmorConfig } from "@escape.tech/graphql-armor-types/dist/declarations/src";
 
-
 const config: GraphQLArmorConfig = {
   costLimit: {
     enabled: true,
@@ -12,7 +11,7 @@ const config: GraphQLArmorConfig = {
   },
   maxDepth: {
     enabled: true,
-    n: 9, // Keep portal-aligned value for depth limit
+    n: 12, // Keep portal-aligned value for depth limit
   },
   maxAliases: {
     enabled: true,
