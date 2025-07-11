@@ -29,13 +29,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
 ```
 
 #### 2. 外部API（パブリックウォレット操作）
@@ -59,10 +59,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 EXPOSE 8080
 CMD ["node", "dist/external-api.js"]
@@ -89,10 +89,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 CMD ["node", "dist/batch.js"]
 ```
@@ -222,7 +222,7 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
     
     - name: Configure Docker
-      run: gcloud auth configure-docker
+      run: gcloud auth configure-docker asia-northeast1-docker.pkg.dev
     
     - name: Build Docker images
       run: |
