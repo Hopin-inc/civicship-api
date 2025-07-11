@@ -3,7 +3,7 @@ import { container } from "tsyringe";
 import UtilityService from "@/application/domain/reward/utility/service";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, PublishStatus } from "@prisma/client";
 import {
   GqlUtilityCreateInput,
   GqlMutationUtilityUpdateInfoArgs,
@@ -72,7 +72,7 @@ describe("UtilityService", () => {
       const mockUtility = {
         id: "u1",
         name: "Test Utility",
-        publishStatus: "PUBLIC" as any,
+        publishStatus: PublishStatus.PUBLIC,
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
@@ -112,7 +112,7 @@ describe("UtilityService", () => {
       const mockUtility = {
         id: "u1",
         name: "Test Utility",
-        publishStatus: "PUBLIC" as any,
+        publishStatus: PublishStatus.PUBLIC,
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
@@ -164,7 +164,13 @@ describe("UtilityService", () => {
       mockConverter.create.mockReturnValue(converted);
       mockRepository.create.mockResolvedValue(created);
 
-      const result = await service.createUtility(mockCtx, input, currentUserId, communityId, mockTx);
+      const result = await service.createUtility(
+        mockCtx,
+        input,
+        currentUserId,
+        communityId,
+        mockTx,
+      );
 
       expect(result).toBe(created);
       expect(mockConverter.create).toHaveBeenCalledWith(input, currentUserId, communityId);
@@ -182,7 +188,7 @@ describe("UtilityService", () => {
       const mockUtility = {
         id,
         name: "Test Utility",
-        publishStatus: "PUBLIC" as any,
+        publishStatus: PublishStatus.PUBLIC,
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
@@ -249,16 +255,16 @@ describe("UtilityService", () => {
   describe("validatePublishStatus", () => {
     it("should pass if all statuses are allowed", () => {
       expect(() =>
-        service.validatePublishStatus(["PUBLIC" as any], {
-          publishStatus: ["PUBLIC" as any],
+        service.validatePublishStatus([PublishStatus.PUBLIC], {
+          publishStatus: [PublishStatus.PUBLIC],
         }),
       ).not.toThrow();
     });
 
     it("should throw if disallowed status is present", async () => {
       try {
-        await service.validatePublishStatus(["PUBLIC" as any], {
-          publishStatus: ["PRIVATE" as any],
+        service.validatePublishStatus([PublishStatus.PUBLIC], {
+          publishStatus: [PublishStatus.PRIVATE],
         });
         fail("Expected ValidationError to be thrown");
       } catch (e: unknown) {
