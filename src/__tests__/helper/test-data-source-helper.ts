@@ -1,5 +1,5 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
-import { Prisma } from "@prisma/client";
+import { Prisma, WalletType } from "@prisma/client";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
@@ -128,7 +128,7 @@ export default class TestDataSourceHelper {
 
   static async findCommunityWallet(communityId: string) {
     return this.db.wallet.findFirst({
-      where: { communityId, type: "COMMUNITY" as any },
+      where: { communityId, type: WalletType.COMMUNITY },
       include: walletInclude,
     });
   }
@@ -138,7 +138,7 @@ export default class TestDataSourceHelper {
     return this.db.wallet.findFirst({
       where: {
         userId,
-        type: "MEMBER" as any,
+        type: WalletType.MEMBER,
         ...(communityId ? { communityId } : {}),
       },
       include: walletInclude,
@@ -261,5 +261,4 @@ export default class TestDataSourceHelper {
   static async findAllParticipation() {
     return this.db.participation.findMany({});
   }
-
 }
