@@ -2,10 +2,10 @@ import "reflect-metadata";
 import { GqlTransactionIssueCommunityPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
-import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Issue Tests", () => {
   const ISSUE_POINTS = 100;
@@ -18,6 +18,10 @@ describe("Point Issue Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    container.register("PrismaClientIssuer", {
+      useValue: new PrismaClientIssuer(),
+    });
+
     transactionUseCase = container.resolve(TransactionUseCase);
   });
 
@@ -29,9 +33,12 @@ describe("Point Issue Tests", () => {
     const user = await TestDataSourceHelper.createUser({
       name: "Issuer",
       slug: "issuer-slug",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
+      currentPrefecture: "KAGAWA" as any,
     });
-    const ctx = { currentUser: { id: user.id } } as unknown as IContext;
+    const ctx: IContext = {
+      currentUser: { id: user.id },
+      issuer: container.resolve("PrismaClientIssuer"),
+    } as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-issue",
@@ -39,7 +46,7 @@ describe("Point Issue Tests", () => {
     });
 
     const wallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.COMMUNITY,
+      type: "COMMUNITY" as any,
       community: { connect: { id: community.id } },
     });
 
@@ -55,7 +62,7 @@ describe("Point Issue Tests", () => {
     await TestDataSourceHelper.refreshCurrentPoints();
 
     const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.POINT_ISSUED,
+      (t) => t.reason === "POINT_ISSUED",
     );
 
     expect(tx).toBeDefined();
