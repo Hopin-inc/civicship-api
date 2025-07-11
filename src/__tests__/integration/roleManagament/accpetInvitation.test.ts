@@ -54,7 +54,12 @@ describe("Membership Integration: Accept Invitation", () => {
       slug: "invited-user-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id } } as IContext;
+    const ctx = { 
+      currentUser: { id: user.id },
+      issuer: {
+        public: jest.fn().mockImplementation((_, callback) => callback()),
+      }
+    } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-invite",
@@ -116,7 +121,12 @@ describe("Membership Integration: Accept Invitation", () => {
       slug: "invited-user-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id } } as IContext;
+    const ctx = { 
+      currentUser: { id: user.id },
+      issuer: {
+        public: jest.fn().mockImplementation((_, callback) => callback()),
+      }
+    } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-invite",
@@ -147,7 +157,12 @@ describe("Membership Integration: Accept Invitation", () => {
       slug: "invited-user-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const ctx = { currentUser: { id: user.id } } as IContext;
+    const ctx = { 
+      currentUser: { id: user.id },
+      issuer: {
+        public: jest.fn().mockImplementation((_, callback) => callback()),
+      }
+    } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-invite",

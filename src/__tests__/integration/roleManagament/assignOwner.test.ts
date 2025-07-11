@@ -55,7 +55,12 @@ describe("Membership Integration: Assign Owner", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ctx = { currentUser: { id: user.id } } as IContext;
+    const ctx = { 
+      currentUser: { id: user.id },
+      issuer: {
+        onlyBelongingCommunity: jest.fn().mockImplementation((_, callback) => callback()),
+      }
+    } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "Community A",
