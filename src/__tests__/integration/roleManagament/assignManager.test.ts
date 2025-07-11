@@ -54,11 +54,18 @@ describe("Membership Integration: Assign Manager", () => {
       slug: "user-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
+    const mockTx = {
+      membership: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+      }
+    };
+
     const ctx = { 
       currentUser: { id: user.id },
       issuer: {
-        onlyBelongingCommunity: jest.fn().mockImplementation((_, callback) => callback()),
-        public: jest.fn().mockImplementation((_, callback) => callback())
+        onlyBelongingCommunity: jest.fn().mockImplementation((_, callback) => callback(mockTx)),
+        public: jest.fn().mockImplementation((_, callback) => callback(mockTx))
       }
     } as unknown as IContext;
 
