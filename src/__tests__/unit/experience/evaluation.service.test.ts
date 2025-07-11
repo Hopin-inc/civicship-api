@@ -274,5 +274,193 @@ describe("EvaluationService", () => {
         expect(result.opportunity.id).toBe("opportunity-1");
       });
     });
+
+    it("should handle undefined evaluation object", () => {
+      expect(() => {
+        service.validateParticipationHasOpportunity(undefined as any);
+      }).toThrow();
+    });
+
+    it("should handle evaluation with undefined participation property", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: undefined,
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should handle deeply nested undefined values in PERSONAL_RECORD path", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "user-1",
+          opportunitySlot: {
+            opportunity: undefined,
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should handle deeply nested undefined values in reservation path", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+          userId: "user-1",
+          reservation: {
+            opportunitySlot: {
+              opportunity: undefined,
+            },
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should handle empty string userId", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "",
+          opportunitySlot: {
+            opportunity: { id: "opportunity-1" },
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should handle whitespace-only userId", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "   ",
+          opportunitySlot: {
+            opportunity: { id: "opportunity-1" },
+          },
+        },
+      } as any;
+
+      const result = service.validateParticipationHasOpportunity(evaluation);
+      expect(result.userId).toBe("   ");
+    });
+
+    it("should validate error message contains evaluationId for participation missing", () => {
+      const evaluation = {
+        id: "evaluation-123",
+        participation: null,
+      } as any;
+
+      try {
+        service.validateParticipationHasOpportunity(evaluation);
+        fail("Expected NotFoundError to be thrown");
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(NotFoundError);
+        if (e instanceof NotFoundError) {
+          expect(e.message).toContain("Participation or Opportunity");
+        }
+      }
+    });
+
+    it("should validate error message contains evaluationId for opportunity missing", () => {
+      const evaluation = {
+        id: "evaluation-456",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "user-1",
+          opportunitySlot: {
+            opportunity: null,
+          },
+        },
+      } as any;
+
+      try {
+        service.validateParticipationHasOpportunity(evaluation);
+        fail("Expected NotFoundError to be thrown");
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(NotFoundError);
+        if (e instanceof NotFoundError) {
+          expect(e.message).toContain("Participation or Opportunity");
+        }
+      }
+    });
+
+    it("should validate error message contains evaluationId for userId missing", () => {
+      const evaluation = {
+        id: "evaluation-789",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: null,
+          opportunitySlot: {
+            opportunity: { id: "opportunity-1" },
+          },
+        },
+      } as any;
+
+      try {
+        service.validateParticipationHasOpportunity(evaluation);
+        fail("Expected NotFoundError to be thrown");
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(NotFoundError);
+        if (e instanceof NotFoundError) {
+          expect(e.message).toContain("User ID");
+        }
+      }
+    });
+
+    it("should handle complex mixed null/undefined scenario", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+          userId: "user-1",
+          reservation: null,
+          opportunitySlot: {
+            opportunity: { id: "should-not-be-used" },
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should prioritize PERSONAL_RECORD path over reservation path when both exist", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "user-1",
+          opportunitySlot: {
+            opportunity: { id: "personal-opportunity" },
+          },
+          reservation: {
+            opportunitySlot: {
+              opportunity: { id: "reservation-opportunity" },
+            },
+          },
+        },
+      } as any;
+
+      const result = service.validateParticipationHasOpportunity(evaluation);
+      expect(result.opportunity.id).toBe("personal-opportunity");
+    });
   });
 });
