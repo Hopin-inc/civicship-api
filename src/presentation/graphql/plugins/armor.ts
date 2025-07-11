@@ -1,32 +1,33 @@
 import { ApolloArmor } from "@escape.tech/graphql-armor";
 import { GraphQLArmorConfig } from "@escape.tech/graphql-armor-types/dist/declarations/src";
 
+
 const config: GraphQLArmorConfig = {
   costLimit: {
     enabled: true,
-    maxCost: 5000, // Maximum allowed query cost
-    objectCost: 2, // Default cost for object fields
-    scalarCost: 1, // Default cost for scalar fields
-    depthCostFactor: 1.5, // Cost increases with query depth
+    maxCost: 200, // Aligned with portal ESLint cost-limit rule (was 5000)
+    objectCost: 2, // Keep same as portal ESLint rule
+    scalarCost: 1, // Keep same as portal ESLint rule
+    depthCostFactor: 1.5, // Keep same as portal ESLint rule
   },
   maxDepth: {
     enabled: true,
-    n: 20, // Maximum allowed query depth
+    n: 9, // Aligned with portal ESLint selection-set-depth rule (was 20)
   },
   maxAliases: {
     enabled: true,
-    n: 15, // Maximum number of aliases
+    n: 1, // Aligned with portal ESLint max-aliases rule (was 15)
   },
   maxDirectives: {
     enabled: true,
-    n: 50, // Maximum number of directives
+    n: 10, // Aligned with portal ESLint max-directives rule (was 50)
   },
   maxTokens: {
     enabled: true,
-    n: 15000, // Maximum number of tokens (roughly equivalent to character limit)
+    n: 600, // Aligned with portal ESLint max-tokens rule (was 15000)
   },
   blockFieldSuggestion: {
-    enabled: true, // Disable field suggestion hints
+    enabled: true, // Keep field suggestion blocking enabled
   },
 };
 
