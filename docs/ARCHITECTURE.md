@@ -36,12 +36,14 @@ Civicship API は **ドメイン駆動設計（DDD）** と **クリーンアー
 ```
 application/
 ├── domain/              # ドメイン固有のビジネスロジック
-│   ├── account/        # ユーザー・コミュニティ管理
+│   ├── account/        # ユーザー・コミュニティ管理（8つのサブドメイン）
+│   │   ├── auth/       # 認証・LIFF統合
+│   │   ├── community/  # コミュニティ作成、管理、設定
+│   │   ├── identity/   # マルチプラットフォーム認証管理
+│   │   ├── membership/ # ユーザー・コミュニティ関係、ロール管理
+│   │   ├── nft-wallet/ # NFTウォレット機能
 │   │   ├── user/       # ユーザープロファイル、認証
-│   │   ├── community/  # コミュニティ作成、管理
-│   │   ├── membership/ # ユーザー・コミュニティ関係
-│   │   ├── wallet/     # ポイントベースウォレットシステム
-│   │   └── identity/   # マルチプラットフォーム認証管理
+│   │   └── wallet/     # ポイントベースウォレットシステム
 │   ├── experience/     # 機会・参加管理
 │   │   ├── opportunity/    # イベント・活動作成
 │   │   ├── reservation/    # 予約システム
@@ -168,18 +170,37 @@ domain/
 ### 1. DataLoaderパターン
 
 **目的:** GraphQLでのN+1クエリ問題の防止
+**パッケージ:** `dataloader@2.2.3`
 
-**実装:**
+**実装例:**
 ```typescript
-// 例: src/application/domain/account/user/controller/dataloader.ts
-export const userLoader = new DataLoader<string, User>(
-  async (userIds) => {
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } }
-    });
-    return userIds.map(id => users.find(user => user.id === id));
-  }
-);
+// 実際の実装: src/application/domain/account/user/controller/dataloader.ts
+export const createUserDataLoader = (issuer: PrismaClientIssuer) => {
+  return new DataLoader<string, PrismaUser | null>(
+    async (userIds: readonly string[]) => {
+      const users = await issuer.internal((tx) =>
+        tx.user.findMany({
+          where: { id: { in: [...userIds] } },
+        }),
+      );
+      return userIds.map(id => users.find(user => user.id === id) || null);
+    },
+  );
+};
+
+// ウォレット用DataLoader実装
+export const createMemberWalletDataLoader = (issuer: PrismaClientIssuer) => {
+  return new DataLoader<string, PrismaWallet | null>(
+    async (userIds: readonly string[]) => {
+      return issuer.internal((tx) =>
+        tx.wallet.findMany({
+          where: { userId: { in: [...userIds] } },
+          include: { currentPointView: true },
+        }),
+      );
+    },
+  );
+};
 ```
 
 **利点:**
@@ -190,14 +211,32 @@ export const userLoader = new DataLoader<string, User>(
 ### 2. 依存性注入（tsyringe）
 
 **目的:** クリーンな依存関係管理とテスタビリティ
+**パッケージ:** `tsyringe@4.10.0`
+**設定ファイル:** `src/application/provider.ts`（275行の包括的DI設定）
 
 **実装:**
 ```typescript
-// 例: src/application/domain/account/user/service.ts
+// 実際のDI設定: src/application/provider.ts
+export function registerProductionDependencies() {
+  // インフラストラクチャ
+  container.register("prismaClient", { useValue: prismaClient });
+  container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
+  
+  // 全7ドメインのサービス・リポジトリ登録
+  // Account Domain
+  container.register("UserService", { useClass: UserService });
+  container.register("UserRepository", { useClass: UserRepository });
+  container.register("CommunityService", { useClass: CommunityService });
+  container.register("CommunityRepository", { useClass: CommunityRepository });
+  // ... 他のドメインも同様に登録
+}
+
+// サービス実装例
 @injectable()
 export class UserService {
   constructor(
-    @inject("UserRepository") private userRepo: IUserRepository
+    @inject("UserRepository") private userRepo: IUserRepository,
+    @inject("PrismaClientIssuer") private issuer: PrismaClientIssuer
   ) {}
 }
 ```
@@ -211,12 +250,43 @@ export class UserService {
 ### 3. 行レベルセキュリティ（PrismaClientIssuer）
 
 **目的:** ユーザー権限に基づくデータ分離
+**実装ファイル:** `src/infrastructure/prisma/client.ts`
 
 **実装:**
 ```typescript
-// 例: ユーザーコンテキストに基づく自動フィルタリング
-const issuer = new PrismaClientIssuer();
-const communities = await issuer.community.findMany(); // ユーザーアクセスで自動フィルタリング
+// 実際のRLS実装
+export class PrismaClientIssuer {
+  public async onlyBelongingCommunity<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+    if (ctx.isAdmin) {
+      return this.public(ctx, callback);
+    }
+    
+    const user = ctx.currentUser;
+    if (user) {
+      return await this.client.$transaction(async (tx) => {
+        await this.setRls(tx);
+        await this.setRlsConfigUserId(tx, user.id);
+        return await callback(tx);
+      });
+    }
+    throw new AuthorizationError("Not authenticated");
+  }
+  
+  private async setRlsConfigUserId(tx: Transaction, userId: string | null) {
+    const [{ value }] = await tx.$queryRawUnsafe<[{ value: string }]>(
+      `SELECT set_config('app.rls_config.user_id', '${userId ?? ""}', FALSE) as value;`,
+    );
+    return value;
+  }
+
+  // 管理者用バイパス
+  public async admin<T>(ctx: IContext, callback: CallbackFn<T>): Promise<T> {
+    return await this.client.$transaction(async (tx) => {
+      await this.setRlsBypass(tx, true);
+      return await callback(tx);
+    });
+  }
+}
 ```
 
 **利点:**
@@ -228,25 +298,47 @@ const communities = await issuer.community.findMany(); // ユーザーアクセ�
 ### 4. 認可ルール
 
 **目的:** GraphQLレベルでの権限チェック
+**パッケージ:** `@graphql-authz/core@1.3.2`
+**実装ファイル:** `src/presentation/graphql/rule.ts`
 
 **実装:**
 ```typescript
-// 例: src/presentation/graphql/rule.ts
-export const IsUser = rule({ cache: "contextual" })(
-  async (parent, args, context) => {
-    return !!context.currentUser;
-  }
-);
+// 実際の認可ルール実装
+const IsUser = preExecRule({
+  error: new AuthenticationError("User must be logged in"),
+})((context: IContext) => {
+  if (context.isAdmin) return true;
+  return !!context.currentUser;
+});
 
-export const IsCommunityOwner = rule({ cache: "contextual" })(
-  async (parent, args, context) => {
-    const membership = await context.dataloaders.membership.load({
-      userId: context.currentUser.id,
-      communityId: args.communityId
-    });
-    return membership?.role === "OWNER";
-  }
-);
+const IsCommunityOwner = preExecRule({
+  error: new AuthorizationError("User must be community owner"),
+})((context: IContext, args: { permission?: { communityId?: string } }) => {
+  if (context.isAdmin) return true;
+  
+  const user = context.currentUser;
+  const permission = args.permission;
+  
+  if (!user || !permission?.communityId) return false;
+  
+  const membership = context.hasPermissions?.memberships?.find(
+    (m) => m.communityId === permission.communityId,
+  );
+  
+  return membership?.role === Role.OWNER;
+});
+
+// 利用可能な認可ルール
+export const rules = {
+  IsUser,                 // ログイン済みユーザー
+  IsAdmin,                // システム管理者
+  IsSelf,                 // 自分自身の操作
+  IsCommunityOwner,       // コミュニティオーナー
+  IsCommunityManager,     // コミュニティマネージャー
+  IsCommunityMember,      // コミュニティメンバー
+  IsOpportunityOwner,     // 機会作成者
+  CanReadPhoneNumber,     // 電話番号読み取り権限
+} as const;
 ```
 
 **利点:**
@@ -264,8 +356,10 @@ export const IsCommunityOwner = rule({ cache: "contextual" })(
 #### ユーザー管理
 - **Users:** 個人ユーザープロファイルと認証
 - **Communities:** 機会をホストする組織
-- **Memberships:** ロール付きユーザー・コミュニティ関係
+- **Memberships:** ロール付きユーザー・コミュニティ関係（OWNER、MANAGER、MEMBER）
 - **Identities:** マルチプラットフォーム認証（LINE、Firebase、電話）
+- **Wallets:** ポイントベースウォレットシステム（COMMUNITY、MEMBER）
+- **NFT Wallets:** NFT機能統合
 
 #### エクスペリエンスシステム
 - **Opportunities:** イベント、活動、ボランティア機会
@@ -290,19 +384,31 @@ export const IsCommunityOwner = rule({ cache: "contextual" })(
 
 ### パフォーマンス最適化
 
-#### マテリアライズドビュー
-```sql
--- 現在のポイント残高（トリガーで更新）
-CREATE MATERIALIZED VIEW mv_current_points AS
-SELECT wallet_id, SUM(point_change) as current_point
-FROM t_transactions
-GROUP BY wallet_id;
+#### マテリアライズドビューとビュー
+**実装されているビュー（Prismaスキーマで定義）:**
 
--- 累積ポイント合計
-CREATE MATERIALIZED VIEW mv_accumulated_points AS
-SELECT wallet_id, SUM(CASE WHEN point_change > 0 THEN point_change ELSE 0 END) as accumulated_point
-FROM t_transactions
-GROUP BY wallet_id;
+**ポイント関連ビュー:**
+- `CurrentPointView` (`mv_current_points`) - 現在のポイント残高
+- `AccumulatedPointView` (`mv_accumulated_points`) - 累積ポイント合計
+
+**場所関連ビュー:**
+- `PlacePublicOpportunityCountView` - 場所別公開機会数
+- `PlaceAccumulatedParticipantsView` - 場所別累積参加者数
+
+**メンバーシップ関連ビュー:**
+- `MembershipParticipationGeoView` - メンバーシップ参加地理情報
+- `MembershipParticipationCountView` - メンバーシップ参加数統計
+- `MembershipHostedOpportunityCountView` - ホスト機会数統計
+
+**機会関連ビュー:**
+- `EarliestReservableSlotView` - 最早予約可能スロット
+- `OpportunityAccumulatedParticipantsView` - 機会別累積参加者数
+- `SlotRemainingCapacityView` - スロット残容量計算
+
+```sql
+-- マテリアライズドビューのリフレッシュ（実装済み）
+-- src/infrastructure/prisma/sql/refreshMaterializedViewCurrentPoints.sql
+REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points";
 ```
 
 #### データベースインデックス
