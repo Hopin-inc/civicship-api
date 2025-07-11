@@ -235,6 +235,7 @@ describe("WalletService", () => {
     });
   });
 
+
   afterEach(() => {
     jest.restoreAllMocks();
   });

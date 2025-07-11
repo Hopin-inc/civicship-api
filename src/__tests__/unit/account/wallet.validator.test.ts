@@ -154,7 +154,7 @@ describe("WalletValidator", () => {
       );
     });
 
-    it("should throw InsufficientBalanceError if currentPoint is missing", async () => {
+    it("should throw DatabaseError if currentPoint is missing", async () => {
       const fromWallet = {
         id: "wallet-from",
         currentPointView: { currentPoint: null },
@@ -167,6 +167,96 @@ describe("WalletValidator", () => {
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
         "Invalid point type: expected bigint",
       );
+    });
+
+    it("should throw DatabaseError if currentPoint is not bigint type", async () => {
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: "1000" as any },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
+        "Invalid point type: expected bigint",
+      );
+    });
+
+    it("should handle BigInt boundary values correctly", async () => {
+      const maxSafeBigInt = BigInt(Number.MAX_SAFE_INTEGER);
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: maxSafeBigInt },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(
+        validator.validateTransfer(Number.MAX_SAFE_INTEGER, fromWallet, toWallet)
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle very large BigInt values", async () => {
+      const veryLargeBigInt = BigInt("999999999999999999999999999999");
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: veryLargeBigInt },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(
+        validator.validateTransfer(1000000, fromWallet, toWallet)
+      ).resolves.not.toThrow();
+    });
+
+    it("should throw InsufficientBalanceError for BigInt boundary case", async () => {
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: BigInt(999) },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(validator.validateTransfer(1000, fromWallet, toWallet)).rejects.toThrow(
+        InsufficientBalanceError,
+      );
+    });
+
+    it("should handle zero BigInt values", async () => {
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(validator.validateTransfer(1, fromWallet, toWallet)).rejects.toThrow(
+        InsufficientBalanceError,
+      );
+    });
+
+    it("should handle negative transfer amounts", async () => {
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: BigInt(1000) },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(validator.validateTransfer(-100, fromWallet, toWallet)).resolves.not.toThrow();
     });
 
     it("should throw InsufficientBalanceError if currentPoint is insufficient", async () => {

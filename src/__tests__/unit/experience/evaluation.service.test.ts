@@ -165,5 +165,114 @@ describe("EvaluationService", () => {
       const result = service.validateParticipationHasOpportunity(evaluation);
       expect(result.opportunity.id).toBe("opportunity-2");
     });
+
+    it("should throw NotFoundError if reservation is missing for non-PERSONAL_RECORD", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+          userId: "user-1",
+          reservation: null,
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should throw NotFoundError if opportunitySlot is missing from reservation", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+          userId: "user-1",
+          reservation: {
+            opportunitySlot: null,
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should throw NotFoundError if opportunitySlot is missing for PERSONAL_RECORD", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "user-1",
+          opportunitySlot: null,
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should throw NotFoundError if opportunity is missing from PERSONAL_RECORD opportunitySlot", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "user-1",
+          opportunitySlot: {
+            opportunity: null,
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should handle complex nested null checks gracefully", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+          userId: "user-1",
+          reservation: {
+            opportunitySlot: {
+              opportunity: undefined,
+            },
+          },
+        },
+      } as any;
+
+      expect(() => {
+        service.validateParticipationHasOpportunity(evaluation);
+      }).toThrow(NotFoundError);
+    });
+
+    it("should handle different ParticipationStatusReason values correctly", () => {
+      const reasons = [
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
+        ParticipationStatusReason.OPPORTUNITY_CANCELED,
+        ParticipationStatusReason.RESERVATION_CANCELED,
+      ];
+
+      reasons.forEach(reason => {
+        const evaluation = {
+          id: "evaluation-1",
+          participation: {
+            reason,
+            userId: "user-1",
+            reservation: {
+              opportunitySlot: {
+                opportunity: { id: "opportunity-1" },
+              },
+            },
+          },
+        } as any;
+
+        const result = service.validateParticipationHasOpportunity(evaluation);
+        expect(result.opportunity.id).toBe("opportunity-1");
+      });
+    });
   });
 });

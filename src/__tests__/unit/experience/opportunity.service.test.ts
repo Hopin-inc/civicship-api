@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { NotFoundError } from "@/errors/graphql";
-import { Prisma } from "@prisma/client";
+import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 
 class MockOpportunityRepository {
@@ -176,6 +176,79 @@ describe("OpportunityService", () => {
       await expect(
         service.setOpportunityPublishStatus(mockCtx, "opportunity-1", "PUBLISHED" as any, mockTx),
       ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("validatePublishStatus", () => {
+    it("should pass validation when filter publishStatus matches allowed statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should pass validation when filter publishStatus is subset of allowed statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should pass validation when filter is undefined", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, undefined),
+      ).resolves.not.toThrow();
+    });
+
+    it("should pass validation when filter publishStatus is undefined", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = {} as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should throw ValidationError when filter publishStatus contains disallowed status", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS"] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
+    });
+
+    it("should throw ValidationError when filter publishStatus is empty array", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should throw ValidationError with multiple disallowed statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE, "INVALID"] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
+    });
+
+    it("should handle duplicate statuses in filter", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
     });
   });
 });
