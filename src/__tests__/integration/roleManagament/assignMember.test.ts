@@ -58,6 +58,7 @@ describe("Membership Integration: Assign Member", () => {
       currentUser: { id: user.id },
       issuer: {
         onlyBelongingCommunity: jest.fn().mockImplementation((_, callback) => callback()),
+        public: jest.fn().mockImplementation((_, callback) => callback())
       }
     } as unknown as IContext;
 
