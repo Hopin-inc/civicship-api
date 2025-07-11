@@ -5,6 +5,7 @@ import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Data Integrity Integration Tests", () => {
   let transactionUseCase: TransactionUseCase;
@@ -38,7 +39,7 @@ describe("Data Integrity Integration Tests", () => {
       community: { connect: { id: community.id } },
     });
 
-    const memberWallet = await TestDataSourceHelper.createWallet({
+    await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
       community: { connect: { id: community.id } },
       user: { connect: { id: user.id } },
@@ -53,7 +54,11 @@ describe("Data Integrity Integration Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx = { currentUser: { id: user.id } } as IContext;
+    const issuer = container.resolve(PrismaClientIssuer);
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+    } as unknown as IContext;
 
     await transactionUseCase.ownerGrantCommunityPoint(ctx, {
       input: { toUserId: user.id, transferPoints: 500 },

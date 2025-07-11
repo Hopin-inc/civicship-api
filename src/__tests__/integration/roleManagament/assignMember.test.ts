@@ -6,8 +6,8 @@ import MembershipUseCase from "@/application/domain/account/membership/usecase";
 import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
-import MembershipService from "@/application/domain/account/membership/service";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 class MockWalletService implements Partial<WalletService> {
   createMemberWalletIfNeeded = jest.fn();
@@ -21,6 +21,7 @@ describe("Membership Integration: Assign Member", () => {
   let membershipUseCase: MembershipUseCase;
   let walletServiceMock: MockWalletService;
   let notificationServiceMock: MockNotificationService;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -28,20 +29,14 @@ describe("Membership Integration: Assign Member", () => {
     container.reset();
     registerProductionDependencies();
 
-    const membershipService = container.resolve(MembershipService);
-
     walletServiceMock = new MockWalletService();
     notificationServiceMock = new MockNotificationService();
 
     container.register("WalletService", { useValue: walletServiceMock });
     container.register("NotificationService", { useValue: notificationServiceMock });
 
-
-    membershipUseCase = new MembershipUseCase(
-      membershipService,
-      walletServiceMock as any,
-      notificationServiceMock as any,
-    );
+    issuer = container.resolve(PrismaClientIssuer);
+    membershipUseCase = container.resolve(MembershipUseCase);
   });
 
   afterAll(async () => {
@@ -54,25 +49,16 @@ describe("Membership Integration: Assign Member", () => {
       slug: "user-slug",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    const mockTx = {
-      membership: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
-      }
-    };
-
-    const ctx = { 
-      currentUser: { id: user.id },
-      issuer: {
-        onlyBelongingCommunity: jest.fn().mockImplementation((_, callback) => callback(mockTx)),
-        public: jest.fn().mockImplementation((_, callback) => callback(mockTx))
-      }
-    } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: "community-assign",
       pointName: "c-point",
     });
+
+    const ctx = {
+      currentUser: { id: user.id },
+      issuer,
+    } as unknown as IContext;
 
     await TestDataSourceHelper.createMembership({
       user: { connect: { id: user.id } },
@@ -102,9 +88,13 @@ describe("Membership Integration: Assign Member", () => {
     expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledTimes(1);
     expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledWith(
       expect.objectContaining({
+        currentUser: { id: user.id },
+        issuer: expect.any(Object),
+      }),
+      expect.objectContaining({
         userId: user.id,
         communityId: community.id,
-        role: Role.MEMBER,
+        role: "MEMBER",
       }),
     );
   });

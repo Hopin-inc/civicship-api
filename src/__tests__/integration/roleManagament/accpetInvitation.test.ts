@@ -6,7 +6,6 @@ import MembershipUseCase from "@/application/domain/account/membership/usecase";
 import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import NotificationService from "@/application/domain/notification/service";
-import MembershipService from "@/application/domain/account/membership/service";
 import { registerProductionDependencies } from "@/application/provider";
 
 class MockWalletService implements Partial<WalletService> {
@@ -28,20 +27,13 @@ describe("Membership Integration: Accept Invitation", () => {
     container.reset();
     registerProductionDependencies();
 
-    const membershipService = container.resolve(MembershipService);
-
     walletServiceMock = new MockWalletService();
     notificationServiceMock = new MockNotificationService();
 
     container.register("WalletService", { useValue: walletServiceMock });
     container.register("NotificationService", { useValue: notificationServiceMock });
 
-
-    membershipUseCase = new MembershipUseCase(
-      membershipService,
-      walletServiceMock as any,
-      notificationServiceMock as any,
-    );
+    membershipUseCase = container.resolve(MembershipUseCase);
   });
 
   afterAll(async () => {
@@ -108,9 +100,13 @@ describe("Membership Integration: Accept Invitation", () => {
     expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledTimes(1);
     expect(notificationServiceMock.switchRichMenuByRole).toHaveBeenCalledWith(
       expect.objectContaining({
+        currentUser: { id: user.id },
+        issuer: expect.any(Object),
+      }),
+      expect.objectContaining({
         userId: user.id,
         communityId: community.id,
-        status: MembershipStatus.JOINED,
+        status: "JOINED",
       }),
     );
   });
