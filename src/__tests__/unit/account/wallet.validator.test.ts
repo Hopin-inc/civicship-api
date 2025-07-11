@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { Prisma, WalletType, TransferType } from "@prisma/client";
+import { Prisma, TransactionReason, WalletType } from "@prisma/client";
 import { container } from "tsyringe";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
@@ -68,7 +68,7 @@ describe("WalletValidator", () => {
         communityId,
         userId,
         transferPoints,
-        TransferType.GRANT,
+        TransactionReason.GRANT,
       );
 
       expect(result).toEqual({
