@@ -33,6 +33,7 @@ input EvaluationFilterInput {
     status: EvaluationStatus
     evaluatorId: ID
     participationId: ID
+    communityId: ID
 }
 
 input EvaluationSortInput {
