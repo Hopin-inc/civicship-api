@@ -17,7 +17,7 @@ module.exports = {
     ],
     "^.+\\.jsx?$": "babel-jest",
   },
-  transformIgnorePatterns: ["node_modules/(?!.*(uuid|@ngneat/falso|graphql-upload)/)"],
+  transformIgnorePatterns: ["node_modules/(?!.*(uuid|@ngneat/falso)/)"],
   coveragePathIgnorePatterns: [
     "/node_modules/",
     "/src/__tests__/helper/*.*",
@@ -31,7 +31,6 @@ module.exports = {
   ],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
-    "^graphql-upload/GraphQLUpload.mjs$": "<rootDir>/src/__tests__/helper/graphql-upload-mock.js",
   },
   testPathIgnorePatterns: [
     "<rootDir>/src/__tests__/helper/*.*",
