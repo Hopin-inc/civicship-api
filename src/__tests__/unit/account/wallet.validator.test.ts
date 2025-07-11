@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { Prisma, TransactionReason, WalletType } from "@prisma/client";
+import { Prisma, WalletType, TransferType } from "@prisma/client";
 import { container } from "tsyringe";
 import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { IContext } from "@/types/server";
@@ -29,7 +29,7 @@ describe("WalletValidator", () => {
     id: walletId,
     communityId,
     userId,
-    currentPointView: { currentPoint: 1000 },
+    currentPointView: { currentPoint: BigInt(1000) },
     createdAt: new Date("2024-01-01"),
     updatedAt: null,
   };
@@ -68,7 +68,7 @@ describe("WalletValidator", () => {
         communityId,
         userId,
         transferPoints,
-        TransactionReason.GRANT,
+        TransferType.GRANT,
       );
 
       expect(result).toEqual({
@@ -157,15 +157,15 @@ describe("WalletValidator", () => {
     it("should throw InsufficientBalanceError if currentPoint is missing", async () => {
       const fromWallet = {
         id: "wallet-from",
-        currentPointView: {},
-      } as PrismaWallet;
+        currentPointView: { currentPoint: null },
+      } as unknown as PrismaWallet;
       const toWallet = {
         id: "wallet-to",
         currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
       await expect(validator.validateTransfer(100, fromWallet, toWallet)).rejects.toThrow(
-        InsufficientBalanceError,
+        "Invalid point type: expected bigint",
       );
     });
 
