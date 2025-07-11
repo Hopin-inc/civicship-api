@@ -10,14 +10,11 @@
 # データベース接続（PostgreSQL 16.4、ポート 15432）
 DATABASE_URL=postgresql://username:password@database_host:15432/civicship_dev
 
-# 管理者 API 認証
-CIVICSHIP_ADMIN_API_KEY=your_admin_api_key_here
-
 # 環境設定
-ENV=LOCAL                    # 環境識別子（LOCAL/DEV/PROD）
+ENV=LOCAL                    # 環境識別子（LOCAL/DEV/PRD）
 NODE_ENV=development        # Node.js 環境
 PORT=3000                   # サーバーポート
-NODE_HTTPS=true            # 開発時の HTTPS 有効化
+NODE_HTTPS=true             # 開発時の HTTPS 有効化
 ```
 
 ### Firebase 認証
@@ -45,186 +42,154 @@ GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 ### セキュリティ・CORS
 
 ```env
-# クロスオリジンリソース共有
-ALLOWED_ORIGINS=http://your-domain:3000,https://your-domain:3000
+# クロスオリジンリソース共有（CORS）
+ALLOWED_ORIGINS="http://localhost:8000 https://localhost:8000"
 
 # セッション管理
 EXPRESS_SESSION_SECRET=your_session_secret_key
 ```
 
-### リッチメニュー設定
+## 環境ファイルのセットアップ
 
-```env
-# LINE リッチメニュー ID（管理画面で設定）
-RICH_MENU_ID_ADMIN_MANAGE=rich_menu_id_for_admin_management
-RICH_MENU_ID_ADMIN_USER=rich_menu_id_for_admin_users  
-RICH_MENU_ID_PUBLIC=rich_menu_id_for_public_users
-```
+### 開発環境
 
-### 追加設定
-
-```env
-# リクエスト設定
-HTTP_TIMEOUT=30000          # HTTP リクエストタイムアウト（ミリ秒）
-AUTH_MODE=firebase          # 認証モード
-
-# プロセス管理
-PROCESS_TYPE=web           # プロセスタイプ識別子
-BATCH_PROCESS_NAME=your_batch_name  # バッチ処理識別子
-
-# Redis 設定（該当する場合）
-REDIS_HOST=redis_host
-REDIS_PORT=6379
-
-# 追加 API
-API_KEY=your_general_api_key
-KYOSO_ISSUER_API_KEY=your_kyoso_api_key
-IDENTUS_API_SALT=your_api_salt
-IDENTUS_CLOUD_AGENT_URL=https://your-cloud-agent.example.com
-IDENTUS_API_URL=https://your-identus-api.example.com
-```
-
-## Environment File Setup
-
-### Development Environment
-
-1. **Copy the template:**
+1. **テンプレートをコピーする：**
    ```bash
    cp .env.example .env
    ```
 
-2. **Fill in all required values** using the variables listed above
+2. **上記の変数を使ってすべての値を入力する**
 
-3. **Important Notes:**
-   - Ensure Firebase private key has proper line breaks (`\n`)
-   - Use port 15432 for PostgreSQL (not the default 5432)
-   - Set `NODE_HTTPS=true` for development HTTPS server
+3. **重要な注意点：**
+   - Firebase の秘密鍵には正しい改行（`\n`）を含めること
+   - PostgreSQL のポートは 15432 を使用する（デフォルトの 5432 ではない）
+   - 開発時 HTTPS のために `NODE_HTTPS=true` を設定する
 
-### Test Environment  
+### テスト環境
 
-1. **Create test file:**
+1. **テスト用ファイルを作成する：**
    ```bash
    cp .env.test .env.test.local
    ```
 
-2. **Configure test-specific values:**
-   - Use separate Firebase project for testing
-   - Use test database URL
-   - Configure test-specific API keys
+2. **テスト専用の値を設定する：**
+   - テスト用 Firebase プロジェクトを使用
+   - テスト用のデータベース URL を使用
+   - テスト用 API キーを設定
 
-### Production Environment
+### 本番環境
 
-1. **Use environment-specific values:**
-   - Production Firebase project
-   - Production database connection
-   - Production GCS bucket
-   - Production API endpoints
+1. **環境固有の値を使用する：**
+   - 本番用 Firebase プロジェクト
+   - 本番用のデータベース接続
+   - 本番用の GCS バケット
+   - 本番用の API エンドポイント
 
-2. **Security considerations:**
-   - Use strong, unique secrets for each environment
-   - Rotate API keys and secrets regularly
-   - Ensure minimal required permissions for service accounts
+2. **セキュリティ上の注意点：**
+   - 各環境で強力かつ一意なシークレットを使用すること
+   - API キーやシークレットは定期的にローテーションすること
+   - サービスアカウントには最小限の権限のみを与えること
 
-## Environment Variable Categories Explained
+## 環境変数カテゴリの説明
 
-### Database Variables
-- `DATABASE_URL`: PostgreSQL connection string with credentials and database name
-- Used by Prisma ORM for all database operations
+### データベース関連変数
+- `DATABASE_URL`: 資格情報およびデータベース名を含む PostgreSQL 接続文字列
+- Prisma ORM によるすべての DB 操作に使用される
 
-### Firebase Variables
-- `FIREBASE_PROJECT_ID`: Your Firebase project identifier
-- `FIREBASE_CLIENT_EMAIL`: Service account email for server-side authentication
-- `FIREBASE_PRIVATE_KEY`: Service account private key (must include `\n` line breaks)
-- `FIREBASE_TOKEN_API_KEY`: Web API key for token validation
-- `FIREBASE_ISSUER`/`FIREBASE_AUDIENCE`: JWT token validation parameters
+### Firebase 関連変数
+- `FIREBASE_PROJECT_ID`: Firebase プロジェクト ID
+- `FIREBASE_CLIENT_EMAIL`: サーバー認証用のサービスアカウントメール
+- `FIREBASE_PRIVATE_KEY`: サービスアカウント秘密鍵（改行 `\n` 含む必要あり）
+- `FIREBASE_TOKEN_API_KEY`: トークン検証用の Web API キー
+- `FIREBASE_ISSUER` / `FIREBASE_AUDIENCE`: JWT 検証用パラメータ
 
-### Google Cloud Storage Variables
-- `GCS_SERVICE_ACCOUNT_BASE64`: Base64-encoded service account JSON
-- `GCS_BUCKET_NAME`: Storage bucket for file uploads
-- `GCP_PROJECT_ID`: Google Cloud project identifier
-- `GOOGLE_APPLICATION_CREDENTIALS`: Path to service account JSON file
+### Google Cloud Storage 関連変数
+- `GCS_SERVICE_ACCOUNT_BASE64`: Base64 エンコードされたサービスアカウント JSON
+- `GCS_BUCKET_NAME`: ファイルアップロード先のストレージバケット名
+- `GCP_PROJECT_ID`: Google Cloud プロジェクト ID
+- `GOOGLE_APPLICATION_CREDENTIALS`: サービスアカウント JSON のパス
 
-### LINE Integration Variables
-- Rich menu IDs are stored in the database and configured via admin interface
-- LINE channel credentials (LIFF, messaging) are also database-stored
-- Only rich menu IDs need to be set as environment variables
+### LINE 連携関連変数
+- リッチメニュー ID はデータベースに保存され、管理画面で設定される
+- LINE チャネル認証情報（LIFF、メッセージング）もデータベースで管理
+- 環境変数として必要なのはリッチメニュー ID のみ
 
-### Security Variables
-- `CIVICSHIP_ADMIN_API_KEY`: Protects admin endpoints
-- `ALLOWED_ORIGINS`: CORS configuration for web clients
-- `EXPRESS_SESSION_SECRET`: Session encryption key
+### セキュリティ関連変数
+- `CIVICSHIP_ADMIN_API_KEY`: 管理者エンドポイント保護用の API キー
+- `ALLOWED_ORIGINS`: Web クライアント向けの CORS 設定
+- `EXPRESS_SESSION_SECRET`: セッション暗号化用の秘密鍵
 
-## Security Best Practices
+## セキュリティベストプラクティス
 
-### Secret Management
-- **Never commit `.env` files** to version control
-- Use different values for each environment (dev/staging/prod)
-- Store production secrets in secure secret management systems
-- Rotate API keys and secrets regularly
+### シークレット管理
+- `.env` ファイルは **絶対にバージョン管理に含めないこと**
+- 環境ごとに異なる値を使用する（dev / staging / prod）
+- 本番用の秘密情報は安全なシークレット管理システムに保管する
+- API キーや秘密鍵は定期的にローテーションする
 
-### Firebase Security
-- Use service accounts with minimal required permissions
-- Enable Firebase Authentication security rules
-- Configure proper CORS origins for web clients
-- Monitor Firebase usage and authentication logs
+### Firebase セキュリティ
+- サービスアカウントは最小限の権限に制限する
+- Firebase Authentication のセキュリティルールを有効にする
+- Web クライアントの CORS 設定を適切に行う
+- Firebase の利用状況や認証ログを監視する
 
-### Database Security
-- Use strong database passwords
-- Restrict database access to necessary IP ranges
-- Enable SSL/TLS for database connections
-- Regular database backups and security updates
+### データベースセキュリティ
+- 強力な DB パスワードを使用する
+- DB アクセスは必要な IP 範囲に制限する
+- DB 接続には SSL/TLS を使用する
+- 定期的なバックアップとセキュリティアップデートを実施する
 
-### API Security
-- Protect admin endpoints with strong API keys
-- Implement rate limiting for public endpoints
-- Monitor API usage and authentication attempts
-- Use HTTPS for all external communications
+### API セキュリティ
+- 管理者用 API エンドポイントは強力な API キーで保護する
+- 公開エンドポイントにはレート制限を設ける
+- API の利用状況や認証試行を監視する
+- 外部通信には必ず HTTPS を使用する
 
-## Troubleshooting Environment Issues
+## 環境変数に関するトラブルシューティング
 
-### Common Problems
+### よくある問題
 
-**Database Connection Issues:**
-- Verify DATABASE_URL format and credentials
-- Check if PostgreSQL container is running on port 15432
-- Ensure database exists and is accessible
+**データベース接続の問題：**
+- `DATABASE_URL` の形式や資格情報を確認
+- PostgreSQL コンテナがポート 15432 で起動しているか確認
+- 対象のデータベースが存在し、アクセス可能であるか確認
 
-**Firebase Authentication Errors:**
-- Verify all Firebase environment variables are set
-- Check that FIREBASE_PRIVATE_KEY has proper line breaks (`\n`)
-- Ensure Firebase project has Authentication enabled
-- Verify service account permissions
+**Firebase 認証エラー：**
+- すべての Firebase 環境変数が設定されているか確認
+- `FIREBASE_PRIVATE_KEY` に適切な改行（`\n`）が含まれているか確認
+- Firebase プロジェクトに認証機能が有効か確認
+- サービスアカウントの権限が適切に設定されているか確認
 
-**GCS Upload Failures:**
-- Check GCS_SERVICE_ACCOUNT_BASE64 is properly encoded
-- Verify GCS bucket exists and is accessible
-- Ensure service account has Storage Object Admin permissions
-- Check GCP_PROJECT_ID matches your Google Cloud project
+**GCS アップロード失敗：**
+- `GCS_SERVICE_ACCOUNT_BASE64` が正しくエンコードされているか確認
+- バケットが存在し、アクセス可能か確認
+- サービスアカウントに Storage Object Admin 権限があるか確認
+- `GCP_PROJECT_ID` が正しいか確認
 
-**CORS Issues:**
-- Verify ALLOWED_ORIGINS includes your client domains
-- Check protocol (http vs https) matches your setup
-- Ensure no trailing slashes in origin URLs
+**CORS 問題：**
+- `ALLOWED_ORIGINS` にクライアントのドメインが含まれているか確認
+- プロトコル（http / https）が一致しているか確認
+- URL に末尾スラッシュが含まれていないことを確認
 
-### Validation Commands
+### バリデーション用コマンド
 
 ```bash
-# Test database connection
+# データベース接続確認
 pnpm db:studio
 
-# Verify Firebase configuration
-# Check server logs for Firebase initialization messages
+# Firebase 設定の確認
+# Firebase 初期化ログをサーバー上で確認
 
-# Test GCS connectivity
-# Upload test file through GraphQL mutation
+# GCS 接続確認
+# GraphQL ミューテーション経由でテストファイルをアップロード
 
-# Validate environment variables
+# 環境変数の確認
 node -e "console.log(process.env.DATABASE_URL ? 'DB OK' : 'DB Missing')"
 ```
 
-## Related Documentation
+## 関連ドキュメント
 
-- [Setup Guide](./SETUP.md) - Complete installation procedures
-- [Troubleshooting](./TROUBLESHOOTING.md) - Detailed problem resolution
-- [Development Workflow](./DEVELOPMENT.md) - Daily development procedures
-- [Architecture Guide](./ARCHITECTURE.md) - System design overview
+- [セットアップガイド](./SETUP.md) - インストール手順の全体
+- [トラブルシューティング](./TROUBLESHOOTING.md) - 詳細な問題解決
+- [開発フロー](./DEVELOPMENT.md) - 日常的な開発手順
+- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計の概要
