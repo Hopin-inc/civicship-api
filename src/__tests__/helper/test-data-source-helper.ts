@@ -1,6 +1,5 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
-import { Prisma, WalletType } from "@prisma/client";
-import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
+import { Prisma } from "@prisma/client";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
@@ -23,6 +22,10 @@ export default class TestDataSourceHelper {
     await this.db.image.deleteMany();
 
     await this.db.participationStatusHistory.deleteMany();
+
+    await this.db.vcIssuanceRequest.deleteMany();
+    await this.db.didIssuanceRequest.deleteMany();
+    await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 
     await this.db.reservation.deleteMany();
@@ -35,15 +38,17 @@ export default class TestDataSourceHelper {
     await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
 
-    await this.db.participationStatusHistory.deleteMany();
-    await this.db.participation.deleteMany();
-
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
     await this.db.membership.deleteMany();
     await this.db.opportunitySlot.deleteMany();
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
+
+    await this.db.communityFirebaseConfig.deleteMany();
+    await this.db.communityLineConfig.deleteMany();
+    await this.db.communityConfig.deleteMany();
+
     await this.db.community.deleteMany();
     await this.db.user.deleteMany();
     await this.db.place.deleteMany();
@@ -123,7 +128,7 @@ export default class TestDataSourceHelper {
 
   static async findCommunityWallet(communityId: string) {
     return this.db.wallet.findFirst({
-      where: { communityId, type: WalletType.COMMUNITY },
+      where: { communityId, type: "COMMUNITY" as any },
       include: walletInclude,
     });
   }
@@ -133,7 +138,7 @@ export default class TestDataSourceHelper {
     return this.db.wallet.findFirst({
       where: {
         userId,
-        type: WalletType.MEMBER,
+        type: "MEMBER" as any,
         ...(communityId ? { communityId } : {}),
       },
       include: walletInclude,
@@ -228,7 +233,7 @@ export default class TestDataSourceHelper {
 
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
-    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
   // ========== Participation関連 (不要になれば削除) =========
@@ -249,4 +254,5 @@ export default class TestDataSourceHelper {
   static async findAllParticipation() {
     return this.db.participation.findMany({});
   }
+
 }
