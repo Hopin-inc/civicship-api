@@ -62,10 +62,10 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 COPY . .
-RUN npm run build:external
+RUN npm run build
 
 EXPOSE 8080
-CMD ["npm", "run", "start:external"]
+CMD ["node", "dist/external-api.js"]
 ```
 
 #### 3. バッチ処理（バックグラウンドジョブ）
@@ -92,9 +92,9 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 COPY . .
-RUN npm run build:batch
+RUN npm run build
 
-CMD ["npm", "run", "start:batch"]
+CMD ["node", "dist/batch.js"]
 ```
 
 ## Google Cloud Run設定
@@ -121,7 +121,7 @@ spec:
     spec:
       containerConcurrency: 100
       containers:
-      - image: gcr.io/PROJECT_ID/civicship-api:latest
+      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api:latest
         ports:
         - containerPort: 3000
         env:
@@ -146,7 +146,7 @@ spec:
   template:
     spec:
       containers:
-      - image: gcr.io/PROJECT_ID/civicship-api-external:latest
+      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api-external:latest
         ports:
         - containerPort: 8080
         env:
@@ -226,20 +226,20 @@ jobs:
     
     - name: Build Docker images
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api:${{ github.sha }} .
-        docker build -f Dockerfile.external -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api-external:${{ github.sha }} .
-        docker build -f Dockerfile.batch -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api-batch:${{ github.sha }} .
+        docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} .
+        docker build -f Dockerfile.external -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }} .
+        docker build -f Dockerfile.batch -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }} .
     
     - name: Push to Container Registry
       run: |
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api:${{ github.sha }}
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api-external:${{ github.sha }}
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api-batch:${{ github.sha }}
+        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }}
+        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-external:${{ github.sha }}
+        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api-batch:${{ github.sha }}
     
     - name: Deploy to Cloud Run
       run: |
         gcloud run deploy civicship-api-internal \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/civicship-api:${{ github.sha }} \
+          --image asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/civicship-api/civicship-api:${{ github.sha }} \
           --platform managed \
           --region asia-northeast1 \
           --allow-unauthenticated
@@ -384,7 +384,7 @@ spec:
   template:
     spec:
       containers:
-      - image: gcr.io/PROJECT_ID/civicship-api:latest
+      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/civicship-api/civicship-api:latest
         livenessProbe:
           httpGet:
             path: /health

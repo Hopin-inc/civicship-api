@@ -64,21 +64,21 @@ DATABASE_URL=postgresql://civicship:civicship@localhost:15432/civicship
 **実装ファイル:** `src/infrastructure/libs/firebase.ts`
 
 ```typescript
-import admin from 'firebase-admin';
+import admin from "firebase-admin";
+import { App } from "firebase-admin/lib/app";
 
-// Firebase Admin SDK初期化
-const firebaseApp = admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  }),
-});
+let app: App | undefined = undefined;
+if (!admin.apps.length) {
+  app = admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    }),
+  });
+}
 
-// マルチテナント認証サポート
-export const getTenantAuth = (tenantId: string) => {
-  return admin.auth(firebaseApp).tenantManager().authForTenant(tenantId);
-};
+export const auth = admin.auth(app);
 ```
 
 **機能:**
@@ -92,20 +92,41 @@ export const getTenantAuth = (tenantId: string) => {
 **実装ファイル:** `src/infrastructure/libs/storage.ts`
 
 ```typescript
-import { Storage } from '@google-cloud/storage';
+import { Storage } from "@google-cloud/storage";
+import logger from "@/infrastructure/logging";
 
-const storage = new Storage({
+const base64Encoded = process.env.GCS_SERVICE_ACCOUNT_BASE64;
+const credentials = base64Encoded
+  ? JSON.parse(Buffer.from(base64Encoded, "base64").toString("utf-8"))
+  : undefined;
+
+export const gcsBucketName = process.env.GCS_BUCKET_NAME!;
+export const storage = new Storage({
   projectId: process.env.GCP_PROJECT_ID,
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  credentials,
 });
 
-const bucket = storage.bucket(process.env.GCS_BUCKET_NAME!);
+export async function generateSignedUrl(
+  fileName: string,
+  folderPath?: string,
+  bucketName?: string,
+): Promise<string> {
+  try {
+    bucketName = bucketName ?? gcsBucketName;
+    const filePath = folderPath ? `${folderPath}/${fileName}` : fileName;
+    const options = {
+      version: "v4" as const,
+      action: "read" as const,
+      expires: Date.now() + 15 * 60 * 1000, // 15分間有効
+    };
 
-export const uploadFile = async (file: Buffer, fileName: string) => {
-  const fileUpload = bucket.file(fileName);
-  await fileUpload.save(file);
-  return fileUpload.publicUrl();
-};
+    const [url] = await storage.bucket(bucketName).file(filePath).getSignedUrl(options);
+    return url;
+  } catch (e) {
+    logger.warn(e);
+    return "";
+  }
+}
 ```
 
 **機能:**
@@ -119,16 +140,29 @@ export const uploadFile = async (file: Buffer, fileName: string) => {
 **実装ファイル:** `src/infrastructure/libs/line.ts`
 
 ```typescript
-import { Client } from '@line/bot-sdk';
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { IContext } from "@/types/server";
+import { container } from "tsyringe";
+import CommunityConfigService from "@/application/domain/account/community/config/service";
+import { messagingApi } from "@line/bot-sdk";
+import logger from "@/infrastructure/logging";
 
-const lineClient = new Client({
-  channelAccessToken: process.env.LINE_MESSAGING_CHANNEL_ACCESS_TOKEN!,
-  channelSecret: process.env.LINE_MESSAGING_CHANNEL_SECRET!,
-});
+export async function createLineClient(
+  communityId: string,
+): Promise<messagingApi.MessagingApiClient> {
+  const issuer = new PrismaClientIssuer();
+  const ctx = { issuer } as IContext;
 
-export const sendMessage = async (userId: string, message: string) => {
-  return lineClient.pushMessage(userId, { type: 'text', text: message });
-};
+  const configService = container.resolve(CommunityConfigService);
+  const { accessToken } = await configService.getLineMessagingConfig(ctx, communityId);
+
+  logger.info("LINE client created", {
+    communityId,
+    tokenPreview: accessToken.slice(0, 10),
+  });
+
+  return new messagingApi.MessagingApiClient({ channelAccessToken: accessToken });
+}
 ```
 
 **機能:**
@@ -142,19 +176,53 @@ export const sendMessage = async (userId: string, message: string) => {
 **実装ファイル:** `src/infrastructure/libs/did.ts`
 
 ```typescript
-import axios from 'axios';
+import axios from "axios";
+import { injectable } from "tsyringe";
+import { IDENTUS_API_URL } from "@/consts/utils";
+import logger from "@/infrastructure/logging";
 
-const identusClient = axios.create({
-  baseURL: process.env.IDENTUS_API_URL,
-  headers: {
-    'Authorization': `Bearer ${process.env.IDENTUS_API_SALT}`,
-  },
-});
+@injectable()
+export class DIDVCServerClient {
+  async call<T>(
+    uid: string,
+    token: string,
+    endpoint: string,
+    method: "GET" | "POST" | "PUT" | "DELETE",
+    data?: Record<string, unknown>,
+  ): Promise<T> {
+    const url = `${IDENTUS_API_URL}${endpoint}`;
+    const headers = {
+      "x-api-key": process.env.API_KEY,
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    };
 
-export const createDID = async (userData: any) => {
-  const response = await identusClient.post('/dids', userData);
-  return response.data;
-};
+    logger.debug(`[DIDVCClient] ${method} ${url} for uid=${uid}`);
+
+    try {
+      let response;
+      switch (method) {
+        case "GET":
+          response = await axios.get(url, { headers });
+          break;
+        case "POST":
+          response = await axios.post(url, data, { headers });
+          break;
+        case "PUT":
+          response = await axios.put(url, data, { headers });
+          break;
+        case "DELETE":
+          response = await axios.delete(url, { headers });
+          break;
+      }
+
+      return response?.data as T;
+    } catch (error) {
+      logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
+      throw error;
+    }
+  }
+}
 ```
 
 **機能:**
@@ -183,10 +251,10 @@ GCP_PROJECT_ID=your-gcp-project
 GCS_BUCKET_NAME=your-bucket-name
 GCS_SERVICE_ACCOUNT_BASE64=base64-encoded-service-account
 
-# LINE API
-LINE_MESSAGING_CHANNEL_ACCESS_TOKEN=your-channel-access-token
-LINE_MESSAGING_CHANNEL_SECRET=your-channel-secret
-LIFF_ID=your-liff-id
+# LINE API（開発・テスト用のデフォルト値）
+LINE_MESSAGING_CHANNEL_ACCESS_TOKEN=your-default-channel-access-token
+LINE_MESSAGING_CHANNEL_SECRET=your-default-channel-secret
+LIFF_ID=your-default-liff-id
 
 # IDENTUS
 IDENTUS_API_URL=https://your-identus-instance.com
@@ -223,7 +291,7 @@ pnpm db:seed-domain
 ### アプリケーションログ
 
 ```typescript
-import { logger } from '../infrastructure/logger';
+import logger from "@/infrastructure/logging";
 
 // 構造化ログ記録
 logger.info('Database connection established', {

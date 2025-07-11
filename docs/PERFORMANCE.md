@@ -47,15 +47,17 @@ export const createUserDataLoader = (issuer: PrismaClientIssuer) => {
 - リクエスト内でのデータ重複排除
 - データベース負荷の大幅軽減
 
-### 2. マテリアライズドビュー
+### 2. データベースビュー
 
 **目的:** 複雑な集計クエリの事前計算
+
+**注意:** 一部のマテリアライズドビューは通常のビューに変換されています（`20250403080546_convert_mv_to_view`マイグレーション参照）。
 
 #### 現在のポイント残高ビュー
 
 ```sql
--- mv_current_points: リアルタイムポイント残高
-CREATE MATERIALIZED VIEW mv_current_points AS
+-- current_point_view: リアルタイムポイント残高（通常のビューに変換済み）
+CREATE VIEW current_point_view AS
 SELECT 
   wallet_id,
   SUM(
@@ -70,12 +72,9 @@ SELECT
 FROM transactions
 WHERE status = 'COMPLETED'
 GROUP BY wallet_id;
-
--- インデックス作成
-CREATE UNIQUE INDEX idx_current_points_wallet_id ON mv_current_points(wallet_id);
 ```
 
-#### 累積ポイントビュー
+#### スロット残り容量ビュー
 
 ```sql
 -- mv_accumulated_points: 累積獲得ポイント
@@ -108,29 +107,17 @@ FROM participations
 GROUP BY opportunity_id;
 ```
 
-#### ビューの自動更新
+#### ビューの特徴
 
-```typescript
-// バッチ処理でのマテリアライズドビュー更新
-export const refreshMaterializedViews = async () => {
-  const startTime = Date.now();
-  
-  try {
-    await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_current_points;`;
-    await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_accumulated_points;`;
-    await prisma.$executeRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY mv_opportunity_participation_stats;`;
-    
-    const duration = Date.now() - startTime;
-    logger.info('Materialized views refreshed successfully', { duration });
-  } catch (error) {
-    logger.error('Failed to refresh materialized views', { error });
-    throw error;
-  }
-};
+**通常のビューの利点:**
+- リアルタイムデータ反映
+- 自動更新（手動リフレッシュ不要）
+- ストレージ使用量削減
 
-// 定期実行（5分間隔）
-setInterval(refreshMaterializedViews, 5 * 60 * 1000);
-```
+**注意点:**
+- クエリ実行時に計算処理が発生
+- 複雑なクエリの場合はパフォーマンス影響あり
+- 適切なインデックス設計が重要
 
 ### 3. データベースインデックス最適化
 
@@ -503,7 +490,7 @@ node --inspect --max-old-space-size=4096 dist/index.js
 - **適切なインデックス設計**
 - **クエリプランの定期的な確認**
 - **不要なデータの定期的なクリーンアップ**
-- **マテリアライズドビューの活用**
+- **データベースビューの活用**
 
 ### 2. アプリケーション最適化
 

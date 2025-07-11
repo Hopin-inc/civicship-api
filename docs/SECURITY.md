@@ -18,26 +18,57 @@ civicship-apiは4層のセキュリティアーキテクチャを採用してい
 **実装ファイル:** `src/presentation/middleware/auth.ts`
 
 ```typescript
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const token = extractTokenFromHeader(req.headers.authorization);
-    
-    // Firebase JWT トークン検証
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    
-    // マルチテナント対応
-    if (decodedToken.firebase.tenant) {
-      const tenantAuth = admin.auth().tenantManager()
-        .authForTenant(decodedToken.firebase.tenant);
-      await tenantAuth.verifyIdToken(token);
-    }
-    
-    req.user = decodedToken;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Unauthorized' });
+export async function createContext({ req }: { req: http.IncomingMessage }): Promise<IContext> {
+  const issuer = new PrismaClientIssuer();
+  const loaders: Loaders = createLoaders(issuer);
+  const idToken = getIdTokenFromRequest(req);
+  const communityId = (req.headers["x-community-id"] as string) || process.env.COMMUNITY_ID;
+
+  if (!communityId) {
+    throw new Error("Missing required header: x-community-id");
   }
-};
+
+  if (!idToken) {
+    return { issuer, loaders, communityId };
+  }
+
+  const configService = container.resolve(CommunityConfigService);
+  const tenantId = await configService.getFirebaseTenantId({ issuer } as IContext, communityId);
+
+  try {
+    const tenantedAuth = auth.tenantManager().authForTenant(tenantId);
+    const decoded = await tenantedAuth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+
+    const [currentUser, hasPermissions] = await Promise.all([
+      issuer.internal(async (tx) =>
+        tx.user.findFirst({
+          where: { identities: { some: { uid } } },
+          include: userAuthInclude,
+        }),
+      ),
+      issuer.internal(async (tx) =>
+        tx.user.findFirst({
+          where: { identities: { some: { uid } } },
+          select: userAuthSelect,
+        }),
+      ),
+    ]);
+
+    return {
+      issuer,
+      loaders,
+      uid,
+      tenantId,
+      communityId,
+      currentUser,
+      hasPermissions,
+      idToken,
+    };
+  } catch {
+    return { communityId, issuer, loaders };
+  }
+}
 ```
 
 **機能:**
