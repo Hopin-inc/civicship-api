@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import { CurrentPrefecture, IdentityPlatform } from "@prisma/client";
 import IdentityService from "@/application/domain/account/identity/service";
 import { auth } from "@/infrastructure/libs/firebase";
 
@@ -47,7 +46,7 @@ describe("IdentityService", () => {
     name: "Test User",
     email: "test@example.com",
     slug: "test-user",
-    currentPrefecture: CurrentPrefecture.KAGAWA,
+    currentPrefecture: "KAGAWA" as any,
   };
   const TEST_USER = {
     id: TEST_USER_ID,
@@ -59,7 +58,7 @@ describe("IdentityService", () => {
     uid: "test-uid",
     tenantId: "test-tenant-id",
     communityId: TEST_COMMUNITY_ID,
-    platform: IdentityPlatform.LINE,
+    platform: "LINE" as any,
   };
 
   const mockTenantedAuth = {
@@ -85,14 +84,14 @@ describe("IdentityService", () => {
       mockUserRepository.create.mockResolvedValue(TEST_USER);
 
       const uid = "test-uid";
-      const platform = IdentityPlatform.FACEBOOK;
+      const platform = "FACEBOOK" as any;
 
       const result = await service.createUserAndIdentity(TEST_USER_DATA, uid, platform, TEST_COMMUNITY_ID);
 
       expect(mockUserRepository.create).toHaveBeenCalledWith({
         ...TEST_USER_DATA,
         identities: {
-          create: { uid, platform },
+          create: { uid, platform, communityId: TEST_COMMUNITY_ID },
         },
       });
       expect(result).toEqual(TEST_USER);
@@ -100,7 +99,7 @@ describe("IdentityService", () => {
 
     it("should throw an error when user creation fails", async () => {
       const uid = "test-uid";
-      const platform = IdentityPlatform.FACEBOOK;
+      const platform = "FACEBOOK" as any;
       const error = new Error("User creation failed");
       mockUserRepository.create.mockRejectedValue(error);
 

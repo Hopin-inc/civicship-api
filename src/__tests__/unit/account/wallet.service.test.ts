@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { Prisma, WalletType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { container } from "tsyringe";
 import WalletService from "@/application/domain/account/wallet/service";
 import { NotFoundError } from "@/errors/graphql";
@@ -28,7 +28,9 @@ describe("WalletService", () => {
   let mockConverter: MockWalletConverter;
   let walletService: WalletService;
 
-  const mockCtx = {} as IContext;
+  const mockCtx = { 
+    issuer: { public: jest.fn((ctx, callback) => callback({})) } 
+  } as unknown as IContext;
   const mockTx = {} as Prisma.TransactionClient;
   const walletId = "wallet-123";
   const communityId = "community-456";
@@ -42,11 +44,11 @@ describe("WalletService", () => {
     updatedAt: null,
   };
 
-  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: WalletType.MEMBER };
+  const memberWallet = { ...baseWallet, id: "member-wallet-111", type: "MEMBER" as any };
   const communityWallet = {
     ...baseWallet,
     id: "community-wallet-111",
-    type: WalletType.COMMUNITY,
+    type: "COMMUNITY" as any,
     userId: null,
   };
 
@@ -59,6 +61,7 @@ describe("WalletService", () => {
 
     container.register("WalletRepository", { useValue: mockRepository });
     container.register("WalletConverter", { useValue: mockConverter });
+    container.register("TransactionService", { useValue: { refreshCurrentPoint: jest.fn() } });
 
     walletService = container.resolve(WalletService);
   });
@@ -164,7 +167,7 @@ describe("WalletService", () => {
   describe("createCommunityWallet", () => {
     it("should create a community wallet", async () => {
       const createInput = {
-        type: WalletType.COMMUNITY,
+        type: "COMMUNITY" as any,
         community: { connect: { id: communityId } },
       };
       mockConverter.createCommunityWallet.mockReturnValue(createInput);
@@ -199,7 +202,7 @@ describe("WalletService", () => {
 
     it("should create new member wallet if not exists", async () => {
       const createInput = {
-        type: WalletType.MEMBER,
+        type: "MEMBER" as any,
         community: { connect: { id: communityId } },
         user: { connect: { id: userId } },
       };
