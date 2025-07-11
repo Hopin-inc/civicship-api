@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import {
   participationIncludeSlot,
+  participationPortfolioInclude,
   participationSelectDetail,
   PrismaParticipationDetail,
 } from "@/application/domain/experience/participation/data/type";
@@ -29,6 +30,25 @@ export default class ParticipationRepository implements IParticipationRepository
     );
   }
 
+  async queryForPortfolio(
+    ctx: IContext,
+    where: Prisma.ParticipationWhereInput,
+    orderBy: Prisma.ParticipationOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ) {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.participation.findMany({
+        where,
+        orderBy,
+        take: take + 1,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+        include: participationPortfolioInclude,
+      }),
+    );
+  }
+
   async count(ctx: IContext, where: Prisma.ParticipationWhereInput) {
     return ctx.issuer.public(ctx, (dbTx) => {
       return dbTx.participation.count({
@@ -50,7 +70,7 @@ export default class ParticipationRepository implements IParticipationRepository
     return ctx.issuer.public(ctx, (tx) => {
       return tx.participation.findUnique({
         where: { id },
-        include: participationIncludeSlot,
+        select: participationIncludeSlot,
       });
     });
   }
@@ -60,6 +80,14 @@ export default class ParticipationRepository implements IParticipationRepository
       data,
       select: participationSelectDetail,
     });
+  }
+
+  async createMany(
+    ctx: IContext,
+    data: Prisma.ParticipationCreateInput[],
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.participation.createMany({ data, skipDuplicates: true });
   }
 
   async update(

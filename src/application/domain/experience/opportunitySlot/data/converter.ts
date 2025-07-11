@@ -12,8 +12,8 @@ export default class OpportunitySlotConverter {
   filter(filter?: GqlOpportunitySlotFilterInput): Prisma.OpportunitySlotWhereInput {
     const slotConditions: Prisma.OpportunitySlotWhereInput[] = [];
 
-    if (filter?.opportunityId) {
-      slotConditions.push({ opportunityId: filter.opportunityId });
+    if (filter?.opportunityIds?.length) {
+      slotConditions.push({ opportunityId: { in: filter.opportunityIds } });
     }
 
     if (filter?.ownerId) {
@@ -21,7 +21,11 @@ export default class OpportunitySlotConverter {
     }
 
     if (filter?.hostingStatus) {
-      slotConditions.push({ hostingStatus: filter.hostingStatus });
+      if (Array.isArray(filter.hostingStatus) && filter.hostingStatus.length > 0) {
+        slotConditions.push({ hostingStatus: { in: filter.hostingStatus } });
+      } else if (!Array.isArray(filter.hostingStatus)) {
+        slotConditions.push({ hostingStatus: filter.hostingStatus });
+      }
     }
 
     const range = filter?.dateRange;

@@ -1,0 +1,27 @@
+# ------------------------------
+# VcIssuanceRequest Object Type
+# ------------------------------
+type VcIssuanceRequest {
+    id: ID!
+    status: VcIssuanceStatus!
+
+    requestedAt: Datetime
+    processedAt: Datetime
+    completedAt: Datetime
+
+    evaluation: Evaluation
+    user: User
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# VcIssuanceStatus Enum
+# ------------------------------
+enum VcIssuanceStatus {
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+}

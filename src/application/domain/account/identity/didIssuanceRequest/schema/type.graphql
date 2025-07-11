@@ -1,0 +1,27 @@
+
+# ------------------------------
+# DidIssuanceRequest Object Type
+# ------------------------------
+type DidIssuanceRequest {
+    id: ID!
+    status: DidIssuanceStatus!
+
+    didValue: String
+
+    requestedAt: Datetime
+    processedAt: Datetime
+    completedAt: Datetime
+
+    createdAt: Datetime
+    updatedAt: Datetime
+}
+
+# ------------------------------
+# DidIssuanceStatus Enum
+# ------------------------------
+enum DidIssuanceStatus {
+    PENDING
+    PROCESSING
+    COMPLETED
+    FAILED
+}

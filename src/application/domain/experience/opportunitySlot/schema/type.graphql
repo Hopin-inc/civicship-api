@@ -2,26 +2,29 @@
 # Opportunity Slot Object Type Definitions
 # ------------------------------
 type OpportunitySlot {
-    id: ID!
+  id: ID!
 
-    hostingStatus: OpportunitySlotHostingStatus!
-    capacity: Int
-    remainingCapacity: Int
+  hostingStatus: OpportunitySlotHostingStatus!
+  capacity: Int
+  remainingCapacity: Int
 
-    startsAt: Datetime!
-    endsAt: Datetime!
+  startsAt: Datetime!
+  endsAt: Datetime!
 
-    opportunity: Opportunity
+  opportunity: Opportunity
 
-    reservations: [Reservation!]
-    
-    # Evaluation statistics
-    isFullyEvaluated: Boolean
-    numParticipants: Int
-    numEvaluated: Int
+  reservations: [Reservation!]
 
-    createdAt: Datetime
-    updatedAt: Datetime
+  # VC Issuance Requests
+  vcIssuanceRequests: [VcIssuanceRequest!]
+
+  # Evaluation statistics
+  isFullyEvaluated: Boolean
+  numParticipants: Int
+  numEvaluated: Int
+
+  createdAt: Datetime
+  updatedAt: Datetime
 }
 
 enum OpportunitySlotHostingStatus {

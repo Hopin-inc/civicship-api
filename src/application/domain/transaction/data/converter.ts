@@ -131,7 +131,10 @@ function buildTransactionWhereInput(
   if (filter.toUserId) conditions.push({ toWallet: { user: { id: filter.toUserId } } });
   if (filter.fromWalletType) conditions.push({ fromWallet: { type: filter.fromWalletType } });
   if (filter.toWalletType) conditions.push({ toWallet: { type: filter.toWalletType } });
-
+  if (filter.fromUserName) conditions.push({ fromWallet: { user: { name: { contains: filter.fromUserName } } } });
+  if (filter.toUserName) conditions.push({ toWallet: { user: { name: { contains: filter.toUserName } } } });
+  if (filter.fromDidValue) conditions.push({ fromWallet: { user: { didIssuanceRequests: { some: { didValue: { contains: filter.fromDidValue } } } } } });
+  if (filter.toDidValue) conditions.push({ toWallet: { user: { didIssuanceRequests: { some: { didValue: { contains: filter.toDidValue } } } } } });
   // 再帰的に and/or/not を処理
   if (filter.and) {
     conditions.push({

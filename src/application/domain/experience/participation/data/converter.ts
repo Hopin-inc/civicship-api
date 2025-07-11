@@ -1,5 +1,6 @@
 import {
   GqlImageInput,
+  GqlParticipationBulkCreateInput,
   GqlParticipationCreatePersonalRecordInput,
   GqlParticipationFilterInput,
   GqlParticipationSortInput,
@@ -20,63 +21,68 @@ export default class ParticipationConverter {
         filter?.userIds ? { userId: { in: filter.userIds } } : {},
         filter?.categories && filter.categories.length
           ? {
-            reservation: {
-              opportunitySlot: {
-                opportunity: {
-                  category: { in: filter.categories.filter(isOpportunityCategory) },
-                },
-              },
-            },
-          }
-          : {},
-        filter?.dateFrom || filter?.dateTo
-          ? {
-            reservation: {
-              opportunitySlot: {
-                startsAt: {
-                  ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
-                  ...(filter.dateTo ? { lte: filter.dateTo } : {}),
-                },
-              },
-            },
-          }
-          : {},
-        filter?.cityCodes
-          ? {
-            reservation: {
-              opportunitySlot: {
-                opportunity: {
-                  place: {
-                    city: {
-                      code: { in: filter.cityCodes },
-                    },
+              reservation: {
+                opportunitySlot: {
+                  opportunity: {
+                    category: { in: filter.categories.filter(isOpportunityCategory) },
                   },
                 },
               },
-            },
-          }
+            }
           : {},
-        filter?.stateCodes
+        filter?.dateFrom || filter?.dateTo
           ? {
-            reservation: {
-              opportunitySlot: {
-                opportunity: {
-                  place: {
-                    city: {
-                      state: {
-                        code: { in: filter.stateCodes },
+              reservation: {
+                opportunitySlot: {
+                  startsAt: {
+                    ...(filter.dateFrom ? { gte: filter.dateFrom } : {}),
+                    ...(filter.dateTo ? { lte: filter.dateTo } : {}),
+                  },
+                },
+              },
+            }
+          : {},
+        filter?.cityCodes
+          ? {
+              reservation: {
+                opportunitySlot: {
+                  opportunity: {
+                    place: {
+                      city: {
+                        code: { in: filter.cityCodes },
                       },
                     },
                   },
                 },
               },
-            },
-          }
+            }
+          : {},
+        filter?.stateCodes
+          ? {
+              reservation: {
+                opportunitySlot: {
+                  opportunity: {
+                    place: {
+                      city: {
+                        state: {
+                          code: { in: filter.stateCodes },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }
           : {},
         filter?.status ? { status: filter.status } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.opportunityId
-          ? { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } }
+          ? {
+              OR: [
+                { reservation: { opportunitySlot: { opportunityId: filter.opportunityId } } },
+                { opportunitySlot: { opportunityId: filter.opportunityId } },
+              ],
+            }
           : {},
         filter?.opportunitySlotId
           ? { reservation: { opportunitySlotId: filter.opportunitySlotId } }
@@ -118,6 +124,20 @@ export default class ParticipationConverter {
       },
       images: images ?? [],
     };
+  }
+
+  createMany(
+    input: GqlParticipationBulkCreateInput,
+    communityId: string,
+  ): Prisma.ParticipationCreateInput[] {
+    return input.userIds.map((userId) => ({
+      user: { connect: { id: userId } },
+      community: { connect: { id: communityId } },
+      opportunitySlot: { connect: { id: input.slotId } },
+      description: input.description ?? null,
+      status: ParticipationStatus.PARTICIPATING,
+      reason: ParticipationStatusReason.PERSONAL_RECORD,
+    }));
   }
 
   setStatus(

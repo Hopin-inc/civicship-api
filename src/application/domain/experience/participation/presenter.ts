@@ -3,6 +3,7 @@ import {
   GqlParticipation,
   GqlParticipationCreatePersonalRecordSuccess,
   GqlParticipationDeleteSuccess,
+  GqlParticipationBulkCreateSuccess,
 } from "@/types/graphql";
 import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 
@@ -42,6 +43,15 @@ export default class ParticipationPresenter {
     return {
       __typename: "ParticipationDeleteSuccess",
       participationId: r.id,
+    };
+  }
+
+  static bulkCreate(
+    participations: PrismaParticipationDetail[],
+  ): GqlParticipationBulkCreateSuccess {
+    return {
+      __typename: "ParticipationBulkCreateSuccess",
+      participations: participations.map(this.get),
     };
   }
 }

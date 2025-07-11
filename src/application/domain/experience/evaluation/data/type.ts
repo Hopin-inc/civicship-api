@@ -1,9 +1,15 @@
 import { Prisma } from "@prisma/client";
 
 export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
+  vcIssuanceRequest: true,
   evaluator: true,
   participation: {
     include: {
+      opportunitySlot: {
+        include: {
+          opportunity: true,
+        },
+      },
       reservation: {
         include: {
           opportunitySlot: {
@@ -13,7 +19,7 @@ export const evaluationInclude = Prisma.validator<Prisma.EvaluationInclude>()({
           },
         },
       },
-      user: true,
+      user: { include: { identities: true, image: true } },
     },
   },
 });

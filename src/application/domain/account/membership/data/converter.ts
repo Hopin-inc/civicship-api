@@ -7,6 +7,20 @@ export default class MembershipConverter {
   filter(filter?: GqlMembershipFilterInput): Prisma.MembershipWhereInput {
     return {
       AND: [
+        filter?.keyword
+          ? {
+              OR: [
+                { user: { name: { contains: filter.keyword, mode: "insensitive" } } },
+                {
+                  user: {
+                    didIssuanceRequests: {
+                      some: { didValue: { contains: filter.keyword, mode: "insensitive" } },
+                    },
+                  },
+                },
+              ],
+            }
+          : {},
         filter?.userId ? { userId: filter.userId } : {},
         filter?.communityId ? { communityId: filter.communityId } : {},
         filter?.status ? { status: filter.status } : {},

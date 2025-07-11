@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import {
   articleSelectDetail,
   articleForPortfolioSelectDetail,
+  articlePortfolioInclude,
 } from "@/application/domain/content/article/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
@@ -28,6 +29,25 @@ export default class ArticleRepository {
     );
   }
 
+  async queryForPortfolio(
+    ctx: IContext,
+    where: Prisma.ArticleWhereInput,
+    orderBy: Prisma.ArticleOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ) {
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.article.findMany({
+        where,
+        orderBy,
+        take: take + 1,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+        include: articlePortfolioInclude,
+      }),
+    );
+  }
+
   async findAccessible(
     ctx: IContext,
     where: Prisma.ArticleWhereUniqueInput & Prisma.ArticleWhereInput,
@@ -41,11 +61,7 @@ export default class ArticleRepository {
     });
   }
 
-  async create(
-    ctx: IContext,
-    data: Prisma.ArticleCreateInput,
-    tx: Prisma.TransactionClient,
-  ) {
+  async create(ctx: IContext, data: Prisma.ArticleCreateInput, tx: Prisma.TransactionClient) {
     return tx.article.create({
       data,
       select: articleSelectDetail,
@@ -65,11 +81,7 @@ export default class ArticleRepository {
     });
   }
 
-  async delete(
-    ctx: IContext,
-    id: string,
-    tx: Prisma.TransactionClient,
-  ) {
+  async delete(ctx: IContext, id: string, tx: Prisma.TransactionClient) {
     return tx.article.delete({
       where: { id },
       select: articleSelectDetail,

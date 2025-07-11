@@ -1,5 +1,4 @@
 import {
-  GqlNestedPlaceConnectOrCreateInput,
   GqlOpportunityCreateInput,
   GqlOpportunityFilterInput,
   GqlOpportunityUpdateContentInput,
@@ -92,7 +91,6 @@ export default class OpportunityService {
     tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunityOrThrow(ctx, id);
-    validatePlaceInput(input.place);
 
     const { data, images } = this.converter.update(input);
 
@@ -133,16 +131,6 @@ export default class OpportunityService {
         `Validation error: publishStatus must be one of ${allowedStatuses.join(", ")}`,
         [JSON.stringify(filter?.publishStatus)],
       );
-    }
-  }
-}
-
-function validatePlaceInput(place?: GqlNestedPlaceConnectOrCreateInput): void {
-  if (place) {
-    if ((place.where && place.create) || (!place.where && !place.create)) {
-      throw new ValidationError(`For Place, choose only one of "where" or "create."`, [
-        JSON.stringify(place),
-      ]);
     }
   }
 }

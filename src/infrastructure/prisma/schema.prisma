@@ -288,8 +288,10 @@ model User {
   imageId String? @map("image_id")
   image   Image?  @relation(fields: [imageId], references: [id])
 
-  identities Identity[]
-  nftWallet  NftWallet?
+  identities          Identity[]
+  nftWallet           NftWallet?
+  didIssuanceRequests DidIssuanceRequest[]
+  vcIssuanceRequests  VcIssuanceRequest[]
 
   memberships           Membership[]
   membershipChangedByMe MembershipHistory[]
@@ -355,6 +357,74 @@ enum IdentityPlatform {
   LINE
   FACEBOOK
   PHONE
+}
+
+enum DidIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("DIDIssuanceStatus")
+}
+
+model DidIssuanceRequest {
+  id String @id @default(cuid())
+
+  status       DidIssuanceStatus @default(PENDING)
+  jobId        String?           @map("job_id")
+  didValue     String?           @map("did_value")
+  errorMessage String?           @map("error_message")
+  retryCount   Int               @default(0) @map("retry_count")
+
+  requestedAt DateTime  @default(now()) @map("requested_at")
+  processedAt DateTime? @map("processed_at")
+  completedAt DateTime? @map("completed_at")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_did_issuance_requests")
+}
+
+enum VcIssuanceStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("VCIssuanceStatus")
+}
+
+model VcIssuanceRequest {
+  id String @id @default(cuid())
+
+  status           VcIssuanceStatus @default(PENDING)
+  jobId            String?          @map("job_id")
+  vcRecordId       String?          @map("vc_record_id")
+  claims           Json
+  credentialFormat String?          @map("credential_format")
+  schemaId         String?          @map("schema_id")
+  errorMessage     String?          @map("error_message")
+  retryCount       Int              @default(0) @map("retry_count")
+
+  requestedAt DateTime  @default(now()) @map("requested_at")
+  processedAt DateTime? @map("processed_at")
+  completedAt DateTime? @map("completed_at")
+
+  evaluationId String     @unique @map("evaluation_id")
+  evaluation   Evaluation @relation(fields: [evaluationId], references: [id])
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("t_vc_issuance_requests")
 }
 
 // ------------------------------ Membership Domain ------------------------------
@@ -634,7 +704,8 @@ model OpportunitySlot {
   opportunityId String      @map("opportunity_id")
   opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
-  reservations Reservation[]
+  reservations   Reservation[]
+  participations Participation[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -718,6 +789,9 @@ model Participation {
   userId String? @map("user_id")
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  opportunitySlotId String?          @map("opportunity_slot_id")
+  opportunitySlot   OpportunitySlot? @relation(fields: [opportunitySlotId], references: [id])
+
   reservationId         String?               @map("reservation_id")
   reservation           Reservation?          @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   ticketStatusHistories TicketStatusHistory[]
@@ -789,7 +863,8 @@ model Evaluation {
   evaluatorId String @map("evaluator_id")
   evaluator   User   @relation(fields: [evaluatorId], references: [id], onDelete: SetNull)
 
-  histories EvaluationHistory[]
+  vcIssuanceRequest VcIssuanceRequest?
+  histories         EvaluationHistory[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

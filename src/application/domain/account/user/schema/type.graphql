@@ -21,12 +21,19 @@ type User {
     currentPrefecture: CurrentPrefecture
 
     identities: [Identity!]
-    portfolios: [Portfolio!]
+    didIssuanceRequests: [DidIssuanceRequest!]
+    portfolios(
+        filter: PortfolioFilterInput
+        sort: PortfolioSortInput
+        cursor: String
+        first: Int
+    ): [Portfolio!]
 
     memberships: [Membership!]
     membershipChangedByMe: [MembershipHistory!]
 
     wallets: [Wallet!]
+    nftWallet: NftWallet
 
     opportunitiesCreatedByMe: [Opportunity!]
     reservations: [Reservation!]
