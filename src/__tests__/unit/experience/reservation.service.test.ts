@@ -1,8 +1,14 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import ReservationService from "@/application/domain/experience/reservation/service";
-import { Prisma } from "@prisma/client";
+import {
+  ParticipationStatus,
+  ParticipationStatusReason,
+  Prisma,
+  ReservationStatus,
+} from "@prisma/client";
 import { IContext } from "@/types/server";
+import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
 
 class MockReservationRepository {
   query = jest.fn();
@@ -42,13 +48,15 @@ describe("ReservationService", () => {
 
   describe("createReservation", () => {
     it("should create a reservation with converted data", async () => {
+      const communityId = "community-1";
       const opportunitySlotId = "slot-1";
       const participantCount = 3;
       const userIdsIfExists = ["user-2", "user-3"];
       const reservationStatuses = {
-        participant: "JOINED",
-        inviter: "CREATED",
-      } as any;
+        reservationStatus: ReservationStatus.APPLIED,
+        participationStatus: ParticipationStatus.PARTICIPATING,
+        participationStatusReason: ParticipationStatusReason.RESERVATION_APPLIED,
+      } as ReservationStatuses;
 
       const createdData = { opportunitySlotId: "slot-1", userId: "test-user-id" };
       mockConverter.create.mockReturnValue(createdData);
@@ -61,6 +69,8 @@ describe("ReservationService", () => {
         userIdsIfExists,
         reservationStatuses,
         mockTx,
+        undefined,
+        communityId,
       );
 
       expect(mockConverter.create).toHaveBeenCalledWith(
@@ -69,6 +79,8 @@ describe("ReservationService", () => {
         participantCount,
         userIdsIfExists,
         reservationStatuses,
+        undefined,
+        communityId,
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, createdData, mockTx);
       expect(result).toEqual({ id: "reservation-1" });
@@ -78,18 +90,21 @@ describe("ReservationService", () => {
   describe("setStatus", () => {
     it("should set status for a reservation", async () => {
       const id = "reservation-1";
-      const status = "APPROVED" as any;
+      const status = ReservationStatus.ACCEPTED;
       const currentUserId = "test-user-id";
 
-      const updatedData = { status: "APPROVED" };
+      const updatedData = { status: ReservationStatus.ACCEPTED };
       mockConverter.setStatus.mockReturnValue(updatedData);
-      mockRepository.setStatus.mockResolvedValue({ id: "reservation-1", status: "APPROVED" });
+      mockRepository.setStatus.mockResolvedValue({
+        id: "reservation-1",
+        status: ReservationStatus.ACCEPTED,
+      });
 
       const result = await service.setStatus(mockCtx, id, currentUserId, status, mockTx);
 
       expect(mockConverter.setStatus).toHaveBeenCalledWith(currentUserId, status);
       expect(mockRepository.setStatus).toHaveBeenCalledWith(mockCtx, id, updatedData, mockTx);
-      expect(result).toEqual({ id: "reservation-1", status: "APPROVED" });
+      expect(result).toEqual({ id: "reservation-1", status: ReservationStatus.ACCEPTED });
     });
   });
 });
