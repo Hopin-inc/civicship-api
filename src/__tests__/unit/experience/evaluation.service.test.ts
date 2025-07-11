@@ -2,8 +2,10 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import EvaluationService from "@/application/domain/experience/evaluation/service";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { Prisma } from "@prisma/client";
+import { EvaluationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { GqlEvaluationCreateInput } from "@/types/graphql";
+import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 
 class MockEvaluationRepository {
   query = jest.fn();
@@ -36,7 +38,7 @@ describe("EvaluationService", () => {
     mockRepository = new MockEvaluationRepository();
     mockConverter = new MockEvaluationConverter();
     mockUtils = new MockUtils();
-    mockUtils.getCurrentUserId = jest.fn().mockReturnValue("admin-user");
+    mockUtils.getCurrentUserId = jest.fn().mockReturnValue("test-user-id");
 
     container.register("EvaluationRepository", { useValue: mockRepository });
     container.register("EvaluationConverter", { useValue: mockConverter });
@@ -49,11 +51,11 @@ describe("EvaluationService", () => {
       const input = {
         participationId: "participation-1",
         comment: "Great job!",
-      } as any;
+      } as GqlEvaluationCreateInput;
 
-      const status = "PASSED" as any;
+      const status = EvaluationStatus.PASSED;
       const converted = { participationId: "participation-1", userId: "test-user-id" };
-      const currentUserId = mockUtils.getCurrentUserId(mockCtx); // ✅ これを使う
+      const currentUserId = mockUtils.getCurrentUserId(mockCtx);
 
       mockConverter.create.mockReturnValue(converted);
       mockRepository.create.mockResolvedValue({ id: "evaluation-1" });
@@ -71,8 +73,8 @@ describe("EvaluationService", () => {
     });
 
     it("should throw ValidationError if status is not PASSED or FAILED", async () => {
-      const input = { participationId: "p1", comment: "ok" } as any;
-      const invalidStatus = "REVIEWING" as any; // 不正なステータス
+      const input = { participationId: "p1", comment: "ok" } as GqlEvaluationCreateInput;
+      const invalidStatus = EvaluationStatus.PENDING;
       const currentUserId = mockUtils.getCurrentUserId(mockCtx);
 
       await expect(
@@ -82,7 +84,7 @@ describe("EvaluationService", () => {
   });
 
   describe("validateParticipationHasOpportunity", () => {
-    it("should return participation, opportunity, communityId, userId if all exist", () => {
+    it("should return participation, opportunity, and userId if all exist", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: {
@@ -94,7 +96,7 @@ describe("EvaluationService", () => {
             },
           },
         },
-      } as any;
+      } as PrismaEvaluation;
 
       const result = service.validateParticipationHasOpportunity(evaluation);
 
@@ -118,31 +120,9 @@ describe("EvaluationService", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: {
-          id: "p1",
-          communityId: "community-1",
           userId: "user-1",
           reservation: {
             opportunitySlot: { opportunity: null },
-          },
-        },
-      } as any;
-
-      expect(() => {
-        service.validateParticipationHasOpportunity(evaluation);
-      }).toThrow(NotFoundError);
-    });
-
-    it("should throw NotFoundError if communityId is missing", () => {
-      const evaluation = {
-        id: "evaluation-1",
-        participation: {
-          id: "p1",
-          communityId: null,
-          userId: "user-1",
-          reservation: {
-            opportunitySlot: {
-              opportunity: { id: "opportunity-1" },
-            },
           },
         },
       } as any;
@@ -156,8 +136,6 @@ describe("EvaluationService", () => {
       const evaluation = {
         id: "evaluation-1",
         participation: {
-          id: "p1",
-          communityId: "community-1",
           userId: null,
           reservation: {
             opportunitySlot: {
@@ -165,11 +143,27 @@ describe("EvaluationService", () => {
             },
           },
         },
-      } as any;
+      } as PrismaEvaluation;
 
       expect(() => {
         service.validateParticipationHasOpportunity(evaluation);
       }).toThrow(NotFoundError);
+    });
+
+    it("should use opportunitySlot from participation if reason is PERSONAL_RECORD", () => {
+      const evaluation = {
+        id: "evaluation-1",
+        participation: {
+          reason: ParticipationStatusReason.PERSONAL_RECORD,
+          userId: "user-1",
+          opportunitySlot: {
+            opportunity: { id: "opportunity-2" },
+          },
+        },
+      } as any;
+
+      const result = service.validateParticipationHasOpportunity(evaluation);
+      expect(result.opportunity.id).toBe("opportunity-2");
     });
   });
 });
