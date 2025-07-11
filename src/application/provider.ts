@@ -98,7 +98,7 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("prismaClient", { useValue: prismaClient });
-  container.register("prismaClientIssuer", { useClass: PrismaClientIssuer });
+  container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
 
   // ------------------------------
