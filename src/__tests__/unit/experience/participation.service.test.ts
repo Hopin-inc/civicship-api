@@ -219,5 +219,42 @@ describe("ParticipationService", () => {
         service.validateDeletable(emptyParticipation);
       }).toThrow(PersonalRecordOnlyDeletableError);
     });
+
+    it("should test all non-PERSONAL_RECORD reasons", () => {
+      const nonPersonalRecordReasons = [
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
+        ParticipationStatusReason.OPPORTUNITY_CANCELED,
+        ParticipationStatusReason.RESERVATION_CANCELED,
+      ];
+
+      nonPersonalRecordReasons.forEach(reason => {
+        const participation = { reason } as PrismaParticipationDetail;
+        
+        expect(() => {
+          service.validateDeletable(participation);
+        }).toThrow(PersonalRecordOnlyDeletableError);
+      });
+    });
+
+    it("should handle null/undefined reason gracefully", () => {
+      const participationWithNullReason = { reason: null } as any;
+      const participationWithUndefinedReason = { reason: undefined } as any;
+
+      expect(() => {
+        service.validateDeletable(participationWithNullReason);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+
+      expect(() => {
+        service.validateDeletable(participationWithUndefinedReason);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+    });
+
+    it("should handle edge case with empty participation object", () => {
+      const emptyParticipation = {} as any;
+
+      expect(() => {
+        service.validateDeletable(emptyParticipation);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+    });
   });
 });

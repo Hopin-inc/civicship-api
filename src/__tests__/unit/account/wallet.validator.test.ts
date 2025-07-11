@@ -339,5 +339,51 @@ describe("WalletValidator", () => {
         validator.validateTransfer(2, fromWallet, toWallet)
       ).rejects.toThrow(InsufficientBalanceError);
     });
+    it("should handle BigInt overflow scenarios", async () => {
+      const maxBigInt = BigInt("9007199254740991999999999999999999999");
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: maxBigInt },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to", 
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(
+        validator.validateTransfer(1000, fromWallet, toWallet)
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle precision loss in BigInt conversion", async () => {
+      const precisionTestValue = BigInt("999999999999999999999999999999999");
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: precisionTestValue },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(
+        validator.validateTransfer(Number.MAX_SAFE_INTEGER - 1, fromWallet, toWallet)
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle mixed BigInt and number comparison edge cases", async () => {
+      const fromWallet = {
+        id: "wallet-from", 
+        currentPointView: { currentPoint: BigInt(Number.MAX_SAFE_INTEGER) },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(
+        validator.validateTransfer(Number.MAX_SAFE_INTEGER + 1, fromWallet, toWallet)
+      ).rejects.toThrow(InsufficientBalanceError);
+    });
   });
 });
