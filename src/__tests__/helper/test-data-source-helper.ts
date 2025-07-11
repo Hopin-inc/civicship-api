@@ -215,6 +215,13 @@ export default class TestDataSourceHelper {
     });
   }
 
+  static async linkClaimToIssuer(ticketIssuerId: string, claimLinkId: string) {
+    return this.db.ticketIssuer.update({
+      where: { id: ticketIssuerId },
+      data: { claimLink: { connect: { id: claimLinkId } } },
+    });
+  }
+
   // ======== TicketClaimLink =========
   static async createTicketClaimLink(data: Prisma.TicketClaimLinkCreateInput) {
     return this.db.ticketClaimLink.create({

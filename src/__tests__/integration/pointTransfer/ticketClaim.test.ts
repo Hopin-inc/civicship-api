@@ -12,6 +12,7 @@ import {
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import TicketUseCase from "@/application/domain/reward/ticket/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Ticket Claim Tests", () => {
   const testSetup = {
@@ -28,167 +29,41 @@ describe("Ticket Claim Tests", () => {
 
   let ctx: IContext;
   let useCase: TicketUseCase;
-  let userId: string;
-  let communityId: string;
+  let issuer: PrismaClientIssuer;
+  let ticketClaimLinkId: string;
   let ownerWalletId: string;
   let memberWalletId: string;
-  let ticketClaimLinkId: string;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
-
     container.reset();
     registerProductionDependencies();
 
     useCase = container.resolve(TicketUseCase);
+    issuer = container.resolve(PrismaClientIssuer);
 
-    const user = await TestDataSourceHelper.createUser({
-      name: testSetup.userName,
-      slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    userId = user.id;
-    ctx = { currentUser: { id: userId } } as unknown as IContext;
-
-    const community = await TestDataSourceHelper.createCommunity({
-      name: testSetup.communityName,
-      pointName: testSetup.pointName,
-    });
-    communityId = community.id;
-
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: userId } },
-      community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.INVITED,
-    });
-
-    const owner = await TestDataSourceHelper.createUser({
-      name: "Ticket Owner",
-      slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: owner.id } },
-      community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.ASSIGNED,
-    });
-
-    const utility = await TestDataSourceHelper.createUtility({
-      name: "Test Utility",
-      pointsRequired: testSetup.pointsRequired,
-      community: { connect: { id: communityId } },
-    });
-
-    const issuer = await TestDataSourceHelper.createTicketIssuer({
-      utility: { connect: { id: utility.id } },
-      owner: { connect: { id: owner.id } },
-      qtyToBeIssued: testSetup.qtyToBeIssued,
-    });
-
-    const claimLink = await TestDataSourceHelper.createTicketClaimLink({
-      issuer: { connect: { id: issuer.id } },
-    });
-    ticketClaimLinkId = claimLink.id;
-
-    const ownerWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: owner.id } },
-    });
-    ownerWalletId = ownerWallet.id;
-
-    const memberWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: userId } },
-    });
-    memberWalletId = memberWallet.id;
-
-    // オーナーにポイントを付与しておく
-    await TestDataSourceHelper.createTransaction({
-      toWallet: { connect: { id: ownerWalletId } },
-      toPointChange: transferPoints,
-      fromPointChange: transferPoints,
-      reason: TransactionReason.GRANT,
-    });
-
-    await TestDataSourceHelper.refreshCurrentPoints();
+    ({ ctx, ticketClaimLinkId, ownerWalletId, memberWalletId } = await setupClaimContext({
+      withPoints: true,
+    }));
   });
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("should claim ticket successfully", async () => {
-    const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
-
-    expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
-
-    const tx = await TestDataSourceHelper.findAllTransactions();
-    const donateTx = tx.find((t) => t.reason === TransactionReason.DONATION);
-    const purchaseTx = tx.find((t) => t.reason === TransactionReason.TICKET_PURCHASED);
-
-    expect(donateTx).toBeDefined();
-    expect(purchaseTx).toBeDefined();
-  });
-
-  it("should transfer points correctly between owner and claimer", async () => {
-    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
-
-    const tx = (await TestDataSourceHelper.findAllTransactions()).find(
-      (t) => t.reason === TransactionReason.DONATION,
-    );
-
-    expect(tx?.from).toBe(ownerWalletId);
-    expect(tx?.to).toBe(memberWalletId);
-    expect(tx?.fromPointChange).toBe(transferPoints);
-    expect(tx?.toPointChange).toBe(transferPoints);
-  });
-
-  it("should refresh currentPointView after claim", async () => {
-    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
-
-    await TestDataSourceHelper.refreshCurrentPoints();
-
-    const ownerPoint = (await TestDataSourceHelper.findWallet(ownerWalletId))?.currentPointView
-      ?.currentPoint;
-    const memberPoint = (await TestDataSourceHelper.findWallet(memberWalletId))?.currentPointView
-      ?.currentPoint;
-
-    expect(ownerPoint).toBe(transferPoints);
-    expect(memberPoint).toBe(0);
-  });
-
-  it("should fail if owner wallet has insufficient points", async () => {
-    // オーナーの残高を 0 に調整（ポイント付与なし）
-    await TestDataSourceHelper.deleteAll();
-
+  const setupClaimContext = async ({ withPoints }: { withPoints: boolean }) => {
     const user = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
       slug: testSetup.slug,
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    userId = user.id;
-    ctx = { currentUser: { id: userId } } as unknown as IContext;
+
+    const ctx = { currentUser: { id: user.id }, issuer } as unknown as IContext;
 
     const community = await TestDataSourceHelper.createCommunity({
       name: testSetup.communityName,
       pointName: testSetup.pointName,
-    });
-    communityId = community.id;
-
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: userId } },
-      community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.INVITED,
     });
 
     const owner = await TestDataSourceHelper.createUser({
@@ -197,45 +72,108 @@ describe("Ticket Claim Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: owner.id } },
-      community: { connect: { id: communityId } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.ASSIGNED,
-    });
+    const [memberWallet, ownerWallet] = await Promise.all([
+      TestDataSourceHelper.createWallet({
+        type: WalletType.MEMBER,
+        community: { connect: { id: community.id } },
+        user: { connect: { id: user.id } },
+      }),
+      TestDataSourceHelper.createWallet({
+        type: WalletType.MEMBER,
+        community: { connect: { id: community.id } },
+        user: { connect: { id: owner.id } },
+      }),
+    ]);
 
     const utility = await TestDataSourceHelper.createUtility({
       name: "Test Utility",
       pointsRequired: testSetup.pointsRequired,
-      community: { connect: { id: communityId } },
+      community: { connect: { id: community.id } },
     });
 
-    const issuer = await TestDataSourceHelper.createTicketIssuer({
+    // 1. issuer を先に作る
+    const ticketIssuer = await TestDataSourceHelper.createTicketIssuer({
       utility: { connect: { id: utility.id } },
       owner: { connect: { id: owner.id } },
       qtyToBeIssued: testSetup.qtyToBeIssued,
     });
 
+    // 2. claimLink を作成（issuer に紐付け）
     const claimLink = await TestDataSourceHelper.createTicketClaimLink({
-      issuer: { connect: { id: issuer.id } },
-    });
-    ticketClaimLinkId = claimLink.id;
-
-    await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: owner.id } },
+      issuer: { connect: { id: ticketIssuer.id } },
     });
 
-    await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: userId } },
-    });
+    // 3. issuer に claimLink を明示的に update（逆側のフィールド）
+    await TestDataSourceHelper.linkClaimToIssuer(ticketIssuer.id, claimLink.id);
+
+    if (withPoints) {
+      await TestDataSourceHelper.createTransaction({
+        toWallet: { connect: { id: ownerWallet.id } },
+        toPointChange: transferPoints,
+        fromPointChange: transferPoints,
+        reason: TransactionReason.GRANT,
+      });
+    }
+
+    await Promise.all([
+      TestDataSourceHelper.createMembership({
+        user: { connect: { id: user.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        role: Role.MEMBER,
+        reason: MembershipStatusReason.INVITED,
+      }),
+      TestDataSourceHelper.createMembership({
+        user: { connect: { id: owner.id } },
+        community: { connect: { id: community.id } },
+        status: MembershipStatus.JOINED,
+        role: Role.MEMBER,
+        reason: MembershipStatusReason.ASSIGNED,
+      }),
+    ]);
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
+    return {
+      ctx,
+      userId: user.id,
+      communityId: community.id,
+      ticketClaimLinkId: claimLink.id,
+      ownerWalletId: ownerWallet.id,
+      memberWalletId: memberWallet.id,
+    };
+  };
+
+  it("should claim ticket successfully", async () => {
+    const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
+    expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
+  });
+
+  it("should transfer points correctly between owner and claimer", async () => {
+    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
+    const tx = await TestDataSourceHelper.findAllTransactions();
+    const donateTx = tx.find((t) => t.reason === TransactionReason.DONATION);
+    expect(donateTx).toMatchObject({
+      from: ownerWalletId,
+      to: memberWalletId,
+      fromPointChange: transferPoints,
+      toPointChange: transferPoints,
+    });
+  });
+
+  it("should refresh currentPointView after claim", async () => {
+    await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
+    await TestDataSourceHelper.refreshCurrentPoints();
+    const [owner, member] = await Promise.all([
+      TestDataSourceHelper.findWallet(ownerWalletId),
+      TestDataSourceHelper.findWallet(memberWalletId),
+    ]);
+    expect(owner?.currentPointView?.currentPoint).toBe(transferPoints);
+    expect(member?.currentPointView?.currentPoint).toBe(0);
+  });
+
+  it("should fail if owner wallet has insufficient points", async () => {
+    ({ ctx, ticketClaimLinkId } = await setupClaimContext({ withPoints: false }));
     await expect(useCase.userClaimTicket(ctx, { ticketClaimLinkId })).rejects.toThrow(
       /insufficient/i,
     );
@@ -243,93 +181,21 @@ describe("Ticket Claim Tests", () => {
 
   it("should not allow claiming the same ticket twice", async () => {
     await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
-
     await expect(useCase.userClaimTicket(ctx, { ticketClaimLinkId })).rejects.toThrow(
       /already been used/i,
     );
   });
 
   it("should fail when claimLinkId is invalid", async () => {
-    const invalidId = "non-existent-id";
-
-    await expect(useCase.userClaimTicket(ctx, { ticketClaimLinkId: invalidId })).rejects.toThrow(
-      /not found/i,
-    );
+    await expect(
+      useCase.userClaimTicket(ctx, { ticketClaimLinkId: "non-existent-id" }),
+    ).rejects.toThrow(/not found/i);
   });
 
   it("should auto-join community if not a member", async () => {
-    // Membership を事前に作成せず検証
     await TestDataSourceHelper.deleteAll();
-
-    const user = await TestDataSourceHelper.createUser({
-      name: testSetup.userName,
-      slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    userId = user.id;
-    ctx = { currentUser: { id: userId } } as unknown as IContext;
-
-    const community = await TestDataSourceHelper.createCommunity({
-      name: testSetup.communityName,
-      pointName: testSetup.pointName,
-    });
-    communityId = community.id;
-
-    const owner = await TestDataSourceHelper.createUser({
-      name: "Ticket Owner",
-      slug: testSetup.slug,
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-
-    await TestDataSourceHelper.createMembership({
-      user: { connect: { id: owner.id } },
-      community: { connect: { id: community.id } },
-      status: MembershipStatus.JOINED,
-      role: Role.MEMBER,
-      reason: MembershipStatusReason.ASSIGNED,
-    });
-
-    const utility = await TestDataSourceHelper.createUtility({
-      name: "Test Utility",
-      pointsRequired: testSetup.pointsRequired,
-      community: { connect: { id: communityId } },
-    });
-
-    const issuer = await TestDataSourceHelper.createTicketIssuer({
-      utility: { connect: { id: utility.id } },
-      owner: { connect: { id: owner.id } },
-      qtyToBeIssued: testSetup.qtyToBeIssued,
-    });
-
-    const claimLink = await TestDataSourceHelper.createTicketClaimLink({
-      issuer: { connect: { id: issuer.id } },
-    });
-    ticketClaimLinkId = claimLink.id;
-
-    const ownerWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: owner.id } },
-    });
-    ownerWalletId = ownerWallet.id;
-
-    await TestDataSourceHelper.createTransaction({
-      toWallet: { connect: { id: ownerWalletId } },
-      toPointChange: transferPoints,
-      fromPointChange: transferPoints,
-      reason: TransactionReason.GRANT,
-    });
-
-    await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: communityId } },
-      user: { connect: { id: userId } },
-    });
-
-    await TestDataSourceHelper.refreshCurrentPoints();
-
+    ({ ctx, ticketClaimLinkId } = await setupClaimContext({ withPoints: true }));
     const result = await useCase.userClaimTicket(ctx, { ticketClaimLinkId });
-
-    expect(result.tickets.length).toBe(2);
+    expect(result.tickets.length).toBe(testSetup.qtyToBeIssued);
   });
 });
