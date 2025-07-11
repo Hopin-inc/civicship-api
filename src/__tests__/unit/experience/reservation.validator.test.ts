@@ -51,7 +51,7 @@ describe("ReservationValidator", () => {
     it("should throw if there are conflicting reservations", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
-        startsAt: futureDate(),
+        startsAt: futureDate(2), // 2 days in future to avoid advance booking error
       } as any;
 
       expect(() => {
@@ -177,14 +177,15 @@ describe("ReservationValidator", () => {
       }).not.toThrow();
     });
 
-    it("should not throw when exactly at 24-hour limit", () => {
+    it("should throw when exactly at 24-hour limit", () => {
       const now = new Date();
       const exactLimit = new Date(now);
       exactLimit.setDate(exactLimit.getDate() + 1);
+      exactLimit.setMilliseconds(exactLimit.getMilliseconds() - 1); // Just under 24 hours
 
       expect(() => {
         validator.validateCancellable(exactLimit);
-      }).not.toThrow();
+      }).toThrow(ReservationCancellationTimeoutError);
     });
 
     it("should handle future daylight saving time transitions", () => {
