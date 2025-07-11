@@ -24,12 +24,8 @@ pnpm dev:https
 ### コード品質チェック
 
 ```bash
-# リンティング実行（可能な場合は自動修正）
+# リンティング実行（ESLint + Prettier自動修正）
 pnpm lint
-pnpm lint:graphql
-
-# 型チェック実行
-pnpm type-check
 
 # テスト実行
 pnpm test
@@ -37,8 +33,14 @@ pnpm test
 # カバレッジ付きテスト実行
 pnpm test:coverage
 
-# ウォッチモードでテスト実行（開発中）
-pnpm test:watch
+# 注意: 以下のコマンドは現在利用できません
+# - pnpm test:watch
+# - pnpm lint:graphql  
+# - pnpm type-check
+# 
+# 代替手段:
+# - TypeScript型チェック: npx tsc --noEmit
+# - GraphQLスキーマ検証: pnpm gql:generate でエラーチェック
 ```
 
 ### データベース操作
@@ -47,31 +49,43 @@ pnpm test:watch
 # データベース内容を表示
 pnpm db:studio
 
-# スキーマ変更後のPrismaクライアント生成
+# スキーマ変更後のPrismaクライアント生成（スキーマフォーマット + 生成）
 pnpm db:generate
 
-# 新しいマイグレーション作成
-pnpm db:migrate dev --name your-migration-name
+# 新しいマイグレーション作成（作成のみ、適用は別途）
+pnpm db:migrate
+
+# マイグレーションをデータベースに適用
+pnpm db:deploy
 
 # データベースリセット（注意 - 全データ削除！）
-pnpm db:reset
+pnpm db:migrate-reset
 
 # 新しいデータでデータベースをシード
-pnpm db:seed-master
-pnpm db:seed-domain
+pnpm db:seed-master    # 都市・州データ
+pnpm db:seed-domain    # ユーザー・コミュニティデータ
+
+# データベーススキーマをPrismaスキーマに反映
+pnpm db:pull
+
+# マイグレーション巻き戻しマーク
+pnpm db:mark-rolled-back
 ```
 
 ### GraphQL操作
 
 ```bash
-# スキーマ変更後のGraphQL型生成
+# スキーマ変更後のGraphQL型生成（codegen.yamlに基づく）
 pnpm gql:generate
 
-# GraphQLスキーマ検証
-pnpm gql:validate
-
-# GraphQLスキーマの破壊的変更チェック
-pnpm gql:diff
+# 注意: 以下のコマンドは現在利用できません
+# - pnpm gql:validate
+# - pnpm gql:diff
+#
+# GraphQLスキーマ検証は以下の方法で実行:
+# 1. pnpm gql:generate でコード生成エラーをチェック
+# 2. 開発サーバー起動時のスキーマ検証エラーを確認
+# 3. Apollo Server の introspection 機能を使用（開発環境のみ）
 ```
 
 ## 開発ワークフロー
@@ -107,20 +121,22 @@ git checkout -b fix/your-bug-fix-name
    # 関連テストを実行
    pnpm test -- --testPathPattern=your-feature
    
-   # 統合テストを実行
-   pnpm test:integration
+   # 全テストを実行
+   pnpm test
    
    # GraphQLエンドポイントをテスト
-   # https://localhost:3000/graphql でGraphQL Playgroundを使用
+   # https://localhost:3000/graphql でApollo Server（introspection有効）を使用
+   # 注意: GraphQL Playgroundは利用できません
+   # Apollo Studio、Insomnia、Postman等のクライアントを使用
    ```
 
 4. **コード品質チェック:**
    ```bash
-   # リンティング問題を修正
-   pnpm lint --fix
+   # リンティング問題を修正（ESLint + Prettier自動修正）
+   pnpm lint
    
-   # 型をチェック
-   pnpm type-check
+   # TypeScript型チェック（手動実行）
+   npx tsc --noEmit
    
    # 全テストが通ることを確認
    pnpm test
@@ -138,8 +154,11 @@ git checkout -b fix/your-bug-fix-name
 
 2. **マイグレーションを生成:**
    ```bash
-   # マイグレーションファイルを作成
-   pnpm db:migrate dev --name add-new-field
+   # マイグレーションファイルを作成（作成のみ）
+   pnpm db:migrate
+   
+   # 作成されたマイグレーションファイルを確認・編集
+   # src/infrastructure/prisma/migrations/ 配下に生成される
    ```
 
 3. **アプリケーションコードを更新:**
@@ -157,7 +176,7 @@ git checkout -b fix/your-bug-fix-name
    nano src/infrastructure/prisma/seeds/domain/your-domain.ts
    
    # シードをテスト
-   pnpm db:reset
+   pnpm db:migrate-reset
    pnpm db:seed-master
    pnpm db:seed-domain
    ```
@@ -228,11 +247,14 @@ git checkout -b fix/your-bug-fix-name
    pnpm test -- --testPathPattern=integration
    ```
 
-3. **エンドツーエンドテスト:**
+3. **認証テスト:**
    ```bash
-   # 完全なAPIフローをテスト
-   pnpm test -- --testPathPattern=e2e
+   # GraphQL認可ルールをテスト
+   pnpm test -- --testPathPattern=auth
    ```
+
+# 注意: pnpm test:integration, pnpm test:e2e コマンドは現在利用できません
+# 代わりに上記のパターンマッチングを使用してください
 
 #### テストの記述
 
@@ -287,26 +309,51 @@ git checkout -b fix/your-bug-fix-name
 
 #### テストデータ管理
 
-1. **ファクトリーを使用:**
+1. **Prisma Fabbricaファクトリーを使用:**
    ```typescript
-   // __tests__/fixtures/factories/user.factory.ts
-   export const createUser = (overrides?: Partial<User>): User => ({
-     id: faker.datatype.uuid(),
-     name: faker.name.fullName(),
-     email: faker.internet.email(),
-     ...overrides
+   // src/infrastructure/prisma/factories/factory.ts から実際のファクトリーを使用
+   import { 
+     UserFactory, 
+     CommunityFactory, 
+     MembershipFactory 
+   } from '@/infrastructure/prisma/factories/factory';
+   import { Role, MembershipStatus } from '@prisma/client';
+
+   // ユーザーを作成（LINE認証付き）
+   const user = await UserFactory.create();
+
+   // コミュニティを作成（ウォレット自動作成）
+   const community = await CommunityFactory.create();
+
+   // 関連データを作成（transientフィールド使用）
+   const membership = await MembershipFactory.create({
+     transientUser: user,
+     transientCommunity: community,
+     transientRole: Role.MEMBER,
+     transientStatus: MembershipStatus.JOINED,
    });
+
+   // 複数データ作成
+   const users = await UserFactory.createList(5);
    ```
 
 2. **テストデータのクリーンアップ:**
    ```typescript
-   afterEach(async () => {
-     await prisma.$transaction([
-       prisma.participation.deleteMany(),
-       prisma.reservation.deleteMany(),
-       prisma.user.deleteMany()
-     ]);
-   });
+   // jest.setup.ts で設定済み
+   // - Firebase認証モック
+   // - Prisma Fabbrica初期化
+   // - テストデータベース設定
+
+   // テストヘルパー使用例
+   import { createApolloTestServer } from '@/__tests__/helper/test-server';
+
+   const mockContext = {
+     currentUser: { id: 'test-user-id' },
+     uid: 'test-user-id',
+     // ... その他のコンテキスト
+   };
+
+   const app = await createApolloTestServer(mockContext);
    ```
 
 ### 5. コードレビュープロセス
@@ -477,6 +524,54 @@ logger.error('Database connection failed', { error });
 - **リクエスト追跡のための相関IDを含める**
 - **監視のためのパフォーマンスメトリクスをログ**
 
+## 実際のコマンド一覧（package.json準拠）
+
+### 利用可能なpnpmコマンド
+
+```bash
+# 開発・ビルド
+pnpm dev              # HTTP開発サーバー
+pnpm dev:https        # HTTPS開発サーバー  
+pnpm dev:external     # 外部API開発サーバー
+pnpm build            # TypeScriptコンパイル + GraphQLコピー
+pnpm start            # プロダクション起動
+pnpm copy-graphql     # GraphQLファイルのみコピー
+
+# コード品質
+pnpm lint             # ESLint + Prettier（自動修正）
+pnpm test             # Jest テスト実行
+pnpm test:coverage    # カバレッジ付きテスト
+
+# データベース
+pnpm db:pull          # スキーマをPrismaに反映
+pnpm db:generate      # Prismaクライアント生成
+pnpm db:migrate       # マイグレーション作成
+pnpm db:deploy        # マイグレーション適用
+pnpm db:migrate-reset # データベースリセット
+pnpm db:studio        # Prisma Studio起動
+pnpm db:seed-master   # マスターデータシード
+pnpm db:seed-domain   # ドメインデータシード
+pnpm db:mark-rolled-back # マイグレーション巻き戻しマーク
+
+# GraphQL
+pnpm gql:generate     # GraphQL型生成
+
+# Docker
+pnpm container:up     # PostgreSQLコンテナ起動
+pnpm container:down   # コンテナ停止・削除
+```
+
+### 利用できないコマンド（ドキュメント修正済み）
+
+以下のコマンドは現在package.jsonに存在しません:
+- `pnpm lint:graphql`
+- `pnpm gql:validate`
+- `pnpm gql:diff`
+- `pnpm type-check`
+- `pnpm test:integration`
+- `pnpm test:watch`
+- `pnpm db:reset`
+
 ## 環境管理
 
 ### 開発環境
@@ -607,10 +702,20 @@ LOG_LEVEL=info
    DEBUG=* pnpm dev:https
    ```
 
-3. **GraphQL Playgroundを使用:**
-   - クエリとミューテーションをテスト
-   - ネットワークリクエストを検査
-   - レスポンス時間をチェック
+3. **GraphQL開発ツールを使用:**
+   - Apollo Server（introspection有効、開発環境のみ）
+   - https://localhost:3000/graphql でスキーマ確認
+   - Apollo Studio、Insomnia、Postman等のクライアントでテスト
+   - 注意: GraphQL Playgroundは利用できません
+
+4. **Winston ログ出力:**
+   ```bash
+   # ログファイル確認
+   tail -f logs/app.log
+   
+   # Google Cloud Logging（本番環境）
+   # @google-cloud/logging-winston で自動送信
+   ```
 
 ### パフォーマンス監視
 
