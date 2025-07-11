@@ -113,6 +113,13 @@ describe("Ticket Claim Tests", () => {
         fromPointChange: transferPoints,
         reason: TransactionReason.GRANT,
       });
+    } else {
+      await TestDataSourceHelper.createTransaction({
+        toWallet: { connect: { id: ownerWallet.id } },
+        toPointChange: 0,
+        fromPointChange: 0,
+        reason: TransactionReason.GRANT,
+      });
     }
 
     await Promise.all([
@@ -168,8 +175,8 @@ describe("Ticket Claim Tests", () => {
       TestDataSourceHelper.findWallet(ownerWalletId),
       TestDataSourceHelper.findWallet(memberWalletId),
     ]);
-    expect(owner?.currentPointView?.currentPoint).toBe(transferPoints);
-    expect(member?.currentPointView?.currentPoint).toBe(0);
+    expect(owner?.currentPointView?.currentPoint).toBe(BigInt(transferPoints));
+    expect(member?.currentPointView?.currentPoint).toBe(BigInt(0));
   });
 
   it("should fail if owner wallet has insufficient points", async () => {
