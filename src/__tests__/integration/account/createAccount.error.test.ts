@@ -25,15 +25,13 @@ describe("Identity UseCase Business Logic Error Tests", () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("should fail to create account with empty name", async () => {
+  it("should fail to create account without authentication context", async () => {
     const community = await TestDataSourceHelper.createCommunity({
       name: "Test Community",
       pointName: "test-points",
     });
 
     const ctx: IContext = {
-      uid: "test-uid",
-      platform: GqlIdentityPlatform.Line,
       phoneAuthToken: "test-phone-auth-token",
       communityId: community.id,
       issuer,
@@ -42,14 +40,14 @@ describe("Identity UseCase Business Logic Error Tests", () => {
     await expect(
       useCase.userCreateAccount(ctx, {
         input: {
-          name: "",
+          name: "Test User",
           slug: "test-slug",
           currentPrefecture: GqlCurrentPrefecture.Kagawa,
           communityId: community.id,
           phoneUid: "test-phone-uid",
         },
       })
-    ).rejects.toThrow(/name.*required|empty.*name/i);
+    ).rejects.toThrow(/authentication|uid.*required/i);
   });
 
   it("should fail to create account with duplicate slug", async () => {

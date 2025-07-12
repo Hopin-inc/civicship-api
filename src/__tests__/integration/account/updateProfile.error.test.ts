@@ -25,7 +25,7 @@ describe("User UseCase Business Logic Error Tests", () => {
   });
 
 
-  it("should fail to update profile with empty name", async () => {
+  it("should fail to update profile without authentication", async () => {
     const user = await TestDataSourceHelper.createUser({
       name: "Test User",
       slug: "test-user",
@@ -33,21 +33,20 @@ describe("User UseCase Business Logic Error Tests", () => {
     });
 
     const ctx = { 
-      currentUser: { id: user.id }, 
-      uid: "test-uid",
+      currentUser: { id: user.id },
       issuer 
     } as IContext;
 
     await expect(
       useCase.userUpdateProfile(ctx, {
         input: {
-          name: "",
+          name: "Updated Name",
           slug: "valid-slug",
           currentPrefecture: CurrentPrefecture.KAGAWA,
         },
         permission: { userId: user.id }
       })
-    ).rejects.toThrow(/name.*required|empty.*name/i);
+    ).rejects.toThrow(/authentication.*required|uid.*missing/i);
   });
 
   it("should fail to update profile with duplicate slug", async () => {

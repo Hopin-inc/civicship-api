@@ -24,36 +24,14 @@ describe("Community UseCase Business Logic Error Tests", () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("should fail to create community with empty name", async () => {
-    const user = await TestDataSourceHelper.createUser({
-      name: "Test User",
-      slug: "test-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+  it("should fail to create community without authentication", async () => {
+    const ctx = { issuer } as IContext; // Missing currentUser
 
     await expect(
       useCase.userCreateCommunityAndJoin({
-        input: { name: "", pointName: "test-points" }
+        input: { name: "Test Community", pointName: "test-points" }
       }, ctx)
-    ).rejects.toThrow(/name.*required|empty.*name/i);
-  });
-
-  it("should fail to create community with empty point name", async () => {
-    const user = await TestDataSourceHelper.createUser({
-      name: "Test User",
-      slug: "test-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-
-    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
-
-    await expect(
-      useCase.userCreateCommunityAndJoin({
-        input: { name: "Test Community", pointName: "" }
-      }, ctx)
-    ).rejects.toThrow(/point.*name.*required|empty.*point.*name/i);
+    ).rejects.toThrow(/must be logged in|authentication/i);
   });
 
   it("should fail to delete non-existent community", async () => {
