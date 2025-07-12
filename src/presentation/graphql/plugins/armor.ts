@@ -4,29 +4,29 @@ import { GraphQLArmorConfig } from "@escape.tech/graphql-armor-types/dist/declar
 const config: GraphQLArmorConfig = {
   costLimit: {
     enabled: true,
-    maxCost: 5000, // Maximum allowed query cost
-    objectCost: 2, // Default cost for object fields
-    scalarCost: 1, // Default cost for scalar fields
-    depthCostFactor: 1.5, // Cost increases with query depth
+    maxCost: 5000, // GraphQL Armor plugin default
+    objectCost: 2, // GraphQL Armor plugin default
+    scalarCost: 1, // GraphQL Armor plugin default
+    depthCostFactor: 1.5, // GraphQL Armor plugin default
   },
   maxDepth: {
     enabled: true,
-    n: 20, // Maximum allowed query depth
+    n: 12, // Keep portal-aligned value for depth limit
   },
   maxAliases: {
     enabled: true,
-    n: 15, // Maximum number of aliases
+    n: 15, // GraphQL Armor plugin default
   },
   maxDirectives: {
     enabled: true,
-    n: 50, // Maximum number of directives
+    n: 50, // GraphQL Armor plugin default
   },
   maxTokens: {
     enabled: true,
-    n: 15000, // Maximum number of tokens (roughly equivalent to character limit)
+    n: 1000, // GraphQL Armor plugin default
   },
   blockFieldSuggestion: {
-    enabled: true, // Disable field suggestion hints
+    enabled: true, // Keep field suggestion blocking enabled
   },
 };
 

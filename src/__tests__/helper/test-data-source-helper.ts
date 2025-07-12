@@ -207,6 +207,13 @@ export default class TestDataSourceHelper {
     });
   }
 
+  // ======== Ticket =========
+  static async createTicket(data: Prisma.TicketCreateInput) {
+    return this.db.ticket.create({
+      data,
+    });
+  }
+
   // ======== TicketIssuer =========
   static async createTicketIssuer(data: Prisma.TicketIssuerCreateInput) {
     return this.db.ticketIssuer.create({

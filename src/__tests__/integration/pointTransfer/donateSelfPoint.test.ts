@@ -112,19 +112,19 @@ describe("Point Donate Tests", () => {
     });
 
     const ctx = { currentUser: { id: fromUser.id }, issuer } as IContext;
-    
+
     const fromWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
       community: { connect: { id: community.id } },
       user: { connect: { id: fromUser.id } },
     });
-    
+
     await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
       community: { connect: { id: community.id } },
       user: { connect: { id: toUser.id } },
     });
-    
+
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: fromWallet.id } },
       fromPointChange: 10,
@@ -137,7 +137,7 @@ describe("Point Donate Tests", () => {
     const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,
       toUserId: toUser.id,
-      transferPoints: 9999, // 残高不足
+      transferPoints: 9999, // More than the 10 points available
     };
 
     const permission: GqlCheckIsSelfPermissionInput = {
