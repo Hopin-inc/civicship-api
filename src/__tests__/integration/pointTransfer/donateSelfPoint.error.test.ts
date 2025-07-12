@@ -1,13 +1,16 @@
 import "reflect-metadata";
+import { GqlTransactionDonateSelfPointInput } from "@/types/graphql";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
-describe("Transaction DonateSelfPoint Error Handling Tests", () => {
+describe("Point Donation Error Handling Tests", () => {
   let transactionUseCase: TransactionUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -15,22 +18,17 @@ describe("Transaction DonateSelfPoint Error Handling Tests", () => {
     container.reset();
     registerProductionDependencies();
     transactionUseCase = container.resolve(TransactionUseCase);
+    issuer = container.resolve(PrismaClientIssuer);
   });
 
   afterAll(async () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("should handle zero point donation", async () => {
-    const fromUser = await TestDataSourceHelper.createUser({
-      name: "From User",
-      slug: "from-user",
-      currentPrefecture: CurrentPrefecture.KAGAWA,
-    });
-    
-    const toUser = await TestDataSourceHelper.createUser({
-      name: "To User", 
-      slug: "to-user",
+  it("should fail to donate points to non-existent user", async () => {
+    const user = await TestDataSourceHelper.createUser({
+      name: "Test User",
+      slug: "test-user",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
@@ -39,14 +37,14 @@ describe("Transaction DonateSelfPoint Error Handling Tests", () => {
       pointName: "test-points",
     });
 
-    const fromMemberWallet = await TestDataSourceHelper.createWallet({
+    const userWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
       community: { connect: { id: community.id } },
-      user: { connect: { id: fromUser.id } },
+      user: { connect: { id: user.id } },
     });
 
     await TestDataSourceHelper.createTransaction({
-      toWallet: { connect: { id: fromMemberWallet.id } },
+      toWallet: { connect: { id: userWallet.id } },
       toPointChange: 100,
       fromPointChange: 100,
       reason: TransactionReason.GRANT,
@@ -54,33 +52,55 @@ describe("Transaction DonateSelfPoint Error Handling Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx = { currentUser: { id: fromUser.id } } as IContext;
+    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
 
-    const input = {
+    const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,
-      fromWalletId: fromMemberWallet.id,
-      toUserId: toUser.id,
-      transferPoints: 0,
+      toUserId: "non-existent-user-id",
+      transferPoints: 50,
     };
 
     await expect(
-      transactionUseCase.userDonateSelfPointToAnother(ctx, { 
+      transactionUseCase.userDonateSelfPointToAnother(ctx, {
         input,
-        permission: { userId: fromUser.id }
+        permission: { userId: user.id },
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/not found/i);
   });
 
-  it("should fail when donating more points than available", async () => {
-    const fromUser = await TestDataSourceHelper.createUser({
-      name: "From User",
-      slug: "from-user",
+  it("should fail to donate points in non-existent community", async () => {
+    const user = await TestDataSourceHelper.createUser({
+      name: "Test User",
+      slug: "test-user",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
-    
-    const toUser = await TestDataSourceHelper.createUser({
-      name: "To User", 
-      slug: "to-user",
+
+    const ctx = { currentUser: { id: user.id }, issuer } as IContext;
+
+    const input: GqlTransactionDonateSelfPointInput = {
+      communityId: "non-existent-community-id",
+      toUserId: user.id,
+      transferPoints: 50,
+    };
+
+    await expect(
+      transactionUseCase.userDonateSelfPointToAnother(ctx, {
+        input,
+        permission: { userId: user.id },
+      }),
+    ).rejects.toThrow(/not found/i);
+  });
+
+  it("should fail to donate points with insufficient balance", async () => {
+    const user1 = await TestDataSourceHelper.createUser({
+      name: "User 1",
+      slug: "user-1",
+      currentPrefecture: CurrentPrefecture.KAGAWA,
+    });
+
+    const user2 = await TestDataSourceHelper.createUser({
+      name: "User 2",
+      slug: "user-2",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
@@ -89,35 +109,34 @@ describe("Transaction DonateSelfPoint Error Handling Tests", () => {
       pointName: "test-points",
     });
 
-    const fromMemberWallet = await TestDataSourceHelper.createWallet({
+    const user1Wallet = await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
       community: { connect: { id: community.id } },
-      user: { connect: { id: fromUser.id } },
+      user: { connect: { id: user1.id } },
     });
 
     await TestDataSourceHelper.createTransaction({
-      toWallet: { connect: { id: fromMemberWallet.id } },
-      toPointChange: 100,
-      fromPointChange: 100,
+      toWallet: { connect: { id: user1Wallet.id } },
+      toPointChange: 30,
+      fromPointChange: 30,
       reason: TransactionReason.GRANT,
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    const ctx = { currentUser: { id: fromUser.id } } as IContext;
+    const ctx = { currentUser: { id: user1.id }, issuer } as IContext;
 
-    const input = {
+    const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,
-      fromWalletId: fromMemberWallet.id,
-      toUserId: toUser.id,
-      transferPoints: 200, // More than available
+      toUserId: user2.id,
+      transferPoints: 50, // More than available balance
     };
 
     await expect(
-      transactionUseCase.userDonateSelfPointToAnother(ctx, { 
+      transactionUseCase.userDonateSelfPointToAnother(ctx, {
         input,
-        permission: { userId: fromUser.id }
+        permission: { userId: user1.id },
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/insufficient.*balance/i);
   });
 });

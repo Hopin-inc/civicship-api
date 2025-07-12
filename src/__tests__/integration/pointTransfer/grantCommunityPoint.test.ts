@@ -96,12 +96,6 @@ describe("Point Grant Tests", () => {
       type: WalletType.COMMUNITY,
       community: { connect: { id: community.id } },
     });
-    
-    const memberWallet = await TestDataSourceHelper.createWallet({
-      type: WalletType.MEMBER,
-      community: { connect: { id: community.id } },
-      user: { connect: { id: user.id } },
-    });
 
     await TestDataSourceHelper.createTransaction({
       toWallet: { connect: { id: communityWallet.id } },
@@ -110,17 +104,10 @@ describe("Point Grant Tests", () => {
       reason: TransactionReason.POINT_ISSUED,
     });
 
-    await TestDataSourceHelper.createTransaction({
-      toWallet: { connect: { id: memberWallet.id } },
-      fromPointChange: 0,
-      toPointChange: 0,
-      reason: TransactionReason.GRANT,
-    });
-
     await TestDataSourceHelper.refreshCurrentPoints();
 
     const input: GqlTransactionGrantCommunityPointInput = {
-      transferPoints: 9999, // 残高不足 - requesting more than the 10 points available
+      transferPoints: 9999, // More than the 10 points available
       toUserId: user.id,
     };
     const permission = { communityId: community.id };
@@ -130,6 +117,6 @@ describe("Point Grant Tests", () => {
     ).rejects.toThrow(/Insufficient balance/i);
 
     const txs = await TestDataSourceHelper.findAllTransactions();
-    expect(txs).toHaveLength(2); // The two initial transactions we created
+    expect(txs).toHaveLength(1); // Only the initial point issuance transaction
   });
 });
