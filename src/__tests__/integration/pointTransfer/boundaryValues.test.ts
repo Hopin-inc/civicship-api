@@ -178,4 +178,42 @@ describe("Point Transfer Boundary Value Tests", () => {
     expect(fromWalletUpdated?.currentPointView?.currentPoint).toBe(BigInt(safeInitialAmount) - BigInt(transferAmount));
     expect(toWalletUpdated?.currentPointView?.currentPoint).toBe(BigInt(transferAmount));
   });
+
+  it("should handle BigInt overflow scenarios", async () => {
+    const community = await TestDataSourceHelper.createCommunity({
+      name: "Test Community",
+      pointName: "test-points",
+    });
+
+    const communityWallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.COMMUNITY,
+      community: { connect: { id: community.id } },
+    });
+
+    const maxSafeInt = Number.MAX_SAFE_INTEGER;
+    
+    await TestDataSourceHelper.createTransaction({
+      toWallet: { connect: { id: communityWallet.id } },
+      toPointChange: maxSafeInt,
+      fromPointChange: maxSafeInt,
+      reason: TransactionReason.POINT_ISSUED,
+    });
+
+    await TestDataSourceHelper.refreshCurrentPoints();
+
+    const wallet = await TestDataSourceHelper.findWallet(communityWallet.id);
+    expect(wallet?.currentPointView?.currentPoint).toBe(BigInt(maxSafeInt));
+
+    await TestDataSourceHelper.createTransaction({
+      toWallet: { connect: { id: communityWallet.id } },
+      toPointChange: 1,
+      fromPointChange: 1,
+      reason: TransactionReason.POINT_ISSUED,
+    });
+
+    await TestDataSourceHelper.refreshCurrentPoints();
+
+    const updatedWallet = await TestDataSourceHelper.findWallet(communityWallet.id);
+    expect(updatedWallet?.currentPointView?.currentPoint).toBe(BigInt(maxSafeInt) + BigInt(1));
+  });
 });
