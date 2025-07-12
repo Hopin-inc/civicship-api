@@ -8,7 +8,7 @@
 
 **目的:** GraphQLでのN+1クエリ問題の防止
 
-詳細な実装については、[実装パターン](./PATTERNS.md) の「DataLoaderパターン」セクションを参照してください。
+詳細な実装については、[実装パターン](PATTERNS.md) の「DataLoaderパターン」セクションを参照してください。
 
 #### 主要な最適化ポイント
 
@@ -509,7 +509,7 @@ node --inspect --max-old-space-size=4096 dist/index.js
 ## 関連ドキュメント
 
 - [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
-- [実装パターン](./PATTERNS.md) - DataLoaderとパフォーマンスパターン
-- [インフラストラクチャガイド](./INFRASTRUCTURE.md) - データベースとキャッシュ設定
+- [実装パターン](PATTERNS.md) - DataLoaderとパフォーマンスパターン
+- [インフラストラクチャガイド](INFRASTRUCTURE.md) - データベースとキャッシュ設定
 - [デプロイメントガイド](./DEPLOYMENT.md) - 本番環境最適化
-- [トラブルシューティング](./TROUBLESHOOTING.md) - パフォーマンス問題の解決
+- [トラブルシューティング](TROUBLESHOOTING.md) - パフォーマンス問題の解決

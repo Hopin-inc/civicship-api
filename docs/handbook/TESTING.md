@@ -339,4 +339,4 @@ node --inspect-brk node_modules/.bin/jest --runInBand your-test-file.test.ts
 - [開発ワークフロー](./DEVELOPMENT.md) - 日常的な開発手順
 - [実装パターン](./PATTERNS.md) - コード実装パターン
 - [コマンドリファレンス](./COMMANDS.md) - 全コマンド一覧
-- [トラブルシューティング](./TROUBLESHOOTING.md) - 問題解決ガイド
+- [トラブルシューティング](TROUBLESHOOTING.md) - 問題解決ガイド

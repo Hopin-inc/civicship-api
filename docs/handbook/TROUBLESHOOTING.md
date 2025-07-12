@@ -371,7 +371,7 @@ Migration failed: Schema drift detected
 
 ## 関連ドキュメント
 
-- [セットアップガイド](./SETUP.md) - 初期環境構築
+- [セットアップガイド](SETUP.md) - 初期環境構築
 - [環境変数設定](./ENVIRONMENT.md) - 設定リファレンス
 - [開発ワークフロー](./DEVELOPMENT.md) - 日常的な開発手順
 - [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要

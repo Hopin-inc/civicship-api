@@ -407,4 +407,4 @@ app.post('/admin/users', adminController.createUser);
 - [インフラストラクチャガイド](./INFRASTRUCTURE.md) - 外部システム統合
 - [実装パターン](./PATTERNS.md) - セキュリティパターンの実装例
 - [環境変数ガイド](./ENVIRONMENT.md) - セキュリティ関連の環境設定
-- [トラブルシューティング](./TROUBLESHOOTING.md) - 認証・認可問題の解決
+- [トラブルシューティング](TROUBLESHOOTING.md) - 認証・認可問題の解決

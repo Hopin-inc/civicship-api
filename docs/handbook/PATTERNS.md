@@ -443,6 +443,6 @@ node --inspect pnpm dev:https
 ## 関連ドキュメント
 
 - [開発ワークフロー](./DEVELOPMENT.md) - 日常的な開発手順
-- [テストガイド](./TESTING.md) - テスト戦略と実行
+- [テストガイド](../TESTING.md) - テスト戦略と実行
 - [コマンドリファレンス](./COMMANDS.md) - 全コマンド一覧
 - [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要

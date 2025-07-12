@@ -6,10 +6,12 @@ import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client
 import TransactionUseCase from "@/application/domain/transaction/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Donate Tests", () => {
   const DONATION_POINTS = 100;
   let transactionUseCase: TransactionUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
@@ -19,6 +21,7 @@ describe("Point Donate Tests", () => {
     registerProductionDependencies();
 
     transactionUseCase = container.resolve(TransactionUseCase);
+    issuer = container.resolve(PrismaClientIssuer);
   });
 
   afterAll(async () => {
@@ -43,7 +46,7 @@ describe("Point Donate Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ctx = { currentUser: { id: fromUser.id } } as IContext;
+    const ctx = { currentUser: { id: fromUser.id }, issuer } as IContext;
 
     const fromWallet = await TestDataSourceHelper.createWallet({
       type: WalletType.MEMBER,
@@ -108,12 +111,33 @@ describe("Point Donate Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
-    const ctx = { currentUser: { id: fromUser.id } } as IContext;
+    const ctx = { currentUser: { id: fromUser.id }, issuer } as IContext;
+
+    const fromWallet = await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: fromUser.id } },
+    });
+
+    await TestDataSourceHelper.createWallet({
+      type: WalletType.MEMBER,
+      community: { connect: { id: community.id } },
+      user: { connect: { id: toUser.id } },
+    });
+
+    await TestDataSourceHelper.createTransaction({
+      toWallet: { connect: { id: fromWallet.id } },
+      fromPointChange: 10,
+      toPointChange: 10,
+      reason: TransactionReason.GRANT,
+    });
+
+    await TestDataSourceHelper.refreshCurrentPoints();
 
     const input: GqlTransactionDonateSelfPointInput = {
       communityId: community.id,
       toUserId: toUser.id,
-      transferPoints: 9999, // 残高不足
+      transferPoints: 9999, // More than the 10 points available
     };
 
     const permission: GqlCheckIsSelfPermissionInput = {
@@ -126,6 +150,6 @@ describe("Point Donate Tests", () => {
     );
 
     const txs = await TestDataSourceHelper.findAllTransactions();
-    expect(txs).toHaveLength(0);
+    expect(txs).toHaveLength(1); // Only the initial grant transaction
   });
 });

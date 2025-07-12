@@ -31,7 +31,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN pnpm install --frozen-lockfile --prod
 
-COPY . .
+COPY .. .
 RUN pnpm build
 
 EXPOSE 3000
