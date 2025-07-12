@@ -189,7 +189,7 @@ node -e "console.log(process.env.DATABASE_URL ? 'DB OK' : 'DB Missing')"
 
 ## 関連ドキュメント
 
-- [セットアップガイド](./SETUP.md) - インストール手順の全体
-- [トラブルシューティング](./TROUBLESHOOTING.md) - 詳細な問題解決
-- [開発フロー](./DEVELOPMENT.md) - 日常的な開発手順
-- [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計の概要
+- [セットアップガイド](../SETUP.md) - インストール手順の全体
+- [トラブルシューティング](../TROUBLESHOOTING.md) - 詳細な問題解決
+- [開発フロー](DEVELOPMENT.md) - 日常的な開発手順
+- [アーキテクチャガイド](ARCHITECTURE.md) - システム設計の概要

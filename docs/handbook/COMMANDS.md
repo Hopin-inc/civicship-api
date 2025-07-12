@@ -341,8 +341,8 @@ curl -X POST https://localhost:3000/graphql \
 
 ## 関連ドキュメント
 
-- [開発ワークフロー](./DEVELOPMENT.md) - 日常的な開発手順
-- [テストガイド](./TESTING.md) - テスト戦略と実行
-- [実装パターン](./PATTERNS.md) - コード実装パターン
-- [セットアップガイド](./SETUP.md) - 初期環境構築
-- [トラブルシューティング](./TROUBLESHOOTING.md) - 問題解決ガイド
+- [開発ワークフロー](DEVELOPMENT.md) - 日常的な開発手順
+- [テストガイド](../TESTING.md) - テスト戦略と実行
+- [実装パターン](../PATTERNS.md) - コード実装パターン
+- [セットアップガイド](../SETUP.md) - 初期環境構築
+- [トラブルシューティング](../TROUBLESHOOTING.md) - 問題解決ガイド

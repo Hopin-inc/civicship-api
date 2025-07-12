@@ -333,7 +333,7 @@ docker exec -it civicship-db psql -U postgres -d civicship_dev \
 
 このガイドでカバーされていない問題が発生した場合:
 
-1. [トラブルシューティングガイド](./TROUBLESHOOTING.md) を確認
+1. [トラブルシューティングガイド](TROUBLESHOOTING.md) を確認
 2. エラーメッセージのサーバーログを確認
 3. すべての環境変数が正しく設定されていることを確認
 4. すべての前提条件が適切にインストールされていることを確認
@@ -341,6 +341,6 @@ docker exec -it civicship-db psql -U postgres -d civicship_dev \
 ## 関連ドキュメント
 
 - [環境変数](./ENVIRONMENT.md) - 設定リファレンス
-- [トラブルシューティング](./TROUBLESHOOTING.md) - 問題解決
+- [トラブルシューティング](TROUBLESHOOTING.md) - 問題解決
 - [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計
 - [開発ワークフロー](./DEVELOPMENT.md) - 日常的な手順

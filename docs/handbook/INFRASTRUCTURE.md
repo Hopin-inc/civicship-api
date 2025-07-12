@@ -316,7 +316,7 @@ logger.error('External API call failed', {
 
 ## トラブルシューティング
 
-よくあるインフラ問題の解決方法については、[トラブルシューティングガイド](./TROUBLESHOOTING.md) を参照してください。
+よくあるインフラ問題の解決方法については、[トラブルシューティングガイド](../TROUBLESHOOTING.md) を参照してください。
 
 ### データベース接続問題
 
@@ -342,7 +342,7 @@ echo $FIREBASE_PRIVATE_KEY | grep "BEGIN PRIVATE KEY"
 ## 関連ドキュメント
 
 - [アーキテクチャガイド](./ARCHITECTURE.md) - システム設計概要
-- [セキュリティガイド](./SECURITY.md) - 認証・認可アーキテクチャ
+- [セキュリティガイド](../SECURITY.md) - 認証・認可アーキテクチャ
 - [デプロイメントガイド](./DEPLOYMENT.md) - 本番環境構成
 - [環境変数ガイド](./ENVIRONMENT.md) - 詳細な環境設定
-- [セットアップガイド](./SETUP.md) - 開発環境構築
+- [セットアップガイド](../SETUP.md) - 開発環境構築
