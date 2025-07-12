@@ -444,6 +444,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String body "❓"
     Int points_to_earn "❓"
     Int fee_required "❓"
+    Boolean points_to_required "❓"
     String community_id "❓"
     String place_id "❓"
     String created_by 

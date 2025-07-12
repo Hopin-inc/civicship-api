@@ -312,6 +312,7 @@ Table t_opportunities {
   images t_images [not null]
   pointsToEarn Int
   feeRequired Int
+  pointsToRequired Boolean [default: false]
   requiredUtilities t_utilities [not null]
   slots t_opportunity_slots [not null]
   earliestReservableSlotView v_earliest_reservable_slot
