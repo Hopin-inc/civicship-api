@@ -67,15 +67,13 @@ const queries = {
 
 const variables = {
   issue: {
-    input: { toWalletId: "wallet-1", transferPoints: 10 },
+    input: { transferPoints: 10 },
     permission: { communityId: "community-1" },
   },
   grant: {
     input: {
-      fromWalletId: "wallet-1",
       toUserId: "user-2",
       transferPoints: 10,
-      communityId: "community-1",
     },
     permission: { communityId: "community-1" },
   },
@@ -119,6 +117,8 @@ const mockMembershipUseCase = {
   ownerAssignOwner: jest.fn().mockResolvedValue({
     __typename: "MembershipSetRoleSuccess",
     membership: {
+      userId: "user-2",
+      communityId: "community-1",
       user: {
         id: "user-2",
       },
