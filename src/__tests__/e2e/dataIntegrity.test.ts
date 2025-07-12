@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import TestDataSourceHelper from "../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
 import TransactionUseCase from "@/application/domain/transaction/usecase";
@@ -33,7 +33,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     const user2 = await TestDataSourceHelper.createUser({
       name: "User 2",
-      slug: "user-2", 
+      slug: "user-2",
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
 
@@ -85,11 +85,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
     const allTransactions = await TestDataSourceHelper.findAllTransactions();
     const totalIssued = allTransactions
-      .filter(t => t.reason === TransactionReason.POINT_ISSUED)
+      .filter((t) => t.reason === TransactionReason.POINT_ISSUED)
       .reduce((sum, t) => sum + Number(t.toPointChange), 0);
-    
+
     const totalGranted = allTransactions
-      .filter(t => t.reason === TransactionReason.GRANT)
+      .filter((t) => t.reason === TransactionReason.GRANT)
       .reduce((sum, t) => sum + Number(t.toPointChange), 0);
 
     expect(totalIssued).toBe(1000);
@@ -145,7 +145,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
     ).rejects.toThrow(/insufficient/i);
 
     await TestDataSourceHelper.refreshCurrentPoints();
-    
+
     const userWallet = await TestDataSourceHelper.findMemberWallet(user.id, community.id);
     const communityWalletUpdated = await TestDataSourceHelper.findWallet(communityWallet.id);
 
@@ -158,7 +158,7 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
 
   it("should maintain data integrity across complex multi-step workflows", async () => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const users: any[] = [];
     for (let i = 0; i < 5; i++) {
       const user = await TestDataSourceHelper.createUser({
@@ -232,9 +232,11 @@ describe("Data Integrity and Concurrency E2E Tests", () => {
     expect(finalWallets[3]?.currentPointView?.currentPoint).toBe(BigInt(1000)); // 1000 + 200 - 200
     expect(finalWallets[4]?.currentPointView?.currentPoint).toBe(BigInt(1200)); // 1000 + 200
 
-    const totalUserPoints = finalWallets.reduce((sum, wallet) => 
-      sum + Number(wallet?.currentPointView?.currentPoint || 0), 0);
-    
+    const totalUserPoints = finalWallets.reduce(
+      (sum, wallet) => sum + Number(wallet?.currentPointView?.currentPoint || 0),
+      0,
+    );
+
     const communityWalletFinal = await TestDataSourceHelper.findWallet(communityWallet.id);
     const totalCommunityPoints = Number(communityWalletFinal?.currentPointView?.currentPoint || 0);
 

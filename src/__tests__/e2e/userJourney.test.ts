@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import TestDataSourceHelper from "../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import { CurrentPrefecture, TransactionReason, WalletType } from "@prisma/client";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
@@ -33,7 +33,7 @@ describe("End-to-End User Journey Integration Tests", () => {
 
   it("should complete full user journey: signup -> receive points -> donate points", async () => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const community = await TestDataSourceHelper.createCommunity({
       name: `test-community-${uniqueId}`,
       pointName: "pt",
@@ -75,7 +75,7 @@ describe("End-to-End User Journey Integration Tests", () => {
     await TestDataSourceHelper.refreshCurrentPoints();
 
     const grantCtx = { currentUser: { id: userId }, issuer } as IContext;
-    
+
     await transactionUseCase.ownerGrantCommunityPoint(grantCtx, {
       input: { transferPoints: 500, toUserId: userId },
       permission: { communityId: community.id },
@@ -97,17 +97,20 @@ describe("End-to-End User Journey Integration Tests", () => {
     });
 
     await TestDataSourceHelper.refreshCurrentPoints();
-    
+
     const userWallet = await TestDataSourceHelper.findMemberWallet(userId, community.id);
-    const secondUserWallet = await TestDataSourceHelper.findMemberWallet(secondUser.id, community.id);
-    
+    const secondUserWallet = await TestDataSourceHelper.findMemberWallet(
+      secondUser.id,
+      community.id,
+    );
+
     expect(userWallet?.currentPointView?.currentPoint).toBe(BigInt(400));
     expect(secondUserWallet?.currentPointView?.currentPoint).toBe(BigInt(100));
 
     const transactions = await TestDataSourceHelper.findAllTransactions();
     expect(transactions).toHaveLength(3); // Issue, Grant, Donation
-    
-    const donationTx = transactions.find(t => t.reason === TransactionReason.DONATION);
+
+    const donationTx = transactions.find((t) => t.reason === TransactionReason.DONATION);
     expect(donationTx).toBeDefined();
     expect(donationTx?.toPointChange).toBe(100);
   });
@@ -123,20 +126,26 @@ describe("End-to-End User Journey Integration Tests", () => {
 
     const ownerCtx = { currentUser: { id: owner.id }, issuer } as IContext;
 
-    const communityResult = await communityUseCase.userCreateCommunityAndJoin({
-      input: {
-        name: `Multi User Community ${uniqueId}`,
-        pointName: "pts",
-      }
-    }, ownerCtx);
+    const communityResult = await communityUseCase.userCreateCommunityAndJoin(
+      {
+        input: {
+          name: `Multi User Community ${uniqueId}`,
+          pointName: "pts",
+        },
+      },
+      ownerCtx,
+    );
 
     expect(communityResult.community).toBeDefined();
     const communityId = communityResult.community!.id;
 
-    await transactionUseCase.ownerIssueCommunityPoint({
-      input: { transferPoints: 2000 },
-      permission: { communityId }
-    }, ownerCtx);
+    await transactionUseCase.ownerIssueCommunityPoint(
+      {
+        input: { transferPoints: 2000 },
+        permission: { communityId },
+      },
+      ownerCtx,
+    );
 
     const users: any[] = [];
     for (let i = 0; i < 3; i++) {
@@ -185,9 +194,9 @@ describe("End-to-End User Journey Integration Tests", () => {
 
     const allTransactions = await TestDataSourceHelper.findAllTransactions();
     const totalIssued = allTransactions
-      .filter(t => t.reason === TransactionReason.POINT_ISSUED)
+      .filter((t) => t.reason === TransactionReason.POINT_ISSUED)
       .reduce((sum, t) => sum + Number(t.toPointChange), 0);
-    
+
     expect(totalIssued).toBe(2000);
   });
 });
