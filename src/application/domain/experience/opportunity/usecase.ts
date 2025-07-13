@@ -52,7 +52,31 @@ export default class OpportunityUseCase {
     );
 
     const hasNextPage = records.length > take;
-    const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
+    let data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
+
+    if (filter?.isReservableWithTicket !== undefined && currentUserId) {
+      const filteredData: GqlOpportunity[] = [];
+      for (let i = 0; i < data.length; i++) {
+        const opportunity = data[i];
+        const record = records[i];
+        const communityId = record.communityId;
+        if (!communityId) {
+          console.log("[isReservableWithTicket filter] Skipping opportunity without communityId:", opportunity.id);
+          continue;
+        }
+
+        const isReservable = await ctx.loaders.isReservableWithTicket.load({
+          userId: currentUserId,
+          communityId: communityId,
+          opportunityId: opportunity.id,
+        });
+
+        if (isReservable === filter.isReservableWithTicket) {
+          filteredData.push(opportunity);
+        }
+      }
+      data = filteredData;
+    }
 
     return OpportunityPresenter.query(data, hasNextPage, cursor);
   }
