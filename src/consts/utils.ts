@@ -1,9 +1,9 @@
-import { IdentityPlatform } from "@prisma/client";
+import { GqlIdentityPlatform } from "@/types/graphql";
 
-export const SignInProvider: Record<string, IdentityPlatform> = {
-  "oidc.line": IdentityPlatform.LINE,
-  "facebook.com": IdentityPlatform.FACEBOOK,
-  "phone": IdentityPlatform.PHONE,
+export const SignInProvider: Record<string, GqlIdentityPlatform> = {
+  "oidc.line": GqlIdentityPlatform.Line,
+  "facebook.com": GqlIdentityPlatform.Facebook,
+  "phone": GqlIdentityPlatform.Phone,
 };
 
 export const IDENTUS_API_URL = process.env.IDENTUS_API_URL || "https://kyoso-identus-api.example.com";

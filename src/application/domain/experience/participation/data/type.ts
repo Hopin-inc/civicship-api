@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { userInclude } from "@/application/domain/account/user/data/type";
+import { placeInclude } from "@/application/domain/location/place/data/type";
 
 export const participationInclude = Prisma.validator<Prisma.ParticipationInclude>()({
   user: { include: userInclude },
@@ -8,8 +9,41 @@ export const participationInclude = Prisma.validator<Prisma.ParticipationInclude
       opportunitySlot: { include: { opportunity: true } },
     },
   },
+  evaluation: true,
   community: true,
   images: true,
+});
+
+export const participationPortfolioInclude = Prisma.validator<Prisma.ParticipationInclude>()({
+  community: true,
+  images: true,
+  evaluation: { include: { vcIssuanceRequest: true } },
+  reservation: {
+    include: {
+      opportunitySlot: {
+        include: {
+          opportunity: {
+            include: {
+              images: true,
+              place: { include: placeInclude },
+            },
+          },
+        },
+      },
+      participations: { include: { user: { include: userInclude } } },
+    },
+  },
+  opportunitySlot: {
+    include: {
+      opportunity: {
+        include: {
+          images: true,
+          place: { include: placeInclude },
+        },
+      },
+      participations: { include: { user: { include: userInclude } } },
+    },
+  },
 });
 
 export type PrismaParticipation = Prisma.ParticipationGetPayload<{
@@ -26,6 +60,7 @@ export const participationSelectDetail = Prisma.validator<Prisma.ParticipationSe
   communityId: true,
   reservationId: true,
   evaluationId: true,
+  opportunitySlotId: true,
 
   createdAt: true,
   updatedAt: true,
@@ -36,9 +71,15 @@ export type PrismaParticipationDetail = Prisma.ParticipationGetPayload<{
 }>;
 
 export const participationIncludeSlot = Prisma.validator<Prisma.ParticipationSelect>()({
+  reason: true,
   reservation: { select: { opportunitySlot: true } },
+  opportunitySlot: true,
 });
 
 export type PrismaParticipationIncludeSlot = Prisma.ParticipationGetPayload<{
   select: typeof participationIncludeSlot;
+}>;
+
+export type PrismaParticipationForPortfolioInclude = Prisma.ParticipationGetPayload<{
+  include: typeof participationPortfolioInclude;
 }>;

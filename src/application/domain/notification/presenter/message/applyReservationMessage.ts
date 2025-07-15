@@ -8,6 +8,7 @@ export interface ReservationAppliedParams {
   participantCount: string;
   applicantName: string;
   redirectUrl: string;
+  requireApproval: boolean;
 }
 
 export function buildReservationAppliedMessage(
@@ -34,18 +35,18 @@ function buildBody(params: ReservationAppliedParams): messagingApi.FlexBox {
     paddingEnd: "xl",
     spacing: "sm",
     contents: [
-      buildTitle(),
+      buildTitle(params.requireApproval),
       buildOpportunityInfo(params),
       buildReservationInfoTable(params),
-      buildExplainMessage(),
+      buildExplainMessage(params.requireApproval),
     ],
   };
 }
 
-function buildTitle(): messagingApi.FlexText {
+function buildTitle(requireApproval: boolean): messagingApi.FlexText {
   return {
     type: "text",
-    text: "新規の参加申込",
+    text: requireApproval ? "新規の参加申込" : "新規予約", // ← 分岐ここ！
     size: "xs",
     color: "#1DB446",
     weight: "bold",
@@ -150,7 +151,36 @@ function buildReservationInfoTable(params: ReservationAppliedParams): messagingA
   };
 }
 
-function buildExplainMessage(): messagingApi.FlexBox {
+function buildExplainMessage(requireApproval: boolean): messagingApi.FlexBox {
+  if (requireApproval) {
+    return {
+      type: "box",
+      layout: "vertical",
+      spacing: "sm",
+      paddingTop: "xl",
+      paddingBottom: "xl",
+      contents: [
+        {
+          type: "text",
+          contents: [
+            { type: "span", text: "もしできるなら", color: "#111111" },
+            { type: "span", text: "24時間以内", weight: "bold", color: "#111111" },
+            { type: "span", text: "にお返事できる最高かもしれません😎", color: "#111111" },
+          ],
+          size: "sm",
+          wrap: true,
+        },
+        {
+          type: "text",
+          text: `※すぐ下の「詳細を確認する」をタップして、申込を承認することができます。`,
+          size: "xs",
+          color: "#999999",
+          wrap: true,
+        },
+      ],
+    };
+  }
+
   return {
     type: "box",
     layout: "vertical",
@@ -160,17 +190,14 @@ function buildExplainMessage(): messagingApi.FlexBox {
     contents: [
       {
         type: "text",
-        contents: [
-          { type: "span", text: "もしできるなら", color: "#111111" },
-          { type: "span", text: "24時間以内", weight: "bold", color: "#111111" },
-          { type: "span", text: "にお返事できる最高かもしれません😎", color: "#111111" },
-        ],
+        text: "承認なしで参加できる募集だったので、予約が確定しています🎉",
         size: "sm",
+        color: "#111111",
         wrap: true,
       },
       {
         type: "text",
-        text: `※すぐ下の「詳細を確認する」をタップして、申込を承認することができます。`,
+        text: "※すぐ下の「詳細を確認する」をタップして、予約を確認することができます。",
         size: "xs",
         color: "#999999",
         wrap: true,

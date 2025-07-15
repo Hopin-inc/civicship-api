@@ -5,6 +5,7 @@ import * as OpportunitySlotLoaders from "@/application/domain/experience/opportu
 import * as ReservationLoaders from "@/application/domain/experience/reservation/controller/dataloader";
 import * as EvaluationLoaders from "@/application/domain/experience/evaluation/controller/dataloader";
 import * as EvaluationHistoryLoaders from "@/application/domain/experience/evaluation/evaluationHistory/controller/dataloader";
+import * as VcIssuanceRequestLoaders from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/dataloader";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 export function createExperienceLoaders(issuer: PrismaClientIssuer) {
@@ -47,5 +48,7 @@ export function createExperienceLoaders(issuer: PrismaClientIssuer) {
       EvaluationHistoryLoaders.createEvaluationHistoriesByEvaluationLoader(issuer),
     evaluationHistoriesCreatedByUser:
       EvaluationHistoryLoaders.createEvaluationHistoriesCreatedByUserLoader(issuer),
+
+    vcIssuanceRequestByEvaluation: VcIssuanceRequestLoaders.createVcIssuanceRequestByEvaluationLoader(issuer),
   };
 }

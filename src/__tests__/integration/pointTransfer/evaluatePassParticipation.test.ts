@@ -16,6 +16,8 @@ import {
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
 import EvaluationUseCase from "@/application/domain/experience/evaluation/usecase";
+import { GqlEvaluationStatus } from "@/types/graphql";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Point Reward Tests", () => {
   const testSetup = {
@@ -45,6 +47,10 @@ describe("Point Reward Tests", () => {
     container.reset();
     registerProductionDependencies();
 
+    container.register("PrismaClientIssuer", {
+      useValue: new PrismaClientIssuer(),
+    });
+
     useCase = container.resolve(EvaluationUseCase);
 
     const opportunityOwnerUserInserted = await TestDataSourceHelper.createUser({
@@ -54,7 +60,10 @@ describe("Point Reward Tests", () => {
       currentPrefecture: CurrentPrefecture.KAGAWA,
     });
     opportunityOwnerUserId = opportunityOwnerUserInserted.id;
-    ctx = { currentUser: { id: opportunityOwnerUserId } } as unknown as IContext;
+    ctx = {
+      currentUser: { id: opportunityOwnerUserId },
+      issuer: container.resolve("PrismaClientIssuer"),
+    } as unknown as IContext;
 
     const participationUserInserted = await TestDataSourceHelper.createUser({
       name: testSetup.userName,
@@ -155,12 +164,17 @@ describe("Point Reward Tests", () => {
     await TestDataSourceHelper.disconnect();
   });
 
-  it("creates POINT_REWARD transaction on evaluation", async () => {
-    await useCase.managerPassEvaluation(
+  it("creates POINT_REWARD transaction on bulk evaluation", async () => {
+    await useCase.managerBulkCreateEvaluations(
       {
         input: {
-          participationId,
-          comment: testSetup.comment,
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
         },
         permission: {
           communityId,
@@ -174,10 +188,18 @@ describe("Point Reward Tests", () => {
     expect(transaction).toBeDefined();
   });
 
-  it("transfers points from opportunityOwner to participation wallet", async () => {
-    await useCase.managerPassEvaluation(
+  it("transfers points from opportunityOwner to participation wallet on bulk evaluation", async () => {
+    await useCase.managerBulkCreateEvaluations(
       {
-        input: { participationId, comment: testSetup.comment },
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
         permission: { communityId },
       },
       ctx,
@@ -193,10 +215,18 @@ describe("Point Reward Tests", () => {
     expect(tx?.toPointChange).toEqual(testSetup.pointsToEarn);
   });
 
-  it("updates currentPointView after evaluation", async () => {
-    await useCase.managerPassEvaluation(
+  it("updates currentPointView after bulk evaluation", async () => {
+    await useCase.managerBulkCreateEvaluations(
       {
-        input: { participationId, comment: testSetup.comment },
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
         permission: { communityId },
       },
       ctx,
@@ -204,26 +234,20 @@ describe("Point Reward Tests", () => {
 
     await TestDataSourceHelper.refreshCurrentPoints();
 
-    // ✅ 参加者（ポイントを受け取る側）
     const participationPoint = (
       await TestDataSourceHelper.findMemberWallet(participationUserId, communityId)
     )?.currentPointView?.currentPoint;
-    expect(participationPoint).toBe(testSetup.pointsToEarn);
+    expect(participationPoint).toBe(BigInt(testSetup.pointsToEarn));
 
-    // ✅ 機会提供者（ポイントを渡す側）
     const opportunityOwnerPoint = (
       await TestDataSourceHelper.findMemberWallet(opportunityOwnerUserId, communityId)
     )?.currentPointView?.currentPoint;
-    const expectedOwnerPoint =
-      testSetup.communityInitialPoint /* 初期付与 */ - testSetup.pointsToEarn; /* 評価による支出 */
-    expect(opportunityOwnerPoint).toBe(expectedOwnerPoint);
+    const expectedOwnerPoint = testSetup.communityInitialPoint - testSetup.pointsToEarn;
+    expect(opportunityOwnerPoint).toBe(BigInt(expectedOwnerPoint));
 
-    // ✅ コミュニティウォレット（残高確認）
     const communityPoint = (await TestDataSourceHelper.findCommunityWallet(communityId))
       ?.currentPointView?.currentPoint;
-    const expectedCommunityPoint =
-      testSetup.communityInitialPoint /* 初期値 */ -
-      testSetup.communityInitialPoint; /* GRANT で全額 opportunityOwner に移動 */
-    expect(communityPoint).toBe(expectedCommunityPoint); // ← 0 を期待するはず
+    const expectedCommunityPoint = 0;
+    expect(communityPoint).toBe(BigInt(expectedCommunityPoint));
   });
 });

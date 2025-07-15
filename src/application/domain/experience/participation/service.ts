@@ -1,4 +1,5 @@
 import {
+  GqlParticipationBulkCreateInput,
   GqlParticipationCreatePersonalRecordInput,
   GqlQueryParticipationsArgs,
 } from "@/types/graphql";
@@ -51,6 +52,15 @@ export default class ParticipationService implements IParticipationService {
       throw new NotFoundError(`ParticipationNotFound: ID=${id}`);
     }
     return participation;
+  }
+
+  async bulkCreateParticipations(
+    ctx: IContext,
+    input: GqlParticipationBulkCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    const createInputs = this.converter.createMany(input, ctx.communityId);
+    return await Promise.all(createInputs.map((d) => this.repository.create(ctx, d, tx)));
   }
 
   async createParticipation(

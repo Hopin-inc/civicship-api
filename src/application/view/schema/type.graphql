@@ -2,19 +2,20 @@
 # Portfolio Object Type Definitions
 # ------------------------------
 type Portfolio {
-    id: ID!
+  id: ID!
 
-    title: String!
-    source: PortfolioSource!
-    category: PortfolioCategory!
+  title: String!
+  source: PortfolioSource!
+  category: PortfolioCategory!
 
-    reservationStatus: ReservationStatus
+  reservationStatus: ReservationStatus
+  evaluationStatus: EvaluationStatus
 
-    date: Datetime!
-    place: Place
+  date: Datetime!
+  place: Place
 
-    thumbnailUrl: String
-    participants: [User!]
+  thumbnailUrl: String
+  participants: [User!]
 }
 
 enum PortfolioSource {
