@@ -7,13 +7,13 @@ import {
 import { PrismaCityDetail } from "@/application/domain/location/master/data/type";
 
 export default class MasterPresenter {
-  static citiesQuery(cities: GqlCity[], hasNextPage: boolean): GqlCitiesConnection {
+  static citiesQuery(cities: GqlCity[], hasNextPage: boolean, cursor?: string): GqlCitiesConnection {
     return {
       __typename: "CitiesConnection",
       totalCount: cities.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: cities[0]?.code,
         endCursor: cities.length ? cities[cities.length - 1].code : undefined,
       },
@@ -24,13 +24,13 @@ export default class MasterPresenter {
     };
   }
 
-  static statesQuery(states: GqlState[], hasNextPage: boolean): GqlStatesConnection {
+  static statesQuery(states: GqlState[], hasNextPage: boolean, cursor?: string): GqlStatesConnection {
     return {
       __typename: "StatesConnection",
       totalCount: states.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: states[0]?.code,
         endCursor: states.length ? states[states.length - 1].code : undefined,
       },

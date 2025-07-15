@@ -2,13 +2,13 @@ import { GqlEvaluation, GqlEvaluationsConnection } from "@/types/graphql";
 import { PrismaEvaluationDetail } from "@/application/domain/experience/evaluation/data/type";
 
 export default class EvaluationPresenter {
-  static query(records: GqlEvaluation[], hasNextPage: boolean): GqlEvaluationsConnection {
+  static query(records: GqlEvaluation[], hasNextPage: boolean, cursor?: string): GqlEvaluationsConnection {
     return {
       __typename: "EvaluationsConnection",
       totalCount: records.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: records[0]?.id,
         endCursor: records.length ? records[records.length - 1].id : undefined,
       },

@@ -9,13 +9,13 @@ import {
 import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 
 export default class OpportunityPresenter {
-  static query(r: GqlOpportunity[], hasNextPage: boolean): GqlOpportunitiesConnection {
+  static query(r: GqlOpportunity[], hasNextPage: boolean, cursor?: string): GqlOpportunitiesConnection {
     return {
       __typename: "OpportunitiesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },

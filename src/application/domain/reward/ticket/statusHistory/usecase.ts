@@ -22,7 +22,7 @@ export default class TicketStatusHistoryUseCase {
     );
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map((record) => TicketStatusHistoryPresenter.get(record));
-    return TicketStatusHistoryPresenter.query(data, hasNextPage);
+    return TicketStatusHistoryPresenter.query(data, hasNextPage, cursor);
   }
 
   static async visitorViewTicketStatusHistory(

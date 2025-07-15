@@ -8,13 +8,13 @@ import {
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 
 export default class TransactionPresenter {
-  static query(r: GqlTransaction[], hasNextPage: boolean): GqlTransactionsConnection {
+  static query(r: GqlTransaction[], hasNextPage: boolean, cursor?: string): GqlTransactionsConnection {
     return {
       __typename: "TransactionsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },
