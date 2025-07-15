@@ -54,7 +54,7 @@ export default class OpportunityUseCase {
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
 
-    return OpportunityPresenter.query(data, hasNextPage);
+    return OpportunityPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewOpportunity(

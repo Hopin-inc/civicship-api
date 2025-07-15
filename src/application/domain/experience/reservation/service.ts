@@ -29,7 +29,7 @@ export default class ReservationService implements IReservationService {
     const results = await this.repository.query(ctx, where, orderBy, take, cursor);
     const hasNextPage = results.length > take;
     const sliced = results.slice(0, take).map(ReservationPresenter.get);
-    return ReservationPresenter.query(sliced, hasNextPage);
+    return ReservationPresenter.query(sliced, hasNextPage, cursor);
   }
 
   async fetchConflictingReservations(ctx: IContext, userId: string, slotId: string) {

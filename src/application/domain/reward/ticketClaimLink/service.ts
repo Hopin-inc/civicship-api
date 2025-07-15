@@ -23,7 +23,7 @@ export default class TicketClaimLinkService implements ITicketClaimLinkService {
     const res = await this.repository.query(ctx, where, orderBy, take + 1, cursor);
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map((record) => TicketClaimLinkPresenter.getDetail(record));
-    return TicketClaimLinkPresenter.query(data, hasNextPage);
+    return TicketClaimLinkPresenter.query(data, hasNextPage, cursor);
   }
 
   async findTicketClaimLink(ctx: IContext, id: string) {

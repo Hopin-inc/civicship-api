@@ -41,7 +41,7 @@ export default class OpportunitySlotUseCase {
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => OpportunitySlotPresenter.get(record));
 
-    return OpportunitySlotPresenter.query(data, hasNextPage);
+    return OpportunitySlotPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewOpportunitySlot(

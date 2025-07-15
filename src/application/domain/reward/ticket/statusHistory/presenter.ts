@@ -5,12 +5,13 @@ export default class TicketStatusHistoryPresenter {
   static query(
     histories: GqlTicketStatusHistory[],
     hasNextPage: boolean,
+    cursor?: string,
   ): GqlTicketStatusHistoriesConnection {
     return {
       totalCount: histories.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: histories[0]?.id,
         endCursor: histories.length ? histories[histories.length - 1].id : undefined,
       },

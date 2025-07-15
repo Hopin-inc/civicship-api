@@ -7,12 +7,12 @@ import {
 import { PrismaReservationDetail } from "@/application/domain/experience/reservation/data/type";
 
 export default class ReservationPresenter {
-  static query(records: GqlReservation[], hasNextPage: boolean): GqlReservationsConnection {
+  static query(records: GqlReservation[], hasNextPage: boolean, cursor?: string): GqlReservationsConnection {
     return {
       totalCount: records.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: records[0]?.id,
         endCursor: records.length ? records[records.length - 1].id : undefined,
       },

@@ -8,13 +8,13 @@ import {
 import { PrismaUtilityDetail } from "@/application/domain/reward/utility/data/type";
 
 export default class UtilityPresenter {
-  static query(utilities: GqlUtility[], hasNextPage: boolean): GqlUtilitiesConnection {
+  static query(utilities: GqlUtility[], hasNextPage: boolean, cursor?: string): GqlUtilitiesConnection {
     return {
       __typename: "UtilitiesConnection",
       totalCount: utilities.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: utilities[0]?.id,
         endCursor: utilities.length ? utilities[utilities.length - 1].id : undefined,
       },

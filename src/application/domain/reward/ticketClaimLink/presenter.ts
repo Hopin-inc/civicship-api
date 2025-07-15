@@ -19,7 +19,7 @@ export default class TicketClaimLinkPresenter {
     };
   }
 
-  static query(data: GqlTicketClaimLink[], hasNextPage: boolean): GqlTicketClaimLinksConnection {
+  static query(data: GqlTicketClaimLink[], hasNextPage: boolean, cursor?: string): GqlTicketClaimLinksConnection {
     return {
       __typename: "TicketClaimLinksConnection",
       edges: data.map((node) => ({
@@ -30,7 +30,7 @@ export default class TicketClaimLinkPresenter {
       pageInfo: {
         __typename: "PageInfo",
         hasNextPage,
-        hasPreviousPage: false,
+        hasPreviousPage: !!cursor,
         startCursor: data.length > 0 ? data[0].id : null,
         endCursor: data.length > 0 ? data[data.length - 1].id : null,
       },

@@ -2,13 +2,13 @@ import { GqlUser, GqlUsersConnection, GqlUserUpdateProfileSuccess } from "@/type
 import { PrismaUser, PrismaUserDetail } from "@/application/domain/account/user/data/type";
 
 export default class UserPresenter {
-  static query(users: GqlUser[], hasNextPage: boolean): GqlUsersConnection {
+  static query(users: GqlUser[], hasNextPage: boolean, cursor?: string): GqlUsersConnection {
     return {
       __typename: "UsersConnection",
       totalCount: users.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: users[0]?.id,
         endCursor: users.length ? users[users.length - 1].id : undefined,
       },
