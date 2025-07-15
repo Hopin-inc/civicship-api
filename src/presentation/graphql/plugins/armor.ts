@@ -4,7 +4,7 @@ import { GraphQLArmorConfig } from "@escape.tech/graphql-armor-types/dist/declar
 const config: GraphQLArmorConfig = {
   costLimit: {
     enabled: true,
-    maxCost: 5000, // GraphQL Armor plugin default
+    maxCost: 7500, // GraphQL Armor plugin default
     objectCost: 2, // GraphQL Armor plugin default
     scalarCost: 1, // GraphQL Armor plugin default
     depthCostFactor: 1.5, // GraphQL Armor plugin default
