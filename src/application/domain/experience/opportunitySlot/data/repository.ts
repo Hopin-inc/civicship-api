@@ -52,6 +52,19 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     });
   }
 
+  async create(
+    ctx: IContext,
+    data: Prisma.OpportunitySlotCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return tx.opportunitySlot.create({ data, select: opportunitySlotSelectDetail });
+    }
+    return ctx.issuer.public(ctx, (tx) =>
+      tx.opportunitySlot.create({ data, select: opportunitySlotSelectDetail }),
+    );
+  }
+
   async createMany(
     ctx: IContext,
     data: Prisma.OpportunitySlotCreateManyInput[],

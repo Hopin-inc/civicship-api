@@ -54,6 +54,16 @@ export default class OpportunitySlotService {
     return record;
   }
 
+  async createOpportunitySlot(
+    ctx: IContext,
+    opportunityId: string,
+    input: GqlOpportunitySlotCreateInput,
+    tx: Prisma.TransactionClient,
+  ) {
+    const data = this.converter.create(opportunityId, input);
+    return this.repository.create(ctx, data, tx);
+  }
+
   async setOpportunitySlotHostingStatus(
     ctx: IContext,
     slotId: string,

@@ -51,6 +51,18 @@ export default class OpportunitySlotConverter {
     return [{ startsAt: sort?.startsAt ?? Prisma.SortOrder.desc }];
   }
 
+  create(
+    opportunityId: string,
+    input: GqlOpportunitySlotCreateInput,
+  ): Prisma.OpportunitySlotCreateInput {
+    return {
+      opportunity: { connect: { id: opportunityId } },
+      capacity: input.capacity,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    };
+  }
+
   createMany(
     opportunityId: string,
     inputs: GqlOpportunitySlotCreateInput[],
