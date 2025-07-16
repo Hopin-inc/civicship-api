@@ -40,6 +40,7 @@ export interface IOpportunitySlotRepository {
     ctx: IContext,
     id: string,
     hostingStatus: OpportunitySlotHostingStatus,
+    capacity: number,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaOpportunitySlotSetHostingStatus>;
 

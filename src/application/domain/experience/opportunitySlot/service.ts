@@ -58,10 +58,11 @@ export default class OpportunitySlotService {
     ctx: IContext,
     slotId: string,
     hostingStatus: OpportunitySlotHostingStatus,
+    capacity: number,
     tx: Prisma.TransactionClient,
   ) {
     await this.findOpportunitySlotOrThrow(ctx, slotId);
-    return await this.repository.setHostingStatus(ctx, slotId, hostingStatus, tx);
+    return await this.repository.setHostingStatus(ctx, slotId, hostingStatus, capacity, tx);
   }
 
   async bulkCreateOpportunitySlots(

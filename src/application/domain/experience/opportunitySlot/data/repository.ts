@@ -77,11 +77,12 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
     ctx: IContext,
     id: string,
     hostingStatus: OpportunitySlotHostingStatus,
+    capacity: number,
     tx: Prisma.TransactionClient,
   ) {
     return tx.opportunitySlot.update({
       where: { id },
-      data: { hostingStatus },
+      data: { hostingStatus, capacity },
       include: opportunitySlotSetHostingStatusInclude,
     });
   }
