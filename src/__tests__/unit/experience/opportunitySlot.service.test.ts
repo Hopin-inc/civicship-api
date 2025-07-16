@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 import { NotFoundError } from "@/errors/graphql";
-import { Prisma } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
 class MockOpportunitySlotRepository {
@@ -45,12 +45,16 @@ describe("OpportunitySlotService", () => {
   describe("setOpportunitySlotHostingStatus", () => {
     it("should set hosting status after finding the slot", async () => {
       mockRepository.find.mockResolvedValue({ id: "slot-1" });
-      mockRepository.setHostingStatus.mockResolvedValue({ id: "slot-1", hostingStatus: "HOSTING" });
+      mockRepository.setHostingStatus.mockResolvedValue({
+        id: "slot-1",
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+      });
 
       const result = await service.setOpportunitySlotHostingStatus(
         mockCtx,
         "slot-1",
-        "HOSTING" as any,
+        OpportunitySlotHostingStatus.SCHEDULED,
+        20,
         mockTx,
       );
 
@@ -58,17 +62,27 @@ describe("OpportunitySlotService", () => {
       expect(mockRepository.setHostingStatus).toHaveBeenCalledWith(
         mockCtx,
         "slot-1",
-        "HOSTING",
+        OpportunitySlotHostingStatus.SCHEDULED,
+        20,
         mockTx,
       );
-      expect(result).toEqual({ id: "slot-1", hostingStatus: "HOSTING" });
+      expect(result).toEqual({
+        id: "slot-1",
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+      });
     });
 
     it("should throw NotFoundError if slot not found", async () => {
       mockRepository.find.mockResolvedValue(null);
 
       await expect(
-        service.setOpportunitySlotHostingStatus(mockCtx, "slot-1", "HOSTING" as any, mockTx),
+        service.setOpportunitySlotHostingStatus(
+          mockCtx,
+          "slot-1",
+          OpportunitySlotHostingStatus.SCHEDULED,
+          20,
+          mockTx,
+        ),
       ).rejects.toThrow(NotFoundError);
     });
   });
