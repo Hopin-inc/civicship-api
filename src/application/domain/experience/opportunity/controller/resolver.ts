@@ -62,6 +62,23 @@ export default class OpportunityResolver {
       return parent.createdBy ? ctx.loaders.user.load(parent.createdBy) : null;
     },
 
+    isReservableWithTicket: async (parent, _, ctx: IContext) => {
+      const userId = ctx.currentUser?.id;
+      const communityId = parent.communityId;
+
+      if (!userId || !communityId) {
+        return false;
+      }
+
+      const result = await ctx.loaders.isReservableWithTicket.load({
+        userId: userId,
+        communityId: communityId,
+        opportunityId: parent.id,
+      });
+
+      return result ?? false;
+    },
+
     images: (parent, _: unknown, ctx: IContext) => {
       return ctx.loaders.imagesByOpportunity.load(parent.id);
     },
