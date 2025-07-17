@@ -64,13 +64,13 @@ export default class EvaluationRepository implements IEvaluationRepository {
     return tx.evaluation.createMany({ data, skipDuplicates: true });
   }
 
-  async findManyByIds(
+  async findManyByParticipationIds(
     ctx: IContext,
-    ids: string[],
+    participationIds: string[],
     tx: Prisma.TransactionClient,
   ): Promise<PrismaEvaluation[]> {
     return tx.evaluation.findMany({
-      where: { id: { in: ids } },
+      where: { participationId: { in: participationIds } },
       include: evaluationInclude,
       orderBy: { createdAt: 'desc' },
     });

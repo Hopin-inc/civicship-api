@@ -34,9 +34,9 @@ export interface IEvaluationRepository {
     tx: Prisma.TransactionClient,
   ): Promise<Prisma.BatchPayload>;
 
-  findManyByIds(
+  findManyByParticipationIds(
     ctx: IContext,
-    ids: string[],
+    participationIds: string[],
     tx: Prisma.TransactionClient,
   ): Promise<PrismaEvaluation[]>;
 }

@@ -132,10 +132,7 @@ export default class EvaluationUseCase {
       .map(evaluation => {
         const { userId } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
         return {
-          id: evaluation.id,
-          participationId: evaluation.participationId,
-          status: evaluation.status.toString(),
-          comment: evaluation.comment || undefined,
+          evaluation,
           userId,
         };
       });

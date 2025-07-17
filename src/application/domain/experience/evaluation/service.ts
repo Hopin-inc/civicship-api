@@ -62,19 +62,11 @@ export default class EvaluationService {
     currentUserId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaEvaluation[]> {
-    for (const item of evaluationItems) {
-      const isValidFinalStatus =
-        item.status === EvaluationStatus.PASSED || item.status === EvaluationStatus.FAILED;
-      if (!isValidFinalStatus) {
-        throw new ValidationError("create evaluation allowed PASSED or FAILED status only.");
-      }
-    }
-
     const evaluationInputs = this.converter.createManyInputs(evaluationItems, currentUserId);
     await this.repository.createMany(ctx, evaluationInputs, tx);
     
     const participationIds = evaluationItems.map(item => item.participationId);
-    return await this.repository.findManyByIds(ctx, participationIds, tx);
+    return await this.repository.findManyByParticipationIds(ctx, participationIds, tx);
   }
 
   validateParticipationHasOpportunity(evaluation: PrismaEvaluation): {
