@@ -3,7 +3,6 @@ import {
   GqlQueryOpportunitySlotArgs,
   GqlMutationOpportunitySlotSetHostingStatusArgs,
   GqlMutationOpportunitySlotsBulkUpdateArgs,
-  GqlMutationOpportunitySlotCreateArgs,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
@@ -26,14 +25,6 @@ export default class OpportunitySlotResolver {
   };
 
   Mutation = {
-    opportunitySlotCreate: (
-      _: unknown,
-      args: GqlMutationOpportunitySlotCreateArgs,
-      ctx: IContext,
-    ) => {
-      return this.slotUseCase.managerCreateOpportunitySlot(args, ctx);
-    },
-
     opportunitySlotSetHostingStatus: (
       _: unknown,
       args: GqlMutationOpportunitySlotSetHostingStatusArgs,
