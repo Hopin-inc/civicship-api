@@ -141,7 +141,7 @@ export class ReservationCancellationTimeoutError extends ApolloError {
 }
 
 export class ReservationAdvanceBookingRequiredError extends ApolloError {
-  constructor(message: string = "Reservation must be made at least 1 day in advance.") {
+  constructor(message: string = "Reservation must be made at least 7 days in advance.") {
     super(message, "RESERVATION_ADVANCE_BOOKING_REQUIRED");
     Object.defineProperty(this, "name", { value: "ReservationAdvanceBookingRequiredError" });
   }
