@@ -1,6 +1,5 @@
 import {
   GqlOpportunitySlot,
-  GqlOpportunitySlotCreateSuccess,
   GqlOpportunitySlotsBulkUpdateSuccess,
   GqlOpportunitySlotsConnection,
   GqlOpportunitySlotSetHostingStatusSuccess,
@@ -11,11 +10,7 @@ import {
 } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
-  static query(
-    r: GqlOpportunitySlot[],
-    hasNextPage: boolean,
-    cursor?: string,
-  ): GqlOpportunitySlotsConnection {
+  static query(r: GqlOpportunitySlot[], hasNextPage: boolean, cursor?: string): GqlOpportunitySlotsConnection {
     return {
       __typename: "OpportunitySlotsConnection",
       totalCount: r.length,
@@ -39,17 +34,11 @@ export default class OpportunitySlotPresenter {
       ...prop,
       remainingCapacity: remainingCapacityView ? remainingCapacityView.remainingCapacity : null,
       isFullyEvaluated: false, // デフォルト値を設定
-      numEvaluated: 0, // デフォルト値を設定
-      numParticipants: 0, // デフォルト値を設定
+      numEvaluated: 0,         // デフォルト値を設定
+      numParticipants: 0,      // デフォルト値を設定
     };
   }
 
-  static create(r: PrismaOpportunitySlotDetail): GqlOpportunitySlotCreateSuccess {
-    return {
-      __typename: "OpportunitySlotCreateSuccess",
-      slot: this.get(r),
-    };
-  }
   static setHostingStatus(
     r: Omit<PrismaOpportunitySlotSetHostingStatus, "reservations" | "opportunity">,
   ): GqlOpportunitySlotSetHostingStatusSuccess {
@@ -62,9 +51,9 @@ export default class OpportunitySlotPresenter {
         startsAt: r.startsAt,
         endsAt: r.endsAt,
         isFullyEvaluated: false, // デフォルト値を設定
-        numEvaluated: 0, // デフォルト値を設定
-        numParticipants: 0, // デフォルト値を設定
-        __typename: "OpportunitySlot",
+        numEvaluated: 0,         // デフォルト値を設定
+        numParticipants: 0,      // デフォルト値を設定
+        __typename: "OpportunitySlot"
       },
     };
   }

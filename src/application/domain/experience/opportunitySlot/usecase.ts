@@ -7,8 +7,6 @@ import {
   GqlOpportunitySlotSetHostingStatusPayload,
   GqlOpportunitySlot,
   GqlQueryOpportunitySlotArgs,
-  GqlMutationOpportunitySlotCreateArgs,
-  GqlOpportunitySlotCreatePayload,
 } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
@@ -55,17 +53,6 @@ export default class OpportunitySlotUseCase {
     return OpportunitySlotPresenter.get(slot);
   }
 
-  async managerCreateOpportunitySlot(
-    { opportunityId, input }: GqlMutationOpportunitySlotCreateArgs,
-    ctx: IContext,
-  ): Promise<GqlOpportunitySlotCreatePayload> {
-    const slot = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      return this.service.createOpportunitySlot(ctx, opportunityId, input, tx);
-    });
-
-    return OpportunitySlotPresenter.create(slot);
-  }
-
   async managerSetOpportunitySlotHostingStatus(
     { id, input }: GqlMutationOpportunitySlotSetHostingStatusArgs,
     ctx: IContext,
@@ -74,9 +61,9 @@ export default class OpportunitySlotUseCase {
     const currentUserId = getCurrentUserId(ctx, input.createdBy);
 
     const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input, tx);
+      const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input.status, tx);
 
-      if (input.hostingStatus === OpportunitySlotHostingStatus.CANCELLED) {
+      if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
         const reservationIds = slot.reservations?.map((r) => r.id) ?? [];
         const participationIds =
           slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];

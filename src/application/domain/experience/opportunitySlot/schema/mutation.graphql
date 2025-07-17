@@ -2,13 +2,6 @@
 # Opportunity Slot Mutation Definitions
 # ------------------------------
 extend type Mutation {
-    opportunitySlotCreate(
-        opportunityId: ID!
-        input: OpportunitySlotCreateInput!
-        permission: CheckOpportunityPermissionInput!
-    ): OpportunitySlotCreatePayload
-    @authz(rules: [IsCommunityManager, IsOpportunityOwner])
-
     opportunitySlotSetHostingStatus(
         id: ID!
         input: OpportunitySlotSetHostingStatusInput!
@@ -27,11 +20,7 @@ extend type Mutation {
 # Opportunity Slot Mutation Input Definitions
 # ------------------------------
 input OpportunitySlotSetHostingStatusInput{
-    hostingStatus: OpportunitySlotHostingStatus!
-
-    capacity: Int
-    startsAt: Datetime
-    endsAt: Datetime
+    status: OpportunitySlotHostingStatus!
     comment: String
 
     # for admin
@@ -61,10 +50,6 @@ input OpportunitySlotUpdateInput {
 # ------------------------------
 # Opportunity Slot Mutation Success Type Definitions
 # ------------------------------
-type OpportunitySlotCreateSuccess {
-    slot: OpportunitySlot!
-}
-
 type OpportunitySlotsBulkUpdateSuccess {
     slots: [OpportunitySlot!]!
 }
@@ -76,9 +61,6 @@ type OpportunitySlotSetHostingStatusSuccess{
 # ------------------------------
 # Opportunity Slot Mutation Union (Payload) Definitions
 # ------------------------------
-union OpportunitySlotCreatePayload =
-    OpportunitySlotCreateSuccess
-
 union OpportunitySlotsBulkUpdatePayload =
     OpportunitySlotsBulkUpdateSuccess
 
