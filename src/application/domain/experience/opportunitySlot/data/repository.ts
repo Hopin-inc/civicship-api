@@ -1,4 +1,4 @@
-import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   opportunitySlotReserveInclude,
@@ -55,14 +55,9 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
   async create(
     ctx: IContext,
     data: Prisma.OpportunitySlotCreateInput,
-    tx?: Prisma.TransactionClient,
+    tx: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.opportunitySlot.create({ data, select: opportunitySlotSelectDetail });
-    }
-    return ctx.issuer.public(ctx, (tx) =>
-      tx.opportunitySlot.create({ data, select: opportunitySlotSelectDetail }),
-    );
+    return tx.opportunitySlot.create({ data, select: opportunitySlotSelectDetail });
   }
 
   async createMany(
@@ -89,13 +84,12 @@ export default class OpportunitySlotRepository implements IOpportunitySlotReposi
   async setHostingStatus(
     ctx: IContext,
     id: string,
-    hostingStatus: OpportunitySlotHostingStatus,
-    capacity: number,
+    data: Prisma.OpportunitySlotUpdateInput,
     tx: Prisma.TransactionClient,
   ) {
     return tx.opportunitySlot.update({
       where: { id },
-      data: { hostingStatus, capacity },
+      data,
       include: opportunitySlotSetHostingStatusInclude,
     });
   }
