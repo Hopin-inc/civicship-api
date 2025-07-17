@@ -270,7 +270,6 @@ export default class EvaluationUseCase {
     const startsAtDate = new Date(startsAt);
 
     if (now < startsAtDate) {
-      // Date オブジェクトとして比較
       throw new CannotEvaluateBeforeOpportunityStartError();
     }
   }
