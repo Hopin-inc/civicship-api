@@ -71,16 +71,15 @@ export default class EvaluationUseCase {
     const communityId = permission.communityId;
 
     const createdEvaluations = await this.createEvaluationsAndUpdateStatus(
-      ctx, input.evaluations, currentUserId
+      ctx,
+      input.evaluations,
+      currentUserId,
     );
 
-    await this.processPassedEvaluationEffects(
-      ctx, createdEvaluations, currentUserId, communityId
-    );
+    await this.processPassedEvaluationEffects(ctx, createdEvaluations, currentUserId, communityId);
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
-
 
   private async handlePointTransferSeparately(
     ctx: IContext,
@@ -108,26 +107,29 @@ export default class EvaluationUseCase {
 
   private async createEvaluationsAndUpdateStatus(
     ctx: IContext,
-    evaluations: Array<{ participationId: string; status: any; comment?: string }>,
-    currentUserId: string
+    evaluations: Array<{ participationId: string; status: GqlEvaluationStatus; comment?: string }>,
+    currentUserId: string,
   ): Promise<PrismaEvaluation[]> {
     return await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await Promise.all(
-        evaluations.map(item => this.validateEvaluatable(ctx, item.participationId))
+        evaluations.map((item) => this.validateEvaluatable(ctx, item.participationId)),
       );
-      
-      const evaluationCreateInputs = evaluations.map(item => ({
+
+      const evaluationCreateInputs = evaluations.map((item) => ({
         participationId: item.participationId,
         status: item.status,
         comment: item.comment,
       }));
-      
+
       const createdEvaluations = await this.evaluationService.bulkCreateEvaluations(
-        ctx, evaluationCreateInputs, currentUserId, tx
+        ctx,
+        evaluationCreateInputs,
+        currentUserId,
+        tx,
       );
-      
+
       await this.bulkUpdateParticipationStatus(ctx, createdEvaluations, currentUserId, tx);
-      
+
       return createdEvaluations;
     });
   }
@@ -136,18 +138,24 @@ export default class EvaluationUseCase {
     ctx: IContext,
     evaluations: PrismaEvaluation[],
     currentUserId: string,
-    tx: Prisma.TransactionClient
+    tx: Prisma.TransactionClient,
   ): Promise<void> {
     await Promise.all(
-      evaluations.map(evaluation => {
-        const reason = evaluation.participation.reservation != null
-          ? GqlParticipationStatusReason.ReservationAccepted
-          : GqlParticipationStatusReason.PersonalRecord;
-        
+      evaluations.map((evaluation) => {
+        const reason =
+          evaluation.participation.reservation != null
+            ? GqlParticipationStatusReason.ReservationAccepted
+            : GqlParticipationStatusReason.PersonalRecord;
+
         return this.participationService.setStatus(
-          ctx, evaluation.participationId, GqlParticipationStatus.Participated, reason, tx, currentUserId
+          ctx,
+          evaluation.participationId,
+          GqlParticipationStatus.Participated,
+          reason,
+          tx,
+          currentUserId,
         );
-      })
+      }),
     );
   }
 
@@ -155,32 +163,32 @@ export default class EvaluationUseCase {
     ctx: IContext,
     evaluations: PrismaEvaluation[],
     currentUserId: string,
-    communityId: string
+    communityId: string,
   ): Promise<void> {
     const passedEvaluationData = this.preparePassedEvaluationData(evaluations);
-    
+
     await Promise.allSettled([
       this.processVCIssuanceRequests(ctx, passedEvaluationData),
       this.processPointTransfers(ctx, passedEvaluationData, currentUserId, communityId),
     ]);
   }
 
-  private preparePassedEvaluationData(
-    evaluations: PrismaEvaluation[]
-  ): Array<{
+  private preparePassedEvaluationData(evaluations: PrismaEvaluation[]): Array<{
     evaluation: PrismaEvaluation;
     userId: string;
     hasPhoneAuth: boolean;
     isPassed: boolean;
   }> {
     return evaluations
-      .map(evaluation => {
+      .map((evaluation) => {
         try {
-          const { userId, participation } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
+          const { userId, participation } =
+            this.evaluationService.validateParticipationHasOpportunity(evaluation);
           const user = participation.user;
-          const hasPhoneAuth = user?.identities.some(i => i.platform === IdentityPlatform.PHONE) ?? false;
+          const hasPhoneAuth =
+            user?.identities.some((i) => i.platform === IdentityPlatform.PHONE) ?? false;
           const isPassed = evaluation.status === GqlEvaluationStatus.Passed;
-          
+
           return { evaluation, userId, hasPhoneAuth, isPassed };
         } catch {
           return null;
@@ -191,21 +199,27 @@ export default class EvaluationUseCase {
 
   private async processVCIssuanceRequests(
     ctx: IContext,
-    evaluationData: Array<{ evaluation: PrismaEvaluation; userId: string; hasPhoneAuth: boolean; isPassed: boolean }>
+    evaluationData: Array<{
+      evaluation: PrismaEvaluation;
+      userId: string;
+      hasPhoneAuth: boolean;
+      isPassed: boolean;
+    }>,
   ): Promise<void> {
     const vcEligibleEvaluations = evaluationData
       .filter(({ isPassed, hasPhoneAuth }) => isPassed && hasPhoneAuth)
       .map(({ evaluation, userId }) => ({ evaluation, userId }));
-    
+
     if (vcEligibleEvaluations.length === 0) return;
 
     try {
-      const vcIssuanceData = this.vcIssuanceRequestConverter.createManyInputs(vcEligibleEvaluations);
+      const vcIssuanceData =
+        this.vcIssuanceRequestConverter.createManyInputs(vcEligibleEvaluations);
       await this.vcIssuanceRequestService.bulkCreateVCIssuanceRequests(ctx, vcIssuanceData);
     } catch (error) {
-      logger.warn("Bulk VC issuance request creation failed", { 
+      logger.warn("Bulk VC issuance request creation failed", {
         count: vcEligibleEvaluations.length,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -214,23 +228,23 @@ export default class EvaluationUseCase {
     ctx: IContext,
     evaluationData: Array<{ evaluation: PrismaEvaluation; userId: string; isPassed: boolean }>,
     currentUserId: string,
-    communityId: string
+    communityId: string,
   ): Promise<void> {
     const passedEvaluations = evaluationData
       .filter(({ isPassed }) => isPassed)
       .map(({ evaluation }) => evaluation);
 
     const results = await Promise.allSettled(
-      passedEvaluations.map(evaluation =>
-        this.handlePointTransferSeparately(ctx, evaluation, currentUserId, communityId)
-      )
+      passedEvaluations.map((evaluation) =>
+        this.handlePointTransferSeparately(ctx, evaluation, currentUserId, communityId),
+      ),
     );
 
     results.forEach((result, index) => {
-      if (result.status === 'rejected') {
+      if (result.status === "rejected") {
         logger.warn("Point transfer failed for evaluation", {
           evaluationId: passedEvaluations[index].id,
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason)
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
         });
       }
     });
@@ -256,7 +270,6 @@ export default class EvaluationUseCase {
     const startsAtDate = new Date(startsAt);
 
     if (now < startsAtDate) {
-      // Date オブジェクトとして比較
       throw new CannotEvaluateBeforeOpportunityStartError();
     }
   }
@@ -292,29 +305,6 @@ export default class EvaluationUseCase {
         fromWalletId,
         toWalletId,
       );
-    }
-  }
-
-  async sendPendingDidRequests(ctx: IContext, evaluation: PrismaEvaluation): Promise<void> {
-    try {
-      const { participation, userId } =
-        this.evaluationService.validateParticipationHasOpportunity(evaluation);
-      const user = participation.user;
-      const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
-      const phoneUid = phoneIdentity?.uid;
-
-      if (!phoneUid) return;
-
-      const vcRequest = this.vcIssuanceRequestConverter.toVCIssuanceRequestInput(evaluation);
-
-      await this.vcIssuanceRequestService.preparePendingVCIssuanceRequest(
-        userId,
-        evaluation.id,
-        vcRequest,
-        ctx,
-      );
-    } catch (error) {
-      logger.warn("tryIssueEvaluationVC failed (non-blocking)", error);
     }
   }
 }
