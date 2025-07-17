@@ -5,6 +5,7 @@ import {
   evaluationInclude,
   evaluationSelectDetail,
   evaluationSelectSlotStartsAt,
+  PrismaEvaluation,
 } from "@/application/domain/experience/evaluation/data/type";
 import { IEvaluationRepository } from "@/application/domain/experience/evaluation/data/interface";
 
@@ -52,6 +53,26 @@ export default class EvaluationRepository implements IEvaluationRepository {
     return tx.evaluation.create({
       data,
       include: evaluationInclude,
+    });
+  }
+
+  async createMany(
+    ctx: IContext,
+    data: Prisma.EvaluationCreateManyInput[],
+    tx: Prisma.TransactionClient,
+  ): Promise<Prisma.BatchPayload> {
+    return tx.evaluation.createMany({ data, skipDuplicates: true });
+  }
+
+  async findManyByParticipationIds(
+    ctx: IContext,
+    participationIds: string[],
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaEvaluation[]> {
+    return tx.evaluation.findMany({
+      where: { participationId: { in: participationIds } },
+      include: evaluationInclude,
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

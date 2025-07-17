@@ -31,6 +31,11 @@ export interface IVCIssuanceRequestRepository {
     },
   ): Promise<PrismaVCIssuanceRequestDetail>;
 
+  createMany(
+    ctx: IContext,
+    data: Prisma.VcIssuanceRequestCreateManyInput[],
+  ): Promise<Prisma.BatchPayload>;
+
   update(
     ctx: IContext,
     id: string,

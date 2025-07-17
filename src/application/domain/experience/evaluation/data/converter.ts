@@ -44,4 +44,31 @@ export default class EvaluationConverter {
       },
     };
   }
+
+  createWithoutHistories(
+    participationId: string,
+    currentUserId: string,
+    status: EvaluationStatus,
+    comment?: string,
+  ): Prisma.EvaluationCreateManyInput {
+    return {
+      participationId,
+      evaluatorId: currentUserId,
+      status,
+      comment,
+    };
+  }
+
+  createManyInputs(
+    evaluationItems: Array<{
+      participationId: string;
+      status: EvaluationStatus;
+      comment?: string;
+    }>,
+    currentUserId: string,
+  ): Prisma.EvaluationCreateManyInput[] {
+    return evaluationItems.map(item =>
+      this.createWithoutHistories(item.participationId, currentUserId, item.status, item.comment)
+    );
+  }
 }
