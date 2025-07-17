@@ -4,6 +4,7 @@ import OpportunitySlotService from "@/application/domain/experience/opportunityS
 import { NotFoundError } from "@/errors/graphql";
 import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { GqlOpportunitySlotSetHostingStatusInput } from "@/types/graphql";
 
 class MockOpportunitySlotRepository {
   query = jest.fn();
@@ -50,11 +51,16 @@ describe("OpportunitySlotService", () => {
         hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
       });
 
+      const input: GqlOpportunitySlotSetHostingStatusInput = {
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        capacity: 20,
+        comment: "任意コメント",
+      };
+
       const result = await service.setOpportunitySlotHostingStatus(
         mockCtx,
         "slot-1",
-        OpportunitySlotHostingStatus.SCHEDULED,
-        20,
+        input,
         mockTx,
       );
 
@@ -62,8 +68,7 @@ describe("OpportunitySlotService", () => {
       expect(mockRepository.setHostingStatus).toHaveBeenCalledWith(
         mockCtx,
         "slot-1",
-        OpportunitySlotHostingStatus.SCHEDULED,
-        20,
+        expect.any(Object), // converter により整形された Prisma 向け input
         mockTx,
       );
       expect(result).toEqual({
@@ -75,14 +80,12 @@ describe("OpportunitySlotService", () => {
     it("should throw NotFoundError if slot not found", async () => {
       mockRepository.find.mockResolvedValue(null);
 
+      const input: GqlOpportunitySlotSetHostingStatusInput = {
+        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+      };
+
       await expect(
-        service.setOpportunitySlotHostingStatus(
-          mockCtx,
-          "slot-1",
-          OpportunitySlotHostingStatus.SCHEDULED,
-          20,
-          mockTx,
-        ),
+        service.setOpportunitySlotHostingStatus(mockCtx, "slot-1", input, mockTx),
       ).rejects.toThrow(NotFoundError);
     });
   });
