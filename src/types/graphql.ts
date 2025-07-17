@@ -1262,8 +1262,8 @@ export type GqlOpportunitySlotSetHostingStatusInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
   createdBy?: InputMaybe<Scalars['ID']['input']>;
   endsAt?: InputMaybe<Scalars['Datetime']['input']>;
-  hostingStatus: GqlOpportunitySlotHostingStatus;
   startsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  status: GqlOpportunitySlotHostingStatus;
 };
 
 export type GqlOpportunitySlotSetHostingStatusPayload = GqlOpportunitySlotSetHostingStatusSuccess;
