@@ -74,15 +74,9 @@ export default class OpportunitySlotUseCase {
     const currentUserId = getCurrentUserId(ctx, input.createdBy);
 
     const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      const slot = await this.service.setOpportunitySlotHostingStatus(
-        ctx,
-        id,
-        input.status,
-        input.capacity,
-        tx,
-      );
+      const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input, tx);
 
-      if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
+      if (input.hostingStatus === OpportunitySlotHostingStatus.CANCELLED) {
         const reservationIds = slot.reservations?.map((r) => r.id) ?? [];
         const participationIds =
           slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
