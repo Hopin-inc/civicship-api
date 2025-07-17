@@ -1109,6 +1109,7 @@ export type GqlOpportunity = {
   isReservableWithTicket?: Maybe<Scalars['Boolean']['output']>;
   place?: Maybe<GqlPlace>;
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
+  pointsToRequired?: Maybe<Scalars['Boolean']['output']>;
   publishStatus: GqlPublishStatus;
   requireApproval: Scalars['Boolean']['output'];
   requiredUtilities?: Maybe<Array<GqlUtility>>;
@@ -1179,6 +1180,7 @@ export type GqlOpportunityFilterInput = {
   not?: InputMaybe<GqlOpportunityFilterInput>;
   or?: InputMaybe<Array<GqlOpportunityFilterInput>>;
   placeIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  pointsToRequired?: InputMaybe<Scalars['Boolean']['input']>;
   publishStatus?: InputMaybe<Array<GqlPublishStatus>>;
   requiredUtilityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   slotDateRange?: InputMaybe<GqlDateTimeRangeFilter>;
@@ -3972,6 +3974,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   isReservableWithTicket?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  pointsToRequired?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
   requiredUtilities?: Resolver<Maybe<Array<GqlResolversTypes['Utility']>>, ParentType, ContextType>;
