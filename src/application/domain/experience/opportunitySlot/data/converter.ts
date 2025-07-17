@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import {
   GqlOpportunitySlotCreateInput,
   GqlOpportunitySlotFilterInput,
+  GqlOpportunitySlotSetHostingStatusInput,
   GqlOpportunitySlotSortInput,
   GqlOpportunitySlotUpdateInput,
 } from "@/types/graphql";
@@ -74,11 +75,14 @@ export default class OpportunitySlotConverter {
     }));
   }
 
-  setStatus(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
-    const { startsAt, endsAt } = input;
+  setStatus(input: GqlOpportunitySlotSetHostingStatusInput): Prisma.OpportunitySlotUpdateInput {
+    const { hostingStatus, capacity, startsAt, endsAt } = input;
+
     return {
-      startsAt: startsAt,
-      endsAt: endsAt,
+      hostingStatus,
+      ...(capacity !== undefined ? { capacity } : {}),
+      ...(startsAt !== undefined ? { startsAt } : {}),
+      ...(endsAt !== undefined ? { endsAt } : {}),
     };
   }
 
