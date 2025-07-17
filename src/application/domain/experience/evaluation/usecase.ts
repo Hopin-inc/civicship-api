@@ -70,81 +70,13 @@ export default class EvaluationUseCase {
     const currentUserId = getCurrentUserId(ctx);
     const communityId = permission.communityId;
 
-    const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      for (const item of input.evaluations) {
-        await this.validateEvaluatable(ctx, item.participationId);
-      }
+    const createdEvaluations = await this.createEvaluationsAndUpdateStatus(
+      ctx, input.evaluations, currentUserId
+    );
 
-      const evaluationCreateInputs = input.evaluations.map(item => ({
-        participationId: item.participationId,
-        status: item.status,
-        comment: item.comment,
-      }));
-      
-      const evaluations = await this.evaluationService.bulkCreateEvaluations(
-        ctx,
-        evaluationCreateInputs,
-        currentUserId,
-        tx
-      );
-      
-      for (let i = 0; i < input.evaluations.length; i++) {
-        const item = input.evaluations[i];
-        const evaluation = evaluations.find(e => e.participationId === item.participationId);
-        
-        if (evaluation) {
-          const reason =
-            evaluation.participation.reservation != null
-              ? GqlParticipationStatusReason.ReservationAccepted
-              : GqlParticipationStatusReason.PersonalRecord;
-
-          await this.participationService.setStatus(
-            ctx,
-            item.participationId,
-            GqlParticipationStatus.Participated,
-            reason,
-            tx,
-            currentUserId,
-          );
-        }
-      }
-      
-      return evaluations;
-    });
-
-    for (const evaluation of createdEvaluations) {
-      if (evaluation.status === GqlEvaluationStatus.Passed) {
-        await this.handlePointTransferSeparately(ctx, evaluation, currentUserId, communityId);
-      }
-    }
-
-    const eligibleEvaluations = createdEvaluations
-      .filter(evaluation => {
-        try {
-          const { participation } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
-          const user = participation.user;
-          const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
-          return phoneIdentity?.uid; // Only create VC requests for users with phone identity
-        } catch {
-          return false;
-        }
-      })
-      .map(evaluation => {
-        const { userId } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
-        return {
-          evaluation,
-          userId,
-        };
-      });
-    
-    if (eligibleEvaluations.length > 0) {
-      try {
-        const vcIssuanceData = this.vcIssuanceRequestConverter.createManyInputs(eligibleEvaluations);
-        await this.vcIssuanceRequestService.bulkCreateVCIssuanceRequests(ctx, vcIssuanceData);
-      } catch (error) {
-        logger.warn("Bulk VC issuance request creation failed (non-blocking)", error);
-      }
-    }
+    await this.processPassedEvaluationEffects(
+      ctx, createdEvaluations, currentUserId, communityId
+    );
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
@@ -172,6 +104,136 @@ export default class EvaluationUseCase {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  private async createEvaluationsAndUpdateStatus(
+    ctx: IContext,
+    evaluations: Array<{ participationId: string; status: any; comment?: string }>,
+    currentUserId: string
+  ): Promise<PrismaEvaluation[]> {
+    return await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      await Promise.all(
+        evaluations.map(item => this.validateEvaluatable(ctx, item.participationId))
+      );
+      
+      const evaluationCreateInputs = evaluations.map(item => ({
+        participationId: item.participationId,
+        status: item.status,
+        comment: item.comment,
+      }));
+      
+      const createdEvaluations = await this.evaluationService.bulkCreateEvaluations(
+        ctx, evaluationCreateInputs, currentUserId, tx
+      );
+      
+      await this.bulkUpdateParticipationStatus(ctx, createdEvaluations, currentUserId, tx);
+      
+      return createdEvaluations;
+    });
+  }
+
+  private async bulkUpdateParticipationStatus(
+    ctx: IContext,
+    evaluations: PrismaEvaluation[],
+    currentUserId: string,
+    tx: Prisma.TransactionClient
+  ): Promise<void> {
+    await Promise.all(
+      evaluations.map(evaluation => {
+        const reason = evaluation.participation.reservation != null
+          ? GqlParticipationStatusReason.ReservationAccepted
+          : GqlParticipationStatusReason.PersonalRecord;
+        
+        return this.participationService.setStatus(
+          ctx, evaluation.participationId, GqlParticipationStatus.Participated, reason, tx, currentUserId
+        );
+      })
+    );
+  }
+
+  private async processPassedEvaluationEffects(
+    ctx: IContext,
+    evaluations: PrismaEvaluation[],
+    currentUserId: string,
+    communityId: string
+  ): Promise<void> {
+    const passedEvaluationData = this.preparePassedEvaluationData(evaluations);
+    
+    await Promise.allSettled([
+      this.processVCIssuanceRequests(ctx, passedEvaluationData),
+      this.processPointTransfers(ctx, passedEvaluationData, currentUserId, communityId),
+    ]);
+  }
+
+  private preparePassedEvaluationData(
+    evaluations: PrismaEvaluation[]
+  ): Array<{
+    evaluation: PrismaEvaluation;
+    userId: string;
+    hasPhoneAuth: boolean;
+    isPassed: boolean;
+  }> {
+    return evaluations
+      .map(evaluation => {
+        try {
+          const { userId, participation } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
+          const user = participation.user;
+          const hasPhoneAuth = user?.identities.some(i => i.platform === IdentityPlatform.PHONE) ?? false;
+          const isPassed = evaluation.status === GqlEvaluationStatus.Passed;
+          
+          return { evaluation, userId, hasPhoneAuth, isPassed };
+        } catch {
+          return null;
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }
+
+  private async processVCIssuanceRequests(
+    ctx: IContext,
+    evaluationData: Array<{ evaluation: PrismaEvaluation; userId: string; hasPhoneAuth: boolean; isPassed: boolean }>
+  ): Promise<void> {
+    const vcEligibleEvaluations = evaluationData
+      .filter(({ isPassed, hasPhoneAuth }) => isPassed && hasPhoneAuth)
+      .map(({ evaluation, userId }) => ({ evaluation, userId }));
+    
+    if (vcEligibleEvaluations.length === 0) return;
+
+    try {
+      const vcIssuanceData = this.vcIssuanceRequestConverter.createManyInputs(vcEligibleEvaluations);
+      await this.vcIssuanceRequestService.bulkCreateVCIssuanceRequests(ctx, vcIssuanceData);
+    } catch (error) {
+      logger.warn("Bulk VC issuance request creation failed", { 
+        count: vcEligibleEvaluations.length,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  private async processPointTransfers(
+    ctx: IContext,
+    evaluationData: Array<{ evaluation: PrismaEvaluation; userId: string; isPassed: boolean }>,
+    currentUserId: string,
+    communityId: string
+  ): Promise<void> {
+    const passedEvaluations = evaluationData
+      .filter(({ isPassed }) => isPassed)
+      .map(({ evaluation }) => evaluation);
+
+    const results = await Promise.allSettled(
+      passedEvaluations.map(evaluation =>
+        this.handlePointTransferSeparately(ctx, evaluation, currentUserId, communityId)
+      )
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        logger.warn("Point transfer failed for evaluation", {
+          evaluationId: passedEvaluations[index].id,
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason)
+        });
+      }
+    });
   }
 
   private async validateEvaluatable(ctx: IContext, participationId: string) {
