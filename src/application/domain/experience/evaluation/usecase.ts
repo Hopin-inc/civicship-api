@@ -1,4 +1,5 @@
 import { inject, injectable } from "tsyringe";
+import pLimit from "p-limit";
 import {
   GqlEvaluation,
   GqlEvaluationBulkCreatePayload,
@@ -234,20 +235,11 @@ export default class EvaluationUseCase {
       .filter(({ isPassed }) => isPassed)
       .map(({ evaluation }) => evaluation);
 
-    const results = await Promise.allSettled(
-      passedEvaluations.map((evaluation) =>
-        this.handlePointTransferSeparately(ctx, evaluation, currentUserId, communityId),
-      ),
+    const limit = pLimit(5);
+    const tasks = passedEvaluations.map((e) =>
+      limit(() => this.handlePointTransferSeparately(ctx, e, currentUserId, communityId)),
     );
-
-    results.forEach((result, index) => {
-      if (result.status === "rejected") {
-        logger.warn("Point transfer failed for evaluation", {
-          evaluationId: passedEvaluations[index].id,
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
-        });
-      }
-    });
+    await Promise.all(tasks);
   }
 
   private async validateEvaluatable(ctx: IContext, participationId: string) {
