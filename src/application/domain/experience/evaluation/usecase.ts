@@ -2,7 +2,6 @@ import { inject, injectable } from "tsyringe";
 import {
   GqlEvaluation,
   GqlEvaluationBulkCreatePayload,
-  GqlEvaluationItem,
   GqlEvaluationsConnection,
   GqlMutationEvaluationBulkCreateArgs,
   GqlParticipationStatus,
@@ -53,7 +52,7 @@ export default class EvaluationUseCase {
 
     const hasNextPage = evaluations.length > take;
     const data = evaluations.slice(0, take).map(EvaluationPresenter.get);
-    return EvaluationPresenter.query(data, hasNextPage, cursor);
+    return EvaluationPresenter.query(data, hasNextPage);
   }
 
   async visitorViewEvaluation(
@@ -72,14 +71,45 @@ export default class EvaluationUseCase {
     const communityId = permission.communityId;
 
     const createdEvaluations = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      return Promise.all(
-        input.evaluations.map((item) =>
-          this.createEvaluationOnly(ctx, tx, {
-            item,
-            currentUserId,
-          }),
-        ),
+      for (const item of input.evaluations) {
+        await this.validateEvaluatable(ctx, item.participationId);
+      }
+
+      const evaluationCreateInputs = input.evaluations.map(item => ({
+        participationId: item.participationId,
+        status: item.status,
+        comment: item.comment,
+      }));
+      
+      const evaluations = await this.evaluationService.bulkCreateEvaluations(
+        ctx,
+        evaluationCreateInputs,
+        currentUserId,
+        tx
       );
+      
+      for (let i = 0; i < input.evaluations.length; i++) {
+        const item = input.evaluations[i];
+        const evaluation = evaluations.find(e => e.participationId === item.participationId);
+        
+        if (evaluation) {
+          const reason =
+            evaluation.participation.reservation != null
+              ? GqlParticipationStatusReason.ReservationAccepted
+              : GqlParticipationStatusReason.PersonalRecord;
+
+          await this.participationService.setStatus(
+            ctx,
+            item.participationId,
+            GqlParticipationStatus.Participated,
+            reason,
+            tx,
+            currentUserId,
+          );
+        }
+      }
+      
+      return evaluations;
     });
 
     for (const evaluation of createdEvaluations) {
@@ -88,49 +118,40 @@ export default class EvaluationUseCase {
       }
     }
 
-    for (const evaluation of createdEvaluations) {
-      await this.sendPendingDidRequests(ctx, evaluation);
+    const eligibleEvaluations = createdEvaluations
+      .filter(evaluation => {
+        try {
+          const { participation } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
+          const user = participation.user;
+          const phoneIdentity = user?.identities.find((i) => i.platform === IdentityPlatform.PHONE);
+          return phoneIdentity?.uid; // Only create VC requests for users with phone identity
+        } catch {
+          return false;
+        }
+      })
+      .map(evaluation => {
+        const { userId } = this.evaluationService.validateParticipationHasOpportunity(evaluation);
+        return {
+          id: evaluation.id,
+          participationId: evaluation.participationId,
+          status: evaluation.status.toString(),
+          comment: evaluation.comment || undefined,
+          userId,
+        };
+      });
+    
+    if (eligibleEvaluations.length > 0) {
+      try {
+        const vcIssuanceData = this.vcIssuanceRequestConverter.createManyInputs(eligibleEvaluations);
+        await this.vcIssuanceRequestService.bulkCreateVCIssuanceRequests(ctx, vcIssuanceData);
+      } catch (error) {
+        logger.warn("Bulk VC issuance request creation failed (non-blocking)", error);
+      }
     }
 
     return EvaluationPresenter.bulkCreate(createdEvaluations);
   }
 
-  private async createEvaluationOnly(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    params: {
-      item: GqlEvaluationItem;
-      currentUserId: string;
-    },
-  ): Promise<PrismaEvaluation> {
-    const { item, currentUserId } = params;
-
-    await this.validateEvaluatable(ctx, item.participationId);
-
-    const evaluation = await this.evaluationService.createEvaluation(
-      ctx,
-      currentUserId,
-      { participationId: item.participationId, comment: item.comment },
-      item.status,
-      tx,
-    );
-
-    const reason =
-      evaluation.participation.reservation != null
-        ? GqlParticipationStatusReason.ReservationAccepted
-        : GqlParticipationStatusReason.PersonalRecord;
-
-    await this.participationService.setStatus(
-      ctx,
-      item.participationId,
-      GqlParticipationStatus.Participated,
-      reason,
-      tx,
-      currentUserId,
-    );
-
-    return evaluation;
-  }
 
   private async handlePointTransferSeparately(
     ctx: IContext,

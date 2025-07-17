@@ -27,4 +27,16 @@ export interface IEvaluationRepository {
     data: Prisma.EvaluationCreateInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaEvaluation>;
+
+  createMany(
+    ctx: IContext,
+    data: Prisma.EvaluationCreateManyInput[],
+    tx: Prisma.TransactionClient,
+  ): Promise<Prisma.BatchPayload>;
+
+  findManyByIds(
+    ctx: IContext,
+    ids: string[],
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaEvaluation[]>;
 }

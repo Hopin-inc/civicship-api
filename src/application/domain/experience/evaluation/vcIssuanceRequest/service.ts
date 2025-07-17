@@ -1,5 +1,5 @@
 import { injectable, inject } from "tsyringe";
-import { VcIssuanceStatus } from "@prisma/client";
+import { VcIssuanceStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
 import { IVCIssuanceRequestRepository } from "./data/interface";
@@ -56,6 +56,13 @@ export class VCIssuanceRequestService {
       schemaId: vcRequest.schemaId,
       status: VcIssuanceStatus.PENDING,
     });
+  }
+
+  async bulkCreateVCIssuanceRequests(
+    ctx: IContext,
+    vcIssuanceData: Prisma.VcIssuanceRequestCreateManyInput[],
+  ): Promise<Prisma.BatchPayload> {
+    return this.vcIssuanceRequestRepository.createMany(ctx, vcIssuanceData);
   }
 
   async requestVCIssuance(

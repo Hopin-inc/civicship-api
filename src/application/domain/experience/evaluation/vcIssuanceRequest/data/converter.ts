@@ -1,7 +1,7 @@
 import { EvaluationCredentialPayload } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import logger from "@/infrastructure/logging";
-import { ParticipationStatusReason, Prisma } from "@prisma/client";
+import { ParticipationStatusReason, Prisma, VcIssuanceStatus } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { GqlVcIssuanceRequestFilterInput, GqlVcIssuanceRequestSortInput } from "@/types/graphql";
 
@@ -81,4 +81,28 @@ export default class VCIssuanceRequestConverter {
       credentialFormat: "JWT",
     };
   };
+
+  createManyInputs(
+    evaluations: Array<{
+      id: string;
+      participationId: string;
+      status: string;
+      comment?: string;
+      userId: string;
+    }>
+  ): Prisma.VcIssuanceRequestCreateManyInput[] {
+    return evaluations.map(evaluation => ({
+      evaluationId: evaluation.id,
+      userId: evaluation.userId,
+      claims: {
+        type: "EvaluationCredential",
+        score: evaluation.status,
+        participationId: evaluation.participationId,
+        evaluationId: evaluation.id,
+        comment: evaluation.comment,
+      },
+      credentialFormat: "JWT",
+      status: VcIssuanceStatus.PENDING,
+    }));
+  }
 }
