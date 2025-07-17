@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   PrismaOpportunitySlotDetail,
@@ -39,7 +39,7 @@ export interface IOpportunitySlotRepository {
   setHostingStatus(
     ctx: IContext,
     id: string,
-    data: Prisma.OpportunitySlotUpdateInput,
+    hostingStatus: OpportunitySlotHostingStatus,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaOpportunitySlotSetHostingStatus>;
 

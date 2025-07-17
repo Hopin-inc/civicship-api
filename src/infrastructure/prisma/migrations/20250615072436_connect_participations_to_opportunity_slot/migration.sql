@@ -1,3 +1,6 @@
+SET app.rls_bypass = 'on';
+SET app.rls_config.user_id = '';
+
 /*
   Warnings:
 
