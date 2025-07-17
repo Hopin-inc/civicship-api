@@ -76,10 +76,10 @@ export default class OpportunitySlotConverter {
   }
 
   setStatus(input: GqlOpportunitySlotSetHostingStatusInput): Prisma.OpportunitySlotUpdateInput {
-    const { hostingStatus, capacity, startsAt, endsAt } = input;
+    const { status, capacity, startsAt, endsAt } = input;
 
     return {
-      hostingStatus,
+      hostingStatus: status,
       ...(capacity !== undefined ? { capacity } : {}),
       ...(startsAt !== undefined ? { startsAt } : {}),
       ...(endsAt !== undefined ? { endsAt } : {}),
