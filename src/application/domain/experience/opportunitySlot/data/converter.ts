@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import {
   GqlOpportunitySlotCreateInput,
   GqlOpportunitySlotFilterInput,
+  GqlOpportunitySlotSetHostingStatusInput,
   GqlOpportunitySlotSortInput,
   GqlOpportunitySlotUpdateInput,
 } from "@/types/graphql";
@@ -51,6 +52,18 @@ export default class OpportunitySlotConverter {
     return [{ startsAt: sort?.startsAt ?? Prisma.SortOrder.desc }];
   }
 
+  create(
+    opportunityId: string,
+    input: GqlOpportunitySlotCreateInput,
+  ): Prisma.OpportunitySlotCreateInput {
+    return {
+      opportunity: { connect: { id: opportunityId } },
+      capacity: input.capacity,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    };
+  }
+
   createMany(
     opportunityId: string,
     inputs: GqlOpportunitySlotCreateInput[],
@@ -62,11 +75,14 @@ export default class OpportunitySlotConverter {
     }));
   }
 
-  setStatus(input: GqlOpportunitySlotUpdateInput): Prisma.OpportunitySlotUpdateInput {
-    const { startsAt, endsAt } = input;
+  setStatus(input: GqlOpportunitySlotSetHostingStatusInput): Prisma.OpportunitySlotUpdateInput {
+    const { hostingStatus, capacity, startsAt, endsAt } = input;
+
     return {
-      startsAt: startsAt,
-      endsAt: endsAt,
+      hostingStatus,
+      ...(capacity !== undefined ? { capacity } : {}),
+      ...(startsAt !== undefined ? { startsAt } : {}),
+      ...(endsAt !== undefined ? { endsAt } : {}),
     };
   }
 
