@@ -27,8 +27,11 @@ extend type Mutation {
 # Opportunity Slot Mutation Input Definitions
 # ------------------------------
 input OpportunitySlotSetHostingStatusInput{
-    capacity: Int!
-    status: OpportunitySlotHostingStatus!
+    hostingStatus: OpportunitySlotHostingStatus!
+
+    capacity: Int
+    startsAt: Datetime
+    endsAt: Datetime
     comment: String
 
     # for admin

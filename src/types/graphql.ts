@@ -1258,10 +1258,12 @@ export const GqlOpportunitySlotHostingStatus = {
 
 export type GqlOpportunitySlotHostingStatus = typeof GqlOpportunitySlotHostingStatus[keyof typeof GqlOpportunitySlotHostingStatus];
 export type GqlOpportunitySlotSetHostingStatusInput = {
-  capacity: Scalars['Int']['input'];
+  capacity?: InputMaybe<Scalars['Int']['input']>;
   comment?: InputMaybe<Scalars['String']['input']>;
   createdBy?: InputMaybe<Scalars['ID']['input']>;
-  status: GqlOpportunitySlotHostingStatus;
+  endsAt?: InputMaybe<Scalars['Datetime']['input']>;
+  hostingStatus: GqlOpportunitySlotHostingStatus;
+  startsAt?: InputMaybe<Scalars['Datetime']['input']>;
 };
 
 export type GqlOpportunitySlotSetHostingStatusPayload = GqlOpportunitySlotSetHostingStatusSuccess;
