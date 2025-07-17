@@ -1,21 +1,28 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import { IContext } from "@/types/server";
-import { CurrentPrefecture, IdentityPlatform, MembershipStatus } from "@prisma/client";
-import { GqlMutationUserSignUpArgs } from "@/types/graphql";
+import {
+  GqlCurrentPrefecture,
+  GqlIdentityPlatform,
+  GqlMutationUserSignUpArgs,
+} from "@/types/graphql";
 import { registerProductionDependencies } from "@/application/provider";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import TestDataSourceHelper from "../../helper/test-data-source-helper";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("IdentityUseCase.userCreateAccount", () => {
   let useCase: IdentityUseCase;
+  let issuer: PrismaClientIssuer;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     jest.clearAllMocks();
     container.reset();
+
     registerProductionDependencies();
 
+    issuer = container.resolve(PrismaClientIssuer);
     useCase = container.resolve(IdentityUseCase);
   });
 
@@ -24,22 +31,27 @@ describe("IdentityUseCase.userCreateAccount", () => {
   });
 
   it("should create user, join community, and create wallet", async () => {
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const community = await TestDataSourceHelper.createCommunity({
-      name: "test-community",
+      name: `test-community-${uniqueId}`,
       pointName: "pt",
     });
 
     const ctx: IContext = {
-      uid: "uid-abc",
-      platform: IdentityPlatform.LINE,
+      uid: `uid-${uniqueId}`,
+      platform: GqlIdentityPlatform.Line,
+      phoneAuthToken: "test-phone-auth-token",
+      communityId: community.id,
+      issuer,
     } as IContext;
 
     const input: GqlMutationUserSignUpArgs = {
       input: {
         name: "Test User",
-        slug: "test-user",
-        currentPrefecture: CurrentPrefecture.KAGAWA,
+        slug: `test-user-${uniqueId}`,
+        currentPrefecture: GqlCurrentPrefecture.Kagawa,
         communityId: community.id,
+        phoneUid: `test-phone-uid-${uniqueId}`,
       },
     };
 
@@ -57,7 +69,7 @@ describe("IdentityUseCase.userCreateAccount", () => {
       },
     });
 
-    expect(membership?.status).toBe(MembershipStatus.JOINED);
+    expect(membership?.status).toBe("JOINED");
 
     const wallet = await TestDataSourceHelper.findMemberWallet(result.user!.id, community.id);
     expect(wallet).toBeDefined();

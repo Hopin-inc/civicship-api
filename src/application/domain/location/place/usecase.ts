@@ -31,7 +31,7 @@ export default class PlaceUseCase {
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map((record) => PlacePresenter.get(record));
 
-    return PlacePresenter.query(data, hasNextPage);
+    return PlacePresenter.query(data, hasNextPage, cursor);
   }
 
   async userViewPlace({ id }: GqlQueryPlaceArgs, ctx: IContext): Promise<GqlPlace | null> {

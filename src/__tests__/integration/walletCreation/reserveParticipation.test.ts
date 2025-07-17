@@ -6,24 +6,27 @@ import { GqlReservationCreateInput, GqlReservationPaymentMethod } from "@/types/
 import ReservationUseCase from "@/application/domain/experience/reservation/usecase";
 import { container } from "tsyringe";
 import { registerProductionDependencies } from "@/application/provider";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 describe("Reservation Integration Tests", () => {
   jest.setTimeout(30_000);
 
   let useCase: ReservationUseCase;
+  let issuer: PrismaClientIssuer;
   let startsAt: Date;
   let endsAt: Date;
 
   beforeEach(async () => {
     await TestDataSourceHelper.deleteAll();
     const now = new Date();
-    startsAt = new Date(now.getTime() + 60 * 60 * 1000);
-    endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    startsAt = new Date(now.getTime() + 25 * 60 * 60 * 1000); // 25 hours in the future
+    endsAt = new Date(now.getTime() + 26 * 60 * 60 * 1000); // 26 hours in the future
 
     container.reset();
     registerProductionDependencies();
 
     useCase = container.resolve(ReservationUseCase);
+    issuer = container.resolve(PrismaClientIssuer);
   });
 
   afterAll(async () => {
@@ -41,7 +44,10 @@ describe("Reservation Integration Tests", () => {
         currentPrefecture: CurrentPrefecture.KAGAWA,
       });
       const userId = userInserted.id;
-      const ctx = { currentUser: { id: userId } } as unknown as IContext;
+      const ctx = {
+        currentUser: { id: userId },
+        issuer,
+      } as unknown as IContext;
 
       const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
       const pointName = `${communityName}-point`;
@@ -120,7 +126,10 @@ describe("Reservation Integration Tests", () => {
         currentPrefecture: CurrentPrefecture.KAGAWA,
       });
       const userId = userInserted.id;
-      const ctx = { currentUser: { id: userId } } as unknown as IContext;
+      const ctx = {
+        currentUser: { id: userId },
+        issuer,
+      } as unknown as IContext;
 
       const communityName = `community-${crypto.randomUUID().slice(0, 6)}`;
       const pointName = `${communityName}-point`;

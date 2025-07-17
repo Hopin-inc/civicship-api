@@ -29,7 +29,7 @@ export class TicketIssuerUseCase {
 
     const hasNextPage = ticketIssuers.length > take;
     const data = ticketIssuers.slice(0, take).map(TicketIssuerPresenter.get);
-    return TicketIssuerPresenter.query(data, hasNextPage);
+    return TicketIssuerPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewTicketIssuer(

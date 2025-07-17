@@ -4,10 +4,15 @@ import { createApolloTestServer } from "@/__tests__/helper/test-server";
 enum Role {
   OWNER = "OWNER",
   MANAGER = "MANAGER",
-  MEMBER = "MEMBER"
+  MEMBER = "MEMBER",
 }
 import path from "path";
 import { registerProductionDependencies } from "@/application/provider";
+
+jest.mock("@/presentation/graphql/scalar", () => ({
+  __esModule: true,
+  default: {},
+}));
 
 jest.mock("@/presentation/graphql/schema/esmPath", () => ({
   getESMDirname: jest.fn(() => path.resolve(__dirname, "../../../src/presentation/graphql/schema")),
@@ -62,15 +67,13 @@ const queries = {
 
 const variables = {
   issue: {
-    input: { toWalletId: "wallet-1", transferPoints: 10 },
+    input: { transferPoints: 10 },
     permission: { communityId: "community-1" },
   },
   grant: {
     input: {
-      fromWalletId: "wallet-1",
       toUserId: "user-2",
       transferPoints: 10,
-      communityId: "community-1",
     },
     permission: { communityId: "community-1" },
   },
@@ -91,11 +94,17 @@ const variables = {
 const mockTransactionUseCase = {
   ownerIssueCommunityPoint: jest.fn().mockResolvedValue({
     __typename: "TransactionIssueCommunityPointSuccess",
-    transaction: { id: "mock-tx" },
+    transaction: {
+      __typename: "Transaction",
+      id: "mock-tx",
+    },
   }),
   ownerGrantCommunityPoint: jest.fn().mockResolvedValue({
     __typename: "TransactionGrantCommunityPointSuccess",
-    transaction: { id: "mock-tx" },
+    transaction: {
+      __typename: "Transaction",
+      id: "mock-tx",
+    },
   }),
 };
 const mockCommunityUseCase = {
@@ -108,7 +117,8 @@ const mockMembershipUseCase = {
   ownerAssignOwner: jest.fn().mockResolvedValue({
     __typename: "MembershipSetRoleSuccess",
     membership: {
-      id: "membership-1",
+      userId: "user-2",
+      communityId: "community-1",
       user: {
         id: "user-2",
       },
@@ -137,7 +147,12 @@ describe("Owner-only mutations - AuthZ", () => {
     jest.clearAllMocks();
   });
 
-  const runTest = (name: string, query: string, vars: Record<string, unknown>, useCaseFn: jest.Mock) => {
+  const runTest = (
+    name: string,
+    query: string,
+    vars: Record<string, unknown>,
+    useCaseFn: jest.Mock,
+  ) => {
     it.each([
       [Role.OWNER, true],
       [Role.MANAGER, false],

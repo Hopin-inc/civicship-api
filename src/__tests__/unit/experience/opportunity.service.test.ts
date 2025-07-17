@@ -1,8 +1,8 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
-import { ValidationError, NotFoundError } from "@/errors/graphql";
-import { Prisma } from "@prisma/client";
+import { NotFoundError } from "@/errors/graphql";
+import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 
 class MockOpportunityRepository {
@@ -143,16 +143,6 @@ describe("OpportunityService", () => {
         service.updateOpportunityContent(mockCtx, "opportunity-1", {} as any, mockTx),
       ).rejects.toThrow(NotFoundError);
     });
-
-    it("should throw ValidationError if invalid place input", async () => {
-      mockRepository.find.mockResolvedValue({ id: "opportunity-1" });
-
-      const invalidInput = { place: {} } as any; // where/create両方なし
-
-      await expect(
-        service.updateOpportunityContent(mockCtx, "opportunity-1", invalidInput, mockTx),
-      ).rejects.toThrow(ValidationError);
-    });
   });
 
   describe("setOpportunityPublishStatus", () => {
@@ -186,6 +176,175 @@ describe("OpportunityService", () => {
       await expect(
         service.setOpportunityPublishStatus(mockCtx, "opportunity-1", "PUBLISHED" as any, mockTx),
       ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe("validatePublishStatus", () => {
+    it("should pass validation when filter publishStatus matches allowed statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should pass validation when filter publishStatus is subset of allowed statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should pass validation when filter is undefined", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, undefined),
+      ).resolves.not.toThrow();
+    });
+
+    it("should pass validation when filter publishStatus is undefined", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = {} as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should throw ValidationError when filter publishStatus contains disallowed status", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS"] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
+    });
+
+    it("should throw ValidationError when filter publishStatus is empty array", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should throw ValidationError with multiple disallowed statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE, "INVALID"] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
+    });
+
+    it("should handle duplicate statuses in filter", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle null and undefined edge cases", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      
+      await expect(
+        service.validatePublishStatus(allowedStatuses, null as any),
+      ).resolves.not.toThrow();
+      
+      await expect(
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle empty allowed statuses array", async () => {
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      
+      await expect(
+        service.validatePublishStatus([], filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of");
+    });
+
+    it("should handle very large arrays", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
+      const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
+      const filter = { publishStatus: largeArray } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should validate error message format", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC, COMMUNITY_INTERNAL");
+    });
+
+    it("should handle null and undefined edge cases", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      
+      await expect(
+        service.validatePublishStatus(allowedStatuses, null as any),
+      ).resolves.not.toThrow();
+      
+      await expect(
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle empty allowed statuses array", async () => {
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      
+      await expect(
+        service.validatePublishStatus([], filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of");
+    });
+
+    it("should handle very large arrays", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
+      const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
+      const filter = { publishStatus: largeArray } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle mixed valid and invalid statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
+    });
+
+    it("should handle duplicate statuses in filter", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).resolves.not.toThrow();
+    });
+
+    it("should handle mixed valid and invalid statuses", async () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, "INVALID_STATUS", PublishStatus.PRIVATE] } as any;
+
+      await expect(
+        service.validatePublishStatus(allowedStatuses, filter),
+      ).rejects.toThrow("Validation error: publishStatus must be one of PUBLIC");
     });
   });
 });

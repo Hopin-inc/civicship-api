@@ -412,6 +412,7 @@ export type GqlEvaluationEdge = GqlEdge & {
 };
 
 export type GqlEvaluationFilterInput = {
+  communityId?: InputMaybe<Scalars['ID']['input']>;
   evaluatorId?: InputMaybe<Scalars['ID']['input']>;
   participationId?: InputMaybe<Scalars['ID']['input']>;
   status?: InputMaybe<GqlEvaluationStatus>;

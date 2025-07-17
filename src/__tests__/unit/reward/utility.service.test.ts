@@ -2,9 +2,8 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import UtilityService from "@/application/domain/reward/utility/service";
 import { NotFoundError, ValidationError } from "@/errors/graphql";
-import { PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, PublishStatus } from "@prisma/client";
 import {
   GqlUtilityCreateInput,
   GqlMutationUtilityUpdateInfoArgs,
@@ -165,10 +164,16 @@ describe("UtilityService", () => {
       mockConverter.create.mockReturnValue(converted);
       mockRepository.create.mockResolvedValue(created);
 
-      const result = await service.createUtility(mockCtx, input, currentUserId, communityId, mockTx);
+      const result = await service.createUtility(
+        mockCtx,
+        input,
+        currentUserId,
+        communityId,
+        mockTx,
+      );
 
       expect(result).toBe(created);
-      expect(mockConverter.create).toHaveBeenCalledWith(input);
+      expect(mockConverter.create).toHaveBeenCalledWith(input, currentUserId, communityId);
       expect(mockRepository.create).toHaveBeenCalledWith(
         mockCtx,
         expect.objectContaining({ dummy: true }),
@@ -258,7 +263,7 @@ describe("UtilityService", () => {
 
     it("should throw if disallowed status is present", async () => {
       try {
-        await service.validatePublishStatus([PublishStatus.PUBLIC], {
+        service.validatePublishStatus([PublishStatus.PUBLIC], {
           publishStatus: [PublishStatus.PRIVATE],
         });
         fail("Expected ValidationError to be thrown");
@@ -267,6 +272,80 @@ describe("UtilityService", () => {
         if (e instanceof ValidationError) {
           expect(e.message).toContain("must be one of PUBLIC");
           expect(e.invalidArgs).toContain('["PRIVATE"]');
+        }
+      }
+    });
+
+    it("should handle null and undefined filter edge cases", () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      
+      expect(() => {
+        service.validatePublishStatus(allowedStatuses, null as any);
+      }).not.toThrow();
+      
+      expect(() => {
+        service.validatePublishStatus(allowedStatuses, undefined as any);
+      }).not.toThrow();
+      
+      expect(() => {
+        service.validatePublishStatus(allowedStatuses, { publishStatus: null } as any);
+      }).not.toThrow();
+    });
+
+    it("should handle empty allowed statuses array", () => {
+      const filter = { publishStatus: [PublishStatus.PUBLIC] } as any;
+      
+      expect(() => {
+        service.validatePublishStatus([], filter);
+      }).toThrow("Validation error: publishStatus must be one of");
+    });
+
+    it("should handle empty publishStatus array", () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [] } as any;
+
+      expect(() => {
+        service.validatePublishStatus(allowedStatuses, filter);
+      }).not.toThrow();
+    });
+
+    it("should handle very large arrays", () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL, PublishStatus.PRIVATE];
+      const largeArray = new Array(1000).fill(PublishStatus.PUBLIC);
+      const filter = { publishStatus: largeArray } as any;
+
+      expect(() => {
+        service.validatePublishStatus(allowedStatuses, filter);
+      }).not.toThrow();
+    });
+
+    it("should validate error message format", () => {
+      const allowedStatuses = [PublishStatus.PUBLIC, PublishStatus.COMMUNITY_INTERNAL];
+      const filter = { publishStatus: [PublishStatus.PRIVATE] } as any;
+
+      try {
+        service.validatePublishStatus(allowedStatuses, filter);
+        fail("Expected ValidationError to be thrown");
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(ValidationError);
+        if (e instanceof ValidationError) {
+          expect(e.message).toBe("Validation error: publishStatus must be one of PUBLIC, COMMUNITY_INTERNAL");
+          expect(e.invalidArgs).toContain('["PRIVATE"]');
+        }
+      }
+    });
+
+    it("should handle mixed valid and invalid statuses", () => {
+      const allowedStatuses = [PublishStatus.PUBLIC];
+      const filter = { publishStatus: [PublishStatus.PUBLIC, PublishStatus.PRIVATE, "INVALID"] } as any;
+
+      try {
+        service.validatePublishStatus(allowedStatuses, filter);
+        fail("Expected ValidationError to be thrown");
+      } catch (e: unknown) {
+        expect(e).toBeInstanceOf(ValidationError);
+        if (e instanceof ValidationError) {
+          expect(e.message).toContain("must be one of PUBLIC");
         }
       }
     });

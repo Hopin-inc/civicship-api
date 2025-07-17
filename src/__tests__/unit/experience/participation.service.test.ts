@@ -1,9 +1,11 @@
 import "reflect-metadata";
 import { container } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
-import { ValidationError, NotFoundError } from "@/errors/graphql";
-import { Prisma } from "@prisma/client";
+import { NotFoundError, PersonalRecordOnlyDeletableError } from "@/errors/graphql";
+import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { GqlParticipationCreatePersonalRecordInput } from "@/types/graphql";
+import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 
 class MockParticipationRepository {
   query = jest.fn();
@@ -50,7 +52,7 @@ describe("ParticipationService", () => {
 
   describe("createParticipation", () => {
     it("should create participation with uploaded images", async () => {
-      const input = { title: "My Participation" } as any;
+      const input = { title: "My Participation" } as GqlParticipationCreatePersonalRecordInput;
       const createdData = { data: { userId: "test-user-id" }, images: ["img1", "img2"] };
       const uploadedImages = [{ id: "img-up-1" }, { id: "img-up-2" }];
 
@@ -100,9 +102,12 @@ describe("ParticipationService", () => {
   describe("setStatus", () => {
     it("should update participation status", async () => {
       const id = "p1";
-      const status = "JOINED" as any;
-      const reason = "ATTENDED" as any;
-      const updatedData = { status: "JOINED", reason: "ATTENDED" };
+      const status = ParticipationStatus.PARTICIPATED;
+      const reason = ParticipationStatusReason.RESERVATION_ACCEPTED;
+      const updatedData = {
+        status: ParticipationStatus.PARTICIPATED,
+        reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+      };
 
       mockConverter.setStatus.mockReturnValue(updatedData);
       mockRepository.update.mockResolvedValue({ id: "p1" });
@@ -123,16 +128,16 @@ describe("ParticipationService", () => {
       const result = await service.bulkSetStatusByReservation(
         mockCtx,
         ids,
-        "JOINED" as any,
-        "ATTENDED" as any,
+        ParticipationStatus.PARTICIPATING,
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
         mockTx,
       );
 
       expect(mockRepository.bulkSetStatusByReservation).toHaveBeenCalledWith(
         mockCtx,
         ids,
-        "JOINED",
-        "ATTENDED",
+        ParticipationStatus.PARTICIPATING,
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
         mockTx,
       );
       expect(result).toEqual({ count: 2 });
@@ -159,7 +164,9 @@ describe("ParticipationService", () => {
 
   describe("validateDeletable", () => {
     it("should pass if participation is personal record", () => {
-      const participation = { reason: "PERSONAL_RECORD" } as any;
+      const participation = {
+        reason: ParticipationStatusReason.PERSONAL_RECORD,
+      } as PrismaParticipationDetail;
 
       expect(() => {
         service.validateDeletable(participation);
@@ -167,11 +174,87 @@ describe("ParticipationService", () => {
     });
 
     it("should throw ValidationError if participation is not personal record", () => {
-      const participation = { reason: "ATTENDED" } as any;
+      const participation = {
+        reason: ParticipationStatusReason.RESERVATION_ACCEPTED,
+      } as PrismaParticipationDetail;
 
       expect(() => {
         service.validateDeletable(participation);
-      }).toThrow(ValidationError);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+    });
+
+    it("should test all non-PERSONAL_RECORD reasons", () => {
+      const nonPersonalRecordReasons = [
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
+        ParticipationStatusReason.OPPORTUNITY_CANCELED,
+        ParticipationStatusReason.RESERVATION_CANCELED,
+      ];
+
+      nonPersonalRecordReasons.forEach(reason => {
+        const participation = { reason } as PrismaParticipationDetail;
+        
+        expect(() => {
+          service.validateDeletable(participation);
+        }).toThrow(PersonalRecordOnlyDeletableError);
+      });
+    });
+
+    it("should handle null/undefined reason gracefully", () => {
+      const participationWithNullReason = { reason: null } as any;
+      const participationWithUndefinedReason = { reason: undefined } as any;
+
+      expect(() => {
+        service.validateDeletable(participationWithNullReason);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+
+      expect(() => {
+        service.validateDeletable(participationWithUndefinedReason);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+    });
+
+    it("should handle edge case with empty participation object", () => {
+      const emptyParticipation = {} as any;
+
+      expect(() => {
+        service.validateDeletable(emptyParticipation);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+    });
+
+    it("should test all non-PERSONAL_RECORD reasons", () => {
+      const nonPersonalRecordReasons = [
+        ParticipationStatusReason.RESERVATION_ACCEPTED,
+        ParticipationStatusReason.OPPORTUNITY_CANCELED,
+        ParticipationStatusReason.RESERVATION_CANCELED,
+      ];
+
+      nonPersonalRecordReasons.forEach(reason => {
+        const participation = { reason } as PrismaParticipationDetail;
+        
+        expect(() => {
+          service.validateDeletable(participation);
+        }).toThrow(PersonalRecordOnlyDeletableError);
+      });
+    });
+
+    it("should handle null/undefined reason gracefully", () => {
+      const participationWithNullReason = { reason: null } as any;
+      const participationWithUndefinedReason = { reason: undefined } as any;
+
+      expect(() => {
+        service.validateDeletable(participationWithNullReason);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+
+      expect(() => {
+        service.validateDeletable(participationWithUndefinedReason);
+      }).toThrow(PersonalRecordOnlyDeletableError);
+    });
+
+    it("should handle edge case with empty participation object", () => {
+      const emptyParticipation = {} as any;
+
+      expect(() => {
+        service.validateDeletable(emptyParticipation);
+      }).toThrow(PersonalRecordOnlyDeletableError);
     });
   });
 });

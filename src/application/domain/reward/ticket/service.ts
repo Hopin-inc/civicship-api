@@ -25,7 +25,7 @@ export default class TicketService {
     const res = await this.repository.query(ctx, where, orderBy, take + 1, cursor);
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map((record) => TicketPresenter.get(record));
-    return TicketPresenter.query(data, hasNextPage);
+    return TicketPresenter.query(data, hasNextPage, cursor);
   }
 
   async fetchTicketsByIds(ctx: IContext, ids: string[]) {

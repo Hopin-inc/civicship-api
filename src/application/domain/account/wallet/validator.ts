@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { Prisma, TransactionReason } from "@prisma/client";
-import { DatabaseError, InsufficientBalanceError, ValidationError } from "@/errors/graphql";
+import { InsufficientBalanceError, ValidationError } from "@/errors/graphql";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 import WalletService from "@/application/domain/account/wallet/service";
 import { inject, injectable } from "tsyringe";
@@ -89,9 +89,12 @@ export default class WalletValidator {
     }
     const { currentPoint } = fromWallet.currentPointView || {};
 
-    if (typeof currentPoint !== "bigint") {
-      throw new DatabaseError("Invalid point type: expected bigint");
+    if (currentPoint == null) {
+      throw new ValidationError("Current point is not available for wallet", [
+        "fromWallet.currentPointView.currentPoint",
+      ]);
     }
+
     if (currentPoint < BigInt(transferPoints)) {
       throw new InsufficientBalanceError(currentPoint.toString(), transferPoints);
     }

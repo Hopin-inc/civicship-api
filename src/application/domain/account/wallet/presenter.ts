@@ -2,13 +2,13 @@ import { GqlWallet, GqlWalletsConnection } from "@/types/graphql";
 import { PrismaWalletDetail } from "@/application/domain/account/wallet/data/type";
 
 export default class WalletPresenter {
-  static query(r: GqlWallet[], hasNextPage: boolean): GqlWalletsConnection {
+  static query(r: GqlWallet[], hasNextPage: boolean, cursor?: string): GqlWalletsConnection {
     return {
       __typename: "WalletsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: false,
+        hasPreviousPage: !!cursor,
         startCursor: r.length > 0 ? r[0].id : null,
         endCursor: r.length > 0 ? r[r.length - 1].id : null,
       },

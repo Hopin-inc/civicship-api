@@ -32,7 +32,7 @@ export default class EvaluationHistoryService {
     const res = await EvaluationHistoryRepository.query(ctx, where, orderBy, take, cursor);
     const hasNextPage = res.length > take;
     const data = res.slice(0, take).map(EvaluationHistoryPresenter.get);
-    return EvaluationHistoryPresenter.query(data, hasNextPage);
+    return EvaluationHistoryPresenter.query(data, hasNextPage, cursor);
   }
 
   static async findEvaluationHistory(ctx: IContext, id: string) {

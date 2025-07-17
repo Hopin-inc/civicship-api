@@ -5,12 +5,13 @@ export default class EvaluationHistoryPresenter {
   static query(
     records: GqlEvaluationHistory[],
     hasNextPage: boolean,
+    cursor?: string,
   ): GqlEvaluationHistoriesConnection {
     return {
       totalCount: records.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: records[0]?.id,
         endCursor: records.length ? records[records.length - 1].id : undefined,
       },

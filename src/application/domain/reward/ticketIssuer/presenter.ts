@@ -6,13 +6,13 @@ import {
 import { PrismaTicketIssuerDetail } from "@/application/domain/reward/ticketIssuer/data/type";
 
 export default class TicketIssuerPresenter {
-  static query(records: GqlTicketIssuer[], hasNextPage: boolean): GqlTicketIssuersConnection {
+  static query(records: GqlTicketIssuer[], hasNextPage: boolean, cursor?: string): GqlTicketIssuersConnection {
     return {
       __typename: "TicketIssuersConnection",
       totalCount: records.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: records[0]?.id,
         endCursor: records.length ? records[records.length - 1].id : undefined,
       },

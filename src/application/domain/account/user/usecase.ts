@@ -25,7 +25,7 @@ export default class UserUseCase {
     const hasNextPage = data.length > take;
 
     const users: GqlUser[] = data.slice(0, take).map(UserPresenter.get);
-    return UserPresenter.query(users, hasNextPage);
+    return UserPresenter.query(users, hasNextPage, cursor);
   }
 
   async visitorViewMember(ctx: IContext, { id }: GqlQueryUserArgs): Promise<GqlUser | null> {

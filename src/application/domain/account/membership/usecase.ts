@@ -40,7 +40,7 @@ export default class MembershipUseCase {
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map(MembershipPresenter.get);
-    return MembershipPresenter.query(data, hasNextPage);
+    return MembershipPresenter.query(data, hasNextPage, args.cursor?.userId + "_" + args.cursor?.communityId);
   }
 
   async visitorViewMembership(

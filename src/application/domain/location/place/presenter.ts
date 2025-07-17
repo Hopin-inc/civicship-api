@@ -8,13 +8,13 @@ import {
 import { PrismaPlace, PrismaPlaceDetail } from "@/application/domain/location/place/data/type";
 
 export default class PlacePresenter {
-  static query(r: GqlPlace[], hasNextPage: boolean): GqlPlacesConnection {
+  static query(r: GqlPlace[], hasNextPage: boolean, cursor?: string): GqlPlacesConnection {
     return {
       __typename: "PlacesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },

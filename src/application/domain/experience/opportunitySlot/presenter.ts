@@ -10,13 +10,13 @@ import {
 } from "@/application/domain/experience/opportunitySlot/data/type";
 
 export default class OpportunitySlotPresenter {
-  static query(r: GqlOpportunitySlot[], hasNextPage: boolean): GqlOpportunitySlotsConnection {
+  static query(r: GqlOpportunitySlot[], hasNextPage: boolean, cursor?: string): GqlOpportunitySlotsConnection {
     return {
       __typename: "OpportunitySlotsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },
