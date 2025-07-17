@@ -19,6 +19,8 @@ import { PublishStatus } from "@prisma/client";
 import OpportunityService from "@/application/domain/experience/opportunity/service";
 import { clampFirst, getMembershipRolesByCtx } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
+import logger from "@/infrastructure/logging";
+import { PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 
 @injectable()
 export default class OpportunityUseCase {
@@ -55,27 +57,13 @@ export default class OpportunityUseCase {
     let data = records.slice(0, take).map((record) => OpportunityPresenter.get(record));
 
     if (filter?.isReservableWithTicket !== undefined && currentUserId) {
-      const filteredData: GqlOpportunity[] = [];
-      for (let i = 0; i < data.length; i++) {
-        const opportunity = data[i];
-        const record = records[i];
-        const communityId = record.communityId;
-        if (!communityId) {
-          console.log("[isReservableWithTicket filter] Skipping opportunity without communityId:", opportunity.id);
-          continue;
-        }
-
-        const isReservable = await ctx.loaders.isReservableWithTicket.load({
-          userId: currentUserId,
-          communityId: communityId,
-          opportunityId: opportunity.id,
-        });
-
-        if (isReservable === filter.isReservableWithTicket) {
-          filteredData.push(opportunity);
-        }
-      }
-      data = filteredData;
+      data = await this.filterOpportunitiesByReservableWithTicket(
+        ctx,
+        records.slice(0, take),
+        data,
+        currentUserId,
+        filter.isReservableWithTicket,
+      );
     }
 
     return OpportunityPresenter.query(data, hasNextPage, cursor);
@@ -143,6 +131,50 @@ export default class OpportunityUseCase {
       );
       return OpportunityPresenter.setPublishStatus(record);
     });
+  }
+
+  private async filterOpportunitiesByReservableWithTicket(
+    ctx: IContext,
+    records: PrismaOpportunityDetail[],
+    gqls: GqlOpportunity[],
+    userId: string,
+    expected: boolean,
+  ): Promise<GqlOpportunity[]> {
+    const pairs = records
+      .map((record, i) => {
+        const communityId = record.communityId;
+        if (!communityId) {
+          logger.log(
+            "[isReservableWithTicket filter] Skipping opportunity without communityId:",
+            gqls[i]?.id,
+          );
+          return null;
+        }
+        return {
+          key: {
+            userId,
+            communityId,
+            opportunityId: record.id,
+          },
+          opportunity: gqls[i],
+        };
+      })
+      .filter(
+        (
+          pair,
+        ): pair is {
+          key: { userId: string; communityId: string; opportunityId: string };
+          opportunity: GqlOpportunity;
+        } => pair !== null,
+      );
+
+    const results = await Promise.all(
+      pairs.map((pair) => ctx.loaders.isReservableWithTicket.load(pair.key)),
+    );
+
+    return pairs
+      .map((pair, i) => (results[i] === expected ? pair.opportunity : null))
+      .filter((op): op is GqlOpportunity => op !== null);
   }
 }
 
