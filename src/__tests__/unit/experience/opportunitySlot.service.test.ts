@@ -48,11 +48,11 @@ describe("OpportunitySlotService", () => {
       mockRepository.find.mockResolvedValue({ id: "slot-1" });
       mockRepository.setHostingStatus.mockResolvedValue({
         id: "slot-1",
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        status: OpportunitySlotHostingStatus.SCHEDULED,
       });
 
       const input: GqlOpportunitySlotSetHostingStatusInput = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        status: OpportunitySlotHostingStatus.SCHEDULED,
         capacity: 20,
         comment: "任意コメント",
       };
@@ -73,7 +73,7 @@ describe("OpportunitySlotService", () => {
       );
       expect(result).toEqual({
         id: "slot-1",
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        status: OpportunitySlotHostingStatus.SCHEDULED,
       });
     });
 
@@ -81,7 +81,7 @@ describe("OpportunitySlotService", () => {
       mockRepository.find.mockResolvedValue(null);
 
       const input: GqlOpportunitySlotSetHostingStatusInput = {
-        hostingStatus: OpportunitySlotHostingStatus.SCHEDULED,
+        status: OpportunitySlotHostingStatus.SCHEDULED,
       };
 
       await expect(
