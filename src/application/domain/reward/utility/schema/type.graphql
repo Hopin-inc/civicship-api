@@ -12,6 +12,7 @@ type Utility {
     images: [String!]
 
     community: Community
+    owner: User
 
     ticketIssuers: [TicketIssuer!]
     tickets: [Ticket!]

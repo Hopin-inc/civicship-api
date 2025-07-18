@@ -643,7 +643,7 @@ model Opportunity {
 
   pointsToEarn      Int?      @map("points_to_earn")
   feeRequired       Int?      @map("fee_required")
-  pointsToRequired  Boolean?  @default(false) @map("points_to_required")
+  pointsRequired    Int?      @map("points_required")
   requiredUtilities Utility[] @relation("t_required_opportunities_on_utilities")
 
   slots                      OpportunitySlot[]

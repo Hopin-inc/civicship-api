@@ -12,6 +12,7 @@ export const utilitySelectDetail = Prisma.validator<Prisma.UtilitySelect>()({
   publishStatus: true,
 
   communityId: true,
+  ownerId: true,
 
   createdAt: true,
   updatedAt: true,
