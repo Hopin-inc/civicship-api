@@ -4,7 +4,6 @@ import http from "http";
 import express from "express";
 import logger from "@/infrastructure/logging";
 import walletRouter from "@/presentation/router/wallet";
-import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -15,7 +14,6 @@ async function startExternalApiServer() {
 
   const server = http.createServer(app);
 
-  app.use(corsHandler);
   app.use(express.json({ limit: "10mb" }));
   app.use(requestLogger);
 
@@ -23,6 +21,7 @@ async function startExternalApiServer() {
     logger.error("External API Error:", {
       message: err.message,
       stack: err.stack,
+      req,
     });
     res.status(500).json({ error: "Internal Server Error" });
   });
