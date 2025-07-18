@@ -2,6 +2,7 @@ import "reflect-metadata";
 import "@/application/provider";
 import http from "http";
 import express from "express";
+import cors from "cors";
 import logger from "@/infrastructure/logging";
 import walletRouter from "@/presentation/router/wallet";
 import { requestLogger } from "@/presentation/middleware/logger";
@@ -14,6 +15,7 @@ async function startExternalApiServer() {
 
   const server = http.createServer(app);
 
+  app.use(cors());
   app.use(express.json({ limit: "10mb" }));
   app.use(requestLogger);
 
