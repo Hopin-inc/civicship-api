@@ -41,6 +41,10 @@ export default class UtilityResolver {
       return ctx.loaders.community.load(parent.communityId);
     },
 
+    owner: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
+      return parent.ownerId ? ctx.loaders.user.load(parent.ownerId) : null;
+    },
+
     images: (parent: PrismaUtilityDetail, _: unknown, ctx: IContext) => {
       return ctx.loaders.imagesByUtility.load(parent.id);
     },
