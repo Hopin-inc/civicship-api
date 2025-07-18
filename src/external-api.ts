@@ -21,7 +21,9 @@ async function startExternalApiServer() {
     logger.error("External API Error:", {
       message: err.message,
       stack: err.stack,
-      req,
+      req: {
+        body: req.body,
+      },
     });
     res.status(500).json({ error: "Internal Server Error" });
   });
