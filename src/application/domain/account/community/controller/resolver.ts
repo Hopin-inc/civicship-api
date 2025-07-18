@@ -44,7 +44,7 @@ export default class CommunityResolver {
       if (!config) return null;
 
       const lineConfig = config.lineConfig;
-      if (!ctx.isAdmin && lineConfig) {
+      if (!ctx.isAdmin) {
         return {
           ...config,
           lineConfig: {
