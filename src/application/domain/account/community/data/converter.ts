@@ -43,11 +43,13 @@ export default class CommunityConverter {
     data: Prisma.CommunityCreateInput;
     image?: GqlImageInput;
   } {
-    const { image, places, ...prop } = input;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { originalId, image, config, createdBy, ...prop } = input;
 
     return {
       data: {
         ...prop,
+        id: originalId,
         memberships: {
           create: [
             {
@@ -66,14 +68,36 @@ export default class CommunityConverter {
             },
           ],
         },
-        places: {
-          create: places?.map((place) => ({
-            ...place,
-            city: {
-              connect: { id: place.cityCode },
+        ...(config && {
+          config: {
+            create: {
+              ...(config.firebaseConfig && {
+                firebaseConfig: {
+                  create: {
+                    tenantId: config.firebaseConfig.tenantId,
+                  },
+                },
+              }),
+              ...(config.lineConfig && {
+                lineConfig: {
+                  create: {
+                    channelId: config.lineConfig.channelId,
+                    channelSecret: config.lineConfig.channelSecret,
+                    accessToken: config.lineConfig.accessToken,
+                    liffId: config.lineConfig.liffId,
+                    liffBaseUrl: config.lineConfig.liffBaseUrl,
+                    richMenus: {
+                      create: config.lineConfig.richMenus.map((menu) => ({
+                        type: menu.type,
+                        richMenuId: menu.richMenuId,
+                      })),
+                    },
+                  },
+                },
+              }),
             },
-          })),
-        },
+          },
+        }),
       },
       image,
     };
@@ -83,31 +107,11 @@ export default class CommunityConverter {
     data: Prisma.CommunityUpdateInput;
     image?: GqlImageInput;
   } {
-    const { image, places, ...prop } = input;
-    const { connectOrCreate, disconnect } = places;
-
-    const existingPlaces = connectOrCreate
-      ?.filter((item) => item.where && !item.create)
-      .map((item) => ({ id: item.where }));
-
-    const newPlaces = connectOrCreate
-      ?.filter((item) => item.create && !item.where)
-      .map((item) => {
-        const { cityCode, ...restCreate } = item.create!;
-        return {
-          ...restCreate,
-          city: { connect: { code: cityCode } },
-        };
-      });
+    const { image, ...prop } = input;
 
     return {
       data: {
         ...prop,
-        places: {
-          connect: existingPlaces,
-          create: newPlaces,
-          disconnect: disconnect?.map((id) => ({ id })),
-        },
       },
       image,
     };

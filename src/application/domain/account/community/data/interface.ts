@@ -1,5 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
+import {
+  PrismaCommunityCreateDetail,
+  PrismaCommunityDetail,
+} from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 
 export default interface ICommunityRepository {
@@ -17,7 +20,7 @@ export default interface ICommunityRepository {
     ctx: IContext,
     data: Prisma.CommunityCreateInput,
     tx: Prisma.TransactionClient,
-  ): Promise<PrismaCommunityDetail>;
+  ): Promise<PrismaCommunityCreateDetail>;
 
   update(
     ctx: IContext,

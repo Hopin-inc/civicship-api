@@ -67,14 +67,36 @@ describe("CommunityService", () => {
         },
       };
 
-      const mockCommunity = { id: "community-1", ...convertedInput };
       const ctxWithUser = { currentUser: { id: "test-user" } } as IContext;
 
-      mockConverter.create.mockReturnValue({ data: convertedInput, image: undefined });
+      const mockCommunity = {
+        id: "community-1",
+        config: {
+          firebaseConfig: {
+            tenantId: "civicship-dev",
+          },
+          lineConfig: {
+            accessToken: "should-be-masked",
+            channelId: "1234567890",
+            channelSecret: "should-be-masked",
+            liffBaseUrl: "https://liff.civicship.jp",
+            liffId: "LIFF_ID_EXAMPLE",
+            richMenus: [
+              { richMenuId: "RICH_MENU_001", type: "PUBLIC" },
+              { richMenuId: "RICH_MENU_002", type: "ADMIN" },
+            ],
+          },
+        },
+        ...convertedInput,
+      };
+
+      const converted = { data: convertedInput, image: undefined };
+      mockConverter.create.mockReturnValue(converted);
       mockRepository.create.mockResolvedValue(mockCommunity);
 
       const result = await service.createCommunityAndJoinAsOwner(
         ctxWithUser,
+        "test-user",
         input,
         {} as Prisma.TransactionClient,
       );
@@ -82,7 +104,10 @@ describe("CommunityService", () => {
       expect(mockConverter.create).toHaveBeenCalledWith(input, "test-user");
       expect(mockRepository.create).toHaveBeenCalledWith(
         ctxWithUser,
-        expect.objectContaining({ ...convertedInput, image: { create: undefined } }),
+        {
+          ...converted.data,
+          image: { create: converted.image },
+        },
         expect.anything(),
       );
       expect(result).toEqual(mockCommunity);
@@ -107,7 +132,6 @@ describe("CommunityService", () => {
       const updateInput: GqlCommunityUpdateProfileInput = {
         name: "Updated Community",
         pointName: "Updated Points",
-        places: { connectOrCreate: [], disconnect: undefined },
       };
 
       const mockCommunity = { id: "community-1" };

@@ -26,10 +26,25 @@ export const communitySelectDetail = Prisma.validator<Prisma.CommunitySelect>()(
   articles: { select: { id: true } },
 });
 
-export type PrismaCommunity = Prisma.CommunityGetPayload<{
-  include: typeof communityInclude;
-}>;
+export const communityCreateSelect = Prisma.validator<Prisma.CommunitySelect>()({
+  id: true,
+  name: true,
+  bio: true,
+  createdAt: true,
+  updatedAt: true,
+
+  imageId: true,
+  config: {
+    select: {
+      lineConfig: { select: { liffId: true, channelId: true, richMenus: true, liffBaseUrl: true } },
+    },
+  },
+});
 
 export type PrismaCommunityDetail = Prisma.CommunityGetPayload<{
   select: typeof communitySelectDetail;
+}>;
+
+export type PrismaCommunityCreateDetail = Prisma.CommunityGetPayload<{
+  select: typeof communityCreateSelect;
 }>;

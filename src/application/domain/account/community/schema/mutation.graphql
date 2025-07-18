@@ -3,7 +3,7 @@
 # ------------------------------
 extend type Mutation {
     communityCreate(input: CommunityCreateInput!): CommunityCreatePayload
-    @authz(rules: [IsUser])
+    @authz(rules: [IsAdmin])
 
     communityDelete(
         id: ID!,
@@ -23,6 +23,8 @@ extend type Mutation {
 # Community Mutation Input Definitions
 # ------------------------------
 input CommunityCreateInput {
+    originalId: String
+
     name: String!
     pointName: String!
     image: ImageInput
@@ -30,7 +32,10 @@ input CommunityCreateInput {
     establishedAt: Datetime
     website: String
 
-    places: [NestedPlaceCreateInput!]
+    config: CommunityConfigInput
+
+    #for admin
+    createdBy: ID
 }
 
 input CommunityUpdateProfileInput {
@@ -40,8 +45,6 @@ input CommunityUpdateProfileInput {
     bio: String
     establishedAt: Datetime
     website: String
-
-    places: NestedPlacesBulkUpdateInput!
 }
 
 # ------------------------------
