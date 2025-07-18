@@ -16,16 +16,31 @@ export async function validateFirebasePhoneAuth(req: Request, res: Response, nex
     const uid = decoded.uid;
 
     const issuer = new PrismaClientIssuer();
-    const user = await issuer.internal(async (tx) =>
-      tx.user.findFirst({
-        where: { identities: { some: { uid } } }
-      })
-    );
+    const user = await issuer.internal(async (tx) => {
+      const existingUser = await tx.user.findFirst({
+        where: { identities: { some: { uid } } },
+      });
 
-    if (!user) {
-      res.status(404).json({ error: 'User not found' });
-      return;
-    }
+      if (existingUser) return existingUser;
+
+      const newUser = await tx.user.create({
+        data: {
+          name: "名前未設定",
+          slug: "名前未設定",
+          currentPrefecture: 'UNKNOWN',
+          identities: {
+            create: [
+              {
+                uid,
+                platform: 'PHONE',
+              },
+            ],
+          },
+        },
+      });
+
+      return newUser;
+    });
 
     (req as any).user = user;
     (req as any).uid = uid;
