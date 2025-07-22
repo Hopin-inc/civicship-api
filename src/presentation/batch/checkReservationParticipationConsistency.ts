@@ -74,13 +74,3 @@ export async function checkReservationParticipationConsistency() {
     logger.error("❌ Error while checking consistency", err);
   }
 }
-
-checkReservationParticipationConsistency()
-  .then(() => {
-    console.log("✅ Done.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("❌ Failed to run batch:", err);
-    process.exit(1);
-  });
