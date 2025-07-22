@@ -1,6 +1,6 @@
 import logger from "@/infrastructure/logging";
 import { resizeImages } from "@/presentation/batch/resizeImages";
-import { syncDIDVC } from "src/presentation/batch/syncDIDVC";
+import { syncDIDVC } from "@/presentation/batch/syncDIDVC";
 
 export async function batchProcess() {
   switch (process.env.BATCH_PROCESS_NAME) {
