@@ -3,138 +3,123 @@
 
 ## Overview
 
-`civicship-api` is a GraphQL API server built with TypeScript. It is designed based on Domain-Driven Design (DDD) principles and uses Prisma ORM for database interaction. It emphasizes clear layer separation and explicit transaction management.
+`civicship-api` is a GraphQL API server built with TypeScript following **Domain-Driven Design (DDD)** and **Clean Architecture** principles. It provides a comprehensive platform for community engagement with integrated point-based rewards, opportunity management, and LINE messaging integration.
 
-## Features
+**Key Features:**
+- 👤 User & Community Management
+- 🎯 Opportunity & Participation Tracking  
+- 🎫 Point-based Reward System
+- 📱 LINE Integration & Notifications
+- 📝 Content & Media Management
 
-civicship-api offers the following business-oriented features:
+For detailed features, see [FEATURES.md](./docs/FEATURES.md).
 
-- 👤 User Account Management (signup, profile update, deletion)
-- 🏘️ Community Management (create, update, delete communities)
-- 👥 Member Invitation and Role Management
-- 🎯 Opportunity and Slot Management (design and scheduling of opportunities)
-- 📅 Reservation and Participation Tracking
-- ✍️ Post-Participation Evaluation (VC issuance)
-- 🎫 Ticket Issuance and Usage
-- 💸 Point System and Transaction Management
-- 🛠️ Utility Management
-- 📍 Place (Opportunity Location) Management
+## Quick Start
 
-For a detailed feature list, see [FEATURES.md](./docs/FEATURES.md).
+### Prerequisites
+- Node.js 20+, pnpm, Docker
 
-## Getting Started
-
-### Installation
-
-Install the dependencies.
-
+### Setup Commands
 ```bash
+# 1. Install dependencies
 pnpm install
-```
 
-### Environment Setup
-
-Set the DATABASE_URL in your .env file.
-
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/database_name
-```
-
-### Start the Development Server
-
-💡 If you haven't already started the database container, run pnpm container:up
-
-```bash
+# 2. Start PostgreSQL container (port 15432)
 pnpm container:up
-```
 
-Then, start the development server.
+# 3. Initialize database
+pnpm db:generate
+pnpm db:seed-master
+pnpm db:seed-domain
 
-```bash
+# 4. Generate GraphQL types & start server
+pnpm gql:generate
 pnpm dev:https
 ```
 
-To view the database contents in your browser, launch Prisma Studio.
+🚀 **API Available at:** GraphQL endpoint on port 3000
 
-```bash
-pnpm db:studio
+### Environment Setup
+
+Create a `.env` file with required environment variables:
+
+```env
+# Core Configuration
+DATABASE_URL=postgresql://user:password@host:15432/civicship_dev
+ENV=LOCAL
+NODE_ENV=development
+PORT=3000
+
+# Firebase Authentication (required)
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_service_account@project.iam.gserviceaccount.com
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+
+# Google Cloud Storage (required)
+GCS_SERVICE_ACCOUNT_BASE64=base64_encoded_service_account_json
+GCS_BUCKET_NAME=your_bucket_name
+GCP_PROJECT_ID=your_gcp_project_id
 ```
 
-## Preparing the Database
+## Architecture Overview
 
-### Insert Initial Data
+This project follows **Domain-Driven Design (DDD)** and **Clean Architecture** principles.
 
-Seed the database with necessary initial data.
-
-```bash
-pnpm db:seed
+### High-Level Structure
+```
+src/
+├── application/domain/     # 🏗️ Business Logic (7 core domains)
+├── infrastructure/        # 🔌 Database & External Services  
+├── presentation/         # 🌐 GraphQL API & Middleware
+└── types/               # 📝 Shared Types
 ```
 
-### Perform Migrations
+### Core Business Domains
+- **account/** - User, Community, Membership, Wallet Management
+- **experience/** - Opportunities, Reservations, Participation Tracking  
+- **content/** - Articles, Media Management
+- **reward/** - Utilities, Tickets, Point-based Rewards
+- **transaction/** - Point Transfers, Financial Operations
+- **notification/** - LINE Messaging Integration
+- **location/** - Geographic Data Management
 
-When changing the database schema, follow these steps:
+## 📖 Documentation
 
-First, update type definitions.
+### 🚀 Getting Started
+- 🔧 [Setup Guide](./docs/SETUP.md) - Complete installation & configuration
+- 🌍 [Environment Variables](./docs/ENVIRONMENT.md) - Configuration reference
+- 🔍 [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues & solutions
 
-```bash
-pnpm db:generate
-```
+### 🏗️ Architecture & Development  
+- 🏗️ [Architecture Guide](./docs/ARCHITECTURE.md) - System design overview
+- 🔒 [Security Architecture](./docs/SECURITY.md) - Authentication & authorization
+- 🔌 [Infrastructure Guide](./docs/INFRASTRUCTURE.md) - External systems & database
+- ⚡ [Performance Guide](./docs/PERFORMANCE.md) - Optimization strategies
+- 🎯 [Implementation Patterns](./docs/PATTERNS.md) - Code patterns & best practices
+- 👨‍💻 [Development Workflow](./docs/DEVELOPMENT.md) - Daily development procedures
 
-Then, create a migration file.
+### 📊 Reference & Operations
+- ✨ [Features](./docs/FEATURES.md) - Complete feature overview
+- 🗄️ [Database Schema](./docs/ERD.md) - Entity relationship diagram
+- 🧪 [Testing](./docs/TESTING.md) - Test strategy & execution
+- 🚀 [Deployment](./docs/DEPLOYMENT.md) - Production deployment guide
+- 💻 [Commands Reference](./docs/COMMANDS.md) - All available commands
 
-```bash
-pnpm db:migrate
-```
+## 🎯 Quick Navigation by Role
 
-Finally, apply the migration to the database.
+### For New Developers
+1. [Setup Guide](./docs/SETUP.md) → [Environment Variables](./docs/ENVIRONMENT.md)
+2. [Architecture Guide](./docs/ARCHITECTURE.md) → [Development Workflow](./docs/DEVELOPMENT.md)
+3. [Implementation Patterns](./docs/PATTERNS.md) → [Testing](./docs/TESTING.md)
 
-```bash
-pnpm db:deploy
-```
+### For System Administrators  
+1. [Infrastructure Guide](./docs/INFRASTRUCTURE.md) → [Security Architecture](./docs/SECURITY.md)
+2. [Deployment Guide](./docs/DEPLOYMENT.md) → [Performance Guide](./docs/PERFORMANCE.md)
+3. [Environment Variables](./docs/ENVIRONMENT.md) → [Troubleshooting](./docs/TROUBLESHOOTING.md)
 
-## Managing GraphQL Schema
-
-If you update the GraphQL schema, regenerate the type definitions.
-
-```bash
-pnpm gql:generate
-```
-
-## Running Tests
-
-For a detailed test report, see [docs/test](./docs/test).
-
-### Run Tests
-
-💡 Make sure the database container is running
-
-```bash
-pnpm test
-```
-
-### Generate a Coverage Report
-
-If you want to check the test coverage, generate a coverage report.
-
-```bash
-pnpm test:coverage
-```
-
-## Directory Structure
-
-This project is organized following Domain-Driven Design (DDD) principles.
-
-```
-.
-┣━━ __tests__/       ┃ Unit, integration, and E2E tests
-┣━━ application/     ┃ Business logic and use cases for each domain
-┣━━ infrastructure/  ┃ Database (Prisma) and external services integration
-┣━━ presentation/    ┃ GraphQL server, middleware, and external interfaces
-┣━━ types/           ┃ Shared type definitions across the project
-┗━━ ...
-```
-
-💡 Each domain (`account`, `experience`, `reward`, etc.) is further organized under `application/domain/`.
+### For API Users
+1. [Features](./docs/FEATURES.md) → [Database Schema](./docs/ERD.md)
+2. [Commands Reference](./docs/COMMANDS.md) → [Testing](./docs/TESTING.md)
 
 ## License
 

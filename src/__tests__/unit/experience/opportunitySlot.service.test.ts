@@ -2,8 +2,9 @@ import "reflect-metadata";
 import { container } from "tsyringe";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 import { NotFoundError } from "@/errors/graphql";
-import { Prisma } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { GqlOpportunitySlotSetHostingStatusInput } from "@/types/graphql";
 
 class MockOpportunitySlotRepository {
   query = jest.fn();
@@ -45,12 +46,21 @@ describe("OpportunitySlotService", () => {
   describe("setOpportunitySlotHostingStatus", () => {
     it("should set hosting status after finding the slot", async () => {
       mockRepository.find.mockResolvedValue({ id: "slot-1" });
-      mockRepository.setHostingStatus.mockResolvedValue({ id: "slot-1", hostingStatus: "HOSTING" });
+      mockRepository.setHostingStatus.mockResolvedValue({
+        id: "slot-1",
+        status: OpportunitySlotHostingStatus.SCHEDULED,
+      });
+
+      const input: GqlOpportunitySlotSetHostingStatusInput = {
+        status: OpportunitySlotHostingStatus.SCHEDULED,
+        capacity: 20,
+        comment: "任意コメント",
+      };
 
       const result = await service.setOpportunitySlotHostingStatus(
         mockCtx,
         "slot-1",
-        "HOSTING" as any,
+        input,
         mockTx,
       );
 
@@ -58,17 +68,24 @@ describe("OpportunitySlotService", () => {
       expect(mockRepository.setHostingStatus).toHaveBeenCalledWith(
         mockCtx,
         "slot-1",
-        "HOSTING",
+        expect.any(Object), // converter により整形された Prisma 向け input
         mockTx,
       );
-      expect(result).toEqual({ id: "slot-1", hostingStatus: "HOSTING" });
+      expect(result).toEqual({
+        id: "slot-1",
+        status: OpportunitySlotHostingStatus.SCHEDULED,
+      });
     });
 
     it("should throw NotFoundError if slot not found", async () => {
       mockRepository.find.mockResolvedValue(null);
 
+      const input: GqlOpportunitySlotSetHostingStatusInput = {
+        status: OpportunitySlotHostingStatus.SCHEDULED,
+      };
+
       await expect(
-        service.setOpportunitySlotHostingStatus(mockCtx, "slot-1", "HOSTING" as any, mockTx),
+        service.setOpportunitySlotHostingStatus(mockCtx, "slot-1", input, mockTx),
       ).rejects.toThrow(NotFoundError);
     });
   });

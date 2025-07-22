@@ -66,7 +66,7 @@ export default class OpportunityUseCase {
       );
     }
 
-    return OpportunityPresenter.query(data, hasNextPage);
+    return OpportunityPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewOpportunity(

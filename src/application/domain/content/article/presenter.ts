@@ -8,13 +8,13 @@ import {
 import { PrismaArticleDetail } from "@/application/domain/content/article/data/type";
 
 export default class ArticlePresenter {
-  static query(r: GqlArticle[], hasNextPage: boolean): GqlArticlesConnection {
+  static query(r: GqlArticle[], hasNextPage: boolean, cursor?: string): GqlArticlesConnection {
     return {
       __typename: "ArticlesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },

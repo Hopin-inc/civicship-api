@@ -8,13 +8,13 @@ import {
 import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
 
 export default class ParticipationPresenter {
-  static query(r: GqlParticipation[], hasNextPage: boolean): GqlParticipationsConnection {
+  static query(r: GqlParticipation[], hasNextPage: boolean, cursor?: string): GqlParticipationsConnection {
     return {
       __typename: "ParticipationsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },

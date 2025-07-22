@@ -1,3 +1,6 @@
+SET app.rls_bypass = 'on';
+SET app.rls_config.user_id = '';
+
 -- AlterTable
 ALTER TABLE "t_participations" ADD COLUMN     "opportunity_id" TEXT;
 

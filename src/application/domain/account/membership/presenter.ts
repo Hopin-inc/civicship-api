@@ -15,13 +15,13 @@ import {
 import { ParticipationType } from "@prisma/client";
 
 export default class MembershipPresenter {
-  static query(r: GqlMembership[], hasNextPage: boolean): GqlMembershipsConnection {
+  static query(r: GqlMembership[], hasNextPage: boolean, cursor?: string): GqlMembershipsConnection {
     return {
       __typename: "MembershipsConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.user?.id + "_" + r[0]?.community?.id,
         endCursor: r.length
           ? r[r.length - 1].user?.id + "_" + r[r.length - 1].community?.id

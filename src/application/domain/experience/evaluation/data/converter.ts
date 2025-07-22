@@ -10,6 +10,7 @@ export default class EvaluationConverter {
     if (!filter) return {};
 
     if (filter.status) conditions.push({ status: filter.status });
+    if (filter.communityId) conditions.push({ participation: { communityId: filter.communityId } });
     if (filter.evaluatorId) conditions.push({ evaluatorId: filter.evaluatorId });
     if (filter.participationId) conditions.push({ participationId: filter.participationId });
 

@@ -30,7 +30,7 @@ export default class WalletUseCase {
       return WalletPresenter.get(record);
     });
 
-    return WalletPresenter.query(data, hasNextPage);
+    return WalletPresenter.query(data, hasNextPage, cursor);
   }
 
   async userViewWallet({ id }: GqlQueryWalletArgs, ctx: IContext): Promise<GqlWallet | null> {

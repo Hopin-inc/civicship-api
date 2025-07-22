@@ -1,6 +1,5 @@
 import { prismaClient } from "@/infrastructure/prisma/client";
 import { Prisma, WalletType } from "@prisma/client";
-import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
 import { communityInclude } from "@/application/domain/account/community/data/type";
 import { walletInclude } from "@/application/domain/account/wallet/data/type";
 import { transactionInclude } from "@/application/domain/transaction/data/type";
@@ -23,6 +22,10 @@ export default class TestDataSourceHelper {
     await this.db.image.deleteMany();
 
     await this.db.participationStatusHistory.deleteMany();
+
+    await this.db.vcIssuanceRequest.deleteMany();
+    await this.db.didIssuanceRequest.deleteMany();
+    await this.db.evaluation.deleteMany();
     await this.db.participation.deleteMany();
 
     await this.db.reservation.deleteMany();
@@ -35,15 +38,17 @@ export default class TestDataSourceHelper {
     await this.db.ticket.deleteMany();
     await this.db.transaction.deleteMany();
 
-    await this.db.participationStatusHistory.deleteMany();
-    await this.db.participation.deleteMany();
-
     await this.db.wallet.deleteMany();
     await this.db.utility.deleteMany();
     await this.db.membership.deleteMany();
     await this.db.opportunitySlot.deleteMany();
     await this.db.opportunity.deleteMany();
     await this.db.article.deleteMany();
+
+    await this.db.communityFirebaseConfig.deleteMany();
+    await this.db.communityLineConfig.deleteMany();
+    await this.db.communityConfig.deleteMany();
+
     await this.db.community.deleteMany();
     await this.db.user.deleteMany();
     await this.db.place.deleteMany();
@@ -202,11 +207,25 @@ export default class TestDataSourceHelper {
     });
   }
 
+  // ======== Ticket =========
+  static async createTicket(data: Prisma.TicketCreateInput) {
+    return this.db.ticket.create({
+      data,
+    });
+  }
+
   // ======== TicketIssuer =========
   static async createTicketIssuer(data: Prisma.TicketIssuerCreateInput) {
     return this.db.ticketIssuer.create({
       data,
       include: ticketIssuerInclude,
+    });
+  }
+
+  static async linkClaimToIssuer(ticketIssuerId: string, claimLinkId: string) {
+    return this.db.ticketIssuer.update({
+      where: { id: ticketIssuerId },
+      data: { claimLink: { connect: { id: claimLinkId } } },
     });
   }
 
@@ -228,7 +247,7 @@ export default class TestDataSourceHelper {
 
   // ======== MaterializedView Refresh (ポイント集計など) =========
   static async refreshCurrentPoints() {
-    return this.db.$queryRawTyped(refreshMaterializedViewCurrentPoints());
+    return this.db.$queryRaw`REFRESH MATERIALIZED VIEW CONCURRENTLY "mv_current_points"`;
   }
 
   // ========== Participation関連 (不要になれば削除) =========

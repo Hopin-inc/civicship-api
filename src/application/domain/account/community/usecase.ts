@@ -33,7 +33,7 @@ export default class CommunityUseCase {
     const res = await this.communityService.fetchCommunities(ctx, { filter, sort, cursor }, take);
     const hasNextPage = res.length > take;
     const data: GqlCommunity[] = res.slice(0, take).map((record) => CommunityPresenter.get(record));
-    return CommunityPresenter.query(data, hasNextPage);
+    return CommunityPresenter.query(data, hasNextPage, cursor);
   }
 
   async userViewCommunity(

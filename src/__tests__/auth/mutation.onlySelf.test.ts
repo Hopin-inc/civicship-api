@@ -3,6 +3,12 @@ import { registerProductionDependencies } from "@/application/provider";
 import { createApolloTestServer } from "@/__tests__/helper/test-server";
 import request from "supertest";
 import path from "path";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+
+jest.mock("@/presentation/graphql/scalar", () => ({
+  __esModule: true,
+  default: {},
+}));
 
 jest.mock("@/presentation/graphql/schema/esmPath", () => ({
   getESMDirname: jest.fn(() => path.resolve(__dirname, "../../../src/presentation/graphql/schema")),
@@ -11,6 +17,8 @@ jest.mock("@/presentation/graphql/schema/esmPath", () => ({
 jest.mock("@/application/domain/utils", () => ({
   getCurrentUserId: jest.fn(() => "user-1"),
 }));
+
+let issuer: PrismaClientIssuer;
 
 const queries = {
   userDeleteMe: `
@@ -102,11 +110,17 @@ const mockIdentityUseCase = {
 const mockMembershipUseCase = {
   userAcceptMyInvitation: jest.fn().mockResolvedValue({
     __typename: "MembershipSetInvitationStatusSuccess",
-    membership: { user: { id: "user-1" }, community: { id: "community-1" } },
+    membership: {
+      user: { id: "user-1" },
+      community: { id: "community-1" },
+    },
   }),
   userDenyMyInvitation: jest.fn().mockResolvedValue({
     __typename: "MembershipSetInvitationStatusSuccess",
-    membership: { user: { id: "user-1" }, community: { id: "community-1" } },
+    membership: {
+      user: { id: "user-1" },
+      community: { id: "community-1" },
+    },
   }),
   memberWithdrawCommunity: jest.fn().mockResolvedValue({
     __typename: "MembershipWithdrawSuccess",
@@ -128,6 +142,7 @@ describe("Self-only mutations - AuthZ", () => {
   beforeAll(() => {
     container.reset();
     registerProductionDependencies();
+    issuer = container.resolve(PrismaClientIssuer);
     container.register("IdentityUseCase", { useValue: mockIdentityUseCase });
     container.register("MembershipUseCase", { useValue: mockMembershipUseCase });
     container.register("ReservationUseCase", { useValue: mockReservationUseCase });
@@ -137,7 +152,12 @@ describe("Self-only mutations - AuthZ", () => {
     jest.clearAllMocks();
   });
 
-  const runTest = (name: string, query: string, vars: Record<string, unknown>, useCaseFn: jest.Mock) => {
+  const runTest = (
+    name: string,
+    query: string,
+    vars: Record<string, unknown>,
+    useCaseFn: jest.Mock,
+  ) => {
     it.each([
       ["same user", "user-1", true],
       ["different user", "user-2", false],
@@ -148,6 +168,7 @@ describe("Self-only mutations - AuthZ", () => {
         hasPermissions: {
           self: [{ userId: "user-1" }],
         },
+        issuer,
       };
 
       const app = await createApolloTestServer(context);

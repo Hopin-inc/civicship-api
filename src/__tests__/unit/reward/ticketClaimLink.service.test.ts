@@ -73,6 +73,42 @@ describe("TicketClaimLinkService", () => {
       expect(result).toBe(validLink);
       expect(mockRepository.find).toHaveBeenCalledWith(ctx, claimLinkId);
     });
+
+    it("should return link for null status (edge case)", async () => {
+      const linkWithNullStatus = {
+        id: claimLinkId,
+        status: null,
+      };
+
+      mockRepository.find.mockResolvedValue(linkWithNullStatus);
+
+      const result = await service.validateBeforeClaim(ctx, claimLinkId);
+      expect(result).toBe(linkWithNullStatus);
+    });
+
+    it("should return link for undefined status (edge case)", async () => {
+      const linkWithUndefinedStatus = {
+        id: claimLinkId,
+        status: undefined,
+      };
+
+      mockRepository.find.mockResolvedValue(linkWithUndefinedStatus);
+
+      const result = await service.validateBeforeClaim(ctx, claimLinkId);
+      expect(result).toBe(linkWithUndefinedStatus);
+    });
+
+    it("should return link for invalid status values (edge case)", async () => {
+      const linkWithInvalidStatus = {
+        id: claimLinkId,
+        status: "INVALID_STATUS" as any,
+      };
+
+      mockRepository.find.mockResolvedValue(linkWithInvalidStatus);
+
+      const result = await service.validateBeforeClaim(ctx, claimLinkId);
+      expect(result).toBe(linkWithInvalidStatus);
+    });
   });
 
   describe("markAsClaimed", () => {

@@ -8,13 +8,13 @@ import {
 import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
 
 export default class CommunityPresenter {
-  static query(r: GqlCommunity[], hasNextPage: boolean): GqlCommunitiesConnection {
+  static query(r: GqlCommunity[], hasNextPage: boolean, cursor?: string): GqlCommunitiesConnection {
     return {
       __typename: "CommunitiesConnection",
       totalCount: r.length,
       pageInfo: {
         hasNextPage,
-        hasPreviousPage: true,
+        hasPreviousPage: !!cursor,
         startCursor: r[0]?.id,
         endCursor: r.length ? r[r.length - 1].id : undefined,
       },

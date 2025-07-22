@@ -28,7 +28,9 @@ describe("WalletService", () => {
   let mockConverter: MockWalletConverter;
   let walletService: WalletService;
 
-  const mockCtx = {} as IContext;
+  const mockCtx = {
+    issuer: { public: jest.fn((ctx, callback) => callback({})) },
+  } as unknown as IContext;
   const mockTx = {} as Prisma.TransactionClient;
   const walletId = "wallet-123";
   const communityId = "community-456";
@@ -59,6 +61,7 @@ describe("WalletService", () => {
 
     container.register("WalletRepository", { useValue: mockRepository });
     container.register("WalletConverter", { useValue: mockConverter });
+    container.register("TransactionService", { useValue: { refreshCurrentPoint: jest.fn() } });
 
     walletService = container.resolve(WalletService);
   });
@@ -231,6 +234,105 @@ describe("WalletService", () => {
       expect(result).toEqual(memberWallet);
     });
   });
+
+  describe("refreshCurrentPointViewIfNotExist error handling", () => {
+    it("should handle ctx.issuer.public() failure gracefully", async () => {
+      const walletWithNullView = {
+        id: "wallet-1",
+        currentPointView: null
+      } as any;
+
+      const issuerError = new Error("Issuer service unavailable");
+      (mockCtx.issuer.public as jest.Mock).mockRejectedValue(issuerError);
+
+      mockRepository.findFirstExistingMemberWallet.mockResolvedValue(walletWithNullView);
+
+      await expect(
+        walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1")
+      ).rejects.toThrow("Issuer service unavailable");
+    });
+
+    it("should handle ctx.issuer.public() with transaction callback error", async () => {
+      const walletWithNullView = {
+        id: "wallet-1", 
+        currentPointView: null
+      } as any;
+
+      const mockTransactionService = container.resolve("TransactionService") as any;
+      mockTransactionService.refreshCurrentPoint.mockRejectedValue(
+        new Error("Transaction refresh failed")
+      );
+
+      (mockCtx.issuer.public as jest.Mock).mockImplementation(async (ctx, callback) => {
+        return await callback({});
+      });
+
+      mockRepository.findFirstExistingMemberWallet.mockResolvedValue(walletWithNullView);
+
+      await expect(
+        walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1")
+      ).rejects.toThrow("Transaction refresh failed");
+    });
+
+    it("should not call issuer.public when currentPointView exists", async () => {
+      const walletWithView = {
+        id: "wallet-1",
+        currentPointView: { currentPoint: BigInt(1000) }
+      } as any;
+
+      mockRepository.findFirstExistingMemberWallet.mockResolvedValue(walletWithView);
+
+      const result = await walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1");
+
+      expect(mockCtx.issuer.public).not.toHaveBeenCalled();
+      expect(result).toBe(walletWithView);
+    });
+
+    it("should handle retry logic when refresh succeeds", async () => {
+      const walletWithNullView = {
+        id: "wallet-1",
+        currentPointView: null
+      } as any;
+
+      const walletWithView = {
+        id: "wallet-1", 
+        currentPointView: { currentPoint: BigInt(1000) }
+      } as any;
+
+      mockRepository.findFirstExistingMemberWallet
+        .mockResolvedValueOnce(walletWithNullView)
+        .mockResolvedValueOnce(walletWithView);
+
+      (mockCtx.issuer.public as jest.Mock).mockResolvedValue(undefined);
+      const mockTransactionService = container.resolve("TransactionService") as any;
+      mockTransactionService.refreshCurrentPoint.mockResolvedValue(undefined);
+
+      const result = await walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1");
+
+      expect(mockRepository.findFirstExistingMemberWallet).toHaveBeenCalledTimes(2);
+      expect(result).toBe(walletWithView);
+    });
+
+    it("should handle edge case where wallet becomes null after refresh", async () => {
+      const walletWithNullView = {
+        id: "wallet-1",
+        currentPointView: null
+      } as any;
+
+      mockRepository.findFirstExistingMemberWallet
+        .mockResolvedValueOnce(walletWithNullView)
+        .mockResolvedValueOnce(null);
+
+      (mockCtx.issuer.public as jest.Mock).mockResolvedValue(undefined);
+      const mockTransactionService = container.resolve("TransactionService") as any;
+      mockTransactionService.refreshCurrentPoint.mockResolvedValue(undefined);
+
+      await expect(
+        walletService.findMemberWalletOrThrow(mockCtx, "user-1", "community-1")
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
 
   afterEach(() => {
     jest.restoreAllMocks();

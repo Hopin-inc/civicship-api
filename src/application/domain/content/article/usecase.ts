@@ -62,7 +62,7 @@ export default class ArticleUseCase {
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => ArticlePresenter.get(record));
-    return ArticlePresenter.query(data, hasNextPage);
+    return ArticlePresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewArticle(

@@ -42,7 +42,7 @@ export default class ParticipationUseCase {
     const data: GqlParticipation[] = records
       .slice(0, take)
       .map((record) => ParticipationPresenter.get(record));
-    return ParticipationPresenter.query(data, hasNextPage);
+    return ParticipationPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewParticipation(

@@ -53,7 +53,7 @@ export default class UtilityUseCase {
 
     const hasNextPage = records.length > take;
     const data = records.slice(0, take).map((record) => UtilityPresenter.get(record));
-    return UtilityPresenter.query(data, hasNextPage);
+    return UtilityPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewUtility(
