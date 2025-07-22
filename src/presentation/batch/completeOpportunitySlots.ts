@@ -20,7 +20,7 @@ import { endOfDay } from "date-fns";
  * are marked appropriately in the system.
  */
 export async function completeOpportunitySlots() {
-  const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
+  const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
   logger.info("🕓 Starting opportunity slot auto-completion batch...");
 
