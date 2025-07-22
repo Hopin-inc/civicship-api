@@ -18,13 +18,15 @@ import {
 
 @injectable()
 export default class ReservationValidator {
+  private static readonly RESERVATION_THRESHOLD_DAYS = 1;
+
   validateReservable(
     slot: PrismaOpportunitySlotReserve,
     participantCount: number,
     remainingCapacity: number | undefined,
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
-    this.validateSlotAtLeast7DaysAhead(slot.startsAt);
+    this.validateSlotAdvanceBookingThreshold(slot.startsAt);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
       throw new ReservationFullError(remainingCapacity, participantCount);
@@ -56,7 +58,7 @@ export default class ReservationValidator {
   validateCancellable(slotStartAt: Date) {
     const now = new Date();
     const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setDate(cancelLimit.getDate() - 7);
+    cancelLimit.setDate(cancelLimit.getDate() - 1);
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();
@@ -74,10 +76,11 @@ export default class ReservationValidator {
     }
   }
 
-  private validateSlotAtLeast7DaysAhead(startsAt: Date) {
+  private validateSlotAdvanceBookingThreshold(startsAt: Date) {
     const now = new Date();
-    const sevenDaysLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    if (startsAt.getTime() < sevenDaysLater.getTime()) {
+    const thresholdDate = new Date();
+    thresholdDate.setDate(now.getDate() + ReservationValidator.RESERVATION_THRESHOLD_DAYS);
+    if (startsAt.getTime() < thresholdDate.getTime()) {
       throw new ReservationAdvanceBookingRequiredError();
     }
   }
