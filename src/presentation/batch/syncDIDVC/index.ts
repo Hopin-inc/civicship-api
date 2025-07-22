@@ -43,13 +43,3 @@ export async function syncDIDVC() {
     logger.error("💥 Batch process error:", error);
   }
 }
-
-syncDIDVC()
-  .then(() => {
-    console.log("✅ Done.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("❌ Error occurred:", err);
-    process.exit(1);
-  });
