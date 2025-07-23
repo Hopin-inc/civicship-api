@@ -421,17 +421,11 @@ export const OpportunityFactory = defineOpportunityFactory.withTransientFields<{
           PublishStatus.PRIVATE,
         ]),
       requireApproval: true,
-      feeRequired: randNumber({ min: 1000, max: 5000 }),
-      pointsToEarn: 0,
+      feeRequired: randNumber({ min: 0, max: 5000 }),
+      pointsToEarn: randNumber({ min: 0, max: 5000 }),
+      pointsRequired: randNumber({ min: 0, max: 5000 }),
       category:
-        transientCategory ??
-        rand([
-          OpportunityCategory.ACTIVITY,
-          OpportunityCategory.ACTIVITY,
-          OpportunityCategory.ACTIVITY,
-          OpportunityCategory.ACTIVITY,
-          OpportunityCategory.QUEST,
-        ]),
+        transientCategory ?? rand([OpportunityCategory.ACTIVITY, OpportunityCategory.QUEST]),
       community: { connect: { id: community.id } },
       createdByUser: { connect: { id: user.id } },
       place: { connect: { id: place.id } },
