@@ -349,7 +349,7 @@ Table t_reservations {
   opportunitySlot t_opportunity_slots [not null]
   comment String
   status ReservationStatus [not null, default: 'APPLIED']
-  participantCountWithPoint Int [not null]
+  participantCountWithPoint Int [not null, default: 0]
   participations t_participations [not null]
   createdBy String
   createdByUser t_users

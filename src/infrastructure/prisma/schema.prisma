@@ -739,7 +739,7 @@ model Reservation {
 
   comment                   String?
   status                    ReservationStatus @default(APPLIED)
-  participantCountWithPoint Int               @map("participant_count_with_point")
+  participantCountWithPoint Int               @default(0) @map("participant_count_with_point")
   participations            Participation[]
 
   createdBy     String? @map("created_by")
