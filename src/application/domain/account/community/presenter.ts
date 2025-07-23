@@ -5,7 +5,10 @@ import {
   GqlCommunityDeleteSuccess,
   GqlCommunityUpdateProfileSuccess,
 } from "@/types/graphql";
-import { PrismaCommunityDetail } from "@/application/domain/account/community/data/type";
+import {
+  PrismaCommunityCreateDetail,
+  PrismaCommunityDetail,
+} from "@/application/domain/account/community/data/type";
 
 export default class CommunityPresenter {
   static query(r: GqlCommunity[], hasNextPage: boolean, cursor?: string): GqlCommunitiesConnection {
@@ -41,10 +44,10 @@ export default class CommunityPresenter {
     };
   }
 
-  static create(r: PrismaCommunityDetail): GqlCommunityCreateSuccess {
+  static create(r: PrismaCommunityCreateDetail): GqlCommunityCreateSuccess {
     return {
       __typename: "CommunityCreateSuccess",
-      community: this.get(r),
+      community: r,
     };
   }
 
