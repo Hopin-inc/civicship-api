@@ -111,14 +111,14 @@ function getTransferDirection(reason: TransactionReason): TransferDirection {
   switch (reason) {
     case TransactionReason.ONBOARDING:
     case TransactionReason.GRANT:
+    case TransactionReason.OPPORTUNITY_RESERVATION_CANCELED:
+    case TransactionReason.OPPORTUNITY_RESERVATION_REJECTED:
       return TransferDirection.COMMUNITY_TO_MEMBER;
     case TransactionReason.POINT_REWARD:
     case TransactionReason.TICKET_PURCHASED:
     case TransactionReason.TICKET_REFUNDED:
     case TransactionReason.DONATION:
     case TransactionReason.OPPORTUNITY_RESERVATION_CREATED:
-    case TransactionReason.OPPORTUNITY_RESERVATION_CANCELED:
-    case TransactionReason.OPPORTUNITY_RESERVATION_REJECTED:
       return TransferDirection.MEMBER_TO_COMMUNITY;
     default:
       throw new ValidationError(`Unsupported TransactionReason`, [reason]);
