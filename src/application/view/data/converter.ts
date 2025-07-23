@@ -16,9 +16,10 @@ export default class ViewConverter {
   ): Prisma.ParticipationWhereInput {
     const conditions: Prisma.ParticipationWhereInput[] = [{ userId, communityId }];
 
-    if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
-      conditions.push({ communityId: { in: filter.communityIds } });
-    }
+    // MEMO: 複数コミュニティ跨る際に復旧
+    // if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
+    //   conditions.push({ communityId: { in: filter.communityIds } });
+    // }
 
     if (filter?.dateRange) {
       conditions.push(this.dateRangeConditionForParticipation(filter.dateRange));
@@ -58,9 +59,10 @@ export default class ViewConverter {
       { communityId },
     ];
 
-    if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
-      conditions.push({ communityId: { in: filter.communityIds } });
-    }
+    // MEMO: 複数コミュニティ跨る際に復旧
+    // if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
+    //   conditions.push({ communityId: { in: filter.communityIds } });
+    // }
 
     if (filter?.dateRange) {
       conditions.push(this.dateRangeConditionForArticle(filter.dateRange));
