@@ -58,6 +58,24 @@ export default class TransactionConverter {
     };
   }
 
+  reservationCreated(
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    createdBy: string,
+    reservationId: string,
+  ): Prisma.TransactionCreateInput {
+    return {
+      reason: TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
+      fromWallet: { connect: { id: fromWalletId } },
+      fromPointChange: transferPoints,
+      toWallet: { connect: { id: toWalletId } },
+      toPointChange: transferPoints,
+      createdByUser: { connect: { id: createdBy } },
+      reservation: { connect: { id: reservationId } },
+    };
+  }
+
   giveRewardPoint(
     fromWalletId: string,
     toWalletId: string,

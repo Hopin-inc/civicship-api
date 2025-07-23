@@ -73,6 +73,31 @@ export default class TransactionService implements ITransactionService {
     return transaction;
   }
 
+  async reservationCreated(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    reservationId: string,
+  ): Promise<PrismaTransactionDetail> {
+    // Walletの存在確認
+    const fromWallet = await tx.wallet.findUnique({ where: { id: fromWalletId } });
+    const toWallet = await tx.wallet.findUnique({ where: { id: toWalletId } });
+
+    if (!fromWallet) {
+      throw new Error(`From wallet not found: ${fromWalletId}`);
+    }
+    if (!toWallet) {
+      throw new Error(`To wallet not found: ${toWalletId}`);
+    }
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.reservationCreated(fromWalletId, toWalletId, transferPoints, currentUserId, reservationId);
+    const transaction = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
+    return transaction;
+  }
+
   async giveRewardPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,

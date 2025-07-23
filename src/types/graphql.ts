@@ -2005,6 +2005,7 @@ export type GqlReservation = {
   histories?: Maybe<Array<GqlReservationHistory>>;
   id: Scalars['ID']['output'];
   opportunitySlot?: Maybe<GqlOpportunitySlot>;
+  participantCountWithPoints?: Maybe<Scalars['Int']['output']>;
   participations?: Maybe<Array<GqlParticipation>>;
   status: GqlReservationStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -2019,6 +2020,7 @@ export type GqlReservationCreateInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
   opportunitySlotId: Scalars['ID']['input'];
   otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  participantCountWithPoints?: InputMaybe<Scalars['Int']['input']>;
   paymentMethod: GqlReservationPaymentMethod;
   ticketIdsIfNeed?: InputMaybe<Array<Scalars['ID']['input']>>;
   totalParticipantCount: Scalars['Int']['input'];
@@ -2409,6 +2411,7 @@ export type GqlTransaction = {
   id: Scalars['ID']['output'];
   participation?: Maybe<GqlParticipation>;
   reason: GqlTransactionReason;
+  reservation?: Maybe<GqlReservation>;
   ticketStatusHistories?: Maybe<Array<GqlTicketStatusHistory>>;
   toPointChange?: Maybe<Scalars['Int']['output']>;
   toWallet?: Maybe<GqlWallet>;
@@ -2479,6 +2482,9 @@ export const GqlTransactionReason = {
   Donation: 'DONATION',
   Grant: 'GRANT',
   Onboarding: 'ONBOARDING',
+  OpportunityReservationCanceled: 'OPPORTUNITY_RESERVATION_CANCELED',
+  OpportunityReservationCreated: 'OPPORTUNITY_RESERVATION_CREATED',
+  OpportunityReservationRejected: 'OPPORTUNITY_RESERVATION_REJECTED',
   PointIssued: 'POINT_ISSUED',
   PointReward: 'POINT_REWARD',
   TicketPurchased: 'TICKET_PURCHASED',
@@ -4351,6 +4357,7 @@ export type GqlReservationResolvers<ContextType = any, ParentType extends GqlRes
   histories?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
+  participantCountWithPoints?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ReservationStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -4588,6 +4595,7 @@ export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlRes
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participation?: Resolver<Maybe<GqlResolversTypes['Participation']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['TransactionReason'], ParentType, ContextType>;
+  reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType>;
   ticketStatusHistories?: Resolver<Maybe<Array<GqlResolversTypes['TicketStatusHistory']>>, ParentType, ContextType>;
   toPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   toWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;

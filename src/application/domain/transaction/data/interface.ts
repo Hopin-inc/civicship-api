@@ -36,6 +36,15 @@ export interface ITransactionService {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaTransactionDetail>;
 
+  reservationCreated(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    reservationId: string,
+  ): Promise<PrismaTransactionDetail>;
+
   giveRewardPoint(
     ctx: IContext,
     tx: Prisma.TransactionClient,

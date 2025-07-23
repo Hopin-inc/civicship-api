@@ -79,6 +79,8 @@ export default class ReservationUseCase {
     { input }: GqlMutationReservationCreateArgs,
     ctx: IContext,
   ): Promise<GqlReservationCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     const slot = await this.opportunitySlotService.findOpportunitySlotOrThrow(
       ctx,
       input.opportunitySlotId,
@@ -105,6 +107,7 @@ export default class ReservationUseCase {
         tx,
         input.comment,
         communityId,
+        input.participantCountWithPoints,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
@@ -115,6 +118,16 @@ export default class ReservationUseCase {
         requiredUtilities,
         participationIds,
         input.ticketIdsIfNeed,
+      );
+
+      await this.handleReservePoints(
+        ctx,
+        tx,
+        input.participantCountWithPoints ?? 0,
+        opportunity.pointsRequired ?? 0,
+        opportunity.communityId!,
+        currentUserId,
+        reservation.id,
       );
 
       return reservation;
@@ -363,6 +376,38 @@ export default class ReservationUseCase {
         tx,
       ),
     ]);
+  }
+
+  private async handleReservePoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participantCountWithPoints: number,
+    pointsRequired: number,
+    communityId: string,
+    currentUserId: string,
+    reservationId: string,
+  ): Promise<void> {
+    if (participantCountWithPoints === 0) return;
+
+    const transferPoints = pointsRequired * participantCountWithPoints;
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+      ctx,
+      tx,
+      communityId,
+      currentUserId,
+      transferPoints,
+      TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+    );
   }
 }
 
