@@ -170,8 +170,8 @@ export default class OpportunityConverter {
       conditions.push({ articles: { some: { id: { in: filter.articleIds } } } });
     if (filter.requiredUtilityIds?.length)
       conditions.push({ requiredUtilities: { some: { id: { in: filter.requiredUtilityIds } } } });
-    if (filter.pointsToRequired !== undefined)
-      conditions.push({ pointsToRequired: filter.pointsToRequired });
+    if (filter.isReservableWithPoint !== undefined)
+      conditions.push({ pointsRequired: { not: null } });
 
     return conditions;
   }

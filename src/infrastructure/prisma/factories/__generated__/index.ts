@@ -3828,7 +3828,7 @@ type OpportunityFactoryDefineInput = {
     body?: string | null;
     pointsToEarn?: number | null;
     feeRequired?: number | null;
-    pointsToRequired?: boolean | null;
+    pointsRequired?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutOpportunitiesInput;
