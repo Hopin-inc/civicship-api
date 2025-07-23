@@ -387,7 +387,7 @@ export default class ReservationUseCase {
     currentUserId: string,
     reservationId: string,
   ): Promise<void> {
-    if (participantCountWithPoints === 0) return;
+    if (participantCountWithPoints === 0 || !pointsRequired) return;
 
     const transferPoints = pointsRequired * participantCountWithPoints;
 
