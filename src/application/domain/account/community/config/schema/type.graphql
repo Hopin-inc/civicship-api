@@ -1,0 +1,28 @@
+type CommunityConfig {
+    firebaseConfig: CommunityFirebaseConfig
+    lineConfig: CommunityLineConfig
+}
+
+type CommunityFirebaseConfig {
+    tenantId: String
+}
+
+type CommunityLineConfig {
+    channelId: String
+    channelSecret: String
+    accessToken: String
+    liffId: String
+    liffBaseUrl: String
+    richMenus: [CommunityLineRichMenuConfig!]
+}
+
+type CommunityLineRichMenuConfig {
+    type: LineRichMenuType!
+    richMenuId: String!
+}
+
+enum LineRichMenuType {
+    ADMIN
+    USER
+    PUBLIC
+}

@@ -1,0 +1,22 @@
+input CommunityConfigInput {
+    firebaseConfig: CommunityFirebaseConfigInput
+    lineConfig: CommunityLineConfigInput
+}
+
+input CommunityFirebaseConfigInput {
+    tenantId: String!
+}
+
+input CommunityLineConfigInput {
+    channelId: String!
+    channelSecret: String!
+    accessToken: String!
+    liffId: String!
+    liffBaseUrl: String!
+    richMenus: [CommunityLineRichMenuConfigInput!]!
+}
+
+input CommunityLineRichMenuConfigInput {
+    type: LineRichMenuType!
+    richMenuId: String!
+}

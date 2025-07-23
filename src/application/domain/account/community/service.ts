@@ -6,8 +6,7 @@ import {
 import CommunityConverter from "@/application/domain/account/community/data/converter";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { NotFoundError, ValidationError } from "@/errors/graphql";
+import { NotFoundError } from "@/errors/graphql";
 import ImageService from "@/application/domain/content/image/service";
 import { inject, injectable } from "tsyringe";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
@@ -44,12 +43,11 @@ export default class CommunityService {
 
   async createCommunityAndJoinAsOwner(
     ctx: IContext,
+    currentUserId: string,
     input: GqlCommunityCreateInput,
     tx: Prisma.TransactionClient,
   ) {
-    const userId = getCurrentUserId(ctx);
-
-    const { data, image } = this.converter.create(input, userId);
+    const { data, image } = this.converter.create(input, currentUserId);
 
     let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
     if (image) {
@@ -78,7 +76,6 @@ export default class CommunityService {
     tx: Prisma.TransactionClient,
   ) {
     await this.findCommunityOrThrow(ctx, id);
-    validateConnectOrCreatePlacesInput(input);
 
     const { data, image } = this.converter.update(input);
 
@@ -95,17 +92,5 @@ export default class CommunityService {
     };
 
     return await this.repository.update(ctx, id, updateInput, tx);
-  }
-}
-
-function validateConnectOrCreatePlacesInput(input: GqlCommunityUpdateProfileInput): void {
-  if (input.places?.connectOrCreate) {
-    input.places.connectOrCreate.forEach((item) => {
-      if ((item.where && item.create) || (!item.where && !item.create)) {
-        throw new ValidationError(`For each Place, choose only one of "where" or "create."`, [
-          JSON.stringify(input.places.connectOrCreate),
-        ]);
-      }
-    });
   }
 }

@@ -1,5 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { communitySelectDetail } from "@/application/domain/account/community/data/type";
+import {
+  communityCreateSelect,
+  communitySelectDetail,
+} from "@/application/domain/account/community/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import ICommunityRepository from "@/application/domain/account/community/data/interface";
@@ -37,7 +40,7 @@ export default class CommunityRepository implements ICommunityRepository {
   async create(ctx: IContext, data: Prisma.CommunityCreateInput, tx: Prisma.TransactionClient) {
     return tx.community.create({
       data,
-      select: communitySelectDetail,
+      select: communityCreateSelect,
     });
   }
 
