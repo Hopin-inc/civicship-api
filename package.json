@@ -97,7 +97,7 @@
     "@graphql-tools/schema": "^10.0.23",
     "@line/bot-sdk": "^9.9.0",
     "@types/graphql-upload": "^17.0.0",
-    "axios": "^1.9.0",
+    "axios": "^1.11.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dataloader": "^2.2.3",
