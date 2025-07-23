@@ -43,15 +43,16 @@ export default class CommunityResolver {
       const config = parent.config;
       if (!config) return null;
 
-      const lineConfig = config.lineConfig;
       if (!ctx.isAdmin) {
         return {
           ...config,
-          lineConfig: {
-            ...lineConfig,
-            accessToken: null,
-            channelSecret: null,
-          },
+          lineConfig: config.lineConfig
+            ? {
+                ...config.lineConfig,
+                accessToken: null,
+                channelSecret: null,
+              }
+            : null,
           firebaseConfig: null,
         };
       }
