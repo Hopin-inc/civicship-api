@@ -52,8 +52,16 @@ export async function checkReservationParticipationConsistency() {
       });
 
       invalids.forEach((r) => {
+        const expected = EXPECTED_MAP[r.status];
+        if (!r.participations?.length) {
+          logger.error("❌ Reservation has no participations", {
+            reservationId: r.id,
+            reservationStatus: r.status,
+          });
+          return;
+        }
+
         r.participations.forEach((p) => {
-          const expected = EXPECTED_MAP[r.status];
           if (p.status !== expected.status || p.reason !== expected.reason) {
             logger.error("❌ Inconsistent reservation-participation pair", {
               reservationId: r.id,
@@ -61,6 +69,8 @@ export async function checkReservationParticipationConsistency() {
               participationId: p.id,
               actualStatus: p.status,
               actualReason: p.reason,
+              expectedStatus: expected.status,
+              expectedReason: expected.reason,
             });
           }
         });
