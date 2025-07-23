@@ -64,9 +64,10 @@ export default class TransactionConverter {
     transferPoints: number,
     createdBy: string,
     reservationId: string,
+    reason: TransactionReason,
   ): Prisma.TransactionCreateInput {
     return {
-      reason: TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
+      reason,
       fromWallet: { connect: { id: fromWalletId } },
       fromPointChange: transferPoints,
       toWallet: { connect: { id: toWalletId } },

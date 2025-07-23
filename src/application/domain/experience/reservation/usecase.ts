@@ -128,6 +128,7 @@ export default class ReservationUseCase {
         opportunity.communityId!,
         currentUserId,
         reservation.id,
+        TransactionReason.OPPORTUNITY_RESERVATION_CREATED
       );
 
       return reservation;
@@ -168,6 +169,17 @@ export default class ReservationUseCase {
       );
 
       await this.handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
+
+      await this.handleReservePoints(
+        ctx,
+        tx,
+        reservation.participantCountWithPoint ?? 0,
+        reservation.opportunitySlot.opportunity.pointsRequired ?? 0,
+        reservation.opportunitySlot.opportunity.communityId!,
+        currentUserId,
+        reservation.id,
+        TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
+      );
     });
 
     await this.notificationService.pushReservationCanceledMessage(ctx, reservation);
@@ -386,6 +398,7 @@ export default class ReservationUseCase {
     communityId: string,
     currentUserId: string,
     reservationId: string,
+    transactionReason: TransactionReason,
   ): Promise<void> {
     if (participantCountWithPoints === 0 || !pointsRequired) return;
 
@@ -397,7 +410,7 @@ export default class ReservationUseCase {
       communityId,
       currentUserId,
       transferPoints,
-      TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
+      transactionReason,
     );
 
     await this.transactionService.reservationCreated(
@@ -407,6 +420,7 @@ export default class ReservationUseCase {
       toWalletId,
       transferPoints,
       reservationId,
+      transactionReason,
     );
   }
 }

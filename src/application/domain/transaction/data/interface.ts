@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { PrismaTransactionDetail } from "@/application/domain/transaction/data/type";
 import { refreshMaterializedViewCurrentPoints } from "@prisma/client/sql";
@@ -34,6 +34,7 @@ export interface ITransactionService {
     toWalletId: string,
     transferPoints: number,
     tx: Prisma.TransactionClient,
+    reason: TransactionReason,
   ): Promise<PrismaTransactionDetail>;
 
   reservationCreated(
@@ -43,6 +44,7 @@ export interface ITransactionService {
     toWalletId: string,
     transferPoints: number,
     reservationId: string,
+    reason: TransactionReason,
   ): Promise<PrismaTransactionDetail>;
 
   giveRewardPoint(
