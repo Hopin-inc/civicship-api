@@ -19,8 +19,10 @@ export default class ViewConverter {
       {
         userId,
         communityId,
-        opportunitySlot: { opportunity: { community: { id: communityId } } },
-        reservation: { opportunitySlot: { opportunity: { community: { id: communityId } } } },
+        OR: [
+          { opportunitySlot: { opportunity: { community: { id: communityId } } } },
+          { reservation: { opportunitySlot: { opportunity: { community: { id: communityId } } } } },
+        ],
       },
     ];
 
