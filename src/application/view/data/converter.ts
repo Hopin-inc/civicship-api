@@ -14,7 +14,17 @@ export default class ViewConverter {
     communityId: string,
     filter?: GqlPortfolioFilterInput,
   ): Prisma.ParticipationWhereInput {
-    const conditions: Prisma.ParticipationWhereInput[] = [{ userId, communityId }];
+    // MEMO: participationsにcommunityIdが紐付いていない
+    const conditions: Prisma.ParticipationWhereInput[] = [
+      {
+        userId,
+        communityId,
+        OR: [
+          { opportunitySlot: { opportunity: { community: { id: communityId } } } },
+          { reservation: { opportunitySlot: { opportunity: { community: { id: communityId } } } } },
+        ],
+      },
+    ];
 
     // MEMO: 複数コミュニティ跨る際に復旧
     // if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
