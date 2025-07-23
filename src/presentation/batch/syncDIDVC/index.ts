@@ -13,7 +13,7 @@ import NotificationService from "@/application/domain/notification/service";
 export async function syncDIDVC() {
   logger.info("🚀 Starting DID/VC synchronization batch");
 
-  const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
+  const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const client = container.resolve<DIDVCServerClient>("DIDVCServerClient");
   const didService = container.resolve<DIDIssuanceService>("DIDIssuanceService");
   const vcService = container.resolve<VCIssuanceRequestService>("VCIssuanceRequestService");
