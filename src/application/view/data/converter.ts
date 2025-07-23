@@ -18,8 +18,8 @@ export default class ViewConverter {
     const conditions: Prisma.ParticipationWhereInput[] = [
       {
         userId,
-        communityId,
         OR: [
+          { communityId },
           { opportunitySlot: { opportunity: { community: { id: communityId } } } },
           { reservation: { opportunitySlot: { opportunity: { community: { id: communityId } } } } },
         ],
