@@ -9,12 +9,14 @@ import { PrismaTransactionDetail } from "@/application/domain/transaction/data/t
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
+import WalletValidator from "@/application/domain/account/wallet/validator";
 
 @injectable()
 export default class TransactionService implements ITransactionService {
   constructor(
     @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
+    @inject("WalletValidator") private readonly walletValidator: WalletValidator,
   ) {}
 
   async fetchTransactions(
@@ -140,5 +142,39 @@ export default class TransactionService implements ITransactionService {
 
   async refreshCurrentPoint(ctx: IContext, tx: Prisma.TransactionClient) {
     return this.repository.refreshCurrentPoints(ctx, tx);
+  }
+
+  async handleReservePoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participantCountWithPoints: number,
+    pointsRequired: number,
+    communityId: string,
+    userId: string,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (participantCountWithPoints === 0 || !pointsRequired) return;
+
+    const transferPoints = pointsRequired * participantCountWithPoints;
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+      ctx,
+      tx,
+      communityId,
+      userId,
+      transferPoints,
+      transactionReason,
+    );
+
+    await this.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
   }
 }

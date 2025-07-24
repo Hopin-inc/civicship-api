@@ -71,6 +71,17 @@ export interface ITransactionService {
     toWalletId: string,
     transferPoints: number,
   ): Promise<PrismaTransactionDetail>;
+
+  handleReservePoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participantCountWithPoints: number,
+    pointsRequired: number,
+    communityId: string,
+    userId: string,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void>;
 }
 
 export interface ITransactionRepository {
