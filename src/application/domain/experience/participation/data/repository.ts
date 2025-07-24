@@ -90,6 +90,22 @@ export default class ParticipationRepository implements IParticipationRepository
     return tx.participation.createMany({ data, skipDuplicates: true });
   }
 
+  async findManyBySlotAndUsers(
+    ctx: IContext,
+    slotId: string,
+    userIds: string[],
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaParticipationDetail[]> {
+    return tx.participation.findMany({
+      where: {
+        opportunitySlotId: slotId,
+        userId: { in: userIds },
+      },
+      select: participationSelectDetail,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async update(
     ctx: IContext,
     id: string,

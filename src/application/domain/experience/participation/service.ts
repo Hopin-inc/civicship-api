@@ -60,7 +60,10 @@ export default class ParticipationService implements IParticipationService {
     tx: Prisma.TransactionClient,
   ) {
     const createInputs = this.converter.createMany(input, ctx.communityId);
-    return await Promise.all(createInputs.map((d) => this.repository.create(ctx, d, tx)));
+    
+    await this.repository.createMany(ctx, createInputs, tx);
+    
+    return await this.repository.findManyBySlotAndUsers(ctx, input.slotId, input.userIds, tx);
   }
 
   async createParticipation(
