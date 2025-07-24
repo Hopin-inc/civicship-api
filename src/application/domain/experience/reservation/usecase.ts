@@ -169,17 +169,18 @@ export default class ReservationUseCase {
       );
 
       await this.handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
-
+      if (res.opportunitySlot.opportunity.communityId) {
       await this.handleReservePoints(
         ctx,
         tx,
         res.participantCountWithPoint ?? 0,
         res.opportunitySlot.opportunity.pointsRequired ?? 0,
-        res.opportunitySlot.opportunity.communityId!,
+        res.opportunitySlot.opportunity.communityId,
         currentUserId,
         res.id,
         TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
       );
+      }
     });
 
     await this.notificationService.pushReservationCanceledMessage(ctx, reservation);
@@ -275,17 +276,18 @@ export default class ReservationUseCase {
         ParticipationStatusReason.RESERVATION_REJECTED,
         tx,
       );
-
+      if (res.opportunitySlot.opportunity.communityId) {
       await this.handleReservePoints(
         ctx,
         tx,
         res.participantCountWithPoint ?? 0,
         res.opportunitySlot.opportunity.pointsRequired ?? 0,
-        res.opportunitySlot.opportunity.communityId!,
+        res.opportunitySlot.opportunity.communityId,
         currentUserId,
         res.id,
         TransactionReason.OPPORTUNITY_RESERVATION_REJECTED
       );
+    }
 
       rejectedReservation = res;
       return res;
