@@ -81,7 +81,6 @@ export default class OpportunitySlotUseCase {
       const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input, tx);
 
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
-        const reservationIds = slot.reservations?.map((r) => r.id) ?? [];
         const participationIds =
           slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
 
@@ -97,16 +96,15 @@ export default class OpportunitySlotUseCase {
             currentUserId,
             tx,
           ),
-          ...reservationIds.map(async (reservationId) => {
+          ...(slot.reservations?.map(async (reservation) => {
             await this.reservationService.setStatus(
               ctx,
-              reservationId,
+              reservation.id,
               currentUserId,
               ReservationStatus.REJECTED,
               tx,
             );
-            const reservation = slot.reservations?.find((r) => r.id === reservationId);
-            if (reservation && reservation.createdBy && slot.opportunity.communityId) {
+            if (reservation.createdBy && slot.opportunity.communityId) {
               await this.handleReservePoints(
                 ctx,
                 tx,
@@ -114,11 +112,11 @@ export default class OpportunitySlotUseCase {
                 slot.opportunity.pointsRequired ?? 0,
                 slot.opportunity.communityId,
                 reservation.createdBy,
-                reservationId,
+                reservation.id,
                 TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
               );
             }
-          }),
+          }) ?? []),
         ]);
 
         cancelledSlot = slot;
