@@ -106,13 +106,13 @@ export default class OpportunitySlotUseCase {
               tx,
             );
             const reservation = slot.reservations?.find((r) => r.id === reservationId);
-            if (reservation && reservation.createdBy) {
+            if (reservation && reservation.createdBy && slot.opportunity.communityId) {
               await this.handleReservePoints(
                 ctx,
                 tx,
                 reservation.participantCountWithPoint ?? 0,
                 slot.opportunity.pointsRequired ?? 0,
-                slot.opportunity.communityId!,
+                slot.opportunity.communityId,
                 reservation.createdBy,
                 reservationId,
                 TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
