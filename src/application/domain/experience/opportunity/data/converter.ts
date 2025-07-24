@@ -125,8 +125,7 @@ export default class OpportunityConverter {
         ...(Array.isArray(relatedArticleIds) && {
           articles: {
             set: relatedArticleIds
-              .filter((id): id is string => !!id && id.trim() !== "")
-              .map((id) => ({ id })),
+              .filter((id): id is string => !!id?.trim())
           },
         }),
       },
