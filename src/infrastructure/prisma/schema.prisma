@@ -1109,5 +1109,41 @@ model NftWallet {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  nftInstances NftInstance[]
+
   @@map("t_nft_wallets")
+}
+
+model NftToken {
+  id        String    @id @default(cuid())
+  address   String    @unique
+  name      String?
+  symbol    String?
+  type      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  nftInstances NftInstance[]
+
+  @@map("t_nft_tokens")
+}
+
+model NftInstance {
+  id          String    @id @default(cuid())
+  instanceId  String    @map("instance_id")
+  name        String?
+  description String?
+  imageUrl    String?   @map("image_url")
+  json        Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  nftWalletId String    @map("nft_wallet_id")
+  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
+
+  nftTokenId String?   @map("nft_token_id")
+  nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
+
+  @@unique([nftWalletId, instanceId])
+  @@map("t_nft_instances")
 }
