@@ -52,6 +52,23 @@ export default class EvaluationService {
     return this.repository.create(ctx, data, tx);
   }
 
+  async bulkCreateEvaluations(
+    ctx: IContext,
+    evaluationItems: Array<{
+      participationId: string;
+      status: EvaluationStatus;
+      comment?: string;
+    }>,
+    currentUserId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaEvaluation[]> {
+    const evaluationInputs = this.converter.createManyInputs(evaluationItems, currentUserId);
+    await this.repository.createMany(ctx, evaluationInputs, tx);
+    
+    const participationIds = evaluationItems.map(item => item.participationId);
+    return await this.repository.findManyByParticipationIds(ctx, participationIds, tx);
+  }
+
   validateParticipationHasOpportunity(evaluation: PrismaEvaluation): {
     participation: NonNullable<PrismaEvaluation["participation"]>;
     opportunity: NonNullable<

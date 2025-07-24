@@ -268,4 +268,19 @@ export default class TestDataSourceHelper {
   static async findAllParticipation() {
     return this.db.participation.findMany({});
   }
+
+  // ======== VcIssuanceRequest =========
+  static async findAllVCIssuanceRequests() {
+    return this.db.vcIssuanceRequest.findMany({
+      include: { 
+        evaluation: true, 
+        user: true 
+      },
+    });
+  }
+
+  // ======== Identity =========
+  static async createIdentity(data: Prisma.IdentityCreateInput) {
+    return this.db.identity.create({ data });
+  }
 }
