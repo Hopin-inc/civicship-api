@@ -105,7 +105,7 @@ export default class OpportunitySlotUseCase {
               tx,
             );
             if (reservation.createdBy && slot.opportunity.communityId) {
-              await this.transactionService.handleReservePoints(
+              await this.handleReservePoints(
                 ctx,
                 tx,
                 reservation.participantCountWithPoint ?? 0,
@@ -176,5 +176,39 @@ export default class OpportunitySlotUseCase {
    */
   async isSlotFullyEvaluated(slotId: string, ctx: IContext): Promise<boolean> {
     return this.service.isSlotFullyEvaluated(ctx, slotId);
+  }
+
+  private async handleReservePoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participantCountWithPoints: number,
+    pointsRequired: number,
+    communityId: string,
+    currentUserId: string,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (participantCountWithPoints === 0 || !pointsRequired) return;
+
+    const transferPoints = pointsRequired * participantCountWithPoints;
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+      ctx,
+      tx,
+      communityId,
+      currentUserId,
+      transferPoints,
+      transactionReason,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
   }
 }

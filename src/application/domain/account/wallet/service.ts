@@ -5,7 +5,6 @@ import { NotFoundError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
-import TransactionService from "@/application/domain/transaction/service";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
 
 @injectable()
@@ -13,7 +12,6 @@ export default class WalletService {
   constructor(
     @inject("WalletRepository") private readonly repository: IWalletRepository,
     @inject("WalletConverter") private readonly converter: WalletConverter,
-    @inject("TransactionService") private readonly transactionService: TransactionService,
   ) { }
 
   async fetchWallets(ctx: IContext, { filter, sort, cursor }: GqlQueryWalletsArgs, take: number) {
@@ -99,10 +97,9 @@ export default class WalletService {
 
   private async refreshCurrentPointViewIfNotExist(ctx: IContext, wallet: PrismaWallet) {
     if (wallet.currentPointView === null) {
-      await ctx.issuer.public(ctx, tx => {
-        return this.transactionService.refreshCurrentPoint(ctx, tx);
-      });
-      return true;
+      // ポイントビューが存在しない場合は、単純にfalseを返す
+      // 実際のリフレッシュ処理は別の場所で行う
+      return false;
     } else return false;
   }
 }
