@@ -118,8 +118,8 @@ export default class OpportunityConverter {
         ...(Array.isArray(requiredUtilityIds) && {
           requiredUtilities: {
             set: requiredUtilityIds
-              .filter((id): id is string => !!id && id.trim() !== "")
-              .map((id) => ({ id })),
+              .filter((id): id is string => !!id?.trim())
+
           },
         }),
         ...(Array.isArray(relatedArticleIds) && {
