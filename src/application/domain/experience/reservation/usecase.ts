@@ -79,6 +79,8 @@ export default class ReservationUseCase {
     { input }: GqlMutationReservationCreateArgs,
     ctx: IContext,
   ): Promise<GqlReservationCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     const slot = await this.opportunitySlotService.findOpportunitySlotOrThrow(
       ctx,
       input.opportunitySlotId,
@@ -105,6 +107,7 @@ export default class ReservationUseCase {
         tx,
         input.comment,
         communityId,
+        input.participantCountWithPoints,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
@@ -115,6 +118,17 @@ export default class ReservationUseCase {
         requiredUtilities,
         participationIds,
         input.ticketIdsIfNeed,
+      );
+
+      await this.handleReservePoints(
+        ctx,
+        tx,
+        input.participantCountWithPoints ?? 0,
+        opportunity.pointsRequired ?? 0,
+        opportunity.communityId!,
+        currentUserId,
+        reservation.id,
+        TransactionReason.OPPORTUNITY_RESERVATION_CREATED
       );
 
       return reservation;
@@ -155,6 +169,17 @@ export default class ReservationUseCase {
       );
 
       await this.handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
+
+      await this.handleReservePoints(
+        ctx,
+        tx,
+        reservation.participantCountWithPoint ?? 0,
+        reservation.opportunitySlot.opportunity.pointsRequired ?? 0,
+        reservation.opportunitySlot.opportunity.communityId!,
+        currentUserId,
+        reservation.id,
+        TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
+      );
     });
 
     await this.notificationService.pushReservationCanceledMessage(ctx, reservation);
@@ -363,6 +388,40 @@ export default class ReservationUseCase {
         tx,
       ),
     ]);
+  }
+
+  private async handleReservePoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participantCountWithPoints: number,
+    pointsRequired: number,
+    communityId: string,
+    currentUserId: string,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (participantCountWithPoints === 0 || !pointsRequired) return;
+
+    const transferPoints = pointsRequired * participantCountWithPoints;
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+      ctx,
+      tx,
+      communityId,
+      currentUserId,
+      transferPoints,
+      transactionReason,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
   }
 }
 

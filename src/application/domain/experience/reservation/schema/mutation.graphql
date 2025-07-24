@@ -47,6 +47,7 @@ input ReservationCreateInput {
 
     paymentMethod: ReservationPaymentMethod!
     ticketIdsIfNeed: [ID!]
+    participantCountWithPoints: Int
 }
 
 input ReservationCancelInput {

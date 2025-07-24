@@ -207,6 +207,9 @@ DONATION DONATION
 GRANT GRANT
 TICKET_PURCHASED TICKET_PURCHASED
 TICKET_REFUNDED TICKET_REFUNDED
+OPPORTUNITY_RESERVATION_CREATED OPPORTUNITY_RESERVATION_CREATED
+OPPORTUNITY_RESERVATION_CANCELED OPPORTUNITY_RESERVATION_CANCELED
+OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
         }
     
   "t_images" {
@@ -470,6 +473,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String opportunity_slot_id 
     String comment "❓"
     ReservationStatus status 
+    Int participant_count_with_point 
     String created_by "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -600,6 +604,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String to "❓"
     Int to_point_change 
     String participation_id "❓"
+    String reservation_id "❓"
     String created_by "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -809,6 +814,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_reservations" o{--}o "t_participations" : "participations"
     "t_reservations" o|--|o "t_users" : "createdByUser"
     "t_reservations" o{--}o "t_reservation_histories" : "histories"
+    "t_reservations" o{--}o "t_transactions" : "transactions"
     "t_reservation_histories" o|--|| "t_reservations" : "reservation"
     "t_reservation_histories" o|--|| "ReservationStatus" : "enum:status"
     "t_reservation_histories" o|--|o "t_users" : "createdByUser"
@@ -865,6 +871,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o|--|o "t_wallets" : "fromWallet"
     "t_transactions" o|--|o "t_wallets" : "toWallet"
     "t_transactions" o|--|o "t_participations" : "participation"
+    "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_nft_wallets" o|--|| "t_users" : "user"

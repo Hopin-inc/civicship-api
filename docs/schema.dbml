@@ -349,10 +349,12 @@ Table t_reservations {
   opportunitySlot t_opportunity_slots [not null]
   comment String
   status ReservationStatus [not null, default: 'APPLIED']
+  participantCountWithPoint Int [not null, default: 0]
   participations t_participations [not null]
   createdBy String
   createdByUser t_users
   histories t_reservation_histories [not null]
+  transactions t_transactions [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -512,6 +514,8 @@ Table t_transactions {
   toPointChange Int [not null]
   participationId String
   participation t_participations
+  reservationId String
+  reservation t_reservations
   ticketStatusHistory t_ticket_status_histories
   createdBy String
   createdByUser t_users
@@ -814,6 +818,9 @@ Enum TransactionReason {
   GRANT
   TICKET_PURCHASED
   TICKET_REFUNDED
+  OPPORTUNITY_RESERVATION_CREATED
+  OPPORTUNITY_RESERVATION_CANCELED
+  OPPORTUNITY_RESERVATION_REJECTED
 }
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
@@ -927,6 +934,8 @@ Ref: t_transactions.from > t_wallets.id [delete: Set Null]
 Ref: t_transactions.to > t_wallets.id [delete: Set Null]
 
 Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
+
+Ref: t_transactions.reservationId > t_reservations.id [delete: Set Null]
 
 Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
 

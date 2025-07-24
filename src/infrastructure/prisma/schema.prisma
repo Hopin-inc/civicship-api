@@ -737,14 +737,16 @@ model Reservation {
   opportunitySlotId String          @map("opportunity_slot_id")
   opportunitySlot   OpportunitySlot @relation(fields: [opportunitySlotId], references: [id], onDelete: Cascade)
 
-  comment        String?
-  status         ReservationStatus @default(APPLIED)
-  participations Participation[]
+  comment                   String?
+  status                    ReservationStatus @default(APPLIED)
+  participantCountWithPoint Int               @default(0) @map("participant_count_with_point")
+  participations            Participation[]
 
   createdBy     String? @map("created_by")
   createdByUser User?   @relation(fields: [createdBy], references: [id], onDelete: SetNull)
 
-  histories ReservationHistory[]
+  histories    ReservationHistory[]
+  transactions Transaction[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1064,6 +1066,9 @@ model Transaction {
   participationId String?        @map("participation_id")
   participation   Participation? @relation(fields: [participationId], references: [id], onDelete: SetNull)
 
+  reservationId String?      @map("reservation_id")
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
   ticketStatusHistory TicketStatusHistory?
 
   createdBy     String? @map("created_by")
@@ -1086,6 +1091,10 @@ enum TransactionReason {
 
   TICKET_PURCHASED
   TICKET_REFUNDED
+
+  OPPORTUNITY_RESERVATION_CREATED
+  OPPORTUNITY_RESERVATION_CANCELED
+  OPPORTUNITY_RESERVATION_REJECTED
 }
 
 // ------------------------------ API Key Domain ------------------------------
