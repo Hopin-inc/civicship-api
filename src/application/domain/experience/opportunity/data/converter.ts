@@ -112,17 +112,21 @@ export default class OpportunityConverter {
     return {
       data: {
         ...prop,
-        ...(placeId && {
+        ...(!!placeId?.trim() && {
           place: { connect: { id: placeId } },
         }),
-        ...(requiredUtilityIds !== undefined && {
+        ...(Array.isArray(requiredUtilityIds) && {
           requiredUtilities: {
-            set: requiredUtilityIds.map((id) => ({ id })),
+            set: requiredUtilityIds
+              .filter((id): id is string => !!id && id.trim() !== "")
+              .map((id) => ({ id })),
           },
         }),
-        ...(relatedArticleIds !== undefined && {
+        ...(Array.isArray(relatedArticleIds) && {
           articles: {
-            set: relatedArticleIds.map((id) => ({ id })),
+            set: relatedArticleIds
+              .filter((id): id is string => !!id && id.trim() !== "")
+              .map((id) => ({ id })),
           },
         }),
       },
