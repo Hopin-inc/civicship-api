@@ -112,8 +112,8 @@ export default class OpportunityConverter {
     return {
       data: {
         ...prop,
-        ...(!!placeId?.trim() && {
-          place: { connect: { id: placeId } },
+        ...(placeId?.trim() && {
+          place: { connect: { id: placeId.trim() } },
         }),
         ...(Array.isArray(requiredUtilityIds) && {
           requiredUtilities: {
