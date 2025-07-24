@@ -152,7 +152,7 @@ export default class ReservationUseCase {
     this.reservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
 
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      await this.reservationService.setStatus(
+      const res = await this.reservationService.setStatus(
         ctx,
         reservation.id,
         currentUserId,
@@ -173,11 +173,11 @@ export default class ReservationUseCase {
       await this.handleReservePoints(
         ctx,
         tx,
-        reservation.participantCountWithPoint ?? 0,
-        reservation.opportunitySlot.opportunity.pointsRequired ?? 0,
-        reservation.opportunitySlot.opportunity.communityId!,
+        res.participantCountWithPoint ?? 0,
+        res.opportunitySlot.opportunity.pointsRequired ?? 0,
+        res.opportunitySlot.opportunity.communityId!,
         currentUserId,
-        reservation.id,
+        res.id,
         TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
       );
     });
@@ -274,6 +274,17 @@ export default class ReservationUseCase {
         ParticipationStatus.NOT_PARTICIPATING,
         ParticipationStatusReason.RESERVATION_REJECTED,
         tx,
+      );
+
+      await this.handleReservePoints(
+        ctx,
+        tx,
+        res.participantCountWithPoint ?? 0,
+        res.opportunitySlot.opportunity.pointsRequired ?? 0,
+        res.opportunitySlot.opportunity.communityId!,
+        currentUserId,
+        res.id,
+        TransactionReason.OPPORTUNITY_RESERVATION_REJECTED
       );
 
       rejectedReservation = res;

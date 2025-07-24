@@ -14,13 +14,15 @@ import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
+import { OpportunitySlotHostingStatus, Prisma, ReservationStatus, TransactionReason } from "@prisma/client";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import NotificationService from "@/application/domain/notification/service";
 import { inject, injectable } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import ReservationService from "@/application/domain/experience/reservation/service";
+import WalletValidator from "../../account/wallet/validator";
+import { ITransactionService } from "../../transaction/data/interface";
 
 @injectable()
 export default class OpportunitySlotUseCase {
@@ -31,6 +33,8 @@ export default class OpportunitySlotUseCase {
     private readonly participationStatusHistoryService: ParticipationStatusHistoryService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("ReservationService") private readonly reservationService: ReservationService,
+    @inject("WalletValidator") private readonly walletValidator: WalletValidator,
+    @inject("TransactionService") private readonly transactionService: ITransactionService,
   ) {}
 
   async visitorBrowseOpportunitySlots(
@@ -93,15 +97,28 @@ export default class OpportunitySlotUseCase {
             currentUserId,
             tx,
           ),
-          ...reservationIds.map((reservationId) =>
-            this.reservationService.setStatus(
+          ...reservationIds.map(async (reservationId) => {
+            await this.reservationService.setStatus(
               ctx,
               reservationId,
               currentUserId,
               ReservationStatus.REJECTED,
               tx,
-            ),
-          ),
+            );
+            const reservation = slot.reservations?.find((r) => r.id === reservationId);
+            if (reservation && reservation.createdBy) {
+              await this.handleReservePoints(
+                ctx,
+                tx,
+                reservation.participantCountWithPoint ?? 0,
+                slot.opportunity.pointsRequired ?? 0,
+                slot.opportunity.communityId!,
+                reservation.createdBy,
+                reservationId,
+                TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
+              );
+            }
+          }),
         ]);
 
         cancelledSlot = slot;
@@ -161,5 +178,39 @@ export default class OpportunitySlotUseCase {
    */
   async isSlotFullyEvaluated(slotId: string, ctx: IContext): Promise<boolean> {
     return this.service.isSlotFullyEvaluated(ctx, slotId);
+  }
+
+  private async handleReservePoints(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    participantCountWithPoints: number,
+    pointsRequired: number,
+    communityId: string,
+    currentUserId: string,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (participantCountWithPoints === 0 || !pointsRequired) return;
+
+    const transferPoints = pointsRequired * participantCountWithPoints;
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+      ctx,
+      tx,
+      communityId,
+      currentUserId,
+      transferPoints,
+      transactionReason,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
   }
 }
