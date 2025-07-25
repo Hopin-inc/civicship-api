@@ -9,14 +9,12 @@ import { PrismaTransactionDetail } from "@/application/domain/transaction/data/t
 import { GqlQueryTransactionsArgs } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { inject, injectable } from "tsyringe";
-import WalletValidator from "@/application/domain/account/wallet/validator";
 
 @injectable()
 export default class TransactionService implements ITransactionService {
   constructor(
     @inject("TransactionRepository") private readonly repository: ITransactionRepository,
     @inject("TransactionConverter") private readonly converter: TransactionConverter,
-    @inject("WalletValidator") private readonly walletValidator: WalletValidator,
   ) {}
 
   async fetchTransactions(

@@ -107,7 +107,7 @@ export default class ReservationUseCase {
         tx,
         input.comment,
         communityId,
-        input.participantCountWithPoints,
+        input.participantCountWithPoint,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
@@ -123,7 +123,7 @@ export default class ReservationUseCase {
       await this.handleReservePoints(
         ctx,
         tx,
-        input.participantCountWithPoints ?? 0,
+        input.participantCountWithPoint ?? 0,
         opportunity.pointsRequired ?? 0,
         opportunity.communityId!,
         currentUserId,

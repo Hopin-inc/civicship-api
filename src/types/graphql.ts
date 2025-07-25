@@ -2005,7 +2005,7 @@ export type GqlReservation = {
   histories?: Maybe<Array<GqlReservationHistory>>;
   id: Scalars['ID']['output'];
   opportunitySlot?: Maybe<GqlOpportunitySlot>;
-  participantCountWithPoints?: Maybe<Scalars['Int']['output']>;
+  participantCountWithPoint?: Maybe<Scalars['Int']['output']>;
   participations?: Maybe<Array<GqlParticipation>>;
   status: GqlReservationStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -2020,7 +2020,7 @@ export type GqlReservationCreateInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
   opportunitySlotId: Scalars['ID']['input'];
   otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
-  participantCountWithPoints?: InputMaybe<Scalars['Int']['input']>;
+  participantCountWithPoint?: InputMaybe<Scalars['Int']['input']>;
   paymentMethod: GqlReservationPaymentMethod;
   ticketIdsIfNeed?: InputMaybe<Array<Scalars['ID']['input']>>;
   totalParticipantCount: Scalars['Int']['input'];
@@ -4357,7 +4357,7 @@ export type GqlReservationResolvers<ContextType = any, ParentType extends GqlRes
   histories?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
-  participantCountWithPoints?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  participantCountWithPoint?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ReservationStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
