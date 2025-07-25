@@ -30,13 +30,13 @@ export default class ViewUseCase {
     const [participations, articles] = await Promise.all([
       this.participationRepository.queryForPortfolio(
         ctx,
-        this.converter.filterParticipation(parent.id, filter),
+        this.converter.filterParticipation(parent.id, ctx.communityId, filter),
         [{ opportunitySlot: { startsAt: sortOrder } }],
         args.first ?? 10,
       ),
       this.articleRepository.queryForPortfolio(
         ctx,
-        this.converter.filterArticle(parent.id, filter),
+        this.converter.filterArticle(parent.id, ctx.communityId, filter),
         [{ publishedAt: sortOrder }],
         args.first ?? 10,
       ),

@@ -18,7 +18,7 @@ import VCIssuanceRequestConverter from "@/application/domain/experience/evaluati
 export async function requestDIDVC() {
   logger.info("🚀 Starting DID & VC request batch");
 
-  const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
+  const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const didService = container.resolve<DIDIssuanceService>("DIDIssuanceService");
   const vcService = container.resolve<VCIssuanceRequestService>("VCIssuanceRequestService");
   const vcConverter = container.resolve<VCIssuanceRequestConverter>("VCIssuanceRequestConverter");

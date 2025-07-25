@@ -11,13 +11,25 @@ import { injectable } from "tsyringe";
 export default class ViewConverter {
   filterParticipation(
     userId: string,
+    communityId: string,
     filter?: GqlPortfolioFilterInput,
   ): Prisma.ParticipationWhereInput {
-    const conditions: Prisma.ParticipationWhereInput[] = [{ userId }];
+    // MEMO: participationsにcommunityIdが紐付いていない
+    const conditions: Prisma.ParticipationWhereInput[] = [
+      {
+        userId,
+        OR: [
+          { communityId },
+          { opportunitySlot: { opportunity: { community: { id: communityId } } } },
+          { reservation: { opportunitySlot: { opportunity: { community: { id: communityId } } } } },
+        ],
+      },
+    ];
 
-    if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
-      conditions.push({ communityId: { in: filter.communityIds } });
-    }
+    // MEMO: 複数コミュニティ跨る際に復旧
+    // if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
+    //   conditions.push({ communityId: { in: filter.communityIds } });
+    // }
 
     if (filter?.dateRange) {
       conditions.push(this.dateRangeConditionForParticipation(filter.dateRange));
@@ -26,25 +38,41 @@ export default class ViewConverter {
     if (filter?.keyword) {
       conditions.push({
         OR: [
-          { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } },
-          { reservation: { opportunitySlot: { opportunity: { title: { contains: filter.keyword, mode: "insensitive" } } } } }
-        ]
+          {
+            opportunitySlot: {
+              opportunity: { title: { contains: filter.keyword, mode: "insensitive" } },
+            },
+          },
+          {
+            reservation: {
+              opportunitySlot: {
+                opportunity: { title: { contains: filter.keyword, mode: "insensitive" } },
+              },
+            },
+          },
+        ],
       });
     }
 
     return { AND: conditions };
   }
 
-  filterArticle(userId: string, filter?: GqlPortfolioFilterInput): Prisma.ArticleWhereInput {
+  filterArticle(
+    userId: string,
+    communityId: string,
+    filter?: GqlPortfolioFilterInput,
+  ): Prisma.ArticleWhereInput {
     const conditions: Prisma.ArticleWhereInput[] = [
       {
         OR: [{ relatedUsers: { some: { id: userId } } }, { authors: { some: { id: userId } } }],
       },
+      { communityId },
     ];
 
-    if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
-      conditions.push({ communityId: { in: filter.communityIds } });
-    }
+    // MEMO: 複数コミュニティ跨る際に復旧
+    // if (Array.isArray(filter?.communityIds) && filter.communityIds.length > 0) {
+    //   conditions.push({ communityId: { in: filter.communityIds } });
+    // }
 
     if (filter?.dateRange) {
       conditions.push(this.dateRangeConditionForArticle(filter.dateRange));
@@ -81,8 +109,8 @@ export default class ViewConverter {
     return {
       OR: [
         { opportunitySlot: { startsAt: condition } },
-        { reservation: { opportunitySlot: { startsAt: condition } } }
-      ]
+        { reservation: { opportunitySlot: { startsAt: condition } } },
+      ],
     };
   }
 

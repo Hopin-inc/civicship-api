@@ -20,7 +20,7 @@ import { endOfDay } from "date-fns";
  * are marked appropriately in the system.
  */
 export async function completeOpportunitySlots() {
-  const issuer = container.resolve<PrismaClientIssuer>("prismaClientIssuer");
+  const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
   logger.info("🕓 Starting opportunity slot auto-completion batch...");
 
@@ -68,16 +68,3 @@ export async function completeOpportunitySlots() {
     logger.error("❌ Error in opportunity slot completion batch:", error);
   }
 }
-
-/**
- * Run the batch script as a CLI entrypoint.
- */
-completeOpportunitySlots()
-  .then(() => {
-    console.log("✅ Done.");
-    process.exit(0);
-  })
-  .catch((err) => {
-    console.error("❌ Error occurred:", err);
-    process.exit(1);
-  });

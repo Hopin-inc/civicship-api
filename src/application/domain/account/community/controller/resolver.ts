@@ -18,7 +18,7 @@ export default class CommunityResolver {
       return this.communityUseCase.userBrowseCommunities(args, ctx);
     },
     community: async (_: unknown, args: GqlQueryCommunityArgs, ctx: IContext) => {
-      return ctx.loaders.community.load(args.id);
+      return this.communityUseCase.userViewCommunity(args, ctx);
     },
   };
 
@@ -39,6 +39,27 @@ export default class CommunityResolver {
   };
 
   Community = {
+    config: async (parent, _: unknown, ctx: IContext) => {
+      const config = parent.config;
+      if (!config) return null;
+
+      if (!ctx.isAdmin) {
+        return {
+          ...config,
+          lineConfig: config.lineConfig
+            ? {
+                ...config.lineConfig,
+                accessToken: null,
+                channelSecret: null,
+              }
+            : null,
+          firebaseConfig: null,
+        };
+      }
+
+      return config;
+    },
+
     image: (parent, _: unknown, ctx: IContext) => {
       return parent.imageId ? ctx.loaders.image.load(parent.imageId) : null;
     },

@@ -49,11 +49,16 @@ export default class CommunityUseCase {
     ctx: IContext,
   ): Promise<GqlCommunityCreatePayload> {
     return ctx.issuer.public(ctx, async (tx) => {
-      const userId = getCurrentUserId(ctx);
-      const community = await this.communityService.createCommunityAndJoinAsOwner(ctx, input, tx);
+      const currentUserId = getCurrentUserId(ctx, input.createdBy);
+      const community = await this.communityService.createCommunityAndJoinAsOwner(
+        ctx,
+        currentUserId,
+        input,
+        tx,
+      );
 
       await this.walletService.createCommunityWallet(ctx, community.id, tx);
-      await this.walletService.createMemberWalletIfNeeded(ctx, userId, community.id, tx);
+      await this.walletService.createMemberWalletIfNeeded(ctx, currentUserId, community.id, tx);
 
       return CommunityPresenter.create(community);
     });

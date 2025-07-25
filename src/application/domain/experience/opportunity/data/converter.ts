@@ -73,6 +73,7 @@ export default class OpportunityConverter {
     data: Omit<Prisma.OpportunityCreateInput, "images">;
     images: GqlImageInput[];
   } => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { images, placeId, slots, createdBy, requiredUtilityIds, relatedArticleIds, ...rest } =
       input;
 
@@ -111,17 +112,19 @@ export default class OpportunityConverter {
     return {
       data: {
         ...prop,
-        ...(placeId && {
+        ...(placeId?.trim() && {
           place: { connect: { id: placeId } },
         }),
-        ...(requiredUtilityIds !== undefined && {
+        ...(requiredUtilityIds && {
           requiredUtilities: {
-            set: requiredUtilityIds.map((id) => ({ id }))
+            set: requiredUtilityIds
+              .filter((id): id is string => !!id?.trim())
+              .map((id) => ({ id })),
           },
         }),
-        ...(relatedArticleIds !== undefined && {
+        ...(relatedArticleIds && {
           articles: {
-            set: relatedArticleIds.map((id) => ({ id }))
+            set: relatedArticleIds.filter((id): id is string => !!id?.trim()).map((id) => ({ id })),
           },
         }),
       },
