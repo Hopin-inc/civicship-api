@@ -28,7 +28,7 @@ import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
 import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
 import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
 import { IReservationService } from "@/application/domain/experience/reservation/data/interface";
@@ -180,6 +180,8 @@ export default class ReservationUseCase {
         res.id,
         TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
       );
+      } else {
+        throw new ValidationError("Cannot process reservation refund: opportunity community information is missing");
       }
     });
 
@@ -287,6 +289,8 @@ export default class ReservationUseCase {
         res.id,
         TransactionReason.OPPORTUNITY_RESERVATION_REJECTED
       );
+      } else {
+        throw new ValidationError("Cannot process reservation refund: reservation creator information is missing");
     }
 
       rejectedReservation = res;

@@ -23,6 +23,7 @@ import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/expe
 import ReservationService from "@/application/domain/experience/reservation/service";
 import WalletValidator from "../../account/wallet/validator";
 import { ITransactionService } from "../../transaction/data/interface";
+import { ValidationError } from "@/errors/graphql";
 
 @injectable()
 export default class OpportunitySlotUseCase {
@@ -115,6 +116,9 @@ export default class OpportunitySlotUseCase {
                 reservation.id,
                 TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
               );
+            } else {
+              // データの不整合を示すエラーを投げる
+              throw new ValidationError("Cannot process reservation refund: reservation creator information is missing");
             }
           }) ?? []),
         ]);
