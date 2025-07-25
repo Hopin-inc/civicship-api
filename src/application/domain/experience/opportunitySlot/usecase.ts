@@ -106,16 +106,26 @@ export default class OpportunitySlotUseCase {
               tx,
             );
             if (reservation.createdBy && slot.opportunity.communityId) {
-              await this.handleReservePoints(
-                ctx,
-                tx,
-                reservation.participantCountWithPoint ?? 0,
-                slot.opportunity.pointsRequired ?? 0,
-                slot.opportunity.communityId,
-                reservation.createdBy,
-                reservation.id,
-                TransactionReason.OPPORTUNITY_RESERVATION_CANCELED
-              );
+              const transferPoints = (slot.opportunity.pointsRequired ?? 0) * (reservation.participantCountWithPoint ?? 0);
+              if (transferPoints > 0) {
+                const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+                  ctx,
+                  tx,
+                  slot.opportunity.communityId,
+                  reservation.createdBy,
+                  transferPoints,
+                  TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
+                );
+                await this.transactionService.reservationCreated(
+                  ctx,
+                  tx,
+                  fromWalletId,
+                  toWalletId,
+                  transferPoints,
+                  reservation.id,
+                  TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
+                );
+              }
             } else {
               // データの不整合を示すエラーを投げる
               throw new ValidationError("Cannot process reservation refund: reservation creator information is missing");
@@ -180,39 +190,5 @@ export default class OpportunitySlotUseCase {
    */
   async isSlotFullyEvaluated(slotId: string, ctx: IContext): Promise<boolean> {
     return this.service.isSlotFullyEvaluated(ctx, slotId);
-  }
-
-  private async handleReservePoints(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    participantCountWithPoints: number,
-    pointsRequired: number,
-    communityId: string,
-    currentUserId: string,
-    reservationId: string,
-    transactionReason: TransactionReason,
-  ): Promise<void> {
-    if (participantCountWithPoints === 0 || !pointsRequired) return;
-
-    const transferPoints = pointsRequired * participantCountWithPoints;
-
-    const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
-      ctx,
-      tx,
-      communityId,
-      currentUserId,
-      transferPoints,
-      transactionReason,
-    );
-
-    await this.transactionService.reservationCreated(
-      ctx,
-      tx,
-      fromWalletId,
-      toWalletId,
-      transferPoints,
-      reservationId,
-      transactionReason,
-    );
   }
 }
