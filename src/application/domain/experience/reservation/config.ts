@@ -8,6 +8,8 @@ export interface ActivityBookingConfig {
 
 // NOTE: 現在はハードコーディングで管理しているが、将来的にカスタムすることが多ければデータベースで管理することを検討
 // TODO: FE にも設定ファイルがあるため、あわせて更新が必要
+// - civicship-portal/src/config/activityBookingConfig.ts
+
 /**
  * Configuration for activity-specific advance booking days
  * Add activity-specific configurations here
@@ -18,7 +20,10 @@ export const ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = {
     // "activity-urgent-123": 1,         // 1 day advance booking
     // "activity-workshop-456": 14,      // 14 days advance booking
     // "activity-special-789": 3,        // 3 days advance booking
-    "cmdhaj5zp009d2fzoon1o5qex": 0,
+    // --- dev 環境での確認用 
+    "cmcak8udp019l8zwh4jvmuomp": 0, // 当日開催直前まで受付
+    "cmcak4qt600lu8zwhdzcuynre": 1, // 1日前まで受付可能
+    "cmcakai1a01jm8zwh7323vpzn": 2, // 2日前まで受付可能
 };
 
 /**
