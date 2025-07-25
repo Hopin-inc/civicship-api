@@ -42,6 +42,7 @@ import { IParticipationService } from "@/application/domain/experience/participa
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import TicketService from "@/application/domain/reward/ticket/service";
 import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
+import WalletService from "@/application/domain/account/wallet/service";
 
 @injectable()
 export default class ReservationUseCase {
@@ -56,6 +57,7 @@ export default class ReservationUseCase {
     private readonly participationStatusHistoryService: ParticipationStatusHistoryService,
     @inject("TicketService") private readonly ticketService: TicketService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
+    @inject("WalletService") private readonly walletService: WalletService,
 
     @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
@@ -122,13 +124,21 @@ export default class ReservationUseCase {
 
       const transferPoints = (opportunity.pointsRequired ?? 0) * (input.participantCountWithPoint ?? 0);
       if (transferPoints > 0) {
-        const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+        const fromWallet = await this.walletService.findMemberWalletOrThrow(
           ctx,
-          tx,
-          opportunity.communityId!,
           currentUserId,
+          opportunity.communityId!,
+        );
+        const toWallet = await this.walletService.findMemberWalletOrThrow(
+          ctx,
+          opportunity.createdBy!,
+          opportunity.communityId!,
+        );
+
+        const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+          fromWallet,
+          toWallet,
           transferPoints,
-          TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
         );
 
         await this.transactionService.reservationCreated(
@@ -183,19 +193,27 @@ export default class ReservationUseCase {
       if (res.opportunitySlot.opportunity.communityId) {
         const transferPoints = (res.opportunitySlot.opportunity.pointsRequired ?? 0) * (res.participantCountWithPoint ?? 0);
         if (transferPoints > 0) {
-          const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+          const fromWallet = await this.walletService.findMemberWalletOrThrow(
             ctx,
-            tx,
-            res.opportunitySlot.opportunity.communityId,
             currentUserId,
+            res.opportunitySlot.opportunity.communityId,
+          );
+          const toWallet = await this.walletService.findMemberWalletOrThrow(
+            ctx,
+            res.opportunitySlot.opportunity.createdBy!,
+            res.opportunitySlot.opportunity.communityId,
+          );
+
+          const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+            fromWallet,
+            toWallet,
             transferPoints,
-            TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
           );
           await this.transactionService.reservationCreated(
             ctx,
             tx,
-            fromWalletId,
             toWalletId,
+            fromWalletId,
             transferPoints,
             res.id,
             TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
@@ -302,19 +320,26 @@ export default class ReservationUseCase {
       if (res.opportunitySlot.opportunity.communityId) {
         const transferPoints = (res.opportunitySlot.opportunity.pointsRequired ?? 0) * (res.participantCountWithPoint ?? 0);
         if (transferPoints > 0) {
-          const { fromWalletId, toWalletId } = await this.walletValidator.validateCommunityMemberTransfer(
+          const fromWallet = await this.walletService.findMemberWalletOrThrow(
             ctx,
-            tx,
-            res.opportunitySlot.opportunity.communityId,
             currentUserId,
+            res.opportunitySlot.opportunity.communityId,
+          );
+          const toWallet = await this.walletService.findMemberWalletOrThrow(
+            ctx,
+            res.opportunitySlot.opportunity.createdBy!,
+            res.opportunitySlot.opportunity.communityId,
+          );
+          const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+            fromWallet,
+            toWallet,
             transferPoints,
-            TransactionReason.OPPORTUNITY_RESERVATION_REJECTED,
           );
           await this.transactionService.reservationCreated(
             ctx,
             tx,
-            fromWalletId,
             toWalletId,
+            fromWalletId,
             transferPoints,
             res.id,
             TransactionReason.OPPORTUNITY_RESERVATION_REJECTED,
