@@ -15,10 +15,10 @@ import {
   GqlOpportunitySlotHostingStatus as OpportunitySlotHostingStatus,
   GqlReservationStatus as ReservationStatus,
 } from "@/types/graphql";
+import { getAdvanceBookingDays } from "@/application/domain/experience/reservation/config";
 
 @injectable()
 export default class ReservationValidator {
-  private static readonly RESERVATION_THRESHOLD_DAYS = 1;
 
   validateReservable(
     slot: PrismaOpportunitySlotReserve,
@@ -26,7 +26,7 @@ export default class ReservationValidator {
     remainingCapacity: number | undefined,
   ) {
     this.validateSlotScheduledAndNotStarted(slot);
-    this.validateSlotAdvanceBookingThreshold(slot.startsAt);
+    this.validateSlotAdvanceBookingThreshold(slot.startsAt, slot.opportunityId);
 
     if (remainingCapacity !== undefined && participantCount > remainingCapacity) {
       throw new ReservationFullError(remainingCapacity, participantCount);
@@ -55,10 +55,21 @@ export default class ReservationValidator {
     return { availableParticipationId: target.id };
   }
 
-  validateCancellable(slotStartAt: Date) {
+  validateCancellable(slotStartAt: Date, opportunityId?: string) {
     const now = new Date();
+    const advanceBookingDays = getAdvanceBookingDays(opportunityId);
+
+    // If advanceBookingDays is 0, cancellation is allowed until the start time
+    if (advanceBookingDays === 0) {
+      if (now.getTime() >= slotStartAt.getTime()) {
+        throw new ReservationCancellationTimeoutError();
+      }
+      return;
+    }
+
+    // Otherwise, use the configured advance booking days
     const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setDate(cancelLimit.getDate() - 1);
+    cancelLimit.setDate(cancelLimit.getDate() - advanceBookingDays);
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();
@@ -76,10 +87,20 @@ export default class ReservationValidator {
     }
   }
 
-  private validateSlotAdvanceBookingThreshold(startsAt: Date) {
+  private validateSlotAdvanceBookingThreshold(startsAt: Date, opportunityId?: string) {
     const now = new Date();
-    const thresholdDate = new Date();
-    thresholdDate.setDate(now.getDate() + ReservationValidator.RESERVATION_THRESHOLD_DAYS);
+    const advanceBookingDays = getAdvanceBookingDays(opportunityId);
+
+    // If advanceBookingDays is 0, booking is allowed until the start time
+    if (advanceBookingDays === 0) {
+      if (now.getTime() >= startsAt.getTime()) {
+        throw new ReservationAdvanceBookingRequiredError();
+      }
+      return;
+    }
+
+    // Otherwise, use the configured advance booking days
+    const thresholdDate = new Date(now.getTime() + (advanceBookingDays * 24 * 60 * 60 * 1000));
     if (startsAt.getTime() < thresholdDate.getTime()) {
       throw new ReservationAdvanceBookingRequiredError();
     }
