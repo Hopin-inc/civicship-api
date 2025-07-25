@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import { 
+import {
   AlreadyStartedReservationError,
   ReservationFullError,
   ReservationNotAcceptedError,
@@ -75,7 +75,7 @@ describe("ReservationValidator", () => {
         validator.validateReservable(slot, 10, 5);
       }).toThrow(ReservationFullError);
     });
-    
+
     it("should throw if booking is within the default advance booking period", () => {
       const slot = {
         hostingStatus: "SCHEDULED" as any,
@@ -87,7 +87,7 @@ describe("ReservationValidator", () => {
         validator.validateReservable(slot, 1, 5);
       }).toThrow(ReservationAdvanceBookingRequiredError);
     });
-    
+
     describe("with custom advance booking days", () => {
       beforeEach(() => {
         jest.spyOn(config, 'getAdvanceBookingDays').mockImplementation((activityId) => {
@@ -104,7 +104,7 @@ describe("ReservationValidator", () => {
       afterEach(() => {
         jest.restoreAllMocks();
       });
-      
+
       it("should pass if booking is within custom advance booking period for specific activity", () => {
         const slot = {
           hostingStatus: "SCHEDULED" as any,
@@ -116,7 +116,7 @@ describe("ReservationValidator", () => {
           validator.validateReservable(slot, 1, 5);
         }).not.toThrow();
       });
-      
+
       it("should throw if booking is within custom advance booking period for specific activity", () => {
         const slot = {
           hostingStatus: "SCHEDULED" as any,
@@ -128,7 +128,7 @@ describe("ReservationValidator", () => {
           validator.validateReservable(slot, 1, 5);
         }).toThrow(ReservationAdvanceBookingRequiredError);
       });
-      
+
       it("should allow booking until start time for activities with 0 advance booking days", () => {
         const slot = {
           hostingStatus: "SCHEDULED" as any,
@@ -244,7 +244,7 @@ describe("ReservationValidator", () => {
         const mockNow = new Date();
         return mockNow.getTime();
       });
-      
+
       const now = new Date(Date.now());
       const exactLimit = new Date(now);
       exactLimit.setDate(exactLimit.getDate() + 7); // デフォルトは7日
@@ -253,7 +253,7 @@ describe("ReservationValidator", () => {
       expect(() => {
         validator.validateCancellable(exactLimit);
       }).not.toThrow();
-      
+
       jest.restoreAllMocks();
     });
 
@@ -272,11 +272,11 @@ describe("ReservationValidator", () => {
       const now = new Date();
       const futureSpringForward = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000)); // 8 days from now
       const futureFallBack = new Date(now.getTime() + (9 * 24 * 60 * 60 * 1000)); // 9 days from now
-      
+
       expect(() => {
         validator.validateCancellable(futureSpringForward);
       }).not.toThrow();
-      
+
       expect(() => {
         validator.validateCancellable(futureFallBack);
       }).not.toThrow();
@@ -294,16 +294,16 @@ describe("ReservationValidator", () => {
       const now = new Date();
       const futureUtcDate = new Date(now.getTime() + (8 * 24 * 60 * 60 * 1000)); // 8 days from now
       const futureLocalDate = new Date(now.getTime() + (9 * 24 * 60 * 60 * 1000)); // 9 days from now
-      
+
       expect(() => {
         validator.validateCancellable(futureUtcDate);
       }).not.toThrow();
-      
+
       expect(() => {
         validator.validateCancellable(futureLocalDate);
       }).not.toThrow();
     });
-    
+
     describe("with custom advance booking days", () => {
       beforeEach(() => {
         jest.spyOn(config, 'getAdvanceBookingDays').mockImplementation((activityId) => {
@@ -320,28 +320,28 @@ describe("ReservationValidator", () => {
       afterEach(() => {
         jest.restoreAllMocks();
       });
-      
+
       it("should pass if cancellation is before custom advance booking days for specific activity", () => {
         const slotStartAt = futureDate(4); // 4日後 (カスタム設定は3日)
         expect(() => {
           validator.validateCancellable(slotStartAt, 'custom-activity-id');
         }).not.toThrow();
       });
-      
+
       it("should throw if cancellation is within custom advance booking days for specific activity", () => {
         const slotStartAt = futureDate(2); // 2日後 (カスタム設定は3日)
         expect(() => {
           validator.validateCancellable(slotStartAt, 'custom-activity-id');
         }).toThrow(ReservationCancellationTimeoutError);
       });
-      
+
       it("should allow cancellation until start time for activities with 0 advance booking days", () => {
         const slotStartAt = futureDate(0.01); // Just slightly in the future
         expect(() => {
           validator.validateCancellable(slotStartAt, 'zero-days-activity-id');
         }).not.toThrow();
       });
-      
+
       it("should throw if cancellation is after start time for activities with 0 advance booking days", () => {
         const slotStartAt = pastDate(0.01); // Just slightly in the past
         expect(() => {

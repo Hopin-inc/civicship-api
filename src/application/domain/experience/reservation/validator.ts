@@ -100,7 +100,8 @@ export default class ReservationValidator {
     }
 
     // Otherwise, use the configured advance booking days
-    const thresholdDate = new Date(now.getTime() + (advanceBookingDays * 24 * 60 * 60 * 1000));
+    const thresholdDate = new Date(now);
+    thresholdDate.setDate(thresholdDate.getDate() + advanceBookingDays);
     if (startsAt.getTime() < thresholdDate.getTime()) {
       throw new ReservationAdvanceBookingRequiredError();
     }
