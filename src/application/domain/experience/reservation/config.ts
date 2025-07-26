@@ -6,30 +6,46 @@ export interface ActivityBookingConfig {
     [activityId: string]: number;
 }
 
-// NOTE: 現在はハードコーディングで管理しているが、将来的にカスタムすることが多ければデータベースで管理することを検討
-// TODO: FE にも設定ファイルがあるため、あわせて更新が必要
-// - civicship-portal/src/config/activityBookingConfig.ts
+// NOTE: 予約受付日数カスタムニーズが今後不明のため、現在は環境変数で管理しているが、多ければデータベースで管理を検討する
 
 /**
- * Configuration for activity-specific advance booking days
- * Add activity-specific configurations here
+ * Default advance booking days for activities without specific configuration
  */
-export const ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = {
-    // Add activity-specific configurations here
-    // Example configurations:
-    // "activity-urgent-123": 1,         // 1 day advance booking
-    // "activity-workshop-456": 14,      // 14 days advance booking
-    // "activity-special-789": 3,        // 3 days advance booking
-    // --- dev 環境での確認用 
+export const DEFAULT_ADVANCE_BOOKING_DAYS = 7;
+
+/**
+ * Default activity booking configuration (used as fallback if env var is not set)
+ */
+const DEFAULT_ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = {
+    // Default configurations for development/testing
     "cmcak8udp019l8zwh4jvmuomp": 0, // 当日開催直前まで受付
     "cmcak4qt600lu8zwhdzcuynre": 1, // 1日前まで受付可能
     "cmcakai1a01jm8zwh7323vpzn": 2, // 2日前まで受付可能
 };
 
 /**
- * Default advance booking days for activities without specific configuration
+ * Get activity booking configuration from environment variable
+ * Environment variable format: {"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
  */
-export const DEFAULT_ADVANCE_BOOKING_DAYS = 7;
+let configFromEnv: ActivityBookingConfig = {};
+try {
+    const envConfig = process.env.ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG;
+    if (envConfig) {
+        configFromEnv = JSON.parse(envConfig);
+        console.log('Loaded activity advance booking days config from environment variable');
+    } else {
+        console.log('No environment variable for activity advance booking days config found, using defaults');
+    }
+} catch (error) {
+    console.error('Error parsing ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG environment variable:', error);
+}
+
+/**
+ * Combined activity booking configuration
+ * Uses environment variable config if available, falls back to defaults
+ */
+export const ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = 
+    Object.keys(configFromEnv).length > 0 ? configFromEnv : DEFAULT_ACTIVITY_BOOKING_CONFIG;
 
 /**
  * Get the advance booking days for a specific activity
