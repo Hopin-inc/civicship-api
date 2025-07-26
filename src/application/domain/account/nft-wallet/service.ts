@@ -117,5 +117,5 @@ interface BaseSepoliaNftItem {
 
 interface BaseSepoliaNftResponse {
   items: BaseSepoliaNftItem[];
-  next_page_params: any;
+  next_page_params: Record<string, unknown> | null;
 }
