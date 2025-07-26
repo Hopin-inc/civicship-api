@@ -5,8 +5,8 @@ import { NotFoundError } from "@/errors/graphql";
 import WalletConverter from "@/application/domain/account/wallet/data/converter";
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
-import TransactionService from "@/application/domain/transaction/service";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
+import TransactionService from "@/application/domain/transaction/service";
 
 @injectable()
 export default class WalletService {
