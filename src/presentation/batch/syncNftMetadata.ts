@@ -25,6 +25,73 @@ interface BaseSepoliaNftResponse {
   next_page_params: any;
 }
 
+export async function processNftWalletMetadata(
+  wallet: { id: string; walletAddress: string },
+  issuer: PrismaClientIssuer
+): Promise<{ success: boolean; itemsProcessed: number; error?: string }> {
+  try {
+    logger.info(`🔄 Processing wallet: ${wallet.walletAddress}`);
+
+    const apiUrl = `https://base-sepolia.blockscout.com/api/v2/addresses/${wallet.walletAddress}/nft`;
+    const response = await fetchData<BaseSepoliaNftResponse>(apiUrl);
+
+    if (!response.items || response.items.length === 0) {
+      logger.info(`📭 No NFTs found for wallet: ${wallet.walletAddress}`);
+      return { success: true, itemsProcessed: 0 };
+    }
+
+    await issuer.internal(async (tx) => {
+      for (const item of response.items) {
+        const nftToken = await tx.nftToken.upsert({
+          where: { address: item.token.address },
+          update: {
+            name: item.token.name,
+            symbol: item.token.symbol,
+            type: item.token.type,
+          },
+          create: {
+            address: item.token.address,
+            name: item.token.name,
+            symbol: item.token.symbol,
+            type: item.token.type,
+          },
+        });
+
+        await tx.nftInstance.upsert({
+          where: {
+            nftWalletId_instanceId: {
+              nftWalletId: wallet.id,
+              instanceId: item.id,
+            },
+          },
+          update: {
+            name: item.metadata.name,
+            description: item.metadata.description,
+            imageUrl: item.metadata.image,
+            json: item,
+            nftTokenId: nftToken.id,
+          },
+          create: {
+            instanceId: item.id,
+            name: item.metadata.name,
+            description: item.metadata.description,
+            imageUrl: item.metadata.image,
+            json: item,
+            nftWalletId: wallet.id,
+            nftTokenId: nftToken.id,
+          },
+        });
+      }
+    });
+
+    logger.info(`✅ Processed ${response.items.length} NFTs for wallet: ${wallet.walletAddress}`);
+    return { success: true, itemsProcessed: response.items.length };
+  } catch (error) {
+    logger.error(`❌ Error processing wallet ${wallet.walletAddress}:`, error);
+    return { success: false, itemsProcessed: 0, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 export async function syncNftMetadata() {
   logger.info("🚀 Starting NFT metadata synchronization batch");
 
@@ -46,65 +113,10 @@ export async function syncNftMetadata() {
     let totalErrors = 0;
 
     for (const wallet of nftWallets) {
-      try {
-        logger.info(`🔄 Processing wallet: ${wallet.walletAddress}`);
-
-        const apiUrl = `https://base-sepolia.blockscout.com/api/v2/addresses/${wallet.walletAddress}/nft`;
-        const response = await fetchData<BaseSepoliaNftResponse>(apiUrl);
-
-        if (!response.items || response.items.length === 0) {
-          logger.info(`📭 No NFTs found for wallet: ${wallet.walletAddress}`);
-          continue;
-        }
-
-        await issuer.internal(async (tx) => {
-          for (const item of response.items) {
-            const nftToken = await tx.nftToken.upsert({
-              where: { address: item.token.address },
-              update: {
-                name: item.token.name,
-                symbol: item.token.symbol,
-                type: item.token.type,
-              },
-              create: {
-                address: item.token.address,
-                name: item.token.name,
-                symbol: item.token.symbol,
-                type: item.token.type,
-              },
-            });
-
-            await tx.nftInstance.upsert({
-              where: {
-                nftWalletId_instanceId: {
-                  nftWalletId: wallet.id,
-                  instanceId: item.id,
-                },
-              },
-              update: {
-                name: item.metadata.name,
-                description: item.metadata.description,
-                imageUrl: item.metadata.image,
-                json: item,
-                nftTokenId: nftToken.id,
-              },
-              create: {
-                instanceId: item.id,
-                name: item.metadata.name,
-                description: item.metadata.description,
-                imageUrl: item.metadata.image,
-                json: item,
-                nftWalletId: wallet.id,
-                nftTokenId: nftToken.id,
-              },
-            });
-          }
-        });
-
-        logger.info(`✅ Processed ${response.items.length} NFTs for wallet: ${wallet.walletAddress}`);
+      const result = await processNftWalletMetadata(wallet, issuer);
+      if (result.success) {
         totalProcessed++;
-      } catch (error) {
-        logger.error(`❌ Error processing wallet ${wallet.walletAddress}:`, error);
+      } else {
         totalErrors++;
       }
     }
