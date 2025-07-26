@@ -4,11 +4,13 @@ import { injectable, inject } from "tsyringe";
 import { fetchData } from "@/utils/fetch";
 import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "./data/repository";
+import NftIssuerRepository from "../nft-issuer/data/repository";
 
 @injectable()
 export default class NFTWalletService {
   constructor(
     @inject("NFTWalletRepository") private nftWalletRepository: NFTWalletRepository,
+    @inject("NftIssuerRepository") private nftIssuerRepository: NftIssuerRepository,
   ) {}
   async createOrUpdateWalletAddress(
     ctx: IContext,
@@ -50,6 +52,8 @@ export default class NFTWalletService {
       }
 
       for (const item of response.items) {
+        const nftIssuer = await this.nftIssuerRepository.upsert(ctx, item.token.address, tx);
+        
         const nftToken = await tx.nftToken.upsert({
           where: { address: item.token.address },
           update: {
@@ -62,6 +66,7 @@ export default class NFTWalletService {
             name: item.token.name,
             symbol: item.token.symbol,
             type: item.token.type,
+            issuerAddress: nftIssuer.address,
           },
         });
 
