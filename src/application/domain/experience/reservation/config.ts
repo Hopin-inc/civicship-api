@@ -14,14 +14,8 @@ export interface ActivityBookingConfig {
 export const DEFAULT_ADVANCE_BOOKING_DAYS = 7;
 
 /**
- * Default activity booking configuration (used as fallback if env var is not set)
+ * Empty default configuration - we'll use only environment variables
  */
-const DEFAULT_ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = {
-    // Default configurations for development/testing
-    "cmcak8udp019l8zwh4jvmuomp": 0, // 当日開催直前まで受付
-    "cmcak4qt600lu8zwhdzcuynre": 1, // 1日前まで受付可能
-    "cmcakai1a01jm8zwh7323vpzn": 2, // 2日前まで受付可能
-};
 
 /**
  * Get activity booking configuration from environment variable
@@ -41,11 +35,10 @@ try {
 }
 
 /**
- * Combined activity booking configuration
- * Uses environment variable config if available, falls back to defaults
+ * Activity booking configuration from environment variable
+ * If no environment variable is set, uses an empty configuration
  */
-export const ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = 
-    Object.keys(configFromEnv).length > 0 ? configFromEnv : DEFAULT_ACTIVITY_BOOKING_CONFIG;
+export const ACTIVITY_BOOKING_CONFIG: ActivityBookingConfig = configFromEnv;
 
 /**
  * Get the advance booking days for a specific activity
