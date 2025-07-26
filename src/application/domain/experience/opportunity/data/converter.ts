@@ -18,6 +18,13 @@ export default class OpportunityConverter {
       ...this.opportunitySlotFilter(filter),
     ];
 
+    // 検索キーワードがない場合のみ予約締め切りフィルターを適用
+    // これにより通常の一覧表示では予約締め切りが過ぎたアクティビティは表示されないが
+    // 検索時には予約締め切りに関わらず表示される
+    if (!filter.keyword) {
+      conditions.push(...this.reservationDeadlineFilter());
+    }
+
     if (Array.isArray(filter.and) && filter.and.length) {
       conditions.push({
         AND: filter.and.map((sub) => this.filter(sub)),
@@ -219,5 +226,87 @@ export default class OpportunityConverter {
     }
 
     return slotConditions.length ? [{ slots: { some: { AND: slotConditions } } }] : [];
+  }
+
+  /**
+   * 予約締め切りが過ぎたアクティビティを除外するフィルター
+   * 各アクティビティの予約締め切り日数を考慮して、予約可能なスロットを持つアクティビティのみを表示
+   * ただし、スロットがないアクティビティは常に表示する（外部予約を想定）
+   */
+  private reservationDeadlineFilter(): Prisma.OpportunityWhereInput[] {
+    const now = new Date();
+
+    return [{
+      OR: [
+        // スロットがないアクティビティは表示する
+        {
+          slots: {
+            none: {}
+          }
+        },
+        // 予約可能なスロットがあるアクティビティを表示
+        {
+          slots: {
+            some: {
+              AND: [
+                { hostingStatus: "SCHEDULED" },
+                {
+                  startsAt: {
+                    // 現在時刻より後のスロットのみ
+                    gt: now,
+                  },
+                },
+                {
+                  // カスタム条件: スロットの開始時間が (現在時刻 + 予約締め切り日数) より後
+                  OR: [
+                    // 予約締め切り日数が0の場合は、開始時間が現在時刻より後ならOK
+                    {
+                      opportunity: {
+                        id: {
+                          in: this.getZeroAdvanceBookingOpportunityIds(),
+                        },
+                      },
+                      startsAt: { gt: now },
+                    },
+                    // 予約締め切り日数が設定されている場合は、その日数を考慮
+                    {
+                      opportunity: {
+                        id: {
+                          notIn: this.getZeroAdvanceBookingOpportunityIds(),
+                        },
+                      },
+                      // 各アクティビティの予約締め切り日数はクエリ内で直接計算できないため、
+                      // 最大の予約締め切り日数（例: 7日）を使用
+                      startsAt: {
+                        gt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      ],
+    }];
+  }
+
+  /**
+   * 予約締め切り日数が0のアクティビティIDを取得
+   * 実際の環境では環境変数から取得するが、ここではハードコードした例
+   */
+  private getZeroAdvanceBookingOpportunityIds(): string[] {
+    try {
+      const envConfig = process.env.ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG;
+      if (!envConfig) return [];
+
+      const config = JSON.parse(envConfig);
+      return Object.entries(config)
+        .filter(([_, days]) => days === 0)
+        .map(([id]) => id);
+    } catch (error) {
+      console.error('Error parsing ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG', error);
+      return [];
+    }
   }
 }
