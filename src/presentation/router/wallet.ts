@@ -6,6 +6,9 @@ import { validateFirebasePhoneAuth } from '@/presentation/middleware/firebase-ph
 import { walletRateLimit } from '@/presentation/middleware/rate-limit';
 import { PrismaClientIssuer } from '@/infrastructure/prisma/client';
 import logger from '@/infrastructure/logging';
+import { IContext } from '@/types/server';
+import { PrismaAuthUser } from '@/application/domain/account/user/data/type';
+import { PrismaNftWalletCreateDetail } from '@/application/domain/account/nft-wallet/data/type';
 
 const router = express();
 
@@ -16,7 +19,7 @@ router.post('/nft-wallets',
   async (req, res) => {
     try {
       const { walletAddress, name } = req.body;
-      const user = (req as any).user;
+      const user = (req as any).user as PrismaAuthUser;
       
       if (!walletAddress) {
         return res.status(400).json({ error: 'walletAddress is required' });
@@ -33,9 +36,9 @@ router.post('/nft-wallets',
       const issuer = new PrismaClientIssuer();
       const nftWalletService = container.resolve(NFTWalletService);
       
-      let walletRecord: any;
-      await issuer.public({} as any, async (tx) => {
-        walletRecord = await nftWalletService.createOrUpdateWalletAddress({} as any, user.id, walletAddress, tx);
+      let walletRecord: PrismaNftWalletCreateDetail | undefined;
+      await issuer.public({} as IContext, async (tx) => {
+        walletRecord = await nftWalletService.createOrUpdateWalletAddress({} as IContext, user.id, walletAddress, tx);
         
         if (name && user.name === "名前未設定") {
           await tx.user.update({
@@ -52,8 +55,8 @@ router.post('/nft-wallets',
         try {
           await issuer.internal(async (tx) => {
             const result = await nftWalletService.processMetadata(
-              {} as any, 
-              { id: walletRecord.id, walletAddress: walletRecord.walletAddress }, 
+              {} as IContext, 
+              { id: walletRecord!.id, walletAddress: walletRecord!.walletAddress }, 
               tx
             );
             if (result.success) {
