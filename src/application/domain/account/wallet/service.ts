@@ -6,7 +6,7 @@ import WalletConverter from "@/application/domain/account/wallet/data/converter"
 import { IWalletRepository } from "@/application/domain/account/wallet/data/interface";
 import { inject, injectable } from "tsyringe";
 import { PrismaWallet } from "@/application/domain/account/wallet/data/type";
-import TransactionService from "../../transaction/service";
+import TransactionService from "@/application/domain/transaction/service";
 
 @injectable()
 export default class WalletService {

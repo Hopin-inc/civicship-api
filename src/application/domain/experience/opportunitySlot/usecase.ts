@@ -21,8 +21,8 @@ import { inject, injectable } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import ReservationService from "@/application/domain/experience/reservation/service";
-import WalletValidator from "../../account/wallet/validator";
-import { ITransactionService } from "../../transaction/data/interface";
+import WalletValidator from "@/application/domain/account/wallet/validator";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import { ValidationError } from "@/errors/graphql";
 import WalletService from "@/application/domain/account/wallet/service";
 
