@@ -624,6 +624,14 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_nft_issuers" {
+    String address "🗝️"
+    String name "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "t_nft_tokens" {
     String id "🗝️"
     String address 
@@ -632,6 +640,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String type 
     DateTime created_at 
     DateTime updated_at "❓"
+    String issuer_address 
     }
   
 
@@ -893,6 +902,8 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_issuers" o{--}o "t_nft_tokens" : "nftTokens"
+    "t_nft_tokens" o|--|| "t_nft_issuers" : "issuer"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"

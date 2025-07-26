@@ -537,6 +537,14 @@ Table t_nft_wallets {
   nftInstances t_nft_instances [not null]
 }
 
+Table t_nft_issuers {
+  address String [pk]
+  name String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  nftTokens t_nft_tokens [not null]
+}
+
 Table t_nft_tokens {
   id String [pk]
   address String [unique, not null]
@@ -545,6 +553,8 @@ Table t_nft_tokens {
   type String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+  issuerAddress String [not null]
+  issuer t_nft_issuers [not null]
   nftInstances t_nft_instances [not null]
 }
 
@@ -961,6 +971,8 @@ Ref: t_transactions.participationId > t_participations.id [delete: Set Null]
 Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
+
+Ref: t_nft_tokens.issuerAddress > t_nft_issuers.address [delete: Restrict]
 
 Ref: t_nft_instances.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
