@@ -640,7 +640,6 @@ TICKET_REFUNDED TICKET_REFUNDED
     String type 
     DateTime created_at 
     DateTime updated_at "❓"
-    String issuer_address 
     }
   
 

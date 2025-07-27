@@ -6805,7 +6805,6 @@ export const defineNftIssuerFactory = (<TOptions extends NftIssuerFactoryDefineO
 defineNftIssuerFactory.withTransientFields = defaultTransientFieldValues => options => defineNftIssuerFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type NftTokenScalarOrEnumFields = {
-    address: string;
     type: string;
 };
 
@@ -6816,7 +6815,6 @@ type NftTokenissuerFactory = {
 
 type NftTokenFactoryDefineInput = {
     id?: string;
-    address?: string;
     name?: string | null;
     symbol?: string | null;
     type?: string;
@@ -6866,7 +6864,6 @@ function autoGenerateNftTokenScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftTokenScalarOrEnumFields {
     return {
-        address: getScalarFieldValueGenerator().String({ modelName: "NftToken", fieldName: "address", isId: false, isUnique: true, seq }),
         type: getScalarFieldValueGenerator().String({ modelName: "NftToken", fieldName: "type", isId: false, isUnique: false, seq })
     };
 }
