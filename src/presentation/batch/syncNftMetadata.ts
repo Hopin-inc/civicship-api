@@ -14,29 +14,46 @@ export async function syncNftMetadata() {
   const ctx = { issuer } as IContext;
 
   try {
-    const nftWallets = await issuer.internal(async (tx) => {
-      return tx.nftWallet.findMany({
-        select: {
-          id: true,
-          walletAddress: true,
-        },
-      });
-    });
-
-    logger.info(`📦 Found ${nftWallets.length} NFT wallets to process`);
-
+    const BATCH_SIZE = 50;
+    let skip = 0;
     let totalProcessed = 0;
     let totalErrors = 0;
+    let hasMore = true;
 
-    for (const wallet of nftWallets) {
-      await issuer.internal(async (tx) => {
-        const result = await nftWalletService.storeMetadata(ctx, wallet, tx);
-        if (result.success) {
-          totalProcessed++;
-        } else {
-          totalErrors++;
-        }
+    while (hasMore) {
+      const nftWallets = await issuer.internal(async (tx) => {
+        return tx.nftWallet.findMany({
+          select: {
+            id: true,
+            walletAddress: true,
+          },
+          take: BATCH_SIZE,
+          skip: skip,
+        });
       });
+
+      if (nftWallets.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      logger.info(`📦 Processing batch ${Math.floor(skip / BATCH_SIZE) + 1}: ${nftWallets.length} wallets (skip: ${skip})`);
+
+      for (const wallet of nftWallets) {
+        await issuer.internal(async (tx) => {
+          const result = await nftWalletService.storeMetadata(ctx, wallet, tx);
+          if (result.success) {
+            totalProcessed++;
+          } else {
+            totalErrors++;
+          }
+        });
+      }
+
+      skip += BATCH_SIZE;
+      if (nftWallets.length < BATCH_SIZE) {
+        hasMore = false;
+      }
     }
 
     logger.info(`🎯 NFT metadata sync completed: ${totalProcessed} wallets processed, ${totalErrors} errors`);

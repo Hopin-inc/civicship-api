@@ -4,6 +4,7 @@ import { injectable, inject } from "tsyringe";
 import { fetchData } from "@/utils/fetch";
 import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
+import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 
 @injectable()
 export default class NFTWalletService {
@@ -39,7 +40,8 @@ export default class NFTWalletService {
     try {
       logger.info(`🔄 Processing wallet: ${wallet.walletAddress}`);
 
-      const apiUrl = `https://base-sepolia.blockscout.com/api/v2/addresses/${wallet.walletAddress}/nft`;
+      const baseApiUrl = process.env.BASE_SEPOLIA_API_URL || 'https://base-sepolia.blockscout.com/api/v2';
+      const apiUrl = `${baseApiUrl}/addresses/${wallet.walletAddress}/nft`;
       const response = await fetchData<BaseSepoliaNftResponse>(apiUrl);
 
       if (!response.items || response.items.length === 0) {
@@ -50,7 +52,7 @@ export default class NFTWalletService {
       for (const item of response.items) {
         let tokenInfo: BaseSepoliaTokenResponse | null = null;
         try {
-          const tokenApiUrl = `https://base-sepolia.blockscout.com/api/v2/tokens/${item.token.address}`;
+          const tokenApiUrl = `${baseApiUrl}/tokens/${item.token.address}`;
           tokenInfo = await fetchData<BaseSepoliaTokenResponse>(tokenApiUrl);
           logger.info(`🔄 Fetched latest token info for: ${item.token.address}`);
         } catch (tokenError) {
@@ -87,37 +89,4 @@ export default class NFTWalletService {
       return { success: false, itemsProcessed: 0, error: error instanceof Error ? error.message : String(error) };
     }
   }
-}
-
-interface BaseSepoliaNftItem {
-  id: string;
-  metadata: {
-    name?: string;
-    description?: string;
-    image?: string;
-  };
-  token: {
-    address: string;
-    name?: string;
-    symbol?: string;
-    type: string;
-  };
-}
-
-interface BaseSepoliaNftResponse {
-  items: BaseSepoliaNftItem[];
-  next_page_params: Record<string, unknown> | null;
-}
-
-interface BaseSepoliaTokenResponse {
-  address: string;
-  name?: string;
-  symbol?: string;
-  type: string;
-  decimals?: string;
-  holders?: string;
-  exchange_rate?: string;
-  total_supply?: string;
-  circulating_market_cap?: string;
-  icon_url?: string;
 }
