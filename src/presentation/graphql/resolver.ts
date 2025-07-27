@@ -19,6 +19,7 @@ import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
+import NftInstanceResolver from "@/application/domain/account/nft-wallet/controller/nft-instance-resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);
@@ -38,6 +39,7 @@ const vcIssuanceRequest = container.resolve(VCIssuanceRequestResolver);
 
 const place = container.resolve(PlaceResolver);
 const master = container.resolve(MasterResolver);
+const nftInstance = container.resolve(NftInstanceResolver);
 
 const ticket = container.resolve(TicketResolver);
 const ticketIssuer = container.resolve(TicketIssuerResolver);
@@ -62,6 +64,7 @@ const resolvers = {
     ...vcIssuanceRequest.Query,
     ...place.Query,
     ...master.Query,
+    ...nftInstance.Query,
     ...utility.Query,
     ...ticket.Query,
     ...ticketIssuer.Query,
