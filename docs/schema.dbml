@@ -543,6 +543,7 @@ Table t_nft_tokens {
   name String
   symbol String
   type String [not null]
+  json Json
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   nftInstances t_nft_instances [not null]

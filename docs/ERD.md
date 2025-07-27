@@ -630,6 +630,7 @@ TICKET_REFUNDED TICKET_REFUNDED
     String name "❓"
     String symbol "❓"
     String type 
+    Json json "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }

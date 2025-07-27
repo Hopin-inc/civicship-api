@@ -6662,6 +6662,7 @@ type NftTokenFactoryDefineInput = {
     name?: string | null;
     symbol?: string | null;
     type?: string;
+    json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
     createdAt?: Date;
     updatedAt?: Date | null;
     nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftTokenInput;
