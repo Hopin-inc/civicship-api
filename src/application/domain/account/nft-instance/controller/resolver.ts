@@ -1,7 +1,7 @@
 import { GqlQueryNftInstancesArgs, GqlQueryNftInstanceArgs } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
-import NftInstanceUseCase from "@/application/domain/account/nft-wallet/nft-instance-usecase";
+import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 
 @injectable()
 export default class NftInstanceResolver {

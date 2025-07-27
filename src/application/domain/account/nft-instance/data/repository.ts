@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
-import INftInstanceRepository from "@/application/domain/account/nft-wallet/data/nft-instance-interface";
+import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {

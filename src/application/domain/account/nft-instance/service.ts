@@ -2,9 +2,9 @@ import { NotFoundError } from "@/errors/graphql";
 import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
 import { inject, injectable } from "tsyringe";
-import INftInstanceRepository from "@/application/domain/account/nft-wallet/data/nft-instance-interface";
-import NftInstanceConverter from "@/application/domain/account/nft-wallet/data/nft-instance-converter";
-import NftInstancePresenter from "@/application/domain/account/nft-wallet/nft-instance-presenter";
+import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
+import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
+import NftInstancePresenter from "@/application/domain/account/nft-instance/presenter";
 import { clampFirst } from "@/application/domain/utils";
 
 @injectable()

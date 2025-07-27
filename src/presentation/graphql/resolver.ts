@@ -19,7 +19,7 @@ import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
 import MasterResolver from "@/application/domain/location/master/controller/resolver";
-import NftInstanceResolver from "@/application/domain/account/nft-wallet/controller/nft-instance-resolver";
+import NftInstanceResolver from "@/application/domain/account/nft-instance/controller/resolver";
 import scalarResolvers from "@/presentation/graphql/scalar";
 
 const identity = container.resolve(IdentityResolver);

@@ -1,7 +1,7 @@
 import { injectable, inject } from "tsyringe";
 import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput } from "@/types/graphql";
 import { IContext } from "@/types/server";
-import NftInstanceService from "@/application/domain/account/nft-wallet/nft-instance-service";
+import NftInstanceService from "@/application/domain/account/nft-instance/service";
 
 @injectable()
 export default class NftInstanceUseCase {
