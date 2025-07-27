@@ -34,6 +34,12 @@ type User {
 
     wallets: [Wallet!]
     nftWallet: NftWallet
+    nftInstances(
+        filter: NftInstanceFilterInput
+        sort: NftInstanceSortInput
+        cursor: String
+        first: Int
+    ): NftInstancesConnection!
 
     opportunitiesCreatedByMe: [Opportunity!]
     reservations: [Reservation!]

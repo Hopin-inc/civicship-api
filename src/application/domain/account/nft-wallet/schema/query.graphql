@@ -1,0 +1,29 @@
+extend type Query {
+  nftInstances(
+    filter: NftInstanceFilterInput
+    sort: NftInstanceSortInput
+    cursor: String
+    first: Int
+  ): NftInstancesConnection!
+  
+  nftInstance(id: ID!): NftInstance
+}
+
+input NftInstanceFilterInput {
+  nftWalletId: [ID!]
+  nftTokenAddress: [String!]
+  nftTokenType: [String!]
+  hasName: Boolean
+  hasDescription: Boolean
+  hasImage: Boolean
+  
+  and: [NftInstanceFilterInput!]
+  or: [NftInstanceFilterInput!]
+  not: NftInstanceFilterInput
+}
+
+input NftInstanceSortInput {
+  createdAt: SortDirection
+  name: SortDirection
+  instanceId: SortDirection
+}
