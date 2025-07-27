@@ -39,7 +39,7 @@ type User {
         sort: NftInstanceSortInput
         cursor: String
         first: Int
-    ): NftInstancesConnection!
+    ): NftInstancesConnection
 
     opportunitiesCreatedByMe: [Opportunity!]
     reservations: [Reservation!]
