@@ -61,4 +61,66 @@ export default class NFTWalletRepository implements INFTWalletRepository {
       select: nftWalletCreateSelect,
     });
   }
+
+  async findByUserIdWithTx(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
+    return tx.nftWallet.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        userId: true,
+        walletAddress: true,
+      },
+    });
+  }
+
+  async upsertNftToken(ctx: IContext, data: { address: string; name?: string | null; symbol?: string | null; type: string }, tx: Prisma.TransactionClient) {
+    return tx.nftToken.upsert({
+      where: { address: data.address },
+      update: {
+        name: data.name,
+        symbol: data.symbol,
+        type: data.type,
+      },
+      create: {
+        address: data.address,
+        name: data.name ?? null,
+        symbol: data.symbol ?? null,
+        type: data.type,
+      },
+      select: {
+        id: true,
+        address: true,
+      },
+    });
+  }
+
+  async upsertNftInstance(ctx: IContext, data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: any; nftWalletId: string; nftTokenId: string }, tx: Prisma.TransactionClient) {
+    return tx.nftInstance.upsert({
+      where: {
+        nftWalletId_instanceId: {
+          nftWalletId: data.nftWalletId,
+          instanceId: data.instanceId,
+        },
+      },
+      update: {
+        name: data.name,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        json: data.json,
+        nftTokenId: data.nftTokenId,
+      },
+      create: {
+        instanceId: data.instanceId,
+        name: data.name,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        json: data.json,
+        nftWalletId: data.nftWalletId,
+        nftTokenId: data.nftTokenId,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
 }

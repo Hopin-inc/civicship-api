@@ -25,9 +25,7 @@ export default class NFTWalletService {
     tx?: Prisma.TransactionClient,
   ) {
     if (tx) {
-      return tx.nftWallet.findUnique({
-        where: { userId },
-      });
+      return this.nftWalletRepository.findByUserIdWithTx(ctx, userId, tx);
     }
 
     return this.nftWalletRepository.findByUserId(ctx, userId);
@@ -63,49 +61,22 @@ export default class NFTWalletService {
         const tokenSymbol = tokenInfo?.symbol || item.token.symbol;
         const tokenType = tokenInfo?.type || item.token.type || "UNKNOWN";
 
-        const updateData = {
-          name: tokenName || null,
-          symbol: tokenSymbol || null,
-          type: tokenType,
-        };
-
-        const createData = {
+        const nftToken = await this.nftWalletRepository.upsertNftToken(ctx, {
           address: item.token.address,
           name: tokenName || null,
           symbol: tokenSymbol || null,
           type: tokenType,
-        };
+        }, tx);
 
-        const nftToken = await tx.nftToken.upsert({
-          where: { address: item.token.address },
-          update: updateData,
-          create: createData,
-        });
-
-        await tx.nftInstance.upsert({
-          where: {
-            nftWalletId_instanceId: {
-              nftWalletId: wallet.id,
-              instanceId: item.id,
-            },
-          },
-          update: {
-            name: item.metadata.name,
-            description: item.metadata.description,
-            imageUrl: item.metadata.image,
-            json: item,
-            nftTokenId: nftToken.id,
-          },
-          create: {
-            instanceId: item.id,
-            name: item.metadata.name,
-            description: item.metadata.description,
-            imageUrl: item.metadata.image,
-            json: item,
-            nftWalletId: wallet.id,
-            nftTokenId: nftToken.id,
-          },
-        });
+        await this.nftWalletRepository.upsertNftInstance(ctx, {
+          instanceId: item.id,
+          name: item.metadata.name || null,
+          description: item.metadata.description || null,
+          imageUrl: item.metadata.image || null,
+          json: item,
+          nftWalletId: wallet.id,
+          nftTokenId: nftToken.id,
+        }, tx);
       }
 
       logger.info(`✅ Processed ${response.items.length} NFTs for wallet: ${wallet.walletAddress}`);
