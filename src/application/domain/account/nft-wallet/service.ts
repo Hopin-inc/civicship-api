@@ -50,19 +50,36 @@ export default class NFTWalletService {
       }
 
       for (const item of response.items) {
+        let tokenInfo: BaseSepoliaTokenResponse | null = null;
+        try {
+          const tokenApiUrl = `https://base-sepolia.blockscout.com/api/v2/tokens/${item.token.address}`;
+          tokenInfo = await fetchData<BaseSepoliaTokenResponse>(tokenApiUrl);
+          logger.info(`🔄 Fetched latest token info for: ${item.token.address}`);
+        } catch (tokenError) {
+          logger.warn(`⚠️ Failed to fetch token info for ${item.token.address}:`, tokenError);
+        }
+
+        const tokenName = tokenInfo?.name || item.token.name;
+        const tokenSymbol = tokenInfo?.symbol || item.token.symbol;
+        const tokenType = tokenInfo?.type || item.token.type || "UNKNOWN";
+
+        const updateData = {
+          name: tokenName || null,
+          symbol: tokenSymbol || null,
+          type: tokenType,
+        };
+
+        const createData = {
+          address: item.token.address,
+          name: tokenName || null,
+          symbol: tokenSymbol || null,
+          type: tokenType,
+        };
+
         const nftToken = await tx.nftToken.upsert({
           where: { address: item.token.address },
-          update: {
-            name: item.token.name,
-            symbol: item.token.symbol,
-            type: item.token.type,
-          },
-          create: {
-            address: item.token.address,
-            name: item.token.name,
-            symbol: item.token.symbol,
-            type: item.token.type,
-          },
+          update: updateData,
+          create: createData,
         });
 
         await tx.nftInstance.upsert({
@@ -118,4 +135,17 @@ interface BaseSepoliaNftItem {
 interface BaseSepoliaNftResponse {
   items: BaseSepoliaNftItem[];
   next_page_params: Record<string, unknown> | null;
+}
+
+interface BaseSepoliaTokenResponse {
+  address: string;
+  name?: string;
+  symbol?: string;
+  type: string;
+  decimals?: string;
+  holders?: string;
+  exchange_rate?: string;
+  total_supply?: string;
+  circulating_market_cap?: string;
+  icon_url?: string;
 }
