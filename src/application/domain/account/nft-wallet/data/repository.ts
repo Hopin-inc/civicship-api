@@ -73,19 +73,21 @@ export default class NFTWalletRepository implements INFTWalletRepository {
     });
   }
 
-  async upsertNftToken(ctx: IContext, data: { address: string; name?: string | null; symbol?: string | null; type: string }, tx: Prisma.TransactionClient) {
+  async upsertNftToken(ctx: IContext, data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: any }, tx: Prisma.TransactionClient) {
     return tx.nftToken.upsert({
       where: { address: data.address },
       update: {
         name: data.name,
         symbol: data.symbol,
         type: data.type,
+        json: data.json,
       },
       create: {
         address: data.address,
         name: data.name ?? null,
         symbol: data.symbol ?? null,
         type: data.type,
+        json: data.json ?? null,
       },
       select: {
         id: true,

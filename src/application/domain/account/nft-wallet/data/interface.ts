@@ -29,7 +29,7 @@ export interface INFTWalletRepository {
   ): Promise<PrismaNftWalletCreateDetail>;
   upsertNftToken(
     ctx: IContext,
-    data: { address: string; name?: string | null; symbol?: string | null; type: string },
+    data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: any },
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string; address: string }>;
   upsertNftInstance(

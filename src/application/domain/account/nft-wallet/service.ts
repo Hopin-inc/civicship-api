@@ -66,6 +66,7 @@ export default class NFTWalletService {
           name: tokenName || null,
           symbol: tokenSymbol || null,
           type: tokenType,
+          json: tokenInfo || item.token,
         }, tx);
 
         await this.nftWalletRepository.upsertNftInstance(ctx, {
