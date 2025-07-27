@@ -31,7 +31,6 @@ import type { TicketStatusHistory } from "@prisma/client";
 import type { Transaction } from "@prisma/client";
 import type { ApiKey } from "@prisma/client";
 import type { NftWallet } from "@prisma/client";
-import type { NftIssuer } from "@prisma/client";
 import type { NftToken } from "@prisma/client";
 import type { NftInstance } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
@@ -755,19 +754,8 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 relationName: "NftInstanceToNftWallet"
             }]
     }, {
-        name: "NftIssuer",
-        fields: [{
-                name: "nftTokens",
-                type: "NftToken",
-                relationName: "NftIssuerToNftToken"
-            }]
-    }, {
         name: "NftToken",
         fields: [{
-                name: "issuer",
-                type: "NftIssuer",
-                relationName: "NftIssuerToNftToken"
-            }, {
                 name: "nftInstances",
                 type: "NftInstance",
                 relationName: "NftInstanceToNftToken"
@@ -6663,164 +6651,19 @@ export const defineNftWalletFactory = (<TOptions extends NftWalletFactoryDefineO
 
 defineNftWalletFactory.withTransientFields = defaultTransientFieldValues => options => defineNftWalletFactoryInternal(options, defaultTransientFieldValues);
 
-type NftIssuerScalarOrEnumFields = {
-    address: string;
-};
-
-type NftIssuerFactoryDefineInput = {
-    address?: string;
-    name?: string | null;
-    createdAt?: Date;
-    updatedAt?: Date | null;
-    nftTokens?: Prisma.NftTokenCreateNestedManyWithoutIssuerInput;
-};
-
-type NftIssuerTransientFields = Record<string, unknown> & Partial<Record<keyof NftIssuerFactoryDefineInput, never>>;
-
-type NftIssuerFactoryTrait<TTransients extends Record<string, unknown>> = {
-    data?: Resolver<Partial<NftIssuerFactoryDefineInput>, BuildDataOptions<TTransients>>;
-} & CallbackDefineOptions<NftIssuer, Prisma.NftIssuerCreateInput, TTransients>;
-
-type NftIssuerFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData?: Resolver<NftIssuerFactoryDefineInput, BuildDataOptions<TTransients>>;
-    traits?: {
-        [traitName: TraitName]: NftIssuerFactoryTrait<TTransients>;
-    };
-} & CallbackDefineOptions<NftIssuer, Prisma.NftIssuerCreateInput, TTransients>;
-
-type NftIssuerTraitKeys<TOptions extends NftIssuerFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
-
-export interface NftIssuerFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
-    readonly _factoryFor: "NftIssuer";
-    build(inputData?: Partial<Prisma.NftIssuerCreateInput & TTransients>): PromiseLike<Prisma.NftIssuerCreateInput>;
-    buildCreateInput(inputData?: Partial<Prisma.NftIssuerCreateInput & TTransients>): PromiseLike<Prisma.NftIssuerCreateInput>;
-    buildList(list: readonly Partial<Prisma.NftIssuerCreateInput & TTransients>[]): PromiseLike<Prisma.NftIssuerCreateInput[]>;
-    buildList(count: number, item?: Partial<Prisma.NftIssuerCreateInput & TTransients>): PromiseLike<Prisma.NftIssuerCreateInput[]>;
-    pickForConnect(inputData: NftIssuer): Pick<NftIssuer, "address">;
-    create(inputData?: Partial<Prisma.NftIssuerCreateInput & TTransients>): PromiseLike<NftIssuer>;
-    createList(list: readonly Partial<Prisma.NftIssuerCreateInput & TTransients>[]): PromiseLike<NftIssuer[]>;
-    createList(count: number, item?: Partial<Prisma.NftIssuerCreateInput & TTransients>): PromiseLike<NftIssuer[]>;
-    createForConnect(inputData?: Partial<Prisma.NftIssuerCreateInput & TTransients>): PromiseLike<Pick<NftIssuer, "address">>;
-}
-
-export interface NftIssuerFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends NftIssuerFactoryInterfaceWithoutTraits<TTransients> {
-    use(name: TTraitName, ...names: readonly TTraitName[]): NftIssuerFactoryInterfaceWithoutTraits<TTransients>;
-}
-
-function autoGenerateNftIssuerScalarsOrEnums({ seq }: {
-    readonly seq: number;
-}): NftIssuerScalarOrEnumFields {
-    return {
-        address: getScalarFieldValueGenerator().String({ modelName: "NftIssuer", fieldName: "address", isId: true, isUnique: false, seq })
-    };
-}
-
-function defineNftIssuerFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends NftIssuerFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): NftIssuerFactoryInterface<TTransients, NftIssuerTraitKeys<TOptions>> {
-    const getFactoryWithTraits = (traitKeys: readonly NftIssuerTraitKeys<TOptions>[] = []) => {
-        const seqKey = {};
-        const getSeq = () => getSequenceCounter(seqKey);
-        const screen = createScreener("NftIssuer", modelFieldDefinitions);
-        const handleAfterBuild = createCallbackChain([
-            onAfterBuild,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
-        ]);
-        const handleBeforeCreate = createCallbackChain([
-            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
-            onBeforeCreate,
-        ]);
-        const handleAfterCreate = createCallbackChain([
-            onAfterCreate,
-            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
-        ]);
-        const build = async (inputData: Partial<Prisma.NftIssuerCreateInput & TTransients> = {}) => {
-            const seq = getSeq();
-            const requiredScalarData = autoGenerateNftIssuerScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<NftIssuerFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
-            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
-            const resolverInput = { seq, ...transientFields };
-            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
-                const acc = await queue;
-                const resolveTraitValue = normalizeResolver<Partial<NftIssuerFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
-                const traitData = await resolveTraitValue(resolverInput);
-                return {
-                    ...acc,
-                    ...traitData,
-                };
-            }, resolveValue(resolverInput));
-            const defaultAssociations = {} as Prisma.NftIssuerCreateInput;
-            const data: Prisma.NftIssuerCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
-            await handleAfterBuild(data, transientFields);
-            return data;
-        };
-        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftIssuerCreateInput & TTransients>>(...args).map(data => build(data)));
-        const pickForConnect = (inputData: NftIssuer) => ({
-            address: inputData.address
-        });
-        const create = async (inputData: Partial<Prisma.NftIssuerCreateInput & TTransients> = {}) => {
-            const data = await build({ ...inputData }).then(screen);
-            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
-            await handleBeforeCreate(data, transientFields);
-            const createdData = await getClient<PrismaClient>().nftIssuer.create({ data });
-            await handleAfterCreate(createdData, transientFields);
-            return createdData;
-        };
-        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.NftIssuerCreateInput & TTransients>>(...args).map(data => create(data)));
-        const createForConnect = (inputData: Partial<Prisma.NftIssuerCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
-        return {
-            _factoryFor: "NftIssuer" as const,
-            build,
-            buildList,
-            buildCreateInput: build,
-            pickForConnect,
-            create,
-            createList,
-            createForConnect,
-        };
-    };
-    const factory = getFactoryWithTraits();
-    const useTraits = (name: NftIssuerTraitKeys<TOptions>, ...names: readonly NftIssuerTraitKeys<TOptions>[]) => {
-        return getFactoryWithTraits([name, ...names]);
-    };
-    return {
-        ...factory,
-        use: useTraits,
-    };
-}
-
-interface NftIssuerFactoryBuilder {
-    <TOptions extends NftIssuerFactoryDefineOptions>(options?: TOptions): NftIssuerFactoryInterface<{}, NftIssuerTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends NftIssuerTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftIssuerFactoryDefineOptions<TTransients>>(options?: TOptions) => NftIssuerFactoryInterface<TTransients, NftIssuerTraitKeys<TOptions>>;
-}
-
-/**
- * Define factory for {@link NftIssuer} model.
- *
- * @param options
- * @returns factory {@link NftIssuerFactoryInterface}
- */
-export const defineNftIssuerFactory = (<TOptions extends NftIssuerFactoryDefineOptions>(options?: TOptions): NftIssuerFactoryInterface<TOptions> => {
-    return defineNftIssuerFactoryInternal(options ?? {}, {});
-}) as NftIssuerFactoryBuilder;
-
-defineNftIssuerFactory.withTransientFields = defaultTransientFieldValues => options => defineNftIssuerFactoryInternal(options ?? {}, defaultTransientFieldValues);
-
 type NftTokenScalarOrEnumFields = {
+    address: string;
     type: string;
-};
-
-type NftTokenissuerFactory = {
-    _factoryFor: "NftIssuer";
-    build: () => PromiseLike<Prisma.NftIssuerCreateNestedOneWithoutNftTokensInput["create"]>;
 };
 
 type NftTokenFactoryDefineInput = {
     id?: string;
+    address?: string;
     name?: string | null;
     symbol?: string | null;
     type?: string;
     createdAt?: Date;
     updatedAt?: Date | null;
-    issuer: NftTokenissuerFactory | Prisma.NftIssuerCreateNestedOneWithoutNftTokensInput;
     nftInstances?: Prisma.NftInstanceCreateNestedManyWithoutNftTokenInput;
 };
 
@@ -6831,15 +6674,11 @@ type NftTokenFactoryTrait<TTransients extends Record<string, unknown>> = {
 } & CallbackDefineOptions<NftToken, Prisma.NftTokenCreateInput, TTransients>;
 
 type NftTokenFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
-    defaultData: Resolver<NftTokenFactoryDefineInput, BuildDataOptions<TTransients>>;
+    defaultData?: Resolver<NftTokenFactoryDefineInput, BuildDataOptions<TTransients>>;
     traits?: {
-        [traitName: string | symbol]: NftTokenFactoryTrait<TTransients>;
+        [traitName: TraitName]: NftTokenFactoryTrait<TTransients>;
     };
 } & CallbackDefineOptions<NftToken, Prisma.NftTokenCreateInput, TTransients>;
-
-function isNftTokenissuerFactory(x: NftTokenissuerFactory | Prisma.NftIssuerCreateNestedOneWithoutNftTokensInput | undefined): x is NftTokenissuerFactory {
-    return (x as any)?._factoryFor === "NftIssuer";
-}
 
 type NftTokenTraitKeys<TOptions extends NftTokenFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
 
@@ -6864,6 +6703,7 @@ function autoGenerateNftTokenScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftTokenScalarOrEnumFields {
     return {
+        address: getScalarFieldValueGenerator().String({ modelName: "NftToken", fieldName: "address", isId: false, isUnique: true, seq }),
         type: getScalarFieldValueGenerator().String({ modelName: "NftToken", fieldName: "type", isId: false, isUnique: false, seq })
     };
 }
@@ -6888,7 +6728,7 @@ function defineNftTokenFactoryInternal<TTransients extends Record<string, unknow
         const build = async (inputData: Partial<Prisma.NftTokenCreateInput & TTransients> = {}) => {
             const seq = getSeq();
             const requiredScalarData = autoGenerateNftTokenScalarsOrEnums({ seq });
-            const resolveValue = normalizeResolver<NftTokenFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver);
+            const resolveValue = normalizeResolver<NftTokenFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
             const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
             const resolverInput = { seq, ...transientFields };
             const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
@@ -6900,11 +6740,7 @@ function defineNftTokenFactoryInternal<TTransients extends Record<string, unknow
                     ...traitData,
                 };
             }, resolveValue(resolverInput));
-            const defaultAssociations = {
-                issuer: isNftTokenissuerFactory(defaultData.issuer) ? {
-                    create: await defaultData.issuer.build()
-                } : defaultData.issuer
-            } as Prisma.NftTokenCreateInput;
+            const defaultAssociations = {} as Prisma.NftTokenCreateInput;
             const data: Prisma.NftTokenCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
             await handleAfterBuild(data, transientFields);
             return data;
@@ -6945,8 +6781,8 @@ function defineNftTokenFactoryInternal<TTransients extends Record<string, unknow
 }
 
 interface NftTokenFactoryBuilder {
-    <TOptions extends NftTokenFactoryDefineOptions>(options: TOptions): NftTokenFactoryInterface<{}, NftTokenTraitKeys<TOptions>>;
-    withTransientFields: <TTransients extends NftTokenTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftTokenFactoryDefineOptions<TTransients>>(options: TOptions) => NftTokenFactoryInterface<TTransients, NftTokenTraitKeys<TOptions>>;
+    <TOptions extends NftTokenFactoryDefineOptions>(options?: TOptions): NftTokenFactoryInterface<{}, NftTokenTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends NftTokenTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends NftTokenFactoryDefineOptions<TTransients>>(options?: TOptions) => NftTokenFactoryInterface<TTransients, NftTokenTraitKeys<TOptions>>;
 }
 
 /**
@@ -6955,11 +6791,11 @@ interface NftTokenFactoryBuilder {
  * @param options
  * @returns factory {@link NftTokenFactoryInterface}
  */
-export const defineNftTokenFactory = (<TOptions extends NftTokenFactoryDefineOptions>(options: TOptions): NftTokenFactoryInterface<TOptions> => {
-    return defineNftTokenFactoryInternal(options, {});
+export const defineNftTokenFactory = (<TOptions extends NftTokenFactoryDefineOptions>(options?: TOptions): NftTokenFactoryInterface<TOptions> => {
+    return defineNftTokenFactoryInternal(options ?? {}, {});
 }) as NftTokenFactoryBuilder;
 
-defineNftTokenFactory.withTransientFields = defaultTransientFieldValues => options => defineNftTokenFactoryInternal(options, defaultTransientFieldValues);
+defineNftTokenFactory.withTransientFields = defaultTransientFieldValues => options => defineNftTokenFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type NftInstanceScalarOrEnumFields = {
     instanceId: string;

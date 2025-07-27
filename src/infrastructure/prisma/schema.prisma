@@ -1114,17 +1114,6 @@ model NftWallet {
   @@map("t_nft_wallets")
 }
 
-model NftIssuer {
-  address   String    @id
-  name      String?
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  nftTokens NftToken[]
-
-  @@map("t_nft_issuers")
-}
-
 model NftToken {
   id        String    @id @default(cuid())
   address   String    @unique
@@ -1133,8 +1122,6 @@ model NftToken {
   type      String
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
-
-  issuer NftIssuer @relation(fields: [address], references: [address], onDelete: Restrict)
 
   nftInstances NftInstance[]
 

@@ -1,8 +1,8 @@
 import { GqlNftWallet } from "@/types/graphql";
-import NftWalletPresenter from "../presenter";
+import NftWalletPresenter from "@/application/domain/account/nft-wallet/presenter";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import DataLoader from "dataloader";
-import { nftWalletSelectDetail } from "../data/type";
+import { nftWalletSelectDetail } from "@/application/domain/account/nft-wallet/data/type";
 
 export function createNftWalletByUserIdLoader(issuer: PrismaClientIssuer) {
     return new DataLoader<string, GqlNftWallet | null>(async (userIds) => {

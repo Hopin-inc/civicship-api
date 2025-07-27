@@ -1,4 +1,4 @@
-import { PrismaNftWalletDetail } from "./data/type";
+import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 
 export default class NftWalletPresenter {
     static get(nftWallet: PrismaNftWalletDetail) {

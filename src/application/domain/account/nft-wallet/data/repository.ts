@@ -1,11 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
-import { INFTWalletRepository } from "./interface";
+import { INFTWalletRepository } from "@/application/domain/account/nft-wallet/data/interface";
 import {
   nftWalletSelectDetail,
   nftWalletCreateSelect,
-} from "./type";
+} from "@/application/domain/account/nft-wallet/data/type";
 
 @injectable()
 export default class NFTWalletRepository implements INFTWalletRepository {
