@@ -35,7 +35,7 @@ export default class NFTWalletService {
     return this.nftWalletRepository.findByUserId(ctx, userId);
   }
 
-  async processMetadata(
+  async storeMetadata(
     ctx: IContext,
     wallet: { id: string; walletAddress: string },
     tx: Prisma.TransactionClient,
@@ -52,7 +52,7 @@ export default class NFTWalletService {
       }
 
       for (const item of response.items) {
-        const nftIssuer = await this.nftIssuerRepository.upsert(ctx, item.token.address, tx);
+        await this.nftIssuerRepository.upsert(ctx, item.token.address, tx);
         
         const nftToken = await tx.nftToken.upsert({
           where: { address: item.token.address },
@@ -66,7 +66,6 @@ export default class NFTWalletService {
             name: item.token.name,
             symbol: item.token.symbol,
             type: item.token.type,
-            issuerAddress: nftIssuer.address,
           },
         });
 

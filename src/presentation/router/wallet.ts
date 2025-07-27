@@ -54,7 +54,7 @@ router.post('/nft-wallets',
       if (walletRecord) {
         try {
           await issuer.internal(async (tx) => {
-            const result = await nftWalletService.processMetadata(
+            const result = await nftWalletService.storeMetadata(
               {} as IContext, 
               { id: walletRecord!.id, walletAddress: walletRecord!.walletAddress }, 
               tx

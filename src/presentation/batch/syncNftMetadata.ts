@@ -30,7 +30,7 @@ export async function syncNftMetadata() {
 
     for (const wallet of nftWallets) {
       await issuer.internal(async (tx) => {
-        const result = await nftWalletService.processMetadata(ctx, wallet, tx);
+        const result = await nftWalletService.storeMetadata(ctx, wallet, tx);
         if (result.success) {
           totalProcessed++;
         } else {

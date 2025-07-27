@@ -1134,8 +1134,7 @@ model NftToken {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  issuerAddress String    @map("issuer_address")
-  issuer        NftIssuer @relation(fields: [issuerAddress], references: [address], onDelete: Restrict)
+  issuer NftIssuer @relation(fields: [address], references: [address], onDelete: Restrict)
 
   nftInstances NftInstance[]
 
