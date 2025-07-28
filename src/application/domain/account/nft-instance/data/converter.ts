@@ -45,7 +45,16 @@ export default class NftInstanceConverter {
 
     if (input.and?.length) {
       const andConditions = input.and.map(filter => this.nftInstancesFilter(filter));
-      where.AND = [...(Array.isArray(where.AND) ? where.AND : []), ...andConditions];
+      const existingAnd = where.AND;
+      if (existingAnd) {
+        if (Array.isArray(existingAnd)) {
+          where.AND = [...existingAnd, ...andConditions];
+        } else {
+          where.AND = [existingAnd, ...andConditions];
+        }
+      } else {
+        where.AND = andConditions;
+      }
     }
 
     if (input.or?.length) {

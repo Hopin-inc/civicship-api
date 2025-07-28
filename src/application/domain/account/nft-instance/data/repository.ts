@@ -12,8 +12,8 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     take: number,
     cursor?: string
   ): Promise<NftInstanceWithRelations[]> {
-    return ctx.issuer.public(ctx, (tx) => {
-      return (tx as any).nftInstance.findMany({
+    return ctx.issuer.public(ctx, async (tx) => {
+      const result = await tx.nftInstance.findMany({
         where,
         include: {
           nftToken: true,
@@ -23,6 +23,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         take,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
+      return result as NftInstanceWithRelations[];
     });
   }
 
@@ -31,21 +32,22 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     where: Prisma.NftInstanceWhereInput
   ): Promise<number> {
     return ctx.issuer.public(ctx, (tx) => {
-      return (tx as any).nftInstance.count({
+      return tx.nftInstance.count({
         where,
       });
     });
   }
 
   async findNftInstanceById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null> {
-    return ctx.issuer.public(ctx, (tx) => {
-      return (tx as any).nftInstance.findUnique({
+    return ctx.issuer.public(ctx, async (tx) => {
+      const result = await tx.nftInstance.findUnique({
         where: { id },
         include: {
           nftToken: true,
           nftWallet: true,
         },
       });
+      return result as NftInstanceWithRelations | null;
     });
   }
 }
