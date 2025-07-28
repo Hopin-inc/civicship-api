@@ -25,12 +25,18 @@ export default class NftInstanceService {
     const orderBy = this.converter.nftInstancesSort(sort);
     const take = clampFirst(first);
     
-    const nftInstances = await this.repository.findNftInstances(ctx, where, orderBy, take + 1, cursor);
+    const [nftInstances, totalCount] = await Promise.all([
+      this.repository.findNftInstances(ctx, where, orderBy, take + 1, cursor),
+      this.repository.countNftInstances(ctx, where)
+    ]);
+    
     const hasNextPage = nftInstances.length > take;
     const nftInstanceNodes = nftInstances.slice(0, take).map((nftInstance) => 
       NftInstancePresenter.toGraphQL(nftInstance)
     );
-    return NftInstancePresenter.nftInstancesQuery(nftInstanceNodes, hasNextPage, cursor);
+    const endCursor = nftInstanceNodes.length > 0 ? nftInstanceNodes[nftInstanceNodes.length - 1].id : undefined;
+    
+    return NftInstancePresenter.nftInstancesQuery(nftInstanceNodes, hasNextPage, totalCount, endCursor);
   }
 
   async getNftInstance(id: string, ctx: IContext) {

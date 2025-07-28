@@ -45,7 +45,7 @@ export default class NftInstanceConverter {
 
     if (input.and?.length) {
       const andConditions = input.and.map(filter => this.nftInstancesFilter(filter));
-      where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...andConditions];
+      where.AND = [...(Array.isArray(where.AND) ? where.AND : []), ...andConditions];
     }
 
     if (input.or?.length) {
@@ -60,24 +60,22 @@ export default class NftInstanceConverter {
   }
 
   nftInstancesSort(input?: GqlNftInstanceSortInput): Prisma.NftInstanceOrderByWithRelationInput[] {
-    if (!input) {
-      return [{ createdAt: "desc" }];
-    }
-
     const orderBy: Prisma.NftInstanceOrderByWithRelationInput[] = [];
 
-    if (input.createdAt) {
+    if (input?.createdAt) {
       orderBy.push({ createdAt: input.createdAt === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
-    if (input.name) {
+    if (input?.name) {
       orderBy.push({ name: input.name === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
-    if (input.instanceId) {
+    if (input?.instanceId) {
       orderBy.push({ instanceId: input.instanceId === GqlSortDirection.Asc ? "asc" : "desc" });
     }
 
-    return orderBy.length > 0 ? orderBy : [{ createdAt: "desc" }];
+    orderBy.push({ id: "asc" });
+
+    return orderBy.length > 1 ? orderBy : [{ createdAt: "desc" }, { id: "asc" }];
   }
 }

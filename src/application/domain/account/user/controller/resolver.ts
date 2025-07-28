@@ -4,6 +4,7 @@ import {
   GqlMutationUserUpdateMyProfileArgs,
   GqlUserPortfoliosArgs,
 } from "@/types/graphql";
+import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import UserUseCase from "@/application/domain/account/user/usecase";
@@ -14,6 +15,7 @@ export default class UserResolver {
   constructor(
     @inject("UserUseCase") private readonly userUseCase: UserUseCase,
     @inject("ViewUseCase") private readonly viewUseCase: ViewUseCase,
+    @inject("NftInstanceUseCase") private readonly nftInstanceUseCase: NftInstanceUseCase,
   ) {}
 
   Query = {
@@ -107,6 +109,11 @@ export default class UserResolver {
 
     nftWallet: (parent, _, ctx: IContext) => {
       return ctx.loaders.nftWalletByUserId.load(parent.id);
+    },
+
+    nftInstances: async (parent, args, ctx: IContext) => {
+      const filter = { ...args.filter, userId: [parent.id] };
+      return this.nftInstanceUseCase.findNftInstances(ctx, filter, args.sort, args.first, args.cursor);
     },
   };
 }

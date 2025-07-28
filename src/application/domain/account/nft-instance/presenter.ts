@@ -3,33 +3,7 @@ import {
   GqlNftInstancesConnection,
   GqlNftToken,
 } from "@/types/graphql";
-
-type NftInstanceWithRelations = {
-  id: string;
-  instanceId: string;
-  name: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  json: any;
-  createdAt: Date;
-  updatedAt: Date | null;
-  nftToken?: {
-    id: string;
-    address: string;
-    name: string | null;
-    symbol: string | null;
-    type: string;
-    json: any;
-    createdAt: Date;
-    updatedAt: Date | null;
-  } | null;
-  nftWallet: {
-    id: string;
-    walletAddress: string;
-    createdAt: Date;
-    updatedAt: Date | null;
-  };
-};
+import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/interface";
 
 export default class NftInstancePresenter {
   static toGraphQL(nftInstance: NftInstanceWithRelations): GqlNftInstance {
@@ -54,22 +28,6 @@ export default class NftInstancePresenter {
     };
   }
 
-  static nftTokenToGraphQL(nftToken: NftInstanceWithRelations['nftToken']): GqlNftToken {
-    if (!nftToken) throw new Error("nftToken is null");
-    
-    return {
-      __typename: "NftToken",
-      id: nftToken.id,
-      address: nftToken.address,
-      name: nftToken.name,
-      symbol: nftToken.symbol,
-      type: nftToken.type,
-      json: nftToken.json,
-      createdAt: nftToken.createdAt,
-      updatedAt: nftToken.updatedAt,
-    };
-  }
-
   static nftTokenToGraphQLSafe(nftToken: NftInstanceWithRelations['nftToken']): GqlNftToken | null {
     if (!nftToken) return null;
     
@@ -89,11 +47,12 @@ export default class NftInstancePresenter {
   static nftInstancesQuery(
     nftInstances: GqlNftInstance[],
     hasNextPage: boolean,
+    totalCount: number,
     cursor?: string
   ): GqlNftInstancesConnection {
     return {
       __typename: "NftInstancesConnection",
-      totalCount: nftInstances.length,
+      totalCount,
       pageInfo: {
         hasNextPage,
         hasPreviousPage: !!cursor,

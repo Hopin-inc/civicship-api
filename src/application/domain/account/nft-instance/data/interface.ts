@@ -4,6 +4,7 @@ import { NftInstance, NftToken, NftWallet, Prisma } from "@prisma/client";
 export type NftInstanceWithRelations = NftInstance & {
   nftToken?: NftToken | null;
   nftWallet: NftWallet;
+  json: Prisma.JsonValue;
 };
 
 export default interface INftInstanceRepository {
@@ -16,4 +17,9 @@ export default interface INftInstanceRepository {
   ): Promise<NftInstanceWithRelations[]>;
 
   findNftInstanceById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null>;
+
+  countNftInstances(
+    ctx: IContext,
+    where: Prisma.NftInstanceWhereInput
+  ): Promise<number>;
 }

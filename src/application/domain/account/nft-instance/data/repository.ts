@@ -14,16 +14,25 @@ export default class NftInstanceRepository implements INftInstanceRepository {
   ): Promise<NftInstanceWithRelations[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return (tx as any).nftInstance.findMany({
-        where: {
-          ...where,
-          ...(cursor ? { id: { gt: cursor } } : {}),
-        },
+        where,
         include: {
           nftToken: true,
           nftWallet: true,
         },
         orderBy,
         take,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+    });
+  }
+
+  async countNftInstances(
+    ctx: IContext,
+    where: Prisma.NftInstanceWhereInput
+  ): Promise<number> {
+    return ctx.issuer.public(ctx, (tx) => {
+      return (tx as any).nftInstance.count({
+        where,
       });
     });
   }
