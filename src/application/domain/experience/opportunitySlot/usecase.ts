@@ -14,7 +14,7 @@ import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import { OpportunitySlotHostingStatus, Prisma, ReservationStatus, TransactionReason } from "@prisma/client";
+import { OpportunitySlotHostingStatus, ReservationStatus, TransactionReason } from "@prisma/client";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import NotificationService from "@/application/domain/notification/service";
 import { inject, injectable } from "tsyringe";

@@ -116,6 +116,7 @@ describe("UtilityService", () => {
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
+        ownerId: null,
         createdAt: new Date(),
         updatedAt: null,
         community: {
@@ -192,6 +193,7 @@ describe("UtilityService", () => {
         description: "Test Description",
         pointsRequired: 100,
         communityId: "c1",
+        ownerId: null,
         createdAt: new Date(),
         updatedAt: null,
         community: {

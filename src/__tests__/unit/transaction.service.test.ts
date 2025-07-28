@@ -4,6 +4,7 @@ import { IContext } from "@/types/server";
 import { container } from "tsyringe";
 import TransactionService from "@/application/domain/transaction/service";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import { TransactionReason } from "@prisma/client";
 
 jest.mock("@/application/domain/utils", () => ({
   getCurrentUserId: jest.fn().mockReturnValue("test-user-id"),
@@ -151,6 +152,7 @@ describe("TransactionService", () => {
         walletId,
         transferPoints,
         mockTx,
+        TransactionReason.DONATION,
       );
 
       expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
