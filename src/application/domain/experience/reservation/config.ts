@@ -1,3 +1,5 @@
+import logger from "@/infrastructure/logging";
+
 /**
  * Activity-specific booking configuration
  * Maps activity IDs to the number of days required for advance booking
@@ -26,12 +28,12 @@ try {
     const envConfig = process.env.ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG;
     if (envConfig) {
         configFromEnv = JSON.parse(envConfig);
-        console.log('Loaded activity advance booking days config from environment variable');
+        logger.info('Loaded activity advance booking days config from environment variable');
     } else {
-        console.log('No environment variable for activity advance booking days config found, using defaults');
+        logger.info('No environment variable for activity advance booking days config found, using defaults');
     }
 } catch (error) {
-    console.error('Error parsing ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG environment variable:', error);
+    logger.error('Error parsing ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG environment variable:', error);
 }
 
 /**
