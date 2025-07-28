@@ -10,6 +10,7 @@ extend type Query {
 }
 
 input NftInstanceFilterInput {
+  userId: [ID!]
   nftWalletId: [ID!]
   nftTokenAddress: [String!]
   nftTokenType: [String!]

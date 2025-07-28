@@ -1174,6 +1174,7 @@ export type GqlNftInstanceFilterInput = {
   nftWalletId?: InputMaybe<Array<Scalars['ID']['input']>>;
   not?: InputMaybe<GqlNftInstanceFilterInput>;
   or?: InputMaybe<Array<GqlNftInstanceFilterInput>>;
+  userId?: InputMaybe<Array<Scalars['ID']['input']>>;
 };
 
 export type GqlNftInstanceSortInput = {

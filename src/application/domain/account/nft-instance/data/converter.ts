@@ -8,6 +8,10 @@ export default class NftInstanceConverter {
 
     const conditions: any[] = [];
 
+    if (input.userId?.length) {
+      conditions.push({ nftWallet: { userId: { in: input.userId } } });
+    }
+
     if (input.nftWalletId?.length) {
       conditions.push({ nftWalletId: { in: input.nftWalletId } });
     }
