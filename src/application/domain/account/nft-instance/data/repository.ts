@@ -1,16 +1,17 @@
 import { IContext } from "@/types/server";
+import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
-import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
+import INftInstanceRepository, { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/interface";
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {
   async findNftInstances(
     ctx: IContext,
-    where: any,
-    orderBy: any[],
+    where: Prisma.NftInstanceWhereInput,
+    orderBy: Prisma.NftInstanceOrderByWithRelationInput[],
     take: number,
     cursor?: string
-  ): Promise<any[]> {
+  ): Promise<NftInstanceWithRelations[]> {
     return ctx.issuer.public(ctx, (tx) => {
       return (tx as any).nftInstance.findMany({
         where: {
@@ -27,7 +28,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async findNftInstanceById(ctx: IContext, id: string): Promise<any | null> {
+  async findNftInstanceById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null> {
     return ctx.issuer.public(ctx, (tx) => {
       return (tx as any).nftInstance.findUnique({
         where: { id },

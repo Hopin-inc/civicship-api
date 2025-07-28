@@ -1,12 +1,13 @@
 import { GqlNftInstanceFilterInput, GqlNftInstanceSortInput, GqlSortDirection } from "@/types/graphql";
+import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 
 @injectable()
 export default class NftInstanceConverter {
-  nftInstancesFilter(input?: GqlNftInstanceFilterInput): any {
+  nftInstancesFilter(input?: GqlNftInstanceFilterInput): Prisma.NftInstanceWhereInput {
     if (!input) return {};
 
-    const conditions: any[] = [];
+    const conditions: Prisma.NftInstanceWhereInput[] = [];
 
     if (input.userId?.length) {
       conditions.push({ nftWallet: { userId: { in: input.userId } } });
@@ -36,7 +37,7 @@ export default class NftInstanceConverter {
       conditions.push(input.hasImage ? { imageUrl: { not: null } } : { imageUrl: null });
     }
 
-    const where: any = {};
+    const where: Prisma.NftInstanceWhereInput = {};
 
     if (conditions.length > 0) {
       where.AND = conditions;
@@ -44,7 +45,7 @@ export default class NftInstanceConverter {
 
     if (input.and?.length) {
       const andConditions = input.and.map(filter => this.nftInstancesFilter(filter));
-      where.AND = [...(where.AND || []), ...andConditions];
+      where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...andConditions];
     }
 
     if (input.or?.length) {
@@ -58,12 +59,12 @@ export default class NftInstanceConverter {
     return where;
   }
 
-  nftInstancesSort(input?: GqlNftInstanceSortInput): any[] {
+  nftInstancesSort(input?: GqlNftInstanceSortInput): Prisma.NftInstanceOrderByWithRelationInput[] {
     if (!input) {
       return [{ createdAt: "desc" }];
     }
 
-    const orderBy: any[] = [];
+    const orderBy: Prisma.NftInstanceOrderByWithRelationInput[] = [];
 
     if (input.createdAt) {
       orderBy.push({ createdAt: input.createdAt === GqlSortDirection.Asc ? "asc" : "desc" });
