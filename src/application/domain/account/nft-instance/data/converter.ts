@@ -37,24 +37,17 @@ export default class NftInstanceConverter {
       conditions.push(input.hasImage ? { imageUrl: { not: null } } : { imageUrl: null });
     }
 
-    const where: Prisma.NftInstanceWhereInput = {};
-
-    if (conditions.length > 0) {
-      where.AND = conditions;
-    }
+    const allAndConditions: Prisma.NftInstanceWhereInput[] = [...conditions];
 
     if (input.and?.length) {
       const andConditions = input.and.map(filter => this.nftInstancesFilter(filter));
-      const existingAnd = where.AND;
-      if (existingAnd) {
-        if (Array.isArray(existingAnd)) {
-          where.AND = [...existingAnd, ...andConditions];
-        } else {
-          where.AND = [existingAnd, ...andConditions];
-        }
-      } else {
-        where.AND = andConditions;
-      }
+      allAndConditions.push(...andConditions);
+    }
+
+    const where: Prisma.NftInstanceWhereInput = {};
+
+    if (allAndConditions.length > 0) {
+      where.AND = allAndConditions;
     }
 
     if (input.or?.length) {
