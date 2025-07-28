@@ -7,16 +7,6 @@ import NftInstanceService from "@/application/domain/account/nft-instance/servic
 export default class NftInstanceUseCase {
   constructor(@inject("NftInstanceService") private readonly service: NftInstanceService) {}
 
-  async findNftInstances(
-    ctx: IContext,
-    filter?: GqlNftInstanceFilterInput,
-    sort?: GqlNftInstanceSortInput,
-    first?: number,
-    cursor?: string
-  ) {
-    return this.service.getNftInstances(filter, sort, ctx, cursor, first);
-  }
-
   async getNftInstances(
     filter: GqlNftInstanceFilterInput | undefined,
     sort: GqlNftInstanceSortInput | undefined,
@@ -24,7 +14,7 @@ export default class NftInstanceUseCase {
     cursor?: string,
     first?: number
   ) {
-    return this.service.getNftInstances(filter, sort, ctx, cursor, first);
+    return this.service.fetchNftInstances(filter, sort, ctx, cursor, first);
   }
 
   async getNftInstance(id: string, ctx: IContext) {

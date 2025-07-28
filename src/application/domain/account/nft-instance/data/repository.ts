@@ -1,7 +1,8 @@
 import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
-import INftInstanceRepository, { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/interface";
+import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
+import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {

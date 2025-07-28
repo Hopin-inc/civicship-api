@@ -14,7 +14,7 @@ export default class NftInstanceService {
     @inject("NftInstanceConverter") private readonly converter: NftInstanceConverter,
   ) {}
 
-  async getNftInstances(
+  async fetchNftInstances(
     filter: GqlNftInstanceFilterInput | undefined,
     sort: GqlNftInstanceSortInput | undefined,
     ctx: IContext,
@@ -32,7 +32,7 @@ export default class NftInstanceService {
     
     const hasNextPage = nftInstances.length > take;
     const nftInstanceNodes = nftInstances.slice(0, take).map((nftInstance) => 
-      NftInstancePresenter.toGraphQL(nftInstance)
+      NftInstancePresenter.get(nftInstance)
     );
     const endCursor = nftInstanceNodes.length > 0 ? nftInstanceNodes[nftInstanceNodes.length - 1].id : undefined;
     
@@ -44,6 +44,6 @@ export default class NftInstanceService {
     if (!nftInstance) {
       throw new NotFoundError("NftInstance", { id });
     }
-    return NftInstancePresenter.toGraphQL(nftInstance);
+    return NftInstancePresenter.get(nftInstance);
   }
 }

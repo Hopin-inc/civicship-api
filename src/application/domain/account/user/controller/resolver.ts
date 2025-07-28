@@ -113,7 +113,7 @@ export default class UserResolver {
 
     nftInstances: async (parent, args, ctx: IContext) => {
       const filter = { ...args.filter, userId: [parent.id] };
-      return this.nftInstanceUseCase.findNftInstances(ctx, filter, args.sort, args.first, args.cursor);
+      return this.nftInstanceUseCase.getNftInstances(filter, args.sort, ctx, args.cursor, args.first);
     },
   };
 }

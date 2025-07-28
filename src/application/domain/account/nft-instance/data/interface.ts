@@ -1,11 +1,6 @@
 import { IContext } from "@/types/server";
-import { NftInstance, NftToken, NftWallet, Prisma } from "@prisma/client";
-
-export type NftInstanceWithRelations = NftInstance & {
-  nftToken?: NftToken | null;
-  nftWallet: NftWallet;
-  json: Prisma.JsonValue;
-};
+import { Prisma } from "@prisma/client";
+import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
 export default interface INftInstanceRepository {
   findNftInstances(
