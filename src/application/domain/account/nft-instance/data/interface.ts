@@ -1,5 +1,5 @@
-import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
 export default interface INftInstanceRepository {
@@ -17,4 +17,10 @@ export default interface INftInstanceRepository {
     ctx: IContext,
     where: Prisma.NftInstanceWhereInput
   ): Promise<number>;
+  
+  upsert(
+    ctx: IContext,
+    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: any; nftWalletId: string; nftTokenId: string },
+    tx: Prisma.TransactionClient,
+  ): Promise<{ id: string }>;
 }
