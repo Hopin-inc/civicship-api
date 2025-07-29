@@ -95,6 +95,19 @@ export class VCIssuanceRequestRepository implements IVCIssuanceRequestRepository
     });
   }
 
+  async createMany(
+    ctx: IContext,
+    data: Prisma.VcIssuanceRequestCreateManyInput[],
+  ): Promise<Prisma.BatchPayload> {
+    const issuer = ctx.issuer || this.getIssuer();
+    return issuer.public(ctx, (tx) => {
+      return tx.vcIssuanceRequest.createMany({ 
+        data, 
+        skipDuplicates: true 
+      });
+    });
+  }
+
   async update(
     ctx: IContext,
     id: string,

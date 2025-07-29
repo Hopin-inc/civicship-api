@@ -3,6 +3,7 @@ import TestDataSourceHelper from "../../helper/test-data-source-helper";
 import { IContext } from "@/types/server";
 import {
   CurrentPrefecture,
+  IdentityPlatform,
   MembershipStatus,
   MembershipStatusReason,
   OpportunityCategory,
@@ -11,6 +12,7 @@ import {
   PublishStatus,
   Role,
   TransactionReason,
+  VcIssuanceStatus,
   WalletType,
 } from "@prisma/client";
 import { container } from "tsyringe";
@@ -247,5 +249,262 @@ describe("Point Reward Tests", () => {
       ?.currentPointView?.currentPoint;
     const expectedCommunityPoint = 0;
     expect(communityPoint).toBe(BigInt(expectedCommunityPoint));
+  });
+
+  it("creates VC issuance request with detailed claims for phone-authenticated user", async () => {
+    await TestDataSourceHelper.createIdentity({
+      uid: `phone-uid-${Date.now()}`,
+      platform: IdentityPlatform.PHONE,
+      user: { connect: { id: participationUserId } },
+      community: { connect: { id: communityId } },
+    });
+
+    await useCase.managerBulkCreateEvaluations(
+      {
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
+    expect(vcRequests).toHaveLength(1);
+    
+    const vcRequest = vcRequests[0];
+    expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
+    expect(vcRequest.evaluationId).toBeDefined();
+    expect(vcRequest.userId).toBe(participationUserId);
+    
+    const claims = vcRequest.claims as any;
+    expect(claims.type).toBe("EvaluationCredential");
+    expect(claims.evaluator).toBeDefined();
+    expect(claims.participant).toBeDefined();
+    expect(claims.opportunity).toBeDefined();
+  });
+
+  it("does not create VC issuance request for user without phone authentication", async () => {
+    await useCase.managerBulkCreateEvaluations(
+      {
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
+    expect(vcRequests).toHaveLength(0);
+  });
+
+  it("creates VC issuance request with correct claims structure", async () => {
+    await TestDataSourceHelper.createIdentity({
+      uid: `phone-uid-${Date.now()}`,
+      platform: IdentityPlatform.PHONE,
+      user: { connect: { id: participationUserId } },
+      community: { connect: { id: communityId } },
+    });
+
+    await useCase.managerBulkCreateEvaluations(
+      {
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
+    const vcRequest = vcRequests[0];
+    const claims = vcRequest.claims as any;
+
+    expect(claims.type).toBe("EvaluationCredential");
+    expect(claims.score).toBe("PASSED");
+    expect(claims.participationId).toBe(participationId);
+    expect(claims.evaluationId).toBeDefined();
+    expect(claims.comment).toBe(testSetup.comment);
+    
+    expect(claims.evaluator.id).toBe(opportunityOwnerUserId);
+    expect(claims.evaluator.name).toBe("Manager");
+    
+    expect(claims.participant.id).toBe(participationUserId);
+    expect(claims.participant.name).toBeDefined();
+    
+    expect(claims.opportunity.id).toBeDefined();
+    expect(claims.opportunity.title).toBe("opportunity");
+    expect(claims.opportunity.pointsToEarn).toBe(testSetup.pointsToEarn);
+  });
+
+  it("creates multiple VC issuance requests for bulk evaluations", async () => {
+    let reservation: any;
+    
+    const reservations = await TestDataSourceHelper.findAllReservations();
+    if (reservations.length > 0) {
+      reservation = reservations[0];
+    }
+
+    const secondParticipation = await TestDataSourceHelper.createParticipation({
+      status: ParticipationStatus.PENDING,
+      reason: ParticipationStatusReason.RESERVATION_APPLIED,
+      community: { connect: { id: communityId } },
+      user: { connect: { id: participationUserId } },
+      reservation: { connect: { id: reservation.id } },
+    });
+
+    await TestDataSourceHelper.createIdentity({
+      uid: `phone-uid-${Date.now()}`,
+      platform: IdentityPlatform.PHONE,
+      user: { connect: { id: participationUserId } },
+      community: { connect: { id: communityId } },
+    });
+
+    await useCase.managerBulkCreateEvaluations(
+      {
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Passed,
+            },
+            {
+              participationId: secondParticipation.id,
+              comment: "Second evaluation",
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
+    expect(vcRequests).toHaveLength(2);
+    
+    vcRequests.forEach(vcRequest => {
+      expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
+      expect(vcRequest.userId).toBe(participationUserId);
+      const claims = vcRequest.claims as any;
+      expect(claims.type).toBe("EvaluationCredential");
+    });
+  });
+
+  it("does not create VC issuance request for Failed evaluation", async () => {
+    await TestDataSourceHelper.createIdentity({
+      uid: `phone-uid-${Date.now()}`,
+      platform: IdentityPlatform.PHONE,
+      user: { connect: { id: participationUserId } },
+      community: { connect: { id: communityId } },
+    });
+
+    await useCase.managerBulkCreateEvaluations(
+      {
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: testSetup.comment,
+              status: GqlEvaluationStatus.Failed,
+            },
+          ],
+        },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
+    expect(vcRequests).toHaveLength(0);
+  });
+
+  it("creates VC only for Passed evaluations in mixed bulk evaluation", async () => {
+    let reservation: any;
+    
+    const reservations = await TestDataSourceHelper.findAllReservations();
+    if (reservations.length > 0) {
+      reservation = reservations[0];
+    }
+
+    const secondParticipation = await TestDataSourceHelper.createParticipation({
+      status: ParticipationStatus.PENDING,
+      reason: ParticipationStatusReason.RESERVATION_APPLIED,
+      community: { connect: { id: communityId } },
+      user: { connect: { id: participationUserId } },
+      reservation: { connect: { id: reservation.id } },
+    });
+
+    const thirdParticipation = await TestDataSourceHelper.createParticipation({
+      status: ParticipationStatus.PENDING,
+      reason: ParticipationStatusReason.RESERVATION_APPLIED,
+      community: { connect: { id: communityId } },
+      user: { connect: { id: participationUserId } },
+      reservation: { connect: { id: reservation.id } },
+    });
+
+    await TestDataSourceHelper.createIdentity({
+      uid: `phone-uid-${Date.now()}`,
+      platform: IdentityPlatform.PHONE,
+      user: { connect: { id: participationUserId } },
+      community: { connect: { id: communityId } },
+    });
+
+    await useCase.managerBulkCreateEvaluations(
+      {
+        input: {
+          evaluations: [
+            {
+              participationId,
+              comment: "Passed evaluation",
+              status: GqlEvaluationStatus.Passed,
+            },
+            {
+              participationId: secondParticipation.id,
+              comment: "Failed evaluation",
+              status: GqlEvaluationStatus.Failed,
+            },
+            {
+              participationId: thirdParticipation.id,
+              comment: "Another passed evaluation",
+              status: GqlEvaluationStatus.Passed,
+            },
+          ],
+        },
+        permission: { communityId },
+      },
+      ctx,
+    );
+
+    const vcRequests = await TestDataSourceHelper.findAllVCIssuanceRequests();
+    expect(vcRequests).toHaveLength(2);
+    
+    vcRequests.forEach(vcRequest => {
+      expect(vcRequest.status).toBe(VcIssuanceStatus.PENDING);
+      expect(vcRequest.userId).toBe(participationUserId);
+      const claims = vcRequest.claims as any;
+      expect(claims.type).toBe("EvaluationCredential");
+      expect(claims.score).toBe("PASSED");
+    });
   });
 });

@@ -1,7 +1,7 @@
-import { EvaluationCredentialPayload } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
+import { EvaluationCredentialPayload, VCClaimsData } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/type";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import logger from "@/infrastructure/logging";
-import { ParticipationStatusReason, Prisma } from "@prisma/client";
+import { ParticipationStatusReason, Prisma, VcIssuanceStatus } from "@prisma/client";
 import { injectable } from "tsyringe";
 import { GqlVcIssuanceRequestFilterInput, GqlVcIssuanceRequestSortInput } from "@/types/graphql";
 
@@ -81,4 +81,75 @@ export default class VCIssuanceRequestConverter {
       credentialFormat: "JWT",
     };
   };
+
+  createManyInputs(
+    evaluations: Array<{
+      evaluation: PrismaEvaluation;
+      userId: string;
+    }>
+  ): Prisma.VcIssuanceRequestCreateManyInput[] {
+    return evaluations.map(({ evaluation, userId }) => {
+      const detailedClaims = this.createDetailedClaims(evaluation);
+      return {
+        evaluationId: evaluation.id,
+        userId,
+        claims: detailedClaims,
+        credentialFormat: "JWT",
+        status: VcIssuanceStatus.PENDING,
+      };
+    });
+  }
+
+  private createDetailedClaims(evaluation: PrismaEvaluation): VCClaimsData {
+    const { participation, opportunity, userId } = this.validateParticipationHasOpportunity(evaluation);
+    const user = participation.user;
+
+    const claims: VCClaimsData = {
+      type: "EvaluationCredential",
+      score: evaluation.status.toString(),
+      participationId: evaluation.participationId,
+      evaluationId: evaluation.id,
+      evaluator: {
+        id: evaluation.evaluator.id, // Use the current user as evaluator since we don't have createdBy
+        name: evaluation.evaluator.name,
+      },
+      participant: {
+        id: userId,
+        name: user?.name || "Unknown",
+        slug: user?.slug || "unknown",
+      },
+      opportunity: {
+        id: opportunity.id,
+        title: opportunity.title,
+        category: opportunity.category.toString(),
+        pointsToEarn: opportunity.pointsToEarn || 0,
+      },
+    };
+
+    if (evaluation.comment) {
+      claims.comment = evaluation.comment;
+    }
+
+    return claims;
+  }
+
+  private validateParticipationHasOpportunity(evaluation: PrismaEvaluation) {
+    const participation = evaluation.participation;
+    if (!participation) {
+      throw new Error("Participation not found in evaluation");
+    }
+
+    const opportunity = participation.reservation?.opportunitySlot?.opportunity || 
+                       participation.opportunitySlot?.opportunity;
+    if (!opportunity) {
+      throw new Error("Opportunity not found in participation");
+    }
+
+    const userId = participation.userId;
+    if (!userId) {
+      throw new Error("User ID not found in participation");
+    }
+
+    return { participation, opportunity, userId };
+  }
 }

@@ -107,6 +107,19 @@ export interface IParticipationRepository {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaParticipationDetail>;
 
+  createMany(
+    ctx: IContext,
+    data: Prisma.ParticipationCreateInput[],
+    tx: Prisma.TransactionClient,
+  ): Promise<Prisma.BatchPayload>;
+
+  findManyBySlotAndUsers(
+    ctx: IContext,
+    slotId: string,
+    userIds: string[],
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaParticipationDetail[]>;
+
   bulkSetStatusByReservation(
     ctx: IContext,
     participationIds: string[],
