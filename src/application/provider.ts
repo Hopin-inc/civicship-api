@@ -18,6 +18,7 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
+import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
@@ -135,6 +136,7 @@ export function registerProductionDependencies() {
   container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
+  container.register("NftWalletResolver", { useClass: NftWalletResolver });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });
