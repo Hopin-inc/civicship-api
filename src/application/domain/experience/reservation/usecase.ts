@@ -135,7 +135,10 @@ export default class ReservationUseCase {
     const currentUserId = getCurrentUserId(ctx);
 
     const reservation = await this.reservationService.findReservationOrThrow(ctx, id);
-    this.reservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
+    this.reservationValidator.validateCancellable(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.opportunityId
+    );
 
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       await this.reservationService.setStatus(
