@@ -1,6 +1,7 @@
 type NftWallet {
   id: ID!
   walletAddress: String!
+  user: User!
   createdAt: Datetime
   updatedAt: Datetime
 }

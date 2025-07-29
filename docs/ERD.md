@@ -624,6 +624,32 @@ TICKET_REFUNDED TICKET_REFUNDED
     }
   
 
+  "t_nft_tokens" {
+    String id "🗝️"
+    String address 
+    String name "❓"
+    String symbol "❓"
+    String type 
+    Json json "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_nft_instances" {
+    String id "🗝️"
+    String instance_id 
+    String name "❓"
+    String description "❓"
+    String image_url "❓"
+    Json json "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    String nft_wallet_id 
+    String nft_token_id "❓"
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 
@@ -867,6 +893,10 @@ TICKET_REFUNDED TICKET_REFUNDED
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_nft_wallets" o|--|| "t_users" : "user"
+    "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
+    "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
