@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - develop
-      - hotfix/*
-      - epic/*
+      - hotfix/**
+      - epic/**
 
 jobs:
   deploy:
