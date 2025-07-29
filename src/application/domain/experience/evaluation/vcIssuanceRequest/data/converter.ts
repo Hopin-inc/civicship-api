@@ -110,8 +110,8 @@ export default class VCIssuanceRequestConverter {
       participationId: evaluation.participationId,
       evaluationId: evaluation.id,
       evaluator: {
-        id: userId, // Use the current user as evaluator since we don't have createdBy
-        name: "Manager",
+        id: evaluation.evaluator.id, // Use the current user as evaluator since we don't have createdBy
+        name: evaluation.evaluator.name,
       },
       participant: {
         id: userId,
