@@ -6,7 +6,7 @@ import { NftInstanceWithRelations } from "@/application/domain/account/nft-insta
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {
-  async findNftInstances(
+  async query(
     ctx: IContext,
     where: Prisma.NftInstanceWhereInput,
     orderBy: Prisma.NftInstanceOrderByWithRelationInput[],

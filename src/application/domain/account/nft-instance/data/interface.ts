@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
 export default interface INftInstanceRepository {
-  findNftInstances(
+  query(
     ctx: IContext,
     where: Prisma.NftInstanceWhereInput,
     orderBy: Prisma.NftInstanceOrderByWithRelationInput[],
