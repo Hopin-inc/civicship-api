@@ -11,9 +11,9 @@ export default interface INftInstanceRepository {
     cursor?: string
   ): Promise<NftInstanceWithRelations[]>;
 
-  findNftInstanceById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null>;
+  findById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null>;
 
-  countNftInstances(
+  count(
     ctx: IContext,
     where: Prisma.NftInstanceWhereInput
   ): Promise<number>;

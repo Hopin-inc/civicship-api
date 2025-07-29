@@ -7,17 +7,14 @@ import NftTokenPresenter from "@/application/domain/account/nft-token/presenter"
 export default class NftInstancePresenter {
   static get(nftInstance: NftInstanceWithRelations): any {
     const { nftWallet, nftToken, ...nftInstanceProps } = nftInstance;
-    
+
     return {
       __typename: "NftInstance",
       ...nftInstanceProps,
       nftToken: NftTokenPresenter.get(nftToken),
       nftWallet: {
         __typename: "NftWallet",
-        id: nftWallet.id,
-        walletAddress: nftWallet.walletAddress,
-        createdAt: nftWallet.createdAt,
-        updatedAt: nftWallet.updatedAt,
+        ...nftWallet,
       },
     };
   }

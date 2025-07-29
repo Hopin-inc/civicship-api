@@ -4,7 +4,7 @@ import { injectable } from "tsyringe";
 
 @injectable()
 export default class NftInstanceConverter {
-  nftInstancesFilter(input?: GqlNftInstanceFilterInput): Prisma.NftInstanceWhereInput {
+  filter(input?: GqlNftInstanceFilterInput): Prisma.NftInstanceWhereInput {
     if (!input) return {};
 
     const conditions: Prisma.NftInstanceWhereInput[] = [];
@@ -40,7 +40,7 @@ export default class NftInstanceConverter {
     const allAndConditions: Prisma.NftInstanceWhereInput[] = [...conditions];
 
     if (input.and?.length) {
-      const andConditions = input.and.map(filter => this.nftInstancesFilter(filter));
+      const andConditions = input.and.map(filter => this.filter(filter));
       allAndConditions.push(...andConditions);
     }
 
@@ -51,17 +51,17 @@ export default class NftInstanceConverter {
     }
 
     if (input.or?.length) {
-      where.OR = input.or.map(filter => this.nftInstancesFilter(filter));
+      where.OR = input.or.map(filter => this.filter(filter));
     }
 
     if (input.not) {
-      where.NOT = this.nftInstancesFilter(input.not);
+      where.NOT = this.filter(input.not);
     }
 
     return where;
   }
 
-  nftInstancesSort(input?: GqlNftInstanceSortInput): Prisma.NftInstanceOrderByWithRelationInput[] {
+  sort(input?: GqlNftInstanceSortInput): Prisma.NftInstanceOrderByWithRelationInput[] {
     const orderBy: Prisma.NftInstanceOrderByWithRelationInput[] = [];
 
     if (input?.createdAt) {

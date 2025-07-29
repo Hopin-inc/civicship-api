@@ -28,7 +28,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async countNftInstances(
+  async count(
     ctx: IContext,
     where: Prisma.NftInstanceWhereInput
   ): Promise<number> {
@@ -39,7 +39,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async findNftInstanceById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null> {
+  async findById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null> {
     return ctx.issuer.public(ctx, async (tx) => {
       const result = await tx.nftInstance.findUnique({
         where: { id },
