@@ -1,12 +1,11 @@
 import {
-  GqlNftInstance,
   GqlNftInstancesConnection,
   GqlNftToken,
 } from "@/types/graphql";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
 export default class NftInstancePresenter {
-  static get(nftInstance: NftInstanceWithRelations): GqlNftInstance {
+  static get(nftInstance: NftInstanceWithRelations): any {
     return {
       __typename: "NftInstance",
       id: nftInstance.id,
@@ -18,7 +17,10 @@ export default class NftInstancePresenter {
       nftToken: nftInstance.nftToken ? this.nftTokenToGraphQLSafe(nftInstance.nftToken) : null,
       nftWallet: {
         __typename: "NftWallet",
-        ...nftInstance.nftWallet,
+        id: nftInstance.nftWallet.id,
+        walletAddress: nftInstance.nftWallet.walletAddress,
+        createdAt: nftInstance.nftWallet.createdAt,
+        updatedAt: nftInstance.nftWallet.updatedAt,
       },
       createdAt: nftInstance.createdAt,
       updatedAt: nftInstance.updatedAt,
@@ -42,7 +44,7 @@ export default class NftInstancePresenter {
   }
 
   static nftInstancesQuery(
-    nftInstances: GqlNftInstance[],
+    nftInstances: any[],
     hasNextPage: boolean,
     totalCount: number,
     cursor?: string
