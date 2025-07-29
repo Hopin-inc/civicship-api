@@ -6,8 +6,9 @@ import {
   AlreadyJoinedError,
   NoAvailableParticipationSlotsError,
   ReservationCancellationTimeoutError,
-  ReservationAdvanceBookingRequiredError
+  ReservationAdvanceBookingRequiredError,
 } from "@/errors/graphql";
+import { DEFAULT_CANCELLATION_DEADLINE_DAYS } from "@/application/domain/experience/reservation/config";
 import ReservationValidator from "@/application/domain/experience/reservation/validator";
 import * as config from "@/application/domain/experience/reservation/config";
 
@@ -224,22 +225,22 @@ describe("ReservationValidator", () => {
   });
 
   describe("validateCancellable", () => {
-    it("should pass if cancellation is before default advance booking days", () => {
-      const slotStartAt = futureDate(8); // 8日後 (デフォルトは7日)
+    it("should pass if cancellation is before cancellation deadline (1 day before start)", () => {
+      const slotStartAt = futureDate(2); // 2日後 (キャンセル期限は1日前)
       expect(() => {
         validator.validateCancellable(slotStartAt);
       }).not.toThrow();
     });
 
-    it("should throw if cancellation is within default advance booking days", () => {
-      const slotStartAt = futureDate(5); // 5日後 (デフォルトは7日)
+    it("should throw if cancellation is within cancellation deadline (1 day before start)", () => {
+      const slotStartAt = futureDate(0.5); // 0.5日後 (キャンセル期限は1日前)
       expect(() => {
         validator.validateCancellable(slotStartAt);
       }).toThrow(ReservationCancellationTimeoutError);
     });
 
-    it("should handle exact boundary condition for default advance booking days", () => {
-      // このテストは「7日前ちょうど」ではなく「7日前+1ミリ秒」の予約がキャンセル可能であることを期待している
+    it("should handle exact boundary condition for cancellation deadline (1 day before start)", () => {
+      // このテストは「1日前ちょうど」ではなく「1日前+1ミリ秒」の予約がキャンセル可能であることを期待している
       jest.spyOn(Date, 'now').mockImplementation(() => {
         const mockNow = new Date();
         return mockNow.getTime();
@@ -247,7 +248,7 @@ describe("ReservationValidator", () => {
 
       const now = new Date(Date.now());
       const exactLimit = new Date(now);
-      exactLimit.setDate(exactLimit.getDate() + 7); // デフォルトは7日
+      exactLimit.setDate(exactLimit.getDate() + DEFAULT_CANCELLATION_DEADLINE_DAYS); // 1日
       exactLimit.setMilliseconds(exactLimit.getMilliseconds() + 1); // 境界値+1ミリ秒
 
       expect(() => {
@@ -257,10 +258,10 @@ describe("ReservationValidator", () => {
       jest.restoreAllMocks();
     });
 
-    it("should throw when exactly at default advance booking days limit", () => {
+    it("should throw when exactly at cancellation deadline limit (1 day before start)", () => {
       const now = new Date();
       const exactLimit = new Date(now);
-      exactLimit.setDate(exactLimit.getDate() + 7); // デフォルトは7日
+      exactLimit.setDate(exactLimit.getDate() + DEFAULT_CANCELLATION_DEADLINE_DAYS); // 1日
       exactLimit.setMilliseconds(exactLimit.getMilliseconds() - 1); // Just under the limit
 
       expect(() => {
@@ -304,50 +305,19 @@ describe("ReservationValidator", () => {
       }).not.toThrow();
     });
 
-    describe("with custom advance booking days", () => {
-      beforeEach(() => {
-        jest.spyOn(config, 'getAdvanceBookingDays').mockImplementation((activityId) => {
-          if (activityId === 'custom-activity-id') {
-            return 3;
-          }
-          if (activityId === 'zero-days-activity-id') {
-            return 0;
-          }
-          return 7; // Default
-        });
-      });
-
-      afterEach(() => {
-        jest.restoreAllMocks();
-      });
-
-      it("should pass if cancellation is before custom advance booking days for specific activity", () => {
-        const slotStartAt = futureDate(4); // 4日後 (カスタム設定は3日)
-        expect(() => {
-          validator.validateCancellable(slotStartAt, 'custom-activity-id');
-        }).not.toThrow();
-      });
-
-      it("should throw if cancellation is within custom advance booking days for specific activity", () => {
-        const slotStartAt = futureDate(2); // 2日後 (カスタム設定は3日)
-        expect(() => {
-          validator.validateCancellable(slotStartAt, 'custom-activity-id');
-        }).toThrow(ReservationCancellationTimeoutError);
-      });
-
-      it("should allow cancellation until start time for activities with 0 advance booking days", () => {
-        const slotStartAt = futureDate(0.01); // Just slightly in the future
-        expect(() => {
-          validator.validateCancellable(slotStartAt, 'zero-days-activity-id');
-        }).not.toThrow();
-      });
-
-      it("should throw if cancellation is after start time for activities with 0 advance booking days", () => {
-        const slotStartAt = pastDate(0.01); // Just slightly in the past
-        expect(() => {
-          validator.validateCancellable(slotStartAt, 'zero-days-activity-id');
-        }).toThrow(ReservationCancellationTimeoutError);
-      });
+    it("should use the same cancellation deadline (1 day) for all activities regardless of their advance booking days", () => {
+      // Even for activities with different advance booking days, cancellation deadline is always 1 day
+      const slotStartAt = futureDate(2); // 2日後 (キャンセル期限は1日前)
+      
+      expect(() => {
+        validator.validateCancellable(slotStartAt, 'any-activity-id');
+      }).not.toThrow();
+      
+      const nearSlotStartAt = futureDate(0.5); // 0.5日後 (キャンセル期限は1日前)
+      
+      expect(() => {
+        validator.validateCancellable(nearSlotStartAt, 'any-activity-id');
+      }).toThrow(ReservationCancellationTimeoutError);
     });
   });
 });

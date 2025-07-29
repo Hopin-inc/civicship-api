@@ -15,7 +15,7 @@ import {
   GqlOpportunitySlotHostingStatus as OpportunitySlotHostingStatus,
   GqlReservationStatus as ReservationStatus,
 } from "@/types/graphql";
-import { getAdvanceBookingDays } from "@/application/domain/experience/reservation/config";
+import { getAdvanceBookingDays, DEFAULT_CANCELLATION_DEADLINE_DAYS } from "@/application/domain/experience/reservation/config";
 
 @injectable()
 export default class ReservationValidator {
@@ -57,19 +57,11 @@ export default class ReservationValidator {
 
   validateCancellable(slotStartAt: Date, opportunityId?: string) {
     const now = new Date();
-    const advanceBookingDays = getAdvanceBookingDays(opportunityId);
-
-    // If advanceBookingDays is 0, cancellation is allowed until the start time
-    if (advanceBookingDays === 0) {
-      if (now.getTime() >= slotStartAt.getTime()) {
-        throw new ReservationCancellationTimeoutError();
-      }
-      return;
-    }
-
-    // Otherwise, use the configured advance booking days
+    
+    // Use DEFAULT_CANCELLATION_DEADLINE_DAYS (1 day) for all activities
+    // This allows cancellations until the day before the activity
     const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setDate(cancelLimit.getDate() - advanceBookingDays);
+    cancelLimit.setDate(cancelLimit.getDate() - DEFAULT_CANCELLATION_DEADLINE_DAYS);
 
     if (now > cancelLimit) {
       throw new ReservationCancellationTimeoutError();

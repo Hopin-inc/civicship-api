@@ -16,6 +16,11 @@ export interface ActivityBookingConfig {
 export const DEFAULT_ADVANCE_BOOKING_DAYS = 7;
 
 /**
+ * Default cancellation deadline days before activity start
+ */
+export const DEFAULT_CANCELLATION_DEADLINE_DAYS = 1;
+
+/**
  * Empty default configuration - we'll use only environment variables
  */
 
