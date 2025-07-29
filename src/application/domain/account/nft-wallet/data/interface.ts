@@ -27,14 +27,4 @@ export interface INFTWalletRepository {
     walletAddress: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftWalletCreateDetail>;
-  upsertNftToken(
-    ctx: IContext,
-    data: { address: string; name?: string | null; symbol?: string | null; type: string; json?: any },
-    tx: Prisma.TransactionClient,
-  ): Promise<{ id: string; address: string }>;
-  upsertNftInstance(
-    ctx: IContext,
-    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: any; nftWalletId: string; nftTokenId: string },
-    tx: Prisma.TransactionClient,
-  ): Promise<{ id: string }>;
 }

@@ -4,12 +4,16 @@ import { injectable, inject } from "tsyringe";
 import { fetchData } from "@/utils/fetch";
 import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
+import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
+import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 
 @injectable()
 export default class NFTWalletService {
   constructor(
     @inject("NFTWalletRepository") private nftWalletRepository: NFTWalletRepository,
+    @inject("NftTokenRepository") private nftTokenRepository: NftTokenRepository,
+    @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
   ) {}
   async createOrUpdateWalletAddress(
     ctx: IContext,
@@ -63,7 +67,7 @@ export default class NFTWalletService {
         const tokenSymbol = tokenInfo?.symbol || item.token.symbol;
         const tokenType = tokenInfo?.type || item.token.type || "UNKNOWN";
 
-        const nftToken = await this.nftWalletRepository.upsertNftToken(ctx, {
+        const nftToken = await this.nftTokenRepository.upsert(ctx, {
           address: item.token.address,
           name: tokenName || null,
           symbol: tokenSymbol || null,
@@ -71,7 +75,7 @@ export default class NFTWalletService {
           json: tokenInfo || item.token,
         }, tx);
 
-        await this.nftWalletRepository.upsertNftInstance(ctx, {
+        await this.nftInstanceRepository.upsert(ctx, {
           instanceId: item.id,
           name: item.metadata.name || null,
           description: item.metadata.description || null,
