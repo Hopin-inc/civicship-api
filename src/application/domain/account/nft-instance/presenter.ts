@@ -6,24 +6,19 @@ import { NftInstanceWithRelations } from "@/application/domain/account/nft-insta
 
 export default class NftInstancePresenter {
   static get(nftInstance: NftInstanceWithRelations): any {
+    const { nftWallet, nftToken, ...nftInstanceProps } = nftInstance;
+    
     return {
       __typename: "NftInstance",
-      id: nftInstance.id,
-      instanceId: nftInstance.instanceId,
-      name: nftInstance.name,
-      description: nftInstance.description,
-      imageUrl: nftInstance.imageUrl,
-      json: nftInstance.json,
-      nftToken: nftInstance.nftToken ? this.nftTokenToGraphQLSafe(nftInstance.nftToken) : null,
+      ...nftInstanceProps,
+      nftToken: nftToken ? this.nftTokenToGraphQLSafe(nftToken) : null,
       nftWallet: {
         __typename: "NftWallet",
-        id: nftInstance.nftWallet.id,
-        walletAddress: nftInstance.nftWallet.walletAddress,
-        createdAt: nftInstance.nftWallet.createdAt,
-        updatedAt: nftInstance.nftWallet.updatedAt,
+        id: nftWallet.id,
+        walletAddress: nftWallet.walletAddress,
+        createdAt: nftWallet.createdAt,
+        updatedAt: nftWallet.updatedAt,
       },
-      createdAt: nftInstance.createdAt,
-      updatedAt: nftInstance.updatedAt,
     };
   }
 
