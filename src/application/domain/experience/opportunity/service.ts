@@ -26,7 +26,7 @@ export default class OpportunityService {
     { cursor, filter, sort }: GqlQueryOpportunitiesArgs,
     take: number,
   ) {
-    const where = this.converter.filter(filter ?? {});
+    const where = this.converter.filter(ctx, filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
     return await this.repository.query(ctx, where, orderBy, take, cursor);
   }
@@ -36,7 +36,7 @@ export default class OpportunityService {
   }
 
   async findOpportunityAccessible(ctx: IContext, id: string, filter: GqlOpportunityFilterInput) {
-    const where = this.converter.findAccessible(id, filter ?? {});
+    const where = this.converter.findAccessible(ctx, id, filter ?? {});
 
     const opportunity = await this.repository.findAccessible(ctx, where);
     if (!opportunity) {
