@@ -7,32 +7,33 @@ import {
 } from "@/types/graphql";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
+import { IContext } from "@/types/server";
 
 @injectable()
 export default class OpportunityConverter {
-  filter(filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
+  filter(ctx: IContext, filter?: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput {
     if (!filter) return {};
 
     const conditions: Prisma.OpportunityWhereInput[] = [
-      ...this.opportunityFilter(filter),
+      ...this.opportunityFilter(filter, ctx.communityId),
       ...this.opportunitySlotFilter(filter),
     ];
 
     if (Array.isArray(filter.and) && filter.and.length) {
       conditions.push({
-        AND: filter.and.map((sub) => this.filter(sub)),
+        AND: filter.and.map((sub) => this.filter(ctx, sub)),
       });
     }
 
     if (Array.isArray(filter.or) && filter.or.length) {
       conditions.push({
-        OR: filter.or.map((sub) => this.filter(sub)),
+        OR: filter.or.map((sub) => this.filter(ctx, sub)),
       });
     }
 
     if (filter.not) {
       conditions.push({
-        NOT: this.filter(filter.not),
+        NOT: this.filter(ctx, filter.not),
       });
     }
 
@@ -55,10 +56,11 @@ export default class OpportunityConverter {
   }
 
   findAccessible(
+    ctx: IContext,
     id: string,
     filter?: GqlOpportunityFilterInput,
   ): Prisma.OpportunityWhereUniqueInput & Prisma.OpportunityWhereInput {
-    const validatedFilter = this.filter(filter);
+    const validatedFilter = this.filter(ctx, filter);
     return {
       id,
       ...(validatedFilter.AND ? { AND: validatedFilter.AND } : {}),
@@ -132,8 +134,11 @@ export default class OpportunityConverter {
     };
   }
 
-  private opportunityFilter(filter: GqlOpportunityFilterInput): Prisma.OpportunityWhereInput[] {
-    const conditions: Prisma.OpportunityWhereInput[] = [];
+  private opportunityFilter(
+    filter: GqlOpportunityFilterInput,
+    communityId: string,
+  ): Prisma.OpportunityWhereInput[] {
+    const conditions: Prisma.OpportunityWhereInput[] = [{ communityId }];
 
     if (filter.keyword) {
       conditions.push({
