@@ -25,6 +25,7 @@ import WalletValidator from "@/application/domain/account/wallet/validator";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
 import { ValidationError } from "@/errors/graphql";
 import WalletService from "@/application/domain/account/wallet/service";
+import { Prisma } from "@prisma/client";
 
 @injectable()
 export default class OpportunitySlotUseCase {
@@ -110,27 +111,12 @@ export default class OpportunitySlotUseCase {
             if (reservation.createdBy && slot.opportunity.communityId) {
               const transferPoints = (slot.opportunity.pointsRequired ?? 0) * (reservation.participantCountWithPoint ?? 0);
               if (transferPoints > 0) {
-                const fromWallet = await this.walletService.findMemberWalletOrThrow(
-                  ctx,
-                  reservation.createdBy,
-                  slot.opportunity.communityId,
-                );
-                const toWallet = await this.walletService.findMemberWalletOrThrow(
-                  ctx,
-                  slotCreatedBy,
-                  slot.opportunity.communityId,
-                );
-
-                const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-                  fromWallet,
-                  toWallet,
-                  transferPoints,
-                );
-                await this.transactionService.reservationCreated(
+                await this.processReservationRefund(
                   ctx,
                   tx,
-                  toWalletId,
-                  fromWalletId,
+                  reservation.createdBy,
+                  slotCreatedBy,
+                  slot.opportunity.communityId,
                   transferPoints,
                   reservation.id,
                   TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
@@ -200,5 +186,48 @@ export default class OpportunitySlotUseCase {
    */
   async isSlotFullyEvaluated(slotId: string, ctx: IContext): Promise<boolean> {
     return this.service.isSlotFullyEvaluated(ctx, slotId);
+  }
+
+  /**
+   * 予約キャンセル時のポイント返金処理
+   */
+  private async processReservationRefund(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    reservationCreatedBy: string,
+    slotCreatedBy: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (transferPoints <= 0) return;
+
+    const fromWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      slotCreatedBy,        // 機会作成者（返金支払い側）
+      communityId,
+    );
+    const toWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      reservationCreatedBy,  // 予約者（返金受け取り側）
+      communityId,
+    );
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+      fromWallet,  // 機会作成者（返金支払い側）← 残高検証対象
+      toWallet,    // 予約者（返金受け取り側）
+      transferPoints,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      toWalletId,    // 予約者（返金受け取り側）
+      fromWalletId,  // 機会作成者（返金支払い側）
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
   }
 }

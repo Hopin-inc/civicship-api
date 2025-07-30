@@ -124,31 +124,14 @@ export default class ReservationUseCase {
 
       const transferPoints = (opportunity.pointsRequired ?? 0) * (input.participantCountWithPoint ?? 0);
       if (transferPoints > 0) {
-        const fromWallet = await this.walletService.findMemberWalletOrThrow(
-          ctx,
-          currentUserId,
-          opportunity.communityId!,
-        );
-        const toWallet = await this.walletService.findMemberWalletOrThrow(
-          ctx,
-          opportunity.createdBy!,
-          opportunity.communityId!,
-        );
-
-        const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-          fromWallet,
-          toWallet,
-          transferPoints,
-        );
-
-        await this.transactionService.reservationCreated(
+        await this.processReservationPayment(
           ctx,
           tx,
-          fromWalletId,
-          toWalletId,
+          currentUserId,
+          opportunity.createdBy!,
+          opportunity.communityId!,
           transferPoints,
           reservation.id,
-          TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
         );
       }
 
@@ -193,27 +176,12 @@ export default class ReservationUseCase {
       if (res.opportunitySlot.opportunity.communityId) {
         const transferPoints = (res.opportunitySlot.opportunity.pointsRequired ?? 0) * (res.participantCountWithPoint ?? 0);
         if (transferPoints > 0) {
-          const fromWallet = await this.walletService.findMemberWalletOrThrow(
-            ctx,
-            currentUserId,
-            res.opportunitySlot.opportunity.communityId,
-          );
-          const toWallet = await this.walletService.findMemberWalletOrThrow(
-            ctx,
-            res.opportunitySlot.opportunity.createdBy!,
-            res.opportunitySlot.opportunity.communityId,
-          );
-
-          const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-            fromWallet,
-            toWallet,
-            transferPoints,
-          );
-          await this.transactionService.reservationCreated(
+          await this.processReservationRefund(
             ctx,
             tx,
-            toWalletId,
-            fromWalletId,
+            res.opportunitySlot.opportunity.createdBy!,
+            currentUserId,
+            res.opportunitySlot.opportunity.communityId,
             transferPoints,
             res.id,
             TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
@@ -320,26 +288,12 @@ export default class ReservationUseCase {
       if (res.opportunitySlot.opportunity.communityId) {
         const transferPoints = (res.opportunitySlot.opportunity.pointsRequired ?? 0) * (res.participantCountWithPoint ?? 0);
         if (transferPoints > 0) {
-          const fromWallet = await this.walletService.findMemberWalletOrThrow(
-            ctx,
-            currentUserId,
-            res.opportunitySlot.opportunity.communityId,
-          );
-          const toWallet = await this.walletService.findMemberWalletOrThrow(
-            ctx,
-            res.opportunitySlot.opportunity.createdBy!,
-            res.opportunitySlot.opportunity.communityId,
-          );
-          const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
-            fromWallet,
-            toWallet,
-            transferPoints,
-          );
-          await this.transactionService.reservationCreated(
+          await this.processReservationRefund(
             ctx,
             tx,
-            toWalletId,
-            fromWalletId,
+            res.opportunitySlot.opportunity.createdBy!,
+            currentUserId,
+            res.opportunitySlot.opportunity.communityId,
             transferPoints,
             res.id,
             TransactionReason.OPPORTUNITY_RESERVATION_REJECTED,
@@ -367,6 +321,98 @@ export default class ReservationUseCase {
   // ----------------------------
   // private methods
   // ----------------------------
+
+  /**
+   * ポイント移動処理を実行する共通メソッド
+   */
+  private async processPointTransfer(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    fromUserId: string,
+    toUserId: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (transferPoints <= 0) return;
+
+    const fromWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      fromUserId,
+      communityId,
+    );
+    const toWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      toUserId,
+      communityId,
+    );
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+      fromWallet,
+      toWallet,
+      transferPoints,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
+  }
+
+  /**
+   * 予約作成時のポイント移動処理
+   */
+  private async processReservationPayment(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    currentUserId: string,
+    opportunityCreatedBy: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+  ): Promise<void> {
+    await this.processPointTransfer(
+      ctx,
+      tx,
+      currentUserId,        // 予約者（支払い側）
+      opportunityCreatedBy,  // 機会作成者（受け取り側）
+      communityId,
+      transferPoints,
+      reservationId,
+      TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
+    );
+  }
+
+  /**
+   * 予約キャンセル時のポイント返金処理
+   */
+  private async processReservationRefund(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    currentUserId: string,
+    opportunityCreatedBy: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    await this.processPointTransfer(
+      ctx,
+      tx,
+      opportunityCreatedBy,  // 機会作成者（返金支払い側）
+      currentUserId,         // 予約者（返金受け取り側）
+      communityId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
+  }
 
   private async handleReserveTicketsIfNeeded(
     ctx: IContext,
