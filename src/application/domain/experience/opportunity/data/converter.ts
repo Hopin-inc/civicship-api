@@ -138,7 +138,16 @@ export default class OpportunityConverter {
     filter: GqlOpportunityFilterInput,
     communityId: string,
   ): Prisma.OpportunityWhereInput[] {
-    const conditions: Prisma.OpportunityWhereInput[] = [{ communityId }];
+    const conditions: Prisma.OpportunityWhereInput[] = [];
+
+    if (filter.communityIds?.length) {
+      if (!filter.communityIds.includes(communityId)) {
+        return [{ OR: [] }]; // ✅ AND: [{ OR: [] }] は常に false
+      }
+      conditions.push({ communityId: { in: filter.communityIds } });
+    } else {
+      conditions.push({ communityId: communityId });
+    }
 
     if (filter.keyword) {
       conditions.push({
@@ -166,7 +175,6 @@ export default class OpportunityConverter {
     if (filter.category) conditions.push({ category: filter.category });
     if (filter.publishStatus?.length)
       conditions.push({ publishStatus: { in: filter.publishStatus } });
-    if (filter.communityIds?.length) conditions.push({ communityId: { in: filter.communityIds } });
     if (filter.createdByUserIds?.length)
       conditions.push({ createdBy: { in: filter.createdByUserIds } });
     if (filter.placeIds?.length) conditions.push({ placeId: { in: filter.placeIds } });
