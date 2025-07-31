@@ -4215,9 +4215,7 @@ export const defineOpportunitySlotFactory = (<TOptions extends OpportunitySlotFa
 
 defineOpportunitySlotFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunitySlotFactoryInternal(options, defaultTransientFieldValues);
 
-type ReservationScalarOrEnumFields = {
-    participantCountWithPoint: number;
-};
+type ReservationScalarOrEnumFields = {};
 
 type ReservationopportunitySlotFactory = {
     _factoryFor: "OpportunitySlot";
@@ -4286,9 +4284,7 @@ export interface ReservationFactoryInterface<TTransients extends Record<string, 
 function autoGenerateReservationScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): ReservationScalarOrEnumFields {
-    return {
-        participantCountWithPoint: getScalarFieldValueGenerator().Int({ modelName: "Reservation", fieldName: "participantCountWithPoint", isId: false, isUnique: false, seq })
-    };
+    return {};
 }
 
 function defineReservationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReservationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReservationFactoryInterface<TTransients, ReservationTraitKeys<TOptions>> {

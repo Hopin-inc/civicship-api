@@ -2,7 +2,6 @@ import { IContext } from "@/types/server";
 import { Prisma } from "@prisma/client";
 import { injectable } from "tsyringe";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
-import { INftInstanceRepository } from "./interface";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
 @injectable()
@@ -52,10 +51,10 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       return result as NftInstanceWithRelations | null;
     });
   }
-  
+
   async upsert(
     ctx: IContext,
-    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: any; nftWalletId: string; nftTokenId: string },
+    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: unknown; nftWalletId: string; nftTokenId: string },
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftInstance.upsert({
