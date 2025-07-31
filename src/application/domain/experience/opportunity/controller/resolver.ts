@@ -65,7 +65,10 @@ export default class OpportunityResolver {
     isReservableWithTicket: async (parent, _, ctx: IContext) => {
       const userId = ctx.currentUser?.id;
       const communityId = parent.communityId;
-      if (!userId || !communityId) return false;
+
+      if (!userId || !communityId) {
+        return false;
+      }
 
       const result = await ctx.loaders.isReservableWithTicket.load({
         userId: userId,

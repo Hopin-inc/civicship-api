@@ -28,7 +28,7 @@ import { PrismaTicket } from "@/application/domain/reward/ticket/data/type";
 import { PrismaParticipation } from "@/application/domain/experience/participation/data/type";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { ReservationStatuses } from "@/application/domain/experience/reservation/helper";
-import { NotFoundError } from "@/errors/graphql";
+import { NotFoundError, ValidationError } from "@/errors/graphql";
 import { inject, injectable } from "tsyringe";
 import ReservationPresenter from "@/application/domain/experience/reservation/presenter";
 import { IReservationService } from "@/application/domain/experience/reservation/data/interface";
@@ -42,6 +42,7 @@ import { IParticipationService } from "@/application/domain/experience/participa
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import TicketService from "@/application/domain/reward/ticket/service";
 import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
+import WalletService from "@/application/domain/account/wallet/service";
 
 @injectable()
 export default class ReservationUseCase {
@@ -56,6 +57,7 @@ export default class ReservationUseCase {
     private readonly participationStatusHistoryService: ParticipationStatusHistoryService,
     @inject("TicketService") private readonly ticketService: TicketService,
     @inject("TransactionService") private readonly transactionService: ITransactionService,
+    @inject("WalletService") private readonly walletService: WalletService,
 
     @inject("NotificationService") private readonly notificationService: NotificationService,
   ) {}
@@ -79,6 +81,8 @@ export default class ReservationUseCase {
     { input }: GqlMutationReservationCreateArgs,
     ctx: IContext,
   ): Promise<GqlReservationCreatePayload> {
+    const currentUserId = getCurrentUserId(ctx);
+
     const slot = await this.opportunitySlotService.findOpportunitySlotOrThrow(
       ctx,
       input.opportunitySlotId,
@@ -105,6 +109,7 @@ export default class ReservationUseCase {
         tx,
         input.comment,
         communityId,
+        input.participantCountWithPoint,
       );
 
       const participationIds = reservation.participations.map((p) => p.id);
@@ -116,6 +121,19 @@ export default class ReservationUseCase {
         participationIds,
         input.ticketIdsIfNeed,
       );
+
+      const transferPoints = (opportunity.pointsRequired ?? 0) * (input.participantCountWithPoint ?? 0);
+      if (transferPoints > 0) {
+        await this.processReservationPayment(
+          ctx,
+          tx,
+          currentUserId,
+          opportunity.createdBy!,
+          opportunity.communityId!,
+          transferPoints,
+          reservation.id,
+        );
+      }
 
       return reservation;
     });
@@ -135,10 +153,13 @@ export default class ReservationUseCase {
     const currentUserId = getCurrentUserId(ctx);
 
     const reservation = await this.reservationService.findReservationOrThrow(ctx, id);
-    this.reservationValidator.validateCancellable(reservation.opportunitySlot.startsAt);
+    this.reservationValidator.validateCancellable(
+      reservation.opportunitySlot.startsAt,
+      reservation.opportunitySlot.opportunityId
+    );
 
     await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
-      await this.reservationService.setStatus(
+      const res = await this.reservationService.setStatus(
         ctx,
         reservation.id,
         currentUserId,
@@ -155,6 +176,23 @@ export default class ReservationUseCase {
       );
 
       await this.handleRefundTicketAfterCancelIfNeeded(ctx, currentUserId, input, tx);
+      if (res.opportunitySlot.opportunity.communityId) {
+        const transferPoints = (res.opportunitySlot.opportunity.pointsRequired ?? 0) * (res.participantCountWithPoint ?? 0);
+        if (transferPoints > 0) {
+          await this.processReservationRefund(
+            ctx,
+            tx,
+            res.opportunitySlot.opportunity.createdBy!,
+            currentUserId,
+            res.opportunitySlot.opportunity.communityId,
+            transferPoints,
+            res.id,
+            TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
+          );
+        }
+      } else {
+        throw new ValidationError("Cannot process reservation refund: opportunity community information is missing");
+      }
     });
 
     await this.notificationService.pushReservationCanceledMessage(ctx, reservation);
@@ -250,6 +288,23 @@ export default class ReservationUseCase {
         ParticipationStatusReason.RESERVATION_REJECTED,
         tx,
       );
+      if (res.opportunitySlot.opportunity.communityId) {
+        const transferPoints = (res.opportunitySlot.opportunity.pointsRequired ?? 0) * (res.participantCountWithPoint ?? 0);
+        if (transferPoints > 0) {
+          await this.processReservationRefund(
+            ctx,
+            tx,
+            res.opportunitySlot.opportunity.createdBy!,
+            currentUserId,
+            res.opportunitySlot.opportunity.communityId,
+            transferPoints,
+            res.id,
+            TransactionReason.OPPORTUNITY_RESERVATION_REJECTED,
+          );
+        }
+      } else {
+        throw new ValidationError("Cannot process reservation refund: reservation creator information is missing");
+      }
 
       rejectedReservation = res;
       return res;
@@ -269,6 +324,98 @@ export default class ReservationUseCase {
   // ----------------------------
   // private methods
   // ----------------------------
+
+  /**
+   * ポイント移動処理を実行する共通メソッド
+   */
+  private async processPointTransfer(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    fromUserId: string,
+    toUserId: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (transferPoints <= 0) return;
+
+    const fromWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      fromUserId,
+      communityId,
+    );
+    const toWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      toUserId,
+      communityId,
+    );
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+      fromWallet,
+      toWallet,
+      transferPoints,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      fromWalletId,
+      toWalletId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
+  }
+
+  /**
+   * 予約作成時のポイント移動処理
+   */
+  private async processReservationPayment(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    currentUserId: string,
+    opportunityCreatedBy: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+  ): Promise<void> {
+    await this.processPointTransfer(
+      ctx,
+      tx,
+      currentUserId,        // 予約者（支払い側）
+      opportunityCreatedBy,  // 機会作成者（受け取り側）
+      communityId,
+      transferPoints,
+      reservationId,
+      TransactionReason.OPPORTUNITY_RESERVATION_CREATED,
+    );
+  }
+
+  /**
+   * 予約キャンセル時のポイント返金処理
+   */
+  private async processReservationRefund(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    currentUserId: string,
+    opportunityCreatedBy: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    await this.processPointTransfer(
+      ctx,
+      tx,
+      opportunityCreatedBy,  // 機会作成者（返金支払い側）
+      currentUserId,         // 予約者（返金受け取り側）
+      communityId,
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
+  }
 
   private async handleReserveTicketsIfNeeded(
     ctx: IContext,

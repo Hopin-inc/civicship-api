@@ -5,6 +5,7 @@ type Reservation {
     id: ID!
     status: ReservationStatus!
     comment: String
+    participantCountWithPoint: Int
 
     opportunitySlot: OpportunitySlot
     participations: [Participation!]

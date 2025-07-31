@@ -153,6 +153,7 @@ export default class TransactionUseCase {
         toWalletId,
         transferPoints,
         tx,
+        TransactionReason.DONATION,
       );
 
       return TransactionPresenter.giveUserPoint(transaction);

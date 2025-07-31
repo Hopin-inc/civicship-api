@@ -60,6 +60,7 @@ export default class ReservationService implements IReservationService {
     tx: Prisma.TransactionClient,
     comment?: string,
     communityId?: string,
+    participantCountWithPoints?: number,
   ) {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.create(
@@ -70,6 +71,7 @@ export default class ReservationService implements IReservationService {
       reservationStatuses,
       comment,
       communityId,
+      participantCountWithPoints,
     );
     return this.repository.create(ctx, data, tx);
   }

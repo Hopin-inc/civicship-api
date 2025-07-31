@@ -13,6 +13,7 @@ type Opportunity {
     publishStatus: PublishStatus!
     requireApproval: Boolean!
     isReservableWithTicket: Boolean
+    pointsRequired: Int
 
     capacity: Int
     pointsToEarn: Int

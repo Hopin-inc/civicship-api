@@ -49,6 +49,13 @@ ALLOWED_ORIGINS="http://localhost:8000 https://localhost:8000"
 EXPRESS_SESSION_SECRET=your_session_secret_key
 ```
 
+### アクティビティ予約設定
+
+```env
+# アクティビティごとの予約受付日数設定（JSON形式）
+ACTIVITY_ADVANCE_BOOKING_DAYS_CONFIG={"activity-id-1":0,"activity-id-2":1,"activity-id-3":7}
+```
+
 ## 環境ファイルのセットアップ
 
 ### 開発環境

@@ -2,36 +2,41 @@
 # Transaction Object Type Definitions
 # ------------------------------
 type Transaction {
-    id: ID!
-    reason: TransactionReason!
+  id: ID!
+  reason: TransactionReason!
 
-    fromWallet: Wallet
-    fromPointChange: Int
-    toWallet: Wallet
-    toPointChange: Int
+  fromWallet: Wallet
+  fromPointChange: Int
+  toWallet: Wallet
+  toPointChange: Int
 
-    participation: Participation
+  participation: Participation
+  reservation: Reservation
 
-    ticketStatusHistories: [TicketStatusHistory!]
+  ticketStatusHistories: [TicketStatusHistory!]
 
-    createdByUser: User
+  createdByUser: User
 
-    createdAt: Datetime
-    updatedAt: Datetime
+  createdAt: Datetime
+  updatedAt: Datetime
 }
 
 # ------------------------------
 # Transaction Enum Definitions
 # ------------------------------
 enum TransactionReason {
-    POINT_ISSUED
-    POINT_REWARD
+  POINT_ISSUED
+  POINT_REWARD
 
-    ONBOARDING
+  ONBOARDING
 
-    DONATION
-    GRANT
+  DONATION
+  GRANT
 
-    TICKET_PURCHASED
-    TICKET_REFUNDED
+  TICKET_PURCHASED
+  TICKET_REFUNDED
+
+  OPPORTUNITY_RESERVATION_CREATED
+  OPPORTUNITY_RESERVATION_CANCELED
+  OPPORTUNITY_RESERVATION_REJECTED
 }
