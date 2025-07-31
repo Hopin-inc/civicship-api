@@ -1234,6 +1234,7 @@ export type GqlOpportunity = {
   images?: Maybe<Array<Scalars['String']['output']>>;
   isReservableWithTicket?: Maybe<Scalars['Boolean']['output']>;
   place?: Maybe<GqlPlace>;
+  pointsRequired?: Maybe<Scalars['Int']['output']>;
   pointsToEarn?: Maybe<Scalars['Int']['output']>;
   publishStatus: GqlPublishStatus;
   requireApproval: Scalars['Boolean']['output'];
@@ -1300,6 +1301,7 @@ export type GqlOpportunityFilterInput = {
   cityCodes?: InputMaybe<Array<Scalars['ID']['input']>>;
   communityIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   createdByUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  isReservableWithPoint?: InputMaybe<Scalars['Boolean']['input']>;
   isReservableWithTicket?: InputMaybe<Scalars['Boolean']['input']>;
   keyword?: InputMaybe<Scalars['String']['input']>;
   not?: InputMaybe<GqlOpportunityFilterInput>;
@@ -2136,6 +2138,7 @@ export type GqlReservation = {
   histories?: Maybe<Array<GqlReservationHistory>>;
   id: Scalars['ID']['output'];
   opportunitySlot?: Maybe<GqlOpportunitySlot>;
+  participantCountWithPoint?: Maybe<Scalars['Int']['output']>;
   participations?: Maybe<Array<GqlParticipation>>;
   status: GqlReservationStatus;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -2150,6 +2153,7 @@ export type GqlReservationCreateInput = {
   comment?: InputMaybe<Scalars['String']['input']>;
   opportunitySlotId: Scalars['ID']['input'];
   otherUserIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  participantCountWithPoint?: InputMaybe<Scalars['Int']['input']>;
   paymentMethod: GqlReservationPaymentMethod;
   ticketIdsIfNeed?: InputMaybe<Array<Scalars['ID']['input']>>;
   totalParticipantCount: Scalars['Int']['input'];
@@ -2540,6 +2544,7 @@ export type GqlTransaction = {
   id: Scalars['ID']['output'];
   participation?: Maybe<GqlParticipation>;
   reason: GqlTransactionReason;
+  reservation?: Maybe<GqlReservation>;
   ticketStatusHistories?: Maybe<Array<GqlTicketStatusHistory>>;
   toPointChange?: Maybe<Scalars['Int']['output']>;
   toWallet?: Maybe<GqlWallet>;
@@ -2610,6 +2615,9 @@ export const GqlTransactionReason = {
   Donation: 'DONATION',
   Grant: 'GRANT',
   Onboarding: 'ONBOARDING',
+  OpportunityReservationCanceled: 'OPPORTUNITY_RESERVATION_CANCELED',
+  OpportunityReservationCreated: 'OPPORTUNITY_RESERVATION_CREATED',
+  OpportunityReservationRejected: 'OPPORTUNITY_RESERVATION_REJECTED',
   PointIssued: 'POINT_ISSUED',
   PointReward: 'POINT_REWARD',
   TicketPurchased: 'TICKET_PURCHASED',
@@ -2758,6 +2766,7 @@ export type GqlUtility = {
   id: Scalars['ID']['output'];
   images?: Maybe<Array<Scalars['String']['output']>>;
   name?: Maybe<Scalars['String']['output']>;
+  owner?: Maybe<GqlUser>;
   pointsRequired: Scalars['Int']['output'];
   publishStatus: GqlPublishStatus;
   requiredForOpportunities?: Maybe<Array<GqlOpportunity>>;
@@ -4234,6 +4243,7 @@ export type GqlOpportunityResolvers<ContextType = any, ParentType extends GqlRes
   images?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   isReservableWithTicket?: Resolver<Maybe<GqlResolversTypes['Boolean']>, ParentType, ContextType>;
   place?: Resolver<Maybe<GqlResolversTypes['Place']>, ParentType, ContextType>;
+  pointsRequired?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   pointsToEarn?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requireApproval?: Resolver<GqlResolversTypes['Boolean'], ParentType, ContextType>;
@@ -4588,6 +4598,7 @@ export type GqlReservationResolvers<ContextType = any, ParentType extends GqlRes
   histories?: Resolver<Maybe<Array<GqlResolversTypes['ReservationHistory']>>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   opportunitySlot?: Resolver<Maybe<GqlResolversTypes['OpportunitySlot']>, ParentType, ContextType>;
+  participantCountWithPoint?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   participations?: Resolver<Maybe<Array<GqlResolversTypes['Participation']>>, ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['ReservationStatus'], ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
@@ -4825,6 +4836,7 @@ export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlRes
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   participation?: Resolver<Maybe<GqlResolversTypes['Participation']>, ParentType, ContextType>;
   reason?: Resolver<GqlResolversTypes['TransactionReason'], ParentType, ContextType>;
+  reservation?: Resolver<Maybe<GqlResolversTypes['Reservation']>, ParentType, ContextType>;
   ticketStatusHistories?: Resolver<Maybe<Array<GqlResolversTypes['TicketStatusHistory']>>, ParentType, ContextType>;
   toPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
   toWallet?: Resolver<Maybe<GqlResolversTypes['Wallet']>, ParentType, ContextType>;
@@ -4955,6 +4967,7 @@ export type GqlUtilityResolvers<ContextType = any, ParentType extends GqlResolve
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
   images?: Resolver<Maybe<Array<GqlResolversTypes['String']>>, ParentType, ContextType>;
   name?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  owner?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   pointsRequired?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   publishStatus?: Resolver<GqlResolversTypes['PublishStatus'], ParentType, ContextType>;
   requiredForOpportunities?: Resolver<Maybe<Array<GqlResolversTypes['Opportunity']>>, ParentType, ContextType>;

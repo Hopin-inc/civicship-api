@@ -43,6 +43,7 @@ input OpportunityFilterInput {
     requiredUtilityIds: [ID!]
 
     isReservableWithTicket: Boolean
+    isReservableWithPoint: Boolean
 
     # slot
     slotHostingStatus: [OpportunitySlotHostingStatus!]

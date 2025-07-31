@@ -533,6 +533,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "histories",
                 type: "ReservationHistory",
                 relationName: "ReservationToReservationHistory"
+            }, {
+                name: "transactions",
+                type: "Transaction",
+                relationName: "ReservationToTransaction"
             }]
     }, {
         name: "ReservationHistory",
@@ -730,6 +734,10 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 name: "participation",
                 type: "Participation",
                 relationName: "ParticipationToTransaction"
+            }, {
+                name: "reservation",
+                type: "Reservation",
+                relationName: "ReservationToTransaction"
             }, {
                 name: "ticketStatusHistory",
                 type: "TicketStatusHistory",
@@ -3852,6 +3860,7 @@ type OpportunityFactoryDefineInput = {
     body?: string | null;
     pointsToEarn?: number | null;
     feeRequired?: number | null;
+    pointsRequired?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     images?: Prisma.ImageCreateNestedManyWithoutOpportunitiesInput;
@@ -4206,7 +4215,9 @@ export const defineOpportunitySlotFactory = (<TOptions extends OpportunitySlotFa
 
 defineOpportunitySlotFactory.withTransientFields = defaultTransientFieldValues => options => defineOpportunitySlotFactoryInternal(options, defaultTransientFieldValues);
 
-type ReservationScalarOrEnumFields = {};
+type ReservationScalarOrEnumFields = {
+    participantCountWithPoint: number;
+};
 
 type ReservationopportunitySlotFactory = {
     _factoryFor: "OpportunitySlot";
@@ -4222,12 +4233,14 @@ type ReservationFactoryDefineInput = {
     id?: string;
     comment?: string | null;
     status?: ReservationStatus;
+    participantCountWithPoint?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
     opportunitySlot: ReservationopportunitySlotFactory | Prisma.OpportunitySlotCreateNestedOneWithoutReservationsInput;
     participations?: Prisma.ParticipationCreateNestedManyWithoutReservationInput;
     createdByUser?: ReservationcreatedByUserFactory | Prisma.UserCreateNestedOneWithoutReservationsAppliedByMeInput;
     histories?: Prisma.ReservationHistoryCreateNestedManyWithoutReservationInput;
+    transactions?: Prisma.TransactionCreateNestedManyWithoutReservationInput;
 };
 
 type ReservationTransientFields = Record<string, unknown> & Partial<Record<keyof ReservationFactoryDefineInput, never>>;
@@ -4273,7 +4286,9 @@ export interface ReservationFactoryInterface<TTransients extends Record<string, 
 function autoGenerateReservationScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): ReservationScalarOrEnumFields {
-    return {};
+    return {
+        participantCountWithPoint: getScalarFieldValueGenerator().Int({ modelName: "Reservation", fieldName: "participantCountWithPoint", isId: false, isUnique: false, seq })
+    };
 }
 
 function defineReservationFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends ReservationFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): ReservationFactoryInterface<TTransients, ReservationTraitKeys<TOptions>> {
@@ -6161,6 +6176,11 @@ type TransactionparticipationFactory = {
     build: () => PromiseLike<Prisma.ParticipationCreateNestedOneWithoutTransactionsInput["create"]>;
 };
 
+type TransactionreservationFactory = {
+    _factoryFor: "Reservation";
+    build: () => PromiseLike<Prisma.ReservationCreateNestedOneWithoutTransactionsInput["create"]>;
+};
+
 type TransactionticketStatusHistoryFactory = {
     _factoryFor: "TicketStatusHistory";
     build: () => PromiseLike<Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput["create"]>;
@@ -6181,6 +6201,7 @@ type TransactionFactoryDefineInput = {
     fromWallet?: TransactionfromWalletFactory | Prisma.WalletCreateNestedOneWithoutFromTransactionsInput;
     toWallet?: TransactiontoWalletFactory | Prisma.WalletCreateNestedOneWithoutToTransactionsInput;
     participation?: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput;
+    reservation?: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput;
     ticketStatusHistory?: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput;
     createdByUser?: TransactioncreatedByUserFactory | Prisma.UserCreateNestedOneWithoutTransactionsCreatedByMeInput;
 };
@@ -6208,6 +6229,10 @@ function isTransactiontoWalletFactory(x: TransactiontoWalletFactory | Prisma.Wal
 
 function isTransactionparticipationFactory(x: TransactionparticipationFactory | Prisma.ParticipationCreateNestedOneWithoutTransactionsInput | undefined): x is TransactionparticipationFactory {
     return (x as any)?._factoryFor === "Participation";
+}
+
+function isTransactionreservationFactory(x: TransactionreservationFactory | Prisma.ReservationCreateNestedOneWithoutTransactionsInput | undefined): x is TransactionreservationFactory {
+    return (x as any)?._factoryFor === "Reservation";
 }
 
 function isTransactionticketStatusHistoryFactory(x: TransactionticketStatusHistoryFactory | Prisma.TicketStatusHistoryCreateNestedOneWithoutTransactionInput | undefined): x is TransactionticketStatusHistoryFactory {
@@ -6289,6 +6314,9 @@ function defineTransactionFactoryInternal<TTransients extends Record<string, unk
                 participation: isTransactionparticipationFactory(defaultData.participation) ? {
                     create: await defaultData.participation.build()
                 } : defaultData.participation,
+                reservation: isTransactionreservationFactory(defaultData.reservation) ? {
+                    create: await defaultData.reservation.build()
+                } : defaultData.reservation,
                 ticketStatusHistory: isTransactionticketStatusHistoryFactory(defaultData.ticketStatusHistory) ? {
                     create: await defaultData.ticketStatusHistory.build()
                 } : defaultData.ticketStatusHistory,

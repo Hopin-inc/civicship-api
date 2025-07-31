@@ -53,7 +53,7 @@ export default class EvaluationUseCase {
 
     const hasNextPage = evaluations.length > take;
     const data = evaluations.slice(0, take).map(EvaluationPresenter.get);
-    return EvaluationPresenter.query(data, hasNextPage);
+    return EvaluationPresenter.query(data, hasNextPage, cursor);
   }
 
   async visitorViewEvaluation(

@@ -345,7 +345,7 @@ describe("Point Reward Tests", () => {
     expect(claims.evaluationId).toBeDefined();
     expect(claims.comment).toBe(testSetup.comment);
     
-    expect(claims.evaluator.id).toBe(participationUserId);
+    expect(claims.evaluator.id).toBe(opportunityOwnerUserId);
     expect(claims.evaluator.name).toBe("Manager");
     
     expect(claims.participant.id).toBe(participationUserId);

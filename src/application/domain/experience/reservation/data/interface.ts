@@ -32,6 +32,7 @@ export interface IReservationService {
     tx: Prisma.TransactionClient,
     comment?: string,
     communityId?: string,
+    participantCountWithPoint?: number,
   ): Promise<PrismaReservation>;
 
   setStatus(

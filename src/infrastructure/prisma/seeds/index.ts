@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import path from "path";
 import { fileURLToPath } from "url";
 import { seedMaster } from "@/infrastructure/prisma/seeds/master";

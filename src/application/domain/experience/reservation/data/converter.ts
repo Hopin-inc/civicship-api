@@ -108,6 +108,7 @@ export default class ReservationConverter {
     { reservationStatus, participationStatus, participationStatusReason }: ReservationStatuses,
     comment?: string,
     communityId?: string,
+    participantCountWithPoints?: number,
   ): Prisma.ReservationCreateInput {
     const userIds = [currentUserId, ...userIdsIfExists];
 
@@ -132,6 +133,7 @@ export default class ReservationConverter {
           createdByUser: { connect: { id: currentUserId } },
         },
       },
+      participantCountWithPoint: participantCountWithPoints ?? 0,
     };
   }
 
