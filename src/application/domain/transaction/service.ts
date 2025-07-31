@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, TransactionReason } from "@prisma/client";
 import { IContext } from "@/types/server";
 import {
   ITransactionRepository,
@@ -68,6 +68,22 @@ export default class TransactionService implements ITransactionService {
   ): Promise<PrismaTransactionDetail> {
     const currentUserId = getCurrentUserId(ctx);
     const data = this.converter.donateSelfPoint(fromWalletId, toWalletId, transferPoints, currentUserId);
+    const transaction = await this.repository.create(ctx, data, tx);
+    await this.repository.refreshCurrentPoints(ctx, tx);
+    return transaction;
+  }
+
+  async reservationCreated(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    fromWalletId: string,
+    toWalletId: string,
+    transferPoints: number,
+    reservationId: string,
+    reason: TransactionReason
+  ): Promise<PrismaTransactionDetail> {
+    const currentUserId = getCurrentUserId(ctx);
+    const data = this.converter.reservationCreated(fromWalletId, toWalletId, transferPoints, currentUserId, reservationId, reason);
     const transaction = await this.repository.create(ctx, data, tx);
     await this.repository.refreshCurrentPoints(ctx, tx);
     return transaction;

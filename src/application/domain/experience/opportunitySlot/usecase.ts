@@ -14,13 +14,18 @@ import { IContext } from "@/types/server";
 import OpportunitySlotService from "@/application/domain/experience/opportunitySlot/service";
 import OpportunitySlotPresenter from "@/application/domain/experience/opportunitySlot/presenter";
 import { clampFirst, getCurrentUserId } from "@/application/domain/utils";
-import { OpportunitySlotHostingStatus, ReservationStatus } from "@prisma/client";
+import { OpportunitySlotHostingStatus, ReservationStatus, TransactionReason } from "@prisma/client";
 import ParticipationStatusHistoryService from "@/application/domain/experience/participation/statusHistory/service";
 import NotificationService from "@/application/domain/notification/service";
 import { inject, injectable } from "tsyringe";
 import ParticipationService from "@/application/domain/experience/participation/service";
 import { PrismaOpportunitySlotSetHostingStatus } from "@/application/domain/experience/opportunitySlot/data/type";
 import ReservationService from "@/application/domain/experience/reservation/service";
+import WalletValidator from "@/application/domain/account/wallet/validator";
+import { ITransactionService } from "@/application/domain/transaction/data/interface";
+import { ValidationError } from "@/errors/graphql";
+import WalletService from "@/application/domain/account/wallet/service";
+import { Prisma } from "@prisma/client";
 
 @injectable()
 export default class OpportunitySlotUseCase {
@@ -31,6 +36,9 @@ export default class OpportunitySlotUseCase {
     private readonly participationStatusHistoryService: ParticipationStatusHistoryService,
     @inject("NotificationService") private readonly notificationService: NotificationService,
     @inject("ReservationService") private readonly reservationService: ReservationService,
+    @inject("WalletValidator") private readonly walletValidator: WalletValidator,
+    @inject("TransactionService") private readonly transactionService: ITransactionService,
+    @inject("WalletService") private readonly walletService: WalletService,
   ) {}
 
   async visitorBrowseOpportunitySlots(
@@ -75,9 +83,8 @@ export default class OpportunitySlotUseCase {
 
     const res = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
       const slot = await this.service.setOpportunitySlotHostingStatus(ctx, id, input, tx);
-
+      const slotCreatedBy = slot.opportunity.createdBy;
       if (input.status === OpportunitySlotHostingStatus.CANCELLED) {
-        const reservationIds = slot.reservations?.map((r) => r.id) ?? [];
         const participationIds =
           slot.reservations?.flatMap((r) => r.participations?.map((p) => p.id) ?? []) ?? [];
 
@@ -93,15 +100,33 @@ export default class OpportunitySlotUseCase {
             currentUserId,
             tx,
           ),
-          ...reservationIds.map((reservationId) =>
-            this.reservationService.setStatus(
+          ...(slot.reservations?.map(async (reservation) => {
+            await this.reservationService.setStatus(
               ctx,
-              reservationId,
+              reservation.id,
               currentUserId,
               ReservationStatus.REJECTED,
               tx,
-            ),
-          ),
+            );
+            if (reservation.createdBy && slot.opportunity.communityId) {
+              const transferPoints = (slot.opportunity.pointsRequired ?? 0) * (reservation.participantCountWithPoint ?? 0);
+              if (transferPoints > 0) {
+                await this.processReservationRefund(
+                  ctx,
+                  tx,
+                  reservation.createdBy,
+                  slotCreatedBy,
+                  slot.opportunity.communityId,
+                  transferPoints,
+                  reservation.id,
+                  TransactionReason.OPPORTUNITY_RESERVATION_CANCELED,
+                );
+              }
+            } else {
+              // データの不整合を示すエラーを投げる
+              throw new ValidationError("Cannot process reservation refund: reservation creator information is missing");
+            }
+          }) ?? []),
         ]);
 
         cancelledSlot = slot;
@@ -161,5 +186,48 @@ export default class OpportunitySlotUseCase {
    */
   async isSlotFullyEvaluated(slotId: string, ctx: IContext): Promise<boolean> {
     return this.service.isSlotFullyEvaluated(ctx, slotId);
+  }
+
+  /**
+   * 予約キャンセル時のポイント返金処理
+   */
+  private async processReservationRefund(
+    ctx: IContext,
+    tx: Prisma.TransactionClient,
+    reservationCreatedBy: string,
+    slotCreatedBy: string,
+    communityId: string,
+    transferPoints: number,
+    reservationId: string,
+    transactionReason: TransactionReason,
+  ): Promise<void> {
+    if (transferPoints <= 0) return;
+
+    const fromWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      slotCreatedBy,        // 機会作成者（返金支払い側）
+      communityId,
+    );
+    const toWallet = await this.walletService.findMemberWalletOrThrow(
+      ctx,
+      reservationCreatedBy,  // 予約者（返金受け取り側）
+      communityId,
+    );
+
+    const { fromWalletId, toWalletId } = await this.walletValidator.validateTransferMemberToMember(
+      fromWallet,  // 機会作成者（返金支払い側）← 残高検証対象
+      toWallet,    // 予約者（返金受け取り側）
+      transferPoints,
+    );
+
+    await this.transactionService.reservationCreated(
+      ctx,
+      tx,
+      toWalletId,    // 予約者（返金受け取り側）
+      fromWalletId,  // 機会作成者（返金支払い側）
+      transferPoints,
+      reservationId,
+      transactionReason,
+    );
   }
 }
