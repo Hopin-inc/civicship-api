@@ -19,7 +19,7 @@ export class DIDVCServerClient {
       "Content-Type": "application/json",
     };
 
-    logger.debug("[DIDVCClient] Request", { method, url, uid, headers, data });
+    logger.debug("[DIDVCClient] Request", { method, url, uid, data });
 
     try {
       let response;
