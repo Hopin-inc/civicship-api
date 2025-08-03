@@ -19,7 +19,7 @@ export class DIDVCServerClient {
       "Content-Type": "application/json",
     };
 
-    logger.debug(`[DIDVCClient] ${method} ${url} for uid=${uid}`);
+    logger.debug("[DIDVCClient] Request", { method, url, uid, headers, data });
 
     try {
       let response;
@@ -38,9 +38,33 @@ export class DIDVCServerClient {
           break;
       }
 
+      logger.debug("[DIDVCClient] Response", { status: response?.status, data: response?.data });
       return response?.data as T;
-    } catch (error) {
-      logger.error(`Error calling DID/VC server at ${endpoint}:`, error);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        logger.error("[DIDVCClient] Error", {
+          url,
+          method,
+          uid,
+          status: error.response?.status,
+          response: error.response?.data,
+          message: error.message,
+        });
+      } else if (error instanceof Error) {
+        logger.error("[DIDVCClient] Error", {
+          url,
+          method,
+          uid,
+          message: error.message,
+        });
+      } else {
+        logger.error("[DIDVCClient] Unknown Error", {
+          url,
+          method,
+          uid,
+          error,
+        });
+      }
       throw error;
     }
   }
