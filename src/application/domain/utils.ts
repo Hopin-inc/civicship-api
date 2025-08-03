@@ -10,7 +10,6 @@ export function getCurrentUserId(ctx: IContext, inputUserId?: string): string {
     throw new AuthorizationError("User must be logged in");
   }
 
-
   return currentUserId;
 }
 
@@ -30,6 +29,11 @@ export function getMembershipRolesByCtx(
 ): { isManager: Record<string, boolean>; isMember: Record<string, boolean> } {
   if (!currentUserId || communityIds.length === 0) {
     return { isManager: {}, isMember: {} };
+  }
+
+  if (ctx.isAdmin) {
+    const allTrue = Object.fromEntries(communityIds.map((id) => [id, true]));
+    return { isManager: allTrue, isMember: allTrue };
   }
 
   const userMemberships = getUserMembershipMap(ctx);
