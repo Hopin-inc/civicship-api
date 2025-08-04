@@ -539,6 +539,38 @@ Table t_nft_wallets {
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
   user t_users [not null]
+  nftInstances t_nft_instances [not null]
+}
+
+Table t_nft_tokens {
+  id String [pk]
+  address String [unique, not null]
+  name String
+  symbol String
+  type String [not null]
+  json Json
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  nftInstances t_nft_instances [not null]
+}
+
+Table t_nft_instances {
+  id String [pk]
+  instanceId String [not null]
+  name String
+  description String
+  imageUrl String
+  json Json
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+  nftWalletId String [not null]
+  nftWallet t_nft_wallets [not null]
+  nftTokenId String
+  nftToken t_nft_tokens
+
+  indexes {
+    (nftWalletId, instanceId) [unique]
+  }
 }
 
 Table v_place_public_opportunity_count {
@@ -940,6 +972,10 @@ Ref: t_transactions.reservationId > t_reservations.id [delete: Set Null]
 Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
+
+Ref: t_nft_instances.nftWalletId > t_nft_wallets.id [delete: Cascade]
+
+Ref: t_nft_instances.nftTokenId > t_nft_tokens.id [delete: Set Null]
 
 Ref: v_place_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 
