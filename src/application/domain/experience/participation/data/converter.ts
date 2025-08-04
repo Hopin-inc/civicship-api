@@ -131,8 +131,8 @@ export default class ParticipationConverter {
     communityId: string,
   ): Prisma.ParticipationCreateInput[] {
     return input.userIds.map((userId) => ({
-      userId: userId,
-      communityId: communityId,
+      userId,
+      communityId,
       opportunitySlotId: input.slotId,
       description: input.description ?? null,
       status: ParticipationStatus.PARTICIPATING,
