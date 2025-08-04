@@ -33,7 +33,7 @@ export function getMembershipRolesByCtx(
 
   if (ctx.isAdmin) {
     const allTrue = Object.fromEntries(communityIds.map((id) => [id, true]));
-    return { isManager: allTrue, isMember: allTrue };
+    return { isManager: { ...allTrue }, isMember: { ...allTrue } };
   }
 
   const userMemberships = getUserMembershipMap(ctx);
