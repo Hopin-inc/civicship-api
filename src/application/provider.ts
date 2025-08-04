@@ -13,6 +13,13 @@ import CommunityService from "@/application/domain/account/community/service";
 import CommunityUseCase from "@/application/domain/account/community/usecase";
 import UserService from "@/application/domain/account/user/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
+import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
+import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
+import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
+import NftInstanceService from "@/application/domain/account/nft-instance/service";
+import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
+import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
+import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
@@ -122,8 +129,17 @@ export function registerProductionDependencies() {
   container.register("UserRepository", { useClass: UserRepository });
   container.register("UserConverter", { useClass: UserConverter });
   container.register("UserService", { useClass: UserService });
+  container.register("NFTWalletRepository", { useClass: NFTWalletRepository });
+  container.register("NftTokenRepository", { useClass: NftTokenRepository });
+  container.register("NftInstanceRepository", { useClass: NftInstanceRepository });
   container.register("NFTWalletService", { useClass: NFTWalletService });
   container.register("UserUseCase", { useClass: UserUseCase });
+
+  container.register("NftInstanceRepository", { useClass: NftInstanceRepository });
+  container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
+  container.register("NftInstanceService", { useClass: NftInstanceService });
+  container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
+  container.register("NftWalletResolver", { useClass: NftWalletResolver });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });

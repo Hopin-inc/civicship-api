@@ -4,6 +4,7 @@ import { checkReservationParticipationConsistency } from "@/presentation/batch/c
 import { completeOpportunitySlots } from "@/presentation/batch/completeOpportunitySlots";
 import { syncDIDVC } from "@/presentation/batch/syncDIDVC";
 import { requestDIDVC } from "@/presentation/batch/requestDIDVC";
+import { syncNftMetadata } from "@/presentation/batch/syncNftMetadata";
 
 export async function batchProcess() {
   switch (process.env.BATCH_PROCESS_NAME) {
@@ -21,6 +22,9 @@ export async function batchProcess() {
       return;
     case "resize-images":
       await resizeImages();
+      return;
+    case "sync-nft-metadata":
+      await syncNftMetadata();
       return;
     default:
       logger.error("Invalid batch process called.");
