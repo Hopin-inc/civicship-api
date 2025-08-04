@@ -14,7 +14,7 @@ export class DIDVCServerClient {
   ): Promise<T> {
     const url = `${IDENTUS_API_URL}${endpoint}`;
     const headers = {
-      "x-api-key": process.env.API_KEY,
+      "x-api-key": process.env.IDENTUS_API_KEY,
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     };
