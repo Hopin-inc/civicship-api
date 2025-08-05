@@ -48,10 +48,3 @@ export async function requestDIDVC() {
     logger.error("💥 Error in DID/VC request batch", error);
   }
 }
-
-requestDIDVC()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error("❌ Unhandled error:", err);
-    process.exit(1);
-  });
