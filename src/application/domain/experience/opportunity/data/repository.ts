@@ -1,5 +1,5 @@
 import { Prisma, PublishStatus } from "@prisma/client";
-import { opportunitySelectDetail } from "@/application/domain/experience/opportunity/data/type";
+import { opportunitySelectDetail, opportunitySelectDetailWithSlots } from "@/application/domain/experience/opportunity/data/type";
 import { IContext } from "@/types/server";
 import { injectable } from "tsyringe";
 import { IOpportunityRepository } from "./interface";
@@ -18,6 +18,25 @@ export default class OpportunityRepository implements IOpportunityRepository {
         where,
         orderBy,
         select: opportunitySelectDetail,
+        take: take + 1,
+        skip: cursor ? 1 : 0,
+        cursor: cursor ? { id: cursor } : undefined,
+      });
+    });
+  }
+
+  async queryWithSlots(
+    ctx: IContext,
+    where: Prisma.OpportunityWhereInput,
+    orderBy: Prisma.OpportunityOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ) {
+    return ctx.issuer.public(ctx, (tx) => {
+      return tx.opportunity.findMany({
+        where,
+        orderBy,
+        select: opportunitySelectDetailWithSlots,
         take: take + 1,
         skip: cursor ? 1 : 0,
         cursor: cursor ? { id: cursor } : undefined,

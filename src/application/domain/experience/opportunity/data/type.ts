@@ -50,6 +50,22 @@ export type PrismaOpportunitySetHostingStatus = Prisma.OpportunityGetPayload<{
   include: typeof opportunitySetHostingStatusInclude;
 }>;
 
+export const opportunitySelectDetailWithSlots = Prisma.validator<Prisma.OpportunitySelect>()({
+  ...opportunitySelectDetail,
+  slots: {
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      hostingStatus: true,
+    },
+  },
+});
+
 export type PrismaOpportunityDetail = Prisma.OpportunityGetPayload<{
   select: typeof opportunitySelectDetail;
+}>;
+
+export type PrismaOpportunityDetailWithSlots = Prisma.OpportunityGetPayload<{
+  select: typeof opportunitySelectDetailWithSlots;
 }>;

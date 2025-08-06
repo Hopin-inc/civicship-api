@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaOpportunityDetail } from "./type";
+import { PrismaOpportunityDetail, PrismaOpportunityDetailWithSlots } from "./type";
 
 export interface IOpportunityRepository {
   query(
@@ -10,6 +10,14 @@ export interface IOpportunityRepository {
     take: number,
     cursor?: string,
   ): Promise<PrismaOpportunityDetail[]>;
+
+  queryWithSlots(
+    ctx: IContext,
+    where: Prisma.OpportunityWhereInput,
+    orderBy: Prisma.OpportunityOrderByWithRelationInput[],
+    take: number,
+    cursor?: string,
+  ): Promise<PrismaOpportunityDetailWithSlots[]>;
 
   find(ctx: IContext, id: string): Promise<PrismaOpportunityDetail | null>;
 
