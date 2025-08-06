@@ -75,7 +75,7 @@ export default class ParticipationService implements IParticipationService {
     const { data, images } = this.converter.create(input, currentUserId);
 
     const uploadedImages: Prisma.ImageCreateWithoutParticipationsInput[] = (await Promise.all(
-      images.map(async (img) => await this.imageService.uploadPublicImage(img, "participations"))
+      images.map((img) => this.imageService.uploadPublicImage(img, "participations"))
     )).filter((img): img is Prisma.ImageCreateWithoutParticipationsInput => img !== null);
 
     const createInput: Prisma.ParticipationCreateInput = {

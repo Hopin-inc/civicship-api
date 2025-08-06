@@ -64,7 +64,9 @@ export default class ArticleService {
     let thumbnailData: Prisma.ImageCreateWithoutArticlesInput | undefined;
     if (thumbnail) {
       const result = await this.imageService.uploadPublicImage(thumbnail, "articles");
-      thumbnailData = result as Prisma.ImageCreateWithoutArticlesInput | undefined;
+      if (result) {
+        thumbnailData = result;
+      }
     }
 
     const createInput: Prisma.ArticleCreateInput = {
@@ -92,7 +94,9 @@ export default class ArticleService {
     let thumbnailData: Prisma.ImageCreateWithoutArticlesInput | undefined;
     if (thumbnail) {
       const result = await this.imageService.uploadPublicImage(thumbnail, "articles");
-      thumbnailData = result as Prisma.ImageCreateWithoutArticlesInput | undefined;
+      if (result) {
+        thumbnailData = result;
+      }
     }
 
     const updateInput: Prisma.ArticleUpdateInput = {

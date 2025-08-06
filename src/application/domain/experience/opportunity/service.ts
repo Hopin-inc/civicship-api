@@ -65,7 +65,7 @@ export default class OpportunityService {
     const { data, images } = this.converter.create(input, communityId, currentUserId);
 
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (await Promise.all(
-      images.map(async (img) => await this.imageService.uploadPublicImage(img, "opportunities"))
+      images.map((img) => this.imageService.uploadPublicImage(img, "opportunities"))
     )).filter((img): img is Prisma.ImageCreateWithoutOpportunitiesInput => img !== null);
 
     const createInput: Prisma.OpportunityCreateInput = {
@@ -95,7 +95,7 @@ export default class OpportunityService {
     const { data, images } = this.converter.update(input);
 
     const uploadedImages: Prisma.ImageCreateWithoutOpportunitiesInput[] = (await Promise.all(
-      images.map(async (img) => await this.imageService.uploadPublicImage(img, "opportunities"))
+      images.map((img) => this.imageService.uploadPublicImage(img, "opportunities"))
     )).filter((img): img is Prisma.ImageCreateWithoutOpportunitiesInput => img !== null);
 
     const updateInput: Prisma.OpportunityUpdateInput = {
