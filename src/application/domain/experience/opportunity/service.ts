@@ -15,6 +15,7 @@ import { inject, injectable } from "tsyringe";
 import { getAdvanceBookingDays } from "@/application/domain/experience/reservation/config";
 import { PrismaOpportunityDetailWithSlots } from "@/application/domain/experience/opportunity/data/type";
 import { OpportunitySlotHostingStatus } from "@prisma/client";
+import { subDays } from 'date-fns';
 
 @injectable()
 export default class OpportunityService {
@@ -22,7 +23,7 @@ export default class OpportunityService {
     @inject("OpportunityRepository") private readonly repository: OpportunityRepository,
     @inject("OpportunityConverter") private readonly converter: OpportunityConverter,
     @inject("ImageService") private readonly imageService: ImageService,
-  ) {}
+  ) { }
 
   async fetchOpportunities(
     ctx: IContext,
@@ -31,25 +32,26 @@ export default class OpportunityService {
   ) {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
-    
+
     // Check if search filters are present
     const hasSearchFilters = this.hasSearchFilters(filter ?? {});
-    
+
     if (hasSearchFilters) {
       // When search filters are present, return all matching opportunities
       return await this.repository.query(ctx, where, orderBy, take, cursor);
     }
-    
+
     // When no search filters, filter out opportunities with all slots past deadline
-    const opportunitiesWithSlots = await this.repository.queryWithSlots(ctx, where, orderBy, take * 2, cursor);
+    const FETCH_BUFFER_MULTIPLIER = 2;
+    const opportunitiesWithSlots = await this.repository.queryWithSlots(ctx, where, orderBy, take * FETCH_BUFFER_MULTIPLIER, cursor);
     const filteredOpportunities = this.filterOpportunitiesBySlotDeadlines(opportunitiesWithSlots);
-    
+
     // Convert back to the expected format (without slots)
     const result = filteredOpportunities.slice(0, take + 1).map(opportunity => {
       const { slots, ...opportunityWithoutSlots } = opportunity;
       return opportunityWithoutSlots;
     });
-    
+
     return result;
   }
 
@@ -176,29 +178,28 @@ export default class OpportunityService {
     opportunities: T[]
   ): T[] {
     const now = new Date();
-    
+
     return opportunities.filter(opportunity => {
       // Always include opportunities with no slots
       if (!opportunity.slots || opportunity.slots.length === 0) {
         return true;
       }
-      
+
       // Check if at least one slot is still bookable
       const hasBookableSlot = opportunity.slots.some(slot => {
         // Skip slots that are not scheduled
         if (slot.hostingStatus !== OpportunitySlotHostingStatus.SCHEDULED) {
           return false;
         }
-        
+
         // Calculate booking deadline
         const advanceBookingDays = getAdvanceBookingDays(opportunity.id);
-        const bookingDeadline = new Date(slot.startsAt);
-        bookingDeadline.setDate(bookingDeadline.getDate() - advanceBookingDays);
-        
+        const bookingDeadline = subDays(slot.startsAt, advanceBookingDays);
+
         // Slot is bookable if current time is before deadline
         return now <= bookingDeadline;
       });
-      
+
       return hasBookableSlot;
     });
   }
