@@ -281,7 +281,8 @@ describe("OpportunityService", () => {
         
         const result = await service.fetchOpportunities(mockCtx, mockArgs, take);
         
-        expect(mockRepository.queryWithSlots).toHaveBeenCalledWith(mockCtx, {}, {}, take * 2, undefined);
+        // Simplified batch size: Math.max((11 - 0) * 2, 50) = 50
+        expect(mockRepository.queryWithSlots).toHaveBeenCalledWith(mockCtx, {}, {}, 50, undefined);
         expect(result).toHaveLength(2);
         expect(result.map(r => r.id)).toEqual(["opp1", "opp2"]);
         // Verify slots are removed from result

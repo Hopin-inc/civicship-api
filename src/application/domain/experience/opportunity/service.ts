@@ -13,7 +13,7 @@ import OpportunityConverter from "@/application/domain/experience/opportunity/da
 import ImageService from "@/application/domain/content/image/service";
 import { inject, injectable } from "tsyringe";
 import { getAdvanceBookingDays } from "@/application/domain/experience/reservation/config";
-import { PrismaOpportunityDetailWithSlots } from "@/application/domain/experience/opportunity/data/type";
+import { PrismaOpportunityDetailWithSlots, PrismaOpportunityDetail } from "@/application/domain/experience/opportunity/data/type";
 import { OpportunitySlotHostingStatus } from "@prisma/client";
 import { subDays } from 'date-fns';
 
@@ -42,17 +42,30 @@ export default class OpportunityService {
     }
 
     // When no search filters, filter out opportunities with all slots past deadline
-    const FETCH_BUFFER_MULTIPLIER = 2;
-    const opportunitiesWithSlots = await this.repository.queryWithSlots(ctx, where, orderBy, take * FETCH_BUFFER_MULTIPLIER, cursor);
-    const filteredOpportunities = this.filterOpportunitiesBySlotDeadlines(opportunitiesWithSlots);
+    const result: PrismaOpportunityDetail[] = [];
+    let currentCursor = cursor;
+    const targetCount = take + 1; // +1 for pagination check
 
-    // Convert back to the expected format (without slots)
-    const result = filteredOpportunities.slice(0, take + 1).map(opportunity => {
-      const { slots, ...opportunityWithoutSlots } = opportunity;
-      return opportunityWithoutSlots;
-    });
+    // fetch in batches until we have enough
+    while (result.length < targetCount) {
+      const batchSize = Math.max((targetCount - result.length) * 2, 50); // 2x buffer, min 50
 
-    return result;
+      const batch = await this.repository.queryWithSlots(ctx, where, orderBy, batchSize, currentCursor);
+
+      if (batch.length === 0) break; // No more data
+
+      // Filter and convert batch
+      const filtered = this.filterOpportunitiesBySlotDeadlines(batch)
+        .map(({ slots, ...opportunity }) => opportunity);
+
+      result.push(...filtered);
+
+      // Update cursor if we need more data
+      if (batch.length < batchSize) break; // Reached end
+      currentCursor = batch[batch.length - 1].id;
+    }
+
+    return result.slice(0, targetCount);
   }
 
   async findOpportunity(ctx: IContext, id: string) {
