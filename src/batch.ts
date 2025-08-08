@@ -5,6 +5,7 @@ import { completeOpportunitySlots } from "@/presentation/batch/completeOpportuni
 import { syncDIDVC } from "@/presentation/batch/syncDIDVC";
 import { requestDIDVC } from "@/presentation/batch/requestDIDVC";
 import { syncNftMetadata } from "@/presentation/batch/syncNftMetadata";
+import { refreshPointViews } from "@/presentation/batch/refreshPointViews";
 
 export async function batchProcess() {
   switch (process.env.BATCH_PROCESS_NAME) {
@@ -25,6 +26,9 @@ export async function batchProcess() {
       return;
     case "sync-nft-metadata":
       await syncNftMetadata();
+      return;
+    case "refresh-point-views":
+      await refreshPointViews();
       return;
     default:
       logger.error("Invalid batch process called.");
