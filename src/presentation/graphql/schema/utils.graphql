@@ -86,7 +86,7 @@ input CheckIsSelfPermissionInput {
 }
 
 input ImageInput {
-    file: Upload!
+    file: Upload
     alt: String
     caption: String
 }

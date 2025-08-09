@@ -558,7 +558,7 @@ export type GqlIdentityPlatform = typeof GqlIdentityPlatform[keyof typeof GqlIde
 export type GqlImageInput = {
   alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
-  file: Scalars['Upload']['input'];
+  file?: InputMaybe<Scalars['Upload']['input']>;
 };
 
 export const GqlLineRichMenuType = {

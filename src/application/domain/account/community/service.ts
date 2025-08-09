@@ -51,14 +51,17 @@ export default class CommunityService {
 
     let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
     if (image) {
-      uploadedImageData = await this.imageService.uploadPublicImage(image, "communities");
+      const result = await this.imageService.uploadPublicImage(image, "communities");
+      if (result) {
+        uploadedImageData = result;
+      }
     }
 
     const updateInput: Prisma.CommunityCreateInput = {
       ...data,
-      image: {
+      image: uploadedImageData ? {
         create: uploadedImageData,
-      },
+      } : undefined,
     };
 
     return this.repository.create(ctx, updateInput, tx);
@@ -81,14 +84,17 @@ export default class CommunityService {
 
     let uploadedImageData: Prisma.ImageCreateWithoutCommunitiesInput | undefined = undefined;
     if (image) {
-      uploadedImageData = await this.imageService.uploadPublicImage(image, "communities");
+      const result = await this.imageService.uploadPublicImage(image, "communities");
+      if (result) {
+        uploadedImageData = result;
+      }
     }
 
     const updateInput: Prisma.CommunityUpdateInput = {
       ...data,
-      image: {
+      image: uploadedImageData ? {
         create: uploadedImageData,
-      },
+      } : undefined,
     };
 
     return await this.repository.update(ctx, id, updateInput, tx);

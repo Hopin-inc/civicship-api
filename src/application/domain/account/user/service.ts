@@ -48,9 +48,12 @@ export default class UserService {
       ...data,
     };
     if (image) {
-      userUpdateInput.image = {
-        create: await this.imageService.uploadPublicImage(image, "users"),
-      };
+      const uploadedImage = await this.imageService.uploadPublicImage(image, "users");
+      if (uploadedImage) {
+        userUpdateInput.image = {
+          create: uploadedImage,
+        };
+      }
     }
 
     return this.repository.update(ctx, ctx.currentUser.id, userUpdateInput, tx);

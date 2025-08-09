@@ -57,15 +57,15 @@ export default class UtilityService implements IUtilityService {
   ) {
     const { data, images } = this.converter.create(input, currentUserId, communityId);
 
-    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
-      images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
-    );
+    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = (await Promise.all(
+      images.map((img) => this.imageService.uploadPublicImage(img, "utilities"))
+    )).filter((img): img is Prisma.ImageCreateWithoutUtilitiesInput => img !== null);
 
     const createInput: Prisma.UtilityCreateInput = {
       ...data,
-      images: {
+      images: uploadedImages.length > 0 ? {
         create: uploadedImages,
-      },
+      } : undefined,
     };
 
     return await this.repository.create(ctx, createInput, tx);
@@ -85,15 +85,15 @@ export default class UtilityService implements IUtilityService {
 
     const { data, images } = this.converter.updateInfo(input);
 
-    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = await Promise.all(
-      images.map((img) => this.imageService.uploadPublicImage(img, "utilities")),
-    );
+    const uploadedImages: Prisma.ImageCreateWithoutUtilitiesInput[] = (await Promise.all(
+      images.map((img) => this.imageService.uploadPublicImage(img, "utilities"))
+    )).filter((img): img is Prisma.ImageCreateWithoutUtilitiesInput => img !== null);
 
     const updateInput: Prisma.UtilityUpdateInput = {
       ...data,
-      images: {
+      images: uploadedImages.length > 0 ? {
         create: uploadedImages,
-      },
+      } : undefined,
     };
 
     return await this.repository.update(ctx, id, updateInput, tx);
