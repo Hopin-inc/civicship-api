@@ -13,6 +13,7 @@ import {
 import { IUtilityRepository } from "@/application/domain/reward/utility/data/interface";
 import UtilityConverter from "@/application/domain/reward/utility/data/converter";
 import ImageService from "@/application/domain/content/image/service";
+import { MOCK_IMAGE_UPLOAD_RESULT } from "@/__tests__/helper/mock-helper";
 
 // --- Mockクラス ---
 class MockUtilityRepository implements IUtilityRepository {
@@ -33,17 +34,7 @@ class MockUtilityConverter extends UtilityConverter {
 }
 
 class MockImageService implements ImageService {
-  uploadPublicImage = jest.fn().mockResolvedValue({
-    bucket: "test-bucket",
-    folderPath: "test-folder",
-    filename: "test-file.jpg",
-    url: "https://test-url.com/test-file.jpg",
-    alt: "test alt",
-    caption: "test caption",
-    ext: ".jpg",
-    mime: "image/jpeg",
-    isPublic: true,
-  });
+  uploadPublicImage = jest.fn().mockResolvedValue(MOCK_IMAGE_UPLOAD_RESULT);
 }
 
 // --- テスト用変数 ---

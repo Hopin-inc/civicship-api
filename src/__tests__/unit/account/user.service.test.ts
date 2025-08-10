@@ -7,6 +7,7 @@ import UserService from "@/application/domain/account/user/service";
 import { IUserRepository } from "@/application/domain/account/user/data/interface";
 import UserConverter from "@/application/domain/account/user/data/converter";
 import ImageService from "@/application/domain/content/image/service";
+import { MOCK_IMAGE_UPLOAD_RESULT } from "@/__tests__/helper/mock-helper";
 
 describe("UserService", () => {
   // --- Mockクラスを定義 ---
@@ -25,17 +26,7 @@ describe("UserService", () => {
   }
 
   class MockImageService extends ImageService {
-    uploadPublicImage = jest.fn().mockResolvedValue({
-      bucket: "test-bucket",
-      folderPath: "test-folder",
-      filename: "test-file.jpg",
-      url: "https://test-url.com/test-file.jpg",
-      alt: "test alt",
-      caption: "test caption",
-      ext: ".jpg",
-      mime: "image/jpeg",
-      isPublic: true,
-    });
+    uploadPublicImage = jest.fn().mockResolvedValue(MOCK_IMAGE_UPLOAD_RESULT);
   }
 
   // --- テスト共通変数 ---

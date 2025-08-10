@@ -4,6 +4,7 @@ import OpportunityService from "@/application/domain/experience/opportunity/serv
 import { NotFoundError } from "@/errors/graphql";
 import { Prisma, PublishStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
+import { MOCK_IMAGE_UPLOAD_RESULT } from "@/__tests__/helper/mock-helper";
 
 class MockOpportunityRepository {
   create = jest.fn();
@@ -22,17 +23,7 @@ class MockOpportunityConverter {
 }
 
 class MockImageService {
-  uploadPublicImage = jest.fn().mockResolvedValue({
-    bucket: "test-bucket",
-    folderPath: "test-folder",
-    filename: "test-file.jpg",
-    url: "https://test-url.com/test-file.jpg",
-    alt: "test alt",
-    caption: "test caption",
-    ext: ".jpg",
-    mime: "image/jpeg",
-    isPublic: true,
-  });
+  uploadPublicImage = jest.fn().mockResolvedValue(MOCK_IMAGE_UPLOAD_RESULT);
 }
 
 describe("OpportunityService", () => {
