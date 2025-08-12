@@ -169,7 +169,11 @@ function parseMultipartBody(body: Buffer, boundary: string): {
           if (fieldName === 'operations' || fieldName === 'map') {
             textFields.set(fieldName, bodySection.toString());
           } else {
-            fileFields.add(fieldName);
+            const hasFilename = headerSection.includes('filename=');
+            const hasContent = bodySection.length > 0;
+            if (hasFilename || hasContent) {
+              fileFields.add(fieldName);
+            }
           }
         }
       }
