@@ -6,6 +6,7 @@ import { ParticipationStatus, ParticipationStatusReason, Prisma } from "@prisma/
 import { IContext } from "@/types/server";
 import { GqlParticipationCreatePersonalRecordInput } from "@/types/graphql";
 import { PrismaParticipationDetail } from "@/application/domain/experience/participation/data/type";
+import { MOCK_IMAGE_UPLOAD_RESULT } from "@/__tests__/helper/mock-helper";
 
 class MockParticipationRepository {
   query = jest.fn();
@@ -24,7 +25,7 @@ class MockParticipationConverter {
 }
 
 class MockImageService {
-  uploadPublicImage = jest.fn();
+  uploadPublicImage = jest.fn().mockResolvedValue(MOCK_IMAGE_UPLOAD_RESULT);
 }
 
 describe("ParticipationService", () => {

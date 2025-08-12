@@ -16,8 +16,13 @@ export default class ImageService {
   async uploadPublicImage(
     image: GqlImageInput,
     folderPath: string,
-  ): Promise<Prisma.ImageCreateWithoutUsersInput> {
+  ): Promise<Prisma.ImageCreateWithoutUsersInput | null> {
     const { file, alt, caption } = image;
+    
+    if (!file) {
+      return null;
+    }
+    
     const uploadFile = (await file) as unknown as FileUpload;
 
     const { createReadStream, filename: rawFilename, mimetype: mime } = uploadFile;
