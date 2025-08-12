@@ -83,6 +83,13 @@ export const customProcessRequest = async (
 ): Promise<GraphQLOperations | GraphQLOperations[]> => {
   const contentType = request.headers['content-type'] || '';
   
+  logger.info('[CustomProcessRequest] Processing request', {
+    contentType,
+    isMultipart: contentType.includes('multipart/form-data'),
+    method: request.method,
+    url: request.url
+  });
+  
   debugLog({ 
     stage: 'received', 
     contentType, 
@@ -90,6 +97,7 @@ export const customProcessRequest = async (
   });
   
   if (!contentType.includes('multipart/form-data')) {
+    logger.info('[CustomProcessRequest] Non-multipart request, using default processor');
     return defaultProcessRequest(request, response, options);
   }
 
@@ -129,6 +137,13 @@ export const customProcessRequest = async (
       const { filename, mimeType } = info;
       
       const safeFilename = filename ? filename.substring(0, 50) + (filename.length > 50 ? '...' : '') : 'none';
+      
+      logger.info('[CustomProcessRequest] File detected', {
+        name,
+        filename: safeFilename,
+        mimeType,
+        hasFilename: Boolean(filename)
+      });
       
       debugLog({ 
         stage: 'file', 
@@ -187,8 +202,16 @@ export const customProcessRequest = async (
         const sanitizedMap = sanitizeMap(map, operations, fileKeys);
         const removedCount = Object.keys(map).length - Object.keys(sanitizedMap).length;
 
+        logger.info('[CustomProcessRequest] Map sanitization complete', {
+          originalMapKeys: Object.keys(map),
+          sanitizedMapKeys: Object.keys(sanitizedMap),
+          fileKeys: Array.from(fileKeys),
+          removedCount
+        });
+
         if (removedCount > 0) {
           if (Object.keys(sanitizedMap).length === 0) {
+            logger.info('[CustomProcessRequest] Converting to JSON (no real files detected)');
             debugLog({ 
               stage: 'forward', 
               uploadCount: 0, 
@@ -196,6 +219,11 @@ export const customProcessRequest = async (
             });
             return resolve(operations);
           }
+          
+          logger.info('[CustomProcessRequest] Forwarding filtered multipart request', {
+            uploadCount: Object.keys(sanitizedMap).length,
+            removedNullFiles: removedCount
+          });
           
           debugLog({ 
             stage: 'forward', 
@@ -224,6 +252,10 @@ export const customProcessRequest = async (
           
           return resolve(await defaultProcessRequest(filteredRequest, response, options));
         } else {
+          logger.info('[CustomProcessRequest] Passing through unmodified multipart request', {
+            uploadCount: Object.keys(map).length
+          });
+          
           debugLog({ 
             stage: 'forward', 
             uploadCount: Object.keys(map).length, 
