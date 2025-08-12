@@ -227,34 +227,42 @@ export const customProcessRequest = async (
             originalMapKeys: Object.keys(map)
           });
           
-          const bodyStr = originalBody.toString('binary');
-          const mapFieldRegex = /(Content-Disposition: form-data; name="map"\r?\n\r?\n)[^]*?(\r?\n--)/;
-          const match = bodyStr.match(mapFieldRegex);
-          
           let updatedBody: Buffer;
-          if (match) {
-            const beforeMap = bodyStr.substring(0, match.index! + match[1].length);
-            const afterMap = bodyStr.substring(match.index! + match[0].length - match[2].length);
-            const updatedBodyStr = beforeMap + sanitizedMapStr + match[2] + afterMap;
-            updatedBody = Buffer.from(updatedBodyStr, 'binary');
-            
-            logger.info('[CustomProcessRequest] Multipart body reconstructed', {
-              originalSize: originalBody.length,
-              updatedSize: updatedBody.length,
-              mapFieldFound: true,
-              beforeMapLength: beforeMap.length,
-              afterMapLength: afterMap.length,
-              sanitizedMapLength: sanitizedMapStr.length
-            });
-            
-            const filePartCount = (updatedBodyStr.match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
-            logger.info('[CustomProcessRequest] File parts verification', {
-              filePartsInReconstructedBody: filePartCount,
-              expectedFileParts: Object.keys(sanitizedMap).length
-            });
-          } else {
+          const mapFieldStart = originalBody.indexOf(Buffer.from('Content-Disposition: form-data; name="map"'));
+          if (mapFieldStart === -1) {
             logger.warn('[CustomProcessRequest] Map field not found in multipart body, using original');
             updatedBody = originalBody;
+          } else {
+            const mapContentStart = originalBody.indexOf(Buffer.from('\r\n\r\n'), mapFieldStart) + 4;
+            const mapContentEnd = originalBody.indexOf(Buffer.from('\r\n--'), mapContentStart);
+            
+            if (mapContentStart > 3 && mapContentEnd > mapContentStart) {
+              const beforeMap = originalBody.subarray(0, mapContentStart);
+              const afterMap = originalBody.subarray(mapContentEnd);
+              const sanitizedMapBuffer = Buffer.from(sanitizedMapStr, 'utf8');
+              
+              updatedBody = Buffer.concat([beforeMap, sanitizedMapBuffer, afterMap]);
+              
+              logger.info('[CustomProcessRequest] Multipart body reconstructed with Buffer operations', {
+                originalSize: originalBody.length,
+                updatedSize: updatedBody.length,
+                mapFieldFound: true,
+                beforeMapLength: beforeMap.length,
+                afterMapLength: afterMap.length,
+                sanitizedMapLength: sanitizedMapBuffer.length,
+                mapContentStart,
+                mapContentEnd
+              });
+              
+              const filePartCount = (updatedBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
+              logger.info('[CustomProcessRequest] File parts verification', {
+                filePartsInReconstructedBody: filePartCount,
+                expectedFileParts: Object.keys(sanitizedMap).length
+              });
+            } else {
+              logger.warn('[CustomProcessRequest] Could not locate map content boundaries, using original');
+              updatedBody = originalBody;
+            }
           }
           
           const { Readable } = await import('stream');
