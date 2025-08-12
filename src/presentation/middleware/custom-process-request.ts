@@ -18,6 +18,14 @@ interface GraphQLOperations {
   [key: string]: unknown;
 }
 
+interface LoggedDecision {
+  fileKey: string;
+  path: string;
+  operationsValue: 'non-null' | null;
+  hasRealFile: boolean;
+  keep: boolean;
+}
+
 async function createReconstructedRequest(
   body: Buffer,
   originalRequest: IncomingMessage,
@@ -58,11 +66,11 @@ function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOpera
   });
   
   const out: MapShape = {};
-  const decisions: any[] = [];
+  const decisions: LoggedDecision[] = [];
 
   for (const [fileKey, paths] of Object.entries(map)) {
     const validPaths = paths.filter((path) => {
-      const value = getByPath(operations as Record<string, unknown>, path);
+      const value = getByPath(operations, path);
       const hasOperationValue = Boolean(value);
       const hasRealFile = fileKeys.has(fileKey);
       const keep = hasOperationValue || hasRealFile;
