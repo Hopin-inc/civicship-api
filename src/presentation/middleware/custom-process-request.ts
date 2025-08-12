@@ -220,13 +220,32 @@ export const customProcessRequest = async (
           
           const originalBody = Buffer.concat(originalBodyChunks);
           const sanitizedMapStr = JSON.stringify(sanitizedMap);
+          
+          const bodyStr = originalBody.toString('binary');
           const mapFieldRegex = /(Content-Disposition: form-data; name="map"\r?\n\r?\n)[^]*?(\r?\n--)/;
-          const updatedBody = originalBody.toString().replace(mapFieldRegex, `$1${sanitizedMapStr}$2`);
+          const match = bodyStr.match(mapFieldRegex);
+          
+          let updatedBody: Buffer;
+          if (match) {
+            const beforeMap = bodyStr.substring(0, match.index! + match[1].length);
+            const afterMap = bodyStr.substring(match.index! + match[0].length - match[2].length);
+            const updatedBodyStr = beforeMap + sanitizedMapStr + match[2] + afterMap;
+            updatedBody = Buffer.from(updatedBodyStr, 'binary');
+            
+            logger.info('[CustomProcessRequest] Multipart body reconstructed', {
+              originalSize: originalBody.length,
+              updatedSize: updatedBody.length,
+              mapFieldFound: true
+            });
+          } else {
+            logger.warn('[CustomProcessRequest] Map field not found in multipart body, using original');
+            updatedBody = originalBody;
+          }
           
           const { Readable } = await import('stream');
           const filteredRequest = new Readable({
             read() {
-              this.push(Buffer.from(updatedBody));
+              this.push(updatedBody);
               this.push(null);
             }
           }) as IncomingMessage;
@@ -234,7 +253,7 @@ export const customProcessRequest = async (
           filteredRequest.headers = { ...request.headers };
           filteredRequest.method = request.method;
           filteredRequest.url = request.url;
-          filteredRequest.headers['content-length'] = Buffer.byteLength(updatedBody).toString();
+          filteredRequest.headers['content-length'] = updatedBody.length.toString();
           
           return resolve(await defaultProcessRequest(filteredRequest, response, options));
         } else {
