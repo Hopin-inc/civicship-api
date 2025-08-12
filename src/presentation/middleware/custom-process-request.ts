@@ -25,12 +25,12 @@ function getByPath(obj: Record<string, unknown> | unknown[], dotted: string): un
   }, obj);
 }
 
-function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOperations[]): MapShape {
+function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOperations[], fileFields: Set<string>): MapShape {
   const out: MapShape = {};
   for (const [fileKey, paths] of Object.entries(map)) {
     const validPaths = paths.filter((path) => {
       const value = getByPath(operations as Record<string, unknown>, path);
-      return Boolean(value);
+      return Boolean(value) || fileFields.has(fileKey);
     });
     if (validPaths.length > 0) {
       out[fileKey] = validPaths;
@@ -68,9 +68,9 @@ export const customProcessRequest = async (
           return resolve(await defaultProcessRequest(originalRequest, response, options));
         }
         
-        const parts = parseMultipartBody(body, boundary);
-        const operationsStr = parts.get('operations');
-        const mapStr = parts.get('map');
+        const { textFields, fileFields } = parseMultipartBody(body, boundary);
+        const operationsStr = textFields.get('operations');
+        const mapStr = textFields.get('map');
         
         if (!operationsStr || !mapStr) {
           return resolve(await defaultProcessRequest(originalRequest, response, options));
@@ -86,7 +86,7 @@ export const customProcessRequest = async (
           return resolve(await defaultProcessRequest(originalRequest, response, options));
         }
         
-        const sanitizedMap = sanitizeMap(map, operations);
+        const sanitizedMap = sanitizeMap(map, operations, fileFields);
         const removedCount = Object.keys(map).length - Object.keys(sanitizedMap).length;
         
         if (removedCount > 0) {
@@ -137,8 +137,12 @@ export const customProcessRequest = async (
   });
 };
 
-function parseMultipartBody(body: Buffer, boundary: string): Map<string, string> {
-  const parts = new Map<string, string>();
+function parseMultipartBody(body: Buffer, boundary: string): { 
+  textFields: Map<string, string>; 
+  fileFields: Set<string> 
+} {
+  const textFields = new Map<string, string>();
+  const fileFields = new Set<string>();
   const boundaryBuffer = Buffer.from(`--${boundary}`);
   
   let start = 0;
@@ -154,8 +158,14 @@ function parseMultipartBody(body: Buffer, boundary: string): Map<string, string>
         const bodySection = partBuffer.slice(headerEndIndex + 4, -2); // Remove trailing \r\n
         
         const nameMatch = headerSection.match(/name="([^"]+)"/);
-        if (nameMatch && (nameMatch[1] === 'operations' || nameMatch[1] === 'map')) {
-          parts.set(nameMatch[1], bodySection.toString());
+        if (nameMatch) {
+          const fieldName = nameMatch[1];
+          
+          if (fieldName === 'operations' || fieldName === 'map') {
+            textFields.set(fieldName, bodySection.toString());
+          } else {
+            fileFields.add(fieldName);
+          }
         }
       }
     }
@@ -164,7 +174,7 @@ function parseMultipartBody(body: Buffer, boundary: string): Map<string, string>
     end = body.indexOf(boundaryBuffer, start);
   }
   
-  return parts;
+  return { textFields, fileFields };
 }
 
 function reconstructMultipartBody(
