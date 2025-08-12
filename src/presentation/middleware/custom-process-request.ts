@@ -221,6 +221,12 @@ export const customProcessRequest = async (
           const originalBody = Buffer.concat(originalBodyChunks);
           const sanitizedMapStr = JSON.stringify(sanitizedMap);
           
+          logger.info('[CustomProcessRequest] Starting multipart reconstruction', {
+            originalSize: originalBody.length,
+            sanitizedMapKeys: Object.keys(sanitizedMap),
+            originalMapKeys: Object.keys(map)
+          });
+          
           const bodyStr = originalBody.toString('binary');
           const mapFieldRegex = /(Content-Disposition: form-data; name="map"\r?\n\r?\n)[^]*?(\r?\n--)/;
           const match = bodyStr.match(mapFieldRegex);
@@ -235,7 +241,16 @@ export const customProcessRequest = async (
             logger.info('[CustomProcessRequest] Multipart body reconstructed', {
               originalSize: originalBody.length,
               updatedSize: updatedBody.length,
-              mapFieldFound: true
+              mapFieldFound: true,
+              beforeMapLength: beforeMap.length,
+              afterMapLength: afterMap.length,
+              sanitizedMapLength: sanitizedMapStr.length
+            });
+            
+            const filePartCount = (updatedBodyStr.match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
+            logger.info('[CustomProcessRequest] File parts verification', {
+              filePartsInReconstructedBody: filePartCount,
+              expectedFileParts: Object.keys(sanitizedMap).length
             });
           } else {
             logger.warn('[CustomProcessRequest] Map field not found in multipart body, using original');
