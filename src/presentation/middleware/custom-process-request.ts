@@ -18,13 +18,6 @@ interface GraphQLOperations {
   [key: string]: unknown;
 }
 
-const debug = process.env.LOG_GRAPHQL_UPLOAD_DEBUG === 'true';
-
-function debugLog(obj: any) {
-  if (debug) {
-    logger.debug('[upload-debug]', obj);
-  }
-}
 
 function getByPath(obj: Record<string, unknown> | unknown[], dotted: string): unknown {
   return dotted.split('.').reduce((acc: unknown, key: string) => {
@@ -35,8 +28,7 @@ function getByPath(obj: Record<string, unknown> | unknown[], dotted: string): un
 }
 
 function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOperations[], fileKeys: Set<string>): MapShape {
-  debugLog({ 
-    stage: 'sanitize:before', 
+  logger.info('[CustomProcessRequest] Sanitize map - before', { 
     mapBefore: map, 
     fileKeys: Array.from(fileKeys) 
   });
@@ -67,8 +59,7 @@ function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOpera
     }
   }
 
-  debugLog({ 
-    stage: 'sanitize:after', 
+  logger.info('[CustomProcessRequest] Sanitize map - after', { 
     decisions, 
     mapAfter: out 
   });
@@ -90,8 +81,7 @@ export const customProcessRequest = async (
     url: request.url
   });
   
-  debugLog({ 
-    stage: 'received', 
+  logger.info('[CustomProcessRequest] Request received details', { 
     contentType, 
     isMultipart: contentType.includes('multipart/form-data') 
   });
@@ -122,8 +112,7 @@ export const customProcessRequest = async (
     });
 
     busboy.on('field', (name: string, value: string) => {
-      debugLog({ 
-        stage: 'field', 
+      logger.info('[CustomProcessRequest] Field detected', { 
         name, 
         size: value.length 
       });
@@ -145,8 +134,7 @@ export const customProcessRequest = async (
         hasFilename: Boolean(filename)
       });
       
-      debugLog({ 
-        stage: 'file', 
+      logger.info('[CustomProcessRequest] File event details', { 
         name, 
         filename: safeFilename, 
         mimeType 
@@ -212,8 +200,7 @@ export const customProcessRequest = async (
         if (removedCount > 0) {
           if (Object.keys(sanitizedMap).length === 0) {
             logger.info('[CustomProcessRequest] Converting to JSON (no real files detected)');
-            debugLog({ 
-              stage: 'forward', 
+            logger.info('[CustomProcessRequest] Forward action', { 
               uploadCount: 0, 
               action: 'json-conversion' 
             });
@@ -225,8 +212,7 @@ export const customProcessRequest = async (
             removedNullFiles: removedCount
           });
           
-          debugLog({ 
-            stage: 'forward', 
+          logger.info('[CustomProcessRequest] Forward action details', { 
             uploadCount: Object.keys(sanitizedMap).length, 
             action: 'filtered-multipart',
             removedNullFiles: removedCount
@@ -256,8 +242,7 @@ export const customProcessRequest = async (
             uploadCount: Object.keys(map).length
           });
           
-          debugLog({ 
-            stage: 'forward', 
+          logger.info('[CustomProcessRequest] Forward action passthrough', { 
             uploadCount: Object.keys(map).length, 
             action: 'passthrough' 
           });
