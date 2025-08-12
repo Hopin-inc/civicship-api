@@ -4,10 +4,24 @@ import logger from "@/infrastructure/logging";
 interface ParsedMultipartData {
   operations?: {
     query: string;
-    variables: any;
+    variables: {
+      input?: {
+        images?: Array<{
+          file?: unknown;
+          alt?: string;
+          caption?: string;
+        }>;
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
+    };
   };
   map?: Record<string, string[]>;
-  files?: Record<string, any>;
+  files?: Record<string, {
+    filename: string;
+    mimetype: string;
+    data: Buffer;
+  }>;
 }
 
 export const multipartPreprocessor = async (
@@ -61,15 +75,15 @@ async function parseMultipartRequest(req: Request): Promise<ParsedMultipartData>
         
         for (const part of parts) {
           if (part.name === 'operations') {
-            result.operations = JSON.parse(part.value);
+            result.operations = JSON.parse(part.value.toString());
           } else if (part.name === 'map') {
-            result.map = JSON.parse(part.value);
-          } else if (part.filename) {
+            result.map = JSON.parse(part.value.toString());
+          } else if (part.filename && part.mimetype) {
             if (!result.files) result.files = {};
             result.files[part.name] = {
               filename: part.filename,
               mimetype: part.mimetype,
-              data: part.value
+              data: Buffer.isBuffer(part.value) ? part.value : Buffer.from(part.value)
             };
           }
         }
@@ -99,8 +113,8 @@ function filterNullFiles(data: ParsedMultipartData): { data: ParsedMultipartData
   
   const originalLength = images.length;
   
-  const filteredImages = images.filter((image: any) => {
-    if (image && image.file === null) {
+  const filteredImages = images.filter((image: unknown) => {
+    if (image && typeof image === 'object' && image !== null && 'file' in image && (image as { file: unknown }).file === null) {
       logger.debug('[MultipartPreprocessor] Filtering out null file from images array');
       return false;
     }
@@ -139,8 +153,7 @@ async function reconstructMultipartRequest(req: Request, data: ParsedMultipartDa
   
   req.headers['content-length'] = newBody.length.toString();
   
-  (req as any)._body = newBody;
-  (req as any).body = newBody;
+  (req as Request & { _body?: Buffer }).body = newBody;
 }
 
 function extractBoundary(contentType: string): string | null {
@@ -150,7 +163,7 @@ function extractBoundary(contentType: string): string | null {
 
 interface MultipartPart {
   name: string;
-  value: any;
+  value: Buffer | string;
   filename?: string;
   mimetype?: string;
 }
