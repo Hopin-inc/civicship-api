@@ -89,26 +89,29 @@ export const customProcessRequest = async (
         const removedCount = Object.keys(map).length - Object.keys(sanitizedMap).length;
         
         if (removedCount > 0) {
-          logger.debug(`[CustomProcessRequest] Filtered ${removedCount} null file entries, using minimal map update`);
+          logger.debug(`[CustomProcessRequest] Detected ${removedCount} null file entries - converting to JSON request`);
           
-          const sanitizedMapStr = JSON.stringify(sanitizedMap);
-          const mapFieldRegex = /(Content-Disposition: form-data; name="map"\r?\n\r?\n)[^]*?(\r?\n--)/;
-          const updatedBody = body.toString().replace(mapFieldRegex, `$1${sanitizedMapStr}$2`);
+          const jsonBody = JSON.stringify(operations);
           
           const { Readable } = await import('stream');
-          const filteredRequest = new Readable({
+          const jsonRequest = new Readable({
             read() {
-              this.push(Buffer.from(updatedBody));
+              this.push(Buffer.from(jsonBody));
               this.push(null);
             }
           }) as IncomingMessage;
           
-          filteredRequest.headers = { ...request.headers };
-          filteredRequest.method = request.method;
-          filteredRequest.url = request.url;
-          filteredRequest.headers['content-length'] = Buffer.byteLength(updatedBody).toString();
+          jsonRequest.headers = {
+            ...request.headers,
+            'content-type': 'application/json',
+            'content-length': Buffer.byteLength(jsonBody).toString()
+          };
+          delete jsonRequest.headers['content-type'];
+          jsonRequest.headers['content-type'] = 'application/json';
+          jsonRequest.method = request.method;
+          jsonRequest.url = request.url;
           
-          return resolve(await defaultProcessRequest(filteredRequest, response, options));
+          return resolve(operations);
         }
         
         const { Readable } = await import('stream');
