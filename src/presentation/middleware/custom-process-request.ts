@@ -251,13 +251,18 @@ export const customProcessRequest = async (
                 afterMapLength: afterMap.length,
                 sanitizedMapLength: sanitizedMapBuffer.length,
                 mapContentStart,
-                mapContentEnd
+                mapContentEnd,
+                originalMapContent: originalBody.subarray(mapContentStart, mapContentEnd).toString('utf8'),
+                sanitizedMapContent: sanitizedMapStr
               });
               
               const filePartCount = (updatedBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
+              const originalFilePartCount = (originalBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
               logger.info('[CustomProcessRequest] File parts verification', {
                 filePartsInReconstructedBody: filePartCount,
-                expectedFileParts: Object.keys(sanitizedMap).length
+                filePartsInOriginalBody: originalFilePartCount,
+                expectedFileParts: Object.keys(sanitizedMap).length,
+                filePartsPreserved: filePartCount === originalFilePartCount
               });
             } else {
               logger.warn('[CustomProcessRequest] Could not locate map content boundaries, using original');
