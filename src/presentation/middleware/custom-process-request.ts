@@ -44,28 +44,27 @@ export const customProcessRequest = async (
   response: ServerResponse,
   options: ProcessRequestOptions = {}
 ): Promise<GraphQLOperations | GraphQLOperations[]> => {
-  logger.debug('[CustomProcessRequest] Processing GraphQL multipart request with sanitization');
+  logger.debug('[CustomProcessRequest] Processing GraphQL multipart request with minimal preprocessing');
   
   const chunks: Buffer[] = [];
-  const originalRequest = request;
   
   return new Promise((resolve, reject) => {
-    originalRequest.on('data', (chunk: Buffer) => {
+    request.on('data', (chunk: Buffer) => {
       chunks.push(chunk);
     });
     
-    originalRequest.on('end', async () => {
+    request.on('end', async () => {
       try {
         const body = Buffer.concat(chunks);
-        const contentType = originalRequest.headers['content-type'] || '';
+        const contentType = request.headers['content-type'] || '';
         
         if (!contentType.includes('multipart/form-data')) {
-          return resolve(await defaultProcessRequest(originalRequest, response, options));
+          return resolve(await defaultProcessRequest(request, response, options));
         }
         
         const boundary = contentType.match(/boundary=([^;]+)/)?.[1];
         if (!boundary) {
-          return resolve(await defaultProcessRequest(originalRequest, response, options));
+          return resolve(await defaultProcessRequest(request, response, options));
         }
         
         const { textFields, fileFields } = parseMultipartBody(body, boundary);
@@ -73,7 +72,7 @@ export const customProcessRequest = async (
         const mapStr = textFields.get('map');
         
         if (!operationsStr || !mapStr) {
-          return resolve(await defaultProcessRequest(originalRequest, response, options));
+          return resolve(await defaultProcessRequest(request, response, options));
         }
         
         let operations: GraphQLOperations | GraphQLOperations[];
@@ -83,34 +82,33 @@ export const customProcessRequest = async (
           operations = JSON.parse(operationsStr);
           map = JSON.parse(mapStr);
         } catch {
-          return resolve(await defaultProcessRequest(originalRequest, response, options));
+          return resolve(await defaultProcessRequest(request, response, options));
         }
         
         const sanitizedMap = sanitizeMap(map, operations, fileFields);
         const removedCount = Object.keys(map).length - Object.keys(sanitizedMap).length;
         
         if (removedCount > 0) {
-          logger.debug(`[CustomProcessRequest] Sanitized map: removed ${removedCount} null file entries`);
+          logger.debug(`[CustomProcessRequest] Filtered ${removedCount} null file entries, using minimal map update`);
           
-          const newBody = reconstructMultipartBody(body, boundary, {
-            operations: JSON.stringify(operations),
-            map: JSON.stringify(sanitizedMap)
-          });
+          const sanitizedMapStr = JSON.stringify(sanitizedMap);
+          const mapFieldRegex = /(Content-Disposition: form-data; name="map"\r?\n\r?\n)[^]*?(\r?\n--)/;
+          const updatedBody = body.toString().replace(mapFieldRegex, `$1${sanitizedMapStr}$2`);
           
           const { Readable } = await import('stream');
-          const modifiedRequest = new Readable({
+          const filteredRequest = new Readable({
             read() {
-              this.push(newBody);
+              this.push(Buffer.from(updatedBody));
               this.push(null);
             }
           }) as IncomingMessage;
           
-          modifiedRequest.headers = { ...originalRequest.headers };
-          modifiedRequest.method = originalRequest.method;
-          modifiedRequest.url = originalRequest.url;
-          modifiedRequest.headers['content-length'] = newBody.length.toString();
+          filteredRequest.headers = { ...request.headers };
+          filteredRequest.method = request.method;
+          filteredRequest.url = request.url;
+          filteredRequest.headers['content-length'] = Buffer.byteLength(updatedBody).toString();
           
-          return resolve(await defaultProcessRequest(modifiedRequest, response, options));
+          return resolve(await defaultProcessRequest(filteredRequest, response, options));
         }
         
         const { Readable } = await import('stream');
@@ -121,9 +119,9 @@ export const customProcessRequest = async (
           }
         }) as IncomingMessage;
         
-        passthroughRequest.headers = { ...originalRequest.headers };
-        passthroughRequest.method = originalRequest.method;
-        passthroughRequest.url = originalRequest.url;
+        passthroughRequest.headers = { ...request.headers };
+        passthroughRequest.method = request.method;
+        passthroughRequest.url = request.url;
         
         return resolve(await defaultProcessRequest(passthroughRequest, response, options));
         
@@ -133,7 +131,7 @@ export const customProcessRequest = async (
       }
     });
     
-    originalRequest.on('error', reject);
+    request.on('error', reject);
   });
 };
 
@@ -175,63 +173,4 @@ function parseMultipartBody(body: Buffer, boundary: string): {
   }
   
   return { textFields, fileFields };
-}
-
-function reconstructMultipartBody(
-  originalBody: Buffer, 
-  boundary: string, 
-  newFields: { operations: string; map: string }
-): Buffer {
-  const parts: Buffer[] = [];
-  const boundaryLine = `--${boundary}`;
-  const endBoundaryLine = `--${boundary}--`;
-  
-  parts.push(Buffer.from(`${boundaryLine}\r\n`));
-  parts.push(Buffer.from('Content-Disposition: form-data; name="operations"\r\n\r\n'));
-  parts.push(Buffer.from(newFields.operations));
-  parts.push(Buffer.from('\r\n'));
-  
-  parts.push(Buffer.from(`${boundaryLine}\r\n`));
-  parts.push(Buffer.from('Content-Disposition: form-data; name="map"\r\n\r\n'));
-  parts.push(Buffer.from(newFields.map));
-  parts.push(Buffer.from('\r\n'));
-  
-  const boundaryBuffer = Buffer.from(`--${boundary}`);
-  let start = 0;
-  let end = originalBody.indexOf(boundaryBuffer, start);
-  
-  while (end !== -1) {
-    if (start > 0) {
-      const partStart = start;
-      const nextBoundaryStart = end;
-      
-      let partEnd = nextBoundaryStart;
-      if (originalBody[partEnd - 2] === 0x0D && originalBody[partEnd - 1] === 0x0A) {
-        partEnd -= 2; // Remove trailing CRLF before boundary
-      }
-      
-      const partBuffer = originalBody.slice(partStart, partEnd);
-      const headerEndIndex = partBuffer.indexOf('\r\n\r\n');
-      
-      if (headerEndIndex !== -1) {
-        const headerSection = partBuffer.slice(0, headerEndIndex).toString();
-        const nameMatch = headerSection.match(/name="([^"]+)"/);
-        
-        if (nameMatch && nameMatch[1] !== 'operations' && nameMatch[1] !== 'map') {
-          parts.push(Buffer.from(`${boundaryLine}\r\n`));
-          parts.push(partBuffer);
-          parts.push(Buffer.from('\r\n'));
-        }
-      }
-    }
-    
-    start = end + boundaryBuffer.length;
-    while (start < originalBody.length && (originalBody[start] === 0x0D || originalBody[start] === 0x0A)) {
-      start++;
-    }
-    end = originalBody.indexOf(boundaryBuffer, start);
-  }
-  
-  parts.push(Buffer.from(`${endBoundaryLine}\r\n`));
-  return Buffer.concat(parts);
 }
