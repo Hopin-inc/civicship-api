@@ -18,6 +18,30 @@ interface GraphQLOperations {
   [key: string]: unknown;
 }
 
+async function createReconstructedRequest(
+  body: Buffer,
+  originalRequest: IncomingMessage,
+  updateContentLength: boolean = false
+): Promise<IncomingMessage> {
+  const { Readable } = await import('stream');
+  const newRequest = new Readable({
+    read() {
+      this.push(body);
+      this.push(null);
+    }
+  }) as IncomingMessage;
+
+  newRequest.headers = { ...originalRequest.headers };
+  newRequest.method = originalRequest.method;
+  newRequest.url = originalRequest.url;
+  
+  if (updateContentLength) {
+    newRequest.headers['content-length'] = body.length.toString();
+  }
+
+  return newRequest;
+}
+
 
 function getByPath(obj: Record<string, unknown> | unknown[], dotted: string): unknown {
   return dotted.split('.').reduce((acc: unknown, key: string) => {
@@ -28,7 +52,7 @@ function getByPath(obj: Record<string, unknown> | unknown[], dotted: string): un
 }
 
 function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOperations[], fileKeys: Set<string>): MapShape {
-  logger.info('[CustomProcessRequest] Sanitize map - before', { 
+  logger.debug('[CustomProcessRequest] Sanitize map - before', { 
     mapBefore: map, 
     fileKeys: Array.from(fileKeys) 
   });
@@ -59,7 +83,7 @@ function sanitizeMap(map: MapShape, operations: GraphQLOperations | GraphQLOpera
     }
   }
 
-  logger.info('[CustomProcessRequest] Sanitize map - after', { 
+  logger.debug('[CustomProcessRequest] Sanitize map - after', { 
     decisions, 
     mapAfter: out 
   });
@@ -79,11 +103,6 @@ export const customProcessRequest = async (
     isMultipart: contentType.includes('multipart/form-data'),
     method: request.method,
     url: request.url
-  });
-  
-  logger.info('[CustomProcessRequest] Request received details', { 
-    contentType, 
-    isMultipart: contentType.includes('multipart/form-data') 
   });
   
   if (!contentType.includes('multipart/form-data')) {
@@ -112,7 +131,7 @@ export const customProcessRequest = async (
     });
 
     busboy.on('field', (name: string, value: string) => {
-      logger.info('[CustomProcessRequest] Field detected', { 
+      logger.debug('[CustomProcessRequest] Field detected', { 
         name, 
         size: value.length 
       });
@@ -134,12 +153,6 @@ export const customProcessRequest = async (
         hasFilename: Boolean(filename)
       });
       
-      logger.info('[CustomProcessRequest] File event details', { 
-        name, 
-        filename: safeFilename, 
-        mimeType 
-      });
-      
       fileKeys.add(name);
       
       stream.resume();
@@ -152,18 +165,7 @@ export const customProcessRequest = async (
 
         if (!operationsStr || !mapStr) {
           const originalBody = Buffer.concat(originalBodyChunks);
-          const { Readable } = await import('stream');
-          const fallbackRequest = new Readable({
-            read() {
-              this.push(originalBody);
-              this.push(null);
-            }
-          }) as IncomingMessage;
-          
-          fallbackRequest.headers = { ...request.headers };
-          fallbackRequest.method = request.method;
-          fallbackRequest.url = request.url;
-          
+          const fallbackRequest = await createReconstructedRequest(originalBody, request);
           return resolve(await defaultProcessRequest(fallbackRequest, response, options));
         }
 
@@ -172,25 +174,14 @@ export const customProcessRequest = async (
           map = JSON.parse(mapStr);
         } catch {
           const originalBody = Buffer.concat(originalBodyChunks);
-          const { Readable } = await import('stream');
-          const fallbackRequest = new Readable({
-            read() {
-              this.push(originalBody);
-              this.push(null);
-            }
-          }) as IncomingMessage;
-          
-          fallbackRequest.headers = { ...request.headers };
-          fallbackRequest.method = request.method;
-          fallbackRequest.url = request.url;
-          
+          const fallbackRequest = await createReconstructedRequest(originalBody, request);
           return resolve(await defaultProcessRequest(fallbackRequest, response, options));
         }
 
         const sanitizedMap = sanitizeMap(map, operations, fileKeys);
         const removedCount = Object.keys(map).length - Object.keys(sanitizedMap).length;
 
-        logger.info('[CustomProcessRequest] Map sanitization complete', {
+        logger.debug('[CustomProcessRequest] Map sanitization complete', {
           originalMapKeys: Object.keys(map),
           sanitizedMapKeys: Object.keys(sanitizedMap),
           fileKeys: Array.from(fileKeys),
@@ -200,28 +191,18 @@ export const customProcessRequest = async (
         if (removedCount > 0) {
           if (Object.keys(sanitizedMap).length === 0) {
             logger.info('[CustomProcessRequest] Converting to JSON (no real files detected)');
-            logger.info('[CustomProcessRequest] Forward action', { 
-              uploadCount: 0, 
-              action: 'json-conversion' 
-            });
             return resolve(operations);
           }
           
-          logger.info('[CustomProcessRequest] Forwarding filtered multipart request', {
+          logger.info('[CustomProcessRequest] Filtering multipart request', {
             uploadCount: Object.keys(sanitizedMap).length,
-            removedNullFiles: removedCount
-          });
-          
-          logger.info('[CustomProcessRequest] Forward action details', { 
-            uploadCount: Object.keys(sanitizedMap).length, 
-            action: 'filtered-multipart',
             removedNullFiles: removedCount
           });
           
           const originalBody = Buffer.concat(originalBodyChunks);
           const sanitizedMapStr = JSON.stringify(sanitizedMap);
           
-          logger.info('[CustomProcessRequest] Starting multipart reconstruction', {
+          logger.debug('[CustomProcessRequest] Starting multipart reconstruction', {
             originalSize: originalBody.length,
             sanitizedMapKeys: Object.keys(sanitizedMap),
             originalMapKeys: Object.keys(map)
@@ -243,7 +224,7 @@ export const customProcessRequest = async (
               
               updatedBody = Buffer.concat([beforeMap, sanitizedMapBuffer, afterMap]);
               
-              logger.info('[CustomProcessRequest] Multipart body reconstructed with Buffer operations', {
+              logger.debug('[CustomProcessRequest] Multipart body reconstructed with Buffer operations', {
                 originalSize: originalBody.length,
                 updatedSize: updatedBody.length,
                 mapFieldFound: true,
@@ -258,7 +239,7 @@ export const customProcessRequest = async (
               
               const filePartCount = (updatedBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
               const originalFilePartCount = (originalBody.toString('utf8').match(/Content-Disposition: form-data; name="file\d+"/g) || []).length;
-              logger.info('[CustomProcessRequest] File parts verification', {
+              logger.debug('[CustomProcessRequest] File parts verification', {
                 filePartsInReconstructedBody: filePartCount,
                 filePartsInOriginalBody: originalFilePartCount,
                 expectedFileParts: Object.keys(sanitizedMap).length,
@@ -270,43 +251,15 @@ export const customProcessRequest = async (
             }
           }
           
-          const { Readable } = await import('stream');
-          const filteredRequest = new Readable({
-            read() {
-              this.push(updatedBody);
-              this.push(null);
-            }
-          }) as IncomingMessage;
-          
-          filteredRequest.headers = { ...request.headers };
-          filteredRequest.method = request.method;
-          filteredRequest.url = request.url;
-          filteredRequest.headers['content-length'] = updatedBody.length.toString();
-          
+          const filteredRequest = await createReconstructedRequest(updatedBody, request, true);
           return resolve(await defaultProcessRequest(filteredRequest, response, options));
         } else {
           logger.info('[CustomProcessRequest] Passing through unmodified multipart request', {
             uploadCount: Object.keys(map).length
           });
           
-          logger.info('[CustomProcessRequest] Forward action passthrough', { 
-            uploadCount: Object.keys(map).length, 
-            action: 'passthrough' 
-          });
-          
           const originalBody = Buffer.concat(originalBodyChunks);
-          const { Readable } = await import('stream');
-          const passthroughRequest = new Readable({
-            read() {
-              this.push(originalBody);
-              this.push(null);
-            }
-          }) as IncomingMessage;
-          
-          passthroughRequest.headers = { ...request.headers };
-          passthroughRequest.method = request.method;
-          passthroughRequest.url = request.url;
-          
+          const passthroughRequest = await createReconstructedRequest(originalBody, request);
           return resolve(await defaultProcessRequest(passthroughRequest, response, options));
         }
       } catch (error) {
