@@ -183,26 +183,34 @@ function reconstructMultipartBody(
   newFields: { operations: string; map: string }
 ): Buffer {
   const parts: Buffer[] = [];
-  const boundaryBuffer = Buffer.from(`--${boundary}\r\n`);
-  const endBoundaryBuffer = Buffer.from(`--${boundary}--\r\n`);
+  const boundaryLine = `--${boundary}`;
+  const endBoundaryLine = `--${boundary}--`;
   
-  parts.push(boundaryBuffer);
+  parts.push(Buffer.from(`${boundaryLine}\r\n`));
   parts.push(Buffer.from('Content-Disposition: form-data; name="operations"\r\n\r\n'));
   parts.push(Buffer.from(newFields.operations));
   parts.push(Buffer.from('\r\n'));
   
-  parts.push(boundaryBuffer);
+  parts.push(Buffer.from(`${boundaryLine}\r\n`));
   parts.push(Buffer.from('Content-Disposition: form-data; name="map"\r\n\r\n'));
   parts.push(Buffer.from(newFields.map));
   parts.push(Buffer.from('\r\n'));
   
-  const originalBoundaryBuffer = Buffer.from(`--${boundary}`);
+  const boundaryBuffer = Buffer.from(`--${boundary}`);
   let start = 0;
-  let end = originalBody.indexOf(originalBoundaryBuffer, start);
+  let end = originalBody.indexOf(boundaryBuffer, start);
   
   while (end !== -1) {
     if (start > 0) {
-      const partBuffer = originalBody.slice(start, end);
+      const partStart = start;
+      const nextBoundaryStart = end;
+      
+      let partEnd = nextBoundaryStart;
+      if (originalBody[partEnd - 2] === 0x0D && originalBody[partEnd - 1] === 0x0A) {
+        partEnd -= 2; // Remove trailing CRLF before boundary
+      }
+      
+      const partBuffer = originalBody.slice(partStart, partEnd);
       const headerEndIndex = partBuffer.indexOf('\r\n\r\n');
       
       if (headerEndIndex !== -1) {
@@ -210,17 +218,20 @@ function reconstructMultipartBody(
         const nameMatch = headerSection.match(/name="([^"]+)"/);
         
         if (nameMatch && nameMatch[1] !== 'operations' && nameMatch[1] !== 'map') {
-          parts.push(boundaryBuffer);
-          parts.push(partBuffer.slice(0, -2)); // Remove trailing \r\n
+          parts.push(Buffer.from(`${boundaryLine}\r\n`));
+          parts.push(partBuffer);
           parts.push(Buffer.from('\r\n'));
         }
       }
     }
     
-    start = end + originalBoundaryBuffer.length;
-    end = originalBody.indexOf(originalBoundaryBuffer, start);
+    start = end + boundaryBuffer.length;
+    while (start < originalBody.length && (originalBody[start] === 0x0D || originalBody[start] === 0x0A)) {
+      start++;
+    }
+    end = originalBody.indexOf(boundaryBuffer, start);
   }
   
-  parts.push(endBoundaryBuffer);
+  parts.push(Buffer.from(`${endBoundaryLine}\r\n`));
   return Buffer.concat(parts);
 }
