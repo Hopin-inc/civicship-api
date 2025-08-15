@@ -82,6 +82,8 @@ export default class OpportunityUseCase {
       isMember,
       isManager,
       currentUserId,
+      undefined,
+      ctx.isAdmin,
     );
 
     const record = await this.service.findOpportunityAccessible(ctx, id, validatedFilter);
@@ -211,10 +213,19 @@ function validateByMembershipRoles(
   isMember: Record<string, boolean>,
   currentUserId?: string,
   filter?: GqlOpportunityFilterInput,
+  isAdmin?: boolean,
 ): GqlOpportunityFilterInput {
   if (communityIds.length === 0) {
     return {
       and: [{ publishStatus: [PublishStatus.PUBLIC] }, ...(filter ? [filter] : [])],
+    };
+  }
+
+  if (isAdmin && communityIds.length > 0) {
+    return {
+      or: communityIds.map((communityId) => ({
+        and: [{ communityIds: [communityId] }, ...(filter ? [filter] : [])],
+      })),
     };
   }
 
