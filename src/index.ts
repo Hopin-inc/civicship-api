@@ -12,6 +12,7 @@ import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
 import { requestLogger } from "@/presentation/middleware/logger";
 import { tokenUpdaterMiddleware } from "@/presentation/middleware/token-updater";
+import { customProcessRequest } from "@/presentation/middleware/custom-process-request";
 import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.mjs";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -39,7 +40,11 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(requestLogger);
   app.use(tokenUpdaterMiddleware);
-  app.use(graphqlUploadExpress({ maxFileSize: 10_000_000, maxFiles: 10 }));
+  app.use(graphqlUploadExpress({ 
+    maxFileSize: 10_000_000, 
+    maxFiles: 10,
+    processRequest: customProcessRequest 
+  }));
 
   app.use((err, req, res, _next) => {
     logger.error("Unhandled Express Error:", {
