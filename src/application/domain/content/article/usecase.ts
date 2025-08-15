@@ -47,6 +47,7 @@ export default class ArticleUseCase {
       isManager,
       currentUserId,
       filter,
+      ctx.isAdmin,
     );
 
     const records = await this.service.fetchArticles(
@@ -78,6 +79,8 @@ export default class ArticleUseCase {
       isMember,
       isManager,
       currentUserId,
+      undefined,
+      ctx.isAdmin,
     );
 
     const record = await this.service.findArticle(ctx, id, validatedFilter);
@@ -121,7 +124,16 @@ function validateByMembershipRoles(
   isMember: Record<string, boolean>,
   currentUserId?: string,
   filter?: GqlArticleFilterInput,
+  isAdmin?: boolean,
 ): GqlArticleFilterInput {
+  if (isAdmin && communityIds.length > 0) {
+    return {
+      or: communityIds.map((communityId) => ({
+        and: [{ communityId }, ...(filter ? [filter] : [])],
+      })),
+    };
+  }
+
   const orConditions: GqlArticleFilterInput[] = communityIds.map((communityId) => {
     if (isManager[communityId]) {
       return {
