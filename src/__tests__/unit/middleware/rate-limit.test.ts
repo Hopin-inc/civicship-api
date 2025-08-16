@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { skipRateLimitForAdminApiKey } from '../../../presentation/middleware/rate-limit';
 
 describe('Rate Limit Skip Logic', () => {
   let mockReq: Partial<Request>;
@@ -12,19 +13,11 @@ describe('Rate Limit Skip Logic', () => {
     delete process.env.CIVICSHIP_ADMIN_API_KEY;
   });
 
-  const testSkipLogic = (req: Partial<Request>) => {
-    const apiKey = req.headers?.['x-api-key'] as string;
-    const adminApiKey = process.env.CIVICSHIP_ADMIN_API_KEY;
-    
-    const hasValidApiKey = apiKey && adminApiKey && apiKey === adminApiKey;
-    return !!hasValidApiKey;
-  };
-
   describe('skip function behavior', () => {
     it('should apply rate limiting for requests without API key', () => {
       mockReq.headers = {};
       
-      const skipResult = testSkipLogic(mockReq);
+      const skipResult = skipRateLimitForAdminApiKey(mockReq as Request);
       
       expect(skipResult).toBe(false);
     });
@@ -35,7 +28,7 @@ describe('Rate Limit Skip Logic', () => {
         'x-api-key': 'invalid-key',
       };
       
-      const skipResult = testSkipLogic(mockReq);
+      const skipResult = skipRateLimitForAdminApiKey(mockReq as Request);
       
       expect(skipResult).toBe(false);
     });
@@ -46,7 +39,7 @@ describe('Rate Limit Skip Logic', () => {
         'x-api-key': 'valid-admin-key',
       };
       
-      const skipResult = testSkipLogic(mockReq);
+      const skipResult = skipRateLimitForAdminApiKey(mockReq as Request);
       
       expect(skipResult).toBe(true);
     });
@@ -56,7 +49,7 @@ describe('Rate Limit Skip Logic', () => {
         'x-api-key': 'some-key',
       };
       
-      const skipResult = testSkipLogic(mockReq);
+      const skipResult = skipRateLimitForAdminApiKey(mockReq as Request);
       
       expect(skipResult).toBe(false);
     });
