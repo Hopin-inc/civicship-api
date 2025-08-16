@@ -21,9 +21,11 @@ export const walletRateLimit = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   skipSuccessfulRequests: false,
   skip: (req) => {
-    const apiKey = req.headers['x-api-key'];
-    const authToken = req.headers['authorization'];
-    return !apiKey || !authToken;
+    const apiKey = req.headers['x-api-key'] as string;
+    const adminApiKey = process.env.CIVICSHIP_ADMIN_API_KEY;
+    
+    const hasValidApiKey = apiKey && adminApiKey && apiKey === adminApiKey;
+    return !!hasValidApiKey;
   },
 });
 
