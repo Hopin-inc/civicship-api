@@ -231,7 +231,7 @@ describe("WalletValidator", () => {
       );
     });
 
-    it("should handle negative transfer amounts", async () => {
+    it("should throw ValidationError for negative transfer amounts", async () => {
       const fromWallet = {
         id: "wallet-from",
         currentPointView: { currentPoint: BigInt(1000) },
@@ -241,7 +241,20 @@ describe("WalletValidator", () => {
         currentPointView: { currentPoint: BigInt(0) },
       } as PrismaWallet;
 
-      await expect(validator.validateTransfer(-100, fromWallet, toWallet)).resolves.not.toThrow();
+      await expect(validator.validateTransfer(-100, fromWallet, toWallet)).rejects.toThrow(ValidationError);
+    });
+
+    it("should throw ValidationError for zero transfer amounts", async () => {
+      const fromWallet = {
+        id: "wallet-from",
+        currentPointView: { currentPoint: BigInt(1000) },
+      } as unknown as PrismaWallet;
+      const toWallet = {
+        id: "wallet-to",
+        currentPointView: { currentPoint: BigInt(0) },
+      } as PrismaWallet;
+
+      await expect(validator.validateTransfer(0, fromWallet, toWallet)).rejects.toThrow(ValidationError);
     });
 
     it("should throw InsufficientBalanceError if currentPoint is insufficient", async () => {
