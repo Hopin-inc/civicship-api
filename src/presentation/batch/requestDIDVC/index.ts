@@ -24,7 +24,7 @@ export async function requestDIDVC() {
    *   1: DID 無効 / VC 実行
    *   0: DID 無効 / VC 無効
    */
-  const requestMode = process.env.BATCH_DID_VC_REQUEST_MODE ? parseInt(process.env.BATCH_DID_VC_REQUEST_MODE) : 3; // デフォルトで全て実行
+  const requestMode = ((val) => (isNaN(val) ? 3 : val))(parseInt(process.env.BATCH_DID_VC_REQUEST_MODE, 10)); // デフォルトで全て実行
   const executeDID = checkBit(requestMode, 2);
   const executeVC = checkBit(requestMode, 1);
 
