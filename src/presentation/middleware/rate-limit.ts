@@ -14,25 +14,21 @@ const RATE_LIMIT_CONFIG = {
 } as const;
 
 export const skipRateLimitForAdminApiKey = (req: Request): boolean => {
-  const apiKey = req.headers['x-api-key'] as string;
+  const apiKeyHeader = req.headers['x-api-key'];
   const adminApiKey = process.env.CIVICSHIP_ADMIN_API_KEY;
-  
-  const hasValidApiKey = (() => {
-    if (!apiKey || !adminApiKey) {
-      return false;
-    }
-    
-    const apiKeyBuffer = Buffer.from(apiKey);
-    const adminApiKeyBuffer = Buffer.from(adminApiKey);
-    
-    if (apiKeyBuffer.length !== adminApiKeyBuffer.length) {
-      return false;
-    }
-    
-    return timingSafeEqual(apiKeyBuffer, adminApiKeyBuffer);
-  })();
-  
-  return hasValidApiKey;
+
+  if (Array.isArray(apiKeyHeader) || !apiKeyHeader || !adminApiKey) {
+    return false;
+  }
+
+  const apiKeyBuffer = Buffer.from(apiKeyHeader);
+  const adminApiKeyBuffer = Buffer.from(adminApiKey);
+
+  if (apiKeyBuffer.length !== adminApiKeyBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(apiKeyBuffer, adminApiKeyBuffer);
 };
 
 export const walletRateLimit = rateLimit({
