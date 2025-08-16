@@ -53,5 +53,16 @@ describe('Rate Limit Skip Logic', () => {
       
       expect(skipResult).toBe(false);
     });
+
+    it('should apply rate limiting if x-api-key header is an array', () => {
+      process.env.CIVICSHIP_ADMIN_API_KEY = 'valid-admin-key';
+      mockReq.headers = {
+        'x-api-key': ['valid-admin-key', 'another-key'],
+      };
+      
+      const skipResult = skipRateLimitForAdminApiKey(mockReq as Request);
+      
+      expect(skipResult).toBe(false);
+    });
   });
 });
