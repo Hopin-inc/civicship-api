@@ -18,6 +18,7 @@ export async function createDIDRequests(
   issuer: PrismaClientIssuer,
   didService: DIDIssuanceService,
   ctx: IContext,
+  limit?: number,
 ): Promise<BatchResult> {
   const users = await issuer.public(ctx, async (tx) => {
     return tx.user.findMany({
@@ -43,6 +44,7 @@ export async function createDIDRequests(
         identities: { where: { platform: IdentityPlatform.PHONE } },
         didIssuanceRequests: true,
       },
+      take: limit,
     });
   });
 

@@ -21,6 +21,7 @@ export async function createVCRequests(
   vcService: VCIssuanceRequestService,
   vcConverter: VCIssuanceRequestConverter,
   ctx: IContext,
+  limit?: number,
 ): Promise<BatchResult> {
   const evaluations = await issuer.public(ctx, async (tx) => {
     return tx.evaluation.findMany({
@@ -58,6 +59,7 @@ export async function createVCRequests(
         ],
       },
       include: evaluationInclude,
+      take: limit,
     });
   });
 
