@@ -132,13 +132,10 @@ export default class TransactionUseCase {
     );
 
     return ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      await this.membershipService.joinIfNeeded(ctx, toUserId, communityId, tx);
-
-      const toWallet = await this.walletService.createMemberWalletIfNeeded(
+      const toWallet = await this.walletService.findMemberWalletOrThrow(
         ctx,
         toUserId,
         communityId,
-        tx,
       );
 
       const { toWalletId } = await this.walletValidator.validateTransferMemberToMember(
