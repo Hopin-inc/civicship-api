@@ -72,7 +72,6 @@ export class DIDIssuanceService {
         token,
         "/did/jobs/create-and-publish",
         "POST",
-        { userId, requestId: didRequest.id },
       );
 
       if (!response?.jobId) {
