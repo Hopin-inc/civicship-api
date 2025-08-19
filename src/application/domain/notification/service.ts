@@ -136,7 +136,7 @@ export default class NotificationService {
       logger.error("pushReservationAppliedMessage: failed to get LIFF config", {
         reservationId: reservation.id,
         communityId: ctx.communityId,
-        error: error instanceof Error ? error.message : String(error),
+        err: error,
       });
       return;
     }
@@ -147,7 +147,7 @@ export default class NotificationService {
       logger.error("pushReservationAppliedMessage: failed to create LINE client", {
         reservationId: reservation.id,
         communityId: ctx.communityId,
-        error: error instanceof Error ? error.message : String(error),
+        err: error,
       });
       return;
     }
@@ -420,7 +420,7 @@ export default class NotificationService {
     } catch (error) {
       logger.error("switchRichMenuByRole: failed to get LIFF config", {
         communityId: ctx.communityId,
-        error: error instanceof Error ? error.message : String(error),
+        err: error,
       });
       return;
     }

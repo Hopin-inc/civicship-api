@@ -86,7 +86,7 @@ export default class CommunityConfigService {
       logger.error("getLineRichMenuIdByType: database query failed", {
         communityId,
         type,
-        error: error instanceof Error ? error.message : String(error),
+        err: error,
       });
       return null;
     }
