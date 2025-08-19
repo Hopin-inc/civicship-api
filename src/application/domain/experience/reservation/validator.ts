@@ -8,6 +8,7 @@ import {
   SlotNotScheduledError,
   NoAvailableParticipationSlotsError,
 } from "@/errors/graphql";
+import { endOfDay, subDays, isAfter } from "date-fns";
 import { PrismaReservation } from "@/application/domain/experience/reservation/data/type";
 import { injectable } from "tsyringe";
 import { PrismaOpportunitySlotReserve } from "@/application/domain/experience/opportunitySlot/data/type";
@@ -59,11 +60,10 @@ export default class ReservationValidator {
     const now = new Date();
     
     // Use DEFAULT_CANCELLATION_DEADLINE_DAYS (1 day) for all activities
-    // This allows cancellations until the day before the activity
-    const cancelLimit = new Date(slotStartAt);
-    cancelLimit.setDate(cancelLimit.getDate() - DEFAULT_CANCELLATION_DEADLINE_DAYS);
+    // This allows cancellations until 23:59 of the day before the activity
+    const cancelLimit = endOfDay(subDays(slotStartAt, DEFAULT_CANCELLATION_DEADLINE_DAYS));
 
-    if (now > cancelLimit) {
+    if (isAfter(now, cancelLimit)) {
       throw new ReservationCancellationTimeoutError();
     }
   }
@@ -91,10 +91,11 @@ export default class ReservationValidator {
       return;
     }
 
-    // Otherwise, use the configured advance booking days
-    const thresholdDate = new Date(now);
-    thresholdDate.setDate(thresholdDate.getDate() + advanceBookingDays);
-    if (startsAt.getTime() < thresholdDate.getTime()) {
+    // Calculate the deadline as end of day N days before the event start date
+    const eventStartDate = new Date(startsAt);
+    const deadlineDate = endOfDay(subDays(eventStartDate, advanceBookingDays));
+
+    if (isAfter(now, deadlineDate)) {
       throw new ReservationAdvanceBookingRequiredError();
     }
   }
