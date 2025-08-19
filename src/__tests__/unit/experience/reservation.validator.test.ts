@@ -84,7 +84,8 @@ describe("ReservationValidator", () => {
       mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
       mockNow.setMilliseconds(mockNow.getMilliseconds() + 1); // Just past the deadline
       
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+      jest.useFakeTimers();
+      jest.setSystemTime(mockNow);
 
       const slot = {
         hostingStatus: "SCHEDULED" as any,
@@ -96,7 +97,7 @@ describe("ReservationValidator", () => {
         validator.validateReservable(slot, 1, 5);
       }).toThrow(ReservationAdvanceBookingRequiredError);
       
-      jest.restoreAllMocks();
+      jest.useRealTimers();
     });
 
     describe("with custom advance booking days", () => {
@@ -122,7 +123,8 @@ describe("ReservationValidator", () => {
         mockNow.setDate(mockNow.getDate() - 3); // 3 days before event (custom advance booking days)
         mockNow.setHours(23, 59, 59, 998); // Just before 23:59:59.999 deadline
         
-        jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+        jest.useFakeTimers();
+        jest.setSystemTime(mockNow);
 
         const slot = {
           hostingStatus: "SCHEDULED" as any,
@@ -134,7 +136,7 @@ describe("ReservationValidator", () => {
           validator.validateReservable(slot, 1, 5);
         }).not.toThrow();
         
-        jest.restoreAllMocks();
+        jest.useRealTimers();
       });
 
       it("should throw if booking is after the deadline (23:59 of N days before event)", () => {
@@ -208,7 +210,8 @@ describe("ReservationValidator", () => {
         mockNow.setDate(mockNow.getDate() - 3); // 3 days before event
         mockNow.setHours(23, 59, 59, 999); // Set to 23:59:59.999
         
-        jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+        jest.useFakeTimers();
+        jest.setSystemTime(mockNow);
 
         const slot = {
           hostingStatus: "SCHEDULED" as any,
@@ -221,7 +224,7 @@ describe("ReservationValidator", () => {
           validator.validateReservable(slot, 1, 5);
         }).not.toThrow();
         
-        jest.restoreAllMocks();
+        jest.useRealTimers();
       });
 
       it("should reject booking after 23:59 of N days before event regardless of event start time", () => {
