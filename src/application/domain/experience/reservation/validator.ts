@@ -92,8 +92,7 @@ export default class ReservationValidator {
     }
 
     // Calculate the deadline as end of day N days before the event start date
-    const eventStartDate = new Date(startsAt);
-    const deadlineDate = endOfDay(subDays(eventStartDate, advanceBookingDays));
+    const deadlineDate = endOfDay(subDays(startsAt, advanceBookingDays));
 
     if (isAfter(now, deadlineDate)) {
       throw new ReservationAdvanceBookingRequiredError();
