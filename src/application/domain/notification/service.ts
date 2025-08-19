@@ -20,6 +20,7 @@ import timezone from "dayjs/plugin/timezone.js";
 import "dayjs/locale/ja.js";
 import { PrismaEvaluation } from "@/application/domain/experience/evaluation/data/type";
 import { buildCertificateIssuedMessage } from "@/application/domain/notification/presenter/message/certificateIssuedMessage";
+import { MessagingApiClient } from "@line/bot-sdk/dist/messaging-api/api";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.locale("ja");
@@ -35,7 +36,7 @@ export default class NotificationService {
   constructor(
     @inject("CommunityConfigService")
     private readonly communityConfigService: CommunityConfigService,
-  ) {}
+  ) { }
 
   async pushCancelOpportunitySlotMessage(
     ctx: IContext,
@@ -48,12 +49,12 @@ export default class NotificationService {
           id: p.id,
           user: p.user
             ? {
-                identities: p.user.identities.map((identity) => ({
-                  platform: identity.platform,
-                  uid: identity.uid,
-                  communityId: identity.communityId ?? undefined,
-                })),
-              }
+              identities: p.user.identities.map((identity) => ({
+                platform: identity.platform,
+                uid: identity.uid,
+                communityId: identity.communityId ?? undefined,
+              })),
+            }
             : null,
         })),
       ),
@@ -99,14 +100,14 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
-            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
-              (identity) => ({
-                platform: identity.platform,
-                uid: identity.uid,
-                communityId: identity.communityId ?? undefined,
-              }),
-            ),
-          }
+          identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+            (identity) => ({
+              platform: identity.platform,
+              uid: identity.uid,
+              communityId: identity.communityId ?? undefined,
+            }),
+          ),
+        }
         : null,
       ctx.communityId,
     );
@@ -114,7 +115,39 @@ export default class NotificationService {
     if (!lineUid) {
       logger.warn("pushReservationAppliedMessage: lineUid is missing", {
         reservationId: reservation.id,
-        createdByUser: reservation.opportunitySlot.opportunity.createdByUser,
+        communityId: ctx.communityId,
+        createdByUserId: reservation.opportunitySlot.opportunity.createdByUser?.id,
+        createdByUserIdentities: reservation.opportunitySlot.opportunity.createdByUser?.identities?.map(i => ({
+          platform: i.platform,
+          communityId: i.communityId,
+          hasUid: !!i.uid,
+        })),
+      });
+      return;
+    }
+
+    let liffBaseUrl: string;
+    let client: MessagingApiClient;
+
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error("pushReservationAppliedMessage: failed to get LIFF config", {
+        reservationId: reservation.id,
+        communityId: ctx.communityId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
+
+    try {
+      client = await createLineClient(ctx.communityId);
+    } catch (error) {
+      logger.error("pushReservationAppliedMessage: failed to create LINE client", {
+        reservationId: reservation.id,
+        communityId: ctx.communityId,
+        error: error instanceof Error ? error.message : String(error),
       });
       return;
     }
@@ -124,10 +157,7 @@ export default class NotificationService {
       reservation.opportunitySlot.endsAt,
     );
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
     const redirectUrl = `${liffBaseUrl}/admin/reservations/${reservation.id}?mode=approval`;
-
-    const client = await createLineClient(ctx.communityId);
 
     const message = buildReservationAppliedMessage({
       title: reservation.opportunitySlot.opportunity.title,
@@ -147,14 +177,14 @@ export default class NotificationService {
     const lineUid = this.extractLineUidFromCreator(
       reservation.opportunitySlot.opportunity.createdByUser
         ? {
-            identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
-              (identity) => ({
-                platform: identity.platform,
-                uid: identity.uid,
-                communityId: identity.communityId ?? undefined,
-              }),
-            ),
-          }
+          identities: reservation.opportunitySlot.opportunity.createdByUser.identities.map(
+            (identity) => ({
+              platform: identity.platform,
+              uid: identity.uid,
+              communityId: identity.communityId ?? undefined,
+            }),
+          ),
+        }
         : null,
       ctx.communityId,
     );
@@ -199,12 +229,12 @@ export default class NotificationService {
         id: p.id,
         user: p.user
           ? {
-              identities: p.user.identities.map((i) => ({
-                platform: i.platform,
-                uid: i.uid,
-                communityId: i.communityId ?? undefined,
-              })),
-            }
+            identities: p.user.identities.map((i) => ({
+              platform: i.platform,
+              uid: i.uid,
+              communityId: i.communityId ?? undefined,
+            })),
+          }
           : null,
       })),
       ctx.communityId,
@@ -248,12 +278,12 @@ export default class NotificationService {
         id: p.id,
         user: p.user
           ? {
-              identities: p.user.identities.map((i) => ({
-                platform: i.platform,
-                uid: i.uid,
-                communityId: i.communityId ?? undefined,
-              })),
-            }
+            identities: p.user.identities.map((i) => ({
+              platform: i.platform,
+              uid: i.uid,
+              communityId: i.communityId ?? undefined,
+            })),
+          }
           : null,
       })),
       ctx.communityId,
@@ -364,7 +394,7 @@ export default class NotificationService {
       return;
     }
     const success = await safeLinkRichMenuIdToUser(client, lineUid, richMenuId);
-    
+
     if (!success) {
       logger.error("switchRichMenuByRole: failed to link rich menu to user", {
         communityId: ctx.communityId,
@@ -433,12 +463,12 @@ export default class NotificationService {
   private extractLineUidFromCreator(
     user:
       | {
-          identities?: {
-            platform: IdentityPlatform;
-            uid: string;
-            communityId?: string;
-          }[];
-        }
+        identities?: {
+          platform: IdentityPlatform;
+          uid: string;
+          communityId?: string;
+        }[];
+      }
       | null
       | undefined,
     communityId: string,
