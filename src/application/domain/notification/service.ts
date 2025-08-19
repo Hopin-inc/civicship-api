@@ -364,8 +364,36 @@ export default class NotificationService {
       return;
     }
     const success = await safeLinkRichMenuIdToUser(client, lineUid, richMenuId);
+    
+    if (!success) {
+      logger.error("switchRichMenuByRole: failed to link rich menu to user", {
+        communityId: ctx.communityId,
+        userId: membership.user?.id,
+        lineUid,
+        richMenuId,
+        richMenuType,
+      });
+    } else {
+      logger.info("switchRichMenuByRole: successfully linked rich menu to user", {
+        communityId: ctx.communityId,
+        userId: membership.user?.id,
+        lineUid,
+        richMenuId,
+        richMenuType,
+      });
+    }
 
-    const { liffBaseUrl } = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+    let liffBaseUrl: string;
+    try {
+      const liffConfig = await this.communityConfigService.getLiffConfig(ctx, ctx.communityId);
+      liffBaseUrl = liffConfig.liffBaseUrl;
+    } catch (error) {
+      logger.error("switchRichMenuByRole: failed to get LIFF config", {
+        communityId: ctx.communityId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return;
+    }
     const redirectUrl = `${liffBaseUrl}/admin`;
 
     //TODO feature flagにしては細かすぎる設定
