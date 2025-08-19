@@ -403,14 +403,6 @@ export default class NotificationService {
         richMenuId,
         richMenuType,
       });
-    } else {
-      logger.info("switchRichMenuByRole: successfully linked rich menu to user", {
-        communityId: ctx.communityId,
-        userId: membership.user?.id,
-        lineUid,
-        richMenuId,
-        richMenuType,
-      });
     }
 
     let liffBaseUrl: string;
