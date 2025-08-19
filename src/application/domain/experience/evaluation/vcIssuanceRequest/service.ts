@@ -144,7 +144,7 @@ export class VCIssuanceRequestService {
       const response = await this.client.call<{ jobId: string }>(
         phoneUid,
         token,
-        "/vc/jobs/connectionless/issue-to-holder",
+        "/vc/connectionless/job/issue-to-holder",
         "POST",
         {
           claims: vcRequest.claims,

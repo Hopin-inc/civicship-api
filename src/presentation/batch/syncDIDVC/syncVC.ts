@@ -86,7 +86,7 @@ export async function processVCRequests(
       const jobStatus = await client.call<{
         status: string;
         result?: { recordId: string };
-      }>(phoneIdentity.uid, token || "", `/vc/jobs/connectionless/${request.jobId}`, "GET");
+      }>(phoneIdentity.uid, token || "", `/vc/connectionless/job/${request.jobId}`, "GET");
 
       if (jobStatus === null) {
         logger.warn(`External API call failed for VC job ${request.jobId}, keeping PENDING status`);

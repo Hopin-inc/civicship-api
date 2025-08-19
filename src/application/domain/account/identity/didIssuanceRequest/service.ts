@@ -70,7 +70,7 @@ export class DIDIssuanceService {
       const response = await this.client.call<{ jobId: string }>(
         phoneUid,
         token,
-        "/did/jobs/create-and-publish",
+        "/did/job/create-and-publish",
         "POST",
       );
 
