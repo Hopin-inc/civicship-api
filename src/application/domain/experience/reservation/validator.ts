@@ -85,7 +85,7 @@ export default class ReservationValidator {
 
     // If advanceBookingDays is 0, booking is allowed until the start time
     if (advanceBookingDays === 0) {
-      if (now.getTime() >= startsAt.getTime()) {
+      if (isAfter(now, startsAt)) {
         throw new ReservationAdvanceBookingRequiredError();
       }
       return;

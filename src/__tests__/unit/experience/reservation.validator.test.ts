@@ -172,6 +172,32 @@ describe("ReservationValidator", () => {
         }).not.toThrow();
       });
 
+      it("should allow same-day booking for activities with 0 advance booking days", () => {
+        // Test case: Event starts at 18:00 today, current time is 14:00 today
+        const today = new Date();
+        const eventTime = new Date(today);
+        eventTime.setHours(18, 0, 0, 0); // Event at 18:00
+        
+        const currentTime = new Date(today);
+        currentTime.setHours(14, 0, 0, 0); // Current time is 14:00
+        
+        jest.useFakeTimers();
+        jest.setSystemTime(currentTime);
+
+        const slot = {
+          hostingStatus: "SCHEDULED" as any,
+          startsAt: eventTime,
+          opportunityId: "zero-days-activity-id" // 0 advance booking days
+        } as any;
+
+        // Should be allowed - same day booking before event start
+        expect(() => {
+          validator.validateReservable(slot, 1, 5);
+        }).not.toThrow();
+        
+        jest.useRealTimers();
+      });
+
       it("should allow booking until 23:59 of N days before event regardless of event start time", () => {
         // Test case: Event starts at 10:00 AM, 4 days from now
         const eventDate = futureDate(4);
