@@ -80,6 +80,10 @@ export default class WalletValidator {
     fromWallet: Pick<PrismaWallet, "currentPointView"> | null,
     toWallet: Pick<PrismaWallet, "currentPointView"> | null,
   ) {
+    if (transferPoints <= 0) {
+      throw new ValidationError("Transfer points must be a positive value", ["transferPoints"]);
+    }
+
     if (!fromWallet || !toWallet) {
       const invalidArgs = [
         ...(!fromWallet ? ["fromWallet"] : []),
