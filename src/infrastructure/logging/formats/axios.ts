@@ -2,7 +2,9 @@ import winston, { Logform } from "winston";
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 import type { ExtendedLogInfo } from "../types";
 import { EXCERPT_NORMAL, EXCERPT_ON_ERROR } from "../constants";
-import { pickHeaders, excerptBody, truncateStr, limitStack } from "../utils";
+import {
+  normalizeHeaders, redactHeaders, excerptBody, truncateStr, limitStack, redactBody,
+} from "../utils";
 
 /**
  * Axios のリクエスト/レスポンス/エラーを http.* に正規化して集約します。
@@ -12,11 +14,8 @@ import { pickHeaders, excerptBody, truncateStr, limitStack } from "../utils";
 export const axiosNormalizer = winston.format((info: Logform.TransformableInfo) => {
   const log = info as ExtendedLogInfo;
 
-  // AxiosError？
   const maybeAxiosError = log as unknown as Partial<AxiosError>;
   const isAxiosError = Boolean((maybeAxiosError as AxiosError).isAxiosError);
-
-  // 成功レスポンスをそのまま渡してきたケースにも対応
   const maybeAxiosResponse = (log.response as AxiosResponse | undefined);
 
   if (isAxiosError) {
@@ -30,16 +29,24 @@ export const axiosNormalizer = winston.format((info: Logform.TransformableInfo) 
       log.message = truncateStr(log.message, 32 * 1024);
     }
 
+    // ★ ヘッダ正規化 + マスク
+    const reqHeaders = redactHeaders(normalizeHeaders(cfg?.headers));
+    const resHeaders = redactHeaders(normalizeHeaders(res?.headers));
+
+    // ★ ボディもマスク後に抜粋
+    const redactedReqBody = redactBody(cfg?.data);
+    const redactedResBody = redactBody(res?.data);
+
     log.http = {
       method: cfg?.method?.toUpperCase(),
       url: cfg?.url,
       baseURL: cfg?.baseURL,
       status: res?.status,
       statusText: res?.statusText,
-      requestHeaders: pickHeaders(cfg?.headers as Record<string, unknown> | undefined),
-      responseHeaders: pickHeaders(res?.headers as Record<string, unknown> | undefined),
-      requestBodyExcerpt: excerptBody(cfg?.data, EXCERPT_NORMAL),
-      responseBodyExcerpt: excerptBody(res?.data, bodyLimit),
+      requestHeaders: reqHeaders,
+      responseHeaders: resHeaders,
+      requestBodyExcerpt: excerptBody(redactedReqBody, EXCERPT_NORMAL),
+      responseBodyExcerpt: excerptBody(redactedResBody, bodyLimit),
       requestId:
         (res?.headers?.["x-request-id"] as string | undefined) ??
         (res?.headers?.["x-correlation-id"] as string | undefined),
@@ -62,16 +69,22 @@ export const axiosNormalizer = winston.format((info: Logform.TransformableInfo) 
     const res = maybeAxiosResponse as AxiosResponse;
     const cfg = res.config as AxiosRequestConfig | undefined;
 
+    const reqHeaders = redactHeaders(normalizeHeaders(cfg?.headers));
+    const resHeaders = redactHeaders(normalizeHeaders(res.headers));
+
+    const redactedReqBody = redactBody(cfg?.data);
+    const redactedResBody = redactBody(res.data);
+
     log.http = {
       method: cfg?.method?.toUpperCase(),
       url: cfg?.url,
       baseURL: cfg?.baseURL,
       status: res.status,
       statusText: res.statusText,
-      requestHeaders: pickHeaders(cfg?.headers as Record<string, unknown> | undefined),
-      responseHeaders: pickHeaders(res.headers as Record<string, unknown> | undefined),
-      requestBodyExcerpt: excerptBody(cfg?.data, EXCERPT_NORMAL),
-      responseBodyExcerpt: excerptBody(res.data, EXCERPT_NORMAL),
+      requestHeaders: reqHeaders,
+      responseHeaders: resHeaders,
+      requestBodyExcerpt: excerptBody(redactedReqBody, EXCERPT_NORMAL),
+      responseBodyExcerpt: excerptBody(redactedResBody, EXCERPT_NORMAL),
       requestId:
         (res.headers?.["x-request-id"] as string | undefined) ??
         (res.headers?.["x-correlation-id"] as string | undefined),

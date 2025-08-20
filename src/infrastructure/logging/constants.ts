@@ -11,7 +11,32 @@ export const LIKELY_HUGE_KEYS = [
   "req", "res", "buffer", "blob", "html", "sql", "query",
 ];
 
-// 絶対に残したいキー（最終段でも保持）
 export const KEEP_ALWAYS = new Set([
   "level", "severity", "timestamp", "message", "__truncated", "http",
 ]);
+
+export const SENSITIVE_HEADER_KEYS = [
+  "authorization",
+  "proxy-authorization",
+  "cookie",
+  "set-cookie",
+  "x-api-key",
+  "x-access-token",
+  "x-auth-token",
+  "x-amzn-authorization",
+];
+
+export const SENSITIVE_BODY_PATHS = [
+  "password",
+  "pass",
+  "token",
+  "accessToken",
+  "refreshToken",
+  "idToken",
+  "clientSecret",
+  "secret",
+];
+
+// ヘッダ出力モード（デフォルト: allowlist）
+export const HTTP_HEADER_MODE: "allowlist" | "all" =
+  (process.env.LOG_HTTP_HEADERS === "all" ? "all" : "allowlist");
