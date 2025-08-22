@@ -39,13 +39,41 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
     throw new Error("Missing required header: x-community-id");
   }
 
-  logger.debug("Request token presence:", {
-    path: req.url || "unknown",
-    hasIdToken: !!idToken,
-    hasRefreshToken: !!refreshToken,
-    hasPhoneToken: !!phoneAuthToken,
-    hasAdminApiKey: !!adminApiKey,
-  });
+  const isUserSignUpRequest = req.url?.includes('userSignUp') || 
+                             (req as any).body?.operationName === 'userSignUp';
+  
+  if (isUserSignUpRequest) {
+    logger.info("userSignUp request token analysis", {
+      path: req.url || "unknown",
+      userAgent: req.headers["user-agent"] || "unknown",
+      hasIdToken: !!idToken,
+      idTokenLength: idToken ? idToken.length : 0,
+      hasRefreshToken: !!refreshToken,
+      refreshTokenLength: refreshToken ? refreshToken.length : 0,
+      hasPhoneAuthToken: !!phoneAuthToken,
+      phoneAuthTokenLength: phoneAuthToken ? phoneAuthToken.length : 0,
+      hasPhoneRefreshToken: !!phoneRefreshToken,
+      phoneRefreshTokenLength: phoneRefreshToken ? phoneRefreshToken.length : 0,
+      hasPhoneUid: !!phoneUid,
+      phoneUidLength: phoneUid ? phoneUid.length : 0,
+      hasPhoneTokenExpiresAt: !!phoneTokenExpiresAt,
+      phoneTokenExpiresAt: phoneTokenExpiresAt || "not_provided",
+      hasTokenExpiresAt: !!tokenExpiresAt,
+      tokenExpiresAt: tokenExpiresAt || "not_provided",
+      communityId: communityId || "not_provided",
+      hasAdminApiKey: !!adminApiKey,
+      component: "AuthMiddleware",
+      operation: "userSignUp",
+    });
+  } else {
+    logger.debug("Request token presence:", {
+      path: req.url || "unknown",
+      hasIdToken: !!idToken,
+      hasRefreshToken: !!refreshToken,
+      hasPhoneToken: !!phoneAuthToken,
+      hasAdminApiKey: !!adminApiKey,
+    });
+  }
 
   if (adminApiKey && expectedAdminKey === undefined) {
     logger.warn("Admin API key is present, but expected key is undefined!");
@@ -112,6 +140,22 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       ),
     ]);
 
+    if (isUserSignUpRequest) {
+      logger.info("userSignUp context created successfully", {
+        uid,
+        platform,
+        tenantId,
+        communityId,
+        hasCurrentUser: !!currentUser,
+        hasPermissions: !!hasPermissions,
+        phoneUid,
+        hasPhoneAuthToken: !!phoneAuthToken,
+        hasPhoneRefreshToken: !!phoneRefreshToken,
+        component: "AuthMiddleware",
+        operation: "userSignUp",
+      });
+    }
+
     return {
       issuer,
       loaders,
@@ -133,7 +177,20 @@ export async function createContext({ req }: { req: http.IncomingMessage }): Pro
       refreshToken,
       tokenExpiresAt,
     };
-  } catch {
+  } catch (error) {
+    if (isUserSignUpRequest) {
+      logger.error("userSignUp token verification failed", {
+        error: error instanceof Error ? error.message : String(error),
+        hasIdToken: !!idToken,
+        hasPhoneAuthToken: !!phoneAuthToken,
+        hasPhoneUid: !!phoneUid,
+        communityId,
+        component: "AuthMiddleware",
+        operation: "userSignUp",
+        errorCategory: "token_verification_failed",
+      });
+    }
+    
     return {
       communityId,
       issuer,
