@@ -156,10 +156,60 @@ export default class IdentityService {
     refreshToken: string,
     expiryTime: Date,
   ): Promise<void> {
-    await this.identityRepository.update(uid, {
-      authToken,
-      refreshToken,
-      tokenExpiresAt: expiryTime,
-    });
+    try {
+      const existingIdentity = await this.identityRepository.find(uid);
+      
+      if (existingIdentity) {
+        const hasTokensChanged = 
+          existingIdentity.authToken !== authToken ||
+          existingIdentity.refreshToken !== refreshToken ||
+          existingIdentity.tokenExpiresAt?.getTime() !== expiryTime.getTime();
+        
+        if (!hasTokensChanged) {
+          logger.debug("Token storage skipped - tokens unchanged", {
+            uid,
+            component: "IdentityService",
+            operation: "storeAuthTokens",
+          });
+          return;
+        }
+        
+        logger.info("Updating existing auth tokens", {
+          uid,
+          hasAuthTokenChanged: existingIdentity.authToken !== authToken,
+          hasRefreshTokenChanged: existingIdentity.refreshToken !== refreshToken,
+          hasExpiryChanged: existingIdentity.tokenExpiresAt?.getTime() !== expiryTime.getTime(),
+          component: "IdentityService",
+          operation: "storeAuthTokens",
+        });
+      } else {
+        logger.info("Creating new auth tokens for identity", {
+          uid,
+          component: "IdentityService",
+          operation: "storeAuthTokens",
+        });
+      }
+
+      await this.identityRepository.update(uid, {
+        authToken,
+        refreshToken,
+        tokenExpiresAt: expiryTime,
+      });
+      
+      logger.info("Auth tokens stored successfully", {
+        uid,
+        expiresAt: expiryTime.toISOString(),
+        component: "IdentityService",
+        operation: "storeAuthTokens",
+      });
+    } catch (error) {
+      logger.error("Failed to store auth tokens", {
+        uid,
+        error: error instanceof Error ? error.message : String(error),
+        component: "IdentityService",
+        operation: "storeAuthTokens",
+      });
+      throw error;
+    }
   }
 }

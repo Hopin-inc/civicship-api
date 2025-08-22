@@ -101,20 +101,80 @@ export default class IdentityUseCase {
     ctx: IContext,
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
-    this.validateSignupContext(ctx);
-    const { data, image, phoneUid, phoneRefreshToken, lineRefreshToken } =
-      this.extractSignupInput(args);
+    try {
+      this.validateSignupContext(ctx);
+      const { data, image, phoneUid, phoneRefreshToken, lineRefreshToken } =
+        this.extractSignupInput(args);
 
-    const user = await this.createUserWithImage(data, ctx, image, phoneUid);
-    const res = await this.initializeUserAssets(ctx, user.id, args.input.communityId);
+      logger.info("Starting user account creation", {
+        phoneUid,
+        communityId: args.input.communityId,
+        hasImage: !!image,
+        hasPhoneRefreshToken: !!phoneRefreshToken,
+        hasLineRefreshToken: !!lineRefreshToken,
+        component: "IdentityUseCase",
+        operation: "userCreateAccount",
+      });
 
-    if (!res) {
-      logger.error("[userCreateAccount] User not found after asset initialization");
-      throw new Error("User not found after initialization");
+      const user = await this.createUserWithImage(data, ctx, image, phoneUid);
+      const res = await this.initializeUserAssets(ctx, user.id, args.input.communityId);
+
+      if (!res) {
+        logger.error("User not found after asset initialization", {
+          userId: user.id,
+          phoneUid,
+          communityId: args.input.communityId,
+          component: "IdentityUseCase",
+          operation: "userCreateAccount",
+          errorCategory: "asset_initialization_failed",
+        });
+        throw new Error("User not found after initialization");
+      }
+
+      await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
+      
+      logger.info("User account created successfully", {
+        userId: res.id,
+        phoneUid,
+        communityId: args.input.communityId,
+        component: "IdentityUseCase",
+        operation: "userCreateAccount",
+      });
+      
+      return IdentityPresenter.create(res);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorContext = {
+        error: errorMessage,
+        phoneUid: args.input.phoneUid,
+        communityId: args.input.communityId,
+        hasPhoneAuthToken: !!ctx.phoneAuthToken,
+        hasPhoneUid: !!ctx.phoneUid,
+        hasUid: !!ctx.uid,
+        hasPlatform: !!ctx.platform,
+        component: "IdentityUseCase",
+        operation: "userCreateAccount",
+      };
+
+      if (errorMessage.includes("Authentication") || errorMessage.includes("required")) {
+        logger.error("User account creation authentication error", {
+          ...errorContext,
+          errorCategory: "authentication_error",
+        });
+      } else if (errorMessage.includes("validation") || errorMessage.includes("invalid")) {
+        logger.error("User account creation validation error", {
+          ...errorContext,
+          errorCategory: "validation_error",
+        });
+      } else {
+        logger.error("User account creation system error", {
+          ...errorContext,
+          errorCategory: "system_error",
+        });
+      }
+      
+      throw error;
     }
-
-    await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
-    return IdentityPresenter.create(res);
   }
 
   private validateSignupContext(ctx: IContext): void {
@@ -162,18 +222,48 @@ export default class IdentityUseCase {
     communityId: string,
   ): Promise<User | null> {
     try {
+      logger.debug("Initializing user assets", {
+        userId,
+        communityId,
+        hasUid: !!ctx.uid,
+        component: "IdentityUseCase",
+        operation: "initializeUserAssets",
+      });
+
       await ctx.issuer.public(ctx, async (tx) => {
         await this.membershipService.joinIfNeeded(ctx, userId, communityId, tx);
         await this.walletService.createMemberWalletIfNeeded(ctx, userId, communityId, tx);
       });
 
       if (!ctx.uid) {
-        logger.error("Missing uid in context");
+        logger.error("Missing uid in context during asset initialization", {
+          userId,
+          communityId,
+          component: "IdentityUseCase",
+          operation: "initializeUserAssets",
+          errorCategory: "missing_context",
+        });
         return null;
       }
+      
       const user = await this.identityService.findUserByIdentity(ctx, ctx.uid);
       if (!user) {
-        logger.error(`User not found after initialization: userId=${userId}`);
+        logger.error("User not found after asset initialization", {
+          userId,
+          communityId,
+          uid: ctx.uid,
+          component: "IdentityUseCase",
+          operation: "initializeUserAssets",
+          errorCategory: "user_not_found",
+        });
+      } else {
+        logger.debug("User assets initialized successfully", {
+          userId,
+          communityId,
+          uid: ctx.uid,
+          component: "IdentityUseCase",
+          operation: "initializeUserAssets",
+        });
       }
 
       return user;
@@ -181,7 +271,11 @@ export default class IdentityUseCase {
       logger.error("Failed to initialize user assets", {
         userId,
         communityId,
-        error,
+        uid: ctx.uid,
+        error: error instanceof Error ? error.message : String(error),
+        component: "IdentityUseCase",
+        operation: "initializeUserAssets",
+        errorCategory: "system_error",
       });
       throw error;
     }
