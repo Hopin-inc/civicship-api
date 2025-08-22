@@ -42,22 +42,6 @@ export class VCIssuanceRequestService {
     return await this.vcIssuanceRequestRepository.findById(ctx, id);
   }
 
-  async preparePendingVCIssuanceRequest(
-    userId: string,
-    evaluationId: string,
-    vcRequest: EvaluationCredentialPayload,
-    ctx: IContext,
-  ): Promise<PrismaVCIssuanceRequestDetail> {
-    return await this.vcIssuanceRequestRepository.create(ctx, {
-      evaluationId,
-      userId,
-      claims: vcRequest.claims,
-      credentialFormat: vcRequest.credentialFormat,
-      schemaId: vcRequest.schemaId,
-      status: VcIssuanceStatus.PENDING,
-    });
-  }
-
   async bulkCreateVCIssuanceRequests(
     ctx: IContext,
     vcIssuanceData: Prisma.VcIssuanceRequestCreateManyInput[],
@@ -91,7 +75,7 @@ export class VCIssuanceRequestService {
         evaluationId,
         userId,
         claims: vcRequest.claims,
-        credentialFormat: vcRequest.credentialFormat,
+        credentialFormat: "JWT",
         schemaId: vcRequest.schemaId,
         status: VcIssuanceStatus.PENDING,
       });
@@ -148,7 +132,6 @@ export class VCIssuanceRequestService {
         "POST",
         {
           claims: vcRequest.claims,
-          credentialFormat: vcRequest.credentialFormat || "JWT",
           schemaId: vcRequest.schemaId,
         },
       );
