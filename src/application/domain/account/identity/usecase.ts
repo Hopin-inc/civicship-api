@@ -19,7 +19,7 @@ import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
-import { AuthenticationError } from "@/errors/graphql";
+import { AuthenticationError, ValidationError } from "@/errors/graphql";
 import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 import { Prisma, User } from "@prisma/client";
 
@@ -101,30 +101,65 @@ export default class IdentityUseCase {
     ctx: IContext,
     args: GqlMutationUserSignUpArgs,
   ): Promise<GqlCurrentUserPayload> {
-    this.validateSignupContext(ctx);
-    const { data, image, phoneUid, phoneRefreshToken, lineRefreshToken } =
-      this.extractSignupInput(args);
+    try {
+      this.validateSignupContext(ctx);
+      const { data, image, phoneUid, phoneRefreshToken, lineRefreshToken } =
+        this.extractSignupInput(args);
 
-    const user = await this.createUserWithImage(data, ctx, image, phoneUid);
-    const res = await this.initializeUserAssets(ctx, user.id, args.input.communityId);
+      const user = await this.createUserWithImage(data, ctx, image, phoneUid);
+      const res = await this.initializeUserAssets(ctx, user.id, args.input.communityId);
 
-    if (!res) {
-      logger.error("[userCreateAccount] User not found after asset initialization");
-      throw new Error("User not found after initialization");
+      if (!res) {
+        logger.error("[userCreateAccount] User not found after asset initialization");
+        throw new Error("User not found after initialization");
+      }
+
+      await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
+      
+      logger.info("User account created successfully", {
+        userId: res.id,
+        phoneUid,
+        communityId: args.input.communityId
+      });
+      
+      return IdentityPresenter.create(res);
+    } catch (error) {
+      logger.error("User account creation failed", {
+        error: error instanceof Error ? error.message : String(error),
+        phoneUid: args.input.phoneUid,
+        communityId: args.input.communityId,
+        hasPhoneAuthToken: !!ctx.phoneAuthToken,
+        hasPhoneUid: !!ctx.phoneUid
+      });
+      throw error;
     }
-
-    await this.storeUserAuthTokens(ctx, phoneUid, phoneRefreshToken, lineRefreshToken);
-    return IdentityPresenter.create(res);
   }
 
   private validateSignupContext(ctx: IContext): void {
+    const errors: string[] = [];
+    
     if (!ctx.uid || !ctx.platform) {
-      logger.error("Authentication required (uid or platform missing)");
-      throw new Error("Authentication required (uid or platform missing)");
+      errors.push("Authentication required (uid or platform missing)");
     }
+    
     if (!ctx.phoneAuthToken) {
-      logger.error("Phone authentication required for user signup");
-      throw new Error("Phone authentication required for user signup");
+      errors.push("Phone authentication token required");
+    }
+    
+    if (!ctx.phoneUid) {
+      errors.push("Phone UID required");
+    }
+    
+    if (errors.length > 0) {
+      logger.error("User signup validation failed", {
+        errors,
+        hasUid: !!ctx.uid,
+        hasPlatform: !!ctx.platform,
+        hasPhoneAuthToken: !!ctx.phoneAuthToken,
+        hasPhoneUid: !!ctx.phoneUid,
+        operation: "userSignUp"
+      });
+      throw new AuthenticationError(`Validation failed: ${errors.join(", ")}`);
     }
   }
 
@@ -193,28 +228,94 @@ export default class IdentityUseCase {
     phoneRefreshToken?: string,
     lineRefreshToken?: string,
   ): Promise<void> {
-    if (phoneUid && ctx.phoneAuthToken) {
+    if (phoneUid || ctx.phoneAuthToken) {
+      if (!phoneUid) {
+        logger.error("Phone UID missing for token storage", {
+          hasPhoneAuthToken: !!ctx.phoneAuthToken,
+          hasPhoneRefreshToken: !!phoneRefreshToken,
+          operation: "userSignUp"
+        });
+        throw new ValidationError("Phone UID is required for token storage", ["phoneUid"]);
+      }
+      
+      if (!ctx.phoneAuthToken) {
+        logger.error("Phone auth token missing for storage", {
+          phoneUid,
+          hasPhoneRefreshToken: !!phoneRefreshToken,
+          operation: "userSignUp"
+        });
+        throw new ValidationError("Phone auth token is required for token storage", ["phoneAuthToken"]);
+      }
+
       const expiryTime = this.deriveExpiryTime(ctx.phoneTokenExpiresAt);
       const refreshToken = phoneRefreshToken || ctx.phoneRefreshToken || "";
-      await this.identityService.storeAuthTokens(
-        phoneUid,
-        ctx.phoneAuthToken,
-        refreshToken,
-        expiryTime,
-      );
-      logger.debug(`Stored phone auth tokens for ${phoneUid}`);
+      
+      try {
+        await this.identityService.storeAuthTokens(
+          phoneUid,
+          ctx.phoneAuthToken,
+          refreshToken,
+          expiryTime,
+        );
+        logger.info("Successfully stored phone auth tokens", {
+          phoneUid,
+          expiresAt: expiryTime.toISOString(),
+          operation: "userSignUp"
+        });
+      } catch (error) {
+        logger.error("Failed to store phone auth tokens", {
+          phoneUid,
+          error: error instanceof Error ? error.message : String(error),
+          operation: "userSignUp"
+        });
+        throw error;
+      }
+    } else {
+      logger.warn("No phone authentication data provided for token storage", {
+        hasPhoneUid: !!phoneUid,
+        hasPhoneAuthToken: !!ctx.phoneAuthToken,
+        operation: "userSignUp"
+      });
     }
 
     if (ctx.uid && ctx.idToken && ctx.platform === IdentityPlatform.Line) {
       const expiryTime = this.deriveExpiryTime(ctx.tokenExpiresAt);
       const refreshToken = lineRefreshToken || ctx.refreshToken || "";
-      await this.identityService.storeAuthTokens(ctx.uid, ctx.idToken, refreshToken, expiryTime);
-      logger.debug(`Stored LINE auth tokens for ${ctx.uid}`);
+      
+      try {
+        await this.identityService.storeAuthTokens(ctx.uid, ctx.idToken, refreshToken, expiryTime);
+        logger.info("Successfully stored LINE auth tokens", {
+          uid: ctx.uid,
+          expiresAt: expiryTime.toISOString(),
+          operation: "userSignUp"
+        });
+      } catch (error) {
+        logger.error("Failed to store LINE auth tokens", {
+          uid: ctx.uid,
+          error: error instanceof Error ? error.message : String(error),
+          operation: "userSignUp"
+        });
+        throw error;
+      }
     }
   }
 
   private deriveExpiryTime(raw?: string): Date {
-    return raw ? new Date(parseInt(raw, 10)) : new Date(Date.now() + 60 * 60 * 1000);
+    if (raw) {
+      try {
+        const parsedTime = parseInt(raw, 10);
+        if (!isNaN(parsedTime)) {
+          return new Date(parsedTime * 1000);
+        }
+      } catch (error) {
+        logger.debug("Could not parse token expiry time", {
+          raw,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    }
+    
+    return new Date(Date.now() + 60 * 60 * 1000);
   }
 
   async checkPhoneUser(
