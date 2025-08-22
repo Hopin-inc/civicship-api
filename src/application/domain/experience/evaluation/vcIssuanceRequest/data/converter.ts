@@ -79,12 +79,6 @@ export default class VCIssuanceRequestConverter {
       throw new Error("Participation not found in evaluation");
     }
 
-    const opportunity = participation.reservation?.opportunitySlot?.opportunity ||
-                       participation.opportunitySlot?.opportunity;
-    if (!opportunity) {
-      throw new Error("Opportunity not found in participation");
-    }
-
     const user = participation.user;
     if (!user) {
       throw new Error("User not found in participation");
@@ -104,6 +98,11 @@ export default class VCIssuanceRequestConverter {
     if (!opportunitySlot) {
       logger.error("OpportunitySlot is missing required fields", { opportunitySlot });
       throw new Error("OpportunitySlot is missing required fields");
+    }
+
+    const opportunity = opportunitySlot.opportunity;
+    if (!opportunity) {
+      throw new Error("Opportunity not found in participation");
     }
 
     return { status, participation, opportunity, opportunitySlot, user, evaluator };
