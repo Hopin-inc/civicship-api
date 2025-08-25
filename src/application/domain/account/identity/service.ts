@@ -5,7 +5,7 @@ import { inject, injectable } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma, IdentityPlatform, User } from "@prisma/client";
 import logger from "@/infrastructure/logging";
-import { FirebaseTokenRefreshResponse } from "@/application/domain/account/identity/data/type";
+import { FirebaseTokenRefreshResponse, PrismaIdentityDetail } from "@/application/domain/account/identity/data/type";
 
 @injectable()
 export default class IdentityService {
@@ -161,5 +161,30 @@ export default class IdentityService {
       refreshToken,
       tokenExpiresAt: expiryTime,
     });
+  }
+
+  async findByUid(uid: string): Promise<PrismaIdentityDetail | null> {
+    return this.identityRepository.find(uid);
+  }
+
+  async findPhoneIdentityForUser(userUid: string): Promise<PrismaIdentityDetail | null> {
+    try {
+      const lineIdentity = await this.identityRepository.find(userUid);
+      if (!lineIdentity) return null;
+
+      const allIdentities = await this.identityRepository.find(userUid);
+      if (allIdentities && allIdentities.platform === IdentityPlatform.PHONE) {
+        return allIdentities;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error("Failed to find phone identity for user", {
+        userUid,
+        error: error instanceof Error ? error.message : String(error),
+        component: "IdentityService",
+      });
+      return null;
+    }
   }
 }

@@ -4,7 +4,7 @@ import {
   GqlMutationUserSignUpArgs,
   GqlMutationLinkPhoneAuthArgs,
   GqlMutationStorePhoneAuthTokenArgs,
-  GqlMutationIdentityCheckPhoneUserArgs
+  GqlMutationIdentityCheckPhoneUserArgs,
 } from "@/types/graphql";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import { PrismaIdentityDetail } from "@/application/domain/account/identity/data/type";
@@ -16,6 +16,9 @@ export default class IdentityResolver {
   Query = {
     currentUser: (_: unknown, __: unknown, ctx: IContext) => {
       return this.usecase.userViewCurrentAccount(ctx);
+    },
+    checkPhoneTokenRegistered: (_: unknown, __: unknown, ctx: IContext) => {
+      return this.usecase.checkPhoneTokenRegistered(ctx);
     },
   };
 
@@ -31,6 +34,15 @@ export default class IdentityResolver {
     },
     storePhoneAuthToken: (_: unknown, args: GqlMutationStorePhoneAuthTokenArgs, ctx: IContext) => {
       return this.usecase.storePhoneAuthToken(
+        ctx,
+        args.input.phoneUid,
+        args.input.authToken,
+        args.input.refreshToken,
+        args.input.expiresIn
+      );
+    },
+    recoverPhoneAuthToken: (_: unknown, args: any, ctx: IContext) => {
+      return this.usecase.recoverPhoneAuthToken(
         ctx,
         args.input.phoneUid,
         args.input.authToken,

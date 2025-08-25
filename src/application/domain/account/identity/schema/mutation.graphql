@@ -15,6 +15,7 @@ extend type Mutation {
     ): LinkPhoneAuthPayload
 
     storePhoneAuthToken(input: StorePhoneAuthTokenInput!): StorePhoneAuthTokenPayload
+    recoverPhoneAuthToken(input: RecoverPhoneAuthTokenInput!): RecoverPhoneAuthTokenPayload
     @authz(rules: [IsSelf])
 
     identityCheckPhoneUser(
@@ -59,6 +60,26 @@ input IdentityCheckPhoneUserInput {
 # ------------------------------
 type CurrentUserPayload {
     user: User
+}
+
+type PhoneTokenStatusPayload {
+    hasValidTokens: Boolean!
+    missingTokens: [String!]!
+    phoneUid: String
+    message: String
+}
+
+input RecoverPhoneAuthTokenInput {
+    phoneUid: String!
+    authToken: String!
+    refreshToken: String!
+    expiresIn: Int!
+}
+
+type RecoverPhoneAuthTokenPayload {
+    success: Boolean!
+    expiresAt: Datetime
+    message: String
 }
 
 type UserDeletePayload {
