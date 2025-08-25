@@ -89,6 +89,7 @@ type UserDeletePayload {
 type StorePhoneAuthTokenPayload {
     success: Boolean!
     expiresAt: Datetime
+    message: String
 }
 
 type IdentityCheckPhoneUserPayload {

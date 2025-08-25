@@ -169,12 +169,11 @@ export default class IdentityService {
 
   async findPhoneIdentityForUser(userUid: string): Promise<PrismaIdentityDetail | null> {
     try {
-      const lineIdentity = await this.identityRepository.find(userUid);
-      if (!lineIdentity) return null;
+      const identity = await this.identityRepository.find(userUid);
+      if (!identity) return null;
 
-      const allIdentities = await this.identityRepository.find(userUid);
-      if (allIdentities && allIdentities.platform === IdentityPlatform.PHONE) {
-        return allIdentities;
+      if (identity.platform === IdentityPlatform.PHONE) {
+        return identity;
       }
 
       return null;
