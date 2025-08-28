@@ -19,7 +19,7 @@ import ImageService from "@/application/domain/content/image/service";
 import { injectable, inject } from "tsyringe";
 import { GqlIdentityPlatform as IdentityPlatform } from "@/types/graphql";
 import logger from "@/infrastructure/logging";
-import { AuthenticationError } from "@/errors/graphql";
+import { AuthenticationError, ValidationError } from "@/errors/graphql";
 import { PrismaUserDetail } from "@/application/domain/account/user/data/type";
 import { Prisma, User } from "@prisma/client";
 
@@ -36,6 +36,70 @@ export default class IdentityUseCase {
     return {
       user: context.currentUser,
     };
+  }
+
+  async checkPhoneTokenRegistered(ctx: IContext): Promise<any> {
+    if (!ctx.uid || !ctx.platform) {
+      return {
+        hasValidTokens: false,
+        missingTokens: ["authentication_required"],
+        phoneUid: null,
+        message: "Authentication required"
+      };
+    }
+
+    try {
+      const phoneIdentity = await this.identityService.findPhoneIdentityForUser(ctx.uid);
+      
+      if (!phoneIdentity) {
+        return {
+          hasValidTokens: false,
+          missingTokens: ["phone_identity_not_found"],
+          phoneUid: null,
+          message: "Phone identity not found"
+        };
+      }
+
+      const missingTokens: string[] = [];
+      if (!phoneIdentity.authToken) missingTokens.push("authToken");
+      if (!phoneIdentity.refreshToken) missingTokens.push("refreshToken");
+      
+      const now = new Date();
+      const isExpired = phoneIdentity.tokenExpiresAt ? phoneIdentity.tokenExpiresAt < now : true;
+      if (isExpired) missingTokens.push("expired");
+
+      const hasValidTokens = missingTokens.length === 0;
+
+      logger.info("Phone token status checked", {
+        userId: ctx.uid,
+        phoneUid: phoneIdentity.uid,
+        hasValidTokens,
+        missingTokens,
+        component: "IdentityUseCase",
+        operation: "checkPhoneTokenRegistered",
+      });
+
+      return {
+        hasValidTokens,
+        missingTokens,
+        phoneUid: phoneIdentity.uid,
+        message: hasValidTokens ? "Phone tokens are valid" : `Missing tokens: ${missingTokens.join(", ")}`
+      };
+    } catch (error) {
+      logger.error("Failed to check phone token status", {
+        userId: ctx.uid,
+        error: error instanceof Error ? error.message : String(error),
+        component: "IdentityUseCase",
+        operation: "checkPhoneTokenRegistered",
+      });
+
+      return {
+        hasValidTokens: false,
+        missingTokens: ["system_error"],
+        phoneUid: null,
+        message: "Failed to check phone token status"
+      };
+    }
   }
 
   async linkPhoneAuth(
@@ -277,5 +341,52 @@ export default class IdentityUseCase {
       user: existingUser,
       membership: membership,
     };
+  }
+
+  async recoverPhoneAuthToken(
+    ctx: IContext,
+    phoneUid: string,
+    authToken: string,
+    refreshToken: string,
+    expiresIn: number,
+  ): Promise<any> {
+    if (!ctx.uid || !ctx.platform) {
+      throw new ValidationError("Authentication required for phone token recovery");
+    }
+
+    const phoneIdentity = await this.identityService.findPhoneIdentityForUser(ctx.uid);
+    if (!phoneIdentity || phoneIdentity.uid !== phoneUid) {
+      throw new ValidationError("Phone identity not found or not owned by user");
+    }
+
+    const expiryTime = new Date();
+    expiryTime.setSeconds(expiryTime.getSeconds() + expiresIn);
+
+    try {
+      await this.identityService.storeAuthTokens(phoneUid, authToken, refreshToken, expiryTime);
+
+      logger.info("Phone auth token recovered successfully", {
+        userId: ctx.uid,
+        phoneUid,
+        component: "IdentityUseCase",
+        operation: "recoverPhoneAuthToken",
+      });
+
+      return {
+        success: true,
+        expiresAt: expiryTime,
+        message: "Phone authentication tokens recovered successfully"
+      };
+    } catch (error) {
+      logger.error("Failed to recover phone auth tokens", {
+        userId: ctx.uid,
+        phoneUid,
+        error: error instanceof Error ? error.message : String(error),
+        component: "IdentityUseCase",
+        operation: "recoverPhoneAuthToken",
+      });
+      
+      throw new Error("Failed to recover phone authentication tokens");
+    }
   }
 }
