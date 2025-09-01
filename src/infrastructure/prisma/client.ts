@@ -16,18 +16,47 @@ export const prismaClient = new PrismaClient({
     { level: "warn", emit: "stdout" },
   ],
 });
-prismaClient.$on("query", async ({ query, params, duration }) => {
+prismaClient.$on("query", async ({ query, params, duration, target }) => {
+  // クエリの種類を解析
+  const queryType = query.trim().split(' ')[0].toUpperCase();
+  const tableMatch = query.match(/FROM\s+"?(\w+)"?/i) || query.match(/UPDATE\s+"?(\w+)"?/i) || query.match(/INSERT\s+INTO\s+"?(\w+)"?/i) || query.match(/DELETE\s+FROM\s+"?(\w+)"?/i);
+  const tableName = tableMatch ? tableMatch[1] : 'unknown';
+
+  // パラメータの数をカウント
+  const paramCount = params ? (Array.isArray(params) ? params.length : 1) : 0;
+
   logger.debug("Prisma query executed", {
-    query,
-    params,
+    queryType,
+    tableName,
     duration,
+    paramCount,
+    query: query.substring(0, 200) + (query.length > 200 ? "..." : ""),
+    params: params ? JSON.stringify(params).substring(0, 300) + (JSON.stringify(params).length > 300 ? "..." : "") : null,
+    target,
   });
 
+  // 遅いクエリの詳細分析
   if (duration > 1000) {
     logger.warn("Slow query detected", {
-      query,
-      params,
+      queryType,
+      tableName,
       duration,
+      paramCount,
+      query: query.substring(0, 500) + (query.length > 500 ? "..." : ""),
+      params: params ? JSON.stringify(params).substring(0, 500) + (JSON.stringify(params).length > 500 ? "..." : "") : null,
+      target,
+      severity: duration > 5000 ? "critical" : "warning",
+    });
+  }
+
+  // 統計情報のログ（定期的に）
+  if (Math.random() < 0.01) { // 1%の確率で統計ログ
+    logger.info("Prisma query statistics", {
+      queryType,
+      tableName,
+      duration,
+      paramCount,
+      timestamp: new Date().toISOString(),
     });
   }
 });
