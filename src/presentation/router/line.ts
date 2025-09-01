@@ -1,5 +1,4 @@
 import express from "express";
-import axios from "axios";
 import { LIFFAuthUseCase, LIFFLoginRequest } from "@/application/domain/account/auth/liff/usercase";
 import logger from "@/infrastructure/logging";
 import { createLineClientAndMiddleware } from "@/infrastructure/libs/line";
@@ -47,11 +46,9 @@ router.post("/liff-login", async (req, res) => {
     const loginRequest: LIFFLoginRequest = { accessToken, communityId };
     const result = await LIFFAuthUseCase.login(loginRequest);
 
-    const response = await axios.get(
-      `https://api.line.me/oauth2/v2.1/verify?access_token=${accessToken}`,
-    );
+    // Calculate expiry timestamp using the expiresIn from the verification result
     const expiryTime = new Date();
-    expiryTime.setSeconds(expiryTime.getSeconds() + response.data.expires_in);
+    expiryTime.setSeconds(expiryTime.getSeconds() + result.expiresIn);
     const expiryTimestamp = Math.floor(expiryTime.getTime() / 1000);
 
     res.setHeader("X-Token-Expires-At", expiryTimestamp.toString());
