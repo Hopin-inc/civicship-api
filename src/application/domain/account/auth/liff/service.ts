@@ -19,12 +19,12 @@ export interface LINETokenVerifyResponse {
 
 export class LIFFService {
   /**
-   * Verify LINE access token
+   * Verify LINE access token and return expiry time
    * @param accessToken Access token from LINE LIFF
    * @param channelId
-   * @returns void - throws error if token is invalid
+   * @returns expires_in value from LINE API
    */
-  static async verifyAccessToken(accessToken: string, channelId: string): Promise<void> {
+  static async verifyAccessToken(accessToken: string, channelId: string): Promise<number> {
     try {
       const response = await axios.get(
         `https://api.line.me/oauth2/v2.1/verify?access_token=${accessToken}`,
@@ -41,6 +41,8 @@ export class LIFFService {
       if (data.expires_in < 0) {
         throw new Error(`Line access token is expired: ${data.expires_in}`);
       }
+
+      return data.expires_in;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorData = error.response?.data;
