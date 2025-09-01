@@ -117,7 +117,7 @@ export async function createApolloServer(httpServer: http.Server) {
           throw new Error("Internal Server Error");
         },
       }),
-      performancePlugin, // パフォーマンス監視プラグインを追加
+      // performancePlugin, // パフォーマンス監視プラグインを一時的に無効化
     ],
     validationRules: [...armorProtection.validationRules],
     formatError: (err) => {
