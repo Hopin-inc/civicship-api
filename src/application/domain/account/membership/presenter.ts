@@ -6,16 +6,18 @@ import {
   GqlMembershipWithdrawSuccess,
   GqlMembershipSetRoleSuccess,
   GqlMembershipRemoveSuccess,
-  GqlMembershipParticipationLocation,
 } from "@/types/graphql";
 import {
   PrismaMembership,
   PrismaMembershipDetail,
 } from "@/application/domain/account/membership/data/type";
-import { ParticipationType } from "@prisma/client";
 
 export default class MembershipPresenter {
-  static query(r: GqlMembership[], hasNextPage: boolean, cursor?: string): GqlMembershipsConnection {
+  static query(
+    r: GqlMembership[],
+    hasNextPage: boolean,
+    cursor?: string,
+  ): GqlMembershipsConnection {
     return {
       __typename: "MembershipsConnection",
       totalCount: r.length,
@@ -35,42 +37,7 @@ export default class MembershipPresenter {
   }
 
   static get(r: PrismaMembershipDetail): GqlMembership {
-    const { participationGeoViews, participationCountViews, opportunityHostedCountView, ...prop } =
-      r;
-
-    const hostedGeoMap = new Map<string, GqlMembershipParticipationLocation>();
-
-    participationGeoViews
-      .filter((v) => v.type === ParticipationType.HOSTED)
-      .forEach((v) => {
-        if (!hostedGeoMap.has(v.placeId)) {
-          hostedGeoMap.set(v.placeId, {
-            placeId: v.placeId,
-            placeName: v.placeName ?? undefined,
-            placeImage: v.placeImage ?? undefined,
-            address: v.address,
-            latitude: v.latitude.toString(),
-            longitude: v.longitude.toString(),
-          });
-        }
-      });
-
-    const hostedGeo = Array.from(hostedGeoMap.values());
-
-    const hostedCount =
-      participationCountViews.find((v) => v.type === ParticipationType.HOSTED)?.totalCount ?? 0;
-
-    return {
-      __typename: "Membership",
-      ...prop,
-      participationView: {
-        hosted: {
-          totalParticipantCount: hostedCount,
-          geo: hostedGeo,
-        },
-      },
-      hostOpportunityCount: opportunityHostedCountView?.totalCount,
-    };
+    return r;
   }
 
   static invite(r: Omit<PrismaMembership, "user">): GqlMembershipInviteSuccess {
