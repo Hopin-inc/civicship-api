@@ -73,10 +73,12 @@ export default class NftMintService {
 
   async mintNow(
     ctx: IContext,
-    tx: Prisma.TransactionClient,
     mintId: string,
   ): Promise<string> {
-    const mint = await tx.nftMint.findUnique({ where: { id: mintId }, ...nftMintSelectBase });
+    const mint = await ctx.issuer.internal(async (tx) => {
+      return tx.nftMint.findUnique({ where: { id: mintId }, ...nftMintSelectBase });
+    });
+    
     if (!mint) throw new Error("Mint not found");
 
     const { txHash } = await this.adapter.mintOne({
