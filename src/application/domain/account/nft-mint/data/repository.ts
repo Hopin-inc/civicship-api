@@ -25,4 +25,11 @@ export class NftMintRepository implements INftMintRepository {
       prismaTx.nftMint.count({ where: { policyId } }),
     );
   }
+
+  async getNextSequenceNumber(ctx: IContext, policyId: string, tx: Prisma.TransactionClient): Promise<number> {
+    const result = await tx.$queryRaw<[{ nextval: bigint }]>`
+      SELECT nextval('nft_mint_sequence_per_policy')
+    `;
+    return Number(result[0].nextval);
+  }
 }

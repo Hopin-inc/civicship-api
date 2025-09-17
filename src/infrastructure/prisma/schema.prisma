@@ -1166,16 +1166,18 @@ enum NftMintStatus {
 }
 
 model NftMint {
-  id        String        @id @default(cuid())
-  policyId  String        @map("policy_id")
-  assetName String        @map("asset_name")
-  receiver  String
-  txHash    String?       @map("tx_hash")
-  status    NftMintStatus
-  error     String?
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime?     @updatedAt @map("updated_at")
+  id          String        @id @default(cuid())
+  policyId    String        @map("policy_id")
+  assetName   String        @map("asset_name")
+  sequenceNum Int           @map("sequence_num")
+  receiver    String
+  txHash      String?       @map("tx_hash")
+  status      NftMintStatus
+  error       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime?     @updatedAt @map("updated_at")
 
+  @@unique([policyId, sequenceNum])
   @@unique([policyId, assetName])
   @@index([receiver])
   @@index([createdAt, id])

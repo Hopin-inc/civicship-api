@@ -16,6 +16,7 @@ export const nftMintSelectBase = Prisma.validator<Prisma.NftMintDefaultArgs>()({
     id: true,
     policyId: true,
     assetName: true,
+    sequenceNum: true,
     receiver: true,
     txHash: true,
     status: true,

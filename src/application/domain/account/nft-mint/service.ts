@@ -29,6 +29,9 @@ export class NftMintIssuanceService {
     policyId?: string,
   ): Promise<{ success: boolean; requestId: string; txHash?: string }> {
     const finalPolicyId = policyId || process.env.POLICY_ID || "policy_dev";
+    const startTime = Date.now();
+    
+    this.logMintStart(userId, productKey, finalPolicyId);
     
     let mintRequest: NftMint | null = null;
 
@@ -41,20 +44,27 @@ export class NftMintIssuanceService {
           receiver: receiverAddress,
         });
       });
-      logger.info(`NFT mint queue phase completed in ${Date.now() - queueStart}ms`);
+      this.logMintPhase("queue", Date.now() - queueStart, { requestId: mintRequest.id });
 
       const mintStart = Date.now();
       const txHash = await this.mintNow(ctx, mintRequest.id);
-      logger.info(`NFT external mint completed in ${Date.now() - mintStart}ms`);
+      this.logMintPhase("external_mint", Date.now() - mintStart, { requestId: mintRequest.id, txHash });
       
       const markStart = Date.now();
       await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
         return this.markMinted(ctx, tx, mintRequest!.id, txHash);
       });
-      logger.info(`NFT mark minted phase completed in ${Date.now() - markStart}ms`);
+      this.logMintPhase("mark_minted", Date.now() - markStart, { requestId: mintRequest!.id });
+
+      const totalDuration = Date.now() - startTime;
+      this.logMintSuccess(mintRequest.id, txHash, totalDuration);
 
       return { success: true, requestId: mintRequest.id, txHash };
     } catch (error) {
+      const totalDuration = Date.now() - startTime;
+      if (mintRequest) {
+        this.logMintFailure(mintRequest.id, error, totalDuration);
+      }
       return this.markMintFailed(ctx, mintRequest?.id || "unknown", error);
     }
   }
@@ -67,14 +77,15 @@ export class NftMintIssuanceService {
     this.validateProductKey(p.productKey);
     this.validateReceiverAddress(p.receiver);
     
-    const count = await this.repo.countByPolicy(ctx, p.policyId);
-    const assetName = `${p.productKey}-${String(count + 1).padStart(4, "0")}`;
+    const sequenceNum = await this.repo.getNextSequenceNumber(ctx, p.policyId, tx);
+    const assetName = `${p.productKey}-${String(sequenceNum).padStart(4, "0")}`;
     
     this.validateAssetNameLength(assetName);
     
     return this.repo.create(ctx, this.converter.buildMintCreate({
       policyId: p.policyId,
       assetName,
+      sequenceNum,
       receiver: p.receiver,
     }), tx);
   }
@@ -146,10 +157,48 @@ export class NftMintIssuanceService {
       await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
         return this.markFailed(ctx, tx, requestId, error instanceof Error ? error.message : String(error));
       });
-      logger.info(`NFT mark failed phase completed in ${Date.now() - failStart}ms`);
+      this.logMintPhase("mark_failed", Date.now() - failStart, { requestId });
     }
 
-    logger.error("NftMintIssuanceService.requestNftMint: failed", error);
+    logger.error("NftMintIssuanceService.requestNftMint: failed", {
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return { success: false, requestId };
+  }
+
+  private logMintStart(userId: string, productKey: string, policyId: string): void {
+    logger.info("NFT mint request started", {
+      userId,
+      productKey,
+      policyId,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  private logMintPhase(phase: string, duration: number, details?: Record<string, any>): void {
+    logger.info(`NFT mint ${phase} completed`, {
+      phase,
+      duration,
+      ...details,
+    });
+  }
+
+  private logMintSuccess(requestId: string, txHash: string, totalDuration: number): void {
+    logger.info("NFT mint completed successfully", {
+      requestId,
+      txHash,
+      totalDuration,
+      status: "MINTED",
+    });
+  }
+
+  private logMintFailure(requestId: string, error: unknown, totalDuration: number): void {
+    logger.error("NFT mint failed", {
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+      totalDuration,
+      status: "FAILED",
+    });
   }
 }

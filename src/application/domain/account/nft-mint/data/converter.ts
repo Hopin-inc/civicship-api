@@ -6,11 +6,13 @@ export default class NftMintConverter {
   buildMintCreate(p: {
     policyId: string;
     assetName: string;
+    sequenceNum: number;
     receiver: string;
   }): Prisma.NftMintCreateInput {
     return {
       policyId: p.policyId,
       assetName: p.assetName,
+      sequenceNum: p.sequenceNum,
       receiver: p.receiver,
       status: NftMintStatus.QUEUED,
     };

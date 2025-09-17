@@ -7,4 +7,5 @@ export interface INftMintRepository {
   update(ctx: IContext, id: string, data: Prisma.NftMintUpdateInput, tx: Prisma.TransactionClient): Promise<NftMintBase>;
   find(ctx: IContext, id: string): Promise<NftMintBase | null>;
   countByPolicy(ctx: IContext, policyId: string): Promise<number>;
+  getNextSequenceNumber(ctx: IContext, policyId: string, tx: Prisma.TransactionClient): Promise<number>;
 }
