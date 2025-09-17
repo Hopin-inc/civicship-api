@@ -656,6 +656,19 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     }
   
 
+  "t_nft_mints" {
+    String id "🗝️"
+    String policy_id 
+    String asset_name 
+    String receiver 
+    String tx_hash "❓"
+    String status 
+    String error "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
   "v_place_public_opportunity_count" {
     String placeId "🗝️"
     Int currentPublicCount 

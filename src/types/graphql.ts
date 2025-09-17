@@ -528,6 +528,20 @@ export type GqlEvaluationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlGqlIssueNftPayload = {
+  __typename?: 'GqlIssueNftPayload';
+  mintId: Scalars['ID']['output'];
+  status: GqlGqlMintStatus;
+  txHash?: Maybe<Scalars['String']['output']>;
+};
+
+export const GqlGqlMintStatus = {
+  Failed: 'FAILED',
+  Minted: 'MINTED',
+  Queued: 'QUEUED'
+} as const;
+
+export type GqlGqlMintStatus = typeof GqlGqlMintStatus[keyof typeof GqlGqlMintStatus];
 export type GqlIdentity = {
   __typename?: 'Identity';
   createdAt?: Maybe<Scalars['Datetime']['output']>;
@@ -559,6 +573,12 @@ export type GqlImageInput = {
   alt?: InputMaybe<Scalars['String']['input']>;
   caption?: InputMaybe<Scalars['String']['input']>;
   file?: InputMaybe<Scalars['Upload']['input']>;
+};
+
+export type GqlIssueResidentNftInput = {
+  productKey: Scalars['String']['input'];
+  receiverAddress: Scalars['String']['input'];
+  userId: Scalars['ID']['input'];
 };
 
 export const GqlLineRichMenuType = {
@@ -756,6 +776,7 @@ export type GqlMutation = {
   communityUpdateProfile?: Maybe<GqlCommunityUpdateProfilePayload>;
   evaluationBulkCreate?: Maybe<GqlEvaluationBulkCreatePayload>;
   identityCheckPhoneUser: GqlIdentityCheckPhoneUserPayload;
+  issueResidentNft: GqlGqlIssueNftPayload;
   linkPhoneAuth?: Maybe<GqlLinkPhoneAuthPayload>;
   membershipAcceptMyInvitation?: Maybe<GqlMembershipSetInvitationStatusPayload>;
   membershipAssignManager?: Maybe<GqlMembershipSetRolePayload>;
@@ -849,6 +870,11 @@ export type GqlMutationEvaluationBulkCreateArgs = {
 
 export type GqlMutationIdentityCheckPhoneUserArgs = {
   input: GqlIdentityCheckPhoneUserInput;
+};
+
+
+export type GqlMutationIssueResidentNftArgs = {
+  input: GqlIssueResidentNftInput;
 };
 
 
@@ -3131,6 +3157,8 @@ export type GqlResolversTypes = ResolversObject<{
   EvaluationSortInput: GqlEvaluationSortInput;
   EvaluationStatus: GqlEvaluationStatus;
   EvaluationsConnection: ResolverTypeWrapper<Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['EvaluationEdge']> }>;
+  GqlIssueNftPayload: ResolverTypeWrapper<GqlGqlIssueNftPayload>;
+  GqlMintStatus: GqlGqlMintStatus;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Identity: ResolverTypeWrapper<Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
@@ -3138,6 +3166,7 @@ export type GqlResolversTypes = ResolversObject<{
   IdentityPlatform: GqlIdentityPlatform;
   ImageInput: GqlImageInput;
   Int: ResolverTypeWrapper<Scalars['Int']['output']>;
+  IssueResidentNftInput: GqlIssueResidentNftInput;
   JSON: ResolverTypeWrapper<Scalars['JSON']['output']>;
   LineRichMenuType: GqlLineRichMenuType;
   LinkPhoneAuthInput: GqlLinkPhoneAuthInput;
@@ -3455,12 +3484,14 @@ export type GqlResolversParentTypes = ResolversObject<{
   EvaluationItem: GqlEvaluationItem;
   EvaluationSortInput: GqlEvaluationSortInput;
   EvaluationsConnection: Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['EvaluationEdge']> };
+  GqlIssueNftPayload: GqlGqlIssueNftPayload;
   ID: Scalars['ID']['output'];
   Identity: Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
   IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
   IdentityCheckPhoneUserPayload: Omit<GqlIdentityCheckPhoneUserPayload, 'membership' | 'user'> & { membership?: Maybe<GqlResolversParentTypes['Membership']>, user?: Maybe<GqlResolversParentTypes['User']> };
   ImageInput: GqlImageInput;
   Int: Scalars['Int']['output'];
+  IssueResidentNftInput: GqlIssueResidentNftInput;
   JSON: Scalars['JSON']['output'];
   LinkPhoneAuthInput: GqlLinkPhoneAuthInput;
   LinkPhoneAuthPayload: Omit<GqlLinkPhoneAuthPayload, 'user'> & { user?: Maybe<GqlResolversParentTypes['User']> };
@@ -3975,6 +4006,13 @@ export type GqlEvaluationsConnectionResolvers<ContextType = any, ParentType exte
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
+export type GqlGqlIssueNftPayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['GqlIssueNftPayload'] = GqlResolversParentTypes['GqlIssueNftPayload']> = ResolversObject<{
+  mintId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['GqlMintStatus'], ParentType, ContextType>;
+  txHash?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
 export type GqlIdentityResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Identity'] = GqlResolversParentTypes['Identity']> = ResolversObject<{
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   platform?: Resolver<Maybe<GqlResolversTypes['IdentityPlatform']>, ParentType, ContextType>;
@@ -4126,6 +4164,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   communityUpdateProfile?: Resolver<Maybe<GqlResolversTypes['CommunityUpdateProfilePayload']>, ParentType, ContextType, RequireFields<GqlMutationCommunityUpdateProfileArgs, 'id' | 'input' | 'permission'>>;
   evaluationBulkCreate?: Resolver<Maybe<GqlResolversTypes['EvaluationBulkCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationEvaluationBulkCreateArgs, 'input' | 'permission'>>;
   identityCheckPhoneUser?: Resolver<GqlResolversTypes['IdentityCheckPhoneUserPayload'], ParentType, ContextType, RequireFields<GqlMutationIdentityCheckPhoneUserArgs, 'input'>>;
+  issueResidentNft?: Resolver<GqlResolversTypes['GqlIssueNftPayload'], ParentType, ContextType, RequireFields<GqlMutationIssueResidentNftArgs, 'input'>>;
   linkPhoneAuth?: Resolver<Maybe<GqlResolversTypes['LinkPhoneAuthPayload']>, ParentType, ContextType, RequireFields<GqlMutationLinkPhoneAuthArgs, 'input' | 'permission'>>;
   membershipAcceptMyInvitation?: Resolver<Maybe<GqlResolversTypes['MembershipSetInvitationStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAcceptMyInvitationArgs, 'input' | 'permission'>>;
   membershipAssignManager?: Resolver<Maybe<GqlResolversTypes['MembershipSetRolePayload']>, ParentType, ContextType, RequireFields<GqlMutationMembershipAssignManagerArgs, 'input' | 'permission'>>;
@@ -5115,6 +5154,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   EvaluationHistory?: GqlEvaluationHistoryResolvers<ContextType>;
   EvaluationHistoryEdge?: GqlEvaluationHistoryEdgeResolvers<ContextType>;
   EvaluationsConnection?: GqlEvaluationsConnectionResolvers<ContextType>;
+  GqlIssueNftPayload?: GqlGqlIssueNftPayloadResolvers<ContextType>;
   Identity?: GqlIdentityResolvers<ContextType>;
   IdentityCheckPhoneUserPayload?: GqlIdentityCheckPhoneUserPayloadResolvers<ContextType>;
   JSON?: GraphQLScalarType;

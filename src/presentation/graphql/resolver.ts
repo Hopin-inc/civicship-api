@@ -3,6 +3,7 @@ import { container } from "tsyringe";
 import IdentityResolver from "@/application/domain/account/identity/controller/resolver";
 import UserResolver from "@/application/domain/account/user/controller/resolver";
 import WalletResolver from "@/application/domain/account/wallet/controller/resolver";
+import NftMintResolver from "@/application/domain/account/nft-mint/controller/resolver";
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import MembershipResolver from "@/application/domain/account/membership/controller/resolver";
 import CommunityResolver from "@/application/domain/account/community/controller/resolver";
@@ -26,6 +27,7 @@ import scalarResolvers from "@/presentation/graphql/scalar";
 const identity = container.resolve(IdentityResolver);
 const user = container.resolve(UserResolver);
 const wallet = container.resolve(WalletResolver);
+const nftMint = container.resolve(NftMintResolver);
 const nftWallet = container.resolve(NftWalletResolver);
 const membership = container.resolve(MembershipResolver);
 const community = container.resolve(CommunityResolver);
@@ -87,6 +89,7 @@ const resolvers = {
     ...place.Mutation,
     ...utility.Mutation,
     ...ticket.Mutation,
+    ...nftMint.Mutation,
     ...transaction.Mutation,
   },
   Identity: identity.Identity,

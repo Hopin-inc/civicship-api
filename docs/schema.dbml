@@ -573,6 +573,22 @@ Table t_nft_instances {
   }
 }
 
+Table t_nft_mints {
+  id String [pk]
+  policyId String [not null]
+  assetName String [not null]
+  receiver String [not null]
+  txHash String
+  status String [not null]
+  error String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
+
+  indexes {
+    (policyId, assetName) [unique]
+  }
+}
+
 Table v_place_public_opportunity_count {
   placeId String [pk]
   place t_places [not null]
