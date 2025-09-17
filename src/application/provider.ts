@@ -21,7 +21,8 @@ import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecas
 import NftMintUseCase from "@/application/domain/account/nft-mint/usecase";
 import NftMintService from "@/application/domain/account/nft-mint/service";
 import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
-import { MockMintAdapter } from "@/application/domain/account/nft-mint/mint/adapter";
+import { MeshMintAdapter } from "@/application/domain/account/nft-mint/mint/meshAdapter";
+import { MeshClient } from "@/infrastructure/libs/mesh";
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -111,6 +112,8 @@ export function registerProductionDependencies() {
   container.register("prismaClient", { useValue: prismaClient });
   container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
+  
+  container.register("MeshClient", { useClass: MeshClient });
 
   // ------------------------------
   // 👥 Account
@@ -144,7 +147,7 @@ export function registerProductionDependencies() {
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
   container.register("NftMintRepository", { useClass: NftMintRepository });
-  container.register("MintAdapter", { useClass: MockMintAdapter }); // P1はモック
+  container.register("MintAdapter", { useClass: MeshMintAdapter });
   container.register("NftMintService", { useClass: NftMintService });
   container.register("NftMintUseCase", { useClass: NftMintUseCase });
   container.register("NftWalletResolver", { useClass: NftWalletResolver });
