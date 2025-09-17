@@ -8,6 +8,7 @@ export default class NftMintConverter {
     assetName: string;
     sequenceNum: number;
     receiver: string;
+    nftWalletId: string;
   }): Prisma.NftMintCreateInput {
     return {
       policyId: p.policyId,
@@ -15,6 +16,7 @@ export default class NftMintConverter {
       sequenceNum: p.sequenceNum,
       receiver: p.receiver,
       status: NftMintStatus.QUEUED,
+      nftWallet: { connect: { id: p.nftWalletId } },
     };
   }
 
