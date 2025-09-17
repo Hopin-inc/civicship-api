@@ -1,13 +1,32 @@
-import { GqlIssueResidentNftInput, GqlGqlIssueNftPayload, GqlGqlMintStatus } from '@/types/graphql';
-import { IContext } from '@/types/server';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from "tsyringe";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
+import { GqlIssueResidentNftInput, GqlGqlIssueNftPayload } from "@/types/graphql";
+import NftMintService from "./service";
+import * as Presenter from "./presenter";
 
 @injectable()
 export default class NftMintUseCase {
-  async issueResidentNft(
-    _ctx: IContext,
-    _input: GqlIssueResidentNftInput
-  ): Promise<GqlGqlIssueNftPayload> {
-    return { mintId: 'TEMP_NOT_IMPLEMENTED', txHash: null, status: GqlGqlMintStatus.Queued };
+  constructor(@inject("NftMintService") private readonly svc: NftMintService) {}
+
+  async issueResidentNft(ctx: IContext, input: GqlIssueResidentNftInput): Promise<GqlGqlIssueNftPayload> {
+    const policyId = process.env.POLICY_ID ?? "policy_dev";
+
+    return ctx.issuer.public(ctx, async (tx: Prisma.TransactionClient) => {
+      const queued = await this.svc.queueMint(ctx, tx, {
+        policyId,
+        productKey: input.productKey,
+        receiver: input.receiverAddress,
+      });
+
+      try {
+        const txHash = await this.svc.mintNow(ctx, tx, queued.id);
+        const minted = await this.svc.markMinted(ctx, tx, queued.id, txHash);
+        return Presenter.presentIssueNft(minted);
+      } catch (e) {
+        const failed = await this.svc.markFailed(ctx, tx, queued.id, e instanceof Error ? e.message : String(e));
+        return Presenter.presentIssueNft(failed);
+      }
+    });
   }
 }

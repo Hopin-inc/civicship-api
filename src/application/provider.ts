@@ -19,6 +19,9 @@ import NftInstanceConverter from "@/application/domain/account/nft-instance/data
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 import NftMintUseCase from "@/application/domain/account/nft-mint/usecase";
+import NftMintService from "@/application/domain/account/nft-mint/service";
+import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
+import { MockMintAdapter } from "@/application/domain/account/nft-mint/mint/adapter";
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -140,6 +143,9 @@ export function registerProductionDependencies() {
   container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
+  container.register("NftMintRepository", { useClass: NftMintRepository });
+  container.register("MintAdapter", { useClass: MockMintAdapter }); // P1はモック
+  container.register("NftMintService", { useClass: NftMintService });
   container.register("NftMintUseCase", { useClass: NftMintUseCase });
   container.register("NftWalletResolver", { useClass: NftWalletResolver });
 
