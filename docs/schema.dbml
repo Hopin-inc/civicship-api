@@ -577,6 +577,7 @@ Table t_nft_mints {
   id String [pk]
   policyId String [not null]
   assetName String [not null]
+  sequenceNum Int [not null]
   receiver String [not null]
   txHash String
   status NftMintStatus [not null]
@@ -585,6 +586,7 @@ Table t_nft_mints {
   updatedAt DateTime
 
   indexes {
+    (policyId, sequenceNum) [unique]
     (policyId, assetName) [unique]
   }
 }

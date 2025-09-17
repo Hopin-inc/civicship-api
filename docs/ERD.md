@@ -668,6 +668,7 @@ FAILED FAILED
     String id "🗝️"
     String policy_id 
     String asset_name 
+    Int sequence_num 
     String receiver 
     String tx_hash "❓"
     NftMintStatus status 

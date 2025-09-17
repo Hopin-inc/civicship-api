@@ -7001,6 +7001,7 @@ defineNftInstanceFactory.withTransientFields = defaultTransientFieldValues => op
 type NftMintScalarOrEnumFields = {
     policyId: string;
     assetName: string;
+    sequenceNum: number;
     receiver: string;
     status: NftMintStatus;
 };
@@ -7009,6 +7010,7 @@ type NftMintFactoryDefineInput = {
     id?: string;
     policyId?: string;
     assetName?: string;
+    sequenceNum?: number;
     receiver?: string;
     txHash?: string | null;
     status?: NftMintStatus;
@@ -7055,6 +7057,7 @@ function autoGenerateNftMintScalarsOrEnums({ seq }: {
     return {
         policyId: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "policyId", isId: false, isUnique: true, seq }),
         assetName: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "assetName", isId: false, isUnique: true, seq }),
+        sequenceNum: getScalarFieldValueGenerator().Int({ modelName: "NftMint", fieldName: "sequenceNum", isId: false, isUnique: true, seq }),
         receiver: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "receiver", isId: false, isUnique: false, seq }),
         status: "QUEUED"
     };
