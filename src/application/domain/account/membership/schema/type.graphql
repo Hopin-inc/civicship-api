@@ -12,38 +12,10 @@ type Membership {
     reason: MembershipStatusReason!
     role: Role!
 
-    participationView: MembershipParticipationView
-    hostOpportunityCount: Int
-
     histories: [MembershipHistory!]
 
     createdAt: Datetime
     updatedAt: Datetime
-}
-
-type MembershipParticipationView {
-    hosted: MembershipHostedMetrics!
-    participated: MembershipParticipatedMetrics
-}
-
-type MembershipHostedMetrics {
-    geo: [MembershipParticipationLocation!]!
-    totalParticipantCount: Int! # ← 他人が参加した人数
-}
-
-type MembershipParticipatedMetrics {
-    geo: [MembershipParticipationLocation!]
-    totalParticipatedCount: Int! # ← 自分が参加した回数
-}
-
-type MembershipParticipationLocation{
-    placeId: ID!
-    placeName: String
-    placeImage: String
-
-    address: String!
-    latitude: Decimal!
-    longitude: Decimal!
 }
 
 # ------------------------------
