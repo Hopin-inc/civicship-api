@@ -18,13 +18,9 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
-import NftMintUseCase from "@/application/domain/account/nft-mint/usecase";
-import NftMintService from "@/application/domain/account/nft-mint/service";
+import { NftMintIssuanceService } from "@/application/domain/account/nft-mint/service";
 import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
 import NftMintConverter from "@/application/domain/account/nft-mint/data/converter";
-import NftMintPresenter from "@/application/domain/account/nft-mint/presenter";
-import { MeshMintAdapter } from "@/application/domain/account/nft-mint/mint/meshAdapter";
-import { MeshClient } from "@/infrastructure/libs/mesh";
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -98,6 +94,7 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { MeshClient } from "@/infrastructure/libs/mesh";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -150,10 +147,7 @@ export function registerProductionDependencies() {
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
   container.register("NftMintRepository", { useClass: NftMintRepository });
   container.register("NftMintConverter", { useClass: NftMintConverter });
-  container.register("NftMintPresenter", { useClass: NftMintPresenter });
-  container.register("MintAdapter", { useClass: MeshMintAdapter });
-  container.register("NftMintService", { useClass: NftMintService });
-  container.register("NftMintUseCase", { useClass: NftMintUseCase });
+  container.register("NftMintIssuanceService", { useClass: NftMintIssuanceService });
   container.register("NftWalletResolver", { useClass: NftWalletResolver });
 
   // 🏘️ Community

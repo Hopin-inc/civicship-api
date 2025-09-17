@@ -1,10 +1,11 @@
 import { inject, injectable } from "tsyringe";
-import { Prisma } from "@prisma/client";
+import { Prisma, NftMint } from "@prisma/client";
 import { IContext } from "@/types/server";
+import logger from "@/infrastructure/logging";
+import { MeshClient } from "@/infrastructure/libs/mesh";
 import { INftMintRepository } from "./data/interface";
 import { NftMintBase, nftMintSelectBase } from "./data/type";
 import NftMintConverter from "./data/converter";
-import { IMintAdapter } from "./mint/adapter";
 import {
   InvalidReceiverAddressError,
   NetworkMismatchError,
@@ -13,14 +14,52 @@ import {
 } from "@/errors/graphql";
 
 @injectable()
-export default class NftMintService {
+export class NftMintIssuanceService {
   constructor(
     @inject("NftMintRepository") private readonly repo: INftMintRepository,
-    @inject("MintAdapter") private readonly adapter: IMintAdapter,
+    @inject("MeshClient") private readonly client: MeshClient,
     @inject("NftMintConverter") private readonly converter: NftMintConverter,
   ) {}
 
-  async queueMint(
+  async requestNftMint(
+    userId: string,
+    productKey: string,
+    receiverAddress: string,
+    ctx: IContext,
+    policyId?: string,
+  ): Promise<{ success: boolean; requestId: string; txHash?: string }> {
+    const finalPolicyId = policyId || process.env.POLICY_ID || "policy_dev";
+    
+    let mintRequest: NftMint | null = null;
+
+    try {
+      const queueStart = Date.now();
+      mintRequest = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
+        return this.queueMint(ctx, tx, {
+          policyId: finalPolicyId,
+          productKey,
+          receiver: receiverAddress,
+        });
+      });
+      logger.info(`NFT mint queue phase completed in ${Date.now() - queueStart}ms`);
+
+      const mintStart = Date.now();
+      const txHash = await this.mintNow(ctx, mintRequest.id);
+      logger.info(`NFT external mint completed in ${Date.now() - mintStart}ms`);
+      
+      const markStart = Date.now();
+      await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
+        return this.markMinted(ctx, tx, mintRequest!.id, txHash);
+      });
+      logger.info(`NFT mark minted phase completed in ${Date.now() - markStart}ms`);
+
+      return { success: true, requestId: mintRequest.id, txHash };
+    } catch (error) {
+      return this.markMintFailed(ctx, mintRequest?.id || "unknown", error);
+    }
+  }
+
+  private async queueMint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
     p: { policyId: string; productKey: string; receiver: string },
@@ -71,7 +110,7 @@ export default class NftMintService {
     }
   }
 
-  async mintNow(
+  private async mintNow(
     ctx: IContext,
     mintId: string,
   ): Promise<string> {
@@ -81,7 +120,7 @@ export default class NftMintService {
     
     if (!mint) throw new Error("Mint not found");
 
-    const { txHash } = await this.adapter.mintOne({
+    const { txHash } = await this.client.mintOne({
       policyId: mint.policyId,
       assetName: mint.assetName,
       receiver: mint.receiver,
@@ -89,11 +128,28 @@ export default class NftMintService {
     return txHash;
   }
 
-  markMinted(ctx: IContext, tx: Prisma.TransactionClient, id: string, txHash: string) {
+  private markMinted(ctx: IContext, tx: Prisma.TransactionClient, id: string, txHash: string) {
     return this.repo.update(ctx, id, this.converter.buildMarkMinted({ txHash }), tx);
   }
 
-  markFailed(ctx: IContext, tx: Prisma.TransactionClient, id: string, error: string) {
+  private markFailed(ctx: IContext, tx: Prisma.TransactionClient, id: string, error: string) {
     return this.repo.update(ctx, id, this.converter.buildMarkFailed({ error }), tx);
+  }
+
+  private async markMintFailed(
+    ctx: IContext,
+    requestId: string,
+    error: unknown,
+  ): Promise<{ success: false; requestId: string }> {
+    if (requestId !== "unknown") {
+      const failStart = Date.now();
+      await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
+        return this.markFailed(ctx, tx, requestId, error instanceof Error ? error.message : String(error));
+      });
+      logger.info(`NFT mark failed phase completed in ${Date.now() - failStart}ms`);
+    }
+
+    logger.error("NftMintIssuanceService.requestNftMint: failed", error);
+    return { success: false, requestId };
   }
 }
