@@ -1177,5 +1177,8 @@ model NftMint {
   updatedAt DateTime?     @updatedAt @map("updated_at")
 
   @@unique([policyId, assetName])
+  @@index([receiver])
+  @@index([createdAt, id])
+  @@index([policyId, createdAt])
   @@map("t_nft_mints")
 }

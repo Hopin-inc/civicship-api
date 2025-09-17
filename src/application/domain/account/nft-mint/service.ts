@@ -5,6 +5,12 @@ import { INftMintRepository } from "./data/interface";
 import { NftMintBase, nftMintSelectBase } from "./data/type";
 import NftMintConverter from "./data/converter";
 import { IMintAdapter } from "./mint/adapter";
+import {
+  InvalidReceiverAddressError,
+  NetworkMismatchError,
+  InvalidProductKeyError,
+  AssetNameTooLongError,
+} from "@/errors/graphql";
 
 @injectable()
 export default class NftMintService {
@@ -19,13 +25,50 @@ export default class NftMintService {
     tx: Prisma.TransactionClient,
     p: { policyId: string; productKey: string; receiver: string },
   ): Promise<NftMintBase> {
+    this.validateProductKey(p.productKey);
+    this.validateReceiverAddress(p.receiver);
+    
     const count = await this.repo.countByPolicy(ctx, p.policyId);
     const assetName = `${p.productKey}-${String(count + 1).padStart(4, "0")}`;
+    
+    this.validateAssetNameLength(assetName);
+    
     return this.repo.create(ctx, this.converter.buildMintCreate({
       policyId: p.policyId,
       assetName,
       receiver: p.receiver,
     }), tx);
+  }
+
+  private validateProductKey(productKey: string): void {
+    const pattern = /^[a-z0-9-]{1,24}$/;
+    if (!pattern.test(productKey)) {
+      throw new InvalidProductKeyError(productKey);
+    }
+  }
+
+  private validateReceiverAddress(receiver: string): void {
+    if (!receiver.startsWith("addr_test") && !receiver.startsWith("addr1")) {
+      throw new InvalidReceiverAddressError(receiver);
+    }
+
+    const networkId = process.env.CARDANO_NETWORK_ID || "0";
+    const expectedNetwork = networkId === "1" ? "mainnet" : "testnet";
+    
+    if (expectedNetwork === "testnet" && !receiver.startsWith("addr_test")) {
+      throw new NetworkMismatchError(receiver, "testnet");
+    }
+    
+    if (expectedNetwork === "mainnet" && !receiver.startsWith("addr1")) {
+      throw new NetworkMismatchError(receiver, "mainnet");
+    }
+  }
+
+  private validateAssetNameLength(assetName: string): void {
+    const bytes = Buffer.byteLength(assetName, 'utf8');
+    if (bytes > 32) {
+      throw new AssetNameTooLongError(assetName, bytes);
+    }
   }
 
   async mintNow(

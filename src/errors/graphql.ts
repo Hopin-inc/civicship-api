@@ -228,3 +228,76 @@ export class ClaimLinkExpiredError extends ApolloError {
     Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
   }
 }
+
+
+export class InvalidReceiverAddressError extends ApolloError {
+  public receiver: string;
+
+  constructor(receiver: string, message = "Receiver address is invalid") {
+    super(message, "MINT_INVALID_RECEIVER");
+    this.receiver = receiver;
+    Object.defineProperty(this, "name", { value: "InvalidReceiverAddressError" });
+  }
+}
+
+export class NetworkMismatchError extends ApolloError {
+  public receiver: string;
+  public expectedNetwork: "testnet" | "mainnet";
+
+  constructor(receiver: string, expectedNetwork: "testnet" | "mainnet") {
+    const message = `Receiver address network mismatch (expected ${expectedNetwork})`;
+    super(message, "MINT_NETWORK_MISMATCH");
+    this.receiver = receiver;
+    this.expectedNetwork = expectedNetwork;
+    Object.defineProperty(this, "name", { value: "NetworkMismatchError" });
+  }
+}
+
+export class InvalidProductKeyError extends ApolloError {
+  public productKey: string;
+  public pattern = "^[a-z0-9-]{1,24}$";
+
+  constructor(productKey: string) {
+    const message = `Invalid productKey format: "${productKey}" (must match ${/^([a-z0-9-]{1,24})$/})`;
+    super(message, "MINT_INVALID_PRODUCT_KEY");
+    this.productKey = productKey;
+    Object.defineProperty(this, "name", { value: "InvalidProductKeyError" });
+  }
+}
+
+export class AssetNameTooLongError extends ApolloError {
+  public assetName: string;
+  public bytes: number;
+  public limitBytes = 32;
+
+  constructor(assetName: string, bytes: number) {
+    const message = `Asset name too long: ${bytes} bytes (limit ${32})`;
+    super(message, "MINT_ASSET_NAME_TOO_LONG");
+    this.assetName = assetName;
+    this.bytes = bytes;
+    Object.defineProperty(this, "name", { value: "AssetNameTooLongError" });
+  }
+}
+
+export class MintAdapterFailureError extends ApolloError {
+  public detail?: string;
+
+  constructor(detail?: string) {
+    super("Mint adapter failed", "MINT_ADAPTER_FAILURE");
+    this.detail = detail;
+    Object.defineProperty(this, "name", { value: "MintAdapterFailureError" });
+  }
+}
+
+export class MintIdempotencyConflictError extends ApolloError {
+  public policyId: string;
+  public assetName?: string;
+
+  constructor(policyId: string, assetName?: string) {
+    const message = `Idempotency conflict on mint (${policyId}${assetName ? "." + assetName : ""})`;
+    super(message, "MINT_IDEMPOTENCY_CONFLICT");
+    this.policyId = policyId;
+    this.assetName = assetName;
+    Object.defineProperty(this, "name", { value: "MintIdempotencyConflictError" });
+  }
+}
