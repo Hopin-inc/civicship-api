@@ -1155,7 +1155,8 @@ model NftInstance {
   nftTokenId String?   @map("nft_token_id")
   nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
 
-  nftMint NftMint?
+  nftMintId String  @unique @map("nft_mint_id")
+  nftMint   NftMint @relation(fields: [nftMintId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1174,8 +1175,7 @@ model NftMint {
   status      NftMintStatus @default(QUEUED)
   error       String?
 
-  nftInstanceId String?      @unique @map("nft_instance_id")
-  nftInstance   NftInstance? @relation(fields: [nftInstanceId], references: [id])
+  nftInstance NftInstance?
 
   nftWalletId String    @map("nft_wallet_id")
   nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)

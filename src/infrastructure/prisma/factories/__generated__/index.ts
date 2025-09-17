@@ -6874,7 +6874,7 @@ type NftInstanceFactoryDefineInput = {
     updatedAt?: Date | null;
     nftWallet: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput;
     nftToken?: NftInstancenftTokenFactory | Prisma.NftTokenCreateNestedOneWithoutNftInstancesInput;
-    nftMint?: NftInstancenftMintFactory | Prisma.NftMintCreateNestedOneWithoutNftInstanceInput;
+    nftMint: NftInstancenftMintFactory | Prisma.NftMintCreateNestedOneWithoutNftInstanceInput;
 };
 
 type NftInstanceTransientFields = Record<string, unknown> & Partial<Record<keyof NftInstanceFactoryDefineInput, never>>;

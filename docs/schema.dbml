@@ -566,7 +566,8 @@ Table t_nft_instances {
   nftWallet t_nft_wallets [not null]
   nftTokenId String
   nftToken t_nft_tokens
-  nftMint t_nft_mints
+  nftMintId String [unique, not null]
+  nftMint t_nft_mints [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
@@ -584,7 +585,6 @@ Table t_nft_mints {
   txHash String
   status NftMintStatus [not null, default: 'QUEUED']
   error String
-  nftInstanceId String [unique]
   nftInstance t_nft_instances
   nftWalletId String [not null]
   nftWallet t_nft_wallets [not null]
@@ -1007,7 +1007,7 @@ Ref: t_nft_instances.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
 Ref: t_nft_instances.nftTokenId > t_nft_tokens.id [delete: Set Null]
 
-Ref: t_nft_mints.nftInstanceId - t_nft_instances.id
+Ref: t_nft_instances.nftMintId - t_nft_mints.id [delete: Cascade]
 
 Ref: t_nft_mints.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
