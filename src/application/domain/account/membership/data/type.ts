@@ -18,10 +18,6 @@ export const membershipSelectDetail = Prisma.validator<Prisma.MembershipSelect>(
   reason: true,
   role: true,
 
-  opportunityHostedCountView: true,
-  participationGeoViews: true,
-  participationCountViews: true,
-
   userId: true,
   communityId: true,
 
