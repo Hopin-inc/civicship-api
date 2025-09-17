@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { Prisma } from "@prisma/client";
+import { Prisma, NftMintStatus } from "@prisma/client";
 
 @injectable()
 export default class NftMintConverter {
@@ -12,15 +12,15 @@ export default class NftMintConverter {
       policyId: p.policyId,
       assetName: p.assetName,
       receiver: p.receiver,
-      status: "QUEUED",
+      status: NftMintStatus.QUEUED,
     };
   }
 
   buildMarkMinted(p: { txHash: string }): Prisma.NftMintUpdateInput {
-    return { status: "MINTED", txHash: p.txHash, error: null };
+    return { status: NftMintStatus.MINTED, txHash: p.txHash, error: null };
   }
 
   buildMarkFailed(p: { error: string }): Prisma.NftMintUpdateInput {
-    return { status: "FAILED", error: p.error };
+    return { status: NftMintStatus.FAILED, error: p.error };
   }
 }
