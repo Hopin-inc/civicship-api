@@ -1111,43 +1111,43 @@ model ApiKey {
 }
 
 model NftWallet {
-  id            String    @id @default(cuid())
-  userId        String    @unique @map("user_id")
-  walletAddress String    @map("wallet_address")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime? @updatedAt @map("updated_at")
+  id            String @id @default(cuid())
+  walletAddress String @map("wallet_address")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  userId       String        @unique @map("user_id")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   nftInstances NftInstance[]
+  nftMints     NftMint[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_wallets")
 }
 
 model NftToken {
-  id        String    @id @default(cuid())
-  address   String    @unique
-  name      String?
-  symbol    String?
-  type      String
-  json      Json?
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
+  id      String  @id @default(cuid())
+  address String  @unique
+  name    String?
+  symbol  String?
+  type    String
+  json    Json?
 
   nftInstances NftInstance[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("t_nft_tokens")
 }
 
 model NftInstance {
-  id          String    @id @default(cuid())
-  instanceId  String    @map("instance_id")
+  id          String  @id @default(cuid())
+  instanceId  String  @map("instance_id")
   name        String?
   description String?
-  imageUrl    String?   @map("image_url")
+  imageUrl    String? @map("image_url")
   json        Json?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime? @updatedAt @map("updated_at")
 
   nftWalletId String    @map("nft_wallet_id")
   nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
@@ -1155,14 +1155,13 @@ model NftInstance {
   nftTokenId String?   @map("nft_token_id")
   nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
 
+  nftMint NftMint?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
   @@unique([nftWalletId, instanceId])
   @@map("t_nft_instances")
-}
-
-enum NftMintStatus {
-  QUEUED
-  MINTED
-  FAILED
 }
 
 model NftMint {
@@ -1172,10 +1171,17 @@ model NftMint {
   sequenceNum Int           @map("sequence_num")
   receiver    String
   txHash      String?       @map("tx_hash")
-  status      NftMintStatus
+  status      NftMintStatus @default(QUEUED)
   error       String?
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime?     @updatedAt @map("updated_at")
+
+  nftInstanceId String?      @unique @map("nft_instance_id")
+  nftInstance   NftInstance? @relation(fields: [nftInstanceId], references: [id])
+
+  nftWalletId String    @map("nft_wallet_id")
+  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@unique([policyId, sequenceNum])
   @@unique([policyId, assetName])
@@ -1183,4 +1189,10 @@ model NftMint {
   @@index([createdAt, id])
   @@index([policyId, createdAt])
   @@map("t_nft_mints")
+}
+
+enum NftMintStatus {
+  QUEUED
+  MINTED
+  FAILED
 }

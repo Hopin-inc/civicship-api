@@ -631,8 +631,8 @@ FAILED FAILED
 
   "t_nft_wallets" {
     String id "🗝️"
-    String user_id 
     String wallet_address 
+    String user_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -657,10 +657,10 @@ FAILED FAILED
     String description "❓"
     String image_url "❓"
     Json json "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
     String nft_wallet_id 
     String nft_token_id "❓"
+    DateTime created_at 
+    DateTime updated_at "❓"
     }
   
 
@@ -673,6 +673,8 @@ FAILED FAILED
     String tx_hash "❓"
     NftMintStatus status 
     String error "❓"
+    String nft_instance_id "❓"
+    String nft_wallet_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -924,10 +926,14 @@ FAILED FAILED
     "t_transactions" o|--|o "t_users" : "createdByUser"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_wallets" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
+    "t_nft_instances" o{--}o "t_nft_mints" : "nftMint"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
+    "t_nft_mints" o|--|o "t_nft_instances" : "nftInstance"
+    "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"
