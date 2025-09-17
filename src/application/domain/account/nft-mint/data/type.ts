@@ -1,14 +1,5 @@
 import { Prisma } from "@prisma/client";
 
-export const nftMintSelectForPresenter = Prisma.validator<Prisma.NftMintDefaultArgs>()({
-  select: {
-    id: true,
-    txHash: true,
-    status: true,
-  },
-});
-export type NftMintForPresenter = Prisma.NftMintGetPayload<typeof nftMintSelectForPresenter>;
-
 export const nftMintSelectBase = Prisma.validator<Prisma.NftMintDefaultArgs>()({
   select: {
     id: true,
@@ -23,4 +14,5 @@ export const nftMintSelectBase = Prisma.validator<Prisma.NftMintDefaultArgs>()({
     updatedAt: true,
   },
 });
+
 export type NftMintBase = Prisma.NftMintGetPayload<typeof nftMintSelectBase>;
