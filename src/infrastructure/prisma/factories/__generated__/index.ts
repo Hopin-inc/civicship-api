@@ -67,6 +67,7 @@ import type { ClaimLinkStatus } from "@prisma/client";
 import type { TicketStatus } from "@prisma/client";
 import type { TicketStatusReason } from "@prisma/client";
 import type { TransactionReason } from "@prisma/client";
+import type { NftMintStatus } from "@prisma/client";
 import type { ParticipationType } from "@prisma/client";
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { createInitializer, createScreener, getScalarFieldValueGenerator, normalizeResolver, normalizeList, getSequenceCounter, createCallbackChain, destructure } from "@quramy/prisma-fabbrica/lib/internal";
@@ -7001,7 +7002,7 @@ type NftMintScalarOrEnumFields = {
     policyId: string;
     assetName: string;
     receiver: string;
-    status: string;
+    status: NftMintStatus;
 };
 
 type NftMintFactoryDefineInput = {
@@ -7010,7 +7011,7 @@ type NftMintFactoryDefineInput = {
     assetName?: string;
     receiver?: string;
     txHash?: string | null;
-    status?: string;
+    status?: NftMintStatus;
     error?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
@@ -7055,7 +7056,7 @@ function autoGenerateNftMintScalarsOrEnums({ seq }: {
         policyId: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "policyId", isId: false, isUnique: true, seq }),
         assetName: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "assetName", isId: false, isUnique: true, seq }),
         receiver: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "receiver", isId: false, isUnique: false, seq }),
-        status: getScalarFieldValueGenerator().String({ modelName: "NftMint", fieldName: "status", isId: false, isUnique: false, seq })
+        status: "QUEUED"
     };
 }
 

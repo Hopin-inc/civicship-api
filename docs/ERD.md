@@ -212,6 +212,14 @@ OPPORTUNITY_RESERVATION_CANCELED OPPORTUNITY_RESERVATION_CANCELED
 OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
         }
     
+
+
+        NftMintStatus {
+            QUEUED QUEUED
+MINTED MINTED
+FAILED FAILED
+        }
+    
   "t_images" {
     String id "🗝️"
     Boolean is_public 
@@ -662,7 +670,7 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     String asset_name 
     String receiver 
     String tx_hash "❓"
-    String status 
+    NftMintStatus status 
     String error "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -918,6 +926,7 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
+    "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

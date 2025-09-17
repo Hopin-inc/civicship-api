@@ -1159,16 +1159,22 @@ model NftInstance {
   @@map("t_nft_instances")
 }
 
+enum NftMintStatus {
+  QUEUED
+  MINTED
+  FAILED
+}
+
 model NftMint {
-  id        String   @id @default(cuid())
-  policyId  String   @map("policy_id")
-  assetName String   @map("asset_name")
+  id        String        @id @default(cuid())
+  policyId  String        @map("policy_id")
+  assetName String        @map("asset_name")
   receiver  String
-  txHash    String?  @map("tx_hash")
-  status    String
+  txHash    String?       @map("tx_hash")
+  status    NftMintStatus
   error     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime?     @updatedAt @map("updated_at")
 
   @@unique([policyId, assetName])
   @@map("t_nft_mints")

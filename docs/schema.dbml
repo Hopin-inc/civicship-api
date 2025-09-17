@@ -579,7 +579,7 @@ Table t_nft_mints {
   assetName String [not null]
   receiver String [not null]
   txHash String
-  status String [not null]
+  status NftMintStatus [not null]
   error String
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
@@ -869,6 +869,12 @@ Enum TransactionReason {
   OPPORTUNITY_RESERVATION_CREATED
   OPPORTUNITY_RESERVATION_CANCELED
   OPPORTUNITY_RESERVATION_REJECTED
+}
+
+Enum NftMintStatus {
+  QUEUED
+  MINTED
+  FAILED
 }
 
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
