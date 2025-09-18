@@ -40,22 +40,4 @@ export default class NftMintValidator {
       throw new NetworkMismatchError(receiver, "mainnet");
     }
   }
-
-  // async validateProductKey(productKey: string): Promise<void> {
-  //   const pattern = /^[a-z0-9-]{1,24}$/;
-  //   if (!pattern.test(productKey)) {
-  //     logger.warn("NFT mint validation failed: invalid product key", {
-  //       productKey,
-  //       pattern: pattern.source,
-  //     });
-  //     throw new InvalidProductKeyError(productKey);
-  //   }
-  // }
-
-  // async validateAssetNameLength(assetName: string): Promise<void> {
-  //   const bytes = Buffer.byteLength(assetName, "utf8");
-  //   if (bytes > 32) {
-  //     throw new AssetNameTooLongError(assetName, bytes);
-  //   }
-  // }
 }
