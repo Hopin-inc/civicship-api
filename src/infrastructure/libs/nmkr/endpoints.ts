@@ -6,6 +6,15 @@ import {
   CheckAddressResponse,
   GetProjectResponse,
   CancelAddressReservationResponse,
+  GetTransactionStateResponse,
+  GetPaymentAddressResponse,
+  SubmitTransactionResponse,
+  EndTransactionResponse,
+  CancelTransactionResponse,
+  ReservePaymentgatewayMintAndSendNftRequest,
+  ReservePaymentgatewayMintAndSendNftResponse,
+  MintAndSendPaymentgatewayNftRequest,
+  MintAndSendPaymentgatewayNftResponse,
 } from "@/infrastructure/libs/nmkr/types";
 
 export class NmkrEndpoints {
@@ -91,6 +100,66 @@ export class NmkrEndpoints {
   async createAuction(customerId: string, auctionData: any): Promise<any> {
     const { data } = await this.http.post(`/v2/CreateAuction/${encodeURIComponent(customerId)}`, auctionData);
     return data;
+  }
+
+  async getTransactionState(paymentTransactionUid: string): Promise<GetTransactionStateResponse> {
+    const { data } = await this.http.get(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/GetTransactionState`,
+    );
+    return data as GetTransactionStateResponse;
+  }
+
+  async getPaymentAddress(paymentTransactionUid: string): Promise<GetPaymentAddressResponse> {
+    const { data } = await this.http.get(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/PaymentAddress`,
+    );
+    return data as GetPaymentAddressResponse;
+  }
+
+  async submitTransaction(paymentTransactionUid: string): Promise<SubmitTransactionResponse> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/SubmitTransaction`,
+      {},
+    );
+    return data as SubmitTransactionResponse;
+  }
+
+  async endTransaction(paymentTransactionUid: string): Promise<EndTransactionResponse> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/EndTransaction`,
+      {},
+    );
+    return data as EndTransactionResponse;
+  }
+
+  async cancelTransaction(paymentTransactionUid: string): Promise<CancelTransactionResponse> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/CancelTransaction`,
+      {},
+    );
+    return data as CancelTransactionResponse;
+  }
+
+  async reservePaymentgatewayMintAndSendNft(
+    paymentTransactionUid: string,
+    payload: ReservePaymentgatewayMintAndSendNftRequest,
+  ): Promise<ReservePaymentgatewayMintAndSendNftResponse> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/ReservePaymentgatewayMintAndSendNft`,
+      payload,
+    );
+    return data as ReservePaymentgatewayMintAndSendNftResponse;
+  }
+
+  async mintAndSendPaymentgatewayNft(
+    paymentTransactionUid: string,
+    payload: MintAndSendPaymentgatewayNftRequest,
+  ): Promise<MintAndSendPaymentgatewayNftResponse> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/MintAndSendPaymentgatewayNft`,
+      payload,
+    );
+    return data as MintAndSendPaymentgatewayNftResponse;
   }
 
 

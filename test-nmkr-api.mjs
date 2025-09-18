@@ -79,6 +79,7 @@ async function testAllNmkrEndpoints() {
     }, results);
     
     // 1.4 Create Random NFT Sale
+    let testPaymentTransactionUid = null;
     await testEndpoint('CreatePaymentTransaction (Random)', async () => {
       const result = await nmkrClient.createRandomNftSale({
         projectUid: projectUid,
@@ -92,8 +93,57 @@ async function testAllNmkrEndpoints() {
           optionalRecevierAddress: testWallet
         }
       });
+      
+      // Store payment transaction UID for workflow testing
+      if (result && result.paymentTransactionUid) {
+        testPaymentTransactionUid = result.paymentTransactionUid;
+        console.log(`💾 Stored payment transaction UID for workflow testing: ${testPaymentTransactionUid}`);
+      }
+      
       return result;
     }, results);
+
+    // 🥇 Priority: ProceedPaymentTransaction Workflow Tests
+    console.log('\n🥇 PRIORITY: Testing ProceedPaymentTransaction Workflow\n');
+    
+    if (testPaymentTransactionUid) {
+      // 1.5 Get Transaction State
+      await testEndpoint('GetTransactionState', async () => {
+        const result = await nmkrClient.getTransactionState(testPaymentTransactionUid);
+        return result;
+      }, results);
+
+      // 1.6 Get Payment Address
+      await testEndpoint('GetPaymentAddress', async () => {
+        const result = await nmkrClient.getPaymentAddress(testPaymentTransactionUid);
+        return result;
+      }, results);
+
+      // 1.7 Reserve Paymentgateway Mint And Send NFT
+      await testEndpoint('ReservePaymentgatewayMintAndSendNft', async () => {
+        const result = await nmkrClient.reservePaymentgatewayMintAndSendNft(testPaymentTransactionUid, {
+          receiverAddress: testWallet
+        });
+        return result;
+      }, results);
+
+      // 1.8 Mint And Send Paymentgateway NFT
+      await testEndpoint('MintAndSendPaymentgatewayNft', async () => {
+        const result = await nmkrClient.mintAndSendPaymentgatewayNft(testPaymentTransactionUid, {
+          receiverAddress: testWallet
+        });
+        return result;
+      }, results);
+
+      // 1.9 Cancel Transaction (test last to avoid breaking other tests)
+      await testEndpoint('CancelTransaction', async () => {
+        const result = await nmkrClient.cancelTransaction(testPaymentTransactionUid);
+        return result;
+      }, results);
+    } else {
+      console.log('⚠️  Skipping workflow tests - no payment transaction UID available');
+      results.failed.push({ name: 'ProceedPaymentTransaction Workflow', error: 'No payment transaction UID from CreatePaymentTransaction' });
+    }
     
     // Test 2: Direct HTTP Calls for Unimplemented Endpoints
     console.log('\n🧪 SECTION 2: Testing Unimplemented Endpoints via HTTP Client\n');
