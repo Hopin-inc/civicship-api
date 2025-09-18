@@ -1114,6 +1114,8 @@ model ApiKey {
   @@map("m_api_keys")
 }
 
+// ------------------------------ NFT Domain ------------------------------
+
 model NftWallet {
   id            String        @id @default(cuid())
   type          NftWalletType @default(INTERNAL)
@@ -1231,6 +1233,8 @@ model NftProduct {
 
   @@map("t_nft_products")
 }
+
+// ------------------------------ Order Domain ------------------------------
 
 model Order {
   id     String      @id @default(cuid())
