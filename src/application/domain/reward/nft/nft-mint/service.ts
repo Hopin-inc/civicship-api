@@ -32,7 +32,7 @@ export default class NftMintService {
     const { id: orderItemId, quantity } = orderItem;
     const startTime = Date.now();
 
-    // this.logger.start(orderItemId, nftWalletId, quantity);
+    this.logger.startMint(orderItemId, nftWalletId, quantity);
 
     try {
       const mints = await this.phaseQueue(ctx, orderItemId, quantity, receiverAddress, nftWalletId);
