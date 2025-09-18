@@ -1,4 +1,3 @@
-import { injectable } from "tsyringe";
 import {
   BlockfrostProvider,
   MeshWallet,
@@ -12,20 +11,23 @@ import type { Mint } from "@meshsdk/core";
 export type NumericLabel = `${number}`;
 export type Network = "preprod" | "mainnet";
 
+export type MeshClientConfig = { network: Network; blockfrostProjectId: string } & (
+  | { key: { type: "mnemonic"; words: string[] } }
+  | { key: { type: "root"; bech32: string } }
+  | { key: { type: "cli"; payment: string; stake?: string } }
+);
+
 export type MintOneInput = Readonly<{
   receiverAddress: string;
-  assetName: string;
+  assetName: string; // UTF-8（内部でHex化してassetUnit生成）
   metadata?: Record<string, unknown>;
-  label?: string;
-  network?: Network;
-  // ★ 追加: 送信後に L1 確定を待つ（Blockfrost の onTxConfirmed）
-  awaitConfirmation?: boolean;
-  confirmationTimeoutMs?: number; // 例: 120_000
+  label?: string; // 既定: "721"
+  awaitConfirmation?: boolean; // 既定: false
+  confirmationTimeoutMs?: number; // 既定: 120_000
 }>;
 
 export type MintOneOutput = Readonly<{
   txHash: string;
-  // ★ 追加: 後続のDB格納/照合に便利
   policyId: string;
   assetUnit: string; // policyId + assetName(hex)
 }>;
@@ -34,120 +36,77 @@ export interface IMeshClient {
   mintOne(input: MintOneInput): Promise<MintOneOutput>;
 }
 
-@injectable()
 export class MeshClient implements IMeshClient {
-  private providers = new Map<Network, BlockfrostProvider>();
-  private wallets = new Map<Network, MeshWallet>();
+  private readonly provider: BlockfrostProvider;
+  private readonly wallet: MeshWallet;
 
-  private provider(network: Network) {
-    let p = this.providers.get(network);
-    if (!p) {
-      p = new BlockfrostProvider(process.env.BLOCKFROST_KEY!);
-      this.providers.set(network, p);
-    }
-    return p;
-  }
-
-  private async wallet(network: Network) {
-    let w = this.wallets.get(network);
-    if (w) return w;
-
-    const provider = this.provider(network);
-    const networkId = network === "mainnet" ? 1 : 0;
-
-    if (process.env.ENV === "LOCAL") {
-      w = new MeshWallet({
-        networkId,
-        fetcher: provider,
-        submitter: provider,
-        key: { type: "address", address: process.env.LOCAL_TEST_ADDRESS ?? "addr_test1..." },
-      });
-      await w.init();
-      this.wallets.set(network, w);
-      return w;
-    }
-
-    w = new MeshWallet({
-      networkId,
-      fetcher: provider,
-      submitter: provider,
-      key: this.loadIssuerKey(),
+  constructor(private readonly cfg: MeshClientConfig) {
+    this.provider = new BlockfrostProvider(cfg.blockfrostProjectId);
+    this.wallet = new MeshWallet({
+      networkId: cfg.network === "mainnet" ? 1 : 0,
+      fetcher: this.provider,
+      submitter: this.provider,
+      key: cfg.key,
     });
-    await w.init();
-    this.wallets.set(network, w);
-    return w;
-  }
-
-  private loadIssuerKey():
-    | { type: "mnemonic"; words: string[] }
-    | { type: "root"; bech32: string }
-    | { type: "cli"; payment: string; stake?: string } {
-    if (process.env.ISSUER_MNEMONIC) {
-      return { type: "mnemonic", words: process.env.ISSUER_MNEMONIC.split(" ") };
-    }
-    if (process.env.ISSUER_XPRV) {
-      return { type: "root", bech32: process.env.ISSUER_XPRV };
-    }
-    if (process.env.ISSUER_CLI_PAYMENT) {
-      return {
-        type: "cli",
-        payment: process.env.ISSUER_CLI_PAYMENT!,
-        stake: process.env.ISSUER_CLI_STAKE,
-      };
-    }
-    throw new Error("Issuer key not configured");
   }
 
   async mintOne(input: MintOneInput): Promise<MintOneOutput> {
-    const network: Network = input.network ?? "preprod";
-    const label: NumericLabel = toNumericLabel(input.label, "721");
-    const wallet = await this.wallet(network);
-    const provider = this.provider(network);
+    await this.wallet.init();
 
-    const changeAddress = await wallet.getChangeAddress();
-    const forgingScript = ForgeScript.withOneSignature(changeAddress);
-    const policyId = resolveScriptHash(forgingScript); // ★ 追加
-    const assetNameHex = stringToHex(input.assetName); // ★ 追加
-    const assetUnit = policyId + assetNameHex; // ★ 追加
+    const { label, metadata } = this.normalize(input);
+    const changeAddress = await this.wallet.getChangeAddress();
 
-    // LOCAL は build/sign/submit をスキップして即返却
-    if (process.env.ENV === "LOCAL") {
-      return { txHash: "LOCAL_DUMMY_TX_HASH", policyId, assetUnit };
-    }
+    const script = ForgeScript.withOneSignature(changeAddress);
+    const policyId = resolveScriptHash(script);
+    const assetUnit = this.buildAssetUnit(policyId, input.assetName);
 
     const mint: Mint = {
       assetName: input.assetName,
       assetQuantity: "1",
       label,
       recipient: input.receiverAddress,
-      metadata: input.metadata ?? {},
+      metadata,
     };
 
-    const tx = new Transaction({ initiator: wallet });
-    tx.mintAsset(forgingScript, mint);
+    const unsigned = await this.buildMintTx(this.wallet, script, mint);
+    const signed = await this.wallet.signTx(unsigned, false);
+    const txHash = await this.wallet.submitTx(signed);
 
-    const unsigned = await tx.build();
-    const signed = await wallet.signTx(unsigned, false);
-    const txHash = await wallet.submitTx(signed);
-
-    // ★ 任意: 確定待ち（onTxConfirmed）
     if (input.awaitConfirmation) {
-      const timeoutMs = input.confirmationTimeoutMs ?? 120_000;
-
-      await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(() => {
-          reject(new Error(`onTxConfirmed timeout after ${timeoutMs}ms`));
-        }, timeoutMs);
-
-        // BlockfrostProvider の onTxConfirmed は (hash, cb) 形式
-        provider.onTxConfirmed(txHash, () => {
-          clearTimeout(timer);
-          resolve();
-        });
-      });
+      await this.waitForConfirmation(txHash, input.confirmationTimeoutMs);
     }
 
     return { txHash, policyId, assetUnit };
+  }
+
+  // ---------- helpers ----------
+  private normalize(input: MintOneInput) {
+    const label: NumericLabel = toNumericLabel(input.label, "721");
+    const metadata = input.metadata ?? {};
+    return { label, metadata };
+  }
+
+  private buildAssetUnit(policyId: string, assetNameUtf8: string) {
+    return policyId + stringToHex(assetNameUtf8);
+  }
+
+  private async buildMintTx(wallet: MeshWallet, script: string, mint: Mint) {
+    const tx = new Transaction({ initiator: wallet });
+    tx.mintAsset(script, mint);
+    return tx.build();
+  }
+
+  private async waitForConfirmation(txHash: string, timeoutMs = 120_000) {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`onTxConfirmed timeout after ${timeoutMs}ms`)),
+        timeoutMs,
+      );
+      this.provider.onTxConfirmed(txHash, () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
   }
 }
 
