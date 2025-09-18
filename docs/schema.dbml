@@ -537,7 +537,7 @@ Table m_api_keys {
 Table t_nft_wallets {
   id String [pk]
   type NftWalletType [not null, default: 'INTERNAL']
-  walletAddress String [not null]
+  walletAddress String [unique, not null]
   userId String [not null]
   user t_users [not null]
   nftInstances t_nft_instances [not null]

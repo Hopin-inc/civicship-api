@@ -6659,7 +6659,7 @@ function autoGenerateNftWalletScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftWalletScalarOrEnumFields {
     return {
-        walletAddress: getScalarFieldValueGenerator().String({ modelName: "NftWallet", fieldName: "walletAddress", isId: false, isUnique: false, seq })
+        walletAddress: getScalarFieldValueGenerator().String({ modelName: "NftWallet", fieldName: "walletAddress", isId: false, isUnique: true, seq })
     };
 }
 

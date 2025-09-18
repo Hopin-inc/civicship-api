@@ -1119,7 +1119,7 @@ model ApiKey {
 model NftWallet {
   id            String        @id @default(cuid())
   type          NftWalletType @default(INTERNAL)
-  walletAddress String        @map("wallet_address")
+  walletAddress String        @unique @map("wallet_address")
 
   userId       String        @map("user_id")
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
