@@ -6,12 +6,7 @@ import { MeshClient } from "@/infrastructure/libs/mesh";
 import { INftMintRepository } from "./data/interface";
 import { NftMintBase } from "./data/type";
 import NftMintConverter from "./data/converter";
-import {
-  InvalidReceiverAddressError,
-  NetworkMismatchError,
-  InvalidProductKeyError,
-  AssetNameTooLongError,
-} from "@/errors/graphql";
+import NftMintValidator from "@/application/domain/account/nft-mint/validator";
 
 @injectable()
 export class NftMintIssuanceService {
@@ -19,6 +14,7 @@ export class NftMintIssuanceService {
     @inject("NftMintRepository") private readonly repo: INftMintRepository,
     @inject("MeshClient") private readonly client: MeshClient,
     @inject("NftMintConverter") private readonly converter: NftMintConverter,
+    @inject("NftMintValidator") private readonly validator: NftMintValidator,
   ) {}
 
   async requestNftMint(
@@ -26,9 +22,9 @@ export class NftMintIssuanceService {
     productKey: string,
     receiverAddress: string,
     nftWalletId: string,
-    policyId?: string,
+    policyId: string,
   ): Promise<{ success: boolean; requestId: string; txHash?: string; status: NftMintStatus }> {
-    const finalPolicyId = policyId || process.env.POLICY_ID || "policy_dev";
+    const finalPolicyId = policyId;
     const startTime = Date.now();
 
     this.logMintStart(nftWalletId, productKey, finalPolicyId);
@@ -37,31 +33,19 @@ export class NftMintIssuanceService {
 
     try {
       // Phase 1: queue
-      const queueStart = Date.now();
-      mintRequest = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
-        return this.queueMint(ctx, tx, {
-          policyId: finalPolicyId,
-          productKey,
-          receiver: receiverAddress,
-          nftWalletId,
-        });
-      });
-      this.logMintPhase("queue", Date.now() - queueStart, { requestId: mintRequest.id });
+      mintRequest = await this.phaseQueue(
+        ctx,
+        finalPolicyId,
+        productKey,
+        receiverAddress,
+        nftWalletId,
+      );
 
       // Phase 2: external mint
-      const mintStart = Date.now();
-      const txHash = await this.mintNow(ctx, mintRequest.id);
-      this.logMintPhase("external_mint", Date.now() - mintStart, {
-        requestId: mintRequest.id,
-        txHash,
-      });
+      const txHash = await this.phaseMint(ctx, mintRequest.id);
 
       // Phase 3: mark minted
-      const markStart = Date.now();
-      await ctx.issuer.internal(async (tx) => {
-        return this.markMinted(ctx, tx, mintRequest!.id, txHash);
-      });
-      this.logMintPhase("mark_minted", Date.now() - markStart, { requestId: mintRequest!.id });
+      await this.phaseMarkMinted(ctx, mintRequest.id, txHash);
 
       const totalDuration = Date.now() - startTime;
       this.logMintSuccess(mintRequest.id, txHash, totalDuration);
@@ -69,16 +53,45 @@ export class NftMintIssuanceService {
       return { success: true, requestId: mintRequest.id, txHash, status: NftMintStatus.MINTED };
     } catch (error) {
       if (!mintRequest) {
-        // queueMint 前で失敗 → DB にレコードがないので FAILED にはせず throw
+        // queueMint 前で失敗
         logger.error("NFT mint failed before queueMint", {
           error: error instanceof Error ? error.message : String(error),
         });
         throw error;
       }
-
-      // queueMint 後なら markFailed
+      // queueMint 後 → markFailed
       return this.markMintFailed(ctx, mintRequest.id, error);
     }
+  }
+
+  private async phaseQueue(
+    ctx: IContext,
+    policyId: string,
+    productKey: string,
+    receiver: string,
+    nftWalletId: string,
+  ): Promise<NftMintBase> {
+    const start = Date.now();
+    const result = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
+      return this.queueMint(ctx, tx, { policyId, productKey, receiver, nftWalletId });
+    });
+    this.logMintPhase("queue", Date.now() - start, { requestId: result.id });
+    return result;
+  }
+
+  private async phaseMint(ctx: IContext, requestId: string): Promise<string> {
+    const start = Date.now();
+    const txHash = await this.mintNow(ctx, requestId);
+    this.logMintPhase("external_mint", Date.now() - start, { requestId, txHash });
+    return txHash;
+  }
+
+  private async phaseMarkMinted(ctx: IContext, requestId: string, txHash: string) {
+    const start = Date.now();
+    await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
+      return this.markMinted(ctx, tx, requestId, txHash);
+    });
+    this.logMintPhase("mark_minted", Date.now() - start, { requestId });
   }
 
   private async queueMint(
@@ -86,13 +99,10 @@ export class NftMintIssuanceService {
     tx: Prisma.TransactionClient,
     p: { policyId: string; productKey: string; receiver: string; nftWalletId: string },
   ): Promise<NftMintBase> {
-    this.validateProductKey(p.productKey);
-    this.validateReceiverAddress(p.receiver);
+    this.validator.validateReceiverAddress(p.receiver);
 
     const sequenceNum = await this.repo.getNextSequenceNumber(ctx, p.policyId, tx);
     const assetName = `${p.productKey}-${String(sequenceNum).padStart(4, "0")}`;
-
-    this.validateAssetNameLength(assetName);
 
     return this.repo.create(
       ctx,
@@ -122,41 +132,6 @@ export class NftMintIssuanceService {
 
   private markMinted(ctx: IContext, tx: Prisma.TransactionClient, id: string, txHash: string) {
     return this.repo.update(ctx, id, this.converter.buildMarkMinted({ txHash }), tx);
-  }
-
-  private validateProductKey(productKey: string): void {
-    const pattern = /^[a-z0-9-]{1,24}$/;
-    if (!pattern.test(productKey)) {
-      logger.warn("NFT mint validation failed: invalid product key", {
-        productKey,
-        pattern: pattern.source,
-      });
-      throw new InvalidProductKeyError(productKey);
-    }
-  }
-
-  private validateReceiverAddress(receiver: string): void {
-    if (!receiver.startsWith("addr_test") && !receiver.startsWith("addr1")) {
-      throw new InvalidReceiverAddressError(receiver);
-    }
-
-    const networkId = process.env.CARDANO_NETWORK_ID || "0";
-    const expected = networkId === "1" ? "mainnet" : "testnet";
-
-    if (expected === "testnet" && !receiver.startsWith("addr_test")) {
-      throw new NetworkMismatchError(receiver, "testnet");
-    }
-
-    if (expected === "mainnet" && !receiver.startsWith("addr1")) {
-      throw new NetworkMismatchError(receiver, "mainnet");
-    }
-  }
-
-  private validateAssetNameLength(assetName: string): void {
-    const bytes = Buffer.byteLength(assetName, "utf8");
-    if (bytes > 32) {
-      throw new AssetNameTooLongError(assetName, bytes);
-    }
   }
 
   private logMintStart(nftWalletId: string, productKey: string, policyId: string): void {

@@ -102,6 +102,7 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
+import { NftMintValidator } from "@/application/domain/account/nft-mint/validator";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -111,7 +112,7 @@ export function registerProductionDependencies() {
   container.register("prismaClient", { useValue: prismaClient });
   container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
-  
+
   container.register("MeshClient", { useClass: MeshClient });
 
   // ------------------------------
@@ -148,6 +149,7 @@ export function registerProductionDependencies() {
   container.register("NftMintRepository", { useClass: NftMintRepository });
   container.register("NftMintConverter", { useClass: NftMintConverter });
   container.register("NftMintIssuanceService", { useClass: NftMintIssuanceService });
+  container.register("NftMintValidator", { useClass: NftMintValidator });
   container.register("NftWalletResolver", { useClass: NftWalletResolver });
 
   // 🏘️ Community
