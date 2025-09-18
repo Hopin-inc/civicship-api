@@ -1236,20 +1236,20 @@ model Order {
   id     String      @id @default(cuid())
   status OrderStatus @default(PENDING)
 
-  paymentProvider PaymentProvider @default(NMKR)
-  externalRef     String?         @unique
+  paymentProvider PaymentProvider @default(NMKR) @map("payment_provider")
+  externalRef     String?         @unique @map("external_ref")
 
   quantity    Int  @default(1)
-  totalAmount Int?
+  totalAmount Int? @map("total_amount")
 
-  userId String
+  userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id])
 
-  nftProductId String
+  nftProductId String     @map("nft_product_id")
   nftProduct   NftProduct @relation(fields: [nftProductId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId, status])
 }

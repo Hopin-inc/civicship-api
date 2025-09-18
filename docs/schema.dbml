@@ -177,6 +177,7 @@ Table t_users {
   transactionsCreatedByMe t_transactions [not null]
   articlesWrittenByMe t_articles [not null]
   articlesAboutMe t_articles [not null]
+  orders Order [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -613,6 +614,22 @@ Table t_nft_products {
   nftMints t_nft_mints [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
+  orders Order [not null]
+}
+
+Table Order {
+  id String [pk]
+  status OrderStatus [not null, default: 'PENDING']
+  paymentProvider PaymentProvider [not null, default: 'NMKR']
+  externalRef String [unique]
+  quantity Int [not null, default: 1]
+  totalAmount Int
+  userId String [not null]
+  user t_users [not null]
+  nftProductId String [not null]
+  nftProduct t_nft_products [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
 }
 
 Table v_place_public_opportunity_count {
@@ -908,6 +925,17 @@ Enum NftMintStatus {
   FAILED
 }
 
+Enum PaymentProvider {
+  NMKR
+}
+
+Enum OrderStatus {
+  PENDING
+  PAID
+  CANCELED
+  REFUNDED
+}
+
 Ref: m_cities.(stateCode, countryCode) > m_states.(code, countryCode) [delete: Restrict]
 
 Ref: t_places.imageId > t_images.id
@@ -1037,6 +1065,10 @@ Ref: t_nft_instances.communityId > t_communities.id
 Ref: t_nft_mints.nftProductId > t_nft_products.id
 
 Ref: t_nft_mints.nftWalletId > t_nft_wallets.id [delete: Cascade]
+
+Ref: Order.userId > t_users.id
+
+Ref: Order.nftProductId > t_nft_products.id
 
 Ref: v_place_public_opportunity_count.placeId - t_places.id [delete: Restrict]
 
