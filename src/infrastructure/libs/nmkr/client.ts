@@ -6,8 +6,11 @@ import {
   CreatePaymentTransactionRandomReq,
   CreatePaymentTransactionRes,
   CheckAddressResponse,
-  GetProjectResponse,
   CancelAddressReservationResponse,
+  GetPaymentAddressResultClass,
+  PricelistResponse,
+  SaleConditionsResponse,
+  ProjectDetailsResponse,
 } from "./types";
 
 @injectable()
@@ -59,7 +62,7 @@ export class NmkrClient {
     }
   }
 
-  async getProjectInfo(projectUid: string): Promise<GetProjectResponse> {
+  async getProjectInfo(projectUid: string): Promise<ProjectDetailsResponse> {
     try {
       return await this.endpoints.getProject(projectUid);
     } catch (error) {
@@ -340,7 +343,7 @@ export class NmkrClient {
     }
   }
 
-  async getPricelist(projectUid: string): Promise<any> {
+  async getPricelist(projectUid: string): Promise<PricelistResponse> {
     try {
       return await this.endpoints.getPricelist(projectUid);
     } catch (error) {
@@ -373,7 +376,7 @@ export class NmkrClient {
     }
   }
 
-  async getSaleConditions(projectUid: string): Promise<any> {
+  async getSaleConditions(projectUid: string): Promise<SaleConditionsResponse> {
     try {
       return await this.endpoints.getSaleConditions(projectUid);
     } catch (error) {
@@ -428,7 +431,7 @@ export class NmkrClient {
     }
   }
 
-  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, price?: number): Promise<any> {
+  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, price?: number): Promise<GetPaymentAddressResultClass> {
     try {
       return await this.endpoints.getPaymentAddressForRandomNftSale(projectUid, countNft, price);
     } catch (error) {
@@ -439,7 +442,7 @@ export class NmkrClient {
     }
   }
 
-  async getPaymentAddressForSpecificNftSale(nftUid: string, tokenCount: number, price?: number): Promise<any> {
+  async getPaymentAddressForSpecificNftSale(nftUid: string, tokenCount: number, price?: number): Promise<GetPaymentAddressResultClass> {
     try {
       return await this.endpoints.getPaymentAddressForSpecificNftSale(nftUid, tokenCount, price);
     } catch (error) {

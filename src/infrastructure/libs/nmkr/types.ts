@@ -104,6 +104,40 @@ export type GetPaymentAddressResultClass = NmkrBaseResponse & {
   qrCode?: string;
   reservedNfts?: NmkrReservedNft[];
 };
+
+export type PricelistResponse = NmkrBaseResponse & {
+  pricelist: Array<{
+    lovelace: number;
+    countNfts: number;
+    discount?: number;
+  }>;
+};
+
+export type SaleConditionsResponse = NmkrBaseResponse & {
+  saleConditions: {
+    enableRandom: boolean;
+    enableSpecific: boolean;
+    maxNftsPerTransaction: number;
+    minLovelacePerTransaction?: number;
+    maxLovelacePerTransaction?: number;
+    whitelistOnly?: boolean;
+    saleStart?: string;
+    saleEnd?: string;
+  };
+};
+
+export type ProjectDetailsResponse = NmkrBaseResponse & {
+  projectName: string;
+  policyId: string;
+  totalNfts: number;
+  soldNfts: number;
+  reservedNfts: number;
+  projectDescription?: string;
+  projectUrl?: string;
+  enableRandom: boolean;
+  enableSpecific: boolean;
+  projectUid: string;
+};
 //
 // // Payout Wallets
 // export type PayoutWallet = {

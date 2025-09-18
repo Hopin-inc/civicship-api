@@ -4,8 +4,11 @@ import {
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
   CheckAddressResponse,
-  GetProjectResponse,
   CancelAddressReservationResponse,
+  GetPaymentAddressResultClass,
+  PricelistResponse,
+  SaleConditionsResponse,
+  ProjectDetailsResponse,
 } from "@/infrastructure/libs/nmkr/types";
 
 export class NmkrEndpoints {
@@ -63,9 +66,9 @@ export class NmkrEndpoints {
     return data as CheckAddressResponse;
   }
 
-  async getProject(projectUid: string): Promise<GetProjectResponse> {
-    const { data } = await this.http.get(`/v2/GetProjectDetails/${encodeURIComponent(projectUid)}`);
-    return data as GetProjectResponse;
+  async getProject(projectUid: string): Promise<ProjectDetailsResponse> {
+    const { data } = await this.http.get(`/v2/ProjectDetails/${encodeURIComponent(projectUid)}`);
+    return data as ProjectDetailsResponse;
   }
 
   async cancelAddressReservation(
@@ -202,9 +205,9 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getPricelist(projectUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetPricelist/${encodeURIComponent(projectUid)}`);
-    return data;
+  async getPricelist(projectUid: string): Promise<PricelistResponse> {
+    const { data } = await this.http.get(`/v2/Pricelist/${encodeURIComponent(projectUid)}`);
+    return data as PricelistResponse;
   }
 
   async getProjectTransactions(projectUid: string): Promise<any> {
@@ -217,9 +220,9 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getSaleConditions(projectUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetSaleConditions/${encodeURIComponent(projectUid)}`);
-    return data;
+  async getSaleConditions(projectUid: string): Promise<SaleConditionsResponse> {
+    const { data } = await this.http.get(`/v2/SaleConditions/${encodeURIComponent(projectUid)}`);
+    return data as SaleConditionsResponse;
   }
 
   async getAdditionalPayoutWallets(projectUid: string): Promise<any> {
@@ -246,20 +249,20 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, price?: number): Promise<any> {
+  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, price?: number): Promise<GetPaymentAddressResultClass> {
     const endpoint = price 
       ? `/v2/GetPaymentAddressForRandomNftSale/${encodeURIComponent(projectUid)}/${countNft}/${price}`
       : `/v2/GetPaymentAddressForRandomNftSale/${encodeURIComponent(projectUid)}/${countNft}`;
     const { data } = await this.http.get(endpoint);
-    return data;
+    return data as GetPaymentAddressResultClass;
   }
 
-  async getPaymentAddressForSpecificNftSale(nftUid: string, tokenCount: number, price?: number): Promise<any> {
+  async getPaymentAddressForSpecificNftSale(nftUid: string, tokenCount: number, price?: number): Promise<GetPaymentAddressResultClass> {
     const endpoint = price
       ? `/v2/GetPaymentAddressForSpecificNftSale/${encodeURIComponent(nftUid)}/${tokenCount}/${price}`
       : `/v2/GetPaymentAddressForSpecificNftSale/${encodeURIComponent(nftUid)}/${tokenCount}`;
     const { data } = await this.http.get(endpoint);
-    return data;
+    return data as GetPaymentAddressResultClass;
   }
 
   async getAllAssetsInWallet(address: string): Promise<any> {
