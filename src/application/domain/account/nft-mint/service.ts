@@ -9,7 +9,7 @@ import NftMintConverter from "./data/converter";
 import NftMintValidator from "@/application/domain/account/nft-mint/validator";
 
 @injectable()
-export class NftMintIssuanceService {
+export default class NftMintService {
   constructor(
     @inject("NftMintRepository") private readonly repo: INftMintRepository,
     @inject("MeshClient") private readonly client: MeshClient,
@@ -19,32 +19,20 @@ export class NftMintIssuanceService {
 
   async requestNftMint(
     ctx: IContext,
-    productKey: string,
+    productId: string,
     receiverAddress: string,
     nftWalletId: string,
-    policyId: string,
   ): Promise<{ success: boolean; requestId: string; txHash?: string; status: NftMintStatus }> {
-    const finalPolicyId = policyId;
     const startTime = Date.now();
 
-    this.logMintStart(nftWalletId, productKey, finalPolicyId);
+    this.logMintStart(nftWalletId, productId);
 
     let mintRequest: NftMintBase | null = null;
 
     try {
-      // Phase 1: queue
-      mintRequest = await this.phaseQueue(
-        ctx,
-        finalPolicyId,
-        productKey,
-        receiverAddress,
-        nftWalletId,
-      );
+      mintRequest = await this.phaseQueue(ctx, productId, receiverAddress, nftWalletId);
 
-      // Phase 2: external mint
       const txHash = await this.phaseMint(ctx, mintRequest.id);
-
-      // Phase 3: mark minted
       await this.phaseMarkMinted(ctx, mintRequest.id, txHash);
 
       const totalDuration = Date.now() - startTime;
@@ -66,14 +54,13 @@ export class NftMintIssuanceService {
 
   private async phaseQueue(
     ctx: IContext,
-    policyId: string,
-    productKey: string,
+    productId: string,
     receiver: string,
     nftWalletId: string,
   ): Promise<NftMintBase> {
     const start = Date.now();
     const result = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
-      return this.queueMint(ctx, tx, { policyId, productKey, receiver, nftWalletId });
+      return this.queueMint(ctx, tx, { productId, receiver, nftWalletId });
     });
     this.logMintPhase("queue", Date.now() - start, { requestId: result.id });
     return result;
@@ -81,7 +68,14 @@ export class NftMintIssuanceService {
 
   private async phaseMint(ctx: IContext, requestId: string): Promise<string> {
     const start = Date.now();
-    const txHash = await this.mintNow(ctx, requestId);
+    const mint = await this.repo.find(ctx, requestId);
+    if (!mint) throw new Error("Mint request not found");
+
+    const { txHash } = await this.client.mintOne({
+      policyId: mint.policyId,
+      assetName: mint.assetName,
+      receiver: mint.receiver,
+    });
     this.logMintPhase("external_mint", Date.now() - start, { requestId, txHash });
     return txHash;
   }
@@ -97,17 +91,17 @@ export class NftMintIssuanceService {
   private async queueMint(
     ctx: IContext,
     tx: Prisma.TransactionClient,
-    p: { policyId: string; productKey: string; receiver: string; nftWalletId: string },
+    p: { productId: string; receiver: string; nftWalletId: string },
   ): Promise<NftMintBase> {
     this.validator.validateReceiverAddress(p.receiver);
 
-    const sequenceNum = await this.repo.getNextSequenceNumber(ctx, p.policyId, tx);
-    const assetName = `${p.productKey}-${String(sequenceNum).padStart(4, "0")}`;
+    const sequenceNum = await this.repo.getNextSequenceNumber(ctx, p.productId, tx);
+    const assetName = `${p.productId}-${String(sequenceNum).padStart(4, "0")}`;
 
     return this.repo.create(
       ctx,
       this.converter.buildMintCreate({
-        policyId: p.policyId,
+        policyId: p.productId,
         assetName,
         sequenceNum,
         receiver: p.receiver,
@@ -117,28 +111,14 @@ export class NftMintIssuanceService {
     );
   }
 
-  private async mintNow(ctx: IContext, mintId: string): Promise<string> {
-    const mint = await this.repo.find(ctx, mintId);
-    if (!mint) throw new Error("Mint request not found");
-
-    const { txHash } = await this.client.mintOne({
-      policyId: mint.policyId,
-      assetName: mint.assetName,
-      receiver: mint.receiver,
-    });
-
-    return txHash;
-  }
-
   private markMinted(ctx: IContext, tx: Prisma.TransactionClient, id: string, txHash: string) {
     return this.repo.update(ctx, id, this.converter.buildMarkMinted({ txHash }), tx);
   }
 
-  private logMintStart(nftWalletId: string, productKey: string, policyId: string): void {
+  private logMintStart(nftWalletId: string, productKey: string): void {
     logger.info("NFT mint request started", {
       nftWalletId,
       productKey,
-      policyId,
       timestamp: new Date().toISOString(),
     });
   }
