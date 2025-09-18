@@ -214,6 +214,13 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
     
 
 
+        NftWalletType {
+            INTERNAL INTERNAL
+EXTERNAL EXTERNAL
+        }
+    
+
+
         NftMintStatus {
             QUEUED QUEUED
 MINTED MINTED
@@ -631,6 +638,7 @@ FAILED FAILED
 
   "t_nft_wallets" {
     String id "🗝️"
+    NftWalletType type 
     String wallet_address 
     String user_id 
     DateTime created_at 
@@ -660,6 +668,7 @@ FAILED FAILED
     String nft_wallet_id 
     String nft_token_id "❓"
     String nft_mint_id "❓"
+    String community_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -667,14 +676,28 @@ FAILED FAILED
 
   "t_nft_mints" {
     String id "🗝️"
-    String policy_id 
-    String asset_name 
+    NftMintStatus status 
     Int sequence_num 
     String receiver 
     String tx_hash "❓"
-    NftMintStatus status 
     String error "❓"
+    String nft_product_id 
     String nft_wallet_id 
+    DateTime created_at 
+    DateTime updated_at "❓"
+    }
+  
+
+  "t_nft_products" {
+    String id "🗝️"
+    String policy_id 
+    String name 
+    String description "❓"
+    String image_url "❓"
+    Int price "❓"
+    Int max_supply "❓"
+    DateTime starts_at "❓"
+    DateTime ends_at "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -775,6 +798,7 @@ FAILED FAILED
     "t_communities" o{--}o "t_opportunities" : "opportunities"
     "t_communities" o{--}o "t_participations" : "participations"
     "t_communities" o{--}o "t_articles" : "articles"
+    "t_communities" o{--}o "t_nft_instances" : "nftInstance"
     "t_community_configs" o|--|| "t_communities" : "community"
     "t_community_configs" o{--}o "t_community_firebase_configs" : "firebaseConfig"
     "t_community_configs" o{--}o "t_community_line_configs" : "lineConfig"
@@ -787,7 +811,7 @@ FAILED FAILED
     "t_users" o|--|| "CurrentPrefecture" : "enum:current_prefecture"
     "t_users" o|--|o "t_images" : "image"
     "t_users" o{--}o "t_identities" : "identities"
-    "t_users" o{--}o "t_nft_wallets" : "nftWallet"
+    "t_users" o{--}o "t_nft_wallets" : "nftWallets"
     "t_users" o{--}o "t_did_issuance_requests" : "didIssuanceRequests"
     "t_users" o{--}o "t_vc_issuance_requests" : "vcIssuanceRequests"
     "t_users" o{--}o "t_memberships" : "memberships"
@@ -924,6 +948,7 @@ FAILED FAILED
     "t_transactions" o|--|o "t_reservations" : "reservation"
     "t_transactions" o{--}o "t_ticket_status_histories" : "ticketStatusHistory"
     "t_transactions" o|--|o "t_users" : "createdByUser"
+    "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_wallets" o{--}o "t_nft_mints" : "nftMints"
@@ -931,9 +956,12 @@ FAILED FAILED
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
     "t_nft_instances" o|--|o "t_nft_mints" : "nftMint"
+    "t_nft_instances" o|--|o "t_communities" : "community"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
-    "t_nft_mints" o{--}o "t_nft_instances" : "nftInstance"
+    "t_nft_mints" o|--|| "t_nft_products" : "nftProduct"
     "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
+    "t_nft_mints" o{--}o "t_nft_instances" : "nftInstance"
+    "t_nft_products" o{--}o "t_nft_mints" : "nftMints"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

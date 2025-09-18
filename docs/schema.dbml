@@ -89,6 +89,7 @@ Table t_communities {
   opportunities t_opportunities [not null]
   participations t_participations [not null]
   articles t_articles [not null]
+  nftInstance t_nft_instances [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 }
@@ -157,7 +158,7 @@ Table t_users {
   imageId String
   image t_images
   identities t_identities [not null]
-  nftWallet t_nft_wallets
+  nftWallets t_nft_wallets [not null]
   didIssuanceRequests t_did_issuance_requests [not null]
   vcIssuanceRequests t_vc_issuance_requests [not null]
   memberships t_memberships [not null]
@@ -534,8 +535,9 @@ Table m_api_keys {
 
 Table t_nft_wallets {
   id String [pk]
+  type NftWalletType [not null, default: 'INTERNAL']
   walletAddress String [not null]
-  userId String [unique, not null]
+  userId String [not null]
   user t_users [not null]
   nftInstances t_nft_instances [not null]
   nftMints t_nft_mints [not null]
@@ -568,6 +570,8 @@ Table t_nft_instances {
   nftToken t_nft_tokens
   nftMintId String [unique]
   nftMint t_nft_mints
+  communityId String
+  community t_communities
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
@@ -578,23 +582,37 @@ Table t_nft_instances {
 
 Table t_nft_mints {
   id String [pk]
-  policyId String [not null]
-  assetName String [not null]
+  status NftMintStatus [not null, default: 'QUEUED']
   sequenceNum Int [not null]
   receiver String [not null]
   txHash String
-  status NftMintStatus [not null, default: 'QUEUED']
   error String
-  nftInstance t_nft_instances
+  nftProductId String [not null]
+  nftProduct t_nft_products [not null]
   nftWalletId String [not null]
   nftWallet t_nft_wallets [not null]
+  nftInstance t_nft_instances
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 
   indexes {
-    (policyId, sequenceNum) [unique]
-    (policyId, assetName) [unique]
+    (nftProductId, sequenceNum) [unique]
   }
+}
+
+Table t_nft_products {
+  id String [pk]
+  policyId String [not null]
+  name String [not null]
+  description String
+  imageUrl String
+  price Int
+  maxSupply Int
+  startsAt DateTime
+  endsAt DateTime
+  nftMints t_nft_mints [not null]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime
 }
 
 Table v_place_public_opportunity_count {
@@ -879,6 +897,11 @@ Enum TransactionReason {
   OPPORTUNITY_RESERVATION_REJECTED
 }
 
+Enum NftWalletType {
+  INTERNAL
+  EXTERNAL
+}
+
 Enum NftMintStatus {
   QUEUED
   MINTED
@@ -1001,13 +1024,17 @@ Ref: t_transactions.reservationId > t_reservations.id [delete: Set Null]
 
 Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
 
-Ref: t_nft_wallets.userId - t_users.id [delete: Cascade]
+Ref: t_nft_wallets.userId > t_users.id [delete: Cascade]
 
 Ref: t_nft_instances.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
-Ref: t_nft_instances.nftTokenId > t_nft_tokens.id [delete: Set Null]
+Ref: t_nft_instances.nftTokenId > t_nft_tokens.id [delete: Restrict]
 
 Ref: t_nft_instances.nftMintId - t_nft_mints.id [delete: Cascade]
+
+Ref: t_nft_instances.communityId > t_communities.id
+
+Ref: t_nft_mints.nftProductId > t_nft_products.id
 
 Ref: t_nft_mints.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
