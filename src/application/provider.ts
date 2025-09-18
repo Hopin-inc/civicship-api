@@ -102,7 +102,7 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
-import { NftMintValidator } from "@/application/domain/account/nft-mint/validator";
+import NftMintValidator from "@/application/domain/account/nft-mint/validator";
 
 export function registerProductionDependencies() {
   // ------------------------------
