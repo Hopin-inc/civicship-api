@@ -97,59 +97,12 @@ export type GetProjectResponse = NmkrBaseResponse & {
 
 export type CancelAddressReservationResponse = NmkrBaseResponse;
 
-export type GetTransactionStateResponse = NmkrBaseResponse & {
-  state: "pending" | "confirmed" | "finished" | "canceled" | "expired" | string;
-  paymentTransactionUid: string;
-  projectUid: string;
-  updatedAt?: string;
-  txHash?: string;
-  paymentTransactionSubstate?: string;
-};
-
-export type GetPaymentAddressResponse = NmkrBaseResponse & {
+export type GetPaymentAddressResultClass = NmkrBaseResponse & {
   paymentAddress: string;
+  paymentAddressId: number;
   expires?: string;
   qrCode?: string;
-};
-
-export type SubmitTransactionResponse = NmkrBaseResponse & {
-  txHash?: string;
-  state?: string;
-};
-
-export type EndTransactionResponse = NmkrBaseResponse & {
-  state?: string;
-  finalTxHash?: string;
-};
-
-export type CancelTransactionResponse = NmkrBaseResponse & {
-  state?: string;
-  canceledAt?: string;
-};
-
-export type ReservePaymentgatewayMintAndSendNftRequest = {
-  receiverAddress?: string;
-  metadata?: Record<string, any>;
-};
-
-export type ReservePaymentgatewayMintAndSendNftResponse = NmkrBaseResponse & {
   reservedNfts?: NmkrReservedNft[];
-  state?: string;
-};
-
-export type MintAndSendPaymentgatewayNftRequest = {
-  receiverAddress?: string;
-  metadata?: Record<string, any>;
-};
-
-export type MintAndSendPaymentgatewayNftResponse = NmkrBaseResponse & {
-  mintedNfts?: Array<{
-    nftUid: string;
-    txHash?: string;
-    tokenname?: string;
-    policyId?: string;
-  }>;
-  state?: string;
 };
 //
 // // Payout Wallets

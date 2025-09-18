@@ -8,15 +8,6 @@ import {
   CheckAddressResponse,
   GetProjectResponse,
   CancelAddressReservationResponse,
-  GetTransactionStateResponse,
-  GetPaymentAddressResponse,
-  SubmitTransactionResponse,
-  EndTransactionResponse,
-  CancelTransactionResponse,
-  ReservePaymentgatewayMintAndSendNftRequest,
-  ReservePaymentgatewayMintAndSendNftResponse,
-  MintAndSendPaymentgatewayNftRequest,
-  MintAndSendPaymentgatewayNftResponse,
 } from "./types";
 
 @injectable()
@@ -126,88 +117,6 @@ export class NmkrClient {
     }
   }
 
-  async getTransactionState(paymentTransactionUid: string): Promise<GetTransactionStateResponse> {
-    try {
-      return await this.endpoints.getTransactionState(paymentTransactionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get transaction state: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getPaymentAddress(paymentTransactionUid: string): Promise<GetPaymentAddressResponse> {
-    try {
-      return await this.endpoints.getPaymentAddress(paymentTransactionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get payment address: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async submitTransaction(paymentTransactionUid: string): Promise<SubmitTransactionResponse> {
-    try {
-      return await this.endpoints.submitTransaction(paymentTransactionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to submit transaction: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async endTransaction(paymentTransactionUid: string): Promise<EndTransactionResponse> {
-    try {
-      return await this.endpoints.endTransaction(paymentTransactionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to end transaction: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async cancelTransaction(paymentTransactionUid: string): Promise<CancelTransactionResponse> {
-    try {
-      return await this.endpoints.cancelTransaction(paymentTransactionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to cancel transaction: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async reservePaymentgatewayMintAndSendNft(
-    paymentTransactionUid: string,
-    payload: ReservePaymentgatewayMintAndSendNftRequest,
-  ): Promise<ReservePaymentgatewayMintAndSendNftResponse> {
-    try {
-      return await this.endpoints.reservePaymentgatewayMintAndSendNft(paymentTransactionUid, payload);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to reserve mint and send NFT: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async mintAndSendPaymentgatewayNft(
-    paymentTransactionUid: string,
-    payload: MintAndSendPaymentgatewayNftRequest,
-  ): Promise<MintAndSendPaymentgatewayNftResponse> {
-    try {
-      return await this.endpoints.mintAndSendPaymentgatewayNft(paymentTransactionUid, payload);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to mint and send NFT: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
 
   async getNmkrPayStatus(paymentTransactionUid: string): Promise<any> {
