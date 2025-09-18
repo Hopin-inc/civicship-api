@@ -1155,8 +1155,8 @@ model NftInstance {
   nftTokenId String?   @map("nft_token_id")
   nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
 
-  nftMintId String  @unique @map("nft_mint_id")
-  nftMint   NftMint @relation(fields: [nftMintId], references: [id], onDelete: Cascade)
+  nftMintId String?  @unique @map("nft_mint_id")
+  nftMint   NftMint? @relation(fields: [nftMintId], references: [id], onDelete: Cascade)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")

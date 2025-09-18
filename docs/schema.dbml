@@ -566,8 +566,8 @@ Table t_nft_instances {
   nftWallet t_nft_wallets [not null]
   nftTokenId String
   nftToken t_nft_tokens
-  nftMintId String [unique, not null]
-  nftMint t_nft_mints [not null]
+  nftMintId String [unique]
+  nftMint t_nft_mints
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime
 

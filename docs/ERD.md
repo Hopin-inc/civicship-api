@@ -659,7 +659,7 @@ FAILED FAILED
     Json json "❓"
     String nft_wallet_id 
     String nft_token_id "❓"
-    String nft_mint_id 
+    String nft_mint_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -930,7 +930,7 @@ FAILED FAILED
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
-    "t_nft_instances" o|--|| "t_nft_mints" : "nftMint"
+    "t_nft_instances" o|--|o "t_nft_mints" : "nftMint"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
     "t_nft_mints" o{--}o "t_nft_instances" : "nftInstance"
     "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
