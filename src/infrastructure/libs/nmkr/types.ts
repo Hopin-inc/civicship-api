@@ -1,7 +1,26 @@
+export type NmkrBaseResponse = {
+  result: "Ok" | "Error";
+  errorMessage?: string;
+};
+
+export type NmkrApiError = NmkrBaseResponse & {
+  result: "Error";
+  errorMessage: string;
+};
+
 export type NmkrPaymentNotification = {
   notificationType: "webhook";
   notificationEndpoint: string;
   hmacSecret?: string;
+};
+
+export type NmkrReservedNft = {
+  lovelace: number;
+  nftUid: string;
+  tokencount: number;
+  tokennameHex?: string;
+  policyId?: string;
+  nftId?: number;
 };
 
 export type CreatePaymentTransactionSpecificReq = {
@@ -14,13 +33,28 @@ export type CreatePaymentTransactionSpecificReq = {
   paymentgatewayParameters: {
     mintNfts: {
       reserveNfts: Array<{
-        lovelace: number; // 価格（1ADA=1_000_000 lovelace）
-        nftUid: string; // ★ NMKR上の NFT UID を指定
-        tokencount: number; // 通常 1
+        lovelace: number;
+        nftUid: string;
+        tokencount: number;
       }>;
-      countNfts?: number; // 使わない想定
+      countNfts?: number;
     };
-    optionalRecevierAddress?: string; // 受取先アドレス（指定するなら）
+    optionalRecevierAddress?: string;
+  };
+};
+
+export type CreatePaymentTransactionRandomReq = {
+  projectUid: string;
+  referer?: string;
+  customerIpAddress?: string;
+  customProperties?: Record<string, string>;
+  paymentTransactionNotifications?: NmkrPaymentNotification[];
+  paymentTransactionType: "nmkr_pay_random";
+  paymentgatewayParameters: {
+    mintNfts: {
+      countNfts: number;
+    };
+    optionalRecevierAddress?: string;
   };
 };
 
@@ -28,13 +62,40 @@ export type CreatePaymentTransactionRes = {
   paymentTransactionUid: string;
   projectUid: string;
   state: string;
-  nmkrPayUrl?: string; // ← 決済リンク
+  nmkrPayUrl?: string;
   expires?: string;
   transactionType?: string;
   paymentTransactionSubstate?: string;
   paymentGatewayType?: string;
-  // 他フィールドは必要になったら追記
+  paymentgatewayResults?: {
+    mintNfts?: {
+      countNfts?: number;
+      reserveNfts?: NmkrReservedNft[];
+    };
+    priceInLovelace?: number;
+  };
 };
+
+export type CheckAddressResponse = NmkrBaseResponse & {
+  state: "active" | "expired" | "finished";
+  reservedNfts?: NmkrReservedNft[];
+  paymentTransactionUid?: string;
+  expires?: string;
+};
+
+export type GetProjectResponse = NmkrBaseResponse & {
+  projectName: string;
+  policyId: string;
+  totalNfts: number;
+  soldNfts: number;
+  reservedNfts: number;
+  projectDescription?: string;
+  projectUrl?: string;
+  enableRandom: boolean;
+  enableSpecific: boolean;
+};
+
+export type CancelAddressReservationResponse = NmkrBaseResponse;
 
 // // GetTransactionState
 // export type GetTransactionStateOutput = {
