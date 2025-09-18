@@ -15,14 +15,12 @@ export class NftMintRepository implements INftMintRepository {
       return tx.nftMint.findMany({
         where: { orderItemId },
         select: nftMintSelectBase,
-        orderBy: { sequenceNum: "asc" },
       });
     }
     return ctx.issuer.internal((dbTx) => {
       return dbTx.nftMint.findMany({
         where: { orderItemId },
         select: nftMintSelectBase,
-        orderBy: { sequenceNum: "asc" },
       });
     });
   }
@@ -48,16 +46,5 @@ export class NftMintRepository implements INftMintRepository {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
     return tx.nftMint.update({ where: { id }, data, select: nftMintSelectBase });
-  }
-
-  async getNextSequenceNumber(
-    ctx: IContext,
-    policyId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<number> {
-    const result = await tx.$queryRaw<[{ nextval: bigint }]>`
-      SELECT nextval('nft_mint_sequence_per_policy')
-    `;
-    return Number(result[0].nextval);
   }
 }
