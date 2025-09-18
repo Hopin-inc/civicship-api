@@ -27,7 +27,7 @@ export default class TransactionUseCase {
     @inject("MembershipService") private readonly membershipService: MembershipService,
     @inject("WalletService") private readonly walletService: WalletService,
     @inject("WalletValidator") private readonly walletValidator: WalletValidator,
-  ) {}
+  ) { }
 
   async visitorBrowseTransactions(
     { filter, sort, cursor, first }: GqlQueryTransactionsArgs,
@@ -74,6 +74,7 @@ export default class TransactionUseCase {
           input.transferPoints,
           communityWallet.id,
           tx,
+          input.comment,
         );
       },
     );
@@ -84,7 +85,7 @@ export default class TransactionUseCase {
     ctx: IContext,
     { input, permission }: GqlMutationTransactionGrantCommunityPointArgs,
   ): Promise<GqlTransactionGrantCommunityPointPayload> {
-    const { toUserId, transferPoints } = input;
+    const { toUserId, transferPoints, comment } = input;
     const currentUserId = getCurrentUserId(ctx);
     const communityWallet = await this.walletService.findCommunityWalletOrThrow(
       ctx,
@@ -114,6 +115,7 @@ export default class TransactionUseCase {
         communityWallet.id,
         toWalletId,
         tx,
+        comment,
       );
       return TransactionPresenter.grantCommunityPoint(transaction);
     });
@@ -123,7 +125,7 @@ export default class TransactionUseCase {
     ctx: IContext,
     { input }: GqlMutationTransactionDonateSelfPointArgs,
   ): Promise<GqlTransactionDonateSelfPointPayload> {
-    const { communityId, toUserId, transferPoints } = input;
+    const { communityId, toUserId, transferPoints, comment } = input;
     const currentUserId = getCurrentUserId(ctx);
     const fromWallet = await this.walletService.findMemberWalletOrThrow(
       ctx,
@@ -151,6 +153,7 @@ export default class TransactionUseCase {
         transferPoints,
         tx,
         TransactionReason.DONATION,
+        comment,
       );
 
       return TransactionPresenter.giveUserPoint(transaction);

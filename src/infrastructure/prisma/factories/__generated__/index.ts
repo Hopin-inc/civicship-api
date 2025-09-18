@@ -6190,6 +6190,7 @@ type TransactioncreatedByUserFactory = {
 type TransactionFactoryDefineInput = {
     id?: string;
     reason?: TransactionReason;
+    comment?: string | null;
     fromPointChange?: number;
     toPointChange?: number;
     createdAt?: Date;
