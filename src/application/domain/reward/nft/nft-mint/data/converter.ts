@@ -4,20 +4,21 @@ import { Prisma, NftMintStatus } from "@prisma/client";
 @injectable()
 export default class NftMintConverter {
   buildMintCreate(p: {
-    policyId: string;
-    assetName: string;
+    orderItemId: string;
+    nftWalletId: string;
     sequenceNum: number;
     receiver: string;
-    nftWalletId: string;
   }): Prisma.NftMintCreateInput {
     return {
-      policyId: p.policyId,
-      assetName: p.assetName,
       sequenceNum: p.sequenceNum,
-      receiver: p.receiver,
       status: NftMintStatus.QUEUED,
       nftWallet: { connect: { id: p.nftWalletId } },
+      orderItem: { connect: { id: p.orderItemId } },
     };
+  }
+
+  buildMarkSubmitted(p: { txHash: string }): Prisma.NftMintUpdateInput {
+    return { status: NftMintStatus.MINTED, txHash: p.txHash, error: null };
   }
 
   buildMarkMinted(p: { txHash: string }): Prisma.NftMintUpdateInput {

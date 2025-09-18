@@ -18,9 +18,9 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
-import NftMintService from "@/application/domain/account/nft-mint/service";
-import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
-import NftMintConverter from "@/application/domain/account/nft-mint/data/converter";
+import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
+import { NftMintRepository } from "@/application/domain/reward/nft/nft-mint/data/repository";
+import NftMintConverter from "@/application/domain/reward/nft/nft-mint/data/converter";
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -102,7 +102,7 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
-import NftMintValidator from "@/application/domain/account/nft-mint/validator";
+import NftMintValidator from "@/application/domain/reward/nft/nft-mint/validator";
 
 export function registerProductionDependencies() {
   // ------------------------------
