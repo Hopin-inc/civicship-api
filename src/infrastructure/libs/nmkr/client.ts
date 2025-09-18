@@ -5,12 +5,8 @@ import {
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
   CreatePaymentTransactionRes,
-  CheckAddressResponse,
-  CancelAddressReservationResponse,
-  GetPaymentAddressResultClass,
   PricelistResponse,
   SaleConditionsResponse,
-  ProjectDetailsResponse,
 } from "./types";
 
 @injectable()
@@ -48,145 +44,6 @@ export class NmkrClient {
     }
   }
 
-  async checkPaymentAddress(
-    projectUid: string,
-    address: string,
-  ): Promise<CheckAddressResponse> {
-    try {
-      return await this.endpoints.checkAddress(projectUid, address);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to check payment address: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getProjectInfo(projectUid: string): Promise<ProjectDetailsResponse> {
-    try {
-      return await this.endpoints.getProject(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get project info: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async cancelPaymentReservation(
-    projectUid: string,
-    paymentAddress: string,
-  ): Promise<CancelAddressReservationResponse> {
-    try {
-      return await this.endpoints.cancelAddressReservation(projectUid, paymentAddress);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to cancel payment reservation: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getAuctionState(auctionUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getAuctionState(auctionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get auction state: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getAllAuctions(customerId: string): Promise<any> {
-    try {
-      return await this.endpoints.getAllAuctions(customerId);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get all auctions: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async createAuction(customerId: string, auctionData: any): Promise<any> {
-    try {
-      return await this.endpoints.createAuction(customerId, auctionData);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to create auction: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-
-
-  async getNmkrPayStatus(paymentTransactionUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getNmkrPayStatus(paymentTransactionUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get NMKR pay status: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getProjectStats(projectUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getProjectStats(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get project stats: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getAllProjects(): Promise<any> {
-    try {
-      return await this.endpoints.getAllProjects();
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get all projects: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getNftDetails(nftUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getNftDetails(nftUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get NFT details: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getProjectNfts(projectUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getProjectNfts(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get project NFTs: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async blockUnblockNft(nftUid: string, blockNft: boolean): Promise<any> {
-    try {
-      return await this.endpoints.blockUnblockNft(nftUid, blockNft);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to block/unblock NFT: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async checkMetadata(nftUid: string): Promise<any> {
     try {
@@ -255,16 +112,6 @@ export class NmkrClient {
     }
   }
 
-  async addPayoutWallet(walletAddress: string): Promise<any> {
-    try {
-      return await this.endpoints.addPayoutWallet(walletAddress);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to add payout wallet: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async getRates(): Promise<any> {
     try {
@@ -409,16 +256,6 @@ export class NmkrClient {
     }
   }
 
-  async getNftDetailsByTokenname(projectUid: string, nftName: string): Promise<any> {
-    try {
-      return await this.endpoints.getNftDetailsByTokenname(projectUid, nftName);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get NFT details by token name: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async getNfts(projectUid: string, state: string, count: number, page: number): Promise<any> {
     try {
@@ -431,9 +268,9 @@ export class NmkrClient {
     }
   }
 
-  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, price?: number): Promise<GetPaymentAddressResultClass> {
+  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, customerIpAddress: string): Promise<any> {
     try {
-      return await this.endpoints.getPaymentAddressForRandomNftSale(projectUid, countNft, price);
+      return await this.endpoints.getPaymentAddressForRandomNftSale(projectUid, countNft, customerIpAddress);
     } catch (error) {
       if (error instanceof NmkrHttpError) {
         throw error;
@@ -442,16 +279,6 @@ export class NmkrClient {
     }
   }
 
-  async getPaymentAddressForSpecificNftSale(nftUid: string, tokenCount: number, price?: number): Promise<GetPaymentAddressResultClass> {
-    try {
-      return await this.endpoints.getPaymentAddressForSpecificNftSale(nftUid, tokenCount, price);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get payment address for specific NFT sale: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async getAllAssetsInWallet(address: string): Promise<any> {
     try {
@@ -475,25 +302,4 @@ export class NmkrClient {
     }
   }
 
-  async createProject(projectData: any): Promise<any> {
-    try {
-      return await this.endpoints.createProject(projectData);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to create project: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async createWallet(customerId: string, walletData: any): Promise<any> {
-    try {
-      return await this.endpoints.createWallet(customerId, walletData);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to create wallet: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 }

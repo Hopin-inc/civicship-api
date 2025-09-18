@@ -76,34 +76,6 @@ export type CreatePaymentTransactionRes = {
   };
 };
 
-export type CheckAddressResponse = NmkrBaseResponse & {
-  state: "active" | "expired" | "finished";
-  reservedNfts?: NmkrReservedNft[];
-  paymentTransactionUid?: string;
-  expires?: string;
-};
-
-export type GetProjectResponse = NmkrBaseResponse & {
-  projectName: string;
-  policyId: string;
-  totalNfts: number;
-  soldNfts: number;
-  reservedNfts: number;
-  projectDescription?: string;
-  projectUrl?: string;
-  enableRandom: boolean;
-  enableSpecific: boolean;
-};
-
-export type CancelAddressReservationResponse = NmkrBaseResponse;
-
-export type GetPaymentAddressResultClass = NmkrBaseResponse & {
-  paymentAddress: string;
-  paymentAddressId: number;
-  expires?: string;
-  qrCode?: string;
-  reservedNfts?: NmkrReservedNft[];
-};
 
 export type PricelistResponse = NmkrBaseResponse & {
   pricelist: Array<{
@@ -126,18 +98,6 @@ export type SaleConditionsResponse = NmkrBaseResponse & {
   };
 };
 
-export type ProjectDetailsResponse = NmkrBaseResponse & {
-  projectName: string;
-  policyId: string;
-  totalNfts: number;
-  soldNfts: number;
-  reservedNfts: number;
-  projectDescription?: string;
-  projectUrl?: string;
-  enableRandom: boolean;
-  enableSpecific: boolean;
-  projectUid: string;
-};
 //
 // // Payout Wallets
 // export type PayoutWallet = {
