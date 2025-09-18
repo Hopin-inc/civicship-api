@@ -101,7 +101,8 @@ export default class NftMintService {
   private async phaseMint(ctx: IContext, mint: PrismaNftMint): Promise<string> {
     const start = Date.now();
     const { txHash } = await this.client.mintOne({
-      metadata: "test",
+      receiverAddress: "test",
+      assetName: "test",
     });
     this.logger.phase("external_mint", Date.now() - start, {
       mintId: mint.id,

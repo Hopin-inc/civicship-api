@@ -40,7 +40,7 @@ export class MeshClient implements IMeshClient {
   private readonly provider: BlockfrostProvider;
   private readonly wallet: MeshWallet;
 
-  constructor(private readonly cfg: MeshClientConfig) {
+  constructor(cfg: MeshClientConfig) {
     this.provider = new BlockfrostProvider(cfg.blockfrostProjectId);
     this.wallet = new MeshWallet({
       networkId: cfg.network === "mainnet" ? 1 : 0,
