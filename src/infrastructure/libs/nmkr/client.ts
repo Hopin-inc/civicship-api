@@ -5,8 +5,6 @@ import {
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
   CreatePaymentTransactionRes,
-  PricelistResponse,
-  SaleConditionsResponse,
 } from "./types";
 
 @injectable()
@@ -190,16 +188,6 @@ export class NmkrClient {
     }
   }
 
-  async getPricelist(projectUid: string): Promise<PricelistResponse> {
-    try {
-      return await this.endpoints.getPricelist(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get pricelist: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async getProjectTransactions(projectUid: string): Promise<any> {
     try {
@@ -223,16 +211,6 @@ export class NmkrClient {
     }
   }
 
-  async getSaleConditions(projectUid: string): Promise<SaleConditionsResponse> {
-    try {
-      return await this.endpoints.getSaleConditions(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get sale conditions: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async getAdditionalPayoutWallets(projectUid: string): Promise<any> {
     try {

@@ -3,8 +3,6 @@ import {
   CreatePaymentTransactionRes,
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
-  PricelistResponse,
-  SaleConditionsResponse,
 } from "@/infrastructure/libs/nmkr/types";
 
 export class NmkrEndpoints {
@@ -136,10 +134,6 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getPricelist(projectUid: string): Promise<PricelistResponse> {
-    const { data } = await this.http.get(`/v2/Pricelist/${encodeURIComponent(projectUid)}`);
-    return data as PricelistResponse;
-  }
 
   async getProjectTransactions(projectUid: string): Promise<any> {
     const { data } = await this.http.get(`/v2/GetProjectTransactions/${encodeURIComponent(projectUid)}`);
@@ -151,10 +145,6 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getSaleConditions(projectUid: string): Promise<SaleConditionsResponse> {
-    const { data } = await this.http.get(`/v2/SaleConditions/${encodeURIComponent(projectUid)}`);
-    return data as SaleConditionsResponse;
-  }
 
   async getAdditionalPayoutWallets(projectUid: string): Promise<any> {
     const { data } = await this.http.get(`/v2/GetAdditionalPayoutWallets/${encodeURIComponent(projectUid)}`);
