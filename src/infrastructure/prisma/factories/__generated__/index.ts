@@ -853,13 +853,13 @@ const modelFieldDefinitions: ModelWithFields[] = [{
     }, {
         name: "Product",
         fields: [{
-                name: "nftProduct",
-                type: "NftProduct",
-                relationName: "NftProductToProduct"
-            }, {
                 name: "orderItem",
                 type: "OrderItem",
                 relationName: "OrderItemToProduct"
+            }, {
+                name: "nftProduct",
+                type: "NftProduct",
+                relationName: "NftProductToProduct"
             }]
     }, {
         name: "NftProduct",
@@ -6934,6 +6934,7 @@ type NftInstanceFactoryDefineInput = {
     description?: string | null;
     imageUrl?: string | null;
     json?: Prisma.NullableJsonNullValueInput | Prisma.InputJsonValue;
+    sequenceNum?: number | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     nftWallet: NftInstancenftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftInstancesInput;
@@ -7100,9 +7101,7 @@ export const defineNftInstanceFactory = (<TOptions extends NftInstanceFactoryDef
 
 defineNftInstanceFactory.withTransientFields = defaultTransientFieldValues => options => defineNftInstanceFactoryInternal(options, defaultTransientFieldValues);
 
-type NftMintScalarOrEnumFields = {
-    sequenceNum: number;
-};
+type NftMintScalarOrEnumFields = {};
 
 type NftMintorderItemFactory = {
     _factoryFor: "OrderItem";
@@ -7122,7 +7121,6 @@ type NftMintnftInstanceFactory = {
 type NftMintFactoryDefineInput = {
     id?: string;
     status?: NftMintStatus;
-    sequenceNum?: number;
     txHash?: string | null;
     error?: string | null;
     createdAt?: Date;
@@ -7179,9 +7177,7 @@ export interface NftMintFactoryInterface<TTransients extends Record<string, unkn
 function autoGenerateNftMintScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftMintScalarOrEnumFields {
-    return {
-        sequenceNum: getScalarFieldValueGenerator().Int({ modelName: "NftMint", fieldName: "sequenceNum", isId: false, isUnique: true, seq })
-    };
+    return {};
 }
 
 function defineNftMintFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends NftMintFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): NftMintFactoryInterface<TTransients, NftMintTraitKeys<TOptions>> {
@@ -7630,8 +7626,8 @@ type ProductFactoryDefineInput = {
     endsAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
-    nftProduct?: ProductnftProductFactory | Prisma.NftProductCreateNestedOneWithoutProductInput;
     orderItem?: Prisma.OrderItemCreateNestedManyWithoutProductInput;
+    nftProduct?: ProductnftProductFactory | Prisma.NftProductCreateNestedOneWithoutProductInput;
 };
 
 type ProductTransientFields = Record<string, unknown> & Partial<Record<keyof ProductFactoryDefineInput, never>>;

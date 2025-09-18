@@ -687,6 +687,7 @@ REFUNDED REFUNDED
     String description "❓"
     String image_url "❓"
     Json json "❓"
+    Int sequence_num "❓"
     String nft_wallet_id 
     String nft_token_id "❓"
     String nft_mint_id "❓"
@@ -699,7 +700,6 @@ REFUNDED REFUNDED
   "t_nft_mints" {
     String id "🗝️"
     NftMintStatus status 
-    Int sequence_num 
     String tx_hash "❓"
     String error "❓"
     String order_item_id "❓"
@@ -1023,8 +1023,8 @@ REFUNDED REFUNDED
     "t_order_items" o|--|| "t_products" : "product"
     "t_order_items" o{--}o "t_nft_mints" : "nftMints"
     "t_products" o|--|| "ProductType" : "enum:type"
-    "t_products" o{--}o "t_nft_products" : "nftProduct"
     "t_products" o{--}o "t_order_items" : "orderItem"
+    "t_products" o{--}o "t_nft_products" : "nftProduct"
     "t_nft_products" o|--|| "t_products" : "product"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
