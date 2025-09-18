@@ -20,9 +20,4 @@ export interface INftMintRepository {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint>;
   find(ctx: IContext, id: string): Promise<PrismaNftMint | null>;
-  getNextSequenceNumber(
-    ctx: IContext,
-    policyId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<number>;
 }

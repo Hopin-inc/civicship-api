@@ -77,7 +77,8 @@ export default class NftMintService {
       const shortage = Math.max(0, quantity - existing.length);
       if (shortage === 0) return existing;
 
-      let nextSeq = await this.repo.getNextSequenceNumber(ctx, orderItemId, tx);
+      // let nextSeq = await this.repo.getNextSequenceNumber(ctx, orderItemId, tx);
+      let nextSeq = 0;
       const created: PrismaNftMint[] = [];
 
       for (let i = 0; i < shortage; i++) {
