@@ -223,6 +223,7 @@ EXTERNAL EXTERNAL
 
         NftMintStatus {
             QUEUED QUEUED
+SUBMITTED SUBMITTED
 MINTED MINTED
 FAILED FAILED
         }
@@ -240,6 +241,12 @@ FAILED FAILED
 PAID PAID
 CANCELED CANCELED
 REFUNDED REFUNDED
+        }
+    
+
+
+        ProductType {
+            NFT NFT
         }
     
   "t_images" {
@@ -693,40 +700,57 @@ REFUNDED REFUNDED
     String id "🗝️"
     NftMintStatus status 
     Int sequence_num 
-    String receiver 
     String tx_hash "❓"
     String error "❓"
-    String nft_product_id 
+    String order_item_id "❓"
     String nft_wallet_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
   
 
-  "t_nft_products" {
-    String id "🗝️"
-    String policy_id 
-    String name 
-    String description "❓"
-    String image_url "❓"
-    Int price "❓"
-    Int max_supply "❓"
-    DateTime starts_at "❓"
-    DateTime ends_at "❓"
-    DateTime created_at 
-    DateTime updated_at "❓"
-    }
-  
-
-  "Order" {
+  "t_orders" {
     String id "🗝️"
     OrderStatus status 
     PaymentProvider payment_provider 
     String external_ref "❓"
-    Int quantity 
     Int total_amount "❓"
     String user_id 
-    String nft_product_id 
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
+  "t_order_items" {
+    String id "🗝️"
+    String order_id 
+    String product_id 
+    Int quantity 
+    Int price_snapshot 
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
+  "t_products" {
+    String id "🗝️"
+    ProductType type 
+    String name 
+    String description "❓"
+    String image_url "❓"
+    Int price 
+    Int max_supply "❓"
+    DateTime starts_at "❓"
+    DateTime ends_at "❓"
+    DateTime created_at 
+    DateTime updated_at 
+    }
+  
+
+  "t_nft_products" {
+    String id "🗝️"
+    String product_id 
+    String policy_id 
     DateTime created_at 
     DateTime updated_at 
     }
@@ -859,7 +883,7 @@ REFUNDED REFUNDED
     "t_users" o{--}o "t_transactions" : "transactionsCreatedByMe"
     "t_users" o{--}o "t_articles" : "articlesWrittenByMe"
     "t_users" o{--}o "t_articles" : "articlesAboutMe"
-    "t_users" o{--}o "Order" : "orders"
+    "t_users" o{--}o "t_orders" : "orders"
     "t_identities" o|--|| "IdentityPlatform" : "enum:platform"
     "t_identities" o|--|| "t_users" : "user"
     "t_identities" o|--|o "t_communities" : "community"
@@ -988,15 +1012,20 @@ REFUNDED REFUNDED
     "t_nft_instances" o|--|o "t_nft_mints" : "nftMint"
     "t_nft_instances" o|--|o "t_communities" : "community"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
-    "t_nft_mints" o|--|| "t_nft_products" : "nftProduct"
+    "t_nft_mints" o|--|o "t_order_items" : "orderItem"
     "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_mints" o{--}o "t_nft_instances" : "nftInstance"
-    "t_nft_products" o{--}o "t_nft_mints" : "nftMints"
-    "t_nft_products" o{--}o "Order" : "orders"
-    "Order" o|--|| "OrderStatus" : "enum:status"
-    "Order" o|--|| "PaymentProvider" : "enum:payment_provider"
-    "Order" o|--|| "t_users" : "user"
-    "Order" o|--|| "t_nft_products" : "nftProduct"
+    "t_orders" o|--|| "OrderStatus" : "enum:status"
+    "t_orders" o|--|| "PaymentProvider" : "enum:payment_provider"
+    "t_orders" o|--|| "t_users" : "user"
+    "t_orders" o{--}o "t_order_items" : "items"
+    "t_order_items" o|--|| "t_orders" : "order"
+    "t_order_items" o|--|| "t_products" : "product"
+    "t_order_items" o{--}o "t_nft_mints" : "nftMints"
+    "t_products" o|--|| "ProductType" : "enum:type"
+    "t_products" o{--}o "t_nft_products" : "nftProduct"
+    "t_products" o{--}o "t_order_items" : "orderItem"
+    "t_nft_products" o|--|| "t_products" : "product"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"
     "v_membership_participation_geo" o|--|| "ParticipationType" : "enum:type"

@@ -1185,12 +1185,11 @@ model NftMint {
   status      NftMintStatus @default(QUEUED)
   sequenceNum Int           @map("sequence_num")
 
-  receiver String
-  txHash   String? @map("tx_hash")
-  error    String?
+  txHash String? @map("tx_hash")
+  error  String?
 
-  nftProductId String     @map("nft_product_id")
-  nftProduct   NftProduct @relation(fields: [nftProductId], references: [id])
+  orderItemId String?    @map("order_item_id")
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
 
   nftWalletId String    @map("nft_wallet_id")
   nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
@@ -1200,41 +1199,19 @@ model NftMint {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@unique([nftProductId, sequenceNum])
-  @@index([receiver])
+  @@unique([orderItemId, sequenceNum])
   @@index([createdAt, id])
   @@map("t_nft_mints")
 }
 
 enum NftMintStatus {
   QUEUED
+  SUBMITTED
   MINTED
   FAILED
 }
 
-model NftProduct {
-  id       String @id @default(cuid())
-  policyId String @map("policy_id")
-
-  name        String
-  description String?
-  imageUrl    String? @map("image_url")
-
-  price     Int?
-  maxSupply Int?      @map("max_supply")
-  startsAt  DateTime? @map("starts_at")
-  endsAt    DateTime? @map("ends_at")
-
-  nftMints NftMint[]
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-  orders    Order[]
-
-  @@map("t_nft_products")
-}
-
-// ------------------------------ Order Domain ------------------------------
+// ------------------------------ Order ------------------------------
 
 model Order {
   id     String      @id @default(cuid())
@@ -1243,19 +1220,36 @@ model Order {
   paymentProvider PaymentProvider @default(NMKR) @map("payment_provider")
   externalRef     String?         @unique @map("external_ref")
 
-  quantity    Int  @default(1)
   totalAmount Int? @map("total_amount")
 
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id])
 
-  nftProductId String     @map("nft_product_id")
-  nftProduct   NftProduct @relation(fields: [nftProductId], references: [id])
+  items OrderItem[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([userId, status])
+  @@map("t_orders")
+}
+
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id])
+
+  productId String  @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity      Int
+  priceSnapshot Int @map("price_snapshot")
+
+  nftMints NftMint[] // NFT の場合だけ発行される
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("t_order_items")
 }
 
 enum PaymentProvider {
@@ -1267,4 +1261,44 @@ enum OrderStatus {
   PAID
   CANCELED
   REFUNDED
+}
+
+// ------------------------------ Product (NFTのみ) ------------------------------
+
+model Product {
+  id          String      @id @default(cuid())
+  type        ProductType @default(NFT)
+  name        String
+  description String?
+  imageUrl    String?     @map("image_url")
+
+  price     Int
+  maxSupply Int?      @map("max_supply")
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+
+  nftProduct NftProduct?
+  orderItem  OrderItem[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("t_products")
+}
+
+enum ProductType {
+  NFT
+}
+
+model NftProduct {
+  id        String  @id @default(cuid())
+  productId String  @unique @map("product_id")
+  product   Product @relation(fields: [productId], references: [id])
+
+  policyId String @map("policy_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("t_nft_products")
 }
