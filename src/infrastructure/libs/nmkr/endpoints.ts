@@ -3,6 +3,40 @@ import { NmkrHttp } from "./http";
 import { components } from "./openapi";
 import { Chain } from "./types.generated";
 import type {
+  CreatePaymentTransactionRequestBody,
+  CreatePaymentTransactionResponse,
+  CheckUtxoResponse,
+  PayoutWalletsResponse,
+  ServerStateResponse,
+  PublicMintsResponse,
+  GetProjectTransactionsResponse,
+  GetAdditionalPayoutWalletsResponse,
+  WalletUtxoResponse,
+  UploadNftRequest,
+  UploadNftResponse,
+  GetNmkrPayStatusResponse,
+  MintAndSendMultipleSpecificRequestBody,
+  MintAndSendMultipleSpecificResponse,
+  ProceedReserveRequestBody,
+  ProceedReserveResponse,
+  ProceedMintRequestBody,
+  ProceedMintResponse,
+  ProceedCancelResponse,
+  ProjectDetailsResponse,
+  CreateProjectRequest,
+  CreateProjectResponse,
+  UploadToIpfsRequestBody,
+  UploadToIpfsResponse,
+  CheckAddressResponse,
+  CancelAddressReservationResponse,
+  WhitelistGetResponse,
+  WhitelistPostResponse,
+  WhitelistDeleteResponse,
+  SaleConditionsGetResponse,
+  SaleConditionsPutRequestBody,
+  SaleConditionsPutResponse
+} from "./types.aliases";
+import type {
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
   GetGetNftsApikeyProjectuidStateCountPage_db3058Response,
@@ -22,29 +56,29 @@ export class NmkrEndpoints {
   }
 
   async createPaymentTransactionForSpecificNft(
-    payload: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
+    payload: CreatePaymentTransactionRequestBody,
+  ): Promise<CreatePaymentTransactionResponse> {
+    return this.http2.postJSON<CreatePaymentTransactionResponse, CreatePaymentTransactionRequestBody>(
       "/v2/CreatePaymentTransaction",
       payload
     );
   }
 
   async createPaymentTransactionForRandomNft(
-    payload: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
+    payload: CreatePaymentTransactionRequestBody,
+  ): Promise<CreatePaymentTransactionResponse> {
+    return this.http2.postJSON<CreatePaymentTransactionResponse, CreatePaymentTransactionRequestBody>(
       "/v2/CreatePaymentTransaction",
       payload
     );
   }
 
-  async checkUtxo(address: string): Promise<Record<string, unknown>> {
-    return this.http2.getJSON<Record<string, unknown>>(`/v2/CheckUtxo/${encodeURIComponent(address)}`);
+  async checkUtxo(address: string): Promise<CheckUtxoResponse> {
+    return this.http2.getJSON<CheckUtxoResponse>(`/v2/CheckUtxo/${encodeURIComponent(address)}`);
   }
 
-  async getPayoutWallets(): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>("/v2/GetPayoutWallets");
+  async getPayoutWallets(): Promise<PayoutWalletsResponse> {
+    return this.http2.getJSON<PayoutWalletsResponse>("/v2/GetPayoutWallets");
   }
 
   async getRates(): Promise<components['schemas']['PricelistClass']> {
@@ -55,12 +89,12 @@ export class NmkrEndpoints {
     return this.http2.getJSON<components['schemas']['PricelistClass']>("/v2/GetAdaRates");
   }
 
-  async getServerState(): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>("/v2/GetServerState");
+  async getServerState(): Promise<ServerStateResponse> {
+    return this.http2.getJSON<ServerStateResponse>("/v2/GetServerState");
   }
 
-  async getPublicMints(): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>("/v2/GetPublicMints");
+  async getPublicMints(): Promise<PublicMintsResponse> {
+    return this.http2.getJSON<PublicMintsResponse>("/v2/GetPublicMints");
   }
 
   async getSolanaRates(): Promise<components['schemas']['PricelistClass']> {
@@ -73,14 +107,14 @@ export class NmkrEndpoints {
     );
   }
 
-  async getProjectTransactions(projectUid: string): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>(
+  async getProjectTransactions(projectUid: string): Promise<GetProjectTransactionsResponse> {
+    return this.http2.getJSON<GetProjectTransactionsResponse>(
       `/v2/GetProjectTransactions/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async getAdditionalPayoutWallets(projectUid: string): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>(
+  async getAdditionalPayoutWallets(projectUid: string): Promise<GetAdditionalPayoutWalletsResponse> {
+    return this.http2.getJSON<GetAdditionalPayoutWalletsResponse>(
       `/v2/GetAdditionalPayoutWallets/${encodeURIComponent(projectUid)}`
     );
   }
@@ -134,19 +168,19 @@ export class NmkrEndpoints {
     );
   }
 
-  async getWalletUtxo(address: string): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>(`/v2/GetWalletUtxo/${encodeURIComponent(address)}`);
+  async getWalletUtxo(address: string): Promise<WalletUtxoResponse> {
+    return this.http2.getJSON<WalletUtxoResponse>(`/v2/GetWalletUtxo/${encodeURIComponent(address)}`);
   }
 
-  async uploadNft(projectUid: string, payload: components['schemas']['UploadNftClass']): Promise<components['schemas']['UploadNftResultClass']> {
-    return this.http2.postJSON<components['schemas']['UploadNftResultClass'], components['schemas']['UploadNftClass']>(
+  async uploadNft(projectUid: string, payload: UploadNftRequest): Promise<UploadNftResponse> {
+    return this.http2.postJSON<UploadNftResponse, UploadNftRequest>(
       `/v2/UploadNft/${encodeURIComponent(projectUid)}?uploadsource=api`,
       payload
     );
   }
 
-  async getNmkrPayStatus(paymentTransactionUid: string): Promise<Record<string, unknown>> {
-    return this.http2.getJSON<Record<string, unknown>>(
+  async getNmkrPayStatus(paymentTransactionUid: string): Promise<GetNmkrPayStatusResponse> {
+    return this.http2.getJSON<GetNmkrPayStatusResponse>(
       `/v2/GetNmkrPayStatus/${encodeURIComponent(paymentTransactionUid)}`
     );
   }
@@ -177,10 +211,10 @@ export class NmkrEndpoints {
   async mintAndSendMultipleSpecific(
     projectUid: string,
     receiverAddress: string,
-    payload: Record<string, unknown>,
+    payload: MintAndSendMultipleSpecificRequestBody,
     blockchain: Chain = "Cardano",
-  ): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
+  ): Promise<MintAndSendMultipleSpecificResponse> {
+    return this.http2.postJSON<MintAndSendMultipleSpecificResponse, MintAndSendMultipleSpecificRequestBody>(
       `/v2/MintAndSendSpecific/${encodeURIComponent(projectUid)}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
       payload
     );
@@ -188,9 +222,9 @@ export class NmkrEndpoints {
 
   async reservePaymentgatewayMintAndSendNft(
     paymentTransactionUid: string,
-    payload: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
+    payload: ProceedReserveRequestBody,
+  ): Promise<ProceedReserveResponse> {
+    return this.http2.postJSON<ProceedReserveResponse, ProceedReserveRequestBody>(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/ReservePaymentgatewayMintAndSendNft`,
       payload
     );
@@ -198,29 +232,29 @@ export class NmkrEndpoints {
 
   async mintAndSendPaymentgatewayNft(
     paymentTransactionUid: string,
-    payload: Record<string, unknown>,
-  ): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
+    payload: ProceedMintRequestBody,
+  ): Promise<ProceedMintResponse> {
+    return this.http2.postJSON<ProceedMintResponse, ProceedMintRequestBody>(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/MintAndSendPaymentgatewayNft`,
       payload
     );
   }
 
-  async cancelTransaction(paymentTransactionUid: string): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, never>>(
+  async cancelTransaction(paymentTransactionUid: string): Promise<ProceedCancelResponse> {
+    return this.http2.postJSON<ProceedCancelResponse, Record<string, never>>(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/CancelTransaction`,
       {}
     );
   }
 
-  async getProjectDetails(projectUid: string): Promise<components['schemas']['NftProjectsDetails']> {
-    return this.http2.getJSON<components['schemas']['NftProjectsDetails']>(
+  async getProjectDetails(projectUid: string): Promise<ProjectDetailsResponse> {
+    return this.http2.getJSON<ProjectDetailsResponse>(
       `/v2/GetProjectDetails/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async createProject(payload: components['schemas']['CreateProjectClass']): Promise<components['schemas']['CreateNewProjectResultClass']> {
-    return this.http2.postJSON<components['schemas']['CreateNewProjectResultClass'], components['schemas']['CreateProjectClass']>(
+  async createProject(payload: CreateProjectRequest): Promise<CreateProjectResponse> {
+    return this.http2.postJSON<CreateProjectResponse, CreateProjectRequest>(
       "/v2/CreateProject",
       payload
     );
@@ -258,44 +292,44 @@ export class NmkrEndpoints {
     return this.http2.getJSON<components['schemas']['GetPaymentAddressResultClass']>(url);
   }
 
-  async uploadToIpfs(customerId: number, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
+  async uploadToIpfs(customerId: number, payload: UploadToIpfsRequestBody): Promise<UploadToIpfsResponse> {
+    return this.http2.postJSON<UploadToIpfsResponse, UploadToIpfsRequestBody>(
       `/v2/UploadToIpfs/${customerId}`,
       payload
     );
   }
 
-  async checkAddress(projectUid: string, address: string): Promise<components['schemas']['CheckAddressResultClass']> {
-    return this.http2.getJSON<components['schemas']['CheckAddressResultClass']>(
+  async checkAddress(projectUid: string, address: string): Promise<CheckAddressResponse> {
+    return this.http2.getJSON<CheckAddressResponse>(
       `/v2/CheckAddress/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}`
     );
   }
 
-  async cancelAddressReservation(projectUid: string, paymentAddress: string): Promise<Record<string, unknown>> {
+  async cancelAddressReservation(projectUid: string, paymentAddress: string): Promise<CancelAddressReservationResponse> {
     const path = `/v2/CancelAddressReservation/${encodeURIComponent(projectUid)}/${encodeURIComponent(paymentAddress)}`;
     
     try {
-      return await this.http2.deleteJSON<Record<string, unknown>>(path);
+      return await this.http2.deleteJSON<CancelAddressReservationResponse>(path);
     } catch (error) {
-      return this.http2.getJSON<Record<string, unknown>>(path);
+      return this.http2.getJSON<CancelAddressReservationResponse>(path);
     }
   }
 
-  async getWhitelist(projectUid: string): Promise<Record<string, unknown>[]> {
-    return this.http2.getJSON<Record<string, unknown>[]>(
+  async getWhitelist(projectUid: string): Promise<WhitelistGetResponse> {
+    return this.http2.getJSON<WhitelistGetResponse>(
       `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async addToWhitelist(projectUid: string, address: string, countOfNfts: number): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, Record<string, never>>(
+  async addToWhitelist(projectUid: string, address: string, countOfNfts: number): Promise<WhitelistPostResponse> {
+    return this.http2.postJSON<WhitelistPostResponse, Record<string, never>>(
       `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}/${countOfNfts}`,
       {}
     );
   }
 
-  async removeFromWhitelist(projectUid: string, address: string): Promise<Record<string, unknown>> {
-    return this.http2.deleteJSON<Record<string, unknown>>(
+  async removeFromWhitelist(projectUid: string, address: string): Promise<WhitelistDeleteResponse> {
+    return this.http2.deleteJSON<WhitelistDeleteResponse>(
       `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}`
     );
   }
@@ -310,14 +344,14 @@ export class NmkrEndpoints {
     );
   }
 
-  async getSaleConditions(projectUid: string): Promise<Record<string, unknown>> {
-    return this.http2.getJSON<Record<string, unknown>>(
+  async getSaleConditions(projectUid: string): Promise<SaleConditionsGetResponse> {
+    return this.http2.getJSON<SaleConditionsGetResponse>(
       `/v2/GetSaleConditions/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async updateSaleConditions(projectUid: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
-    return this.http2.putJSON<Record<string, unknown>, Record<string, unknown>>(
+  async updateSaleConditions(projectUid: string, payload: SaleConditionsPutRequestBody): Promise<SaleConditionsPutResponse> {
+    return this.http2.putJSON<SaleConditionsPutResponse, SaleConditionsPutRequestBody>(
       `/v2/UpdateSaleConditions/${encodeURIComponent(projectUid)}`,
       payload
     );
