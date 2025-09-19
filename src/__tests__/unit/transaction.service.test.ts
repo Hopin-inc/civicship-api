@@ -153,6 +153,7 @@ describe("TransactionService", () => {
         transferPoints,
         mockTx,
         TransactionReason.DONATION,
+        undefined,
       );
 
       expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
@@ -160,6 +161,7 @@ describe("TransactionService", () => {
         walletId,
         transferPoints,
         "test-user-id",
+        undefined,
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);

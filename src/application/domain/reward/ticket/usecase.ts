@@ -105,6 +105,7 @@ export default class TicketUseCase {
         transferPoints,
         tx,
         TransactionReason.DONATION,
+        undefined,
       );
 
       await this.transactionService.purchaseTicket(
