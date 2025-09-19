@@ -1,66 +1,50 @@
 import { AxiosInstance } from "axios";
 import { NmkrHttp } from "./http";
 import { components } from "./openapi";
-import { Chain, MintResult } from "./types.generated";
+import { Chain } from "./types.generated";
 import type {
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
+  GetGetNftsApikeyProjectuidStateCountPage_db3058Response,
   GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse,
-  GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response
+  GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response,
+  GetListProjectsApikey_b6d5e7Response,
+  GetListProjectsApikeyCountPage_1d70d9Response
 } from "./types.operations";
 
 export class NmkrEndpoints {
   private readonly http2: NmkrHttp;
   private readonly countsPath: string;
 
-  constructor(private readonly http: AxiosInstance) {
+  constructor(http: AxiosInstance) {
     this.http2 = new NmkrHttp(http);
     this.countsPath = process.env.NMKR_COUNTS_PATH ?? '/v2/GetCounts';
   }
 
-  private createRequestConfig(includeContentType = false) {
-    const config: any = {
-      responseType: "text" as any,
-    };
-
-    if (includeContentType) {
-      config.headers = { 
-        ...(config.headers ?? {}), 
-        'Content-Type': 'application/json' 
-      };
-    }
-
-    return config;
-  }
-
   async createPaymentTransactionForSpecificNft(
-    payload: any,
-  ): Promise<any> {
-    const { data } = await this.http.post(
+    payload: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
       "/v2/CreatePaymentTransaction",
-      payload,
-      this.createRequestConfig(true),
+      payload
     );
-    return data;
   }
 
   async createPaymentTransactionForRandomNft(
-    payload: any,
-  ): Promise<any> {
-    const { data } = await this.http.post(
+    payload: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
       "/v2/CreatePaymentTransaction",
-      payload,
-      this.createRequestConfig(true),
+      payload
     );
-    return data;
   }
 
-  async checkUtxo(address: string): Promise<any> {
-    return this.http2.getJSON(`/v2/CheckUtxo/${encodeURIComponent(address)}`);
+  async checkUtxo(address: string): Promise<Record<string, unknown>> {
+    return this.http2.getJSON<Record<string, unknown>>(`/v2/CheckUtxo/${encodeURIComponent(address)}`);
   }
 
-  async getPayoutWallets(): Promise<any> {
-    return this.http2.getJSON("/v2/GetPayoutWallets");
+  async getPayoutWallets(): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>("/v2/GetPayoutWallets");
   }
 
   async getRates(): Promise<components['schemas']['PricelistClass']> {
@@ -71,12 +55,12 @@ export class NmkrEndpoints {
     return this.http2.getJSON<components['schemas']['PricelistClass']>("/v2/GetAdaRates");
   }
 
-  async getServerState(): Promise<any> {
-    return this.http2.getJSON("/v2/GetServerState");
+  async getServerState(): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>("/v2/GetServerState");
   }
 
-  async getPublicMints(): Promise<any> {
-    return this.http2.getJSON("/v2/GetPublicMints");
+  async getPublicMints(): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>("/v2/GetPublicMints");
   }
 
   async getSolanaRates(): Promise<components['schemas']['PricelistClass']> {
@@ -89,14 +73,14 @@ export class NmkrEndpoints {
     );
   }
 
-  async getProjectTransactions(projectUid: string): Promise<any> {
-    return this.http2.getJSON(
+  async getProjectTransactions(projectUid: string): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>(
       `/v2/GetProjectTransactions/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async getAdditionalPayoutWallets(projectUid: string): Promise<any> {
-    return this.http2.getJSON(
+  async getAdditionalPayoutWallets(projectUid: string): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>(
       `/v2/GetAdditionalPayoutWallets/${encodeURIComponent(projectUid)}`
     );
   }
@@ -112,37 +96,57 @@ export class NmkrEndpoints {
     countNft: number,
     customerIpAddress: string,
   ): Promise<components['schemas']['GetPaymentAddressResultClass']> {
-    return this.http2.getJSON<components['schemas']['GetPaymentAddressResultClass']>(
-      `/v2/GetPaymentAddressForRandomNftSale/${encodeURIComponent(projectUid)}/${countNft}/${encodeURIComponent(customerIpAddress)}`
-    );
+    try {
+      return await this.http2.getJSON<components['schemas']['GetPaymentAddressResultClass']>(
+        `/v2/GetPaymentAddressForRandomNftSale/${encodeURIComponent(projectUid)}/${countNft}/${encodeURIComponent(customerIpAddress)}`
+      );
+    } catch (error: unknown) {
+      if (error instanceof Error && 'status' in error && (error as { status: number }).status === 406) {
+        try {
+          const saleConditions = await this.getSaleConditions(projectUid);
+          console.warn('SaleConditions snapshot (406):', JSON.stringify(saleConditions, null, 2));
+        } catch (scError) {
+          console.warn('Failed to fetch SaleConditions for 406 debugging:', scError);
+        }
+      }
+      throw error;
+    }
   }
 
-  async getAllAssetsInWallet(address: string): Promise<any> {
-    return this.http2.getJSON(
-      `/v2/GetAllAssetsInWallet/${encodeURIComponent(address)}`
-    );
+  async getAllAssetsInWallet(address: string, options?: { timeoutMs?: number }): Promise<Record<string, unknown>[]> {
+    const timeout = options?.timeoutMs || 90000;
+    try {
+      return await this.http2.getJSON<Record<string, unknown>[]>(
+        `/v2/GetAllAssetsInWallet/${encodeURIComponent(address)}`,
+        { timeout }
+      );
+    } catch (error: unknown) {
+      if (error instanceof Error && (error.message?.includes('timeout') || error.message?.includes('ECONNABORTED'))) {
+        console.warn(`GetAllAssetsInWallet timeout for ${address}. Consider using GetWalletUtxo as alternative.`);
+      }
+      throw error;
+    }
   }
 
-  async getNfts(projectUid: string, state: string, count: number, page: number): Promise<components['schemas']['NftDetailsClass'][]> {
-    return this.http2.getJSON<components['schemas']['NftDetailsClass'][]>(
+  async getNfts(projectUid: string, state: string, count: number, page: number): Promise<GetGetNftsApikeyProjectuidStateCountPage_db3058Response> {
+    return this.http2.getJSON<GetGetNftsApikeyProjectuidStateCountPage_db3058Response>(
       `/v2/GetNfts/${encodeURIComponent(projectUid)}/${state}/${count}/${page}`
     );
   }
 
-  async getWalletUtxo(address: string): Promise<any> {
-    return this.http2.getJSON(`/v2/GetWalletUtxo/${encodeURIComponent(address)}`);
+  async getWalletUtxo(address: string): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>(`/v2/GetWalletUtxo/${encodeURIComponent(address)}`);
   }
 
-  async uploadNft(projectUid: string, payload: any): Promise<components['schemas']['UploadNftResultClass']> {
-    return this.http2.postJSON(
+  async uploadNft(projectUid: string, payload: components['schemas']['UploadNftClass']): Promise<components['schemas']['UploadNftResultClass']> {
+    return this.http2.postJSON<components['schemas']['UploadNftResultClass'], components['schemas']['UploadNftClass']>(
       `/v2/UploadNft/${encodeURIComponent(projectUid)}?uploadsource=api`,
-      payload,
-      { headers: { 'Content-Type': 'application/json', 'Accept': 'text/plain' } }
+      payload
     );
   }
 
-  async getNmkrPayStatus(paymentTransactionUid: string): Promise<any> {
-    return this.http2.getJSON(
+  async getNmkrPayStatus(paymentTransactionUid: string): Promise<Record<string, unknown>> {
+    return this.http2.getJSON<Record<string, unknown>>(
       `/v2/GetNmkrPayStatus/${encodeURIComponent(paymentTransactionUid)}`
     );
   }
@@ -173,40 +177,37 @@ export class NmkrEndpoints {
   async mintAndSendMultipleSpecific(
     projectUid: string,
     receiverAddress: string,
-    payload: any,
+    payload: Record<string, unknown>,
     blockchain: Chain = "Cardano",
-  ): Promise<MintResult> {
-    return this.http2.postJSON<MintResult>(
+  ): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
       `/v2/MintAndSendSpecific/${encodeURIComponent(projectUid)}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 
   async reservePaymentgatewayMintAndSendNft(
     paymentTransactionUid: string,
-    payload: { receiverAddress: string },
-  ): Promise<any> {
-    return this.http2.postJSON(
+    payload: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/ReservePaymentgatewayMintAndSendNft`,
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 
   async mintAndSendPaymentgatewayNft(
     paymentTransactionUid: string,
-    payload: { receiverAddress: string },
-  ): Promise<any> {
-    return this.http2.postJSON(
+    payload: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/MintAndSendPaymentgatewayNft`,
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 
-  async cancelTransaction(paymentTransactionUid: string): Promise<any> {
-    return this.http2.postJSON(
+  async cancelTransaction(paymentTransactionUid: string): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, never>>(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/CancelTransaction`,
       {}
     );
@@ -218,23 +219,21 @@ export class NmkrEndpoints {
     );
   }
 
-  async createProject(payload: any): Promise<components['schemas']['CreateNewProjectResultClass']> {
-    return this.http2.postJSON<components['schemas']['CreateNewProjectResultClass']>(
+  async createProject(payload: components['schemas']['CreateProjectClass']): Promise<components['schemas']['CreateNewProjectResultClass']> {
+    return this.http2.postJSON<components['schemas']['CreateNewProjectResultClass'], components['schemas']['CreateProjectClass']>(
       "/v2/CreateProject",
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 
   async updateMetadata(
     projectUid: string,
     nftUid: string,
-    payload: any,
-  ): Promise<any> {
-    return this.http2.postJSON(
+    payload: components['schemas']['UploadMetadataClass'],
+  ): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, components['schemas']['UploadMetadataClass']>(
       `/v2/UpdateMetadata/${encodeURIComponent(projectUid)}/${encodeURIComponent(nftUid)}`,
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 
@@ -259,11 +258,10 @@ export class NmkrEndpoints {
     return this.http2.getJSON<components['schemas']['GetPaymentAddressResultClass']>(url);
   }
 
-  async uploadToIpfs(customerId: number, payload: any): Promise<any> {
-    return this.http2.postJSON(
+  async uploadToIpfs(customerId: number, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, unknown>>(
       `/v2/UploadToIpfs/${customerId}`,
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 
@@ -273,56 +271,55 @@ export class NmkrEndpoints {
     );
   }
 
-  async cancelAddressReservation(projectUid: string, paymentAddress: string): Promise<any> {
+  async cancelAddressReservation(projectUid: string, paymentAddress: string): Promise<Record<string, unknown>> {
     const path = `/v2/CancelAddressReservation/${encodeURIComponent(projectUid)}/${encodeURIComponent(paymentAddress)}`;
     
     try {
-      return await this.http2.deleteJSON(path);
+      return await this.http2.deleteJSON<Record<string, unknown>>(path);
     } catch (error) {
-      return this.http2.getJSON(path);
+      return this.http2.getJSON<Record<string, unknown>>(path);
     }
   }
 
-  async getWhitelist(projectUid: string): Promise<any[]> {
-    return this.http2.getJSON(
+  async getWhitelist(projectUid: string): Promise<Record<string, unknown>[]> {
+    return this.http2.getJSON<Record<string, unknown>[]>(
       `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async addToWhitelist(projectUid: string, address: string, countOfNfts: number): Promise<any> {
-    return this.http2.postJSON(
+  async addToWhitelist(projectUid: string, address: string, countOfNfts: number): Promise<Record<string, unknown>> {
+    return this.http2.postJSON<Record<string, unknown>, Record<string, never>>(
       `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}/${countOfNfts}`,
       {}
     );
   }
 
-  async removeFromWhitelist(projectUid: string, address: string): Promise<void> {
-    return this.http2.deleteJSON<void>(
+  async removeFromWhitelist(projectUid: string, address: string): Promise<Record<string, unknown>> {
+    return this.http2.deleteJSON<Record<string, unknown>>(
       `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}`
     );
   }
 
-  async listProjects(): Promise<any[]> {
-    return this.http2.getJSON("/v2/ListProjects");
+  async listProjects(): Promise<GetListProjectsApikey_b6d5e7Response> {
+    return this.http2.getJSON<GetListProjectsApikey_b6d5e7Response>("/v2/ListProjects");
   }
 
-  async listProjectsPaginated(count: number, page: number): Promise<any[]> {
-    return this.http2.getJSON(
+  async listProjectsPaginated(count: number, page: number): Promise<GetListProjectsApikeyCountPage_1d70d9Response> {
+    return this.http2.getJSON<GetListProjectsApikeyCountPage_1d70d9Response>(
       `/v2/ListProjects/${count}/${page}`
     );
   }
 
-  async getSaleConditions(projectUid: string): Promise<any> {
-    return this.http2.getJSON(
+  async getSaleConditions(projectUid: string): Promise<Record<string, unknown>> {
+    return this.http2.getJSON<Record<string, unknown>>(
       `/v2/GetSaleConditions/${encodeURIComponent(projectUid)}`
     );
   }
 
-  async updateSaleConditions(projectUid: string, payload: any): Promise<any> {
-    return this.http2.putJSON(
+  async updateSaleConditions(projectUid: string, payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return this.http2.putJSON<Record<string, unknown>, Record<string, unknown>>(
       `/v2/UpdateSaleConditions/${encodeURIComponent(projectUid)}`,
-      payload,
-      { headers: { 'Content-Type': 'application/json' } }
+      payload
     );
   }
 }

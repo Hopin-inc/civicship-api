@@ -1,65 +1,76 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from "axios";
 
-export class NmkrHttpError extends Error {
+export class NmkrApiError extends Error {
   constructor(
-    public readonly endpoint: string,
-    public readonly statusCode: number,
-    public readonly nmkrError?: string,
+    public readonly status: number,
+    public readonly rawBody: unknown,
+    public readonly url: string
   ) {
-    super(`NMKR API Error: ${endpoint} (${statusCode}): ${nmkrError || 'Unknown error'}`);
-    this.name = 'NmkrHttpError';
+    super(`NMKR ${status} ${url}`);
+    this.name = 'NmkrApiError';
   }
+}
 
-  toLogSafeString(): string {
-    const safeEndpoint = this.endpoint.replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED]');
-    return `NMKR API Error: ${safeEndpoint} (${this.statusCode}): ${this.nmkrError || 'Unknown error'}`;
-  }
+function isAxiosError(e: unknown): e is AxiosError {
+  return !!e && typeof e === 'object' && 'isAxiosError' in e;
 }
 
 export class NmkrHttp {
   constructor(private readonly http: AxiosInstance) {}
 
+  private parseResponse<T>(raw: unknown): T {
+    if (typeof raw === 'string') {
+      try { return JSON.parse(raw) as T; } catch { /* text/plainなどはそのまま */ }
+    }
+    return raw as T;
+  }
+
   async getJSON<T>(url: string, cfg?: AxiosRequestConfig): Promise<T> {
-    const { data } = await this.http.get<string>(url, { 
-      responseType: 'text', 
-      ...cfg 
-    });
-    return this.parseResponse<T>(data);
+    const config: AxiosRequestConfig = { responseType: 'text', timeout: 15000, ...cfg };
+
+    const maxRetries = cfg?.timeout && cfg.timeout > 30_000 ? 3 : 1;
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await this.http.get<string>(url, config);
+        if (res.status >= 200 && res.status < 300) return this.parseResponse<T>(res.data);
+        throw new NmkrApiError(res.status, res.data, url);
+      } catch (error: unknown) {
+        lastError = error;
+        if (
+          attempt < maxRetries &&
+          isAxiosError(error) &&
+          (error.code === 'ECONNABORTED' || error.message?.includes('timeout'))
+        ) {
+          await new Promise(r => setTimeout(r, 500 * attempt));
+          continue;
+        }
+        if (isAxiosError(error) && error.response) {
+          throw new NmkrApiError(error.response.status ?? 0, error.response.data, url);
+        }
+        throw error;
+      }
+    }
+    throw lastError instanceof Error ? lastError : new Error('Unknown HTTP error');
   }
 
-  async postJSON<T, B = unknown>(url: string, body?: B, cfg?: AxiosRequestConfig): Promise<T> {
-    const { data } = await this.http.post<string>(url, body, { 
-      responseType: 'text', 
-      ...cfg 
-    });
-    return this.parseResponse<T>(data);
+  async postJSON<T, B = unknown>(url: string, body: B, cfg?: AxiosRequestConfig): Promise<T> {
+    const res = await this.http.post<string>(url, body, { responseType: 'text', ...cfg });
+    if (res.status >= 200 && res.status < 300) return this.parseResponse<T>(res.data);
+    throw new NmkrApiError(res.status, res.data, url);
   }
 
-  async putJSON<T, B = unknown>(url: string, body?: B, cfg?: AxiosRequestConfig): Promise<T> {
-    const { data } = await this.http.put<string>(url, body, { 
-      responseType: 'text', 
-      ...cfg 
-    });
-    return this.parseResponse<T>(data);
+  async putJSON<T, B = unknown>(url: string, body: B, cfg?: AxiosRequestConfig): Promise<T> {
+    const res = await this.http.put<string>(url, body, { responseType: 'text', ...cfg });
+    if (res.status >= 200 && res.status < 300) return this.parseResponse<T>(res.data);
+    throw new NmkrApiError(res.status, res.data, url);
   }
 
   async deleteJSON<T>(url: string, cfg?: AxiosRequestConfig): Promise<T> {
-    const { data } = await this.http.delete<string>(url, { 
-      responseType: 'text', 
-      ...cfg 
-    });
-    return this.parseResponse<T>(data);
-  }
-
-  private parseResponse<T>(raw: unknown): T {
-    if (typeof raw === 'string') {
-      try {
-        return JSON.parse(raw) as T;
-      } catch {
-        return raw as T;
-      }
-    }
-    return raw as T;
+    const res = await this.http.delete<string>(url, { responseType: 'text', ...cfg });
+    if (res.status >= 200 && res.status < 300) return this.parseResponse<T>(res.data);
+    throw new NmkrApiError(res.status, res.data, url);
   }
 }
 
@@ -110,16 +121,16 @@ export const createNmkrHttpClient = (): AxiosInstance => {
     (response) => {
       const data = response.data;
       if (data && data.result === "Error") {
-        throw new NmkrHttpError(
-          response.config.url || "unknown",
+        throw new NmkrApiError(
           response.status,
-          data.errorMessage,
+          data,
+          response.config.url || "unknown"
         );
       }
       return response;
     },
     async (error: AxiosError) => {
-      const config = error.config as any;
+      const config = error.config as AxiosRequestConfig & { __retryCount?: number };
       
       if (error.response?.status === 429 || (error.response?.status && error.response.status >= 500)) {
         config.__retryCount = config.__retryCount || 0;
@@ -133,10 +144,10 @@ export const createNmkrHttpClient = (): AxiosInstance => {
       }
       
       if (error.response) {
-        throw new NmkrHttpError(
-          error.config?.url || "unknown",
+        throw new NmkrApiError(
           error.response.status,
-          error.message,
+          error.response.data,
+          error.config?.url || "unknown"
         );
       }
       throw error;
