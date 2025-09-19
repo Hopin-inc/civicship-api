@@ -1,9 +1,21 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance, AxiosError } from "axios";
+
+export class NmkrHttpError extends Error {
+  constructor(
+    public readonly endpoint: string,
+    public readonly statusCode: number,
+    public readonly nmkrError?: string,
+  ) {
+    super(`NMKR API Error: ${endpoint} (${statusCode}): ${nmkrError || 'Unknown error'}`);
+    this.name = 'NmkrHttpError';
+  }
+}
 
 export const createNmkrHttpClient = (): AxiosInstance => {
-  const baseURL = process.env.NMKR_BASE_URL!;
+  const baseURL = process.env.NMKR_BASE_URL || "https://studio-api.nmkr.io";
   const apiKey = process.env.NMKR_API_KEY!;
-  return axios.create({
+  
+  const client = axios.create({
     baseURL,
     timeout: 15_000,
     headers: {
@@ -24,4 +36,30 @@ export const createNmkrHttpClient = (): AxiosInstance => {
       },
     ],
   });
+
+  client.interceptors.response.use(
+    (response) => {
+      const data = response.data;
+      if (data && data.result === "Error") {
+        throw new NmkrHttpError(
+          response.config.url || "unknown",
+          response.status,
+          data.errorMessage,
+        );
+      }
+      return response;
+    },
+    (error: AxiosError) => {
+      if (error.response) {
+        throw new NmkrHttpError(
+          error.config?.url || "unknown",
+          error.response.status,
+          error.message,
+        );
+      }
+      throw error;
+    },
+  );
+
+  return client;
 };
