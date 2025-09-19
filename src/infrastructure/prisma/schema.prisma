@@ -351,7 +351,7 @@ model Identity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([userId, platform, communityId])
+  @@index([userId])
   @@map("t_identities")
 }
 
@@ -572,7 +572,7 @@ model Wallet {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([communityId, userId])
+  @@index([userId])
   @@map("t_wallets")
 }
 
@@ -624,7 +624,6 @@ model Article {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([communityId, publishStatus])
   @@map("t_articles")
 }
 
@@ -670,7 +669,8 @@ model Opportunity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([communityId, publishStatus, category])
+  @@index([title])
+  @@index([createdBy])
   @@map("t_opportunities")
 }
 
@@ -718,7 +718,7 @@ model OpportunitySlot {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([opportunityId, startsAt])
+  @@index([opportunityId])
   @@map("t_opportunity_slots")
 }
 
@@ -759,7 +759,7 @@ model Reservation {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([opportunitySlotId, status])
+  @@index([opportunitySlotId])
   @@map("t_reservations")
 }
 
@@ -820,7 +820,7 @@ model Participation {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([status, userId])
+  @@index([userId])
   @@map("t_participations")
 }
 
