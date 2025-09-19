@@ -9,114 +9,390 @@ if (!fs.existsSync(opsPath)) {
   process.exit(1);
 }
 
-const src = fs.readFileSync(opsPath, 'utf8');
+const ops = fs.readFileSync(opsPath, 'utf8');
 
-// Mapping rules: [aliasName, regex to find the concrete name]
-const pairs = [
-  // Project management types (found in search results)
-  ['CreateProjectRequest', /PostCreateProjectApikey_[a-z0-9]{6}RequestBody/],
-  ['CreateProjectResponse', /PostCreateProjectApikey_[a-z0-9]{6}Response(?!\d)/],
-  
-  // Project and NFT types (found in search results)
-  ['GetCountsResponse', /GetGetCountsApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-  ['GetNftDetailsByIdResponse', /GetGetNftDetailsByIdApikeyNftuid_[a-z0-9]{6}Response(?!\d)/],
-  ['GetNftsResponse', /GetGetNftsApikeyProjectuidStateCountPage_[a-z0-9]{6}Response(?!\d)/],
-  
-  // Payment address types (found in search results)
-  ['GetPaymentAddressForRandomNftSaleResponse', /GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_[a-z0-9]{6}Response(?!\d)/],
-  ['GetPaymentAddressForSpecificNftSaleRequestBody', /PostGetAddressForSpecificNftSaleApikeyNftprojectid_[a-z0-9]{6}RequestBody/],
-  ['GetPaymentAddressForSpecificNftSaleResponse', /PostGetAddressForSpecificNftSaleApikeyNftprojectid_[a-z0-9]{6}Response(?!\d)/],
-  
-  // Minting types (found in search results)
-  ['MintAndSendRandomResponse', /GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_[a-z0-9]{6}Response(?!\d)/],
-  
-  // Upload and metadata types (found in search results)
-  ['UploadNftRequest', /PostUploadNftApikeyNftprojectid_[a-z0-9]{6}RequestBody/],
-  ['UploadNftResponse', /PostUploadNftApikeyNftprojectid_[a-z0-9]{6}Response(?!\d)/],
-  ['UpdateMetadataRequest', /PostUpdateMetadataApikeyNftprojectidNftid_[a-z0-9]{6}RequestBody/],
-  ['UpdateMetadataResponse', /PostUpdateMetadataApikeyNftprojectidNftid_[a-z0-9]{6}Response(?!\d)/],
-  
-  // Address and reservation types (found in search results)
-  ['CheckAddressResponse', /GetCheckAddressApikeyProjectuidAddress_[a-z0-9]{6}Response(?!\d)/],
-  ['CancelAddressReservationResponse', /GetCancelAddressReservationApikeyProjectuidPaymentaddress_[a-z0-9]{6}Response(?!\d)/],
-  
-  // Types that may not exist in current operations but needed for endpoints
-  ['CreatePaymentTransactionRequestBody', /PostCreatePaymentTransactionApikey_[a-z0-9]{6}RequestBody/],
-  ['CreatePaymentTransactionResponse', /PostCreatePaymentTransactionApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['CheckUtxoResponse', /GetCheckUtxoApikeyAddress_[a-z0-9]{6}Response(?!\d)/],
-  ['PayoutWalletsResponse', /GetGetPayoutWalletsApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['RatesResponse', /GetGetRatesApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['AdaRatesResponse', /GetGetAdaRatesApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['ServerStateResponse', /GetGetServerStateApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['PublicMintsResponse', /GetGetPublicMintsApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['GetProjectTransactionsResponse', /GetGetProjectTransactionsApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-  ['GetAdditionalPayoutWalletsResponse', /GetGetAdditionalPayoutWalletsApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-  ['AllAssetsInWalletResponse', /GetGetAllAssetsInWalletApikeyAddress_[a-z0-9]{6}Response(?!\d)/],
-  ['WalletUtxoResponse', /GetGetWalletUtxoApikeyAddress_[a-z0-9]{6}Response(?!\d)/],
-  ['GetNmkrPayStatusResponse', /GetGetNmkrPayStatusApikeyPaymenttransactionuid_[a-z0-9]{6}Response(?!\d)/],
-  ['MintAndSendSpecificResponse', /GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_[a-z0-9]{6}Response(?!\d)/],
-  ['MintAndSendMultipleSpecificRequestBody', /PostMintAndSendSpecificApikeyProjectuidReceiveraddress_[a-z0-9]{6}RequestBody/],
-  ['MintAndSendMultipleSpecificResponse', /PostMintAndSendSpecificApikeyProjectuidReceiveraddress_[a-z0-9]{6}Response(?!\d)/],
-  ['ProceedReserveRequestBody', /PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApikeyPaymenttransactionuid_[a-z0-9]{6}RequestBody/],
-  ['ProceedReserveResponse', /PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApikeyPaymenttransactionuid_[a-z0-9]{6}Response(?!\d)/],
-  ['ProceedMintRequestBody', /PostProceedPaymentTransactionMintAndSendPaymentgatewayNftApikeyPaymenttransactionuid_[a-z0-9]{6}RequestBody/],
-  ['ProceedMintResponse', /PostProceedPaymentTransactionMintAndSendPaymentgatewayNftApikeyPaymenttransactionuid_[a-z0-9]{6}Response(?!\d)/],
-  ['ProceedCancelResponse', /PostProceedPaymentTransactionCancelTransactionApikeyPaymenttransactionuid_[a-z0-9]{6}Response(?!\d)/],
-  ['ProjectDetailsResponse', /GetGetProjectDetailsApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-  ['UploadToIpfsRequestBody', /PostUploadToIpfsApikeyCustomerid_[a-z0-9]{6}RequestBody/],
-  ['UploadToIpfsResponse', /PostUploadToIpfsApikeyCustomerid_[a-z0-9]{6}Response(?!\d)/],
-  ['WhitelistGetResponse', /GetManageWhitelistApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-  ['WhitelistPostResponse', /PostManageWhitelistApikeyProjectuidAddressCountofnfts_[a-z0-9]{6}Response(?!\d)/],
-  ['WhitelistDeleteResponse', /DeleteManageWhitelistApikeyProjectuidAddress_[a-z0-9]{6}Response(?!\d)/],
-  ['ListProjectsResponse', /GetListProjectsApikey_[a-z0-9]{6}Response(?!\d)/],
-  ['ListProjectsPaginatedResponse', /GetListProjectsApikeyCountPage_[a-z0-9]{6}Response(?!\d)/],
-  ['SaleConditionsGetResponse', /GetGetSaleConditionsApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-  ['SaleConditionsPutRequestBody', /PutUpdateSaleConditionsApikeyProjectuid_[a-z0-9]{6}RequestBody/],
-  ['SaleConditionsPutResponse', /PutUpdateSaleConditionsApikeyProjectuid_[a-z0-9]{6}Response(?!\d)/],
-];
-
-const lines = [];
-lines.push('/* eslint-disable */');
-lines.push('// @generated - DO NOT EDIT');
-lines.push('// Auto-generated stable type aliases for NMKR API operations');
-lines.push('');
-lines.push("import type { components } from './openapi';");
-lines.push('');
-
-// Import all the concrete types we'll be aliasing
-const imports = [];
-for (const [alias, re] of pairs) {
-  const match = src.match(re);
-  if (match) {
-    imports.push(match[0]);
-  }
+// Helper function to find operation type names with improved regex
+function findName(re) {
+  const match = ops.match(re);
+  return match?.[0];
 }
 
-if (imports.length > 0) {
-  lines.push('import type {');
-  imports.forEach((imp, i) => {
-    lines.push(`  ${imp}${i < imports.length - 1 ? ',' : ''}`);
-  });
-  lines.push("} from './types.operations';");
-  lines.push('');
-}
+// Helper to create case-insensitive regex with flexible hash length
+const R = (pattern) => new RegExp(pattern, 'i');
 
-// Generate the aliases
-for (const [alias, re] of pairs) {
-  const match = src.match(re);
-  if (match) {
-    const real = match[0];
-    lines.push(`export type ${alias} = ${real};`);
+// Try to find operation types first (with improved regex patterns)
+const tryOps = {
+  // Payment transactions
+  CreatePaymentTransactionRequestBody: findName(R('PostCreatePaymentTransactionApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
+  CreatePaymentTransactionResponse: findName(R('PostCreatePaymentTransactionApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Basic API endpoints
+  CheckUtxoResponse: findName(R('GetCheckUtxoApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
+  PayoutWalletsResponse: findName(R('GetGetPayoutWalletsApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  RatesResponse: findName(R('GetGetRatesApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  AdaRatesResponse: findName(R('GetGetAdaRatesApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  ServerStateResponse: findName(R('GetGetServerStateApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  PublicMintsResponse: findName(R('GetGetPublicMintsApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Project and NFT operations
+  GetCountsResponse: findName(R('GetGetCountsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  GetNftDetailsByIdResponse: findName(R('GetGetNftDetailsByIdApi[Kk]eyNftuid_[a-z0-9]{6,}Response(?!\\d)')),
+  GetNftsResponse: findName(R('GetGetNftsApi[Kk]eyProjectuidStateCountPage_[a-z0-9]{6,}Response(?!\\d)')),
+  GetProjectTransactionsResponse: findName(R('GetGetProjectTransactionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  GetAdditionalPayoutWalletsResponse: findName(R('GetGetAdditionalPayoutWalletsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Payment address operations
+  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApi[Kk]eyProjectuidCountnft_[a-z0-9]{6,}Response(?!\\d)')),
+  GetPaymentAddressForSpecificNftSaleRequestBody: findName(R('PostGetAddressForSpecificNftSaleApi[Kk]eyNftprojectid_[a-z0-9]{6,}RequestBody')),
+  GetPaymentAddressForSpecificNftSaleResponse: findName(R('PostGetAddressForSpecificNftSaleApi[Kk]eyNftprojectid_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Wallet operations
+  AllAssetsInWalletResponse: findName(R('GetGetAllAssetsInWalletApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
+  WalletUtxoResponse: findName(R('GetGetWalletUtxoApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Upload and metadata operations
+  UploadNftRequest: findName(R('PostUploadNftApi[Kk]eyNftprojectid_[a-z0-9]{6,}RequestBody')),
+  UploadNftResponse: findName(R('PostUploadNftApi[Kk]eyNftprojectid_[a-z0-9]{6,}Response(?!\\d)')),
+  UpdateMetadataRequest: findName(R('PostUpdateMetadataApi[Kk]eyNftprojectidNftid_[a-z0-9]{6,}RequestBody')),
+  UpdateMetadataResponse: findName(R('PostUpdateMetadataApi[Kk]eyNftprojectidNftid_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Payment status
+  GetNmkrPayStatusResponse: findName(R('GetGetNmkrPayStatusApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Minting operations
+  MintAndSendRandomResponse: findName(R('GetMintAndSendRandomApi[Kk]eyNftprojectidCountnftReceiveraddress_[a-z0-9]{6,}Response(?!\\d)')),
+  MintAndSendSpecificResponse: findName(R('GetMintAndSendSpecificApi[Kk]eyNftprojectidNftidTokencountReceiveraddress_[a-z0-9]{6,}Response(?!\\d)')),
+  MintAndSendMultipleSpecificRequestBody: findName(R('PostMintAndSendSpecificApi[Kk]eyProjectuidReceiveraddress_[a-z0-9]{6,}RequestBody')),
+  MintAndSendMultipleSpecificResponse: findName(R('PostMintAndSendSpecificApi[Kk]eyProjectuidReceiveraddress_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Payment gateway operations
+  ProceedReserveRequestBody: findName(R('PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}RequestBody')),
+  ProceedReserveResponse: findName(R('PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
+  ProceedMintRequestBody: findName(R('PostProceedPaymentTransactionMintAndSendPaymentgatewayNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}RequestBody')),
+  ProceedMintResponse: findName(R('PostProceedPaymentTransactionMintAndSendPaymentgatewayNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
+  ProceedCancelResponse: findName(R('PostProceedPaymentTransactionCancelTransactionApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Project management
+  ProjectDetailsResponse: findName(R('GetGetProjectDetailsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  CreateProjectRequest: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
+  CreateProjectResponse: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // IPFS operations
+  UploadToIpfsRequestBody: findName(R('PostUploadToIpfsApi[Kk]eyCustomerid_[a-z0-9]{6,}RequestBody')),
+  UploadToIpfsResponse: findName(R('PostUploadToIpfsApi[Kk]eyCustomerid_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Address operations
+  CheckAddressResponse: findName(R('GetCheckAddressApi[Kk]eyProjectuidAddress_[a-z0-9]{6,}Response(?!\\d)')),
+  CancelAddressReservationResponse: findName(R('GetCancelAddressReservationApi[Kk]eyProjectuidPaymentaddress_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Whitelist operations
+  WhitelistGetResponse: findName(R('GetManageWhitelistApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  WhitelistPostResponse: findName(R('PostManageWhitelistApi[Kk]eyProjectuidAddressCountofnfts_[a-z0-9]{6,}Response(?!\\d)')),
+  WhitelistDeleteResponse: findName(R('DeleteManageWhitelistApi[Kk]eyProjectuidAddress_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Project listing
+  ListProjectsResponse: findName(R('GetListProjectsApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  ListProjectsPaginatedResponse: findName(R('GetListProjectsApi[Kk]eyCountPage_[a-z0-9]{6,}Response(?!\\d)')),
+  
+  // Sale conditions
+  SaleConditionsGetResponse: findName(R('GetGetSaleConditionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  SaleConditionsPutRequestBody: findName(R('PutUpdateSaleConditionsApi[Kk]eyProjectuid_[a-z0-9]{6,}RequestBody')),
+  SaleConditionsPutResponse: findName(R('PutUpdateSaleConditionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+};
+
+// Helper function to add alias or paths fallback
+function aliasOrPaths(alias, opsName, pathsType) {
+  if (opsName) {
+    return `export type ${alias} = ${opsName};`;
   } else {
-    // Fallback to Record<string, unknown> for missing types
-    console.warn(`Warning: Alias "${alias}" not found by ${re}, using Record<string, unknown>`);
-    lines.push(`export type ${alias} = Record<string, unknown>;`);
+    console.warn(`Warning: ${alias} not found in operations, using paths fallback`);
+    return `export type ${alias} = ${pathsType};`;
   }
 }
 
-lines.push('');
-lines.push("// Re-export components for convenience");
-lines.push("export type { components } from './openapi';");
+// Build output
+const out = [];
+out.push('/* eslint-disable */');
+out.push('// @generated - DO NOT EDIT');
+out.push('// Auto-generated stable type aliases for NMKR API operations');
+out.push('');
+out.push("import type { paths, components } from './openapi';");
+out.push('');
 
-fs.writeFileSync(outPath, lines.join('\n') + '\n', 'utf8');
-console.log(`✔ Generated ${outPath} with ${pairs.length} type aliases`);
+// Collect imports for found operation types
+const foundOpsTypes = Object.values(tryOps).filter(Boolean);
+if (foundOpsTypes.length > 0) {
+  out.push('import type {');
+  foundOpsTypes.forEach((type, i) => {
+    out.push(`  ${type}${i < foundOpsTypes.length - 1 ? ',' : ''}`);
+  });
+  out.push("} from './types.operations';");
+  out.push('');
+}
+
+// Generate aliases with paths fallback
+out.push('// Payment transactions');
+out.push(aliasOrPaths(
+  'CreatePaymentTransactionRequestBody',
+  tryOps.CreatePaymentTransactionRequestBody,
+  'paths["/v2/CreatePaymentTransaction"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'CreatePaymentTransactionResponse',
+  tryOps.CreatePaymentTransactionResponse,
+  'paths["/v2/CreatePaymentTransaction"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Basic API endpoints');
+out.push(aliasOrPaths(
+  'CheckUtxoResponse',
+  tryOps.CheckUtxoResponse,
+  'paths["/v2/CheckUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'PayoutWalletsResponse',
+  tryOps.PayoutWalletsResponse,
+  'paths["/v2/GetPayoutWallets"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'RatesResponse',
+  tryOps.RatesResponse,
+  'paths["/v2/GetRates"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'AdaRatesResponse',
+  tryOps.AdaRatesResponse,
+  'paths["/v2/GetAdaRates"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'ServerStateResponse',
+  tryOps.ServerStateResponse,
+  'paths["/v2/GetServerState"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'PublicMintsResponse',
+  tryOps.PublicMintsResponse,
+  'paths["/v2/GetPublicMints"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Project and NFT operations');
+out.push(aliasOrPaths(
+  'GetCountsResponse',
+  tryOps.GetCountsResponse,
+  'paths["/v2/GetCounts/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'GetNftDetailsByIdResponse',
+  tryOps.GetNftDetailsByIdResponse,
+  'paths["/v2/GetNftDetailsById/{nftUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'GetNftsResponse',
+  tryOps.GetNftsResponse,
+  'paths["/v2/GetNfts/{projectUid}/{state}/{count}/{page}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'GetProjectTransactionsResponse',
+  tryOps.GetProjectTransactionsResponse,
+  'paths["/v2/GetProjectTransactions/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'GetAdditionalPayoutWalletsResponse',
+  tryOps.GetAdditionalPayoutWalletsResponse,
+  'paths["/v2/GetAdditionalPayoutWallets/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Payment address operations');
+out.push(aliasOrPaths(
+  'GetPaymentAddressForRandomNftSaleResponse',
+  tryOps.GetPaymentAddressForRandomNftSaleResponse,
+  'paths["/v2/GetAddressForRandomNftSale/{projectUid}/{countNft}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'GetPaymentAddressForSpecificNftSaleRequestBody',
+  tryOps.GetPaymentAddressForSpecificNftSaleRequestBody,
+  'paths["/v2/GetAddressForSpecificNftSale/{nftProjectId}"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'GetPaymentAddressForSpecificNftSaleResponse',
+  tryOps.GetPaymentAddressForSpecificNftSaleResponse,
+  'paths["/v2/GetAddressForSpecificNftSale/{nftProjectId}"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Wallet operations');
+out.push(aliasOrPaths(
+  'AllAssetsInWalletResponse',
+  tryOps.AllAssetsInWalletResponse,
+  'paths["/v2/GetAllAssetsInWallet/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'WalletUtxoResponse',
+  tryOps.WalletUtxoResponse,
+  'paths["/v2/GetWalletUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Upload and metadata operations');
+out.push('export type UploadNftRequest = components["schemas"]["UploadNftClass"];');
+out.push('export type UploadNftResponse = components["schemas"]["UploadNftResultClass"];');
+out.push('export type UpdateMetadataRequest = components["schemas"]["UploadMetadataClass"];');
+out.push('export type UpdateMetadataResponse = components["schemas"]["UploadMetadataResultClass"];');
+
+out.push('');
+out.push('// Payment status');
+out.push(aliasOrPaths(
+  'GetNmkrPayStatusResponse',
+  tryOps.GetNmkrPayStatusResponse,
+  'paths["/v2/GetNmkrPayStatus/{paymentTransactionUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Minting operations');
+out.push(aliasOrPaths(
+  'MintAndSendRandomResponse',
+  tryOps.MintAndSendRandomResponse,
+  'paths["/v2/MintAndSendRandom/{nftProjectId}/{countNft}/{receiverAddress}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'MintAndSendSpecificResponse',
+  tryOps.MintAndSendSpecificResponse,
+  'paths["/v2/MintAndSendSpecific/{nftProjectId}/{nftId}/{tokenCount}/{receiverAddress}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'MintAndSendMultipleSpecificRequestBody',
+  tryOps.MintAndSendMultipleSpecificRequestBody,
+  'paths["/v2/MintAndSendSpecific/{projectUid}/{receiverAddress}"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'MintAndSendMultipleSpecificResponse',
+  tryOps.MintAndSendMultipleSpecificResponse,
+  'paths["/v2/MintAndSendSpecific/{projectUid}/{receiverAddress}"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Payment gateway operations');
+out.push(aliasOrPaths(
+  'ProceedReserveRequestBody',
+  tryOps.ProceedReserveRequestBody,
+  'paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/ReservePaymentgatewayMintAndSendNft"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'ProceedReserveResponse',
+  tryOps.ProceedReserveResponse,
+  'paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/ReservePaymentgatewayMintAndSendNft"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'ProceedMintRequestBody',
+  tryOps.ProceedMintRequestBody,
+  'paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/MintAndSendPaymentgatewayNft"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'ProceedMintResponse',
+  tryOps.ProceedMintResponse,
+  'paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/MintAndSendPaymentgatewayNft"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'ProceedCancelResponse',
+  tryOps.ProceedCancelResponse,
+  'paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/CancelTransaction"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Project management');
+out.push(aliasOrPaths(
+  'ProjectDetailsResponse',
+  tryOps.ProjectDetailsResponse,
+  'paths["/v2/GetProjectDetails/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'CreateProjectRequest',
+  tryOps.CreateProjectRequest,
+  'paths["/v2/CreateProject"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'CreateProjectResponse',
+  tryOps.CreateProjectResponse,
+  'paths["/v2/CreateProject"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// IPFS operations');
+out.push(aliasOrPaths(
+  'UploadToIpfsRequestBody',
+  tryOps.UploadToIpfsRequestBody,
+  'paths["/v2/UploadToIpfs/{customerId}"]["post"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'UploadToIpfsResponse',
+  tryOps.UploadToIpfsResponse,
+  'paths["/v2/UploadToIpfs/{customerId}"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Address operations');
+out.push('export type CheckAddressResponse = components["schemas"]["CheckAddressResultClass"];');
+out.push(aliasOrPaths(
+  'CancelAddressReservationResponse',
+  tryOps.CancelAddressReservationResponse,
+  'paths["/v2/CancelAddressReservation/{projectUid}/{paymentAddress}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Whitelist operations');
+out.push(aliasOrPaths(
+  'WhitelistGetResponse',
+  tryOps.WhitelistGetResponse,
+  'paths["/v2/ManageWhitelist/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'WhitelistPostResponse',
+  tryOps.WhitelistPostResponse,
+  'paths["/v2/ManageWhitelist/{projectUid}/{address}/{countOfNfts}"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'WhitelistDeleteResponse',
+  tryOps.WhitelistDeleteResponse,
+  'paths["/v2/ManageWhitelist/{projectUid}/{address}"]["delete"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Project listing');
+out.push(aliasOrPaths(
+  'ListProjectsResponse',
+  tryOps.ListProjectsResponse,
+  'paths["/v2/ListProjects"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'ListProjectsPaginatedResponse',
+  tryOps.ListProjectsPaginatedResponse,
+  'paths["/v2/ListProjects/{count}/{page}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Sale conditions');
+out.push(aliasOrPaths(
+  'SaleConditionsGetResponse',
+  tryOps.SaleConditionsGetResponse,
+  'paths["/v2/GetSaleConditions/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'SaleConditionsPutRequestBody',
+  tryOps.SaleConditionsPutRequestBody,
+  'paths["/v2/UpdateSaleConditions/{projectUid}"]["put"]["requestBody"]["content"]["application/json"]'
+));
+out.push(aliasOrPaths(
+  'SaleConditionsPutResponse',
+  tryOps.SaleConditionsPutResponse,
+  'paths["/v2/UpdateSaleConditions/{projectUid}"]["put"]["responses"]["200"]["content"]["application/json"]'
+));
+
+out.push('');
+out.push('// Re-export components for convenience');
+out.push('export type { components } from "./openapi";');
+
+fs.writeFileSync(outPath, out.join('\n') + '\n', 'utf8');
+console.log(`✔ Generated ${outPath} with stable type aliases (${foundOpsTypes.length} from operations, rest from paths fallback)`);

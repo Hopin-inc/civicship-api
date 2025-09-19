@@ -2,77 +2,106 @@
 // @generated - DO NOT EDIT
 // Auto-generated stable type aliases for NMKR API operations
 
-import type { components } from './openapi';
+import type { paths, components } from './openapi';
 
 import type {
-  PostCreateProjectApikey_9ec63aRequestBody,
-  PostCreateProjectApikey_9ec63aResponse,
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
   GetGetNftsApikeyProjectuidStateCountPage_db3058Response,
   GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response,
   PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fRequestBody,
   PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fResponse,
-  GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse,
   PostUploadNftApikeyNftprojectid_e6d68cRequestBody,
   PostUploadNftApikeyNftprojectid_e6d68cResponse,
   PostUpdateMetadataApikeyNftprojectidNftid_1326a3RequestBody,
   PostUpdateMetadataApikeyNftprojectidNftid_1326a3Response,
-  GetCheckAddressApikeyProjectuidAddress_be060fResponse,
-  GetCancelAddressReservationApikeyProjectuidPaymentaddress_920914Response,
+  GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse,
   GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response,
   GetGetProjectDetailsApikeyProjectuid_b6371eResponse,
+  PostCreateProjectApikey_9ec63aRequestBody,
+  PostCreateProjectApikey_9ec63aResponse,
+  GetCheckAddressApikeyProjectuidAddress_be060fResponse,
+  GetCancelAddressReservationApikeyProjectuidPaymentaddress_920914Response,
   GetListProjectsApikey_b6d5e7Response,
   GetListProjectsApikeyCountPage_1d70d9Response
 } from './types.operations';
 
-export type CreateProjectRequest = PostCreateProjectApikey_9ec63aRequestBody;
-export type CreateProjectResponse = PostCreateProjectApikey_9ec63aResponse;
+// Payment transactions
+export type CreatePaymentTransactionRequestBody = paths["/v2/CreatePaymentTransaction"]["post"]["requestBody"]["content"]["application/json"];
+export type CreatePaymentTransactionResponse = paths["/v2/CreatePaymentTransaction"]["post"]["responses"]["200"]["content"]["application/json"];
+
+// Basic API endpoints
+export type CheckUtxoResponse = paths["/v2/CheckUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type PayoutWalletsResponse = paths["/v2/GetPayoutWallets"]["get"]["responses"]["200"]["content"]["application/json"];
+export type RatesResponse = paths["/v2/GetRates"]["get"]["responses"]["200"]["content"]["application/json"];
+export type AdaRatesResponse = paths["/v2/GetAdaRates"]["get"]["responses"]["200"]["content"]["application/json"];
+export type ServerStateResponse = paths["/v2/GetServerState"]["get"]["responses"]["200"]["content"]["application/json"];
+export type PublicMintsResponse = paths["/v2/GetPublicMints"]["get"]["responses"]["200"]["content"]["application/json"];
+
+// Project and NFT operations
 export type GetCountsResponse = GetGetCountsApikeyProjectuid_3ababbResponse;
 export type GetNftDetailsByIdResponse = GetGetNftDetailsByIdApikeyNftuid_1b8124Response;
 export type GetNftsResponse = GetGetNftsApikeyProjectuidStateCountPage_db3058Response;
+export type GetProjectTransactionsResponse = paths["/v2/GetProjectTransactions/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type GetAdditionalPayoutWalletsResponse = paths["/v2/GetAdditionalPayoutWallets/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+// Payment address operations
 export type GetPaymentAddressForRandomNftSaleResponse = GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response;
 export type GetPaymentAddressForSpecificNftSaleRequestBody = PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fRequestBody;
 export type GetPaymentAddressForSpecificNftSaleResponse = PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fResponse;
+
+// Wallet operations
+export type AllAssetsInWalletResponse = paths["/v2/GetAllAssetsInWallet/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type WalletUtxoResponse = paths["/v2/GetWalletUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+// Upload and metadata operations
+export type UploadNftRequest = components["schemas"]["UploadNftClass"];
+export type UploadNftResponse = components["schemas"]["UploadNftResultClass"];
+export type UpdateMetadataRequest = components["schemas"]["UploadMetadataClass"];
+export type UpdateMetadataResponse = components["schemas"]["UploadMetadataResultClass"];
+
+// Payment status
+export type GetNmkrPayStatusResponse = paths["/v2/GetNmkrPayStatus/{paymentTransactionUid}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+// Minting operations
 export type MintAndSendRandomResponse = GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse;
-export type UploadNftRequest = PostUploadNftApikeyNftprojectid_e6d68cRequestBody;
-export type UploadNftResponse = PostUploadNftApikeyNftprojectid_e6d68cResponse;
-export type UpdateMetadataRequest = PostUpdateMetadataApikeyNftprojectidNftid_1326a3RequestBody;
-export type UpdateMetadataResponse = PostUpdateMetadataApikeyNftprojectidNftid_1326a3Response;
-export type CheckAddressResponse = GetCheckAddressApikeyProjectuidAddress_be060fResponse;
-export type CancelAddressReservationResponse = GetCancelAddressReservationApikeyProjectuidPaymentaddress_920914Response;
-export type CreatePaymentTransactionRequestBody = Record<string, unknown>;
-export type CreatePaymentTransactionResponse = Record<string, unknown>;
-export type CheckUtxoResponse = Record<string, unknown>;
-export type PayoutWalletsResponse = Record<string, unknown>;
-export type RatesResponse = Record<string, unknown>;
-export type AdaRatesResponse = Record<string, unknown>;
-export type ServerStateResponse = Record<string, unknown>;
-export type PublicMintsResponse = Record<string, unknown>;
-export type GetProjectTransactionsResponse = Record<string, unknown>;
-export type GetAdditionalPayoutWalletsResponse = Record<string, unknown>;
-export type AllAssetsInWalletResponse = Record<string, unknown>;
-export type WalletUtxoResponse = Record<string, unknown>;
-export type GetNmkrPayStatusResponse = Record<string, unknown>;
 export type MintAndSendSpecificResponse = GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response;
-export type MintAndSendMultipleSpecificRequestBody = Record<string, unknown>;
-export type MintAndSendMultipleSpecificResponse = Record<string, unknown>;
-export type ProceedReserveRequestBody = Record<string, unknown>;
-export type ProceedReserveResponse = Record<string, unknown>;
-export type ProceedMintRequestBody = Record<string, unknown>;
-export type ProceedMintResponse = Record<string, unknown>;
-export type ProceedCancelResponse = Record<string, unknown>;
+export type MintAndSendMultipleSpecificRequestBody = paths["/v2/MintAndSendSpecific/{projectUid}/{receiverAddress}"]["post"]["requestBody"]["content"]["application/json"];
+export type MintAndSendMultipleSpecificResponse = paths["/v2/MintAndSendSpecific/{projectUid}/{receiverAddress}"]["post"]["responses"]["200"]["content"]["application/json"];
+
+// Payment gateway operations
+export type ProceedReserveRequestBody = paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/ReservePaymentgatewayMintAndSendNft"]["post"]["requestBody"]["content"]["application/json"];
+export type ProceedReserveResponse = paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/ReservePaymentgatewayMintAndSendNft"]["post"]["responses"]["200"]["content"]["application/json"];
+export type ProceedMintRequestBody = paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/MintAndSendPaymentgatewayNft"]["post"]["requestBody"]["content"]["application/json"];
+export type ProceedMintResponse = paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/MintAndSendPaymentgatewayNft"]["post"]["responses"]["200"]["content"]["application/json"];
+export type ProceedCancelResponse = paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/CancelTransaction"]["post"]["responses"]["200"]["content"]["application/json"];
+
+// Project management
 export type ProjectDetailsResponse = GetGetProjectDetailsApikeyProjectuid_b6371eResponse;
-export type UploadToIpfsRequestBody = Record<string, unknown>;
-export type UploadToIpfsResponse = Record<string, unknown>;
-export type WhitelistGetResponse = Record<string, unknown>;
-export type WhitelistPostResponse = Record<string, unknown>;
-export type WhitelistDeleteResponse = Record<string, unknown>;
+export type CreateProjectRequest = PostCreateProjectApikey_9ec63aRequestBody;
+export type CreateProjectResponse = PostCreateProjectApikey_9ec63aResponse;
+
+// IPFS operations
+export type UploadToIpfsRequestBody = paths["/v2/UploadToIpfs/{customerId}"]["post"]["requestBody"]["content"]["application/json"];
+export type UploadToIpfsResponse = paths["/v2/UploadToIpfs/{customerId}"]["post"]["responses"]["200"]["content"]["application/json"];
+
+// Address operations
+export type CheckAddressResponse = components["schemas"]["CheckAddressResultClass"];
+export type CancelAddressReservationResponse = GetCancelAddressReservationApikeyProjectuidPaymentaddress_920914Response;
+
+// Whitelist operations
+export type WhitelistGetResponse = paths["/v2/ManageWhitelist/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type WhitelistPostResponse = paths["/v2/ManageWhitelist/{projectUid}/{address}/{countOfNfts}"]["post"]["responses"]["200"]["content"]["application/json"];
+export type WhitelistDeleteResponse = paths["/v2/ManageWhitelist/{projectUid}/{address}"]["delete"]["responses"]["200"]["content"]["application/json"];
+
+// Project listing
 export type ListProjectsResponse = GetListProjectsApikey_b6d5e7Response;
 export type ListProjectsPaginatedResponse = GetListProjectsApikeyCountPage_1d70d9Response;
-export type SaleConditionsGetResponse = Record<string, unknown>;
-export type SaleConditionsPutRequestBody = Record<string, unknown>;
-export type SaleConditionsPutResponse = Record<string, unknown>;
+
+// Sale conditions
+export type SaleConditionsGetResponse = paths["/v2/GetSaleConditions/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type SaleConditionsPutRequestBody = paths["/v2/UpdateSaleConditions/{projectUid}"]["put"]["requestBody"]["content"]["application/json"];
+export type SaleConditionsPutResponse = paths["/v2/UpdateSaleConditions/{projectUid}"]["put"]["responses"]["200"]["content"]["application/json"];
 
 // Re-export components for convenience
-export type { components } from './openapi';
+export type { components } from "./openapi";
