@@ -5,6 +5,9 @@ import {
   CreatePaymentTransactionRandomReq,
   UploadNftRequest,
   ReserveMultipleNftsClassV2,
+  CreateProjectRequest,
+  UpdateMetadataRequest,
+  UploadToIpfsRequest,
 } from "@/infrastructure/libs/nmkr/types";
 
 export class NmkrEndpoints {
@@ -328,6 +331,131 @@ export class NmkrEndpoints {
         ],
       }
     );
+    return data;
+  }
+
+  async getProjectDetails(projectUid: string): Promise<any> {
+    const { data } = await this.http.get(`/v2/GetProjectDetails/${encodeURIComponent(projectUid)}`, {
+      responseType: "text" as any,
+      transformResponse: [
+        (raw) => {
+          if (typeof raw === "string") {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return raw;
+            }
+          }
+          return raw;
+        },
+      ],
+    });
+    return data;
+  }
+
+  async createProject(payload: CreateProjectRequest): Promise<any> {
+    const { data } = await this.http.post("/v2/CreateProject", payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: "text" as any,
+      transformResponse: [
+        (raw) => {
+          if (typeof raw === "string") {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return raw;
+            }
+          }
+          return raw;
+        },
+      ],
+    });
+    return data;
+  }
+
+  async updateMetadata(projectUid: string, nftUid: string, payload: UpdateMetadataRequest): Promise<any> {
+    const { data } = await this.http.post(
+      `/v2/UpdateMetadata/${encodeURIComponent(projectUid)}/${encodeURIComponent(nftUid)}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
+    return data;
+  }
+
+  async getPaymentAddressForSpecificNftSale(
+    nftUid: string, 
+    tokenCount: number, 
+    referer?: string, 
+    customProperty?: string, 
+    optionalReceiverAddress?: string
+  ): Promise<any> {
+    let url = `/v2/GetPaymentAddressForSpecificNftSale/${encodeURIComponent(nftUid)}/${tokenCount}`;
+    const params = new URLSearchParams();
+    
+    if (referer) params.append('referer', referer);
+    if (customProperty) params.append('customproperty', customProperty);
+    if (optionalReceiverAddress) params.append('optionalreceiveraddress', optionalReceiverAddress);
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    const { data } = await this.http.get(url, {
+      responseType: "text" as any,
+      transformResponse: [
+        (raw) => {
+          if (typeof raw === "string") {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return raw;
+            }
+          }
+          return raw;
+        },
+      ],
+    });
+    return data;
+  }
+
+  async uploadToIpfs(customerId: number, payload: UploadToIpfsRequest): Promise<any> {
+    const { data } = await this.http.post(`/v2/UploadToIpfs/${customerId}`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      responseType: "text" as any,
+      transformResponse: [
+        (raw) => {
+          if (typeof raw === "string") {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return raw;
+            }
+          }
+          return raw;
+        },
+      ],
+    });
     return data;
   }
 

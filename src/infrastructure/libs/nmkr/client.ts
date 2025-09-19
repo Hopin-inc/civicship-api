@@ -9,6 +9,12 @@ import {
   GetNmkrPayStatusResponse,
   MintAndSendResultClass,
   ReserveMultipleNftsClassV2,
+  CreateProjectRequest,
+  NftProjectsDetails,
+  UpdateMetadataRequest,
+  GetPaymentAddressForSpecificNftSaleResponse,
+  UploadToIpfsRequest,
+  UploadToIpfsResponse,
 } from "./types";
 
 @injectable()
@@ -286,6 +292,67 @@ export class NmkrClient {
         throw error;
       }
       throw new Error(`Failed to cancel transaction: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getProjectDetails(projectUid: string): Promise<NftProjectsDetails> {
+    try {
+      return await this.endpoints.getProjectDetails(projectUid);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to get project details: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async createProject(payload: CreateProjectRequest): Promise<any> {
+    try {
+      return await this.endpoints.createProject(payload);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to create project: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async updateMetadata(projectUid: string, nftUid: string, payload: UpdateMetadataRequest): Promise<any> {
+    try {
+      return await this.endpoints.updateMetadata(projectUid, nftUid, payload);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to update metadata: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getPaymentAddressForSpecificNftSale(
+    nftUid: string, 
+    tokenCount: number, 
+    referer?: string, 
+    customProperty?: string, 
+    optionalReceiverAddress?: string
+  ): Promise<GetPaymentAddressForSpecificNftSaleResponse> {
+    try {
+      return await this.endpoints.getPaymentAddressForSpecificNftSale(nftUid, tokenCount, referer, customProperty, optionalReceiverAddress);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to get payment address for specific NFT sale: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async uploadToIpfs(customerId: number, payload: UploadToIpfsRequest): Promise<UploadToIpfsResponse> {
+    try {
+      return await this.endpoints.uploadToIpfs(customerId, payload);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to upload to IPFS: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
