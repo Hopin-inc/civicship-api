@@ -1,15 +1,17 @@
 import { Prisma } from "@prisma/client";
+import { productSelectBase } from "@/application/domain/product/type";
 
 export const orderItemSelectBase = Prisma.validator<Prisma.OrderItemSelect>()({
   id: true,
+
+  priceSnapshot: true,
+  quantity: true,
+
   orderId: true,
   order: true,
 
   productId: true,
-  product: true,
-
-  quantity: true,
-  priceSnapshot: true,
+  product: { select: productSelectBase },
 
   nftMints: true,
 

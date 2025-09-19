@@ -13,7 +13,6 @@ export const productSelectBase = Prisma.validator<Prisma.ProductSelect>()({
   endsAt: true,
 
   nftProduct: true,
-  orderItem: true,
 
   createdAt: true,
   updatedAt: true,
