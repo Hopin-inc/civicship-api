@@ -22,32 +22,32 @@ const R = (pattern) => new RegExp(`${pattern}(?![\\w$])`, 'i');
 
 // Try to find operation types first (with improved regex patterns)
 const tryOps = {
-  // Payment transactions
-  CreatePaymentTransactionRequestBody: findName(R('PostCreatePaymentTransactionApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
-  CreatePaymentTransactionResponse: findName(R('PostCreatePaymentTransactionApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  // Payment transactions - using actual CreateProject pattern since CreatePaymentTransaction doesn't exist
+  CreatePaymentTransactionRequestBody: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
+  CreatePaymentTransactionResponse: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}Response')),
   
-  // Basic API endpoints
-  CheckUtxoResponse: findName(R('GetCheckUtxoApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
-  PayoutWalletsResponse: findName(R('GetGetPayoutWalletsApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
-  RatesResponse: findName(R('GetGetRatesApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
-  AdaRatesResponse: findName(R('GetGetAdaRatesApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
-  ServerStateResponse: findName(R('GetGetServerStateApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
-  PublicMintsResponse: findName(R('GetGetPublicMintsApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
+  // Basic API endpoints - using actual CheckAddress pattern for CheckUtxo
+  CheckUtxoResponse: findName(R('GetCheckAddressApi[Kk]ey.*Address_[a-z0-9]{6,}Response')),
+  PayoutWalletsResponse: findName(R('GetGetPayoutWalletsApi[Kk]ey_[a-z0-9]{6,}Response')),
+  RatesResponse: findName(R('GetGetPricelistApi[Kk]ey.*_[a-z0-9]{6,}Response')),
+  AdaRatesResponse: findName(R('GetGetPricelistApi[Kk]ey.*_[a-z0-9]{6,}Response')),
+  ServerStateResponse: findName(R('GetGetServerStateApi[Kk]ey_[a-z0-9]{6,}Response')),
+  PublicMintsResponse: findName(R('GetGetPublicMintsApi[Kk]ey_[a-z0-9]{6,}Response')),
   
   // Project and NFT operations
-  GetCountsResponse: findName(R('GetGetCountsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
-  GetNftDetailsByIdResponse: findName(R('GetGetNftDetailsByIdApi[Kk]eyNftuid_[a-z0-9]{6,}Response(?!\\d)')),
-  GetNftsResponse: findName(R('GetGetNftsApi[Kk]eyProjectuidStateCountPage_[a-z0-9]{6,}Response(?!\\d)')),
-  GetProjectTransactionsResponse: findName(R('GetGetProjectTransactionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
-  GetAdditionalPayoutWalletsResponse: findName(R('GetGetAdditionalPayoutWalletsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  GetCountsResponse: findName(R('GetGetCountsApikey.*Projectuid_[a-z0-9]{6,}Response')),
+  GetNftDetailsByIdResponse: findName(R('GetGetNftDetailsByIdApikey.*Nftuid_[a-z0-9]{6,}Response')),
+  GetNftsResponse: findName(R('GetGetNftsApikey.*Projectuid.*State.*Count.*Page_[a-z0-9]{6,}Response')),
+  GetProjectTransactionsResponse: findName(R('GetGetProjectTransactionsApikey.*Projectuid_[a-z0-9]{6,}Response')),
+  GetAdditionalPayoutWalletsResponse: findName(R('GetGetAdditionalPayoutWalletsApikey.*Projectuid_[a-z0-9]{6,}Response')),
   
   // Payment address operations (corrected to match actual operation names)
-  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApi[Kk]eyProjectuidCountnft_[a-z0-9]{6,}Response')),
-  GetPaymentAddressForSpecificNftSaleResponse: findName(R('GetGetAddressForSpecificNftSaleApi[Kk]eyNftprojectidNftidTokencount_[a-z0-9]{6,}Response')),
+  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApikey.*Projectuid.*Countnft_[a-z0-9]{6,}Response')),
+  GetPaymentAddressForSpecificNftSaleResponse: findName(R('GetGetAddressForSpecificNftSaleApikey.*Nftuid.*Tokencount_[a-z0-9]{6,}Response')),
   
   // Wallet operations
-  AllAssetsInWalletResponse: findName(R('GetGetAllAssetsInWalletApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
-  WalletUtxoResponse: findName(R('GetGetWalletUtxoApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
+  AllAssetsInWalletResponse: findName(R('GetGetAllAssetsInWalletApikey.*Address_[a-z0-9]{6,}Response')),
+  WalletUtxoResponse: findName(R('GetGetWalletUtxoApikey.*Address_[a-z0-9]{6,}Response')),
   
   // Upload and metadata operations
   UploadNftRequest: findName(R('PostUploadNftApi[Kk]eyNftprojectid_[a-z0-9]{6,}RequestBody')),
@@ -59,10 +59,10 @@ const tryOps = {
   GetNmkrPayStatusResponse: findName(R('GetGetNmkrPayStatusApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
   
   // Minting operations
-  MintAndSendRandomResponse: findName(R('GetMintAndSendRandomApi[Kk]eyNftprojectidCountnftReceiveraddress_[a-z0-9]{6,}Response(?!\\d)')),
-  MintAndSendSpecificResponse: findName(R('GetMintAndSendSpecificApi[Kk]eyNftprojectidNftidTokencountReceiveraddress_[a-z0-9]{6,}Response(?!\\d)')),
-  MintAndSendMultipleSpecificRequestBody: findName(R('PostMintAndSendSpecificApi[Kk]eyProjectuidReceiveraddress_[a-z0-9]{6,}RequestBody')),
-  MintAndSendMultipleSpecificResponse: findName(R('PostMintAndSendSpecificApi[Kk]eyProjectuidReceiveraddress_[a-z0-9]{6,}Response(?!\\d)')),
+  MintAndSendRandomResponse: findName(R('GetMintAndSendRandomApikey.*Nftprojectid.*Countnft.*Receiveraddress_[a-z0-9]{6,}Response')),
+  MintAndSendSpecificResponse: findName(R('GetMintAndSendSpecificApikey.*Nftprojectid.*Nftid.*Tokencount.*Receiveraddress_[a-z0-9]{6,}Response')),
+  MintAndSendMultipleSpecificRequestBody: findName(R('PostMintAndSendSpecificApikey.*Projectuid.*Receiveraddress_[a-z0-9]{6,}RequestBody')),
+  MintAndSendMultipleSpecificResponse: findName(R('PostMintAndSendSpecificApikey.*Projectuid.*Receiveraddress_[a-z0-9]{6,}Response')),
   
   // Payment gateway operations
   ProceedReserveRequestBody: findName(R('PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}RequestBody')),
@@ -134,12 +134,12 @@ out.push('// Payment transactions');
 out.push(aliasOrPaths(
   'CreatePaymentTransactionRequestBody',
   tryOps.CreatePaymentTransactionRequestBody,
-  'paths["/v2/CreatePaymentTransaction"]["post"]["requestBody"]["content"]["application/json"]'
+  'paths["/CreateProject/{apikey}"]["post"]["requestBody"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
   'CreatePaymentTransactionResponse',
   tryOps.CreatePaymentTransactionResponse,
-  'paths["/v2/CreatePaymentTransaction"]["post"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/CreateProject/{apikey}"]["post"]["responses"]["200"]["content"]["application/json"]'
 ));
 
 out.push('');
@@ -147,7 +147,7 @@ out.push('// Basic API endpoints');
 out.push(aliasOrPaths(
   'CheckUtxoResponse',
   tryOps.CheckUtxoResponse,
-  'paths["/v2/CheckUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/CheckAddress/{apikey}/{projectuid}/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
   'PayoutWalletsResponse',
@@ -201,12 +201,12 @@ out.push('// Payment address operations (corrected paths and removed RequestBody
 out.push(aliasOrPaths(
   'GetPaymentAddressForRandomNftSaleResponse',
   tryOps.GetPaymentAddressForRandomNftSaleResponse,
-  'paths["/v2/GetAddressForRandomNftSale/{projectUid}/{countNft}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/GetAddressForRandomNftSale/{apikey}/{projectuid}/{countnft}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
   'GetPaymentAddressForSpecificNftSaleResponse',
   tryOps.GetPaymentAddressForSpecificNftSaleResponse,
-  'paths["/v2/GetAddressForSpecificNftSale/{nftProjectId}/{nftId}/{tokenCount}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/GetAddressForSpecificNftSale/{apikey}/{nftuid}/{tokencount}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 
 out.push('');
