@@ -4,6 +4,7 @@ import {
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
   UploadNftRequest,
+  ReserveMultipleNftsClassV2,
 } from "@/infrastructure/libs/nmkr/types";
 
 export class NmkrEndpoints {
@@ -52,42 +53,14 @@ export class NmkrEndpoints {
   }
 
 
-  async checkMetadata(nftUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/CheckMetadata/${encodeURIComponent(nftUid)}`);
-    return data;
-  }
-
-  async duplicateNft(nftUid: string): Promise<any> {
-    const { data } = await this.http.post(`/v2/DuplicateNft/${encodeURIComponent(nftUid)}`, {});
-    return data;
-  }
 
 
-  async checkIfEligibleForDiscount(projectUid: string, address: string): Promise<any> {
-    const { data } = await this.http.get(
-      `/v2/CheckIfEligibleForDiscount/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}`,
-    );
-    return data;
-  }
-
-  async checkIfSaleConditionsMet(projectUid: string, address: string, countNft: number): Promise<any> {
-    const { data } = await this.http.get(
-      `/v2/CheckIfSaleConditionsMet/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}/${countNft}`,
-    );
-    return data;
-  }
 
   async checkUtxo(address: string): Promise<any> {
     const { data } = await this.http.get(`/v2/CheckUtxo/${encodeURIComponent(address)}`);
     return data;
   }
 
-  async createBurningAddress(projectUid: string, addressActiveInHours: number): Promise<any> {
-    const { data } = await this.http.get(
-      `/v2/CreateBurningAddress/${encodeURIComponent(projectUid)}/${addressActiveInHours}`,
-    );
-    return data;
-  }
 
 
   async getPayoutWallets(): Promise<any> {
@@ -125,15 +98,6 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getDiscounts(projectUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetDiscounts/${encodeURIComponent(projectUid)}`);
-    return data;
-  }
-
-  async getNotifications(projectUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetNotifications/${encodeURIComponent(projectUid)}`);
-    return data;
-  }
 
 
   async getProjectTransactions(projectUid: string): Promise<any> {
@@ -141,10 +105,6 @@ export class NmkrEndpoints {
     return data;
   }
 
-  async getRefunds(projectUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetRefunds/${encodeURIComponent(projectUid)}`);
-    return data;
-  }
 
 
   async getAdditionalPayoutWallets(projectUid: string): Promise<any> {
@@ -223,6 +183,151 @@ export class NmkrEndpoints {
         },
       ],
     });
+    return data;
+  }
+
+  async mintAndSendRandom(projectUid: string, countNft: number, receiverAddress: string, blockchain: string = "Cardano"): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/MintAndSendRandom/${encodeURIComponent(projectUid)}/${countNft}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
+      {
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
+    return data;
+  }
+
+  async mintAndSendSpecific(projectUid: string, nftUid: string, tokenCount: number, receiverAddress: string, blockchain: string = "Cardano"): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/MintAndSendSpecific/${encodeURIComponent(projectUid)}/${encodeURIComponent(nftUid)}/${tokenCount}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
+      {
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
+    return data;
+  }
+
+  async mintAndSendMultipleSpecific(projectUid: string, receiverAddress: string, payload: ReserveMultipleNftsClassV2, blockchain: string = "Cardano"): Promise<any> {
+    const { data } = await this.http.post(
+      `/v2/MintAndSendSpecific/${encodeURIComponent(projectUid)}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
+    return data;
+  }
+
+  async reservePaymentgatewayMintAndSendNft(paymentTransactionUid: string, payload: { receiverAddress: string }): Promise<any> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/ReservePaymentgatewayMintAndSendNft`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
+    return data;
+  }
+
+  async mintAndSendPaymentgatewayNft(paymentTransactionUid: string, payload: { receiverAddress: string }): Promise<any> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/MintAndSendPaymentgatewayNft`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
+    return data;
+  }
+
+  async cancelTransaction(paymentTransactionUid: string): Promise<any> {
+    const { data } = await this.http.post(
+      `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/CancelTransaction`,
+      {},
+      {
+        responseType: "text" as any,
+        transformResponse: [
+          (raw) => {
+            if (typeof raw === "string") {
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return raw;
+              }
+            }
+            return raw;
+          },
+        ],
+      }
+    );
     return data;
   }
 

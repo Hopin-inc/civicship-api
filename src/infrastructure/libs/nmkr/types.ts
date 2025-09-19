@@ -180,6 +180,42 @@ export type NmkrWebhookPayload = {
   timestamp: string;
 };
 
+export type MintAndSendResultClass = {
+  mintAndSendId?: number;
+  sendedNft?: NFT[];
+};
+
+export type ReserveNftsClassV2 = {
+  lovelace?: number;
+  nftUid?: string;
+  nftId?: number;
+  tokencount?: number;
+};
+
+export type ReserveMultipleNftsClassV2 = {
+  reserveNfts?: ReserveNftsClassV2[];
+};
+
+export type NFT = {
+  nftId?: number;
+  nftUid?: string;
+  assetId?: string;
+  policyId?: string;
+  assetName?: string;
+  fingerprint?: string;
+  initialMintTxHash?: string;
+  metadata?: any;
+  state?: string;
+  minted?: boolean;
+  ipfsHash?: string;
+  arweaveHash?: string;
+  tokenname?: string;
+  image?: string;
+  mediaType?: string;
+  description?: string;
+  files?: any[];
+};
+
 //
 // // Payout Wallets
 // export type PayoutWallet = {

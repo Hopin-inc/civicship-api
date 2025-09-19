@@ -7,6 +7,8 @@ import {
   CreatePaymentTransactionRes,
   UploadNftRequest,
   GetNmkrPayStatusResponse,
+  MintAndSendResultClass,
+  ReserveMultipleNftsClassV2,
 } from "./types";
 
 @injectable()
@@ -45,50 +47,8 @@ export class NmkrClient {
   }
 
 
-  async checkMetadata(nftUid: string): Promise<any> {
-    try {
-      return await this.endpoints.checkMetadata(nftUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to check metadata: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async duplicateNft(nftUid: string): Promise<any> {
-    try {
-      return await this.endpoints.duplicateNft(nftUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to duplicate NFT: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
 
-  async checkIfEligibleForDiscount(projectUid: string, address: string): Promise<any> {
-    try {
-      return await this.endpoints.checkIfEligibleForDiscount(projectUid, address);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to check discount eligibility: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async checkIfSaleConditionsMet(projectUid: string, address: string, countNft: number): Promise<any> {
-    try {
-      return await this.endpoints.checkIfSaleConditionsMet(projectUid, address, countNft);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to check sale conditions: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
   async checkUtxo(address: string): Promise<any> {
     try {
@@ -101,16 +61,6 @@ export class NmkrClient {
     }
   }
 
-  async createBurningAddress(projectUid: string, addressActiveInHours: number): Promise<any> {
-    try {
-      return await this.endpoints.createBurningAddress(projectUid, addressActiveInHours);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to create burning address: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
 
   async getRates(): Promise<any> {
@@ -168,27 +118,6 @@ export class NmkrClient {
     }
   }
 
-  async getDiscounts(projectUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getDiscounts(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get discounts: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
-
-  async getNotifications(projectUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getNotifications(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get notifications: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
 
   async getProjectTransactions(projectUid: string): Promise<any> {
@@ -202,16 +131,6 @@ export class NmkrClient {
     }
   }
 
-  async getRefunds(projectUid: string): Promise<any> {
-    try {
-      return await this.endpoints.getRefunds(projectUid);
-    } catch (error) {
-      if (error instanceof NmkrHttpError) {
-        throw error;
-      }
-      throw new Error(`Failed to get refunds: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  }
 
 
   async getAdditionalPayoutWallets(projectUid: string): Promise<any> {
@@ -301,6 +220,72 @@ export class NmkrClient {
         throw error;
       }
       throw new Error(`Failed to get NMKR pay status: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async mintAndSendRandom(projectUid: string, countNft: number, receiverAddress: string, blockchain: string = "Cardano"): Promise<MintAndSendResultClass> {
+    try {
+      return await this.endpoints.mintAndSendRandom(projectUid, countNft, receiverAddress, blockchain);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to mint and send random NFT: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async mintAndSendSpecific(projectUid: string, nftUid: string, tokenCount: number, receiverAddress: string, blockchain: string = "Cardano"): Promise<MintAndSendResultClass> {
+    try {
+      return await this.endpoints.mintAndSendSpecific(projectUid, nftUid, tokenCount, receiverAddress, blockchain);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to mint and send specific NFT: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async mintAndSendMultipleSpecific(projectUid: string, receiverAddress: string, payload: ReserveMultipleNftsClassV2, blockchain: string = "Cardano"): Promise<MintAndSendResultClass> {
+    try {
+      return await this.endpoints.mintAndSendMultipleSpecific(projectUid, receiverAddress, payload, blockchain);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to mint and send multiple specific NFTs: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async reservePaymentgatewayMintAndSendNft(paymentTransactionUid: string, payload: { receiverAddress: string }): Promise<any> {
+    try {
+      return await this.endpoints.reservePaymentgatewayMintAndSendNft(paymentTransactionUid, payload);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to reserve paymentgateway mint and send NFT: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async mintAndSendPaymentgatewayNft(paymentTransactionUid: string, payload: { receiverAddress: string }): Promise<any> {
+    try {
+      return await this.endpoints.mintAndSendPaymentgatewayNft(paymentTransactionUid, payload);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to mint and send paymentgateway NFT: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async cancelTransaction(paymentTransactionUid: string): Promise<any> {
+    try {
+      return await this.endpoints.cancelTransaction(paymentTransactionUid);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to cancel transaction: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
