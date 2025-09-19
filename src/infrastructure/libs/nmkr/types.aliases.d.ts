@@ -58,7 +58,7 @@ export type WalletUtxoResponse = paths["/v2/GetWalletUtxo/{address}"]["get"]["re
 export type UploadNftRequest = components["schemas"]["UploadNftClass"];
 export type UploadNftResponse = components["schemas"]["UploadNftResultClass"];
 export type UpdateMetadataRequest = components["schemas"]["UploadMetadataClass"];
-export type UpdateMetadataResponse = components["schemas"]["UploadMetadataResultClass"];
+export type UpdateMetadataResponse = PostUpdateMetadataApikeyNftprojectidNftid_1326a3Response;
 
 // Payment status
 export type GetNmkrPayStatusResponse = paths["/v2/GetNmkrPayStatus/{paymentTransactionUid}"]["get"]["responses"]["200"]["content"]["application/json"];

@@ -240,7 +240,11 @@ out.push('// Upload and metadata operations');
 out.push('export type UploadNftRequest = components["schemas"]["UploadNftClass"];');
 out.push('export type UploadNftResponse = components["schemas"]["UploadNftResultClass"];');
 out.push('export type UpdateMetadataRequest = components["schemas"]["UploadMetadataClass"];');
-out.push('export type UpdateMetadataResponse = components["schemas"]["UploadMetadataResultClass"];');
+out.push(aliasOrPaths(
+  'UpdateMetadataResponse',
+  tryOps.UpdateMetadataResponse,
+  'paths["/v2/UpdateMetadata/{nftprojectid}/{nftid}"]["post"]["responses"]["200"]["content"]["application/json"]'
+));
 
 out.push('');
 out.push('// Payment status');

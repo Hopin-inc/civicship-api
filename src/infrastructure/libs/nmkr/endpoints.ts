@@ -11,9 +11,11 @@ import type {
   PublicMintsResponse,
   GetProjectTransactionsResponse,
   GetAdditionalPayoutWalletsResponse,
+  AllAssetsInWalletResponse,
   WalletUtxoResponse,
   UploadNftRequest,
   UploadNftResponse,
+  UpdateMetadataResponse,
   GetNmkrPayStatusResponse,
   MintAndSendMultipleSpecificRequestBody,
   MintAndSendMultipleSpecificResponse,
@@ -147,10 +149,10 @@ export class NmkrEndpoints {
     }
   }
 
-  async getAllAssetsInWallet(address: string, options?: { timeoutMs?: number }): Promise<Record<string, unknown>[]> {
+  async getAllAssetsInWallet(address: string, options?: { timeoutMs?: number }): Promise<AllAssetsInWalletResponse> {
     const timeout = options?.timeoutMs || 90000;
     try {
-      return await this.http2.getJSON<Record<string, unknown>[]>(
+      return await this.http2.getJSON<AllAssetsInWalletResponse>(
         `/v2/GetAllAssetsInWallet/${encodeURIComponent(address)}`,
         { timeout }
       );
@@ -264,8 +266,8 @@ export class NmkrEndpoints {
     projectUid: string,
     nftUid: string,
     payload: components['schemas']['UploadMetadataClass'],
-  ): Promise<Record<string, unknown>> {
-    return this.http2.postJSON<Record<string, unknown>, components['schemas']['UploadMetadataClass']>(
+  ): Promise<UpdateMetadataResponse> {
+    return this.http2.postJSON<UpdateMetadataResponse, components['schemas']['UploadMetadataClass']>(
       `/v2/UpdateMetadata/${encodeURIComponent(projectUid)}/${encodeURIComponent(nftUid)}`,
       payload
     );
