@@ -219,7 +219,7 @@ out.push(aliasOrPaths(
 out.push(aliasOrPaths(
   'GetPaymentAddressForSpecificNftSaleResponse',
   tryOps.GetPaymentAddressForSpecificNftSaleResponse,
-  'paths["/v2/GetAddressForSpecificNftSale/{nftProjectId}"]["post"]["responses"]["200"]["content"]["application/json"]'
+  'components["schemas"]["GetPaymentAddressResultClass"]'
 ));
 
 out.push('');

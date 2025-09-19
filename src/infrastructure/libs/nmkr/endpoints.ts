@@ -149,6 +149,15 @@ export class NmkrEndpoints {
     }
   }
 
+  /**
+   * Retrieves all assets in a wallet. This is a heavy operation that can take up to 90 seconds.
+   * For faster results with basic UTXO information, consider using getWalletUtxo() instead.
+   * 
+   * @param address - The wallet address to query
+   * @param options - Optional configuration including timeout (default: 90000ms)
+   * @returns Promise resolving to all assets in the wallet
+   * @throws Error if the request times out or fails
+   */
   async getAllAssetsInWallet(address: string, options?: { timeoutMs?: number }): Promise<AllAssetsInWalletResponse> {
     const timeout = options?.timeoutMs || 90000;
     try {
