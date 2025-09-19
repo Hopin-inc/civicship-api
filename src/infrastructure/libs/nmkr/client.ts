@@ -58,10 +58,6 @@ export class NmkrClient {
     );
   }
 
-
-
-
-
   async checkUtxo(address: string): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.checkUtxo(address),
@@ -75,8 +71,6 @@ export class NmkrClient {
       'Failed to get payout wallets'
     );
   }
-
-
 
   async getRates(): Promise<any> {
     return this.handleRequest(
@@ -112,8 +106,6 @@ export class NmkrClient {
       'Failed to get counts'
     );
   }
-
-
 
   async getProjectTransactions(projectUid: string): Promise<any> {
     return this.handleRequest(
