@@ -1,26 +1,14 @@
 import { injectable } from "tsyringe";
 import { createNmkrHttpClient, NmkrHttpError } from "./http";
 import { NmkrEndpoints } from "./endpoints";
-import {
-  CreatePaymentTransactionSpecificReq,
-  CreatePaymentTransactionRandomReq,
-  CreatePaymentTransactionRes,
-  UploadNftRequest,
-  GetNmkrPayStatusResponse,
-  MintAndSendResultClass,
-  ReserveMultipleNftsClassV2,
-  CreateProjectRequest,
-  NftProjectsDetails,
-  UpdateMetadataRequest,
-  GetPaymentAddressForSpecificNftSaleResponse,
-  UploadToIpfsRequest,
-  UploadToIpfsResponse,
-  CountsResponse,
-  NftDetailsResponse,
-  AssetsInWalletResponse,
-  NftState,
-  Blockchain,
-} from "./types";
+import { components } from "./openapi";
+import { Chain, MintResult } from "./types.generated";
+import type {
+  GetGetCountsApikeyProjectuid_3ababbResponse,
+  GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
+  GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse,
+  GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response
+} from "./types.operations";
 
 @injectable()
 export class NmkrClient {
@@ -46,8 +34,8 @@ export class NmkrClient {
   }
 
   async createSpecificNftSale(
-    payload: CreatePaymentTransactionSpecificReq,
-  ): Promise<CreatePaymentTransactionRes> {
+    payload: any,
+  ): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.createPaymentTransactionForSpecificNft(payload),
       'Failed to create specific NFT sale'
@@ -55,8 +43,8 @@ export class NmkrClient {
   }
 
   async createRandomNftSale(
-    payload: CreatePaymentTransactionRandomReq,
-  ): Promise<CreatePaymentTransactionRes> {
+    payload: any,
+  ): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.createPaymentTransactionForRandomNft(payload),
       'Failed to create random NFT sale'
@@ -77,7 +65,7 @@ export class NmkrClient {
     );
   }
 
-  async getRates(): Promise<any> {
+  async getRates(): Promise<components['schemas']['PricelistClass']> {
     return this.handleRequest(
       () => this.endpoints.getRates(),
       'Failed to get rates'
@@ -105,7 +93,7 @@ export class NmkrClient {
     );
   }
 
-  async getCounts(projectUid: string): Promise<CountsResponse> {
+  async getCounts(projectUid: string): Promise<GetGetCountsApikeyProjectuid_3ababbResponse> {
     return this.handleRequest(
       () => this.endpoints.getCounts(projectUid),
       'Failed to get counts'
@@ -126,7 +114,7 @@ export class NmkrClient {
     );
   }
 
-  async getNftDetailsById(nftUid: string): Promise<NftDetailsResponse> {
+  async getNftDetailsById(nftUid: string): Promise<GetGetNftDetailsByIdApikeyNftuid_1b8124Response> {
     return this.handleRequest(
       () => this.endpoints.getNftDetailsById(nftUid),
       'Failed to get NFT details by ID'
@@ -134,21 +122,21 @@ export class NmkrClient {
   }
 
 
-  async getNfts(projectUid: string, state: NftState | string, count: number, page: number): Promise<any> {
+  async getNfts(projectUid: string, state: string, count: number, page: number): Promise<components['schemas']['NftDetailsClass'][]> {
     return this.handleRequest(
       () => this.endpoints.getNfts(projectUid, state, count, page),
       'Failed to get NFTs'
     );
   }
 
-  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, customerIpAddress: string): Promise<any> {
+  async getPaymentAddressForRandomNftSale(projectUid: string, countNft: number, customerIpAddress: string): Promise<components['schemas']['GetPaymentAddressResultClass']> {
     return this.handleRequest(
       () => this.endpoints.getPaymentAddressForRandomNftSale(projectUid, countNft, customerIpAddress),
       'Failed to get payment address for random NFT sale'
     );
   }
 
-  async getAllAssetsInWallet(address: string): Promise<AssetsInWalletResponse> {
+  async getAllAssetsInWallet(address: string): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.getAllAssetsInWallet(address),
       'Failed to get all assets in wallet'
@@ -162,35 +150,35 @@ export class NmkrClient {
     );
   }
 
-  async uploadNft(projectUid: string, payload: UploadNftRequest): Promise<any> {
+  async uploadNft(projectUid: string, payload: any): Promise<components['schemas']['UploadNftResultClass']> {
     return this.handleRequest(
       () => this.endpoints.uploadNft(projectUid, payload),
       'Failed to upload NFT'
     );
   }
 
-  async getNmkrPayStatus(paymentTransactionUid: string): Promise<GetNmkrPayStatusResponse> {
+  async getNmkrPayStatus(paymentTransactionUid: string): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.getNmkrPayStatus(paymentTransactionUid),
       'Failed to get NMKR pay status'
     );
   }
 
-  async mintAndSendRandom(projectUid: string, countNft: number, receiverAddress: string, blockchain: Blockchain = Blockchain.CARDANO): Promise<MintAndSendResultClass> {
+  async mintAndSendRandom(projectUid: string, countNft: number, receiverAddress: string, blockchain: Chain = 'Cardano'): Promise<GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse> {
     return this.handleRequest(
       () => this.endpoints.mintAndSendRandom(projectUid, countNft, receiverAddress, blockchain),
       'Failed to mint and send random NFT'
     );
   }
 
-  async mintAndSendSpecific(projectUid: string, nftUid: string, tokenCount: number, receiverAddress: string, blockchain: Blockchain = Blockchain.CARDANO): Promise<MintAndSendResultClass> {
+  async mintAndSendSpecific(projectUid: string, nftUid: string, tokenCount: number, receiverAddress: string, blockchain: Chain = 'Cardano'): Promise<GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response> {
     return this.handleRequest(
       () => this.endpoints.mintAndSendSpecific(projectUid, nftUid, tokenCount, receiverAddress, blockchain),
       'Failed to mint and send specific NFT'
     );
   }
 
-  async mintAndSendMultipleSpecific(projectUid: string, receiverAddress: string, payload: ReserveMultipleNftsClassV2, blockchain: Blockchain = Blockchain.CARDANO): Promise<MintAndSendResultClass> {
+  async mintAndSendMultipleSpecific(projectUid: string, receiverAddress: string, payload: any, blockchain: Chain = 'Cardano'): Promise<MintResult> {
     return this.handleRequest(
       () => this.endpoints.mintAndSendMultipleSpecific(projectUid, receiverAddress, payload, blockchain),
       'Failed to mint and send multiple specific NFTs'
@@ -218,21 +206,21 @@ export class NmkrClient {
     );
   }
 
-  async getProjectDetails(projectUid: string): Promise<NftProjectsDetails> {
+  async getProjectDetails(projectUid: string): Promise<components['schemas']['NftProjectsDetails']> {
     return this.handleRequest(
       () => this.endpoints.getProjectDetails(projectUid),
       'Failed to get project details'
     );
   }
 
-  async createProject(payload: CreateProjectRequest): Promise<any> {
+  async createProject(payload: any): Promise<components['schemas']['CreateNewProjectResultClass']> {
     return this.handleRequest(
       () => this.endpoints.createProject(payload),
       'Failed to create project'
     );
   }
 
-  async updateMetadata(projectUid: string, nftUid: string, payload: UpdateMetadataRequest): Promise<any> {
+  async updateMetadata(projectUid: string, nftUid: string, payload: any): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.updateMetadata(projectUid, nftUid, payload),
       'Failed to update metadata'
@@ -245,21 +233,21 @@ export class NmkrClient {
     referer?: string, 
     customProperty?: string, 
     optionalReceiverAddress?: string
-  ): Promise<GetPaymentAddressForSpecificNftSaleResponse> {
+  ): Promise<components['schemas']['GetPaymentAddressResultClass']> {
     return this.handleRequest(
       () => this.endpoints.getPaymentAddressForSpecificNftSale(nftUid, tokenCount, referer, customProperty, optionalReceiverAddress),
       'Failed to get payment address for specific NFT sale'
     );
   }
 
-  async uploadToIpfs(customerId: number, payload: UploadToIpfsRequest): Promise<UploadToIpfsResponse> {
+  async uploadToIpfs(customerId: number, payload: any): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.uploadToIpfs(customerId, payload),
       'Failed to upload to IPFS'
     );
   }
 
-  async checkAddress(projectUid: string, address: string): Promise<any> {
+  async checkAddress(projectUid: string, address: string): Promise<components['schemas']['CheckAddressResultClass']> {
     return this.handleRequest(
       () => this.endpoints.checkAddress(projectUid, address),
       'Failed to check address'
@@ -273,7 +261,7 @@ export class NmkrClient {
     );
   }
 
-  async getWhitelist(projectUid: string): Promise<any> {
+  async getWhitelist(projectUid: string): Promise<any[]> {
     return this.handleRequest(
       () => this.endpoints.getWhitelist(projectUid),
       'Failed to get whitelist'
@@ -287,21 +275,21 @@ export class NmkrClient {
     );
   }
 
-  async removeFromWhitelist(projectUid: string, address: string): Promise<any> {
+  async removeFromWhitelist(projectUid: string, address: string): Promise<void> {
     return this.handleRequest(
       () => this.endpoints.removeFromWhitelist(projectUid, address),
       'Failed to remove from whitelist'
     );
   }
 
-  async listProjects(): Promise<any> {
+  async listProjects(): Promise<any[]> {
     return this.handleRequest(
       () => this.endpoints.listProjects(),
       'Failed to list projects'
     );
   }
 
-  async listProjectsPaginated(count: number, page: number): Promise<any> {
+  async listProjectsPaginated(count: number, page: number): Promise<any[]> {
     return this.handleRequest(
       () => this.endpoints.listProjectsPaginated(count, page),
       'Failed to list projects with pagination'

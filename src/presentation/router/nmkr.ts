@@ -1,6 +1,12 @@
 import express from "express";
 import logger from "@/infrastructure/logging";
-import { NmkrWebhookPayload } from "@/infrastructure/libs/nmkr/types";
+type NmkrWebhookPayload = {
+  paymentTransactionUid: string;
+  projectUid: string;
+  state: string;
+  paymentTransactionSubstate?: string;
+  txHash?: string;
+};
 import crypto from "crypto";
 
 const router = express();

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from "axios";
+import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from "axios";
 
 export class NmkrHttpError extends Error {
   constructor(
@@ -13,6 +13,53 @@ export class NmkrHttpError extends Error {
   toLogSafeString(): string {
     const safeEndpoint = this.endpoint.replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED]');
     return `NMKR API Error: ${safeEndpoint} (${this.statusCode}): ${this.nmkrError || 'Unknown error'}`;
+  }
+}
+
+export class NmkrHttp {
+  constructor(private readonly http: AxiosInstance) {}
+
+  async getJSON<T>(url: string, cfg?: AxiosRequestConfig): Promise<T> {
+    const { data } = await this.http.get<string>(url, { 
+      responseType: 'text', 
+      ...cfg 
+    });
+    return this.parseResponse<T>(data);
+  }
+
+  async postJSON<T, B = unknown>(url: string, body?: B, cfg?: AxiosRequestConfig): Promise<T> {
+    const { data } = await this.http.post<string>(url, body, { 
+      responseType: 'text', 
+      ...cfg 
+    });
+    return this.parseResponse<T>(data);
+  }
+
+  async putJSON<T, B = unknown>(url: string, body?: B, cfg?: AxiosRequestConfig): Promise<T> {
+    const { data } = await this.http.put<string>(url, body, { 
+      responseType: 'text', 
+      ...cfg 
+    });
+    return this.parseResponse<T>(data);
+  }
+
+  async deleteJSON<T>(url: string, cfg?: AxiosRequestConfig): Promise<T> {
+    const { data } = await this.http.delete<string>(url, { 
+      responseType: 'text', 
+      ...cfg 
+    });
+    return this.parseResponse<T>(data);
+  }
+
+  private parseResponse<T>(raw: unknown): T {
+    if (typeof raw === 'string') {
+      try {
+        return JSON.parse(raw) as T;
+      } catch {
+        return raw as T;
+      }
+    }
+    return raw as T;
   }
 }
 
