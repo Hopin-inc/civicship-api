@@ -129,6 +129,57 @@ export type UploadNftResponse = {
   metadataSolana?: string;
 };
 
+export type PaymentTransactionState = 
+  | "active" 
+  | "expired" 
+  | "pending" 
+  | "confirmed" 
+  | "finished" 
+  | "canceled";
+
+export type PaymentTransactionSubstate = 
+  | "waitingforlocknft"
+  | "waitingforbid" 
+  | "sold"
+  | "canceled"
+  | "readytosignbyseller"
+  | "readytosignbysellercancel"
+  | "readytosignbybuyer"
+  | "readytosignbybuyercancel"
+  | "auctionexpired"
+  | "waitingforsale"
+  | "submitted"
+  | "confirmed"
+  | "waitingforlockada";
+
+export type GetNmkrPayStatusResponse = {
+  paymentTransactionUid?: string;
+  projectUid?: string;
+  customProperties?: Record<string, string>;
+  state: PaymentTransactionState;
+  paymentTransactionCreated: string;
+  customeripaddress?: string;
+  referer?: string;
+  txHash?: string;
+  expires?: string;
+  nmkrPayUrl?: string;
+  paymentgatewayParameters?: any;
+  paymentgatewayResults?: any;
+  transactionType?: string;
+  paymentTransactionSubstate: PaymentTransactionSubstate;
+  paymentGatewayType?: string;
+};
+
+export type NmkrWebhookPayload = {
+  paymentTransactionUid: string;
+  projectUid: string;
+  state: PaymentTransactionState;
+  paymentTransactionSubstate: PaymentTransactionSubstate;
+  txHash?: string;
+  customProperties?: Record<string, string>;
+  timestamp: string;
+};
+
 //
 // // Payout Wallets
 // export type PayoutWallet = {

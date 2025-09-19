@@ -207,4 +207,23 @@ export class NmkrEndpoints {
     return data;
   }
 
+  async getNmkrPayStatus(paymentTransactionUid: string): Promise<any> {
+    const { data } = await this.http.get(`/v2/GetNmkrPayStatus/${encodeURIComponent(paymentTransactionUid)}`, {
+      responseType: "text" as any,
+      transformResponse: [
+        (raw) => {
+          if (typeof raw === "string") {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return raw;
+            }
+          }
+          return raw;
+        },
+      ],
+    });
+    return data;
+  }
+
 }

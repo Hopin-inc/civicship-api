@@ -7,6 +7,7 @@ import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
+import nmkrRouter from "@/presentation/router/nmkr";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -56,6 +57,7 @@ async function startServer() {
 
   app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);
+  app.use("/nmkr", nmkrRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });

@@ -6,6 +6,7 @@ import {
   CreatePaymentTransactionRandomReq,
   CreatePaymentTransactionRes,
   UploadNftRequest,
+  GetNmkrPayStatusResponse,
 } from "./types";
 
 @injectable()
@@ -289,6 +290,17 @@ export class NmkrClient {
         throw error;
       }
       throw new Error(`Failed to upload NFT: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getNmkrPayStatus(paymentTransactionUid: string): Promise<GetNmkrPayStatusResponse> {
+    try {
+      return await this.endpoints.getNmkrPayStatus(paymentTransactionUid);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to get NMKR pay status: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
