@@ -17,8 +17,8 @@ function findName(re) {
   return match?.[0];
 }
 
-// Helper to create case-insensitive regex with flexible hash length
-const R = (pattern) => new RegExp(pattern, 'i');
+// Helper to create case-insensitive regex with flexible hash length and word boundaries
+const R = (pattern) => new RegExp(`${pattern}(?![\\w$])`, 'i');
 
 // Try to find operation types first (with improved regex patterns)
 const tryOps = {
@@ -41,10 +41,9 @@ const tryOps = {
   GetProjectTransactionsResponse: findName(R('GetGetProjectTransactionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
   GetAdditionalPayoutWalletsResponse: findName(R('GetGetAdditionalPayoutWalletsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
   
-  // Payment address operations
-  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApi[Kk]eyProjectuidCountnft_[a-z0-9]{6,}Response(?!\\d)')),
-  GetPaymentAddressForSpecificNftSaleRequestBody: findName(R('PostGetAddressForSpecificNftSaleApi[Kk]eyNftprojectid_[a-z0-9]{6,}RequestBody')),
-  GetPaymentAddressForSpecificNftSaleResponse: findName(R('PostGetAddressForSpecificNftSaleApi[Kk]eyNftprojectid_[a-z0-9]{6,}Response(?!\\d)')),
+  // Payment address operations (corrected to match actual operation names)
+  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApi[Kk]eyProjectuidCountnft_[a-z0-9]{6,}Response')),
+  GetPaymentAddressForSpecificNftSaleResponse: findName(R('GetGetAddressForSpecificNftSaleApi[Kk]eyNftprojectidNftidTokencount_[a-z0-9]{6,}Response')),
   
   // Wallet operations
   AllAssetsInWalletResponse: findName(R('GetGetAllAssetsInWalletApi[Kk]eyAddress_[a-z0-9]{6,}Response(?!\\d)')),
@@ -155,16 +154,9 @@ out.push(aliasOrPaths(
   tryOps.PayoutWalletsResponse,
   'paths["/v2/GetPayoutWallets"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
-out.push(aliasOrPaths(
-  'RatesResponse',
-  tryOps.RatesResponse,
-  'paths["/v2/GetRates"]["get"]["responses"]["200"]["content"]["application/json"]'
-));
-out.push(aliasOrPaths(
-  'AdaRatesResponse',
-  tryOps.AdaRatesResponse,
-  'paths["/v2/GetAdaRates"]["get"]["responses"]["200"]["content"]["application/json"]'
-));
+// Use components direct reference for Rates (more stable)
+out.push('export type RatesResponse = components["schemas"]["PricelistClass"];');
+out.push('export type AdaRatesResponse = components["schemas"]["PricelistClass"];');
 out.push(aliasOrPaths(
   'ServerStateResponse',
   tryOps.ServerStateResponse,
@@ -205,21 +197,16 @@ out.push(aliasOrPaths(
 ));
 
 out.push('');
-out.push('// Payment address operations');
+out.push('// Payment address operations (corrected paths and removed RequestBody for GET method)');
 out.push(aliasOrPaths(
   'GetPaymentAddressForRandomNftSaleResponse',
   tryOps.GetPaymentAddressForRandomNftSaleResponse,
   'paths["/v2/GetAddressForRandomNftSale/{projectUid}/{countNft}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
-  'GetPaymentAddressForSpecificNftSaleRequestBody',
-  tryOps.GetPaymentAddressForSpecificNftSaleRequestBody,
-  'paths["/v2/GetAddressForSpecificNftSale/{nftProjectId}"]["post"]["requestBody"]["content"]["application/json"]'
-));
-out.push(aliasOrPaths(
   'GetPaymentAddressForSpecificNftSaleResponse',
   tryOps.GetPaymentAddressForSpecificNftSaleResponse,
-  'components["schemas"]["GetPaymentAddressResultClass"]'
+  'paths["/v2/GetAddressForSpecificNftSale/{nftProjectId}/{nftId}/{tokenCount}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 
 out.push('');

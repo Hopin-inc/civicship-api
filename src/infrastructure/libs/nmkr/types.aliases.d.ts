@@ -9,8 +9,7 @@ import type {
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
   GetGetNftsApikeyProjectuidStateCountPage_db3058Response,
   GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response,
-  PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fRequestBody,
-  PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fResponse,
+  GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response,
   PostUploadNftApikeyNftprojectid_e6d68cRequestBody,
   PostUploadNftApikeyNftprojectid_e6d68cResponse,
   PostUpdateMetadataApikeyNftprojectidNftid_1326a3RequestBody,
@@ -33,8 +32,8 @@ export type CreatePaymentTransactionResponse = paths["/v2/CreatePaymentTransacti
 // Basic API endpoints
 export type CheckUtxoResponse = paths["/v2/CheckUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
 export type PayoutWalletsResponse = paths["/v2/GetPayoutWallets"]["get"]["responses"]["200"]["content"]["application/json"];
-export type RatesResponse = paths["/v2/GetRates"]["get"]["responses"]["200"]["content"]["application/json"];
-export type AdaRatesResponse = paths["/v2/GetAdaRates"]["get"]["responses"]["200"]["content"]["application/json"];
+export type RatesResponse = components["schemas"]["PricelistClass"];
+export type AdaRatesResponse = components["schemas"]["PricelistClass"];
 export type ServerStateResponse = paths["/v2/GetServerState"]["get"]["responses"]["200"]["content"]["application/json"];
 export type PublicMintsResponse = paths["/v2/GetPublicMints"]["get"]["responses"]["200"]["content"]["application/json"];
 
@@ -45,10 +44,9 @@ export type GetNftsResponse = GetGetNftsApikeyProjectuidStateCountPage_db3058Res
 export type GetProjectTransactionsResponse = paths["/v2/GetProjectTransactions/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
 export type GetAdditionalPayoutWalletsResponse = paths["/v2/GetAdditionalPayoutWallets/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
 
-// Payment address operations
+// Payment address operations (corrected paths and removed RequestBody for GET method)
 export type GetPaymentAddressForRandomNftSaleResponse = GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response;
-export type GetPaymentAddressForSpecificNftSaleRequestBody = PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fRequestBody;
-export type GetPaymentAddressForSpecificNftSaleResponse = PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fResponse;
+export type GetPaymentAddressForSpecificNftSaleResponse = GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response;
 
 // Wallet operations
 export type AllAssetsInWalletResponse = paths["/v2/GetAllAssetsInWallet/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
