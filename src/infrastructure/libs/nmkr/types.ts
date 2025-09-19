@@ -216,6 +216,63 @@ export type NFT = {
   files?: any[];
 };
 
+export type CreateProjectRequest = {
+  projectname?: string;
+  description?: string;
+  projecturl?: string;
+  tokennamePrefix?: string;
+  twitterHandle?: string;
+  policyExpires: boolean;
+  policyLocksDateTime?: string;
+  payoutWalletaddress?: string;
+  payoutWalletaddressUsdc?: string;
+  maxNftSupply?: number;
+};
+
+export type NftProjectsDetails = {
+  id?: number;
+  projectUid?: string;
+  projectname?: string;
+  description?: string;
+  projecturl?: string;
+  tokennamePrefix?: string;
+  twitterHandle?: string;
+  policyExpires?: boolean;
+  policyLocksDateTime?: string;
+  payoutWalletaddress?: string;
+  payoutWalletaddressUsdc?: string;
+  maxNftSupply?: number;
+  policyId?: string;
+  addressExpiresPolicyScript?: string;
+  addressExpiresStakeScript?: string;
+  created?: string;
+  state?: string;
+};
+
+export type UpdateMetadataRequest = {
+  metadata?: any;
+};
+
+export type GetPaymentAddressForSpecificNftSaleResponse = {
+  paymentAddress?: string;
+  lovelaceToSend?: number;
+  utxoMinAda?: number;
+  validUntil?: string;
+  expires?: string;
+};
+
+export type UploadToIpfsRequest = {
+  mimetype?: string;
+  fileFromBase64?: string;
+  fileFromsUrl?: string;
+  name?: string;
+};
+
+export type UploadToIpfsResponse = {
+  ipfsHash?: string;
+  ipfsUrl?: string;
+};
+
 //
 // // Payout Wallets
 // export type PayoutWallet = {
