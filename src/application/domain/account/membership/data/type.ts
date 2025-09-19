@@ -23,9 +23,6 @@ export const membershipSelectDetail = Prisma.validator<Prisma.MembershipSelect>(
 
   createdAt: true,
   updatedAt: true,
-
-  user: true,
-  community: true,
 });
 
 export type PrismaMembership = Prisma.MembershipGetPayload<{

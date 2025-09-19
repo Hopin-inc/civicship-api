@@ -37,7 +37,10 @@ export default class MembershipPresenter {
   }
 
   static get(r: PrismaMembershipDetail): GqlMembership {
-    return r;
+    return {
+      __typename: "Membership",
+      ...r,
+    };
   }
 
   static invite(r: Omit<PrismaMembership, "user">): GqlMembershipInviteSuccess {
