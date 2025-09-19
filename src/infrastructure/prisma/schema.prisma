@@ -316,6 +316,7 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([name])
   @@map("t_users")
 }
 
@@ -350,6 +351,7 @@ model Identity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_identities")
 }
 
@@ -387,6 +389,7 @@ model DidIssuanceRequest {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_did_issuance_requests")
 }
 
@@ -424,6 +427,7 @@ model VcIssuanceRequest {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_vc_issuance_requests")
 }
 
@@ -568,6 +572,7 @@ model Wallet {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_wallets")
 }
 
@@ -664,6 +669,8 @@ model Opportunity {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([title])
+  @@index([createdBy])
   @@map("t_opportunities")
 }
 
@@ -711,6 +718,7 @@ model OpportunitySlot {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([opportunityId])
   @@map("t_opportunity_slots")
 }
 
@@ -751,6 +759,7 @@ model Reservation {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([opportunitySlotId])
   @@map("t_reservations")
 }
 
@@ -811,6 +820,7 @@ model Participation {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("t_participations")
 }
 
