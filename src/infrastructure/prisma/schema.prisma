@@ -1238,15 +1238,16 @@ model Order {
 }
 
 model OrderItem {
-  id      String @id @default(cuid())
+  id String @id @default(cuid())
+
+  priceSnapshot Int @map("price_snapshot")
+  quantity      Int
+
   orderId String @map("order_id")
   order   Order  @relation(fields: [orderId], references: [id])
 
   productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id])
-
-  quantity      Int
-  priceSnapshot Int @map("price_snapshot")
 
   nftMints NftMint[] // NFT の場合だけ発行される
 
