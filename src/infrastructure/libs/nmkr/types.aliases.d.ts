@@ -8,26 +8,46 @@ import type {
   PostCreateProjectApikey_9ec63aRequestBody,
   PostCreateProjectApikey_9ec63aResponse,
   GetCheckAddressApikeyProjectuidAddress_be060fResponse,
-  GetGetPricelistApikeyNftprojectid_97abb2Response,
-  GetGetPricelistApikeyNftprojectid_97abb2Response,
+  GetCheckAddressApikeyProjectuidAddress_be060fResponse,
+  GetCancelAddressReservationApikeyProjectuidPaymentaddress_920914Response,
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
   GetGetNftsApikeyProjectuidStateCountPage_db3058Response,
   GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response,
-  GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response,
+  GetGetAddressForSpecificNftSaleApikeyNftuidTokencount_9eba78Response,
   PostUploadNftApikeyNftprojectid_e6d68cRequestBody,
   PostUploadNftApikeyNftprojectid_e6d68cResponse,
   PostUpdateMetadataApikeyNftprojectidNftid_1326a3RequestBody,
   PostUpdateMetadataApikeyNftprojectidNftid_1326a3Response,
   GetMintAndSendRandomApikeyNftprojectidCountnftReceiveraddress_63bb4eResponse,
   GetMintAndSendSpecificApikeyNftprojectidNftidTokencountReceiveraddress_26d237Response,
-  GetGetProjectDetailsApikeyProjectuid_b6371eResponse,
   PostCreateProjectApikey_9ec63aRequestBody,
   PostCreateProjectApikey_9ec63aResponse,
-  GetCheckAddressApikeyProjectuidAddress_be060fResponse,
-  GetCancelAddressReservationApikeyProjectuidPaymentaddress_920914Response,
   GetListProjectsApikey_b6d5e7Response,
-  GetListProjectsApikeyCountPage_1d70d9Response
+  GetListProjectsApikeyCountPage_1d70d9Response,
+  GetListProjectsApikeyCustomeridCountPage_eaa4b4Response,
+  GetDeleteNftApikeyNftprojectidNftid_126f2bResponse,
+  GetDeleteNftApikeyNftuid_5fd0b6Response,
+  GetCheckWalletValidationApikeyValidationuidLovelace_627d3bResponse,
+  GetGetWalletValidationAddressApikeyValidationname_b3b8b4Response,
+  PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fRequestBody,
+  PostGetAddressForSpecificNftSaleApikeyNftprojectid_bd582fResponse,
+  GetGetPricelistApikeyProjectuid_64fcb6Response,
+  GetGetPricelistApikeyNftprojectid_97abb2Response,
+  GetGetNftDetailsApikeyNftprojectidNftname_0ad3beResponse,
+  GetGetNftDetailsByIdApikeyNftprojectidNftid_d324f1Response,
+  GetGetNftsApikeyNftprojectidStateCountPage_0f80e1Response,
+  GetGetNftsApikeyNftprojectidState_e6cc2bResponse,
+  GetGetCountsApikeyNftprojectid_159693Response,
+  GetGetAddressForRandomNftSaleApikeyNftprojectidCountnft_3ec645Response,
+  GetGetAddressForRandomNftSaleApikeyProjectuidCountnftLovelace_ee6ee9Response,
+  GetGetAddressForRandomNftSaleApikeyNftprojectidCountnftLovelace_103cf6Response,
+  GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response,
+  GetGetAddressForSpecificNftSaleApikeyNftuidTokencountLovelace_5a355cResponse,
+  GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencountLovelace_f786abResponse,
+  GetCancelAddressReservationApikeyNftprojectidPaymentaddress_157ae6Response,
+  GetCheckAddressApikeyNftprojectidAddress_9a1efaResponse,
+  GetGetProjectDetailsApikeyCustomeridNftprojectid_a635a0Response
 } from './types.operations';
 
 // Payment transactions
@@ -51,7 +71,7 @@ export type GetAdditionalPayoutWalletsResponse = paths["/v2/GetAdditionalPayoutW
 
 // Payment address operations (corrected paths and removed RequestBody for GET method)
 export type GetPaymentAddressForRandomNftSaleResponse = GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response;
-export type GetPaymentAddressForSpecificNftSaleResponse = GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response;
+export type GetPaymentAddressForSpecificNftSaleResponse = GetGetAddressForSpecificNftSaleApikeyNftuidTokencount_9eba78Response;
 
 // Wallet operations
 export type AllAssetsInWalletResponse = paths["/v2/GetAllAssetsInWallet/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
@@ -80,7 +100,7 @@ export type ProceedMintResponse = paths["/v2/ProceedPaymentTransaction/{paymentT
 export type ProceedCancelResponse = paths["/v2/ProceedPaymentTransaction/{paymentTransactionUid}/CancelTransaction"]["post"]["responses"]["200"]["content"]["application/json"];
 
 // Project management
-export type ProjectDetailsResponse = GetGetProjectDetailsApikeyProjectuid_b6371eResponse;
+export type ProjectDetailsResponse = paths["/v2/GetProjectDetails/{projectUid}"]["get"]["responses"]["200"]["content"]["application/json"];
 export type CreateProjectRequest = PostCreateProjectApikey_9ec63aRequestBody;
 export type CreateProjectResponse = PostCreateProjectApikey_9ec63aResponse;
 

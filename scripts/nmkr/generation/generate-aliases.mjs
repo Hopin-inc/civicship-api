@@ -11,92 +11,134 @@ if (!fs.existsSync(opsPath)) {
 
 const ops = fs.readFileSync(opsPath, 'utf8');
 
-// Helper function to find operation type names with improved regex
-function findName(re) {
-  const match = ops.match(re);
-  return match?.[0];
+// Extract all exported type names from types.operations.d.ts
+const exported = Array.from(ops.matchAll(/export\s+type\s+(\w+)\s*=/g))
+  .map(m => m[1]); // e.g., GetGetPayoutWalletsApikey_g7h8i9Response
+
+// Partial match picker function
+function pickOp({ includes = [], suffix }) {
+  const needle = includes.map(s => s.toLowerCase());
+  const cand = exported.filter(name => {
+    const n = name.toLowerCase();
+    return needle.every(part => n.includes(part)) && n.endsWith(suffix.toLowerCase());
+  });
+  if (cand.length === 0) return null;
+  // Sort by length and lexicographically for consistent results
+  cand.sort((a, b) => a.length - b.length || a.localeCompare(b));
+  return cand[0];
 }
 
-// Helper to create case-insensitive regex with flexible hash length and word boundaries
-const R = (pattern) => new RegExp(`${pattern}(?![\\w$])`, 'i');
-
-// Try to find operation types first (with improved regex patterns)
+// Try to find operation types using partial matching based on actual operation names that exist
 const tryOps = {
-  // Payment transactions (using CreateProject since CreatePaymentTransaction doesn't exist)
-  CreatePaymentTransactionRequestBody: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
-  CreatePaymentTransactionResponse: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}Response(?![\\w$])')),
-  
-  // Basic API endpoints
-  CheckUtxoResponse: findName(R('GetCheckAddressApi[Kk]eyProjectuidAddress_[a-z0-9]{6,}Response(?![\\w$])')),
-  PayoutWalletsResponse: findName(R('GetGetPayoutWalletsApi[Kk]ey_[a-z0-9]{6,}Response')),
-  RatesResponse: findName(R('GetGetPricelistApi[Kk]ey.*_[a-z0-9]{6,}Response')),
-  AdaRatesResponse: findName(R('GetGetPricelistApi[Kk]ey.*_[a-z0-9]{6,}Response')),
-  ServerStateResponse: findName(R('GetGetServerStateApi[Kk]ey_[a-z0-9]{6,}Response')),
-  PublicMintsResponse: findName(R('GetGetPublicMintsApi[Kk]ey_[a-z0-9]{6,}Response')),
-  
-  // Project and NFT operations
-  GetCountsResponse: findName(R('GetGetCountsApikey.*Projectuid_[a-z0-9]{6,}Response')),
-  GetNftDetailsByIdResponse: findName(R('GetGetNftDetailsByIdApikey.*Nftuid_[a-z0-9]{6,}Response')),
-  GetNftsResponse: findName(R('GetGetNftsApikey.*Projectuid.*State.*Count.*Page_[a-z0-9]{6,}Response')),
-  GetProjectTransactionsResponse: findName(R('GetGetProjectTransactionsApikey.*Projectuid_[a-z0-9]{6,}Response')),
-  GetAdditionalPayoutWalletsResponse: findName(R('GetGetAdditionalPayoutWalletsApikey.*Projectuid_[a-z0-9]{6,}Response')),
-  
-  // Payment address operations (corrected to match actual operation names)
-  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApi[Kk]eyProjectuidCountnft_[a-z0-9]{6,}Response(?![\\w$])')),
-  GetPaymentAddressForSpecificNftSaleResponse: findName(R('GetGetAddressForSpecificNftSaleApi[Kk]eyNftprojectidNftidTokencount_[a-z0-9]{6,}Response(?![\\w$])')),
-  
-  // Wallet operations
-  AllAssetsInWalletResponse: findName(R('GetGetAllAssetsInWalletApikey.*Address_[a-z0-9]{6,}Response')),
-  WalletUtxoResponse: findName(R('GetGetWalletUtxoApikey.*Address_[a-z0-9]{6,}Response')),
-  
-  // Upload and metadata operations
-  UploadNftRequest: findName(R('PostUploadNftApi[Kk]eyNftprojectid_[a-z0-9]{6,}RequestBody')),
-  UploadNftResponse: findName(R('PostUploadNftApi[Kk]eyNftprojectid_[a-z0-9]{6,}Response(?!\\d)')),
-  UpdateMetadataRequest: findName(R('PostUpdateMetadataApi[Kk]eyNftprojectidNftid_[a-z0-9]{6,}RequestBody')),
-  UpdateMetadataResponse: findName(R('PostUpdateMetadataApi[Kk]eyNftprojectidNftid_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Payment status
-  GetNmkrPayStatusResponse: findName(R('GetGetNmkrPayStatusApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Minting operations
-  MintAndSendRandomResponse: findName(R('GetMintAndSendRandomApikey.*Nftprojectid.*Countnft.*Receiveraddress_[a-z0-9]{6,}Response')),
-  MintAndSendSpecificResponse: findName(R('GetMintAndSendSpecificApikey.*Nftprojectid.*Nftid.*Tokencount.*Receiveraddress_[a-z0-9]{6,}Response')),
-  MintAndSendMultipleSpecificRequestBody: findName(R('PostMintAndSendSpecificApikey.*Projectuid.*Receiveraddress_[a-z0-9]{6,}RequestBody')),
-  MintAndSendMultipleSpecificResponse: findName(R('PostMintAndSendSpecificApikey.*Projectuid.*Receiveraddress_[a-z0-9]{6,}Response')),
-  
-  // Payment gateway operations
-  ProceedReserveRequestBody: findName(R('PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}RequestBody')),
-  ProceedReserveResponse: findName(R('PostProceedPaymentTransactionReservePaymentgatewayMintAndSendNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
-  ProceedMintRequestBody: findName(R('PostProceedPaymentTransactionMintAndSendPaymentgatewayNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}RequestBody')),
-  ProceedMintResponse: findName(R('PostProceedPaymentTransactionMintAndSendPaymentgatewayNftApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
-  ProceedCancelResponse: findName(R('PostProceedPaymentTransactionCancelTransactionApi[Kk]eyPaymenttransactionuid_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Project management
-  ProjectDetailsResponse: findName(R('GetGetProjectDetailsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
-  CreateProjectRequest: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
-  CreateProjectResponse: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // IPFS operations
-  UploadToIpfsRequestBody: findName(R('PostUploadToIpfsApi[Kk]eyCustomerid_[a-z0-9]{6,}RequestBody')),
-  UploadToIpfsResponse: findName(R('PostUploadToIpfsApi[Kk]eyCustomerid_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Address operations
-  CheckAddressResponse: findName(R('GetCheckAddressApi[Kk]eyProjectuidAddress_[a-z0-9]{6,}Response(?!\\d)')),
-  CancelAddressReservationResponse: findName(R('GetCancelAddressReservationApi[Kk]eyProjectuidPaymentaddress_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Whitelist operations
-  WhitelistGetResponse: findName(R('GetManageWhitelistApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
-  WhitelistPostResponse: findName(R('PostManageWhitelistApi[Kk]eyProjectuidAddressCountofnfts_[a-z0-9]{6,}Response(?!\\d)')),
-  WhitelistDeleteResponse: findName(R('DeleteManageWhitelistApi[Kk]eyProjectuidAddress_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Project listing
-  ListProjectsResponse: findName(R('GetListProjectsApi[Kk]ey_[a-z0-9]{6,}Response(?!\\d)')),
-  ListProjectsPaginatedResponse: findName(R('GetListProjectsApi[Kk]eyCountPage_[a-z0-9]{6,}Response(?!\\d)')),
-  
-  // Sale conditions
-  SaleConditionsGetResponse: findName(R('GetGetSaleConditionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
-  SaleConditionsPutRequestBody: findName(R('PutUpdateSaleConditionsApi[Kk]eyProjectuid_[a-z0-9]{6,}RequestBody')),
-  SaleConditionsPutResponse: findName(R('PutUpdateSaleConditionsApi[Kk]eyProjectuid_[a-z0-9]{6,}Response(?!\\d)')),
+  // CreatePaymentTransaction (maps to CreateProject since CreatePaymentTransaction doesn't exist)
+  CreatePaymentTransactionRequestBody: pickOp({ includes: ['createproject', 'apikey'], suffix: 'RequestBody' }),
+  CreatePaymentTransactionResponse: pickOp({ includes: ['createproject', 'apikey'], suffix: 'Response' }),
+
+  // Address operations that actually exist
+  CheckUtxoResponse: pickOp({ includes: ['checkaddress', 'apikey', 'address'], suffix: 'Response' }),
+  CheckAddressResponse: pickOp({ includes: ['checkaddress', 'apikey', 'projectuid', 'address'], suffix: 'Response' }),
+  CancelAddressReservationResponse: pickOp({ includes: ['canceladdressreservation', 'apikey', 'projectuid', 'paymentaddress'], suffix: 'Response' }),
+
+  // Project/NFT operations that exist
+  GetCountsResponse: pickOp({ includes: ['getcounts', 'apikey', 'projectuid'], suffix: 'Response' }),
+  GetNftDetailsByIdResponse: pickOp({ includes: ['getnftdetailsbyid', 'apikey', 'nftuid'], suffix: 'Response' }),
+  GetNftsResponse: pickOp({ includes: ['getnfts', 'apikey', 'projectuid', 'state', 'count', 'page'], suffix: 'Response' }),
+
+  // Payment address operations that exist
+  GetPaymentAddressForRandomNftSaleResponse: pickOp({ includes: ['getaddressforrandomnftsale', 'apikey', 'projectuid', 'countnft'], suffix: 'Response' }),
+  GetPaymentAddressForSpecificNftSaleResponse: pickOp({ includes: ['getaddressforspecificnftsale', 'apikey', 'nftuid', 'tokencount'], suffix: 'Response' }),
+
+  // Upload/Metadata operations that exist
+  UploadNftRequest: pickOp({ includes: ['uploadnft', 'apikey', 'nftprojectid'], suffix: 'RequestBody' }),
+  UploadNftResponse: pickOp({ includes: ['uploadnft', 'apikey', 'nftprojectid'], suffix: 'Response' }),
+  UpdateMetadataRequest: pickOp({ includes: ['updatemetadata', 'apikey', 'nftprojectid', 'nftid'], suffix: 'RequestBody' }),
+  UpdateMetadataResponse: pickOp({ includes: ['updatemetadata', 'apikey', 'nftprojectid', 'nftid'], suffix: 'Response' }),
+
+  // Mint operations that exist
+  MintAndSendRandomResponse: pickOp({ includes: ['mintandsendrandom', 'apikey', 'nftprojectid', 'countnft', 'receiveraddress'], suffix: 'Response' }),
+  MintAndSendSpecificResponse: pickOp({ includes: ['mintandsendspecific', 'apikey', 'nftprojectid', 'nftid', 'tokencount', 'receiveraddress'], suffix: 'Response' }),
+
+  // Project management that exists
+  CreateProjectRequest: pickOp({ includes: ['createproject', 'apikey'], suffix: 'RequestBody' }),
+  CreateProjectResponse: pickOp({ includes: ['createproject', 'apikey'], suffix: 'Response' }),
+  ProjectDetailsResponse: pickOp({ includes: ['getprojectdetails', 'apikey', 'projectuid'], suffix: 'Response' }),
+
+  // Listing operations that exist
+  ListProjectsResponse: pickOp({ includes: ['listprojects', 'apikey'], suffix: 'Response' }),
+  ListProjectsPaginatedResponse: pickOp({ includes: ['listprojects', 'apikey', 'count', 'page'], suffix: 'Response' }),
+  ListProjectsCustomerResponse: pickOp({ includes: ['listprojects', 'apikey', 'customerid', 'count', 'page'], suffix: 'Response' }),
+
+  // Delete operations that exist
+  DeleteNftResponse: pickOp({ includes: ['deletenft', 'apikey', 'nftprojectid', 'nftid'], suffix: 'Response' }),
+  DeleteNftByUidResponse: pickOp({ includes: ['deletenft', 'apikey', 'nftuid'], suffix: 'Response' }),
+
+  // Wallet validation that exists
+  CheckWalletValidationResponse: pickOp({ includes: ['checkwalletvalidation', 'apikey', 'validationuid', 'lovelace'], suffix: 'Response' }),
+  GetWalletValidationAddressResponse: pickOp({ includes: ['getwalletvalidationaddress', 'apikey', 'validationname'], suffix: 'Response' }),
+
+  // POST operations for GetAddressForSpecificNftSale that exist
+  GetAddressForSpecificNftSaleRequestBody: pickOp({ includes: ['getaddressforspecificnftsale', 'apikey', 'nftprojectid'], suffix: 'RequestBody' }),
+  GetAddressForSpecificNftSalePostResponse: pickOp({ includes: ['getaddressforspecificnftsale', 'apikey', 'nftprojectid'], suffix: 'Response' }),
+
+  // Pricelist operations that exist
+  GetPricelistResponse: pickOp({ includes: ['getpricelist', 'apikey', 'projectuid'], suffix: 'Response' }),
+  GetPricelistNftProjectResponse: pickOp({ includes: ['getpricelist', 'apikey', 'nftprojectid'], suffix: 'Response' }),
+
+  // NFT Details operations that exist
+  GetNftDetailsResponse: pickOp({ includes: ['getnftdetails', 'apikey', 'nftprojectid', 'nftname'], suffix: 'Response' }),
+  GetNftDetailsByIdNftProjectResponse: pickOp({ includes: ['getnftdetailsbyid', 'apikey', 'nftprojectid', 'nftid'], suffix: 'Response' }),
+
+  // Additional GetNfts variations that exist
+  GetNftsNftProjectResponse: pickOp({ includes: ['getnfts', 'apikey', 'nftprojectid', 'state', 'count', 'page'], suffix: 'Response' }),
+  GetNftsStateOnlyResponse: pickOp({ includes: ['getnfts', 'apikey', 'nftprojectid', 'state'], suffix: 'Response' }),
+
+  // Additional GetCounts variations that exist
+  GetCountsNftProjectResponse: pickOp({ includes: ['getcounts', 'apikey', 'nftprojectid'], suffix: 'Response' }),
+
+  // Additional GetAddressForRandomNftSale variations that exist
+  GetAddressForRandomNftSaleNftProjectResponse: pickOp({ includes: ['getaddressforrandomnftsale', 'apikey', 'nftprojectid', 'countnft'], suffix: 'Response' }),
+  GetAddressForRandomNftSaleWithLovelaceResponse: pickOp({ includes: ['getaddressforrandomnftsale', 'apikey', 'projectuid', 'countnft', 'lovelace'], suffix: 'Response' }),
+  GetAddressForRandomNftSaleNftProjectWithLovelaceResponse: pickOp({ includes: ['getaddressforrandomnftsale', 'apikey', 'nftprojectid', 'countnft', 'lovelace'], suffix: 'Response' }),
+
+  // Additional GetAddressForSpecificNftSale variations that exist
+  GetAddressForSpecificNftSaleNftProjectResponse: pickOp({ includes: ['getaddressforspecificnftsale', 'apikey', 'nftprojectid', 'nftid', 'tokencount'], suffix: 'Response' }),
+  GetAddressForSpecificNftSaleWithLovelaceResponse: pickOp({ includes: ['getaddressforspecificnftsale', 'apikey', 'nftuid', 'tokencount', 'lovelace'], suffix: 'Response' }),
+  GetAddressForSpecificNftSaleNftProjectWithLovelaceResponse: pickOp({ includes: ['getaddressforspecificnftsale', 'apikey', 'nftprojectid', 'nftid', 'tokencount', 'lovelace'], suffix: 'Response' }),
+
+  // Additional CancelAddressReservation variations that exist
+  CancelAddressReservationNftProjectResponse: pickOp({ includes: ['canceladdressreservation', 'apikey', 'nftprojectid', 'paymentaddress'], suffix: 'Response' }),
+
+  // Additional CheckAddress variations that exist
+  CheckAddressNftProjectResponse: pickOp({ includes: ['checkaddress', 'apikey', 'nftprojectid', 'address'], suffix: 'Response' }),
+
+  // Project details variations that exist
+  ProjectDetailsCustomerResponse: pickOp({ includes: ['getprojectdetails', 'apikey', 'customerid', 'nftprojectid'], suffix: 'Response' }),
+
+  // Operations that don't exist in types.operations.d.ts - will use paths fallback
+  PayoutWalletsResponse: null, // Will use paths fallback
+  ServerStateResponse: null, // Will use paths fallback
+  PublicMintsResponse: null, // Will use paths fallback
+  GetProjectTransactionsResponse: null, // Will use paths fallback
+  GetAdditionalPayoutWalletsResponse: null, // Will use paths fallback
+  AllAssetsInWalletResponse: null, // Will use paths fallback
+  WalletUtxoResponse: null, // Will use paths fallback
+  GetNmkrPayStatusResponse: null, // Will use paths fallback
+  MintAndSendMultipleSpecificRequestBody: null, // Will use paths fallback
+  MintAndSendMultipleSpecificResponse: null, // Will use paths fallback
+  ProceedReserveRequestBody: null, // Will use paths fallback
+  ProceedReserveResponse: null, // Will use paths fallback
+  ProceedMintRequestBody: null, // Will use paths fallback
+  ProceedMintResponse: null, // Will use paths fallback
+  ProceedCancelResponse: null, // Will use paths fallback
+  ProjectDetailsResponse: null, // Will use paths fallback
+  UploadToIpfsRequestBody: null, // Will use paths fallback
+  UploadToIpfsResponse: null, // Will use paths fallback
+  WhitelistGetResponse: null, // Will use paths fallback
+  WhitelistPostResponse: null, // Will use paths fallback
+  WhitelistDeleteResponse: null, // Will use paths fallback
+  SaleConditionsGetResponse: null, // Will use paths fallback
+  SaleConditionsPutRequestBody: null, // Will use paths fallback
+  SaleConditionsPutResponse: null, // Will use paths fallback
 };
 
 // Helper function to add alias or paths fallback
@@ -134,12 +176,12 @@ out.push('// Payment transactions');
 out.push(aliasOrPaths(
   'CreatePaymentTransactionRequestBody',
   tryOps.CreatePaymentTransactionRequestBody,
-  'paths["/CreateProject/{apikey}"]["post"]["requestBody"]["content"]["application/json"]'
+  'paths["/v2/CreatePaymentTransaction"]["post"]["requestBody"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
   'CreatePaymentTransactionResponse',
   tryOps.CreatePaymentTransactionResponse,
-  'paths["/CreateProject/{apikey}"]["post"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/v2/CreatePaymentTransaction"]["post"]["responses"]["200"]["content"]["application/json"]'
 ));
 
 out.push('');
@@ -147,7 +189,7 @@ out.push('// Basic API endpoints');
 out.push(aliasOrPaths(
   'CheckUtxoResponse',
   tryOps.CheckUtxoResponse,
-  'paths["/CheckAddress/{apikey}/{projectuid}/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/v2/CheckUtxo/{address}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
   'PayoutWalletsResponse',
@@ -201,12 +243,12 @@ out.push('// Payment address operations (corrected paths and removed RequestBody
 out.push(aliasOrPaths(
   'GetPaymentAddressForRandomNftSaleResponse',
   tryOps.GetPaymentAddressForRandomNftSaleResponse,
-  'paths["/GetAddressForRandomNftSale/{apikey}/{projectuid}/{countnft}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/v2/GetPaymentAddressForRandomNftSale/{projectUid}/{countNft}/{customerIpAddress}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 out.push(aliasOrPaths(
   'GetPaymentAddressForSpecificNftSaleResponse',
   tryOps.GetPaymentAddressForSpecificNftSaleResponse,
-  'paths["/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}/{nftid}/{tokencount}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/v2/GetPaymentAddressForSpecificNftSale/{nftUid}/{tokenCount}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 
 out.push('');
