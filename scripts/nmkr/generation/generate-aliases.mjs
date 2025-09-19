@@ -22,12 +22,12 @@ const R = (pattern) => new RegExp(`${pattern}(?![\\w$])`, 'i');
 
 // Try to find operation types first (with improved regex patterns)
 const tryOps = {
-  // Payment transactions - using actual CreateProject pattern since CreatePaymentTransaction doesn't exist
+  // Payment transactions (using CreateProject since CreatePaymentTransaction doesn't exist)
   CreatePaymentTransactionRequestBody: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}RequestBody')),
-  CreatePaymentTransactionResponse: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}Response')),
+  CreatePaymentTransactionResponse: findName(R('PostCreateProjectApi[Kk]ey_[a-z0-9]{6,}Response(?![\\w$])')),
   
-  // Basic API endpoints - using actual CheckAddress pattern for CheckUtxo
-  CheckUtxoResponse: findName(R('GetCheckAddressApi[Kk]ey.*Address_[a-z0-9]{6,}Response')),
+  // Basic API endpoints
+  CheckUtxoResponse: findName(R('GetCheckAddressApi[Kk]eyProjectuidAddress_[a-z0-9]{6,}Response(?![\\w$])')),
   PayoutWalletsResponse: findName(R('GetGetPayoutWalletsApi[Kk]ey_[a-z0-9]{6,}Response')),
   RatesResponse: findName(R('GetGetPricelistApi[Kk]ey.*_[a-z0-9]{6,}Response')),
   AdaRatesResponse: findName(R('GetGetPricelistApi[Kk]ey.*_[a-z0-9]{6,}Response')),
@@ -42,8 +42,8 @@ const tryOps = {
   GetAdditionalPayoutWalletsResponse: findName(R('GetGetAdditionalPayoutWalletsApikey.*Projectuid_[a-z0-9]{6,}Response')),
   
   // Payment address operations (corrected to match actual operation names)
-  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApikey.*Projectuid.*Countnft_[a-z0-9]{6,}Response')),
-  GetPaymentAddressForSpecificNftSaleResponse: findName(R('GetGetAddressForSpecificNftSaleApikey.*Nftuid.*Tokencount_[a-z0-9]{6,}Response')),
+  GetPaymentAddressForRandomNftSaleResponse: findName(R('GetGetAddressForRandomNftSaleApi[Kk]eyProjectuidCountnft_[a-z0-9]{6,}Response(?![\\w$])')),
+  GetPaymentAddressForSpecificNftSaleResponse: findName(R('GetGetAddressForSpecificNftSaleApi[Kk]eyNftprojectidNftidTokencount_[a-z0-9]{6,}Response(?![\\w$])')),
   
   // Wallet operations
   AllAssetsInWalletResponse: findName(R('GetGetAllAssetsInWalletApikey.*Address_[a-z0-9]{6,}Response')),
@@ -206,7 +206,7 @@ out.push(aliasOrPaths(
 out.push(aliasOrPaths(
   'GetPaymentAddressForSpecificNftSaleResponse',
   tryOps.GetPaymentAddressForSpecificNftSaleResponse,
-  'paths["/GetAddressForSpecificNftSale/{apikey}/{nftuid}/{tokencount}"]["get"]["responses"]["200"]["content"]["application/json"]'
+  'paths["/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}/{nftid}/{tokencount}"]["get"]["responses"]["200"]["content"]["application/json"]'
 ));
 
 out.push('');
@@ -387,3 +387,5 @@ out.push('export type { components } from "./openapi";');
 
 fs.writeFileSync(outPath, out.join('\n') + '\n', 'utf8');
 console.log(`✔ Generated ${outPath} with stable type aliases (${foundOpsTypes.length} from operations, rest from paths fallback)`);
+console.log('ops-resolved count:', foundOpsTypes.length);
+for (const t of foundOpsTypes.sort()) console.log('  -', t);

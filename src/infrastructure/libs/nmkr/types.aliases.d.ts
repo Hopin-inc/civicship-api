@@ -7,14 +7,14 @@ import type { paths, components } from './openapi';
 import type {
   PostCreateProjectApikey_9ec63aRequestBody,
   PostCreateProjectApikey_9ec63aResponse,
-  GetCheckAddressApikeyNftprojectidAddress_9a1efaResponse,
+  GetCheckAddressApikeyProjectuidAddress_be060fResponse,
   GetGetPricelistApikeyNftprojectid_97abb2Response,
   GetGetPricelistApikeyNftprojectid_97abb2Response,
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
   GetGetNftsApikeyProjectuidStateCountPage_db3058Response,
   GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response,
-  GetGetAddressForSpecificNftSaleApikeyNftuidTokencount_9eba78Response,
+  GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response,
   PostUploadNftApikeyNftprojectid_e6d68cRequestBody,
   PostUploadNftApikeyNftprojectid_e6d68cResponse,
   PostUpdateMetadataApikeyNftprojectidNftid_1326a3RequestBody,
@@ -35,7 +35,7 @@ export type CreatePaymentTransactionRequestBody = PostCreateProjectApikey_9ec63a
 export type CreatePaymentTransactionResponse = PostCreateProjectApikey_9ec63aResponse;
 
 // Basic API endpoints
-export type CheckUtxoResponse = GetCheckAddressApikeyNftprojectidAddress_9a1efaResponse;
+export type CheckUtxoResponse = GetCheckAddressApikeyProjectuidAddress_be060fResponse;
 export type PayoutWalletsResponse = paths["/v2/GetPayoutWallets"]["get"]["responses"]["200"]["content"]["application/json"];
 export type RatesResponse = components["schemas"]["PricelistClass"];
 export type AdaRatesResponse = components["schemas"]["PricelistClass"];
@@ -51,7 +51,7 @@ export type GetAdditionalPayoutWalletsResponse = paths["/v2/GetAdditionalPayoutW
 
 // Payment address operations (corrected paths and removed RequestBody for GET method)
 export type GetPaymentAddressForRandomNftSaleResponse = GetGetAddressForRandomNftSaleApikeyProjectuidCountnft_39cec8Response;
-export type GetPaymentAddressForSpecificNftSaleResponse = GetGetAddressForSpecificNftSaleApikeyNftuidTokencount_9eba78Response;
+export type GetPaymentAddressForSpecificNftSaleResponse = GetGetAddressForSpecificNftSaleApikeyNftprojectidNftidTokencount_916632Response;
 
 // Wallet operations
 export type AllAssetsInWalletResponse = paths["/v2/GetAllAssetsInWallet/{address}"]["get"]["responses"]["200"]["content"]["application/json"];
