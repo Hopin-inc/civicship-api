@@ -5,6 +5,7 @@ import {
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
   CreatePaymentTransactionRes,
+  UploadNftRequest,
 } from "./types";
 
 @injectable()
@@ -277,6 +278,17 @@ export class NmkrClient {
         throw error;
       }
       throw new Error(`Failed to get wallet UTXO: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async uploadNft(projectUid: string, payload: UploadNftRequest): Promise<any> {
+    try {
+      return await this.endpoints.uploadNft(projectUid, payload);
+    } catch (error) {
+      if (error instanceof NmkrHttpError) {
+        throw error;
+      }
+      throw new Error(`Failed to upload NFT: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

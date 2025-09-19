@@ -98,6 +98,37 @@ export type SaleConditionsResponse = NmkrBaseResponse & {
   };
 };
 
+export type NftFileV2 = {
+  mimetype?: string;
+  fileFromBase64?: string;
+  fileFromsUrl?: string;
+  fileFromIPFS?: string;
+};
+
+export type UploadNftRequest = {
+  tokenname?: string;
+  displayname?: string;
+  description?: string;
+  previewImageNft?: NftFileV2;
+  subfiles?: any[];
+  metadataPlaceholder?: any[];
+  metadataOverride?: string;
+  metadataOverrideCip68?: string;
+  priceInLovelace?: number;
+  isBlocked?: boolean;
+};
+
+export type UploadNftResponse = {
+  nftId: number;
+  nftUid: string;
+  ipfsHashMainnft?: string;
+  ipfsHashSubfiles?: string[];
+  metadata?: string;
+  assetId?: string;
+  metadataAptos?: string;
+  metadataSolana?: string;
+};
+
 //
 // // Payout Wallets
 // export type PayoutWallet = {

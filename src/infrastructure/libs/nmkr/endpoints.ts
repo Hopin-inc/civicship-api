@@ -3,6 +3,7 @@ import {
   CreatePaymentTransactionRes,
   CreatePaymentTransactionSpecificReq,
   CreatePaymentTransactionRandomReq,
+  UploadNftRequest,
 } from "@/infrastructure/libs/nmkr/types";
 
 export class NmkrEndpoints {
@@ -183,5 +184,27 @@ export class NmkrEndpoints {
     return data;
   }
 
+  async uploadNft(projectUid: string, payload: UploadNftRequest): Promise<any> {
+    const { data } = await this.http.post(`/v2/UploadNft/${encodeURIComponent(projectUid)}?uploadsource=api`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/plain',
+      },
+      responseType: "text",
+      transformResponse: [
+        (raw) => {
+          if (typeof raw === "string") {
+            try {
+              return JSON.parse(raw);
+            } catch {
+              return raw;
+            }
+          }
+          return raw;
+        },
+      ],
+    });
+    return data;
+  }
 
 }
