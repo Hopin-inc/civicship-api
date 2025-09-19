@@ -85,7 +85,7 @@ export type PricelistResponse = NmkrBaseResponse & {
   }>;
 };
 
-export type SaleConditionsResponse = NmkrBaseResponse & {
+export type SaleConditionsResponseV1 = NmkrBaseResponse & {
   saleConditions: {
     enableRandom: boolean;
     enableSpecific: boolean;
@@ -272,3 +272,97 @@ export type UploadToIpfsResponse = {
   ipfsHash?: string;
   ipfsUrl?: string;
 };
+
+export type CheckAddressResponse = {
+  result?: string;
+  state?: string;
+  paymentAddress?: string;
+  lovelaceToSend?: number;
+  validUntil?: string;
+};
+
+export type WhitelistEntry = {
+  address?: string;
+  countOfNfts?: number;
+  soldNfts?: number;
+};
+
+export type WhitelistResponse = {
+  entries?: WhitelistEntry[];
+};
+
+export type ProjectListItem = {
+  projectUid?: string;
+  projectname?: string;
+  description?: string;
+  state?: string;
+  created?: string;
+  policyId?: string;
+};
+
+export type ProjectListResponse = {
+  projects?: ProjectListItem[];
+  totalCount?: number;
+};
+
+export type SaleCondition = {
+  type?: string;
+  value?: any;
+  enabled?: boolean;
+};
+
+export type SaleConditionsResponse = {
+  conditions?: SaleCondition[];
+};
+
+export type CountsResponse = {
+  sold?: number;
+  reserved?: number;
+  free?: number;
+  total?: number;
+};
+
+export type NftDetailsResponse = {
+  nftUid?: string;
+  name?: string;
+  state?: string;
+  metadata?: any;
+  ipfsHash?: string;
+  policyId?: string;
+  assetName?: string;
+};
+
+export type AssetsInWalletResponse = {
+  assets?: Array<{
+    policyId?: string;
+    assetName?: string;
+    quantity?: number;
+  }>;
+};
+
+export enum NftState {
+  DRAFT = 'draft',
+  FREE = 'free',
+  RESERVED = 'reserved',
+  MINTED = 'minted',
+  SOLD = 'sold',
+  FAILED = 'failed'
+}
+
+export enum Blockchain {
+  CARDANO = 'Cardano',
+  SOLANA = 'Solana',
+  ETHEREUM = 'Ethereum'
+}
+
+export enum PaymentTransactionType {
+  NMKR_PAY_SPECIFIC = 'nmkr_pay_specific',
+  NMKR_PAY_RANDOM = 'nmkr_pay_random'
+}
+
+export const NMKR_CONFIG = {
+  DEFAULT_TIMEOUT: 15000,
+  MAX_RETRIES: 3,
+  RETRY_DELAY_BASE: 1000,
+  DEFAULT_BLOCKCHAIN: Blockchain.CARDANO
+} as const;

@@ -9,6 +9,11 @@ export class NmkrHttpError extends Error {
     super(`NMKR API Error: ${endpoint} (${statusCode}): ${nmkrError || 'Unknown error'}`);
     this.name = 'NmkrHttpError';
   }
+
+  toLogSafeString(): string {
+    const safeEndpoint = this.endpoint.replace(/Bearer\s+[^\s]+/gi, 'Bearer [REDACTED]');
+    return `NMKR API Error: ${safeEndpoint} (${this.statusCode}): ${this.nmkrError || 'Unknown error'}`;
+  }
 }
 
 export const createNmkrHttpClient = (): AxiosInstance => {
@@ -37,6 +42,23 @@ export const createNmkrHttpClient = (): AxiosInstance => {
     ],
   });
 
+  client.interceptors.request.use(
+    (config) => {
+      if (!config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${apiKey}`;
+      }
+      
+      if (config.url?.includes('MintAndSend') || config.url?.includes('CreatePaymentTransaction')) {
+        if (!config.headers['Idempotency-Key']) {
+          config.headers['Idempotency-Key'] = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+      }
+      
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
   client.interceptors.response.use(
     (response) => {
       const data = response.data;
@@ -49,7 +71,20 @@ export const createNmkrHttpClient = (): AxiosInstance => {
       }
       return response;
     },
-    (error: AxiosError) => {
+    async (error: AxiosError) => {
+      const config = error.config as any;
+      
+      if (error.response?.status === 429 || (error.response?.status && error.response.status >= 500)) {
+        config.__retryCount = config.__retryCount || 0;
+        
+        if (config.__retryCount < 3) {
+          config.__retryCount++;
+          const delay = Math.pow(2, config.__retryCount) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return client(config);
+        }
+      }
+      
       if (error.response) {
         throw new NmkrHttpError(
           error.config?.url || "unknown",

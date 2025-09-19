@@ -28,6 +28,17 @@ export class NmkrEndpoints {
     ];
   }
 
+  private transformResponse(data: any): any {
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return data;
+      }
+    }
+    return data;
+  }
+
   private createRequestConfig(includeContentType = false) {
     const config: any = {
       responseType: "text" as any,
@@ -303,6 +314,77 @@ export class NmkrEndpoints {
       payload,
       this.createRequestConfig(true),
     );
-    return data;
+    return this.transformResponse(data);
+  }
+
+  async checkAddress(projectUid: string, address: string): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/CheckAddress/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}`,
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async cancelAddressReservation(projectUid: string, paymentAddress: string): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/CancelAddressReservation/${encodeURIComponent(projectUid)}/${encodeURIComponent(paymentAddress)}`,
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async getWhitelist(projectUid: string): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}`,
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async addToWhitelist(projectUid: string, address: string, countOfNfts: number): Promise<any> {
+    const { data } = await this.http.post(
+      `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}/${countOfNfts}`,
+      {},
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async removeFromWhitelist(projectUid: string, address: string): Promise<any> {
+    const { data } = await this.http.delete(
+      `/v2/ManageWhitelist/${encodeURIComponent(projectUid)}/${encodeURIComponent(address)}`,
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async listProjects(): Promise<any> {
+    const { data } = await this.http.get("/v2/ListProjects", this.createRequestConfig());
+    return this.transformResponse(data);
+  }
+
+  async listProjectsPaginated(count: number, page: number): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/ListProjects/${count}/${page}`,
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async getSaleConditions(projectUid: string): Promise<any> {
+    const { data } = await this.http.get(
+      `/v2/GetSaleConditions/${encodeURIComponent(projectUid)}`,
+      this.createRequestConfig()
+    );
+    return this.transformResponse(data);
+  }
+
+  async updateSaleConditions(projectUid: string, payload: any): Promise<any> {
+    const { data } = await this.http.put(
+      `/v2/UpdateSaleConditions/${encodeURIComponent(projectUid)}`,
+      payload,
+      this.createRequestConfig(true)
+    );
+    return this.transformResponse(data);
   }
 }
