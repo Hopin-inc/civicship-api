@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { NftWalletType, Prisma } from "@prisma/client";
 import { injectable, inject } from "tsyringe";
 import { fetchData } from "@/utils/fetch";
 import logger from "@/infrastructure/logging";
@@ -7,6 +7,7 @@ import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/re
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
+import { ValidationError } from "@/errors/graphql";
 
 @injectable()
 export default class NFTWalletService {
@@ -15,25 +16,32 @@ export default class NFTWalletService {
     @inject("NftTokenRepository") private nftTokenRepository: NftTokenRepository,
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
   ) {}
+
   async createOrUpdateWalletAddress(
     ctx: IContext,
     userId: string,
     walletAddress: string,
     tx: Prisma.TransactionClient,
   ) {
-    return this.nftWalletRepository.upsertByUserId(ctx, userId, walletAddress, tx);
-  }
-
-  async findWalletByUserId(
-    ctx: IContext,
-    userId: string,
-    tx?: Prisma.TransactionClient,
-  ) {
-    if (tx) {
-      return this.nftWalletRepository.findByUserIdWithTx(ctx, userId, tx);
+    const existing = await this.nftWalletRepository.findByWalletAddress(ctx, walletAddress);
+    if (existing) {
+      if (existing.userId !== userId) {
+        throw new ValidationError("This wallet address is already linked to another user.", [
+          walletAddress,
+        ]);
+      }
+      return existing;
     }
 
-    return this.nftWalletRepository.findByUserId(ctx, userId);
+    return await this.nftWalletRepository.create(
+      ctx,
+      {
+        walletAddress,
+        type: NftWalletType.EXTERNAL,
+        user: { connect: { id: userId } },
+      },
+      tx,
+    );
   }
 
   async storeMetadata(
@@ -44,7 +52,8 @@ export default class NFTWalletService {
     try {
       logger.info(`🔄 Processing wallet: ${wallet.walletAddress}`);
 
-      const baseApiUrl = process.env.BASE_SEPOLIA_API_URL || 'https://base-sepolia.blockscout.com/api/v2';
+      const baseApiUrl =
+        process.env.BASE_SEPOLIA_API_URL || "https://base-sepolia.blockscout.com/api/v2";
       const apiUrl = `${baseApiUrl}/addresses/${wallet.walletAddress}/nft`;
       const response = await fetchData<BaseSepoliaNftResponse>(apiUrl);
 
@@ -67,30 +76,42 @@ export default class NFTWalletService {
         const tokenSymbol = tokenInfo?.symbol || item.token.symbol;
         const tokenType = tokenInfo?.type || item.token.type || "UNKNOWN";
 
-        const nftToken = await this.nftTokenRepository.upsert(ctx, {
-          address: item.token.address,
-          name: tokenName || null,
-          symbol: tokenSymbol || null,
-          type: tokenType,
-          json: tokenInfo || item.token,
-        }, tx);
+        const nftToken = await this.nftTokenRepository.upsert(
+          ctx,
+          {
+            address: item.token.address,
+            name: tokenName || null,
+            symbol: tokenSymbol || null,
+            type: tokenType,
+            json: tokenInfo || item.token,
+          },
+          tx,
+        );
 
-        await this.nftInstanceRepository.upsert(ctx, {
-          instanceId: item.id,
-          name: item.metadata.name || null,
-          description: item.metadata.description || null,
-          imageUrl: item.metadata.image || null,
-          json: item,
-          nftWalletId: wallet.id,
-          nftTokenId: nftToken.id,
-        }, tx);
+        await this.nftInstanceRepository.upsert(
+          ctx,
+          {
+            instanceId: item.id,
+            name: item.metadata.name || null,
+            description: item.metadata.description || null,
+            imageUrl: item.metadata.image || null,
+            json: item,
+            nftWalletId: wallet.id,
+            nftTokenId: nftToken.id,
+          },
+          tx,
+        );
       }
 
       logger.info(`✅ Processed ${response.items.length} NFTs for wallet: ${wallet.walletAddress}`);
       return { success: true, itemsProcessed: response.items.length };
     } catch (error) {
       logger.error(`❌ Error processing wallet ${wallet.walletAddress}:`, error);
-      return { success: false, itemsProcessed: 0, error: error instanceof Error ? error.message : String(error) };
+      return {
+        success: false,
+        itemsProcessed: 0,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   }
 }

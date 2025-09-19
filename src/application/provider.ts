@@ -18,6 +18,9 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
+import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
+import { NftMintRepository } from "@/application/domain/reward/nft/nft-mint/data/repository";
+import NftMintConverter from "@/application/domain/reward/nft/nft-mint/data/converter";
 import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -91,6 +94,7 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
+import { MeshClient } from "@/infrastructure/libs/mesh";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -98,6 +102,7 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
+import NftMintValidator from "@/application/domain/reward/nft/nft-mint/validator";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -107,6 +112,8 @@ export function registerProductionDependencies() {
   container.register("prismaClient", { useValue: prismaClient });
   container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
+
+  container.register("MeshClient", { useClass: MeshClient });
 
   // ------------------------------
   // 👥 Account
@@ -139,6 +146,10 @@ export function registerProductionDependencies() {
   container.register("NftInstanceConverter", { useClass: NftInstanceConverter });
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
+  container.register("NftMintRepository", { useClass: NftMintRepository });
+  container.register("NftMintConverter", { useClass: NftMintConverter });
+  container.register("NftMintService", { useClass: NftMintService });
+  container.register("NftMintValidator", { useClass: NftMintValidator });
   container.register("NftWalletResolver", { useClass: NftWalletResolver });
 
   // 🏘️ Community
