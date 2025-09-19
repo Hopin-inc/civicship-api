@@ -148,4 +148,4 @@ credentials/
 .generated/
 
 # NMKR generated files
-/src/infrastructure/libs/nmkr/*.d.ts
+/src/infrastructure/libs/nmkr/types/*.d.ts

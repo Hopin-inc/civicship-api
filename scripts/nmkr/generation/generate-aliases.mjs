@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const opsPath = path.resolve("src/infrastructure/libs/nmkr/types.operations.d.ts");
-const outPath = path.resolve("src/infrastructure/libs/nmkr/types.aliases.d.ts");
+const opsPath = path.resolve("src/infrastructure/libs/nmkr/types/types.operations.d.ts");
+const outPath = path.resolve("src/infrastructure/libs/nmkr/types/types.aliases.d.ts");
 
 if (!fs.existsSync(opsPath)) {
   console.error(`Operations file not found: ${opsPath}`);
