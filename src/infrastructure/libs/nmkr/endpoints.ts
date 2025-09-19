@@ -13,45 +13,47 @@ import {
 export class NmkrEndpoints {
   constructor(private readonly http: AxiosInstance) {}
 
+  private createTransformResponse() {
+    return [
+      (raw: any) => {
+        if (typeof raw === "string") {
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return raw;
+          }
+        }
+        return raw;
+      },
+    ];
+  }
+
+  private createRequestConfig(includeContentType = false) {
+    const config: any = {
+      responseType: "text" as any,
+      transformResponse: this.createTransformResponse(),
+    };
+    
+    if (includeContentType) {
+      config.headers = {
+        'Content-Type': 'application/json',
+      };
+    }
+    
+    return config;
+  }
+
   async createPaymentTransactionForSpecificNft(
     payload: CreatePaymentTransactionSpecificReq,
   ): Promise<CreatePaymentTransactionRes> {
-    const { data } = await this.http.post("/v2/CreatePaymentTransaction", payload, {
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.post("/v2/CreatePaymentTransaction", payload, this.createRequestConfig(true));
     return data as CreatePaymentTransactionRes;
   }
 
   async createPaymentTransactionForRandomNft(
     payload: CreatePaymentTransactionRandomReq,
   ): Promise<CreatePaymentTransactionRes> {
-    const { data } = await this.http.post("/v2/CreatePaymentTransaction", payload, {
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.post("/v2/CreatePaymentTransaction", payload, this.createRequestConfig(true));
     return data as CreatePaymentTransactionRes;
   }
 
@@ -148,65 +150,21 @@ export class NmkrEndpoints {
   }
 
   async uploadNft(projectUid: string, payload: UploadNftRequest): Promise<any> {
-    const { data } = await this.http.post(`/v2/UploadNft/${encodeURIComponent(projectUid)}?uploadsource=api`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/plain',
-      },
-      responseType: "text",
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const config = this.createRequestConfig(true);
+    config.headers['Accept'] = 'text/plain';
+    const { data } = await this.http.post(`/v2/UploadNft/${encodeURIComponent(projectUid)}?uploadsource=api`, payload, config);
     return data;
   }
 
   async getNmkrPayStatus(paymentTransactionUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetNmkrPayStatus/${encodeURIComponent(paymentTransactionUid)}`, {
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.get(`/v2/GetNmkrPayStatus/${encodeURIComponent(paymentTransactionUid)}`, this.createRequestConfig());
     return data;
   }
 
   async mintAndSendRandom(projectUid: string, countNft: number, receiverAddress: string, blockchain: string = "Cardano"): Promise<any> {
     const { data } = await this.http.get(
       `/v2/MintAndSendRandom/${encodeURIComponent(projectUid)}/${countNft}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
-      {
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig()
     );
     return data;
   }
@@ -214,21 +172,7 @@ export class NmkrEndpoints {
   async mintAndSendSpecific(projectUid: string, nftUid: string, tokenCount: number, receiverAddress: string, blockchain: string = "Cardano"): Promise<any> {
     const { data } = await this.http.get(
       `/v2/MintAndSendSpecific/${encodeURIComponent(projectUid)}/${encodeURIComponent(nftUid)}/${tokenCount}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
-      {
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig()
     );
     return data;
   }
@@ -237,24 +181,7 @@ export class NmkrEndpoints {
     const { data } = await this.http.post(
       `/v2/MintAndSendSpecific/${encodeURIComponent(projectUid)}/${encodeURIComponent(receiverAddress)}?blockchain=${blockchain}`,
       payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig(true)
     );
     return data;
   }
@@ -263,24 +190,7 @@ export class NmkrEndpoints {
     const { data } = await this.http.post(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/ReservePaymentgatewayMintAndSendNft`,
       payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig(true)
     );
     return data;
   }
@@ -289,24 +199,7 @@ export class NmkrEndpoints {
     const { data } = await this.http.post(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/MintAndSendPaymentgatewayNft`,
       payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig(true)
     );
     return data;
   }
@@ -315,63 +208,18 @@ export class NmkrEndpoints {
     const { data } = await this.http.post(
       `/v2/ProceedPaymentTransaction/${encodeURIComponent(paymentTransactionUid)}/CancelTransaction`,
       {},
-      {
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig()
     );
     return data;
   }
 
   async getProjectDetails(projectUid: string): Promise<any> {
-    const { data } = await this.http.get(`/v2/GetProjectDetails/${encodeURIComponent(projectUid)}`, {
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.get(`/v2/GetProjectDetails/${encodeURIComponent(projectUid)}`, this.createRequestConfig());
     return data;
   }
 
   async createProject(payload: CreateProjectRequest): Promise<any> {
-    const { data } = await this.http.post("/v2/CreateProject", payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.post("/v2/CreateProject", payload, this.createRequestConfig(true));
     return data;
   }
 
@@ -379,24 +227,7 @@ export class NmkrEndpoints {
     const { data } = await this.http.post(
       `/v2/UpdateMetadata/${encodeURIComponent(projectUid)}/${encodeURIComponent(nftUid)}`,
       payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        responseType: "text" as any,
-        transformResponse: [
-          (raw) => {
-            if (typeof raw === "string") {
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return raw;
-              }
-            }
-            return raw;
-          },
-        ],
-      }
+      this.createRequestConfig(true)
     );
     return data;
   }
@@ -419,43 +250,12 @@ export class NmkrEndpoints {
       url += `?${params.toString()}`;
     }
 
-    const { data } = await this.http.get(url, {
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.get(url, this.createRequestConfig());
     return data;
   }
 
   async uploadToIpfs(customerId: number, payload: UploadToIpfsRequest): Promise<any> {
-    const { data } = await this.http.post(`/v2/UploadToIpfs/${customerId}`, payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      responseType: "text" as any,
-      transformResponse: [
-        (raw) => {
-          if (typeof raw === "string") {
-            try {
-              return JSON.parse(raw);
-            } catch {
-              return raw;
-            }
-          }
-          return raw;
-        },
-      ],
-    });
+    const { data } = await this.http.post(`/v2/UploadToIpfs/${customerId}`, payload, this.createRequestConfig(true));
     return data;
   }
 

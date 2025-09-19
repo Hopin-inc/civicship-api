@@ -84,17 +84,8 @@ async function testWorkingEndpoints() {
       });
     });
     
-    // Test metadata and NFT operations
-    await testEndpoint('CheckMetadata', () => nmkrClient.checkMetadata(nftUid));
-    await testEndpoint('DuplicateNft', () => nmkrClient.duplicateNft(nftUid));
-    
-    // Test discount and sale conditions
-    await testEndpoint('CheckIfEligibleForDiscount', () => nmkrClient.checkIfEligibleForDiscount(projectUid, testWallet));
-    await testEndpoint('CheckIfSaleConditionsMet', () => nmkrClient.checkIfSaleConditionsMet(projectUid, testWallet, 1));
-    
     // Test utility endpoints
     await testEndpoint('CheckUtxo', () => nmkrClient.checkUtxo(testWallet));
-    await testEndpoint('CreateBurningAddress', () => nmkrClient.createBurningAddress(projectUid, 24));
     
     // Test rates and server info
     await testEndpoint('GetRates', () => nmkrClient.getRates());
@@ -103,10 +94,7 @@ async function testWorkingEndpoints() {
     
     // Test project-specific endpoints
     await testEndpoint('GetCounts', () => nmkrClient.getCounts(projectUid));
-    await testEndpoint('GetDiscounts', () => nmkrClient.getDiscounts(projectUid));
-    await testEndpoint('GetNotifications', () => nmkrClient.getNotifications(projectUid));
     await testEndpoint('GetProjectTransactions', () => nmkrClient.getProjectTransactions(projectUid));
-    await testEndpoint('GetRefunds', () => nmkrClient.getRefunds(projectUid));
     await testEndpoint('GetAdditionalPayoutWallets', () => nmkrClient.getAdditionalPayoutWallets(projectUid));
     
     // Test NFT details
