@@ -723,10 +723,10 @@ REFUNDED REFUNDED
 
   "t_order_items" {
     String id "🗝️"
+    Int price_snapshot 
+    Int quantity 
     String order_id 
     String product_id 
-    Int quantity 
-    Int price_snapshot 
     DateTime created_at 
     DateTime updated_at 
     }

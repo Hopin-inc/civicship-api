@@ -7434,8 +7434,8 @@ export const defineOrderFactory = (<TOptions extends OrderFactoryDefineOptions>(
 defineOrderFactory.withTransientFields = defaultTransientFieldValues => options => defineOrderFactoryInternal(options, defaultTransientFieldValues);
 
 type OrderItemScalarOrEnumFields = {
-    quantity: number;
     priceSnapshot: number;
+    quantity: number;
 };
 
 type OrderItemorderFactory = {
@@ -7450,8 +7450,8 @@ type OrderItemproductFactory = {
 
 type OrderItemFactoryDefineInput = {
     id?: string;
-    quantity?: number;
     priceSnapshot?: number;
+    quantity?: number;
     createdAt?: Date;
     updatedAt?: Date;
     order: OrderItemorderFactory | Prisma.OrderCreateNestedOneWithoutItemsInput;
@@ -7503,8 +7503,8 @@ function autoGenerateOrderItemScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): OrderItemScalarOrEnumFields {
     return {
-        quantity: getScalarFieldValueGenerator().Int({ modelName: "OrderItem", fieldName: "quantity", isId: false, isUnique: false, seq }),
-        priceSnapshot: getScalarFieldValueGenerator().Int({ modelName: "OrderItem", fieldName: "priceSnapshot", isId: false, isUnique: false, seq })
+        priceSnapshot: getScalarFieldValueGenerator().Int({ modelName: "OrderItem", fieldName: "priceSnapshot", isId: false, isUnique: false, seq }),
+        quantity: getScalarFieldValueGenerator().Int({ modelName: "OrderItem", fieldName: "quantity", isId: false, isUnique: false, seq })
     };
 }
 
