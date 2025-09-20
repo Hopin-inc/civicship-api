@@ -10,6 +10,7 @@ export const transactionInclude = Prisma.validator<Prisma.TransactionInclude>()(
 export const transactionSelectDetail = Prisma.validator<Prisma.TransactionSelect>()({
   id: true,
   reason: true,
+  comment: true,
   fromPointChange: true,
   toPointChange: true,
 

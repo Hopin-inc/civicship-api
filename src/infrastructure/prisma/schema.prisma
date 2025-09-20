@@ -1053,7 +1053,8 @@ enum TicketStatusReason {
 model Transaction {
   id String @id @default(cuid())
 
-  reason TransactionReason
+  reason  TransactionReason
+  comment String?
 
   from            String?
   fromWallet      Wallet? @relation("from_wallet", fields: [from], references: [id], onDelete: SetNull)

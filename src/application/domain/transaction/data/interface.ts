@@ -18,6 +18,7 @@ export interface ITransactionService {
     transferPoints: number,
     toWalletId: string,
     tx: Prisma.TransactionClient,
+    comment?: string,
   ): Promise<PrismaTransactionDetail>;
 
   grantCommunityPoint(
@@ -26,6 +27,7 @@ export interface ITransactionService {
     fromWalletId: string,
     memberWalletId: string,
     tx: Prisma.TransactionClient,
+    comment?: string,
   ): Promise<PrismaTransactionDetail>;
 
   donateSelfPoint(
@@ -34,7 +36,7 @@ export interface ITransactionService {
     toWalletId: string,
     transferPoints: number,
     tx: Prisma.TransactionClient,
-    reason: TransactionReason,
+    comment?: string,
   ): Promise<PrismaTransactionDetail>;
 
   reservationCreated(

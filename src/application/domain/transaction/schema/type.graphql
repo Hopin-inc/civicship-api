@@ -4,6 +4,7 @@
 type Transaction {
   id: ID!
   reason: TransactionReason!
+  comment: String
 
   fromWallet: Wallet
   fromPointChange: Int
