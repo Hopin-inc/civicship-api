@@ -4,7 +4,6 @@ import { IContext } from "@/types/server";
 import { container } from "tsyringe";
 import TransactionService from "@/application/domain/transaction/service";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
-import { TransactionReason } from "@prisma/client";
 
 jest.mock("@/application/domain/utils", () => ({
   getCurrentUserId: jest.fn().mockReturnValue("test-user-id"),
@@ -34,6 +33,7 @@ describe("TransactionService", () => {
   const transferPoints = 100;
   const walletId = "wallet-1";
   const participationId = "participation-123";
+  const comment = "test-comment";
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -75,6 +75,7 @@ describe("TransactionService", () => {
         transferPoints,
         walletId,
         mockTx,
+        comment,
       );
 
       expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints, "test-user-id");
@@ -118,6 +119,7 @@ describe("TransactionService", () => {
         transferPoints,
         walletId,
         "test-user-id",
+        comment,
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
@@ -152,8 +154,7 @@ describe("TransactionService", () => {
         walletId,
         transferPoints,
         mockTx,
-        TransactionReason.DONATION,
-        undefined,
+        comment,
       );
 
       expect(mockConverter.donateSelfPoint).toHaveBeenCalledWith(
@@ -161,7 +162,7 @@ describe("TransactionService", () => {
         walletId,
         transferPoints,
         "test-user-id",
-        undefined,
+        comment,
       );
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);

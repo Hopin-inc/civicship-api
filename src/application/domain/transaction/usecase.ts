@@ -152,7 +152,6 @@ export default class TransactionUseCase {
         toWalletId,
         transferPoints,
         tx,
-        TransactionReason.DONATION,
         comment,
       );
 
