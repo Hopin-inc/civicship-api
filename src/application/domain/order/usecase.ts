@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
-import { buildCustomProps } from '@/application/domain/nmkr/customProps';
+import CustomPropertiesService from './customProperties/service';
 import InventoryService from '@/application/domain/product/inventory/service';
 import { getCurrentUserId } from '@/application/domain/utils';
 import logger from '@/infrastructure/logging';
@@ -36,6 +36,7 @@ export default class OrderUseCase {
     @inject("InventoryService") private readonly inventoryService: InventoryService,
     @inject("OrderRepository") private readonly orderRepository: OrderRepository,
     @inject("OrderConverter") private readonly orderConverter: OrderConverter,
+    @inject("CustomPropertiesService") private readonly customPropertiesService: CustomPropertiesService,
   ) {}
 
   async createOrder(
@@ -137,7 +138,7 @@ export default class OrderUseCase {
       orderItem.product.nftProduct!.externalRef!,
       1,
       orderItem.priceSnapshot.toString(),
-      buildCustomProps(customProps),
+      this.customPropertiesService.buildCustomProps(customProps),
       receiverAddress
     );
 
@@ -167,7 +168,7 @@ export default class OrderUseCase {
       paymentAddress: paymentResponse.paymentAddress,
       paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       totalAmount: order.totalAmount!,
-      customProperty: buildCustomProps(customProps)
+      customProperty: this.customPropertiesService.buildCustomProps(customProps)
     };
   }
 }

@@ -18,10 +18,13 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
-import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
-import { NftMintRepository } from "@/application/domain/reward/nft/nft-mint/data/repository";
+import NftMintService from "@/application/domain/account/nft-mint/service";
+import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
+import { NftProductRepository } from "@/application/domain/product/nft-product/data/repository";
+import NftProductService from "@/application/domain/product/nft-product/service";
 import InventoryService from "@/application/domain/product/inventory/service";
-import NmkrWebhookService from "@/application/domain/nmkr/webhookService";
+import CustomPropertiesService from "@/application/domain/order/customProperties/service";
+import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
@@ -153,14 +156,18 @@ export function registerProductionDependencies() {
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
   container.register("NftMintRepository", { useClass: NftMintRepository });
   container.register("NftMintService", { useClass: NftMintService });
+  container.register("NftMintWebhookService", { useClass: NftMintWebhookService });
   container.register("InventoryService", { useClass: InventoryService });
-  container.register("NmkrWebhookService", { useClass: NmkrWebhookService });
+  
+  container.register("NftProductRepository", { useClass: NftProductRepository });
+  container.register("NftProductService", { useClass: NftProductService });
 
   container.register("OrderRepository", { useClass: OrderRepository });
   container.register("OrderConverter", { useClass: OrderConverter });
   container.register("OrderUseCase", { useClass: OrderUseCase });
   container.register("OrderResolver", { useClass: OrderResolver });
   container.register("OrderService", { useClass: OrderService });
+  container.register("CustomPropertiesService", { useClass: CustomPropertiesService });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });
