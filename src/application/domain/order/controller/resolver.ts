@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import OrderUseCase from '../usecase';
@@ -14,15 +15,17 @@ interface OrderCreateArgs {
 
 @injectable()
 export default class OrderResolver {
-  constructor(@inject("OrderUseCase") private readonly useCase: OrderUseCase) {}
+  constructor(
+    @inject("OrderUseCase") private readonly orderUseCase: OrderUseCase,
+  ) {}
 
   Mutation = {
     orderCreate: async (
-      _: unknown,
+      _parent: unknown,
       args: OrderCreateArgs,
       ctx: IContext
     ) => {
-      return this.useCase.createOrder(ctx, args);
+      return this.orderUseCase.createOrder(ctx, args);
     },
   };
 }

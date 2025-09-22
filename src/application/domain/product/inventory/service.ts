@@ -59,15 +59,6 @@ export default class InventoryService {
     return result._sum.quantity || 0;
   }
 
-  async reserveInventory(tx: Prisma.TransactionClient, items: Array<{ productId: string; quantity: number }>): Promise<void> {
-    for (const item of items) {
-      const inventory = await this.calculateInventoryWithTx(tx, item.productId);
-      
-      if (inventory.available < item.quantity) {
-        throw new Error(`Insufficient inventory for product ${item.productId}. Available: ${inventory.available}, Requested: ${item.quantity}`);
-      }
-    }
-  }
 
   private async calculateInventoryWithTx(tx: Prisma.TransactionClient, productId: string): Promise<InventorySnapshot> {
     const [product, reserved, soldPendingMint, minted] = await Promise.all([
@@ -114,7 +105,24 @@ export default class InventoryService {
     return result._sum.quantity || 0;
   }
 
-  async transferToSoldPending(tx: Prisma.TransactionClient, orderItems: Array<{ productId: string; quantity: number }>): Promise<void> {
+
+  async reserveInventory(
+    tx: Prisma.TransactionClient,
+    items: Array<{ productId: string; quantity: number }>
+  ): Promise<void> {
+    for (const item of items) {
+      const inventory = await this.calculateInventoryWithTx(tx, item.productId);
+      
+      if (inventory.available < item.quantity) {
+        throw new Error(`Insufficient inventory for product ${item.productId}. Available: ${inventory.available}, Requested: ${item.quantity}`);
+      }
+    }
+  }
+
+  async transferToSoldPending(
+    tx: Prisma.TransactionClient,
+    orderItems: Array<{ productId: string; quantity: number }>
+  ): Promise<void> {
     logger.info("Transferring inventory to sold pending", { 
       orderItems: orderItems.map(item => ({ productId: item.productId, quantity: item.quantity }))
     });

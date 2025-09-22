@@ -9,7 +9,6 @@ import { NmkrClient } from '@/infrastructure/libs/nmkr/api/client';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
 import OrderPresenter from './presenter';
-import { OrderWithItems } from './type';
 
 interface OrderCreateInput {
   productId: string;
@@ -53,7 +52,7 @@ export default class OrderUseCase {
       receiverAddress
     });
 
-    const order = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
+    const order = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
       const product = await tx.product.findUnique({
         where: { id: productId },
         include: { 
@@ -93,7 +92,22 @@ export default class OrderUseCase {
         totalAmount,
       });
 
-      const createdOrder = await this.orderRepository.create(tx, orderData);
+      const createdOrder = await tx.order.create({
+        data: orderData,
+        include: {
+          items: {
+            include: {
+              product: {
+                include: {
+                  nftProduct: true,
+                },
+              },
+              nftMints: true,
+            },
+          },
+          user: true,
+        },
+      });
 
       logger.info("Order created successfully", {
         orderId: createdOrder.id,
@@ -104,15 +118,7 @@ export default class OrderUseCase {
       return createdOrder;
     });
 
-    const updatedOrder = await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
-      return await this.orderRepository.findById(tx, order.id);
-    });
-
-    if (!updatedOrder) {
-      throw new Error(`Order not found: ${order.id}`);
-    }
-
-    const orderItem = updatedOrder.items[0];
+    const orderItem = order.items[0];
     const customProps = {
       propsVersion: 1 as const,
       orderId: order.id,
@@ -145,10 +151,9 @@ export default class OrderUseCase {
 
     const externalRef = paymentResponse.paymentAddressId.toString();
 
-    await ctx.issuer.internal(async (tx: Prisma.TransactionClient) => {
-      const updateData = this.orderConverter.toPrismaUpdateInput(externalRef);
-      await this.orderRepository.update(tx, order.id, updateData);
-    });
+    const updatedOrder = await this.orderRepository.update(ctx, order.id, 
+      this.orderConverter.toPrismaUpdateInput(externalRef)
+    );
 
     logger.info("Order creation completed", {
       orderId: order.id,
@@ -156,14 +161,9 @@ export default class OrderUseCase {
       paymentAddressId: paymentResponse.paymentAddressId
     });
 
-    const orderWithExternalRef: OrderWithItems = {
-      ...updatedOrder,
-      externalRef,
-    };
-
     return {
       __typename: 'OrderCreateSuccess',
-      order: OrderPresenter.toGraphQL(orderWithExternalRef),
+      order: OrderPresenter.toGraphQL(updatedOrder),
       paymentAddress: paymentResponse.paymentAddress,
       paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       totalAmount: order.totalAmount!,
