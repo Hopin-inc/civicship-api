@@ -750,6 +750,7 @@ REFUNDED REFUNDED
   "t_nft_products" {
     String id "🗝️"
     String product_id 
+    String external_ref "❓"
     String policy_id 
     DateTime created_at 
     DateTime updated_at 

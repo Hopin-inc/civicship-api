@@ -7779,6 +7779,7 @@ type NftProductproductFactory = {
 
 type NftProductFactoryDefineInput = {
     id?: string;
+    externalRef?: string | null;
     policyId?: string;
     createdAt?: Date;
     updatedAt?: Date;

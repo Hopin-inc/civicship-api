@@ -642,6 +642,7 @@ Table t_nft_products {
   id String [pk]
   productId String [unique, not null]
   product t_products [not null]
+  externalRef String
   policyId String [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]

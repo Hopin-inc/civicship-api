@@ -3,8 +3,8 @@ const fs = require("fs");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const path = require("path");
 
-const schemaPath = path.resolve(__dirname, "schema.mainnet.json");
-const outPath = path.resolve(__dirname, "types.generated.ts");
+const schemaPath = path.resolve("src/infrastructure/libs/nmkr/schema/schema.mainnet.json");
+const outPath = path.resolve("src/infrastructure/libs/nmkr/types/types.generated.ts");
 
 if (!fs.existsSync(schemaPath)) {
   console.error(

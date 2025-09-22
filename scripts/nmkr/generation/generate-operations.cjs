@@ -5,8 +5,8 @@ const path = require("path");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const crypto = require("crypto");
 
-const schemaPath = path.resolve("src/infrastructure/libs/nmkr/schema.mainnet.json");
-const outPath = path.resolve("src/infrastructure/libs/nmkr/types.operations.d.ts");
+const schemaPath = path.resolve("src/infrastructure/libs/nmkr/schema/schema.mainnet.json");
+const outPath = path.resolve("src/infrastructure/libs/nmkr/types/types.operations.d.ts");
 
 if (!fs.existsSync(schemaPath)) {
   console.error(

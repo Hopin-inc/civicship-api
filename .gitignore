@@ -148,5 +148,4 @@ credentials/
 .generated/
 
 # NMKR generated files
-/src/infrastructure/libs/nmkr/openapi.d.ts
-/src/infrastructure/libs/nmkr/types.operations.d.ts
+/src/infrastructure/libs/nmkr/types/*.d.ts
