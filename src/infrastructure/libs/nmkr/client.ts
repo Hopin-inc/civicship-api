@@ -147,6 +147,22 @@ export class NmkrClient {
     );
   }
 
+  async getPaymentAddressForRandomNftSaleWithCustomProps(
+    projectUid: string,
+    tokenCount: number,
+    customPropsInput: import('@/application/domain/nmkr/customProps').CustomPropsV1,
+    customerIpAddress: string = '127.0.0.1',
+  ): Promise<components['schemas']['GetPaymentAddressResultClass']> {
+    const { buildCustomProps } = await import('@/application/domain/nmkr/customProps');
+    const customProperty = buildCustomProps(customPropsInput);
+    console.log('CustomProps for random NFT sale (not sent to API):', customProperty);
+    
+    return this.handleRequest(
+      () => this.endpoints.getPaymentAddressForRandomNftSale(projectUid, tokenCount, customerIpAddress),
+      'Failed to get payment address for random NFT sale with custom props'
+    );
+  }
+
   async getAllAssetsInWallet(
     address: string, 
     options?: { timeoutMs?: number }
@@ -290,6 +306,21 @@ export class NmkrClient {
     return this.handleRequest(
       () => this.endpoints.getPaymentAddressForSpecificNftSale(nftUid, tokenCount, referer, customProperty, optionalReceiverAddress),
       'Failed to get payment address for specific NFT sale'
+    );
+  }
+
+  async getPaymentAddressForSpecificNftSaleWithCustomProps(
+    nftUid: string,
+    tokenCount: number,
+    customPropsInput: import('@/application/domain/nmkr/customProps').CustomPropsV1,
+    referer?: string,
+    optionalReceiverAddress?: string,
+  ): Promise<components['schemas']['GetPaymentAddressResultClass']> {
+    const { buildCustomProps } = await import('@/application/domain/nmkr/customProps');
+    const customProperty = buildCustomProps(customPropsInput);
+    return this.handleRequest(
+      () => this.endpoints.getPaymentAddressForSpecificNftSale(nftUid, tokenCount, referer, customProperty, optionalReceiverAddress),
+      'Failed to get payment address for specific NFT sale with custom props'
     );
   }
 
