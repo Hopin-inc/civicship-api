@@ -1,0 +1,28 @@
+type Product {
+  id: ID!
+  type: ProductType!
+  name: String!
+  description: String
+  imageUrl: String
+  price: Int!
+  maxSupply: Int
+  startsAt: Datetime
+  endsAt: Datetime
+  nftProduct: NftProduct
+  createdAt: Datetime!
+  updatedAt: Datetime!
+}
+
+type NftProduct {
+  id: ID!
+  productId: ID!
+  product: Product!
+  externalRef: String
+  policyId: String!
+  createdAt: Datetime!
+  updatedAt: Datetime!
+}
+
+enum ProductType {
+  NFT
+}

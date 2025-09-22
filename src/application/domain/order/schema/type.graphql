@@ -1,0 +1,34 @@
+type Order {
+  id: ID!
+  status: OrderStatus!
+  paymentProvider: PaymentProvider!
+  externalRef: String
+  totalAmount: Int!
+  user: User!
+  items: [OrderItem!]!
+  createdAt: Datetime!
+  updatedAt: Datetime!
+}
+
+type OrderItem {
+  id: ID!
+  priceSnapshot: Int!
+  quantity: Int!
+  product: Product!
+  nftMints: [NftMint!]!
+  createdAt: Datetime!
+  updatedAt: Datetime!
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum PaymentProvider {
+  NMKR
+  STRIPE
+}

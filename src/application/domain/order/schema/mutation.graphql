@@ -1,0 +1,24 @@
+extend type Mutation {
+  orderCreate(input: OrderCreateInput!): OrderCreatePayload! @authz(rules: [IsUser])
+}
+
+input OrderCreateInput {
+  productId: ID!
+  quantity: Int!
+  receiverAddress: String!
+}
+
+union OrderCreatePayload = OrderCreateSuccess | OrderCreateError
+
+type OrderCreateSuccess {
+  order: Order!
+  paymentAddress: String!
+  paymentDeadline: String!
+  totalAmount: Int!
+  customProperty: String!
+}
+
+type OrderCreateError {
+  message: String!
+  code: String!
+}

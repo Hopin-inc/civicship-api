@@ -1,19 +1,32 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
 
-export const orderSelectBase = Prisma.validator<Prisma.OrderSelect>()({
-  id: true,
-  status: true,
-  paymentProvider: true,
-  externalRef: true,
-  totalAmount: true,
-
-  userId: true,
-  user: true,
-
-  items: true,
-
-  createdAt: true,
-  updatedAt: true,
+export const orderSelectWithItems = Prisma.validator<Prisma.OrderDefaultArgs>()({
+  include: {
+    items: {
+      include: {
+        product: {
+          include: {
+            nftProduct: true,
+          },
+        },
+        nftMints: true,
+      },
+    },
+    user: true,
+  },
 });
 
-export type PrismaOrder = Prisma.OrderGetPayload<{ select: typeof orderSelectBase }>;
+export type OrderWithItems = Prisma.OrderGetPayload<typeof orderSelectWithItems>;
+
+export const orderItemSelectWithProduct = Prisma.validator<Prisma.OrderItemDefaultArgs>()({
+  include: {
+    product: {
+      include: {
+        nftProduct: true,
+      },
+    },
+    nftMints: true,
+  },
+});
+
+export type OrderItemWithProduct = Prisma.OrderItemGetPayload<typeof orderItemSelectWithProduct>;

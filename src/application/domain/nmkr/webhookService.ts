@@ -13,8 +13,8 @@ export default class NmkrWebhookService {
 
   async processStateTransition(
     ctx: IContext,
-    nftMintId: string, 
-    nmkrState: string, 
+    nftMintId: string,
+    nmkrState: string,
     txHash?: string,
     paymentTransactionUid?: string
   ): Promise<void> {

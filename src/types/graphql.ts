@@ -744,6 +744,7 @@ export type GqlMutation = {
   opportunitySlotSetHostingStatus?: Maybe<GqlOpportunitySlotSetHostingStatusPayload>;
   opportunitySlotsBulkUpdate?: Maybe<GqlOpportunitySlotsBulkUpdatePayload>;
   opportunityUpdateContent?: Maybe<GqlOpportunityUpdateContentPayload>;
+  orderCreate: GqlOrderCreatePayload;
   participationBulkCreate?: Maybe<GqlParticipationBulkCreatePayload>;
   participationCreatePersonalRecord?: Maybe<GqlParticipationCreatePersonalRecordPayload>;
   participationDeletePersonalRecord?: Maybe<GqlParticipationDeletePayload>;
@@ -925,6 +926,11 @@ export type GqlMutationOpportunityUpdateContentArgs = {
   id: Scalars['ID']['input'];
   input: GqlOpportunityUpdateContentInput;
   permission: GqlCheckCommunityPermissionInput;
+};
+
+
+export type GqlMutationOrderCreateArgs = {
+  input: GqlOrderCreateInput;
 };
 
 
@@ -1158,6 +1164,40 @@ export type GqlNftInstancesConnection = {
   edges: Array<GqlNftInstanceEdge>;
   pageInfo: GqlPageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+export type GqlNftMint = {
+  __typename?: 'NftMint';
+  createdAt: Scalars['Datetime']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  nftInstance?: Maybe<GqlNftInstance>;
+  nftWallet: GqlNftWallet;
+  nftWalletId: Scalars['ID']['output'];
+  orderItem?: Maybe<GqlOrderItem>;
+  orderItemId?: Maybe<Scalars['ID']['output']>;
+  status: GqlNftMintStatus;
+  txHash?: Maybe<Scalars['String']['output']>;
+  updatedAt: Scalars['Datetime']['output'];
+};
+
+export const GqlNftMintStatus = {
+  Failed: 'FAILED',
+  Minted: 'MINTED',
+  Queued: 'QUEUED',
+  Submitted: 'SUBMITTED'
+} as const;
+
+export type GqlNftMintStatus = typeof GqlNftMintStatus[keyof typeof GqlNftMintStatus];
+export type GqlNftProduct = {
+  __typename?: 'NftProduct';
+  createdAt: Scalars['Datetime']['output'];
+  externalRef?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  policyId: Scalars['String']['output'];
+  product: GqlProduct;
+  productId: Scalars['ID']['output'];
+  updatedAt: Scalars['Datetime']['output'];
 };
 
 export type GqlNftToken = {
@@ -1423,6 +1463,62 @@ export type GqlOpportunityUpdateContentSuccess = {
   opportunity: GqlOpportunity;
 };
 
+export type GqlOrder = {
+  __typename?: 'Order';
+  createdAt: Scalars['Datetime']['output'];
+  externalRef?: Maybe<Scalars['String']['output']>;
+  id: Scalars['ID']['output'];
+  items: Array<GqlOrderItem>;
+  paymentProvider: GqlPaymentProvider;
+  status: GqlOrderStatus;
+  totalAmount: Scalars['Int']['output'];
+  updatedAt: Scalars['Datetime']['output'];
+  user: GqlUser;
+};
+
+export type GqlOrderCreateError = {
+  __typename?: 'OrderCreateError';
+  code: Scalars['String']['output'];
+  message: Scalars['String']['output'];
+};
+
+export type GqlOrderCreateInput = {
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Int']['input'];
+  receiverAddress: Scalars['String']['input'];
+};
+
+export type GqlOrderCreatePayload = GqlOrderCreateError | GqlOrderCreateSuccess;
+
+export type GqlOrderCreateSuccess = {
+  __typename?: 'OrderCreateSuccess';
+  customProperty: Scalars['String']['output'];
+  order: GqlOrder;
+  paymentAddress: Scalars['String']['output'];
+  paymentDeadline: Scalars['String']['output'];
+  totalAmount: Scalars['Int']['output'];
+};
+
+export type GqlOrderItem = {
+  __typename?: 'OrderItem';
+  createdAt: Scalars['Datetime']['output'];
+  id: Scalars['ID']['output'];
+  nftMints: Array<GqlNftMint>;
+  priceSnapshot: Scalars['Int']['output'];
+  product: GqlProduct;
+  quantity: Scalars['Int']['output'];
+  updatedAt: Scalars['Datetime']['output'];
+};
+
+export const GqlOrderStatus = {
+  Cancelled: 'CANCELLED',
+  Completed: 'COMPLETED',
+  Failed: 'FAILED',
+  Paid: 'PAID',
+  Pending: 'PENDING'
+} as const;
+
+export type GqlOrderStatus = typeof GqlOrderStatus[keyof typeof GqlOrderStatus];
 export type GqlPageInfo = {
   __typename?: 'PageInfo';
   endCursor?: Maybe<Scalars['String']['output']>;
@@ -1581,6 +1677,12 @@ export type GqlParticipationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export const GqlPaymentProvider = {
+  Nmkr: 'NMKR',
+  Stripe: 'STRIPE'
+} as const;
+
+export type GqlPaymentProvider = typeof GqlPaymentProvider[keyof typeof GqlPaymentProvider];
 export const GqlPhoneUserStatus = {
   ExistingDifferentCommunity: 'EXISTING_DIFFERENT_COMMUNITY',
   ExistingSameCommunity: 'EXISTING_SAME_COMMUNITY',
@@ -1729,6 +1831,27 @@ export type GqlPortfoliosConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export type GqlProduct = {
+  __typename?: 'Product';
+  createdAt: Scalars['Datetime']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  endsAt?: Maybe<Scalars['Datetime']['output']>;
+  id: Scalars['ID']['output'];
+  imageUrl?: Maybe<Scalars['String']['output']>;
+  maxSupply?: Maybe<Scalars['Int']['output']>;
+  name: Scalars['String']['output'];
+  nftProduct?: Maybe<GqlNftProduct>;
+  price: Scalars['Int']['output'];
+  startsAt?: Maybe<Scalars['Datetime']['output']>;
+  type: GqlProductType;
+  updatedAt: Scalars['Datetime']['output'];
+};
+
+export const GqlProductType = {
+  Nft: 'NFT'
+} as const;
+
+export type GqlProductType = typeof GqlProductType[keyof typeof GqlProductType];
 export const GqlPublishStatus = {
   CommunityInternal: 'COMMUNITY_INTERNAL',
   Private: 'PRIVATE',
@@ -2995,6 +3118,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   OpportunitySlotSetHostingStatusPayload: ( Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: _RefType['OpportunitySlot'] } );
   OpportunitySlotsBulkUpdatePayload: ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
   OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
+  OrderCreatePayload: ( GqlOrderCreateError ) | ( Omit<GqlOrderCreateSuccess, 'order'> & { order: _RefType['Order'] } );
   ParticipationBulkCreatePayload: ( Omit<GqlParticipationBulkCreateSuccess, 'participations'> & { participations: Array<_RefType['Participation']> } );
   ParticipationCreatePersonalRecordPayload: ( Omit<GqlParticipationCreatePersonalRecordSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationDeletePayload: ( GqlParticipationDeleteSuccess );
@@ -3146,6 +3270,9 @@ export type GqlResolversTypes = ResolversObject<{
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
   NftInstancesConnection: ResolverTypeWrapper<Omit<GqlNftInstancesConnection, 'edges'> & { edges: Array<GqlResolversTypes['NftInstanceEdge']> }>;
+  NftMint: ResolverTypeWrapper<Omit<GqlNftMint, 'nftInstance' | 'nftWallet' | 'orderItem'> & { nftInstance?: Maybe<GqlResolversTypes['NftInstance']>, nftWallet: GqlResolversTypes['NftWallet'], orderItem?: Maybe<GqlResolversTypes['OrderItem']> }>;
+  NftMintStatus: GqlNftMintStatus;
+  NftProduct: ResolverTypeWrapper<GqlNftProduct>;
   NftToken: ResolverTypeWrapper<GqlNftToken>;
   NftWallet: ResolverTypeWrapper<Omit<GqlNftWallet, 'user'> & { user: GqlResolversTypes['User'] }>;
   OpportunitiesConnection: ResolverTypeWrapper<Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversTypes['OpportunityEdge']> }>;
@@ -3181,6 +3308,13 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityUpdateContentInput: GqlOpportunityUpdateContentInput;
   OpportunityUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityUpdateContentPayload']>;
   OpportunityUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
+  Order: ResolverTypeWrapper<Omit<GqlOrder, 'items' | 'user'> & { items: Array<GqlResolversTypes['OrderItem']>, user: GqlResolversTypes['User'] }>;
+  OrderCreateError: ResolverTypeWrapper<GqlOrderCreateError>;
+  OrderCreateInput: GqlOrderCreateInput;
+  OrderCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrderCreatePayload']>;
+  OrderCreateSuccess: ResolverTypeWrapper<Omit<GqlOrderCreateSuccess, 'order'> & { order: GqlResolversTypes['Order'] }>;
+  OrderItem: ResolverTypeWrapper<Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversTypes['NftMint']> }>;
+  OrderStatus: GqlOrderStatus;
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
   Paging: ResolverTypeWrapper<GqlPaging>;
   Participation: ResolverTypeWrapper<Participation>;
@@ -3204,6 +3338,7 @@ export type GqlResolversTypes = ResolversObject<{
   ParticipationStatusReason: GqlParticipationStatusReason;
   ParticipationType: GqlParticipationType;
   ParticipationsConnection: ResolverTypeWrapper<Omit<GqlParticipationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['ParticipationEdge']> }>;
+  PaymentProvider: GqlPaymentProvider;
   PhoneUserStatus: GqlPhoneUserStatus;
   Place: ResolverTypeWrapper<Place>;
   PlaceCreateInput: GqlPlaceCreateInput;
@@ -3225,6 +3360,8 @@ export type GqlResolversTypes = ResolversObject<{
   PortfolioSortInput: GqlPortfolioSortInput;
   PortfolioSource: GqlPortfolioSource;
   PortfoliosConnection: ResolverTypeWrapper<Omit<GqlPortfoliosConnection, 'edges'> & { edges: Array<GqlResolversTypes['PortfolioEdge']> }>;
+  Product: ResolverTypeWrapper<GqlProduct>;
+  ProductType: GqlProductType;
   PublishStatus: GqlPublishStatus;
   Query: ResolverTypeWrapper<{}>;
   Reservation: ResolverTypeWrapper<Omit<GqlReservation, 'createdByUser' | 'histories' | 'opportunitySlot' | 'participations'> & { createdByUser?: Maybe<GqlResolversTypes['User']>, histories?: Maybe<Array<GqlResolversTypes['ReservationHistory']>>, opportunitySlot?: Maybe<GqlResolversTypes['OpportunitySlot']>, participations?: Maybe<Array<GqlResolversTypes['Participation']>> }>;
@@ -3462,6 +3599,8 @@ export type GqlResolversParentTypes = ResolversObject<{
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
   NftInstancesConnection: Omit<GqlNftInstancesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['NftInstanceEdge']> };
+  NftMint: Omit<GqlNftMint, 'nftInstance' | 'nftWallet' | 'orderItem'> & { nftInstance?: Maybe<GqlResolversParentTypes['NftInstance']>, nftWallet: GqlResolversParentTypes['NftWallet'], orderItem?: Maybe<GqlResolversParentTypes['OrderItem']> };
+  NftProduct: GqlNftProduct;
   NftToken: GqlNftToken;
   NftWallet: Omit<GqlNftWallet, 'user'> & { user: GqlResolversParentTypes['User'] };
   OpportunitiesConnection: Omit<GqlOpportunitiesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['OpportunityEdge']> };
@@ -3495,6 +3634,12 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityUpdateContentInput: GqlOpportunityUpdateContentInput;
   OpportunityUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityUpdateContentPayload'];
   OpportunityUpdateContentSuccess: Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
+  Order: Omit<GqlOrder, 'items' | 'user'> & { items: Array<GqlResolversParentTypes['OrderItem']>, user: GqlResolversParentTypes['User'] };
+  OrderCreateError: GqlOrderCreateError;
+  OrderCreateInput: GqlOrderCreateInput;
+  OrderCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrderCreatePayload'];
+  OrderCreateSuccess: Omit<GqlOrderCreateSuccess, 'order'> & { order: GqlResolversParentTypes['Order'] };
+  OrderItem: Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversParentTypes['NftMint']> };
   PageInfo: GqlPageInfo;
   Paging: GqlPaging;
   Participation: Participation;
@@ -3533,6 +3678,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   PortfolioFilterInput: GqlPortfolioFilterInput;
   PortfolioSortInput: GqlPortfolioSortInput;
   PortfoliosConnection: Omit<GqlPortfoliosConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['PortfolioEdge']> };
+  Product: GqlProduct;
   Query: {};
   Reservation: Omit<GqlReservation, 'createdByUser' | 'histories' | 'opportunitySlot' | 'participations'> & { createdByUser?: Maybe<GqlResolversParentTypes['User']>, histories?: Maybe<Array<GqlResolversParentTypes['ReservationHistory']>>, opportunitySlot?: Maybe<GqlResolversParentTypes['OpportunitySlot']>, participations?: Maybe<Array<GqlResolversParentTypes['Participation']>> };
   ReservationCancelInput: GqlReservationCancelInput;
@@ -4076,6 +4222,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunitySlotSetHostingStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotSetHostingStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotSetHostingStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
+  orderCreate?: Resolver<GqlResolversTypes['OrderCreatePayload'], ParentType, ContextType, RequireFields<GqlMutationOrderCreateArgs, 'input'>>;
   participationBulkCreate?: Resolver<Maybe<GqlResolversTypes['ParticipationBulkCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationBulkCreateArgs, 'input' | 'permission'>>;
   participationCreatePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationCreatePersonalRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCreatePersonalRecordArgs, 'input'>>;
   participationDeletePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDeletePersonalRecordArgs, 'id' | 'permission'>>;
@@ -4129,6 +4276,32 @@ export type GqlNftInstancesConnectionResolvers<ContextType = any, ParentType ext
   edges?: Resolver<Array<GqlResolversTypes['NftInstanceEdge']>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlNftMintResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NftMint'] = GqlResolversParentTypes['NftMint']> = ResolversObject<{
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  error?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  nftInstance?: Resolver<Maybe<GqlResolversTypes['NftInstance']>, ParentType, ContextType>;
+  nftWallet?: Resolver<GqlResolversTypes['NftWallet'], ParentType, ContextType>;
+  nftWalletId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  orderItem?: Resolver<Maybe<GqlResolversTypes['OrderItem']>, ParentType, ContextType>;
+  orderItemId?: Resolver<Maybe<GqlResolversTypes['ID']>, ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['NftMintStatus'], ParentType, ContextType>;
+  txHash?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlNftProductResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['NftProduct'] = GqlResolversParentTypes['NftProduct']> = ResolversObject<{
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  externalRef?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  policyId?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  product?: Resolver<GqlResolversTypes['Product'], ParentType, ContextType>;
+  productId?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4283,6 +4456,49 @@ export type GqlOpportunityUpdateContentPayloadResolvers<ContextType = any, Paren
 
 export type GqlOpportunityUpdateContentSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OpportunityUpdateContentSuccess'] = GqlResolversParentTypes['OpportunityUpdateContentSuccess']> = ResolversObject<{
   opportunity?: Resolver<GqlResolversTypes['Opportunity'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOrderResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Order'] = GqlResolversParentTypes['Order']> = ResolversObject<{
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  externalRef?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  items?: Resolver<Array<GqlResolversTypes['OrderItem']>, ParentType, ContextType>;
+  paymentProvider?: Resolver<GqlResolversTypes['PaymentProvider'], ParentType, ContextType>;
+  status?: Resolver<GqlResolversTypes['OrderStatus'], ParentType, ContextType>;
+  totalAmount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  user?: Resolver<GqlResolversTypes['User'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOrderCreateErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreateError'] = GqlResolversParentTypes['OrderCreateError']> = ResolversObject<{
+  code?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOrderCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreatePayload'] = GqlResolversParentTypes['OrderCreatePayload']> = ResolversObject<{
+  __resolveType: TypeResolveFn<'OrderCreateError' | 'OrderCreateSuccess', ParentType, ContextType>;
+}>;
+
+export type GqlOrderCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreateSuccess'] = GqlResolversParentTypes['OrderCreateSuccess']> = ResolversObject<{
+  customProperty?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  order?: Resolver<GqlResolversTypes['Order'], ParentType, ContextType>;
+  paymentAddress?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  paymentDeadline?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  totalAmount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlOrderItemResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderItem'] = GqlResolversParentTypes['OrderItem']> = ResolversObject<{
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  nftMints?: Resolver<Array<GqlResolversTypes['NftMint']>, ParentType, ContextType>;
+  priceSnapshot?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  product?: Resolver<GqlResolversTypes['Product'], ParentType, ContextType>;
+  quantity?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -4468,6 +4684,22 @@ export type GqlPortfoliosConnectionResolvers<ContextType = any, ParentType exten
   edges?: Resolver<Array<GqlResolversTypes['PortfolioEdge']>, ParentType, ContextType>;
   pageInfo?: Resolver<GqlResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type GqlProductResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Product'] = GqlResolversParentTypes['Product']> = ResolversObject<{
+  createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  description?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  endsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
+  imageUrl?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
+  maxSupply?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
+  name?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  nftProduct?: Resolver<Maybe<GqlResolversTypes['NftProduct']>, ParentType, ContextType>;
+  price?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
+  startsAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
+  type?: Resolver<GqlResolversTypes['ProductType'], ParentType, ContextType>;
+  updatedAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5069,6 +5301,8 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   NftInstance?: GqlNftInstanceResolvers<ContextType>;
   NftInstanceEdge?: GqlNftInstanceEdgeResolvers<ContextType>;
   NftInstancesConnection?: GqlNftInstancesConnectionResolvers<ContextType>;
+  NftMint?: GqlNftMintResolvers<ContextType>;
+  NftProduct?: GqlNftProductResolvers<ContextType>;
   NftToken?: GqlNftTokenResolvers<ContextType>;
   NftWallet?: GqlNftWalletResolvers<ContextType>;
   OpportunitiesConnection?: GqlOpportunitiesConnectionResolvers<ContextType>;
@@ -5091,6 +5325,11 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   OpportunitySlotsConnection?: GqlOpportunitySlotsConnectionResolvers<ContextType>;
   OpportunityUpdateContentPayload?: GqlOpportunityUpdateContentPayloadResolvers<ContextType>;
   OpportunityUpdateContentSuccess?: GqlOpportunityUpdateContentSuccessResolvers<ContextType>;
+  Order?: GqlOrderResolvers<ContextType>;
+  OrderCreateError?: GqlOrderCreateErrorResolvers<ContextType>;
+  OrderCreatePayload?: GqlOrderCreatePayloadResolvers<ContextType>;
+  OrderCreateSuccess?: GqlOrderCreateSuccessResolvers<ContextType>;
+  OrderItem?: GqlOrderItemResolvers<ContextType>;
   PageInfo?: GqlPageInfoResolvers<ContextType>;
   Paging?: GqlPagingResolvers<ContextType>;
   Participation?: GqlParticipationResolvers<ContextType>;
@@ -5117,6 +5356,7 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   Portfolio?: GqlPortfolioResolvers<ContextType>;
   PortfolioEdge?: GqlPortfolioEdgeResolvers<ContextType>;
   PortfoliosConnection?: GqlPortfoliosConnectionResolvers<ContextType>;
+  Product?: GqlProductResolvers<ContextType>;
   Query?: GqlQueryResolvers<ContextType>;
   Reservation?: GqlReservationResolvers<ContextType>;
   ReservationCreatePayload?: GqlReservationCreatePayloadResolvers<ContextType>;

@@ -16,6 +16,7 @@ import PlaceResolver from "@/application/domain/location/place/controller/resolv
 import TicketResolver from "@/application/domain/reward/ticket/controller/resolver";
 import UtilityResolver from "@/application/domain/reward/utility/controller/resolver";
 import TransactionResolver from "@/application/domain/transaction/controller/resolver";
+import OrderResolver from "@/application/domain/order/controller/resolver";
 import TicketClaimLinkResolver from "@/application/domain/reward/ticketClaimLink/controller/resolver";
 import TicketIssuerResolver from "@/application/domain/reward/ticketIssuer/controller/resolver";
 import VCIssuanceRequestResolver from "@/application/domain/experience/evaluation/vcIssuanceRequest/controller/resolver";
@@ -47,8 +48,8 @@ const ticket = container.resolve(TicketResolver);
 const ticketIssuer = container.resolve(TicketIssuerResolver);
 const ticketClaimLink = container.resolve(TicketClaimLinkResolver);
 const utility = container.resolve(UtilityResolver);
-
 const transaction = container.resolve(TransactionResolver);
+const order = container.resolve(OrderResolver);
 
 const resolvers = {
   Query: {
@@ -86,8 +87,8 @@ const resolvers = {
     ...evaluation.Mutation,
     ...place.Mutation,
     ...utility.Mutation,
-    ...ticket.Mutation,
     ...transaction.Mutation,
+    ...order.Mutation,
   },
   Identity: identity.Identity,
   User: user.User,

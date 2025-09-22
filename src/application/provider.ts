@@ -20,14 +20,17 @@ import NftInstanceService from "@/application/domain/account/nft-instance/servic
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
 import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
 import { NftMintRepository } from "@/application/domain/reward/nft/nft-mint/data/repository";
-import NftMintConverter from "@/application/domain/reward/nft/nft-mint/data/converter";
-
 import InventoryService from "@/application/domain/product/inventory/service";
 import NmkrWebhookService from "@/application/domain/nmkr/webhookService";
-import NftWalletResolver from "@/application/domain/account/nft-wallet/controller/resolver";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
+import OrderRepository from "@/application/domain/order/data/repository";
+import OrderConverter from "@/application/domain/order/data/converter";
+import OrderUseCase from "@/application/domain/order/usecase";
+import OrderResolver from "@/application/domain/order/controller/resolver";
+import OrderService from "@/application/domain/order/service";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -105,7 +108,6 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
-import NftMintValidator from "@/application/domain/reward/nft/nft-mint/validator";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -150,13 +152,15 @@ export function registerProductionDependencies() {
   container.register("NftInstanceService", { useClass: NftInstanceService });
   container.register("NftInstanceUseCase", { useClass: NftInstanceUseCase });
   container.register("NftMintRepository", { useClass: NftMintRepository });
-  container.register("NftMintConverter", { useClass: NftMintConverter });
   container.register("NftMintService", { useClass: NftMintService });
-  container.register("NftMintValidator", { useClass: NftMintValidator });
-  container.register("NftWalletResolver", { useClass: NftWalletResolver });
-
   container.register("InventoryService", { useClass: InventoryService });
   container.register("NmkrWebhookService", { useClass: NmkrWebhookService });
+
+  container.register("OrderRepository", { useClass: OrderRepository });
+  container.register("OrderConverter", { useClass: OrderConverter });
+  container.register("OrderUseCase", { useClass: OrderUseCase });
+  container.register("OrderResolver", { useClass: OrderResolver });
+  container.register("OrderService", { useClass: OrderService });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });
@@ -302,6 +306,16 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("ViewUseCase", { useClass: ViewUseCase });
+
+  // ------------------------------
+  // ------------------------------
+
+  container.register("NmkrClient", { useClass: NmkrClient });
+  container.register("OrderRepository", { useClass: OrderRepository });
+  container.register("OrderConverter", { useClass: OrderConverter });
+  container.register("OrderService", { useClass: OrderService });
+  container.register("OrderUseCase", { useClass: OrderUseCase });
+  container.register("OrderResolver", { useClass: OrderResolver });
 }
 
 registerProductionDependencies();

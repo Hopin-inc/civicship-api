@@ -6,6 +6,7 @@ export interface CustomPropsV1 {
   orderId?: string;
   orderItemId?: string;
   nftInstanceId?: string;
+  receiverAddress?: string;
 }
 
 function isValidCustomPropsV1(obj: any): obj is CustomPropsV1 {
@@ -18,7 +19,8 @@ function isValidCustomPropsV1(obj: any): obj is CustomPropsV1 {
     (obj.userRef === undefined || typeof obj.userRef === 'string') &&
     (obj.orderId === undefined || typeof obj.orderId === 'string') &&
     (obj.orderItemId === undefined || typeof obj.orderItemId === 'string') &&
-    (obj.nftInstanceId === undefined || typeof obj.nftInstanceId === 'string')
+    (obj.nftInstanceId === undefined || typeof obj.nftInstanceId === 'string') &&
+    (obj.receiverAddress === undefined || typeof obj.receiverAddress === 'string')
   );
 }
 
