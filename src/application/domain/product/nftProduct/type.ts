@@ -5,6 +5,7 @@ export const nftProductSelectBase = Prisma.validator<Prisma.NftProductSelect>()(
   productId: true,
   product: true,
 
+  externalRef: true,
   policyId: true,
 
   createdAt: true,
