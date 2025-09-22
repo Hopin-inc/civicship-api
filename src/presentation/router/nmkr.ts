@@ -108,8 +108,9 @@ async function processNmkrWebhook(payload: NmkrWebhookPayload): Promise<void> {
 
   try {
     const webhookService = container.resolve<NmkrWebhookService>("NmkrWebhookService");
+    const prismaClientIssuer = container.resolve("PrismaClientIssuer");
     const mockContext = {
-      issuer: (global as any).prismaClientIssuer,
+      issuer: prismaClientIssuer,
       user: { id: 'system', role: 'SYSTEM' }
     } as unknown as IContext;
     
