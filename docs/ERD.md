@@ -599,6 +599,7 @@ OPPORTUNITY_RESERVATION_REJECTED OPPORTUNITY_RESERVATION_REJECTED
   "t_transactions" {
     String id "🗝️"
     TransactionReason reason 
+    String comment "❓"
     String from "❓"
     Int from_point_change 
     String to "❓"

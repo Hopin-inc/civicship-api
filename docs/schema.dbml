@@ -506,6 +506,7 @@ Table t_ticket_status_histories {
 Table t_transactions {
   id String [pk]
   reason TransactionReason [not null]
+  comment String
   from String
   fromWallet t_wallets
   fromPointChange Int [not null]

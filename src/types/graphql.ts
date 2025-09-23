@@ -2537,6 +2537,7 @@ export type GqlTicketsConnection = {
 
 export type GqlTransaction = {
   __typename?: 'Transaction';
+  comment?: Maybe<Scalars['String']['output']>;
   createdAt?: Maybe<Scalars['Datetime']['output']>;
   createdByUser?: Maybe<GqlUser>;
   fromPointChange?: Maybe<Scalars['Int']['output']>;
@@ -2552,6 +2553,7 @@ export type GqlTransaction = {
 };
 
 export type GqlTransactionDonateSelfPointInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   communityId: Scalars['ID']['input'];
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
@@ -2589,6 +2591,7 @@ export type GqlTransactionFilterInput = {
 };
 
 export type GqlTransactionGrantCommunityPointInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   toUserId: Scalars['ID']['input'];
   transferPoints: Scalars['Int']['input'];
 };
@@ -2601,6 +2604,7 @@ export type GqlTransactionGrantCommunityPointSuccess = {
 };
 
 export type GqlTransactionIssueCommunityPointInput = {
+  comment?: InputMaybe<Scalars['String']['input']>;
   transferPoints: Scalars['Int']['input'];
 };
 
@@ -4829,6 +4833,7 @@ export type GqlTicketsConnectionResolvers<ContextType = any, ParentType extends 
 }>;
 
 export type GqlTransactionResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['Transaction'] = GqlResolversParentTypes['Transaction']> = ResolversObject<{
+  comment?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   createdAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
   createdByUser?: Resolver<Maybe<GqlResolversTypes['User']>, ParentType, ContextType>;
   fromPointChange?: Resolver<Maybe<GqlResolversTypes['Int']>, ParentType, ContextType>;
