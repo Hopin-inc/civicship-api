@@ -6,7 +6,7 @@ import InventoryService from '@/application/domain/product/inventory/service';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
 import { IOrderService } from './data/interface';
-import { productSelectForValidation, ProductForValidation, orderSelectWithItems } from './data/type';
+import { productSelectForValidation, ProductForValidation, orderSelectWithItems, OrderWithItems } from './data/type';
 
 @injectable()
 export default class OrderService implements IOrderService {
@@ -20,7 +20,7 @@ export default class OrderService implements IOrderService {
     ctx: IContext,
     input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
     tx: Prisma.TransactionClient
-  ): Promise<{ order: any; createdItems: any[] }> {
+  ): Promise<{ order: OrderWithItems; createdItems: OrderWithItems['items'] }> {
     const currentUserId = getCurrentUserId(ctx);
     const item = input.items[0];
     const { productId, quantity } = item;

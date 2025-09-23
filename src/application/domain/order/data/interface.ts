@@ -25,7 +25,7 @@ export interface IOrderService {
     ctx: IContext,
     input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
     tx: Prisma.TransactionClient
-  ): Promise<{ order: any; createdItems: any[] }>;
+  ): Promise<{ order: OrderWithItems; createdItems: OrderWithItems['items'] }>;
   
-  updateOrderWithExternalRef(ctx: IContext, orderId: string, externalRef: string): Promise<any>;
+  updateOrderWithExternalRef(ctx: IContext, orderId: string, externalRef: string): Promise<OrderWithItems>;
 }
