@@ -29,6 +29,8 @@ import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
 import OrderRepository from "@/application/domain/order/data/repository";
 import OrderConverter from "@/application/domain/order/data/converter";
+import { OrderItemRepository } from "@/application/domain/order/orderItem/data/repository";
+import { OrderItemReadService } from "@/application/domain/order/orderItem/service";
 import OrderService from "@/application/domain/order/service";
 import OrderUseCase from "@/application/domain/order/usecase";
 import OrderResolver from "@/application/domain/order/controller/resolver";
@@ -163,6 +165,8 @@ export function registerProductionDependencies() {
 
   container.register("OrderRepository", { useClass: OrderRepository });
   container.register("OrderConverter", { useClass: OrderConverter });
+  container.register("OrderItemRepository", { useClass: OrderItemRepository });
+  container.register("OrderItemReadService", { useClass: OrderItemReadService });
   container.register("OrderUseCase", { useClass: OrderUseCase });
   container.register("OrderResolver", { useClass: OrderResolver });
   container.register("OrderService", { useClass: OrderService });

@@ -24,11 +24,14 @@ export interface IOrderRepository {
 }
 
 export interface IOrderService {
-  createWithReservation(
+  create(
     ctx: IContext,
-    input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
+    input: { 
+      userId: string;
+      items: Array<{ productId: string; quantity: number; priceSnapshot: number }>;
+    },
     tx?: Prisma.TransactionClient
-  ): Promise<{ order: OrderWithItems; createdItems: OrderWithItems['items'] }>;
+  ): Promise<OrderWithItems>;
   
   updateOrderWithExternalRef(
     ctx: IContext, 

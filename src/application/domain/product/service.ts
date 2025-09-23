@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { IContext } from '@/types/server';
 import { IProductService } from './data/interface';
 import ProductRepository from './data/repository';
+import { OrderItemReadService } from '@/application/domain/order/orderItem/service';
 import { PrismaProductForValidation } from './data/type';
 import logger from '@/infrastructure/logging';
 
@@ -29,6 +30,7 @@ export interface ProductSnapshot {
 export default class ProductService implements IProductService {
   constructor(
     @inject("ProductRepository") private readonly repository: ProductRepository,
+    @inject("OrderItemReadService") private readonly orderItemReadService: OrderItemReadService,
   ) {}
 
   async findProductForValidation(
@@ -89,53 +91,22 @@ export default class ProductService implements IProductService {
 
   async calculateInventory(ctx: IContext, productId: string, tx?: Prisma.TransactionClient): Promise<InventorySnapshot> {
     if (tx) {
-      return this.calculateInventoryWithTx(tx, productId);
+      return this.calculateInventoryWithTx(ctx, tx, productId);
     }
     return ctx.issuer.public(ctx, (transaction) => {
-      return this.calculateInventoryWithTx(transaction, productId);
+      return this.calculateInventoryWithTx(ctx, transaction, productId);
     });
   }
   
-  private async getReservedCount(prisma: Prisma.TransactionClient, productId: string): Promise<number> {
-    const result = await prisma.orderItem.aggregate({
-      where: { productId, order: { status: 'PENDING' } },
-      _sum: { quantity: true },
-    });
-    return result._sum.quantity || 0;
-  }
-  
-  private async getSoldPendingMintCount(prisma: Prisma.TransactionClient, productId: string): Promise<number> {
-    const result = await prisma.orderItem.aggregate({
-      where: { 
-        productId, 
-        order: { status: 'PAID' },
-        nftMints: { some: { status: 'SUBMITTED' } }
-      },
-      _sum: { quantity: true },
-    });
-    return result._sum.quantity || 0;
-  }
-  
-  private async getMintedCount(prisma: Prisma.TransactionClient, productId: string): Promise<number> {
-    const result = await prisma.orderItem.aggregate({
-      where: { 
-        productId,
-        nftMints: { some: { status: 'MINTED' } }
-      },
-      _sum: { quantity: true },
-    });
-    return result._sum.quantity || 0;
-  }
 
-  private async calculateInventoryWithTx(tx: Prisma.TransactionClient, productId: string): Promise<InventorySnapshot> {
-    const [product, reserved, soldPendingMint, minted] = await Promise.all([
+  private async calculateInventoryWithTx(ctx: IContext, tx: Prisma.TransactionClient, productId: string): Promise<InventorySnapshot> {
+    const [product, inventoryAggregates] = await Promise.all([
       tx.product.findUnique({ where: { id: productId }, select: { maxSupply: true } }),
-      this.getReservedCount(tx, productId),
-      this.getSoldPendingMintCount(tx, productId), 
-      this.getMintedCount(tx, productId),
+      this.orderItemReadService.getInventoryCounts(ctx, productId, tx),
     ]);
     
     const maxSupply = product?.maxSupply || null;
+    const { reserved, soldPendingMint, minted } = inventoryAggregates;
     const available = maxSupply == null ? Number.MAX_SAFE_INTEGER : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
     
     return { productId, reserved, soldPendingMint, minted, available, maxSupply };
@@ -147,7 +118,7 @@ export default class ProductService implements IProductService {
     tx: Prisma.TransactionClient
   ): Promise<void> {
     for (const item of items) {
-      const inventory = await this.calculateInventoryWithTx(tx, item.productId);
+      const inventory = await this.calculateInventoryWithTx(ctx, tx, item.productId);
       
       if (inventory.maxSupply != null && inventory.available < item.quantity) {
         throw new Error(`Insufficient inventory for product ${item.productId}. Available: ${inventory.available}, Requested: ${item.quantity}`);

@@ -3,9 +3,6 @@ import { Prisma } from '@prisma/client';
 
 interface OrderCreateData {
   userId: string;
-  productId: string;
-  quantity: number;
-  priceSnapshot: number;
   totalAmount: number;
 }
 
@@ -18,15 +15,6 @@ export default class OrderConverter {
       totalAmount: data.totalAmount,
       user: {
         connect: { id: data.userId }
-      },
-      items: {
-        create: {
-          quantity: data.quantity,
-          priceSnapshot: data.priceSnapshot,
-          product: {
-            connect: { id: data.productId }
-          }
-        }
       }
     };
   }

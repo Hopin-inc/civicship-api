@@ -61,7 +61,7 @@ export default class NftMintWebhookService {
       }
 
       if (currentMint.orderItem?.product) {
-        const inventory = await this.productService.calculateInventory(ctx, currentMint.orderItem.product.id);
+        const inventory = await this.productService.calculateInventory(ctx, currentMint.orderItem.product.id, tx);
         logger.info("Inventory snapshot", {
           nftMintId,
           productId: currentMint.orderItem.product.id,

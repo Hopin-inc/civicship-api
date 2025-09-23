@@ -1,10 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import { Prisma } from '@prisma/client';
-import { getCurrentUserId } from '@/application/domain/utils';
-import ProductService from '@/application/domain/product/service';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
+import { OrderItemRepository } from './orderItem/data/repository';
 import { IOrderService } from './data/interface';
 import { orderSelectWithItems, OrderWithItems } from './data/type';
 
@@ -13,33 +12,45 @@ export default class OrderService implements IOrderService {
   constructor(
     @inject("OrderRepository") private readonly repository: OrderRepository,
     @inject("OrderConverter") private readonly converter: OrderConverter,
-    @inject("ProductService") private readonly productService: ProductService,
+    @inject("OrderItemRepository") private readonly orderItemRepository: OrderItemRepository,
   ) {}
 
-  async createWithReservation(
+  async create(
     ctx: IContext,
-    input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
+    input: { 
+      userId: string;
+      items: Array<{ productId: string; quantity: number; priceSnapshot: number }>;
+    },
     tx?: Prisma.TransactionClient
-  ): Promise<{ order: OrderWithItems; createdItems: OrderWithItems['items'] }> {
-    const currentUserId = getCurrentUserId(ctx);
-    
+  ): Promise<OrderWithItems> {
     const executeInTransaction = async (transaction: Prisma.TransactionClient) => {
-      const item = input.items[0];
-      const { productId, quantity } = item;
-
-      const product = await this.validateProduct(ctx, transaction, productId);
-      await this.reserveInventory(ctx, productId, quantity, transaction);
+      const totalAmount = input.items.reduce((sum, item) => sum + (item.priceSnapshot * item.quantity), 0);
       
-      const order = await this.createOrder(
-        ctx,
-        currentUserId,
-        productId,
-        quantity,
-        product.price,
-        transaction
-      );
+      const orderData = this.converter.toPrismaCreateInput({
+        userId: input.userId,
+        totalAmount,
+      });
 
-      return { order, createdItems: order.items };
+      const order = await transaction.order.create({
+        data: orderData,
+        ...orderSelectWithItems,
+      });
+
+      for (const item of input.items) {
+        const orderItemData = {
+          order: { connect: { id: order.id } },
+          product: { connect: { id: item.productId } },
+          quantity: item.quantity,
+          priceSnapshot: item.priceSnapshot,
+        };
+
+        await this.orderItemRepository.create(ctx, orderItemData, transaction);
+      }
+
+      return transaction.order.findUnique({
+        where: { id: order.id },
+        ...orderSelectWithItems,
+      }) as Promise<OrderWithItems>;
     };
 
     if (tx) {
@@ -49,50 +60,6 @@ export default class OrderService implements IOrderService {
     }
   }
 
-  private async validateProduct(ctx: IContext, tx: Prisma.TransactionClient, productId: string) {
-    return this.productService.validateProductForOrder(ctx, productId, tx);
-  }
-
-  private async reserveInventory(
-    ctx: IContext,
-    productId: string,
-    quantity: number,
-    tx: Prisma.TransactionClient
-  ) {
-    const inventory = await this.productService.calculateInventory(ctx, productId, tx);
-    this.validateInventoryAvailable(inventory.available, quantity);
-    await this.productService.reserveInventory(ctx, [{ productId, quantity }], tx);
-  }
-
-  private async createOrder(
-    ctx: IContext,
-    userId: string,
-    productId: string,
-    quantity: number,
-    priceSnapshot: number,
-    tx: Prisma.TransactionClient
-  ) {
-    const totalAmount = priceSnapshot * quantity;
-    const orderData = this.converter.toPrismaCreateInput({
-      userId,
-      productId,
-      quantity,
-      priceSnapshot,
-      totalAmount,
-    });
-
-    return tx.order.create({
-      data: orderData,
-      ...orderSelectWithItems,
-    });
-  }
-
-
-  private validateInventoryAvailable(available: number, requested: number): void {
-    if (available < requested) {
-      throw new Error(`Insufficient inventory. Available: ${available}, Requested: ${requested}`);
-    }
-  }
 
   async updateOrderWithExternalRef(
     ctx: IContext, 

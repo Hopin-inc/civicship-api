@@ -5,6 +5,7 @@ import { buildCustomProps } from '@/infrastructure/libs/nmkr/customProps';
 import { NmkrClient } from '@/infrastructure/libs/nmkr/api/client';
 import logger from '@/infrastructure/logging';
 import OrderService from './service';
+import ProductService from '@/application/domain/product/service';
 import OrderPresenter from './presenter';
 
 interface OrderCreateInput {
@@ -30,6 +31,7 @@ interface OrderCreateSuccess {
 export default class OrderUseCase {
   constructor(
     @inject("OrderService") private readonly orderService: OrderService,
+    @inject("ProductService") private readonly productService: ProductService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
   ) {}
 
@@ -47,9 +49,22 @@ export default class OrderUseCase {
       receiverAddress
     });
 
-    const { order } = await this.orderService.createWithReservation(ctx, {
-      items: [{ productId, quantity }],
-      receiverAddress
+    let order;
+    
+    await ctx.issuer.internal(async (tx) => {
+      const product = await this.productService.validateProductForOrder(ctx, productId, tx);
+      
+      const inventory = await this.productService.calculateInventory(ctx, productId, tx);
+      if (inventory.maxSupply != null && inventory.available < quantity) {
+        throw new Error(`Insufficient inventory. Available: ${inventory.available}, Requested: ${quantity}`);
+      }
+      
+      await this.productService.reserveInventory(ctx, [{ productId, quantity }], tx);
+      
+      order = await this.orderService.create(ctx, {
+        userId: currentUserId,
+        items: [{ productId, quantity, priceSnapshot: product.price }],
+      }, tx);
     });
 
     logger.info("Order created successfully", {
