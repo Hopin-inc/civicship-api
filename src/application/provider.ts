@@ -21,9 +21,7 @@ import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecas
 import NftMintService from "@/application/domain/account/nft-mint/service";
 import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
 import { NftProductRepository } from "@/application/domain/product/nft-product/data/repository";
-import NftProductService from "@/application/domain/product/nft-product/service";
 import InventoryService from "@/application/domain/product/inventory/service";
-import CustomPropertiesService from "@/application/domain/order/customProperties/service";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -160,14 +158,12 @@ export function registerProductionDependencies() {
   container.register("InventoryService", { useClass: InventoryService });
   
   container.register("NftProductRepository", { useClass: NftProductRepository });
-  container.register("NftProductService", { useClass: NftProductService });
 
   container.register("OrderRepository", { useClass: OrderRepository });
   container.register("OrderConverter", { useClass: OrderConverter });
   container.register("OrderUseCase", { useClass: OrderUseCase });
   container.register("OrderResolver", { useClass: OrderResolver });
   container.register("OrderService", { useClass: OrderService });
-  container.register("CustomPropertiesService", { useClass: CustomPropertiesService });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });
@@ -318,11 +314,6 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("NmkrClient", { useClass: NmkrClient });
-  container.register("OrderRepository", { useClass: OrderRepository });
-  container.register("OrderConverter", { useClass: OrderConverter });
-  container.register("OrderService", { useClass: OrderService });
-  container.register("OrderUseCase", { useClass: OrderUseCase });
-  container.register("OrderResolver", { useClass: OrderResolver });
 }
 
 registerProductionDependencies();

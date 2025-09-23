@@ -1,13 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
-import CustomPropertiesService from './customProperties/service';
-import InventoryService from '@/application/domain/product/inventory/service';
-import { getCurrentUserId } from '@/application/domain/utils';
+import { getCurrentUserId, buildCustomProps } from '@/application/domain/utils';
 import logger from '@/infrastructure/logging';
 import { Prisma } from '@prisma/client';
-import { NmkrClient } from '@/infrastructure/libs/nmkr/api/client';
-import OrderRepository from './data/repository';
-import OrderConverter from './data/converter';
+import OrderService from './service';
 import OrderPresenter from './presenter';
 
 interface OrderCreateInput {
@@ -32,11 +28,7 @@ interface OrderCreateSuccess {
 @injectable()
 export default class OrderUseCase {
   constructor(
-    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
-    @inject("InventoryService") private readonly inventoryService: InventoryService,
-    @inject("OrderRepository") private readonly orderRepository: OrderRepository,
-    @inject("OrderConverter") private readonly orderConverter: OrderConverter,
-    @inject("CustomPropertiesService") private readonly customPropertiesService: CustomPropertiesService,
+    @inject("OrderService") private readonly orderService: OrderService,
   ) {}
 
   async createOrder(
@@ -54,66 +46,21 @@ export default class OrderUseCase {
     });
 
     const order = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      const product = await tx.product.findUnique({
-        where: { id: productId },
-        include: { 
-          nftProduct: true
-        }
-      });
-
-      if (!product) {
-        throw new Error(`Product not found: ${productId}`);
-      }
-
-      if (product.type !== 'NFT') {
-        throw new Error(`Product is not an NFT: ${productId}`);
-      }
-
-      if (!product.nftProduct) {
-        throw new Error(`NFT product not found for product: ${productId}`);
-      }
-
-      if (!product.nftProduct.externalRef) {
-        throw new Error(`NFT product missing externalRef: ${productId}`);
-      }
-
-      const inventory = await this.inventoryService.calculateInventory(ctx, productId);
-      if (inventory.available < quantity) {
-        throw new Error(`Insufficient inventory. Available: ${inventory.available}, Requested: ${quantity}`);
-      }
-
-      await this.inventoryService.reserveInventory(tx, [{ productId, quantity }]);
-
-      const totalAmount = product.price * quantity;
-      const orderData = this.orderConverter.toPrismaCreateInput({
-        userId: currentUserId,
+      const product = await this.orderService.validateAndReserveProduct(ctx, productId, quantity, tx);
+      
+      const createdOrder = await this.orderService.createOrderInTransaction(
+        ctx,
+        currentUserId,
         productId,
         quantity,
-        priceSnapshot: product.price,
-        totalAmount,
-      });
-
-      const createdOrder = await tx.order.create({
-        data: orderData,
-        include: {
-          items: {
-            include: {
-              product: {
-                include: {
-                  nftProduct: true,
-                },
-              },
-              nftMints: true,
-            },
-          },
-          user: true,
-        },
-      });
+        product.price,
+        tx
+      );
 
       logger.info("Order created successfully", {
         orderId: createdOrder.id,
         userId: currentUserId,
-        totalAmount
+        totalAmount: createdOrder.totalAmount
       });
 
       return createdOrder;
@@ -134,27 +81,20 @@ export default class OrderUseCase {
       externalRef: orderItem.product.nftProduct!.externalRef
     });
 
-    const paymentResponse = await this.nmkrClient.getPaymentAddressForSpecificNftSale(
+    const paymentResponse = await this.orderService.requestNmkrPayment(
       orderItem.product.nftProduct!.externalRef!,
       1,
       orderItem.priceSnapshot.toString(),
-      this.customPropertiesService.buildCustomProps(customProps),
+      buildCustomProps(customProps),
       receiverAddress
     );
 
-    if (!paymentResponse.paymentAddress) {
+    if (!paymentResponse.paymentAddress || !paymentResponse.paymentAddressId) {
       throw new Error('NMKR payment address not received');
     }
 
-    if (!paymentResponse.paymentAddressId) {
-      throw new Error('NMKR payment address ID not received');
-    }
-
     const externalRef = paymentResponse.paymentAddressId.toString();
-
-    const updatedOrder = await this.orderRepository.update(ctx, order.id, 
-      this.orderConverter.toPrismaUpdateInput(externalRef)
-    );
+    const updatedOrder = await this.orderService.updateOrderWithExternalRef(ctx, order.id, externalRef);
 
     logger.info("Order creation completed", {
       orderId: order.id,
@@ -168,7 +108,7 @@ export default class OrderUseCase {
       paymentAddress: paymentResponse.paymentAddress,
       paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       totalAmount: order.totalAmount!,
-      customProperty: this.customPropertiesService.buildCustomProps(customProps)
+      customProperty: buildCustomProps(customProps)
     };
   }
 }

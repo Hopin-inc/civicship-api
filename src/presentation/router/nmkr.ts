@@ -2,7 +2,7 @@ import express from "express";
 import logger from "@/infrastructure/logging";
 import crypto from "crypto";
 import { container } from "tsyringe";
-import CustomPropertiesService from "@/application/domain/order/customProperties/service";
+import { parseCustomProps } from "@/application/domain/utils";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import InventoryService from "@/application/domain/product/inventory/service";
 import { IContext } from "@/types/server";
@@ -86,8 +86,7 @@ async function processNmkrWebhook(payload: NmkrWebhookPayload): Promise<void> {
     return;
   }
 
-  const customPropertiesService = container.resolve<CustomPropertiesService>("CustomPropertiesService");
-  const customPropsResult = customPropertiesService.parseCustomProps(customProperty);
+  const customPropsResult = parseCustomProps(customProperty);
   if (!customPropsResult.success) {
     logger.error("NMKR webhook invalid customProperty", {
       paymentTransactionUid,
