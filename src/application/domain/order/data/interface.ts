@@ -5,18 +5,21 @@ import { OrderWithItems } from '../type';
 export interface IOrderRepository {
   create(
     ctx: IContext,
-    data: Prisma.OrderCreateInput
+    data: Prisma.OrderCreateInput,
+    tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems>;
 
   findById(
     ctx: IContext,
-    id: string
+    id: string,
+    tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems | null>;
 
   update(
     ctx: IContext,
     id: string,
-    data: Prisma.OrderUpdateInput
+    data: Prisma.OrderUpdateInput,
+    tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems>;
 }
 
@@ -24,8 +27,13 @@ export interface IOrderService {
   createWithReservation(
     ctx: IContext,
     input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
-    tx: Prisma.TransactionClient
+    tx?: Prisma.TransactionClient
   ): Promise<{ order: OrderWithItems; createdItems: OrderWithItems['items'] }>;
   
-  updateOrderWithExternalRef(ctx: IContext, orderId: string, externalRef: string): Promise<OrderWithItems>;
+  updateOrderWithExternalRef(
+    ctx: IContext, 
+    orderId: string, 
+    externalRef: string,
+    tx?: Prisma.TransactionClient
+  ): Promise<OrderWithItems>;
 }

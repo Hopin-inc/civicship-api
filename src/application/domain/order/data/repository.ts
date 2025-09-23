@@ -8,10 +8,17 @@ import { orderSelectWithItems, OrderWithItems } from '../type';
 export default class OrderRepository implements IOrderRepository {
   async create(
     ctx: IContext,
-    data: Prisma.OrderCreateInput
+    data: Prisma.OrderCreateInput,
+    tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems> {
-    return ctx.issuer.public(ctx, (tx) => {
+    if (tx) {
       return tx.order.create({
+        data,
+        ...orderSelectWithItems,
+      });
+    }
+    return ctx.issuer.public(ctx, (transaction) => {
+      return transaction.order.create({
         data,
         ...orderSelectWithItems,
       });
@@ -20,10 +27,17 @@ export default class OrderRepository implements IOrderRepository {
 
   async findById(
     ctx: IContext,
-    id: string
+    id: string,
+    tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems | null> {
-    return ctx.issuer.public(ctx, (tx) => {
+    if (tx) {
       return tx.order.findUnique({
+        where: { id },
+        ...orderSelectWithItems,
+      });
+    }
+    return ctx.issuer.public(ctx, (transaction) => {
+      return transaction.order.findUnique({
         where: { id },
         ...orderSelectWithItems,
       });
@@ -33,10 +47,18 @@ export default class OrderRepository implements IOrderRepository {
   async update(
     ctx: IContext,
     id: string,
-    data: Prisma.OrderUpdateInput
+    data: Prisma.OrderUpdateInput,
+    tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems> {
-    return ctx.issuer.public(ctx, (tx) => {
+    if (tx) {
       return tx.order.update({
+        where: { id },
+        data,
+        ...orderSelectWithItems,
+      });
+    }
+    return ctx.issuer.public(ctx, (transaction) => {
+      return transaction.order.update({
         where: { id },
         data,
         ...orderSelectWithItems,
