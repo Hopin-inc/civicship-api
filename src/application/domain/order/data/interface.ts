@@ -21,29 +21,11 @@ export interface IOrderRepository {
 }
 
 export interface IOrderService {
-  validateAndReserveProduct(
+  createWithReservation(
     ctx: IContext,
-    productId: string,
-    quantity: number,
-    tx: Prisma.TransactionClient
-  ): Promise<any>;
-  
-  createOrderInTransaction(
-    ctx: IContext,
-    userId: string,
-    productId: string,
-    quantity: number,
-    priceSnapshot: number,
-    tx: Prisma.TransactionClient
-  ): Promise<any>;
-  
-  requestNmkrPayment(
-    externalRef: string,
-    quantity: number,
-    priceSnapshot: string,
-    customProperty: string,
-    receiverAddress: string
-  ): Promise<any>;
+    input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
+    tx?: Prisma.TransactionClient
+  ): Promise<{ order: any; createdItems: any[] }>;
   
   updateOrderWithExternalRef(ctx: IContext, orderId: string, externalRef: string): Promise<any>;
 }

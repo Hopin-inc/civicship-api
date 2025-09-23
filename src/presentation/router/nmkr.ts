@@ -2,7 +2,7 @@ import express from "express";
 import logger from "@/infrastructure/logging";
 import crypto from "crypto";
 import { container } from "tsyringe";
-import { parseCustomProps } from "@/application/domain/utils";
+import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import InventoryService from "@/application/domain/product/inventory/service";
 import { IContext } from "@/types/server";

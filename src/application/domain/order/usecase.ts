@@ -1,8 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
-import { getCurrentUserId, buildCustomProps } from '@/application/domain/utils';
+import { getCurrentUserId } from '@/application/domain/utils';
+import { buildCustomProps } from '@/infrastructure/libs/nmkr/customProps';
+import { NmkrClient } from '@/infrastructure/libs/nmkr/api/client';
 import logger from '@/infrastructure/logging';
-import { Prisma } from '@prisma/client';
 import OrderService from './service';
 import OrderPresenter from './presenter';
 
@@ -29,6 +30,7 @@ interface OrderCreateSuccess {
 export default class OrderUseCase {
   constructor(
     @inject("OrderService") private readonly orderService: OrderService,
+    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
   ) {}
 
   async createOrder(
@@ -45,25 +47,15 @@ export default class OrderUseCase {
       receiverAddress
     });
 
-    const order = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx: Prisma.TransactionClient) => {
-      const product = await this.orderService.validateAndReserveProduct(ctx, productId, quantity, tx);
-      
-      const createdOrder = await this.orderService.createOrderInTransaction(
-        ctx,
-        currentUserId,
-        productId,
-        quantity,
-        product.price,
-        tx
-      );
+    const { order } = await this.orderService.createWithReservation(ctx, {
+      items: [{ productId, quantity }],
+      receiverAddress
+    });
 
-      logger.info("Order created successfully", {
-        orderId: createdOrder.id,
-        userId: currentUserId,
-        totalAmount: createdOrder.totalAmount
-      });
-
-      return createdOrder;
+    logger.info("Order created successfully", {
+      orderId: order.id,
+      userId: currentUserId,
+      totalAmount: order.totalAmount
     });
 
     const orderItem = order.items[0];
@@ -81,7 +73,7 @@ export default class OrderUseCase {
       externalRef: orderItem.product.nftProduct!.externalRef
     });
 
-    const paymentResponse = await this.orderService.requestNmkrPayment(
+    const paymentResponse = await this.nmkrClient.getPaymentAddressForSpecificNftSale(
       orderItem.product.nftProduct!.externalRef!,
       1,
       orderItem.priceSnapshot.toString(),

@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import { Prisma } from '@prisma/client';
-import { NmkrClient } from '@/infrastructure/libs/nmkr/api/client';
+import { getCurrentUserId } from '@/application/domain/utils';
 import InventoryService from '@/application/domain/product/inventory/service';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
@@ -13,16 +13,43 @@ export default class OrderService implements IOrderService {
   constructor(
     @inject("OrderRepository") private readonly repository: OrderRepository,
     @inject("OrderConverter") private readonly converter: OrderConverter,
-    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
     @inject("InventoryService") private readonly inventoryService: InventoryService,
   ) {}
 
-  async validateAndReserveProduct(
+  async createWithReservation(
     ctx: IContext,
-    productId: string,
-    quantity: number,
-    tx: Prisma.TransactionClient
-  ) {
+    input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
+    tx?: Prisma.TransactionClient
+  ): Promise<{ order: any; createdItems: any[] }> {
+    const currentUserId = getCurrentUserId(ctx);
+    
+    const executeInTransaction = async (transaction: Prisma.TransactionClient) => {
+      const item = input.items[0];
+      const { productId, quantity } = item;
+
+      const product = await this.validateProduct(transaction, productId);
+      await this.reserveInventory(ctx, productId, quantity, transaction);
+      
+      const order = await this.createOrder(
+        ctx,
+        currentUserId,
+        productId,
+        quantity,
+        product.price,
+        transaction
+      );
+
+      return { order, createdItems: order.items };
+    };
+
+    if (tx) {
+      return executeInTransaction(tx);
+    } else {
+      return ctx.issuer.onlyBelongingCommunity(ctx, executeInTransaction);
+    }
+  }
+
+  private async validateProduct(tx: Prisma.TransactionClient, productId: string) {
     const product = await tx.product.findUnique({
       where: { id: productId },
       ...productSelectForValidation
@@ -33,14 +60,41 @@ export default class OrderService implements IOrderService {
     this.validateNftProductExists(product!, productId);
     this.validateExternalRefExists(product!, productId);
 
-    const validatedProduct = product!;
+    return product!;
+  }
 
+  private async reserveInventory(
+    ctx: IContext,
+    productId: string,
+    quantity: number,
+    tx: Prisma.TransactionClient
+  ) {
     const inventory = await this.inventoryService.calculateInventory(ctx, productId);
     this.validateInventoryAvailable(inventory.available, quantity);
-
     await this.inventoryService.reserveInventory(tx, [{ productId, quantity }]);
+  }
 
-    return validatedProduct;
+  private async createOrder(
+    ctx: IContext,
+    userId: string,
+    productId: string,
+    quantity: number,
+    priceSnapshot: number,
+    tx: Prisma.TransactionClient
+  ) {
+    const totalAmount = priceSnapshot * quantity;
+    const orderData = this.converter.toPrismaCreateInput({
+      userId,
+      productId,
+      quantity,
+      priceSnapshot,
+      totalAmount,
+    });
+
+    return tx.order.create({
+      data: orderData,
+      ...orderSelectWithItems,
+    });
   }
 
   private validateProductExists(product: ProductForValidation | null, productId: string): void {
@@ -71,45 +125,6 @@ export default class OrderService implements IOrderService {
     if (available < requested) {
       throw new Error(`Insufficient inventory. Available: ${available}, Requested: ${requested}`);
     }
-  }
-
-  async createOrderInTransaction(
-    ctx: IContext,
-    userId: string,
-    productId: string,
-    quantity: number,
-    priceSnapshot: number,
-    tx: Prisma.TransactionClient
-  ) {
-    const totalAmount = priceSnapshot * quantity;
-    const orderData = this.converter.toPrismaCreateInput({
-      userId,
-      productId,
-      quantity,
-      priceSnapshot,
-      totalAmount,
-    });
-
-    return tx.order.create({
-      data: orderData,
-      ...orderSelectWithItems,
-    });
-  }
-
-  async requestNmkrPayment(
-    externalRef: string,
-    quantity: number,
-    priceSnapshot: string,
-    customProperty: string,
-    receiverAddress: string
-  ) {
-    return this.nmkrClient.getPaymentAddressForSpecificNftSale(
-      externalRef,
-      quantity,
-      priceSnapshot,
-      customProperty,
-      receiverAddress
-    );
   }
 
   async updateOrderWithExternalRef(ctx: IContext, orderId: string, externalRef: string) {
