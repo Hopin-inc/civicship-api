@@ -27,7 +27,6 @@ import WalletValidator from "@/application/domain/account/wallet/validator";
 import MembershipService from "@/application/domain/account/membership/service";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { ITransactionService } from "@/application/domain/transaction/data/interface";
-import { TransactionReason } from "@prisma/client";
 
 @injectable()
 export default class TicketUseCase {
