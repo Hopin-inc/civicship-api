@@ -47,9 +47,11 @@ export default class OrderUseCase {
       receiverAddress
     });
 
-    const { order } = await this.orderService.createWithReservation(ctx, {
-      items: [{ productId, quantity }],
-      receiverAddress
+    const { order } = await ctx.issuer.onlyBelongingCommunity(ctx, async (tx) => {
+      return this.orderService.createWithReservation(ctx, {
+        items: [{ productId, quantity }],
+        receiverAddress
+      }, tx);
     });
 
     logger.info("Order created successfully", {

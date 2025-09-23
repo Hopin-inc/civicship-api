@@ -19,34 +19,25 @@ export default class OrderService implements IOrderService {
   async createWithReservation(
     ctx: IContext,
     input: { items: Array<{ productId: string; quantity: number }>; receiverAddress: string },
-    tx?: Prisma.TransactionClient
+    tx: Prisma.TransactionClient
   ): Promise<{ order: any; createdItems: any[] }> {
     const currentUserId = getCurrentUserId(ctx);
+    const item = input.items[0];
+    const { productId, quantity } = item;
+
+    const product = await this.validateProduct(tx, productId);
+    await this.reserveInventory(ctx, productId, quantity, tx);
     
-    const executeInTransaction = async (transaction: Prisma.TransactionClient) => {
-      const item = input.items[0];
-      const { productId, quantity } = item;
+    const order = await this.createOrder(
+      ctx,
+      currentUserId,
+      productId,
+      quantity,
+      product.price,
+      tx
+    );
 
-      const product = await this.validateProduct(transaction, productId);
-      await this.reserveInventory(ctx, productId, quantity, transaction);
-      
-      const order = await this.createOrder(
-        ctx,
-        currentUserId,
-        productId,
-        quantity,
-        product.price,
-        transaction
-      );
-
-      return { order, createdItems: order.items };
-    };
-
-    if (tx) {
-      return executeInTransaction(tx);
-    } else {
-      return ctx.issuer.onlyBelongingCommunity(ctx, executeInTransaction);
-    }
+    return { order, createdItems: order.items };
   }
 
   private async validateProduct(tx: Prisma.TransactionClient, productId: string) {
