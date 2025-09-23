@@ -4,6 +4,26 @@ import { IContext } from '@/types/server';
 import { IProductService } from './data/interface';
 import ProductRepository from './data/repository';
 import { PrismaProductForValidation } from './data/type';
+import logger from '@/infrastructure/logging';
+
+export interface InventorySnapshot {
+  productId: string;
+  reserved: number;
+  soldPendingMint: number; 
+  minted: number;
+  available: number;
+  maxSupply: number | null;
+}
+
+export interface ProductSnapshot {
+  id: string;
+  price: number;
+  maxSupply: number | null;
+  nft: {
+    policyId: string;
+    externalRef: string;
+  } | null;
+}
 
 @injectable()
 export default class ProductService implements IProductService {
@@ -43,5 +63,111 @@ export default class ProductService implements IProductService {
     }
     
     return product;
+  }
+
+  async getForOrder(ctx: IContext, productIds: string[], tx?: Prisma.TransactionClient): Promise<ProductSnapshot[]> {
+    const products = await Promise.all(
+      productIds.map(id => this.findProductForValidation(ctx, id, tx))
+    );
+    
+    return products.map(product => {
+      if (!product) {
+        throw new Error(`Product not found`);
+      }
+      
+      return {
+        id: product.id,
+        price: product.price,
+        maxSupply: product.maxSupply,
+        nft: product.nftProduct ? {
+          policyId: product.nftProduct.policyId!,
+          externalRef: product.nftProduct.externalRef!,
+        } : null,
+      };
+    });
+  }
+
+  async calculateInventory(ctx: IContext, productId: string, tx?: Prisma.TransactionClient): Promise<InventorySnapshot> {
+    if (tx) {
+      return this.calculateInventoryWithTx(tx, productId);
+    }
+    return ctx.issuer.public(ctx, (transaction) => {
+      return this.calculateInventoryWithTx(transaction, productId);
+    });
+  }
+  
+  private async getReservedCount(prisma: Prisma.TransactionClient, productId: string): Promise<number> {
+    const result = await prisma.orderItem.aggregate({
+      where: { productId, order: { status: 'PENDING' } },
+      _sum: { quantity: true },
+    });
+    return result._sum.quantity || 0;
+  }
+  
+  private async getSoldPendingMintCount(prisma: Prisma.TransactionClient, productId: string): Promise<number> {
+    const result = await prisma.orderItem.aggregate({
+      where: { 
+        productId, 
+        order: { status: 'PAID' },
+        nftMints: { some: { status: 'SUBMITTED' } }
+      },
+      _sum: { quantity: true },
+    });
+    return result._sum.quantity || 0;
+  }
+  
+  private async getMintedCount(prisma: Prisma.TransactionClient, productId: string): Promise<number> {
+    const result = await prisma.orderItem.aggregate({
+      where: { 
+        productId,
+        nftMints: { some: { status: 'MINTED' } }
+      },
+      _sum: { quantity: true },
+    });
+    return result._sum.quantity || 0;
+  }
+
+  private async calculateInventoryWithTx(tx: Prisma.TransactionClient, productId: string): Promise<InventorySnapshot> {
+    const [product, reserved, soldPendingMint, minted] = await Promise.all([
+      tx.product.findUnique({ where: { id: productId }, select: { maxSupply: true } }),
+      this.getReservedCount(tx, productId),
+      this.getSoldPendingMintCount(tx, productId), 
+      this.getMintedCount(tx, productId),
+    ]);
+    
+    const maxSupply = product?.maxSupply || null;
+    const available = maxSupply == null ? Number.MAX_SAFE_INTEGER : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
+    
+    return { productId, reserved, soldPendingMint, minted, available, maxSupply };
+  }
+
+  async reserveInventory(
+    ctx: IContext,
+    items: Array<{ productId: string; quantity: number }>,
+    tx: Prisma.TransactionClient
+  ): Promise<void> {
+    for (const item of items) {
+      const inventory = await this.calculateInventoryWithTx(tx, item.productId);
+      
+      if (inventory.maxSupply != null && inventory.available < item.quantity) {
+        throw new Error(`Insufficient inventory for product ${item.productId}. Available: ${inventory.available}, Requested: ${item.quantity}`);
+      }
+    }
+  }
+
+  async transferToSoldPending(
+    ctx: IContext,
+    orderItemIds: string[],
+    tx: Prisma.TransactionClient
+  ): Promise<void> {
+    logger.info("Transferring inventory to sold pending", { orderItemIds });
+  }
+
+  async commitMinted(
+    ctx: IContext,
+    orderItemIds: string[],
+    tx: Prisma.TransactionClient
+  ): Promise<void> {
+    logger.info("Committing minted inventory", { orderItemIds });
   }
 }

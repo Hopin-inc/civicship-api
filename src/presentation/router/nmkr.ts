@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { container } from "tsyringe";
 import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
-import InventoryService from "@/application/domain/product/inventory/service";
+import ProductService from "@/application/domain/product/service";
 import { IContext } from "@/types/server";
 
 type NmkrWebhookPayload = {
@@ -115,7 +115,7 @@ async function processOrderPayment(orderId: string, paymentTransactionUid: strin
 
   try {
     const prismaClientIssuer = container.resolve("PrismaClientIssuer");
-    const inventoryService = container.resolve<InventoryService>("InventoryService");
+    const productService = container.resolve<ProductService>("ProductService");
     const mockContext = {
       issuer: prismaClientIssuer,
       user: { id: 'system', role: 'SYSTEM' }
@@ -138,7 +138,7 @@ async function processOrderPayment(orderId: string, paymentTransactionUid: strin
         });
       }
 
-      await inventoryService.transferToSoldPending(tx, order.items);
+      await productService.transferToSoldPending(mockContext, order.items.map(item => item.id), tx);
 
       logger.info("Order payment processed successfully", {
         orderId,

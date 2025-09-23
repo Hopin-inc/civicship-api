@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { IContext } from '@/types/server';
 import { PrismaProductForValidation } from './type';
+import { InventorySnapshot, ProductSnapshot } from '../service';
 
 export interface IProductService {
   findProductForValidation(
@@ -14,6 +15,36 @@ export interface IProductService {
     productId: string,
     tx?: Prisma.TransactionClient
   ): Promise<PrismaProductForValidation>;
+
+  getForOrder(
+    ctx: IContext,
+    productIds: string[],
+    tx?: Prisma.TransactionClient
+  ): Promise<ProductSnapshot[]>;
+
+  calculateInventory(
+    ctx: IContext,
+    productId: string,
+    tx?: Prisma.TransactionClient
+  ): Promise<InventorySnapshot>;
+
+  reserveInventory(
+    ctx: IContext,
+    items: Array<{ productId: string; quantity: number }>,
+    tx: Prisma.TransactionClient
+  ): Promise<void>;
+
+  transferToSoldPending(
+    ctx: IContext,
+    orderItemIds: string[],
+    tx: Prisma.TransactionClient
+  ): Promise<void>;
+
+  commitMinted(
+    ctx: IContext,
+    orderItemIds: string[],
+    tx: Prisma.TransactionClient
+  ): Promise<void>;
 }
 
 export interface IProductRepository {

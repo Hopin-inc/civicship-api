@@ -3,14 +3,14 @@ import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import { NftMintStatus, Prisma } from '@prisma/client';
 import NftMintService from '../service';
-import InventoryService from '@/application/domain/product/inventory/service';
+import ProductService from '@/application/domain/product/service';
 import logger from '@/infrastructure/logging';
 
 @injectable()
 export default class NftMintWebhookService {
   constructor(
     @inject("NftMintService") private readonly nftMintService: NftMintService,
-    @inject("InventoryService") private readonly inventoryService: InventoryService,
+    @inject("ProductService") private readonly productService: ProductService,
   ) {}
 
   async processStateTransition(
@@ -61,7 +61,7 @@ export default class NftMintWebhookService {
       }
 
       if (currentMint.orderItem?.product) {
-        const inventory = await this.inventoryService.calculateInventory(ctx, currentMint.orderItem.product.id);
+        const inventory = await this.productService.calculateInventory(ctx, currentMint.orderItem.product.id);
         logger.info("Inventory snapshot", {
           nftMintId,
           productId: currentMint.orderItem.product.id,

@@ -2,7 +2,6 @@ import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import { Prisma } from '@prisma/client';
 import { getCurrentUserId } from '@/application/domain/utils';
-import InventoryService from '@/application/domain/product/inventory/service';
 import ProductService from '@/application/domain/product/service';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
@@ -14,7 +13,6 @@ export default class OrderService implements IOrderService {
   constructor(
     @inject("OrderRepository") private readonly repository: OrderRepository,
     @inject("OrderConverter") private readonly converter: OrderConverter,
-    @inject("InventoryService") private readonly inventoryService: InventoryService,
     @inject("ProductService") private readonly productService: ProductService,
   ) {}
 
@@ -61,9 +59,9 @@ export default class OrderService implements IOrderService {
     quantity: number,
     tx: Prisma.TransactionClient
   ) {
-    const inventory = await this.inventoryService.calculateInventory(ctx, productId);
+    const inventory = await this.productService.calculateInventory(ctx, productId, tx);
     this.validateInventoryAvailable(inventory.available, quantity);
-    await this.inventoryService.reserveInventory(tx, [{ productId, quantity }]);
+    await this.productService.reserveInventory(ctx, [{ productId, quantity }], tx);
   }
 
   private async createOrder(
