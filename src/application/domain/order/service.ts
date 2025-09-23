@@ -6,6 +6,7 @@ import InventoryService from '@/application/domain/product/inventory/service';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
 import { IOrderService } from './data/interface';
+import { productSelectForValidation, ProductForValidation, orderSelectWithItems } from './data/type';
 
 @injectable()
 export default class OrderService implements IOrderService {
@@ -24,33 +25,52 @@ export default class OrderService implements IOrderService {
   ) {
     const product = await tx.product.findUnique({
       where: { id: productId },
-      include: { nftProduct: true }
+      ...productSelectForValidation
     });
 
-    if (!product) {
-      throw new Error(`Product not found: ${productId}`);
-    }
+    this.validateProductExists(product, productId);
+    this.validateProductIsNft(product!, productId);
+    this.validateNftProductExists(product!, productId);
+    this.validateExternalRefExists(product!, productId);
 
-    if (product.type !== 'NFT') {
-      throw new Error(`Product is not an NFT: ${productId}`);
-    }
-
-    if (!product.nftProduct) {
-      throw new Error(`NFT product not found for product: ${productId}`);
-    }
-
-    if (!product.nftProduct.externalRef) {
-      throw new Error(`NFT product missing externalRef: ${productId}`);
-    }
+    const validatedProduct = product!;
 
     const inventory = await this.inventoryService.calculateInventory(ctx, productId);
-    if (inventory.available < quantity) {
-      throw new Error(`Insufficient inventory. Available: ${inventory.available}, Requested: ${quantity}`);
-    }
+    this.validateInventoryAvailable(inventory.available, quantity);
 
     await this.inventoryService.reserveInventory(tx, [{ productId, quantity }]);
 
-    return product;
+    return validatedProduct;
+  }
+
+  private validateProductExists(product: ProductForValidation | null, productId: string): void {
+    if (!product) {
+      throw new Error(`Product not found: ${productId}`);
+    }
+  }
+
+  private validateProductIsNft(product: ProductForValidation, productId: string): void {
+    if (product.type !== 'NFT') {
+      throw new Error(`Product is not an NFT: ${productId}`);
+    }
+  }
+
+  private validateNftProductExists(product: ProductForValidation, productId: string): void {
+    if (!product.nftProduct) {
+      throw new Error(`NFT product not found for product: ${productId}`);
+    }
+  }
+
+  private validateExternalRefExists(product: ProductForValidation, productId: string): void {
+    if (!product.nftProduct?.externalRef) {
+      throw new Error(`NFT product missing externalRef: ${productId}`);
+    }
+  }
+
+  private validateInventoryAvailable(available: number, requested: number): void {
+    if (available < requested) {
+      throw new Error(`Insufficient inventory. Available: ${available}, Requested: ${requested}`);
+    }
   }
 
   async createOrderInTransaction(
@@ -72,19 +92,7 @@ export default class OrderService implements IOrderService {
 
     return tx.order.create({
       data: orderData,
-      include: {
-        items: {
-          include: {
-            product: {
-              include: {
-                nftProduct: true,
-              },
-            },
-            nftMints: true,
-          },
-        },
-        user: true,
-      },
+      ...orderSelectWithItems,
     });
   }
 
