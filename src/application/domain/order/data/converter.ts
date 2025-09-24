@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { Prisma } from '@prisma/client';
+import { Prisma, OrderStatus, PaymentProvider } from '@prisma/client';
 
 interface OrderCreateData {
   userId: string;
@@ -10,8 +10,8 @@ interface OrderCreateData {
 export default class OrderConverter {
   toPrismaCreateInput(data: OrderCreateData): Prisma.OrderCreateInput {
     return {
-      status: 'PENDING',
-      paymentProvider: 'NMKR',
+      status: OrderStatus.PENDING,
+      paymentProvider: PaymentProvider.NMKR,
       totalAmount: data.totalAmount,
       user: {
         connect: { id: data.userId }

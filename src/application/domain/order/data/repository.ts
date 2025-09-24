@@ -17,7 +17,7 @@ export default class OrderRepository implements IOrderRepository {
         ...orderSelectWithItems,
       });
     }
-    return ctx.issuer.public(ctx, (transaction) => {
+    return ctx.issuer.internal(async (transaction) => {
       return transaction.order.create({
         data,
         ...orderSelectWithItems,
@@ -57,7 +57,7 @@ export default class OrderRepository implements IOrderRepository {
         ...orderSelectWithItems,
       });
     }
-    return ctx.issuer.public(ctx, (transaction) => {
+    return ctx.issuer.internal(async (transaction) => {
       return transaction.order.update({
         where: { id },
         data,

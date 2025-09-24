@@ -13,7 +13,7 @@ union OrderCreatePayload = OrderCreateSuccess | OrderCreateError
 type OrderCreateSuccess {
   order: Order!
   paymentAddress: String!
-  paymentDeadline: String!
+  paymentDeadline: Datetime!
   totalAmount: Int!
   customProperty: String!
 }

@@ -23,9 +23,8 @@ type OrderItem {
 enum OrderStatus {
   PENDING
   PAID
-  COMPLETED
-  CANCELLED
-  FAILED
+  CANCELED
+  REFUNDED
 }
 
 enum PaymentProvider {
