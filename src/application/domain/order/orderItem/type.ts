@@ -1,5 +1,17 @@
 import { Prisma } from "@prisma/client";
-import { productSelectBase } from "@/application/domain/product/type";
+
+const productSelectForOrderItem = Prisma.validator<Prisma.ProductSelect>()({
+  id: true,
+  name: true,
+  price: true,
+  nftProduct: {
+    select: {
+      id: true,
+      externalRef: true,
+      policyId: true,
+    },
+  },
+});
 
 export const orderItemSelectBase = Prisma.validator<Prisma.OrderItemSelect>()({
   id: true,
@@ -11,9 +23,17 @@ export const orderItemSelectBase = Prisma.validator<Prisma.OrderItemSelect>()({
   order: true,
 
   productId: true,
-  product: { select: productSelectBase },
+  product: { select: productSelectForOrderItem },
 
-  nftMints: true,
+  nftMints: {
+    select: {
+      id: true,
+      status: true,
+      txHash: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
 
   createdAt: true,
   updatedAt: true,

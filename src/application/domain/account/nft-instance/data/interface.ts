@@ -20,7 +20,7 @@ export default interface INftInstanceRepository {
   
   upsert(
     ctx: IContext,
-    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: any; nftWalletId: string; nftTokenId: string },
+    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: Record<string, unknown>; nftWalletId: string; nftTokenId: string },
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string }>;
 }

@@ -24,7 +24,7 @@ export default class MasterConverter {
     return [{ name: "asc" }];
   }
 
-  stateToGraphQL(state: any) {
+  stateToGraphQL(state: { code: string; name: string; countryCode: string }) {
     return {
       __typename: "State" as const,
       code: state.code,
