@@ -46,22 +46,45 @@ export default class OrderUseCase {
       await ctx.issuer.internal(async (tx) => {
         const product = await this.productService.validateProductForOrder(ctx, productId, tx);
         
-        const inventory = await this.productService.calculateInventory(ctx, productId, tx);
-        if (inventory.maxSupply != null && inventory.available < quantity) {
+        const inventoryBefore = await this.productService.calculateInventory(ctx, productId, tx);
+        if (inventoryBefore.maxSupply != null && inventoryBefore.available < quantity) {
           throw new InsufficientInventoryError(
-            `Insufficient inventory. Available: ${inventory.available}, Requested: ${quantity}`,
+            `Insufficient inventory. Available: ${inventoryBefore.available}, Requested: ${quantity}`,
             productId,
-            inventory.available,
+            inventoryBefore.available,
             quantity
           );
         }
-        
-        await this.productService.reserveInventory(ctx, [{ productId, quantity }], tx);
         
         order = await this.orderService.create(ctx, {
           userId: currentUserId,
           items: [{ productId, quantity, priceSnapshot: product.price }],
         }, tx);
+        
+        const inventoryAfter = await this.productService.calculateInventory(ctx, productId, tx);
+        if (inventoryAfter.maxSupply != null && inventoryAfter.available < 0) {
+          logger.error("Inventory oversold detected after order creation", {
+            orderId: order.id,
+            productId,
+            inventoryBefore,
+            inventoryAfter,
+            requestedQuantity: quantity
+          });
+          throw new InsufficientInventoryError(
+            `Inventory oversold. Available after creation: ${inventoryAfter.available}`,
+            productId,
+            inventoryAfter.available,
+            quantity
+          );
+        }
+        
+        logger.info("Order creation inventory audit", {
+          orderId: order.id,
+          productId,
+          inventoryBefore,
+          inventoryAfter,
+          requestedQuantity: quantity
+        });
       });
 
       logger.info("Order created successfully", {
