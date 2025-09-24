@@ -6,6 +6,7 @@ import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import ProductService from "@/application/domain/product/service";
 import { IContext } from "@/types/server";
+import { OrderStatus, NftMintStatus } from "@prisma/client";
 
 type NmkrWebhookPayload = {
   paymentTransactionUid: string;
@@ -124,14 +125,14 @@ async function processOrderPayment(orderId: string, paymentTransactionUid: strin
     await mockContext.issuer.internal(async (tx) => {
       const order = await tx.order.update({
         where: { id: orderId },
-        data: { status: 'PAID' },
+        data: { status: OrderStatus.PAID },
         include: { items: true }
       });
 
       for (const orderItem of order.items) {
         await tx.nftMint.create({
           data: {
-            status: 'QUEUED',
+            status: NftMintStatus.QUEUED,
             orderItemId: orderItem.id,
             nftWalletId: 'system-wallet' // TODO: Get proper wallet from user
           }
