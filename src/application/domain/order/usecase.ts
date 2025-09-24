@@ -11,7 +11,8 @@ import OrderPresenter from './presenter';
 import { 
   OrderValidationError, 
   InsufficientInventoryError, 
-  ProductNotFoundError 
+  ProductNotFoundError,
+  NmkrApiError
 } from './errors';
 
 interface OrderCreateArgs {
@@ -31,7 +32,17 @@ export default class OrderUseCase {
     args: OrderCreateArgs
   ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const { productId, quantity, receiverAddress } = args.input;
+    const { items, receiverAddress } = args.input;
+
+    if (!items || items.length === 0) {
+      throw new OrderValidationError('Order must contain at least one item', 'EMPTY_ORDER');
+    }
+
+    if (items.length > 1) {
+      throw new OrderValidationError('Multiple items not yet supported', 'MULTIPLE_ITEMS_NOT_SUPPORTED');
+    }
+
+    const { productId, quantity } = items[0];
 
     logger.info("Order creation initiated", {
       userId: currentUserId,
@@ -83,7 +94,8 @@ export default class OrderUseCase {
           productId,
           inventoryBefore,
           inventoryAfter,
-          requestedQuantity: quantity
+          requestedQuantity: quantity,
+          correlationId: `order-${order.id}-${Date.now()}`
         });
       });
 
@@ -117,7 +129,7 @@ export default class OrderUseCase {
       );
 
       if (!paymentResponse.paymentAddress || !paymentResponse.paymentAddressId) {
-        throw new OrderValidationError('NMKR payment address not received');
+        throw new NmkrApiError('NMKR payment address not received', 'PAYMENT_ADDRESS_ERROR');
       }
 
       const externalRef = paymentResponse.paymentAddressId.toString();
@@ -126,7 +138,8 @@ export default class OrderUseCase {
       logger.info("Order creation completed", {
         orderId: order.id,
         paymentAddress: paymentResponse.paymentAddress,
-        paymentAddressId: paymentResponse.paymentAddressId
+        paymentAddressId: paymentResponse.paymentAddressId,
+        correlationId: `order-${order.id}-${Date.now()}`
       });
 
       return {
@@ -134,13 +147,13 @@ export default class OrderUseCase {
         order: OrderPresenter.toGraphQL(updatedOrder),
         customProperty: JSON.stringify(customProps),
         paymentAddress: paymentResponse.paymentAddress,
-        paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
         totalAmount: updatedOrder.totalAmount!,
       };
     } catch (error) {
       logger.warn('Order creation failed', { 
         userId: currentUserId, 
-        productId,
+        items,
         error: error instanceof Error ? error.message : 'Unknown error' 
       });
       
@@ -157,6 +170,22 @@ export default class OrderUseCase {
           __typename: 'OrderCreateError',
           message: error.message,
           code: 'PRODUCT_NOT_FOUND'
+        };
+      }
+      
+      if (error instanceof OrderValidationError) {
+        return {
+          __typename: 'OrderCreateError',
+          message: error.message,
+          code: error.code
+        };
+      }
+      
+      if (error instanceof NmkrApiError) {
+        return {
+          __typename: 'OrderCreateError',
+          message: error.message,
+          code: error.code
         };
       }
       

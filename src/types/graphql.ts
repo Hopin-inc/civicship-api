@@ -1483,8 +1483,7 @@ export type GqlOrderCreateError = {
 };
 
 export type GqlOrderCreateInput = {
-  productId: Scalars['ID']['input'];
-  quantity: Scalars['Int']['input'];
+  items: Array<GqlOrderItemInput>;
   receiverAddress: Scalars['String']['input'];
 };
 
@@ -1495,7 +1494,7 @@ export type GqlOrderCreateSuccess = {
   customProperty: Scalars['String']['output'];
   order: GqlOrder;
   paymentAddress: Scalars['String']['output'];
-  paymentDeadline: Scalars['String']['output'];
+  paymentDeadline: Scalars['Datetime']['output'];
   totalAmount: Scalars['Int']['output'];
 };
 
@@ -1510,12 +1509,16 @@ export type GqlOrderItem = {
   updatedAt: Scalars['Datetime']['output'];
 };
 
+export type GqlOrderItemInput = {
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Int']['input'];
+};
+
 export const GqlOrderStatus = {
-  Cancelled: 'CANCELLED',
-  Completed: 'COMPLETED',
-  Failed: 'FAILED',
+  Canceled: 'CANCELED',
   Paid: 'PAID',
-  Pending: 'PENDING'
+  Pending: 'PENDING',
+  Refunded: 'REFUNDED'
 } as const;
 
 export type GqlOrderStatus = typeof GqlOrderStatus[keyof typeof GqlOrderStatus];
@@ -1678,8 +1681,7 @@ export type GqlParticipationsConnection = {
 };
 
 export const GqlPaymentProvider = {
-  Nmkr: 'NMKR',
-  Stripe: 'STRIPE'
+  Nmkr: 'NMKR'
 } as const;
 
 export type GqlPaymentProvider = typeof GqlPaymentProvider[keyof typeof GqlPaymentProvider];
@@ -3314,6 +3316,7 @@ export type GqlResolversTypes = ResolversObject<{
   OrderCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrderCreatePayload']>;
   OrderCreateSuccess: ResolverTypeWrapper<Omit<GqlOrderCreateSuccess, 'order'> & { order: GqlResolversTypes['Order'] }>;
   OrderItem: ResolverTypeWrapper<Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversTypes['NftMint']> }>;
+  OrderItemInput: GqlOrderItemInput;
   OrderStatus: GqlOrderStatus;
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
   Paging: ResolverTypeWrapper<GqlPaging>;
@@ -3640,6 +3643,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   OrderCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrderCreatePayload'];
   OrderCreateSuccess: Omit<GqlOrderCreateSuccess, 'order'> & { order: GqlResolversParentTypes['Order'] };
   OrderItem: Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversParentTypes['NftMint']> };
+  OrderItemInput: GqlOrderItemInput;
   PageInfo: GqlPageInfo;
   Paging: GqlPaging;
   Participation: Participation;
@@ -4486,7 +4490,7 @@ export type GqlOrderCreateSuccessResolvers<ContextType = any, ParentType extends
   customProperty?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   order?: Resolver<GqlResolversTypes['Order'], ParentType, ContextType>;
   paymentAddress?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  paymentDeadline?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  paymentDeadline?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   totalAmount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

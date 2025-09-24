@@ -185,7 +185,8 @@ async function processOrderPayment(orderId: string, paymentTransactionUid: strin
       logger.info("Order payment processed successfully", {
         orderId,
         paymentTransactionUid,
-        itemCount: order.items.length
+        itemCount: order.items.length,
+        correlationId: `webhook-${paymentTransactionUid}-${Date.now()}`
       });
     });
   } catch (error) {
@@ -230,6 +231,7 @@ async function processNftMintStateTransition(
       nftMintId,
       paymentTransactionUid,
       state,
+      correlationId: `webhook-${paymentTransactionUid || nftMintId}-${Date.now()}`
     });
   } catch (error) {
     logger.error("Failed to process NFT mint state transition", {

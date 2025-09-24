@@ -6,6 +6,8 @@ export const orderItemInclude = Prisma.validator<Prisma.OrderItemInclude>()({
   nftMints: true,
 });
 
-export type OrderItemWithRelations = Prisma.OrderItemGetPayload<{
+export type OrderItemWithProduct = Prisma.OrderItemGetPayload<{
   include: typeof orderItemInclude;
 }>;
+
+export type OrderItemWithRelations = OrderItemWithProduct;

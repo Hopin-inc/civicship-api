@@ -1,7 +1,20 @@
 export class OrderValidationError extends Error {
-  constructor(message: string, public field?: string) {
+  public readonly code: string;
+  
+  constructor(message: string, code: string = 'VALIDATION_ERROR', public field?: string) {
     super(message);
     this.name = 'OrderValidationError';
+    this.code = code;
+  }
+}
+
+export class NmkrApiError extends Error {
+  public readonly code: string;
+  
+  constructor(message: string, code: string = 'NMKR_API_ERROR') {
+    super(message);
+    this.name = 'NmkrApiError';
+    this.code = code;
   }
 }
 

@@ -3,9 +3,13 @@ extend type Mutation {
 }
 
 input OrderCreateInput {
+  items: [OrderItemInput!]!
+  receiverAddress: String!
+}
+
+input OrderItemInput {
   productId: ID!
   quantity: Int!
-  receiverAddress: String!
 }
 
 union OrderCreatePayload = OrderCreateSuccess | OrderCreateError

@@ -3,16 +3,6 @@ import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import OrderUseCase from '../usecase';
 
-interface OrderCreateInput {
-  productId: string;
-  quantity: number;
-  receiverAddress: string;
-}
-
-interface OrderCreateArgs {
-  input: OrderCreateInput;
-}
-
 @injectable()
 export default class OrderResolver {
   constructor(
@@ -20,11 +10,7 @@ export default class OrderResolver {
   ) {}
 
   Mutation = {
-    orderCreate: async (
-      _parent: unknown,
-      args: OrderCreateArgs,
-      ctx: IContext
-    ) => {
+    orderCreate: async (_parent: unknown, args: any, ctx: IContext) => {
       return this.orderUseCase.createOrder(ctx, args);
     },
   };

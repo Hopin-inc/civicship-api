@@ -44,6 +44,41 @@ export default class OrderRepository implements IOrderRepository {
     });
   }
 
+  async createWithItems(
+    ctx: IContext,
+    orderData: Omit<Prisma.OrderCreateInput, 'items'>,
+    items: Array<{
+      productId: string;
+      quantity: number;
+      priceSnapshot: number;
+    }>,
+    tx?: Prisma.TransactionClient,
+  ): Promise<OrderWithItems> {
+    const orderCreateData: Prisma.OrderCreateInput = {
+      ...orderData,
+      items: {
+        create: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceSnapshot: item.priceSnapshot,
+        })),
+      },
+    };
+
+    if (tx) {
+      return tx.order.create({
+        data: orderCreateData,
+        ...orderSelectWithItems,
+      });
+    }
+    return ctx.issuer.internal(async (transaction) =>
+      transaction.order.create({
+        data: orderCreateData,
+        ...orderSelectWithItems,
+      }),
+    );
+  }
+
   async update(
     ctx: IContext,
     id: string,

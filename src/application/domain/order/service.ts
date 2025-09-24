@@ -3,16 +3,15 @@ import { IContext } from '@/types/server';
 import { Prisma } from '@prisma/client';
 import OrderRepository from './data/repository';
 import OrderConverter from './data/converter';
-import { OrderItemRepository } from './orderItem/data/repository';
 import { IOrderService } from './data/interface';
-import { orderSelectWithItems, OrderWithItems } from './data/type';
+import { OrderWithItems } from './data/type';
+import logger from '@/infrastructure/logging';
 
 @injectable()
 export default class OrderService implements IOrderService {
   constructor(
     @inject("OrderRepository") private readonly repository: OrderRepository,
     @inject("OrderConverter") private readonly converter: OrderConverter,
-    @inject("OrderItemRepository") private readonly orderItemRepository: OrderItemRepository,
   ) {}
 
   async create(
@@ -23,40 +22,23 @@ export default class OrderService implements IOrderService {
     },
     tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems> {
-    const executeInTransaction = async (transaction: Prisma.TransactionClient) => {
-      const totalAmount = input.items.reduce((sum, item) => sum + (item.priceSnapshot * item.quantity), 0);
-      
-      const orderData = this.converter.toPrismaCreateInput({
-        userId: input.userId,
-        totalAmount,
-      });
+    const totalAmount = input.items.reduce((sum, item) => sum + (item.priceSnapshot * item.quantity), 0);
+    
+    const orderData = this.converter.toPrismaCreateInput({
+      userId: input.userId,
+      totalAmount,
+    });
 
-      const order = await transaction.order.create({
-        data: orderData,
-        select: { id: true }
-      });
+    const order = await this.repository.createWithItems(ctx, orderData, input.items, tx);
 
-      await this.orderItemRepository.createMany(ctx, 
-        input.items.map(item => ({
-          orderId: order.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          priceSnapshot: item.priceSnapshot,
-        })), 
-        transaction
-      );
+    logger.info("Order created with items", {
+      orderId: order.id,
+      userId: input.userId,
+      itemCount: input.items.length,
+      totalAmount: order.totalAmount
+    });
 
-      return transaction.order.findUnique({
-        where: { id: order.id },
-        ...orderSelectWithItems,
-      }) as Promise<OrderWithItems>;
-    };
-
-    if (tx) {
-      return executeInTransaction(tx);
-    } else {
-      return ctx.issuer.internal(executeInTransaction);
-    }
+    return order;
   }
 
 

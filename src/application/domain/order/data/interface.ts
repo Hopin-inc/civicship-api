@@ -9,6 +9,17 @@ export interface IOrderRepository {
     tx?: Prisma.TransactionClient
   ): Promise<OrderWithItems>;
 
+  createWithItems(
+    ctx: IContext,
+    orderData: Omit<Prisma.OrderCreateInput, 'items'>,
+    items: Array<{
+      productId: string;
+      quantity: number;
+      priceSnapshot: number;
+    }>,
+    tx?: Prisma.TransactionClient,
+  ): Promise<OrderWithItems>;
+
   findById(
     ctx: IContext,
     id: string,
