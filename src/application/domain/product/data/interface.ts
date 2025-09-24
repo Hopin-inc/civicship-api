@@ -33,18 +33,6 @@ export interface IProductService {
     items: Array<{ productId: string; quantity: number }>,
     tx: Prisma.TransactionClient
   ): Promise<void>;
-
-  transferToSoldPending(
-    ctx: IContext,
-    orderItemIds: string[],
-    tx: Prisma.TransactionClient
-  ): Promise<void>;
-
-  commitMinted(
-    ctx: IContext,
-    orderItemIds: string[],
-    tx: Prisma.TransactionClient
-  ): Promise<void>;
 }
 
 export interface IProductRepository {
@@ -53,4 +41,10 @@ export interface IProductRepository {
     id: string,
     tx?: Prisma.TransactionClient
   ): Promise<PrismaProductForValidation | null>;
+
+  findManyByIdsForValidation(
+    ctx: IContext,
+    productIds: string[],
+    tx?: Prisma.TransactionClient
+  ): Promise<PrismaProductForValidation[]>;
 }

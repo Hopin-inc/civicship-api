@@ -161,7 +161,26 @@ async function processOrderPayment(orderId: string, paymentTransactionUid: strin
         });
       }
 
-      await productService.transferToSoldPending(mockContext, order.items.map(item => item.id), tx);
+      const inventorySnapshots: Array<{
+        orderItemId: string;
+        productId: string;
+        inventory: any;
+      }> = [];
+      for (const item of order.items) {
+        const inventory = await productService.calculateInventory(mockContext, item.productId, tx);
+        inventorySnapshots.push({
+          orderItemId: item.id,
+          productId: item.productId,
+          inventory
+        });
+      }
+      
+      logger.info("Inventory transfer audit", {
+        orderId,
+        paymentTransactionUid,
+        transition: "PENDING->PAID",
+        inventorySnapshots
+      });
 
       logger.info("Order payment processed successfully", {
         orderId,

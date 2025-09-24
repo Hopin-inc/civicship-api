@@ -5,7 +5,6 @@ import { orderItemInclude } from "./type";
 import {
   whereReservedByProduct,
   whereSoldPendingMintByProduct,
-  whereMintedByProduct,
 } from "./converter";
 import { injectable } from "tsyringe";
 
@@ -49,21 +48,48 @@ export class OrderItemRepository implements IOrderItemRepository {
     await tx.orderItem.createMany({ data });
   }
 
-  async countReservedForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
+  async countReservedForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient): Promise<number> {
     const where = whereReservedByProduct(productId);
-    if (tx) return tx.orderItem.count({ where });
-    return ctx.issuer.public(ctx, (t) => t.orderItem.count({ where }));
+    
+    if (tx) {
+      const result = await tx.orderItem.aggregate({ where, _sum: { quantity: true } });
+      return result._sum.quantity ?? 0;
+    }
+    
+    return ctx.issuer.public(ctx, async (transaction) => {
+      const result = await transaction.orderItem.aggregate({ where, _sum: { quantity: true } });
+      return result._sum.quantity ?? 0;
+    });
   }
 
-  async countSoldPendingMintForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
+  async countSoldPendingMintForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient): Promise<number> {
     const where = whereSoldPendingMintByProduct(productId);
-    if (tx) return tx.orderItem.count({ where });
-    return ctx.issuer.public(ctx, (t) => t.orderItem.count({ where }));
+    
+    if (tx) {
+      const result = await tx.orderItem.aggregate({ where, _sum: { quantity: true } });
+      return result._sum.quantity ?? 0;
+    }
+    
+    return ctx.issuer.public(ctx, async (transaction) => {
+      const result = await transaction.orderItem.aggregate({ where, _sum: { quantity: true } });
+      return result._sum.quantity ?? 0;
+    });
   }
 
-  async countMintedForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
-    const where = whereMintedByProduct(productId);
-    if (tx) return tx.orderItem.count({ where });
-    return ctx.issuer.public(ctx, (t) => t.orderItem.count({ where }));
+  async countMintedForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient): Promise<number> {
+    const query = { 
+      where: { 
+        status: 'MINTED' as const, 
+        orderItem: { productId } 
+      } 
+    };
+    
+    if (tx) {
+      return tx.nftMint.count(query);
+    }
+    
+    return ctx.issuer.public(ctx, (transaction) => {
+      return transaction.nftMint.count(query);
+    });
   }
 }
