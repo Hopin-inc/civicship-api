@@ -15,7 +15,7 @@ export interface NftMintUpdateData {
 export default class NftMintConverter {
   static toPrismaCreateInput(data: NftMintCreateData): Prisma.NftMintCreateInput {
     return {
-      status: data.status || 'QUEUED',
+      status: data.status || NftMintStatus.QUEUED,
       orderItem: {
         connect: { id: data.orderItemId },
       },

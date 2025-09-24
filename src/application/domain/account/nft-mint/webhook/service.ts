@@ -51,12 +51,12 @@ export default class NftMintWebhookService {
         nftMintId,
         newStatus,
         txHash,
-        error: newStatus === 'FAILED' ? `Failed in state: ${nmkrState}` : undefined,
+        error: newStatus === NftMintStatus.FAILED ? `Failed in state: ${nmkrState}` : undefined,
       }, tx);
 
-      if (newStatus === 'SUBMITTED') {
+      if (newStatus === NftMintStatus.SUBMITTED) {
         await this.onPaidTransition(ctx, currentMint, tx);
-      } else if (newStatus === 'MINTED') {
+      } else if (newStatus === NftMintStatus.MINTED) {
         await this.onMintedTransition(ctx, currentMint, tx);
       }
 
@@ -87,10 +87,10 @@ export default class NftMintWebhookService {
 
   private mapNmkrStateToStatus(nmkrState: string): NftMintStatus | null {
     switch (nmkrState) {
-      case 'confirmed': return 'SUBMITTED';
-      case 'finished': return 'MINTED';
+      case 'confirmed': return NftMintStatus.SUBMITTED;
+      case 'finished': return NftMintStatus.MINTED;
       case 'canceled':
-      case 'expired': return 'FAILED';
+      case 'expired': return NftMintStatus.FAILED;
       default: return null;
     }
   }

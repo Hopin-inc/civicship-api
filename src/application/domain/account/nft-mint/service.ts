@@ -28,7 +28,7 @@ export default class NftMintService {
     const createData = NftMintConverter.toPrismaCreateInput({
       orderItemId,
       nftWalletId,
-      status: 'QUEUED',
+      status: NftMintStatus.QUEUED,
     });
 
     return this.nftMintRepository.create(ctx, createData, tx);
@@ -85,10 +85,10 @@ export default class NftMintService {
 
   mapNmkrStateToStatus(nmkrState: string): NftMintStatus | null {
     switch (nmkrState) {
-      case 'confirmed': return 'SUBMITTED';
-      case 'finished': return 'MINTED';
+      case 'confirmed': return NftMintStatus.SUBMITTED;
+      case 'finished': return NftMintStatus.MINTED;
       case 'canceled':
-      case 'expired': return 'FAILED';
+      case 'expired': return NftMintStatus.FAILED;
       default: return null;
     }
   }
