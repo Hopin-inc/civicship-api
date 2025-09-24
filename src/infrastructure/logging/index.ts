@@ -5,6 +5,8 @@ import { axiosNormalizer } from "./formats/axios";
 import { sizeGuard } from "./formats/sizeGuard";
 
 const isLocal = process.env.ENV === "LOCAL";
+const logLevel = process.env.LOG_LEVEL || (isLocal ? "debug" : "info");
+const enablePerformanceLogging = process.env.ENABLE_PERFORMANCE_LOGGING === "true";
 
 const baseFormats: winston.Logform.Format[] = [
   winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
@@ -41,9 +43,17 @@ if (isLocal) {
 }
 
 const logger = winston.createLogger({
-  level: "debug", // 本番は "info" 推奨
+  level: logLevel,
   format: winston.format.combine(...baseFormats),
   transports,
 });
+
+// パフォーマンス監視が有効な場合の追加設定
+if (enablePerformanceLogging) {
+  logger.info("Performance logging enabled", {
+    logLevel,
+    timestamp: new Date().toISOString(),
+  });
+}
 
 export default logger;

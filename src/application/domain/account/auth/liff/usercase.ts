@@ -12,6 +12,7 @@ export interface LIFFLoginRequest {
 export interface LIFFLoginResponse {
   customToken: string;
   profile: LINEProfile;
+  expiresIn: number;
 }
 
 export class LIFFAuthUseCase {
@@ -24,7 +25,7 @@ export class LIFFAuthUseCase {
       request.communityId,
     );
 
-    await LIFFService.verifyAccessToken(request.accessToken, liffId);
+    const expiresIn = await LIFFService.verifyAccessToken(request.accessToken, liffId);
     const profile = await LIFFService.getProfile(request.accessToken);
 
     const tenantId = await configService.getFirebaseTenantId(
@@ -37,6 +38,7 @@ export class LIFFAuthUseCase {
     return {
       customToken,
       profile,
+      expiresIn,
     };
   }
 }
