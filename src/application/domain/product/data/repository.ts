@@ -24,4 +24,23 @@ export default class ProductRepository implements IProductRepository {
       });
     });
   }
+
+  async findManyByIdsForValidation(
+    ctx: IContext, 
+    productIds: string[], 
+    tx?: Prisma.TransactionClient
+  ): Promise<PrismaProductForValidation[]> {
+    if (tx) {
+      return tx.product.findMany({ 
+        where: { id: { in: productIds } }, 
+        select: productSelectForValidation 
+      });
+    }
+    return ctx.issuer.public(ctx, (transaction) =>
+      transaction.product.findMany({ 
+        where: { id: { in: productIds } }, 
+        select: productSelectForValidation 
+      }),
+    );
+  }
 }

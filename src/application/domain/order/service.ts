@@ -33,19 +33,18 @@ export default class OrderService implements IOrderService {
 
       const order = await transaction.order.create({
         data: orderData,
-        ...orderSelectWithItems,
+        select: { id: true }
       });
 
-      for (const item of input.items) {
-        const orderItemData = {
-          order: { connect: { id: order.id } },
-          product: { connect: { id: item.productId } },
+      await this.orderItemRepository.createMany(ctx, 
+        input.items.map(item => ({
+          orderId: order.id,
+          productId: item.productId,
           quantity: item.quantity,
           priceSnapshot: item.priceSnapshot,
-        };
-
-        await this.orderItemRepository.create(ctx, orderItemData, transaction);
-      }
+        })), 
+        transaction
+      );
 
       return transaction.order.findUnique({
         where: { id: order.id },
@@ -56,7 +55,7 @@ export default class OrderService implements IOrderService {
     if (tx) {
       return executeInTransaction(tx);
     } else {
-      return ctx.issuer.onlyBelongingCommunity(ctx, executeInTransaction);
+      return ctx.issuer.internal(executeInTransaction);
     }
   }
 

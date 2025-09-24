@@ -5,6 +5,7 @@ import { IProductService } from './data/interface';
 import ProductRepository from './data/repository';
 import { OrderItemReadService } from '@/application/domain/order/orderItem/service';
 import { PrismaProductForValidation } from './data/type';
+import { ProductNotFoundError, InsufficientInventoryError, OrderValidationError } from '@/application/domain/order/errors';
 import logger from '@/infrastructure/logging';
 
 export interface InventorySnapshot {
@@ -49,19 +50,19 @@ export default class ProductService implements IProductService {
     const product = await this.findProductForValidation(ctx, productId, tx);
     
     if (!product) {
-      throw new Error(`Product not found: ${productId}`);
+      throw new ProductNotFoundError(productId);
     }
     
     if (product.type !== 'NFT') {
-      throw new Error(`Product is not an NFT: ${productId}`);
+      throw new OrderValidationError(`Product is not an NFT: ${productId}`);
     }
     
     if (!product.nftProduct) {
-      throw new Error(`NFT product not found for product: ${productId}`);
+      throw new OrderValidationError(`NFT product not found for product: ${productId}`);
     }
     
     if (!product.nftProduct?.externalRef) {
-      throw new Error(`NFT product missing externalRef: ${productId}`);
+      throw new OrderValidationError(`NFT product missing externalRef: ${productId}`);
     }
     
     return product;
@@ -121,7 +122,12 @@ export default class ProductService implements IProductService {
       const inventory = await this.calculateInventoryWithTx(ctx, tx, item.productId);
       
       if (inventory.maxSupply != null && inventory.available < item.quantity) {
-        throw new Error(`Insufficient inventory for product ${item.productId}. Available: ${inventory.available}, Requested: ${item.quantity}`);
+        throw new InsufficientInventoryError(
+          `Insufficient inventory for product ${item.productId}. Available: ${inventory.available}, Requested: ${item.quantity}`,
+          item.productId,
+          inventory.available,
+          item.quantity
+        );
       }
     }
   }
@@ -132,6 +138,40 @@ export default class ProductService implements IProductService {
     tx: Prisma.TransactionClient
   ): Promise<void> {
     logger.info("Transferring inventory to sold pending", { orderItemIds });
+    
+    const orderItems = await tx.orderItem.findMany({
+      where: { id: { in: orderItemIds } },
+      include: { product: true, order: true }
+    });
+    
+    for (const item of orderItems) {
+      const inventoryBefore = await this.calculateInventoryWithTx(ctx, tx, item.productId);
+      
+      if (inventoryBefore.maxSupply != null && inventoryBefore.available < 0) {
+        logger.error("Inventory inconsistency detected during transfer", {
+          orderItemId: item.id,
+          productId: item.productId,
+          inventorySnapshot: inventoryBefore
+        });
+        throw new InsufficientInventoryError(
+          `Inventory inconsistency for product ${item.productId}`,
+          item.productId,
+          inventoryBefore.available,
+          item.quantity
+        );
+      }
+      
+      const inventoryAfter = await this.calculateInventoryWithTx(ctx, tx, item.productId);
+      logger.info("Inventory transfer audit", {
+        orderItemId: item.id,
+        productId: item.productId,
+        orderId: item.order.id,
+        inventoryBefore,
+        inventoryAfter,
+        transition: "PENDING->PAID",
+        transferredQuantity: item.quantity
+      });
+    }
   }
 
   async commitMinted(
@@ -140,5 +180,61 @@ export default class ProductService implements IProductService {
     tx: Prisma.TransactionClient
   ): Promise<void> {
     logger.info("Committing minted inventory", { orderItemIds });
+    
+    const orderItems = await tx.orderItem.findMany({
+      where: { id: { in: orderItemIds } },
+      include: { product: true, nftMints: true }
+    });
+    
+    for (const item of orderItems) {
+      const inventoryBefore = await this.calculateInventoryWithTx(ctx, tx, item.productId);
+      
+      const successfulMints = item.nftMints.filter(mint => mint.status === 'MINTED');
+      if (successfulMints.length !== item.quantity) {
+        logger.warn("Minting quantity mismatch", {
+          orderItemId: item.id,
+          expectedQuantity: item.quantity,
+          actualMinted: successfulMints.length,
+          nftMintStatuses: item.nftMints.map(m => ({ id: m.id, status: m.status }))
+        });
+      }
+      
+      const inventoryAfter = await this.calculateInventoryWithTx(ctx, tx, item.productId);
+      logger.info("Minting completion audit", {
+        orderItemId: item.id,
+        productId: item.productId,
+        nftMintIds: item.nftMints.map(m => m.id),
+        inventoryBefore,
+        inventoryAfter,
+        transition: "SUBMITTED->MINTED",
+        mintedQuantity: successfulMints.length,
+        expectedQuantity: item.quantity
+      });
+    }
+  }
+
+  async validateProductsForOrder(
+    ctx: IContext,
+    productIds: string[],
+    tx?: Prisma.TransactionClient
+  ): Promise<PrismaProductForValidation[]> {
+    const products = await this.repository.findManyByIdsForValidation(ctx, productIds, tx);
+    
+    for (const productId of productIds) {
+      const product = products.find(p => p.id === productId);
+      if (!product) {
+        throw new ProductNotFoundError(productId);
+      }
+      
+      if (product.type !== 'NFT') {
+        throw new OrderValidationError(`Product is not an NFT: ${productId}`);
+      }
+      
+      if (!product.nftProduct?.externalRef) {
+        throw new OrderValidationError(`NFT product missing externalRef: ${productId}`);
+      }
+    }
+    
+    return products;
   }
 }

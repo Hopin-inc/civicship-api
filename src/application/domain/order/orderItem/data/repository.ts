@@ -24,9 +24,29 @@ export class OrderItemRepository implements IOrderItemRepository {
     if (tx) {
       return tx.orderItem.create({ data, include: orderItemInclude });
     }
-    return ctx.issuer.public(ctx, (t) =>
+    return ctx.issuer.internal(async (t) =>
       t.orderItem.create({ data, include: orderItemInclude }),
     );
+  }
+
+  async createMany(
+    ctx: IContext,
+    items: Array<{
+      orderId: string;
+      productId: string;
+      quantity: number;
+      priceSnapshot: number;
+    }>,
+    tx: Prisma.TransactionClient
+  ): Promise<void> {
+    const data = items.map(item => ({
+      orderId: item.orderId,
+      productId: item.productId,
+      quantity: item.quantity,
+      priceSnapshot: item.priceSnapshot,
+    }));
+    
+    await tx.orderItem.createMany({ data });
   }
 
   async countReservedForProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
