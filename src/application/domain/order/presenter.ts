@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
-import { GqlOrder, GqlOrderItem } from '@/types/graphql';
-import { OrderWithItems, OrderItemWithProduct } from './type';
+import { GqlOrder, GqlOrderItem, GqlOrderStatus } from '@/types/graphql';
+import { OrderWithItems, OrderItemWithProduct } from './data/type';
 import UserPresenter from '@/application/domain/account/user/presenter';
 import ProductPresenter from '@/application/domain/product/presenter';
 
@@ -10,7 +10,7 @@ export default class OrderPresenter {
     return {
       __typename: 'Order',
       id: order.id,
-      status: order.status as any, // Cast to handle enum differences between Prisma and GraphQL
+      status: order.status as GqlOrderStatus,
       paymentProvider: order.paymentProvider,
       externalRef: order.externalRef,
       totalAmount: order.totalAmount!,
@@ -28,7 +28,7 @@ export default class OrderPresenter {
       priceSnapshot: item.priceSnapshot,
       quantity: item.quantity,
       product: ProductPresenter.toGraphQL(item.product),
-      nftMints: [], // Simplified for now - will be populated by proper NftMint presenter when needed
+      nftMints: [],
       createdAt: item.createdAt,
       updatedAt: item.updatedAt
     };

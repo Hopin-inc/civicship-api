@@ -147,19 +147,26 @@ export default class ProductService implements IProductService {
     for (const item of orderItems) {
       const inventoryBefore = await this.calculateInventoryWithTx(ctx, tx, item.productId);
       
-      if (inventoryBefore.maxSupply != null && inventoryBefore.available < 0) {
-        logger.error("Inventory inconsistency detected during transfer", {
+      if (inventoryBefore.maxSupply != null && inventoryBefore.available < item.quantity) {
+        logger.error("Insufficient inventory for transfer to sold pending", {
           orderItemId: item.id,
           productId: item.productId,
+          available: inventoryBefore.available,
+          requested: item.quantity,
           inventorySnapshot: inventoryBefore
         });
         throw new InsufficientInventoryError(
-          `Inventory inconsistency for product ${item.productId}`,
+          `Insufficient inventory for product ${item.productId}. Available: ${inventoryBefore.available}, Requested: ${item.quantity}`,
           item.productId,
           inventoryBefore.available,
           item.quantity
         );
       }
+      
+      await tx.order.update({
+        where: { id: item.order.id },
+        data: { status: 'PAID' }
+      });
       
       const inventoryAfter = await this.calculateInventoryWithTx(ctx, tx, item.productId);
       logger.info("Inventory transfer audit", {
@@ -169,7 +176,12 @@ export default class ProductService implements IProductService {
         inventoryBefore,
         inventoryAfter,
         transition: "PENDING->PAID",
-        transferredQuantity: item.quantity
+        transferredQuantity: item.quantity,
+        inventoryDelta: {
+          reserved: inventoryAfter.reserved - inventoryBefore.reserved,
+          soldPendingMint: inventoryAfter.soldPendingMint - inventoryBefore.soldPendingMint,
+          available: inventoryAfter.available - inventoryBefore.available
+        }
       });
     }
   }
@@ -190,12 +202,40 @@ export default class ProductService implements IProductService {
       const inventoryBefore = await this.calculateInventoryWithTx(ctx, tx, item.productId);
       
       const successfulMints = item.nftMints.filter(mint => mint.status === 'MINTED');
+      const failedMints = item.nftMints.filter(mint => mint.status === 'FAILED');
+      
       if (successfulMints.length !== item.quantity) {
         logger.warn("Minting quantity mismatch", {
           orderItemId: item.id,
           expectedQuantity: item.quantity,
           actualMinted: successfulMints.length,
+          failedMints: failedMints.length,
           nftMintStatuses: item.nftMints.map(m => ({ id: m.id, status: m.status }))
+        });
+      }
+      
+      await tx.nftMint.updateMany({
+        where: { 
+          id: { in: successfulMints.map(m => m.id) },
+          status: 'SUBMITTED'
+        },
+        data: { status: 'MINTED' }
+      });
+      
+      if (failedMints.length > 0) {
+        await tx.nftMint.updateMany({
+          where: { 
+            id: { in: failedMints.map(m => m.id) },
+            status: { in: ['SUBMITTED', 'QUEUED'] }
+          },
+          data: { status: 'FAILED' }
+        });
+        
+        logger.warn("Failed mints detected - inventory returned to available pool", {
+          orderItemId: item.id,
+          productId: item.productId,
+          failedMintIds: failedMints.map(m => m.id),
+          returnedQuantity: failedMints.length
         });
       }
       
@@ -208,7 +248,13 @@ export default class ProductService implements IProductService {
         inventoryAfter,
         transition: "SUBMITTED->MINTED",
         mintedQuantity: successfulMints.length,
-        expectedQuantity: item.quantity
+        failedQuantity: failedMints.length,
+        expectedQuantity: item.quantity,
+        inventoryDelta: {
+          soldPendingMint: inventoryAfter.soldPendingMint - inventoryBefore.soldPendingMint,
+          minted: inventoryAfter.minted - inventoryBefore.minted,
+          available: inventoryAfter.available - inventoryBefore.available
+        }
       });
     }
   }

@@ -22,6 +22,7 @@ import NftMintService from "@/application/domain/account/nft-mint/service";
 import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
 import ProductRepository from "@/application/domain/product/data/repository";
 import ProductService from "@/application/domain/product/service";
+import ProductPresenter from "@/application/domain/product/presenter";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
@@ -159,6 +160,7 @@ export function registerProductionDependencies() {
   container.register("NftMintWebhookService", { useClass: NftMintWebhookService });
   container.register("ProductRepository", { useClass: ProductRepository });
   container.register("ProductService", { useClass: ProductService });
+  container.register("ProductPresenter", { useClass: ProductPresenter });
   
 
   container.register("OrderRepository", { useClass: OrderRepository });

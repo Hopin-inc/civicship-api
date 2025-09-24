@@ -33,18 +33,40 @@ const verifyHmacSignature = (
   const signature = req.headers["x-nmkr-signature"] as string;
   const hmacSecret = process.env.NMKR_WEBHOOK_HMAC_SECRET;
 
-  if (hmacSecret && signature) {
-    const body = JSON.stringify(req.body);
-    const expectedSignature = crypto.createHmac("sha256", hmacSecret).update(body).digest("hex");
+  if (!hmacSecret) {
+    logger.error("NMKR webhook HMAC secret not configured");
+    res.status(500).json({ error: "Server configuration error" });
+    return;
+  }
 
-    if (signature !== `sha256=${expectedSignature}`) {
-      logger.warn("NMKR webhook signature verification failed", {
-        expected: `sha256=${expectedSignature}`,
-        received: signature,
-      });
-      res.status(401).json({ error: "Invalid signature" });
-      return;
-    }
+  if (!signature) {
+    logger.warn("NMKR webhook missing signature header");
+    res.status(401).json({ error: "Missing signature" });
+    return;
+  }
+
+  const body = JSON.stringify(req.body);
+  const expectedSignature = crypto.createHmac("sha256", hmacSecret).update(body).digest("hex");
+  const expectedSignatureWithPrefix = `sha256=${expectedSignature}`;
+
+  const signatureBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSignatureWithPrefix);
+
+  if (signatureBuffer.length !== expectedBuffer.length) {
+    logger.warn("NMKR webhook signature length mismatch", {
+      receivedLength: signatureBuffer.length,
+      expectedLength: expectedBuffer.length,
+    });
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
+
+  if (!crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    logger.warn("NMKR webhook signature verification failed", {
+      received: signature,
+    });
+    res.status(401).json({ error: "Invalid signature" });
+    return;
   }
 
   next();
