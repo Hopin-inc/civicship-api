@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import OrderUseCase from "../usecase";

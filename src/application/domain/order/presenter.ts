@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { GqlOrder, GqlOrderCreatePayload, GqlOrderItem, GqlOrderStatus } from "@/types/graphql";
+import { GqlOrder, GqlOrderCreatePayload, GqlOrderItem } from "@/types/graphql";
 import { OrderWithItems, OrderItemWithProduct } from "./data/type";
 import UserPresenter from "@/application/domain/account/user/presenter";
 import ProductPresenter from "@/application/domain/product/presenter";
@@ -24,17 +24,13 @@ export default class OrderPresenter {
   }
 
   static create(order: OrderWithItems): GqlOrder {
+    const { items, user, ...props } = order;
+
     return {
       __typename: "Order",
-      id: order.id,
-      status: order.status as GqlOrderStatus,
-      paymentProvider: order.paymentProvider,
-      externalRef: order.externalRef,
-      totalAmount: order.totalAmount!,
-      user: UserPresenter.get(order.user),
-      items: order.items.map((item) => OrderPresenter.get(item)),
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
+      ...props,
+      user: UserPresenter.get(user),
+      items: items.map((item) => OrderPresenter.get(item)),
     };
   }
 

@@ -144,31 +144,25 @@ export default class OrderUseCase {
 
     const { orderId, nftMintId } = customPropsResult.data;
 
+    let handled = false;
     await ctx.issuer.internal(async (tx) => {
       if (state === "confirmed" && orderId) {
         await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
+        handled = true;
         return;
       }
-
-      const status = this.mapNmkrState(state);
-
       if (nftMintId) {
-        await this.nftMintService.processStateTransition(
-          ctx,
-          {
-            nftMintId,
-            status,
-            txHash,
-          },
-          tx,
-        );
+        const status = this.mapNmkrState(state);
+        await this.nftMintService.processStateTransition(ctx, { nftMintId, status, txHash }, tx);
+        handled = true;
         return;
       }
     });
-
-    logger.warn("NMKR webhook missing both orderId and nftMintId in customProperty", {
-      paymentTransactionUid,
-    });
+    if (!handled) {
+      logger.warn("NMKR webhook missing both orderId and nftMintId in customProperty", {
+        paymentTransactionUid,
+      });
+    }
   }
 
   private async processOrderPayment(
