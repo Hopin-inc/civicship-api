@@ -21,35 +21,6 @@ export interface CreateWalletResponse {
   message?: string;
 }
 
-export interface CreateSubcustomerRequest {
-  description: string;
-  externalId: string;
-}
-
-export interface CreateSubcustomerResponse {
-  subcustomerId: number;
-  customerId: number;
-  description: string;
-  externalId: string;
-  success: boolean;
-  message?: string;
-}
-
-export interface CreateApikeyForSubcustomerRequest {
-  subcustomerId: number;
-  description: string;
-  expiryDate: string;
-}
-
-export interface CreateApikeyForSubcustomerResponse {
-  apiKey: string;
-  subcustomerId: number;
-  description: string;
-  expiryDate: string;
-  success: boolean;
-  message?: string;
-}
-
 export interface CreateWalletRequest {
   // Empty for now, as the endpoint appears to only require the customerid path parameter
 }
