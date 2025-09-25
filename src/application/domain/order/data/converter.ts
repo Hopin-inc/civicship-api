@@ -1,25 +1,20 @@
-import { injectable } from 'tsyringe';
-import { Prisma, OrderStatus, PaymentProvider } from '@prisma/client';
-
-interface OrderCreateData {
-  userId: string;
-  totalAmount: number;
-}
+import { injectable } from "tsyringe";
+import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
 
 @injectable()
 export default class OrderConverter {
-  toPrismaCreateInput(data: OrderCreateData): Prisma.OrderCreateInput {
+  create(userId: string, totalAmount: number): Prisma.OrderCreateInput {
     return {
       status: OrderStatus.PENDING,
       paymentProvider: PaymentProvider.NMKR,
-      totalAmount: data.totalAmount,
+      totalAmount,
       user: {
-        connect: { id: data.userId }
-      }
+        connect: { id: userId },
+      },
     };
   }
 
-  toPrismaUpdateInput(externalRef: string): Prisma.OrderUpdateInput {
+  updateExternalRef(externalRef: string): Prisma.OrderUpdateInput {
     return {
       externalRef,
     };
