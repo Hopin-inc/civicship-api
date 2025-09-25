@@ -84,13 +84,15 @@ export default class OrderUseCase {
       orderId: order.id,
       userRef: currentUserId,
     };
-    const input = this.converter.nmkrPaymentTransactionInput(order, nftWallet, customProps);
+    const paymenttransaction = this.converter.nmkrPaymentTransactionInput(
+      order,
+      nftWallet,
+      customProps,
+    );
 
     let paymentUid: string;
     try {
-      const paymentResponse = await this.nmkrClient.createSpecificNftSale({
-        paymenttransaction: input,
-      });
+      const paymentResponse = await this.nmkrClient.createSpecificNftSale(paymenttransaction);
 
       if (!paymentResponse.uid) {
         throw new Error("NMKR payment transaction not created");

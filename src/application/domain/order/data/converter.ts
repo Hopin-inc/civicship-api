@@ -34,26 +34,28 @@ export default class OrderConverter {
     customProps: CustomPropsV1,
   ) {
     return {
-      projectuid: order.items[0].product.nftProduct!.externalRef!,
-      paymentTransactionType: "nmkr_pay_specific",
-      receiveraddress: nftWallet.walletAddress,
-      customproperties: customProps,
-      paymentTransactionNotifications: [
-        {
-          notificationType: "webhook",
-          notificationEndpoint: process.env.NMKR_WEBHOOK_URL!,
-          hmacSecret: process.env.NMKR_WEBHOOK_HMAC_SECRET!,
-        },
-      ],
-      paymentgatewayParameters: {
-        mintNfts: {
-          countNfts: 1,
-          reserveNfts: [
-            {
-              nftUid: order.items[0].product.nftProduct!.externalRef!,
-              tokencount: 1,
-            },
-          ],
+      paymenttransaction: {
+        projectUid: order.items[0].product.nftProduct!.externalRef!,
+        paymentTransactionType: "paymentgateway_nft_specific",
+        optionalRecevierAddress: nftWallet.walletAddress,
+        customProperties: customProps,
+        paymentTransactionNotifications: [
+          {
+            notificationType: "webhook",
+            notificationEndpoint: process.env.NMKR_WEBHOOK_URL!,
+            hmacSecret: process.env.NMKR_WEBHOOK_HMAC_SECRET!,
+          },
+        ],
+        paymentgatewayParameters: {
+          mintNfts: {
+            countNfts: 1,
+            reserveNfts: [
+              {
+                nftUid: order.items[0].product.nftProduct!.externalRef!,
+                tokencount: 1,
+              },
+            ],
+          },
         },
       },
     };
