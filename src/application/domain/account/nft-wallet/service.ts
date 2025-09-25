@@ -56,21 +56,56 @@ export default class NFTWalletService {
 
   async createInternalWallet(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
     const customerId = Number(process.env.NMKR_CUSTOMER_ID);
-    const nmkrResponse = await this.nmkrClient.createWallet(customerId);
-
-    if (!nmkrResponse.success || !nmkrResponse.walletAddress) {
-      throw new Error(`Failed to create NMKR wallet: ${nmkrResponse.message || "Unknown error"}`);
+    let subcustomerId: number | undefined;
+    let apiKey: string | undefined;
+    
+    try {
+      const subcustomerResponse = await this.nmkrClient.createSubcustomer(customerId, {
+        description: `Civicship user wallet for ${userId}`,
+        externalId: userId,
+      });
+      
+      if (!subcustomerResponse.success || !subcustomerResponse.subcustomerId) {
+        throw new Error(`Failed to create NMKR subcustomer: ${subcustomerResponse.message || 'Unknown error'}`);
+      }
+      subcustomerId = subcustomerResponse.subcustomerId;
+      
+      const apiKeyResponse = await this.nmkrClient.createApikeyForSubcustomer(customerId, {
+        subcustomerId: subcustomerResponse.subcustomerId,
+        description: `API Key for user ${userId}`,
+        expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+      });
+      
+      if (!apiKeyResponse.success || !apiKeyResponse.apiKey) {
+        throw new Error(`Failed to create NMKR API key: ${apiKeyResponse.message || 'Unknown error'}`);
+      }
+      apiKey = apiKeyResponse.apiKey;
+      
+      const walletResponse = await this.nmkrClient.createWallet(subcustomerResponse.subcustomerId);
+      
+      if (!walletResponse.success || !walletResponse.walletAddress) {
+        throw new Error(`Failed to create NMKR wallet: ${walletResponse.message || 'Unknown error'}`);
+      }
+      
+      return await this.nftWalletRepository.create(
+        ctx,
+        {
+          walletAddress: walletResponse.walletAddress,
+          type: NftWalletType.INTERNAL,
+          apiKey: apiKeyResponse.apiKey,
+          externalRef: subcustomerResponse.subcustomerId.toString(),
+          user: { connect: { id: userId } },
+        },
+        tx,
+      );
+    } catch (error) {
+      await this.logOrphanedNmkrResources(subcustomerId, apiKey);
+      logger.error('Failed to create NMKR subcustomer wallet', {
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
-
-    return await this.nftWalletRepository.create(
-      ctx,
-      {
-        walletAddress: nmkrResponse.walletAddress,
-        type: NftWalletType.INTERNAL,
-        user: { connect: { id: userId } },
-      },
-      tx,
-    );
   }
 
   async getOrCreateInternalWallet(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
@@ -150,6 +185,19 @@ export default class NFTWalletService {
         itemsProcessed: 0,
         error: error instanceof Error ? error.message : String(error),
       };
+    }
+  }
+
+  private async logOrphanedNmkrResources(
+    subcustomerId?: number,
+    apiKey?: string,
+  ): Promise<void> {
+    if (subcustomerId || apiKey) {
+      logger.warn('NMKR resources created but wallet creation failed', {
+        subcustomerId,
+        apiKey: apiKey ? '***masked***' : undefined,
+        note: 'Manual cleanup may be required',
+      });
     }
   }
 }

@@ -218,7 +218,7 @@ export default class OrderUseCase {
 
   private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
     try {
-      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED);
+      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.CANCELED);
     } catch (updateErr) {
       logger.error("Failed to mark order as FAILED after NMKR error", {
         orderId,
