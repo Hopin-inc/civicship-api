@@ -6613,6 +6613,7 @@ type NftWalletFactoryDefineInput = {
     type?: NftWalletType;
     walletAddress?: string;
     apiKey?: string | null;
+    externalRef?: string | null;
     createdAt?: Date;
     updatedAt?: Date | null;
     user: NftWalletuserFactory | Prisma.UserCreateNestedOneWithoutNftWalletsInput;
