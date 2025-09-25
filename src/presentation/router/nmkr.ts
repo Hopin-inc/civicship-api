@@ -24,7 +24,7 @@ const verifyHmacSignature = (
   res: express.Response,
   next: express.NextFunction,
 ) => {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV === "LOCAL") {
     logger.info("HMAC verification bypassed in development");
     next();
     return;
