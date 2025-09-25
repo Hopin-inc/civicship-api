@@ -37,8 +37,8 @@ import type {
   SaleConditionsGetResponse,
   SaleConditionsPutRequestBody,
   SaleConditionsPutResponse,
-  CreateWalletResponse,
 } from "../types/types.aliases";
+import type { CreateWalletResponse } from "../types/types.generated";
 import type {
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,

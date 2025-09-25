@@ -13,6 +13,18 @@ export type MintReservation = { reservationId: string; state: 'reserved'; txHash
 export type MintedResult   = { state: 'minted'; txHash: string; nftUid: string; reservationId?: string };
 export type MintResult     = MintReservation | MintedResult;
 
+// Wallet creation types for endpoints not in OpenAPI schema
+export interface CreateWalletResponse {
+  walletAddress: string;
+  customerId: number;
+  success: boolean;
+  message?: string;
+}
+
+export interface CreateWalletRequest {
+  // Empty for now, as the endpoint appears to only require the customerid path parameter
+}
+
 export const NMKR_CONFIG = {
   DEFAULT_TIMEOUT: 15000,
   MAX_RETRIES: 3,
