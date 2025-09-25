@@ -78,7 +78,7 @@ describe("TransactionService", () => {
         comment,
       );
 
-      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints, "test-user-id");
+      expect(mockConverter.issueCommunityPoint).toHaveBeenCalledWith(walletId, transferPoints, "test-user-id", comment);
       expect(mockRepository.create).toHaveBeenCalledWith(mockCtx, convertedData, mockTx);
       expect(mockRepository.refreshCurrentPoints).toHaveBeenCalledWith(mockCtx, mockTx);
       expect(result).toBe(mockTransaction);
@@ -112,6 +112,7 @@ describe("TransactionService", () => {
         walletId,
         walletId,
         mockTx,
+        comment,
       );
 
       expect(mockConverter.grantCommunityPoint).toHaveBeenCalledWith(
