@@ -61,7 +61,7 @@ export class NftMintRepository implements INftMintRepository {
       return tx.nftMint.update({ where: { id }, data, select: nftMintSelectBase });
     }
 
-    return ctx.issuer.public(ctx, (dbTx) =>
+    return ctx.issuer.internal((dbTx) =>
       dbTx.nftMint.update({ where: { id }, data, select: nftMintSelectBase }),
     );
   }
