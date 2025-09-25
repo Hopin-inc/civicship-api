@@ -30,28 +30,24 @@ export default class OrderUseCase {
 
   async userCreateOrder(
     ctx: IContext,
-    args: GqlMutationOrderCreateArgs,
+    { id }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const { productId, quantity } = args.input;
-
-    if (quantity <= 0) {
-      throw new ValidationError("Quantity must be greater than 0");
-    }
+    const quantity = 1;
 
     const order = await ctx.issuer.internal(async (tx) => {
-      const product = await this.productService.findOrThrowForOrder(ctx, productId, tx);
+      const product = await this.productService.findOrThrowForOrder(ctx, id, tx);
 
-      await this.assertSufficientInventory(ctx, productId, quantity, tx);
+      await this.assertSufficientInventory(ctx, id, quantity, tx);
       const created = await this.orderService.createOrder(
         ctx,
         {
           userId: currentUserId,
-          items: [{ productId, quantity, priceSnapshot: product.price }],
+          items: [{ productId: id, quantity, priceSnapshot: product.price }],
         },
         tx,
       );
-      await this.assertSufficientInventory(ctx, productId, 0, tx);
+      await this.assertSufficientInventory(ctx, id, 0, tx);
       return created;
     });
 
