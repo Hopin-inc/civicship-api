@@ -29,7 +29,7 @@ export class NmkrClient {
 
   async createSpecificNftSale(
     payload: Arg<NmkrEndpoints["createPaymentTransactionForSpecificNft"]>,
-  ): Promise<Res<NmkrEndpoints["createPaymentTransactionForSpecificNft"]>> {
+  ): Promise<any> {
     return this.handleRequest(
       () => this.endpoints.createPaymentTransactionForSpecificNft(payload),
       "Failed to create specific NFT sale",
@@ -49,13 +49,6 @@ export class NmkrClient {
     address: Arg<NmkrEndpoints["checkUtxo"]>,
   ): Promise<Res<NmkrEndpoints["checkUtxo"]>> {
     return this.handleRequest(() => this.endpoints.checkUtxo(address), "Failed to check UTXO");
-  }
-
-  async getPayoutWallets(): Promise<Res<NmkrEndpoints["getPayoutWallets"]>> {
-    return this.handleRequest(
-      () => this.endpoints.getPayoutWallets(),
-      "Failed to get payout wallets",
-    );
   }
 
   async getRates(): Promise<components["schemas"]["PricelistClass"]> {
@@ -201,24 +194,6 @@ export class NmkrClient {
     );
   }
 
-  async mintAndSendMultipleSpecific(
-    projectUid: string,
-    receiverAddress: string,
-    payload: Arg<NmkrEndpoints["mintAndSendMultipleSpecific"], 2>,
-    blockchain: Chain = "Cardano",
-  ): Promise<Res<NmkrEndpoints["mintAndSendMultipleSpecific"]>> {
-    return this.handleRequest(
-      () =>
-        this.endpoints.mintAndSendMultipleSpecific(
-          projectUid,
-          receiverAddress,
-          payload,
-          blockchain,
-        ),
-      "Failed to mint and send multiple specific NFTs",
-    );
-  }
-
   async reservePaymentgatewayMintAndSendNft(
     paymentTransactionUid: string,
     payload: Arg<NmkrEndpoints["reservePaymentgatewayMintAndSendNft"], 1>,
@@ -257,15 +232,6 @@ export class NmkrClient {
     );
   }
 
-  async createProject(
-    payload: Arg<NmkrEndpoints["createProject"]>,
-  ): Promise<Res<NmkrEndpoints["createProject"]>> {
-    return this.handleRequest(
-      () => this.endpoints.createProject(payload),
-      "Failed to create project",
-    );
-  }
-
   async updateMetadata(
     projectUid: string,
     nftUid: string,
@@ -297,16 +263,6 @@ export class NmkrClient {
     );
   }
 
-  async uploadToIpfs(
-    customerId: number,
-    payload: Arg<NmkrEndpoints["uploadToIpfs"], 1>,
-  ): Promise<Res<NmkrEndpoints["uploadToIpfs"]>> {
-    return this.handleRequest(
-      () => this.endpoints.uploadToIpfs(customerId, payload),
-      "Failed to upload to IPFS",
-    );
-  }
-
   async checkAddress(
     projectUid: string,
     address: string,
@@ -317,43 +273,12 @@ export class NmkrClient {
     );
   }
 
-  async cancelAddressReservation(
-    projectUid: string,
-    paymentAddress: string,
-  ): Promise<Res<NmkrEndpoints["cancelAddressReservation"]>> {
-    return this.handleRequest(
-      () => this.endpoints.cancelAddressReservation(projectUid, paymentAddress),
-      "Failed to cancel address reservation",
-    );
-  }
-
   async getWhitelist(
     projectUid: Arg<NmkrEndpoints["getWhitelist"]>,
   ): Promise<Res<NmkrEndpoints["getWhitelist"]>> {
     return this.handleRequest(
       () => this.endpoints.getWhitelist(projectUid),
       "Failed to get whitelist",
-    );
-  }
-
-  async addToWhitelist(
-    projectUid: string,
-    address: string,
-    countOfNfts: number,
-  ): Promise<Res<NmkrEndpoints["addToWhitelist"]>> {
-    return this.handleRequest(
-      () => this.endpoints.addToWhitelist(projectUid, address, countOfNfts),
-      "Failed to add to whitelist",
-    );
-  }
-
-  async removeFromWhitelist(
-    projectUid: string,
-    address: string,
-  ): Promise<Res<NmkrEndpoints["removeFromWhitelist"]>> {
-    return this.handleRequest(
-      () => this.endpoints.removeFromWhitelist(projectUid, address),
-      "Failed to remove from whitelist",
     );
   }
 
@@ -377,16 +302,6 @@ export class NmkrClient {
     return this.handleRequest(
       () => this.endpoints.getSaleConditions(projectUid),
       "Failed to get sale conditions",
-    );
-  }
-
-  async updateSaleConditions(
-    projectUid: string,
-    payload: Arg<NmkrEndpoints["updateSaleConditions"], 1>,
-  ): Promise<Res<NmkrEndpoints["updateSaleConditions"]>> {
-    return this.handleRequest(
-      () => this.endpoints.updateSaleConditions(projectUid, payload),
-      "Failed to update sale conditions",
     );
   }
 

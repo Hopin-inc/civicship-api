@@ -1,5 +1,4 @@
 export interface CustomPropsV1 {
-  propsVersion: 1;
   nftMintId?: string;
   nftWalletId?: string;
   userRef?: string;
@@ -13,7 +12,6 @@ function isValidCustomPropsV1(obj: any): obj is CustomPropsV1 {
   return (
     typeof obj === "object" &&
     obj !== null &&
-    obj.propsVersion === 1 &&
     (obj.nftMintId === undefined || typeof obj.nftMintId === "string") &&
     (obj.nftWalletId === undefined || typeof obj.nftWalletId === "string") &&
     (obj.userRef === undefined || typeof obj.userRef === "string") &&
@@ -22,13 +20,6 @@ function isValidCustomPropsV1(obj: any): obj is CustomPropsV1 {
     (obj.nftInstanceId === undefined || typeof obj.nftInstanceId === "string") &&
     (obj.receiverAddress === undefined || typeof obj.receiverAddress === "string")
   );
-}
-
-export function buildCustomProps(input: Partial<CustomPropsV1>): CustomPropsV1 {
-  return {
-    propsVersion: 1,
-    ...input,
-  };
 }
 
 export function parseCustomProps(
