@@ -930,7 +930,7 @@ export type GqlMutationOpportunityUpdateContentArgs = {
 
 
 export type GqlMutationOrderCreateArgs = {
-  input: GqlOrderCreateInput;
+  id: Scalars['ID']['input'];
 };
 
 
@@ -1472,11 +1472,6 @@ export type GqlOrder = {
   totalAmount?: Maybe<Scalars['Int']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
   user: GqlUser;
-};
-
-export type GqlOrderCreateInput = {
-  productId: Scalars['ID']['input'];
-  quantity: Scalars['Int']['input'];
 };
 
 export type GqlOrderCreatePayload = GqlOrderCreateSuccess;
@@ -3295,7 +3290,6 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityUpdateContentPayload']>;
   OpportunityUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   Order: ResolverTypeWrapper<Omit<GqlOrder, 'items' | 'user'> & { items?: Maybe<Array<GqlResolversTypes['OrderItem']>>, user: GqlResolversTypes['User'] }>;
-  OrderCreateInput: GqlOrderCreateInput;
   OrderCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrderCreatePayload']>;
   OrderCreateSuccess: ResolverTypeWrapper<GqlOrderCreateSuccess>;
   OrderItem: ResolverTypeWrapper<Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversTypes['NftMint']> }>;
@@ -3620,7 +3614,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityUpdateContentPayload'];
   OpportunityUpdateContentSuccess: Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   Order: Omit<GqlOrder, 'items' | 'user'> & { items?: Maybe<Array<GqlResolversParentTypes['OrderItem']>>, user: GqlResolversParentTypes['User'] };
-  OrderCreateInput: GqlOrderCreateInput;
   OrderCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrderCreatePayload'];
   OrderCreateSuccess: GqlOrderCreateSuccess;
   OrderItem: Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversParentTypes['NftMint']> };
@@ -4206,7 +4199,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunitySlotSetHostingStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotSetHostingStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotSetHostingStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
-  orderCreate?: Resolver<GqlResolversTypes['OrderCreatePayload'], ParentType, ContextType, RequireFields<GqlMutationOrderCreateArgs, 'input'>>;
+  orderCreate?: Resolver<GqlResolversTypes['OrderCreatePayload'], ParentType, ContextType, RequireFields<GqlMutationOrderCreateArgs, 'id'>>;
   participationBulkCreate?: Resolver<Maybe<GqlResolversTypes['ParticipationBulkCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationBulkCreateArgs, 'input' | 'permission'>>;
   participationCreatePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationCreatePersonalRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCreatePersonalRecordArgs, 'input'>>;
   participationDeletePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDeletePersonalRecordArgs, 'id' | 'permission'>>;
