@@ -3,9 +3,9 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { IProductService } from "./data/interface";
 import ProductRepository from "./data/repository";
-import { OrderItemReadService } from "@/application/domain/order/orderItem/service";
 import { PrismaProduct } from "./data/type";
 import ProductValidator from "@/application/domain/product/validator";
+import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 
 export interface InventorySnapshot {
   productId: string;
@@ -20,7 +20,7 @@ export interface InventorySnapshot {
 export default class ProductService implements IProductService {
   constructor(
     @inject("ProductRepository") private readonly repository: ProductRepository,
-    @inject("OrderItemReadService") private readonly orderItemReadService: OrderItemReadService,
+    @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
   ) {}
 
   async findOrThrowForOrder(
@@ -54,7 +54,7 @@ export default class ProductService implements IProductService {
   ): Promise<InventorySnapshot> {
     const [product, inventoryAggregates] = await Promise.all([
       tx.product.findUnique({ where: { id: productId }, select: { maxSupply: true } }),
-      this.orderItemReadService.getInventoryCounts(ctx, productId, tx),
+      this.orderItemService.getInventoryCounts(ctx, productId, tx),
     ]);
 
     const maxSupply = product?.maxSupply || null;

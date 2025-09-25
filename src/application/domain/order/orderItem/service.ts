@@ -2,11 +2,11 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import { OrderItemRepository } from "./data/repository";
-import { IOrderItemReadService } from "@/application/domain/order/orderItem/data/interface";
+import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 import OrderItemConverter from "@/application/domain/order/orderItem/data/converter";
 
 @injectable()
-export class OrderItemReadService implements IOrderItemReadService {
+export class OrderItemService implements IOrderItemService {
   constructor(
     @inject("OrderItemRepository") private readonly repo: OrderItemRepository,
     @inject("OrderItemConverter") private readonly converter: OrderItemConverter,

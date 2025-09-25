@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 
-export interface IOrderItemReadService {
+export interface IOrderItemService {
   getInventoryCounts(
     ctx: IContext,
     productId: string,
