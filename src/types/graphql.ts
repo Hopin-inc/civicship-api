@@ -1477,7 +1477,6 @@ export type GqlOrder = {
 export type GqlOrderCreateInput = {
   productId: Scalars['ID']['input'];
   quantity: Scalars['Int']['input'];
-  receiverAddress: Scalars['String']['input'];
 };
 
 export type GqlOrderCreatePayload = GqlOrderCreateSuccess;

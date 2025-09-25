@@ -5,7 +5,6 @@ extend type Mutation {
 input OrderCreateInput {
   productId: ID!
   quantity: Int!
-  receiverAddress: String!
 }
 
 type OrderCreateSuccess {
