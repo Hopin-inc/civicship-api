@@ -36,11 +36,11 @@ export default class OrderUseCase {
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmfun8n8u00008z00pqq95nxa";
+    const currentUserId = "cmfzidhe3000n8zta98ux2kil";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
-    const { order, nftWallet } = await ctx.issuer.internal(async (tx) => {
-      const order = await this.orderService.createOrder(
+    const order = await ctx.issuer.internal(async (tx) => {
+      return this.orderService.createOrder(
         ctx,
         {
           userId: currentUserId,
@@ -48,13 +48,36 @@ export default class OrderUseCase {
         },
         tx,
       );
-      const nftWallet = await this.nftWalletService.getOrCreateInternalWallet(
-        ctx,
-        currentUserId,
-        tx,
-      );
-      return { order, nftWallet };
     });
+
+    let nftWallet = await this.nftWalletService.checkIfExists(ctx, currentUserId);
+    if (!nftWallet) {
+      const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
+      try {
+        const walletResponse = await this.nmkrClient.createWallet(parentCustomerId, {
+          walletName: currentUserId,
+          enterpriseaddress: true,
+          walletPassword: "stringstring",
+        });
+
+        logger.debug("Created NMKR Managed wallet", walletResponse);
+
+        nftWallet = await ctx.issuer.internal((tx) =>
+          this.nftWalletService.createInternalWallet(
+            ctx,
+            currentUserId,
+            walletResponse.address,
+            tx,
+          ),
+        );
+      } catch (error) {
+        logger.error("Failed to create NMKR Managed wallet", {
+          userId: currentUserId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      }
+    }
 
     const customProps = {
       propsVersion: 1 as const,
