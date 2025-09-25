@@ -5,8 +5,8 @@ import {
   GqlOrderCreatePayload,
   GqlPaymentProvider,
 } from "@/types/graphql";
-import { getCurrentUserId } from "@/application/domain/utils";
-import { buildCustomProps, parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
+// import { getCurrentUserId } from "@/application/domain/utils";
+import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import logger from "@/infrastructure/logging";
 import OrderService from "./service";
@@ -16,15 +16,16 @@ import NftMintService from "@/application/domain/reward/nft-mint/service";
 import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
-import { ValidationError } from "@/errors/graphql";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
-import { container } from "tsyringe";
+import OrderConverter from "@/application/domain/order/data/converter";
 
 @injectable()
 export default class OrderUseCase {
   constructor(
+    @inject("OrderConverter") private readonly converter: OrderConverter,
     @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
     @inject("NftMintService") private readonly nftMintService: NftMintService,
+    @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
@@ -34,62 +35,51 @@ export default class OrderUseCase {
     ctx: IContext,
     { id }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
-    const quantity = 1;
+    // const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = "cmfun8n8u00008z00pqq95nxa";
+    const product = await this.productService.findOrThrowForOrder(ctx, id);
 
-    const order = await ctx.issuer.internal(async (tx) => {
-      const product = await this.productService.findOrThrowForOrder(ctx, id, tx);
-
-      await this.assertSufficientInventory(ctx, id, quantity, tx);
-      const created = await this.orderService.createOrder(
+    const { order, nftWallet } = await ctx.issuer.internal(async (tx) => {
+      const order = await this.orderService.createOrder(
         ctx,
         {
           userId: currentUserId,
-          items: [{ productId: id, quantity, priceSnapshot: product.price }],
+          items: [{ productId: id, quantity: 1, priceSnapshot: product.price }],
         },
         tx,
       );
-      await this.assertSufficientInventory(ctx, id, 0, tx);
-      return created;
+      const nftWallet = await this.nftWalletService.getOrCreateInternalWallet(
+        ctx,
+        currentUserId,
+        tx,
+      );
+      return { order, nftWallet };
     });
-
-    const orderItem = order.items[0];
-    const projectuid = orderItem.product.nftProduct!.externalRef!;
-
-    const nftWallet = await ctx.issuer.internal(async (tx) => {
-      const nftWalletService = container.resolve<NFTWalletService>("NFTWalletService");
-      return await nftWalletService.getOrCreateInternalWallet(ctx, currentUserId, tx);
-    });
-
-    const receiverAddress = nftWallet.walletAddress;
 
     const customProps = {
       propsVersion: 1 as const,
       orderId: order.id,
-      orderItemId: orderItem.id,
       userRef: currentUserId,
-      receiverAddress,
     };
+    const input = this.converter.nmkrPaymentTransactionInput(order, nftWallet, customProps);
 
-    let paymentuid: string;
+    let paymentUid: string;
     try {
       const paymentResponse = await this.nmkrClient.createSpecificNftSale({
-        projectuid,
-        receiveraddress: receiverAddress,
-        customproperties: buildCustomProps(customProps),
+        paymenttransaction: input,
       });
 
       if (!paymentResponse.uid) {
         throw new Error("NMKR payment transaction not created");
       }
-      paymentuid = paymentResponse.uid;
+      paymentUid = paymentResponse.uid;
     } catch (err) {
       await this.safeMarkOrderFailed(ctx, order.id, err);
       throw err;
     }
 
-    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentuid);
-    return OrderPresenter.create(paymentuid);
+    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentUid);
+    return OrderPresenter.create(paymentUid);
   }
 
   async processWebhook(
@@ -201,20 +191,6 @@ export default class OrderUseCase {
     }
   }
 
-  private async assertSufficientInventory(
-    ctx: IContext,
-    productId: string,
-    quantity: number,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    const snapshot = await this.calculateInventory(ctx, productId, tx);
-    if (snapshot.maxSupply != null && snapshot.available < quantity) {
-      throw new ValidationError(
-        `Insufficient inventory. Available: ${snapshot.available}, Requested: ${quantity}`,
-      );
-    }
-  }
-
   private async calculateInventory(
     ctx: IContext,
     productId: string,
@@ -242,7 +218,7 @@ export default class OrderUseCase {
 
   private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
     try {
-      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.CANCELED);
+      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED);
     } catch (updateErr) {
       logger.error("Failed to mark order as FAILED after NMKR error", {
         orderId,
