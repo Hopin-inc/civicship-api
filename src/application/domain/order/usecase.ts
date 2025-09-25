@@ -80,31 +80,33 @@ export default class OrderUseCase {
     }
 
     const customProps = {
-      propsVersion: 1 as const,
       orderId: order.id,
       userRef: currentUserId,
     };
     const paymenttransaction = this.converter.nmkrPaymentTransactionInput(
-      order,
+      product,
       nftWallet,
       customProps,
     );
 
     let paymentUid: string;
+    let paymentUrl: string;
     try {
       const paymentResponse = await this.nmkrClient.createSpecificNftSale(paymenttransaction);
+      logger.debug("Created NMKR payment transaction", paymentResponse);
 
-      if (!paymentResponse.uid) {
+      if (!paymentResponse.paymentTransactionUid) {
         throw new Error("NMKR payment transaction not created");
       }
-      paymentUid = paymentResponse.uid;
+      paymentUid = paymentResponse.paymentTransactionUid;
+      paymentUrl = paymentResponse.nmkrPayUrl;
     } catch (err) {
       await this.safeMarkOrderFailed(ctx, order.id, err);
       throw err;
     }
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentUid);
-    return OrderPresenter.create(paymentUid);
+    return OrderPresenter.create(paymentUrl);
   }
 
   async processWebhook(

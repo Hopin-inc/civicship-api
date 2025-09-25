@@ -1,8 +1,8 @@
 import { injectable } from "tsyringe";
 import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
-import { OrderWithItems } from "@/application/domain/order/data/type";
 import { PrismaNftWalletCreateDetail } from "@/application/domain/account/nft-wallet/data/type";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
+import { PrismaProduct } from "@/application/domain/product/data/type";
 
 @injectable()
 export default class OrderConverter {
@@ -29,35 +29,27 @@ export default class OrderConverter {
   }
 
   nmkrPaymentTransactionInput(
-    order: OrderWithItems,
+    product: PrismaProduct,
     nftWallet: PrismaNftWalletCreateDetail,
     customProps: CustomPropsV1,
   ) {
     return {
-      paymenttransaction: {
-        projectUid: order.items[0].product.nftProduct!.externalRef!,
-        paymentTransactionType: "paymentgateway_nft_specific",
-        optionalRecevierAddress: nftWallet.walletAddress,
-        customProperties: customProps,
-        paymentTransactionNotifications: [
-          {
-            notificationType: "webhook",
-            notificationEndpoint: process.env.NMKR_WEBHOOK_URL!,
-            hmacSecret: process.env.NMKR_WEBHOOK_HMAC_SECRET!,
-          },
-        ],
-        paymentgatewayParameters: {
-          mintNfts: {
-            countNfts: 1,
-            reserveNfts: [
-              {
-                nftUid: order.items[0].product.nftProduct!.externalRef!,
-                tokencount: 1,
-              },
-            ],
-          },
+      projectUid: "078b2532-716a-4dac-b135-b43e2f042185",
+      paymentTransactionType: "paymentgateway_nft_random",
+      paymentgatewayParameters: {
+        mintNfts: {
+          countNfts: 1,
         },
       },
+      optionalRecevierAddress: nftWallet.walletAddress,
+      customProperties: customProps,
+      paymentTransactionNotifications: [
+        {
+          notificationType: "webhook",
+          notificationEndpoint: process.env.NMKR_WEBHOOK_URL!,
+          hmacSecret: process.env.NMKR_WEBHOOK_HMAC_SECRET!,
+        },
+      ],
     };
   }
 }

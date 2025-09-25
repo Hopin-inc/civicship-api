@@ -3,10 +3,10 @@ import { GqlOrderCreatePayload } from "@/types/graphql";
 
 @injectable()
 export default class OrderPresenter {
-  static create(paymentUid: string): GqlOrderCreatePayload {
+  static create(paymentUrl: string): GqlOrderCreatePayload {
     return {
       __typename: "OrderCreateSuccess",
-      paymentLink: `https://nmkr.io/pay/${paymentUid}`,
+      paymentLink: paymentUrl,
     };
   }
 }
