@@ -2,12 +2,15 @@ import { injectable, inject } from 'tsyringe';
 import { IContext } from '@/types/server';
 import { GqlOrderCreateInput, GqlOrderCreatePayload } from '@/types/graphql';
 import { getCurrentUserId } from '@/application/domain/utils';
-import { buildCustomProps } from '@/infrastructure/libs/nmkr/customProps';
+import { buildCustomProps, parseCustomProps } from '@/infrastructure/libs/nmkr/customProps';
 import { NmkrClient } from '@/infrastructure/libs/nmkr/api/client';
 import logger from '@/infrastructure/logging';
 import OrderService from './service';
 import ProductService from '@/application/domain/product/service';
 import OrderPresenter from './presenter';
+import NftMintWebhookService from '@/application/domain/account/nft-mint/webhook/service';
+import NftMintService from '@/application/domain/account/nft-mint/service';
+import { OrderStatus } from '@prisma/client';
 import { 
   OrderValidationError, 
   InsufficientInventoryError, 
@@ -25,6 +28,8 @@ export default class OrderUseCase {
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
+    @inject("NftMintWebhookService") private readonly nftMintWebhookService: NftMintWebhookService,
+    @inject("NftMintService") private readonly nftMintService: NftMintService,
   ) {}
 
   async createOrder(
@@ -193,6 +198,115 @@ export default class OrderUseCase {
         message: 'Order creation failed',
         code: 'INTERNAL_ERROR'
       };
+    }
+  }
+
+  async processNmkrWebhook(
+    ctx: IContext,
+    payload: {
+      paymentTransactionUid: string;
+      projectUid: string;
+      state: string;
+      paymentTransactionSubstate?: string;
+      txHash?: string;
+      customProperty?: string;
+    }
+  ): Promise<void> {
+    const { paymentTransactionUid, state, paymentTransactionSubstate, txHash, customProperty } = payload;
+
+    logger.info("Processing NMKR webhook", {
+      paymentTransactionUid,
+      state,
+      substate: paymentTransactionSubstate,
+      txHash,
+    });
+
+    if (!customProperty) {
+      logger.warn("NMKR webhook missing customProperty", { paymentTransactionUid });
+      return;
+    }
+
+    const customPropsResult = parseCustomProps(customProperty);
+    if (!customPropsResult.success) {
+      logger.error("NMKR webhook invalid customProperty", {
+        paymentTransactionUid,
+        error: customPropsResult.error,
+      });
+      return;
+    }
+    
+    const { orderId, nftMintId } = customPropsResult.data;
+
+    if (state === 'confirmed' && orderId) {
+      await this.processOrderPayment(ctx, orderId, paymentTransactionUid);
+      return;
+    }
+
+    if (nftMintId) {
+      await this.nftMintWebhookService.processStateTransition(
+        ctx,
+        nftMintId,
+        state,
+        txHash,
+        paymentTransactionUid
+      );
+      return;
+    }
+
+    logger.warn("NMKR webhook missing both orderId and nftMintId in customProperty", { paymentTransactionUid });
+  }
+
+  private async processOrderPayment(ctx: IContext, orderId: string, paymentTransactionUid: string): Promise<void> {
+    logger.info("Processing order payment confirmation", { orderId, paymentTransactionUid });
+
+    try {
+      await ctx.issuer.internal(async (tx) => {
+        const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
+
+        for (const orderItem of order.items) {
+          await this.nftMintService.createForOrderItem(
+            ctx,
+            orderItem.id,
+            'system-wallet',
+            tx
+          );
+        }
+
+        const inventorySnapshots: Array<{
+          orderItemId: string;
+          productId: string;
+          inventory: any;
+        }> = [];
+        for (const item of order.items) {
+          const inventory = await this.productService.calculateInventory(ctx, item.productId, tx);
+          inventorySnapshots.push({
+            orderItemId: item.id,
+            productId: item.productId,
+            inventory
+          });
+        }
+        
+        logger.info("Inventory transfer audit", {
+          orderId,
+          paymentTransactionUid,
+          transition: "PENDING->PAID",
+          inventorySnapshots
+        });
+
+        logger.info("Order payment processed successfully", {
+          orderId,
+          paymentTransactionUid,
+          itemCount: order.items.length,
+          correlationId: `webhook-${paymentTransactionUid}-${Date.now()}`
+        });
+      });
+    } catch (error) {
+      logger.error("Failed to process order payment", {
+        orderId,
+        paymentTransactionUid,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
     }
   }
 }

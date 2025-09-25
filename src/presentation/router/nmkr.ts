@@ -2,11 +2,8 @@ import express from "express";
 import logger from "@/infrastructure/logging";
 import crypto from "crypto";
 import { container } from "tsyringe";
-import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
-import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
-import ProductService from "@/application/domain/product/service";
-import { IContext } from "@/types/server";
-import { OrderStatus, NftMintStatus } from "@prisma/client";
+import OrderUseCase from "@/application/domain/order/usecase";
+import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 
 type NmkrWebhookPayload = {
   paymentTransactionUid: string;
@@ -84,7 +81,13 @@ router.post("/webhook", verifyHmacSignature, async (req, res) => {
       txHash: payload.txHash,
     });
 
-    await processNmkrWebhook(payload);
+    const orderUseCase = container.resolve<OrderUseCase>("OrderUseCase");
+    const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
+    
+    await issuer.internal(async (tx) => {
+      const ctx = { issuer, user: { id: 'system', isAdmin: true } } as any;
+      await orderUseCase.processNmkrWebhook(ctx, payload);
+    });
 
     res.status(200).json({ success: true });
   } catch (error) {
@@ -93,154 +96,5 @@ router.post("/webhook", verifyHmacSignature, async (req, res) => {
   }
 });
 
-async function processNmkrWebhook(payload: NmkrWebhookPayload): Promise<void> {
-  const { paymentTransactionUid, state, paymentTransactionSubstate, txHash, customProperty } =
-    payload;
-
-  logger.info("Processing NMKR webhook", {
-    paymentTransactionUid,
-    state,
-    substate: paymentTransactionSubstate,
-    txHash,
-  });
-
-  if (!customProperty) {
-    logger.warn("NMKR webhook missing customProperty", { paymentTransactionUid });
-    return;
-  }
-
-  const customPropsResult = parseCustomProps(customProperty);
-  if (!customPropsResult.success) {
-    logger.error("NMKR webhook invalid customProperty", {
-      paymentTransactionUid,
-      error: customPropsResult.error,
-    });
-    return;
-  }
-  
-  const { orderId, nftMintId } = customPropsResult.data;
-
-  if (state === 'confirmed' && orderId) {
-    await processOrderPayment(orderId, paymentTransactionUid);
-    return;
-  }
-
-  if (nftMintId) {
-    await processNftMintStateTransition(nftMintId, state, txHash, paymentTransactionUid);
-    return;
-  }
-
-  logger.warn("NMKR webhook missing both orderId and nftMintId in customProperty", { paymentTransactionUid });
-}
-
-async function processOrderPayment(orderId: string, paymentTransactionUid: string): Promise<void> {
-  logger.info("Processing order payment confirmation", { orderId, paymentTransactionUid });
-
-  try {
-    const prismaClientIssuer = container.resolve("PrismaClientIssuer");
-    const productService = container.resolve<ProductService>("ProductService");
-    const mockContext = {
-      issuer: prismaClientIssuer,
-      user: { id: 'system', role: 'SYSTEM' }
-    } as unknown as IContext;
-
-    await mockContext.issuer.internal(async (tx) => {
-      const order = await tx.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.PAID },
-        include: { items: true }
-      });
-
-      for (const orderItem of order.items) {
-        await tx.nftMint.create({
-          data: {
-            status: NftMintStatus.QUEUED,
-            orderItemId: orderItem.id,
-            nftWalletId: 'system-wallet' // TODO: Get proper wallet from user
-          }
-        });
-      }
-
-      const inventorySnapshots: Array<{
-        orderItemId: string;
-        productId: string;
-        inventory: any;
-      }> = [];
-      for (const item of order.items) {
-        const inventory = await productService.calculateInventory(mockContext, item.productId, tx);
-        inventorySnapshots.push({
-          orderItemId: item.id,
-          productId: item.productId,
-          inventory
-        });
-      }
-      
-      logger.info("Inventory transfer audit", {
-        orderId,
-        paymentTransactionUid,
-        transition: "PENDING->PAID",
-        inventorySnapshots
-      });
-
-      logger.info("Order payment processed successfully", {
-        orderId,
-        paymentTransactionUid,
-        itemCount: order.items.length,
-        correlationId: `webhook-${paymentTransactionUid}-${Date.now()}`
-      });
-    });
-  } catch (error) {
-    logger.error("Failed to process order payment", {
-      orderId,
-      paymentTransactionUid,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-}
-
-async function processNftMintStateTransition(
-  nftMintId: string, 
-  state: string, 
-  txHash?: string, 
-  paymentTransactionUid?: string
-): Promise<void> {
-  logger.info("Processing NFT mint state transition", {
-    nftMintId,
-    paymentTransactionUid,
-    state,
-    txHash,
-  });
-
-  try {
-    const webhookService = container.resolve<NftMintWebhookService>("NftMintWebhookService");
-    const prismaClientIssuer = container.resolve("PrismaClientIssuer");
-    const mockContext = {
-      issuer: prismaClientIssuer,
-      user: { id: "system", role: "SYSTEM" },
-    } as unknown as IContext;
-
-    await webhookService.processStateTransition(
-      mockContext,
-      nftMintId,
-      state,
-      txHash,
-      paymentTransactionUid,
-    );
-    
-    logger.info("NFT mint state transition processed successfully", {
-      nftMintId,
-      paymentTransactionUid,
-      state,
-      correlationId: `webhook-${paymentTransactionUid || nftMintId}-${Date.now()}`
-    });
-  } catch (error) {
-    logger.error("Failed to process NFT mint state transition", {
-      nftMintId,
-      paymentTransactionUid,
-      state,
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-}
 
 export default router;

@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { Prisma } from '@prisma/client';
+import { Prisma, OrderStatus } from '@prisma/client';
 import { IContext } from '@/types/server';
 import { IOrderRepository } from './interface';
 import { orderSelectWithItems, OrderWithItems } from '../type';
@@ -96,6 +96,28 @@ export default class OrderRepository implements IOrderRepository {
       return transaction.order.update({
         where: { id },
         data,
+        ...orderSelectWithItems,
+      });
+    });
+  }
+
+  async updateStatus(
+    ctx: IContext,
+    orderId: string,
+    status: OrderStatus,
+    tx?: Prisma.TransactionClient
+  ): Promise<OrderWithItems> {
+    if (tx) {
+      return tx.order.update({
+        where: { id: orderId },
+        data: { status },
+        ...orderSelectWithItems,
+      });
+    }
+    return ctx.issuer.internal(async (transaction) => {
+      return transaction.order.update({
+        where: { id: orderId },
+        data: { status },
         ...orderSelectWithItems,
       });
     });
