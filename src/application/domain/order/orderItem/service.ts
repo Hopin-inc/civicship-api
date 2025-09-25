@@ -12,14 +12,17 @@ export class OrderItemService implements IOrderItemService {
     @inject("OrderItemConverter") private readonly converter: OrderItemConverter,
   ) {}
 
-  async getInventoryCounts(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
-    const reservedWhere = this.converter.reservedByProduct(productId);
-    const pendingMintWhere = this.converter.soldPendingMintByProduct(productId);
+  async countReservedByProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
+    const where = this.converter.reservedByProduct(productId);
+    return this.repo.count(ctx, where, tx);
+  }
 
-    const [reserved, soldPendingMint] = await Promise.all([
-      this.repo.countByWhere(ctx, reservedWhere, tx),
-      this.repo.countByWhere(ctx, pendingMintWhere, tx),
-    ]);
-    return { reserved, soldPendingMint };
+  async countSoldPendingMintByProduct(
+    ctx: IContext,
+    productId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const where = this.converter.soldPendingMintByProduct(productId);
+    return this.repo.count(ctx, where, tx);
   }
 }
