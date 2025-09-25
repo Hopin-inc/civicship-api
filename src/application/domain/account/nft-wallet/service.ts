@@ -46,11 +46,7 @@ export default class NFTWalletService {
     );
   }
 
-  async checkIfExists(
-    ctx: IContext,
-    userId: string,
-    type: NftWalletType = NftWalletType.INTERNAL,
-  ) {
+  async checkIfExists(ctx: IContext, userId: string, type: NftWalletType = NftWalletType.INTERNAL) {
     const existing = await this.nftWalletRepository.findByUserId(ctx, userId);
     if (existing && existing.type === type) {
       return existing;
@@ -58,16 +54,12 @@ export default class NFTWalletService {
     return null;
   }
 
-  async createInternalWallet(
-    ctx: IContext,
-    userId: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    const customerId = parseInt(userId.slice(-8), 16) % 1000000;
+  async createInternalWallet(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
+    const customerId = 190395;
     const nmkrResponse = await this.nmkrClient.createWallet(customerId);
-    
+
     if (!nmkrResponse.success || !nmkrResponse.walletAddress) {
-      throw new Error(`Failed to create NMKR wallet: ${nmkrResponse.message || 'Unknown error'}`);
+      throw new Error(`Failed to create NMKR wallet: ${nmkrResponse.message || "Unknown error"}`);
     }
 
     return await this.nftWalletRepository.create(
@@ -81,11 +73,7 @@ export default class NFTWalletService {
     );
   }
 
-  async getOrCreateInternalWallet(
-    ctx: IContext,
-    userId: string,
-    tx: Prisma.TransactionClient,
-  ) {
+  async getOrCreateInternalWallet(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
     const existing = await this.checkIfExists(ctx, userId, NftWalletType.INTERNAL);
     if (existing) {
       return existing;

@@ -1,5 +1,6 @@
 extend type Mutation {
-  orderCreate(id: ID!): OrderCreatePayload! @authz(rules: [IsUser])
+  orderCreate(id: ID!): OrderCreatePayload!
+#  @authz(rules: [IsUser])
 }
 
 type OrderCreateSuccess {
