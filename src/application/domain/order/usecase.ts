@@ -1,6 +1,10 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
+import {
+  GqlMutationOrderCreateArgs,
+  GqlOrderCreatePayload,
+  GqlPaymentProvider,
+} from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { buildCustomProps, parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
@@ -8,16 +12,20 @@ import logger from "@/infrastructure/logging";
 import OrderService from "./service";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
-import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
-import { OrderStatus } from "@prisma/client";
+import NftMintService from "@/application/domain/reward/nft-mint/service";
+import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
+import { InventorySnapshot } from "@/application/domain/product/data/type";
+import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
+import { ValidationError } from "@/errors/graphql";
 
 @injectable()
 export default class OrderUseCase {
   constructor(
+    @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
+    @inject("NftMintService") private readonly nftMintService: NftMintService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
-    @inject("NftMintService") private readonly nftMintService: NftMintService,
   ) {}
 
   async userCreateOrder(
@@ -27,94 +35,83 @@ export default class OrderUseCase {
     const currentUserId = getCurrentUserId(ctx);
     const { items, receiverAddress } = args.input;
 
-    if (!items || items.length === 0) {
-      throw new Error("Order must contain at least one item");
+    if (!items?.length) {
+      throw new ValidationError("Order must contain at least one item");
     }
-
     if (items.length > 1) {
-      throw new Error("Multiple items not yet supported");
+      throw new ValidationError("Multiple items not yet supported");
     }
 
     const { productId, quantity } = items[0];
 
-    try {
-      let order;
+    let order;
+    await ctx.issuer.internal(async (tx) => {
+      const product = await this.productService.findOrThrowForOrder(ctx, productId, tx);
 
-      await ctx.issuer.internal(async (tx) => {
-        const product = await this.productService.findOrThrowForOrder(ctx, productId, tx);
-
-        const inventoryBefore = await this.productService.calculateInventory(ctx, productId, tx);
-        if (inventoryBefore.maxSupply != null && inventoryBefore.available < quantity) {
-          throw new Error(
-            `Insufficient inventory. Available: ${inventoryBefore.available}, Requested: ${quantity}`,
-          );
-        }
-
-        order = await this.orderService.createOrder(
-          ctx,
-          {
-            userId: currentUserId,
-            items: [{ productId, quantity, priceSnapshot: product.price }],
-          },
-          tx,
-        );
-
-        const inventoryAfter = await this.productService.calculateInventory(ctx, productId, tx);
-        if (inventoryAfter.maxSupply != null && inventoryAfter.available < 0) {
-          logger.error("Inventory oversold detected after order creation", {
-            orderId: order.id,
-            productId,
-            inventoryBefore,
-            inventoryAfter,
-            requestedQuantity: quantity,
-          });
-          throw new Error("Inventory oversold detected after order creation");
-        }
-      });
-
-      const orderItem = order.items[0];
-      const customProps = {
-        propsVersion: 1 as const,
-        orderId: order.id,
-        orderItemId: orderItem.id,
-        userRef: currentUserId,
-        receiverAddress,
-      };
-
-      const paymentResponse = await this.nmkrClient.createSpecificNftSale({
-        projectuid: orderItem.product.nftProduct!.externalRef!,
-        receiveraddress: receiverAddress,
-        customproperties: buildCustomProps(customProps),
-      });
-
-      if (!paymentResponse.uid) {
-        throw new Error("NMKR payment transaction not created");
-      }
-
-      const externalRef = paymentResponse.uid;
-      const updatedOrder = await this.orderService.updateOrderWithExternalRef(
+      await this.assertSufficientInventory(ctx, productId, quantity, tx);
+      order = await this.orderService.createOrder(
         ctx,
-        order.id,
-        externalRef,
+        {
+          userId: currentUserId,
+          items: [{ productId, quantity, priceSnapshot: product.price }],
+        },
+        tx,
       );
+      await this.assertSufficientInventory(ctx, productId, 0, tx);
+    });
 
-      return {
-        __typename: "OrderCreateSuccess",
-        order: OrderPresenter.create(updatedOrder),
-        paymentLink: `https://nmkr.io/pay/${paymentResponse.uid}`,
-        paymentProvider: "NMKR_PAY" as const,
-        paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        totalAmount: updatedOrder.totalAmount!,
-        currency: "JPY",
-        customProperty: JSON.stringify(customProps),
-      };
-    } catch (error) {
-      logger.warn("Order creation failed", {
-        userId: currentUserId,
-        items,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-      throw error;
+    const orderItem = order.items[0];
+    const customProps = {
+      propsVersion: 1 as const,
+      orderId: order.id,
+      orderItemId: orderItem.id,
+      userRef: currentUserId,
+      receiverAddress,
+    };
+
+    const paymentResponse = await this.nmkrClient.createSpecificNftSale({
+      projectuid: orderItem.product.nftProduct!.externalRef!,
+      receiveraddress: receiverAddress,
+      customproperties: buildCustomProps(customProps),
+    });
+
+    if (!paymentResponse.uid) {
+      throw new Error("NMKR payment transaction not created");
+    }
+
+    const updatedOrder = await this.orderService.updateOrderWithExternalRef(
+      ctx,
+      order.id,
+      paymentResponse.uid,
+    );
+
+    return OrderPresenter.createOrderPayload({
+      order: updatedOrder,
+      paymentUid: paymentResponse.uid,
+      customProps,
+    });
+  }
+
+  async processWebhook(
+    ctx: IContext,
+    payload: {
+      provider: GqlPaymentProvider;
+      projectUid: string;
+      paymentTransactionUid: string;
+      state: string;
+      txHash?: string;
+      customProperty?: string;
+    },
+  ): Promise<"NMKR" | "STRIPE" | "IGNORED"> {
+    switch (payload.provider) {
+      case GqlPaymentProvider.Nmkr:
+        await this.processNmkrWebhook(ctx, payload);
+        return "NMKR";
+      // case "STRIPE":
+      // return this.processStripeWebhook(ctx, payload);
+      default:
+        logger.warn("Unsupported payment provider", { provider: payload.provider });
+        return "IGNORED";
     }
   }
 
@@ -147,21 +144,27 @@ export default class OrderUseCase {
 
     const { orderId, nftMintId } = customPropsResult.data;
 
-    if (state === "confirmed" && orderId) {
-      await this.processOrderPayment(ctx, orderId, paymentTransactionUid);
-      return;
-    }
+    await ctx.issuer.internal(async (tx) => {
+      if (state === "confirmed" && orderId) {
+        await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
+        return;
+      }
 
-    if (nftMintId) {
-      await this.nftMintService.processWebhookStateTransition(
-        ctx,
-        nftMintId,
-        state,
-        txHash,
-        paymentTransactionUid,
-      );
-      return;
-    }
+      const status = this.mapNmkrState(state);
+
+      if (nftMintId) {
+        await this.nftMintService.processStateTransition(
+          ctx,
+          {
+            nftMintId,
+            status,
+            txHash,
+          },
+          tx,
+        );
+        return;
+      }
+    });
 
     logger.warn("NMKR webhook missing both orderId and nftMintId in customProperty", {
       paymentTransactionUid,
@@ -172,29 +175,28 @@ export default class OrderUseCase {
     ctx: IContext,
     orderId: string,
     paymentTransactionUid: string,
+    tx: Prisma.TransactionClient,
   ): Promise<void> {
     try {
-      await ctx.issuer.internal(async (tx) => {
-        const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
+      const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
 
-        for (const orderItem of order.items) {
-          await this.nftMintService.createForOrderItem(ctx, orderItem.id, "system-wallet", tx);
-        }
+      for (const orderItem of order.items) {
+        await this.nftMintService.createForOrderItem(ctx, orderItem.id, "system-wallet", tx);
+      }
 
-        const inventorySnapshots: Array<{
-          orderItemId: string;
-          productId: string;
-          inventory: any;
-        }> = [];
-        for (const item of order.items) {
-          const inventory = await this.productService.calculateInventory(ctx, item.productId, tx);
-          inventorySnapshots.push({
-            orderItemId: item.id,
-            productId: item.productId,
-            inventory,
-          });
-        }
-      });
+      const inventorySnapshots: Array<{
+        orderItemId: string;
+        productId: string;
+        inventory: InventorySnapshot;
+      }> = [];
+      for (const item of order.items) {
+        const inventory = await this.calculateInventory(ctx, item.productId, tx);
+        inventorySnapshots.push({
+          orderItemId: item.id,
+          productId: item.productId,
+          inventory,
+        });
+      }
     } catch (error) {
       logger.error("Failed to process order payment", {
         orderId,
@@ -202,6 +204,59 @@ export default class OrderUseCase {
         error: error instanceof Error ? error.message : "Unknown error",
       });
       throw error;
+    }
+  }
+
+  private async assertSufficientInventory(
+    ctx: IContext,
+    productId: string,
+    quantity: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const snapshot = await this.calculateInventory(ctx, productId, tx);
+    if (snapshot.maxSupply != null && snapshot.available < quantity) {
+      throw new ValidationError(
+        `Insufficient inventory. Available: ${snapshot.available}, Requested: ${quantity}`,
+      );
+    }
+  }
+
+  private async calculateInventory(
+    ctx: IContext,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<InventorySnapshot> {
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      select: { maxSupply: true },
+    });
+
+    const [reserved, soldPendingMint, minted] = await Promise.all([
+      this.orderItemService.countReservedByProduct(ctx, productId, tx),
+      this.orderItemService.countSoldPendingMintByProduct(ctx, productId, tx),
+      this.nftMintService.countMintedByProduct(ctx, productId, tx),
+    ]);
+
+    const maxSupply = product?.maxSupply ?? null;
+    const available =
+      maxSupply == null
+        ? Number.MAX_SAFE_INTEGER
+        : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
+
+    return { productId, reserved, soldPendingMint, minted, available, maxSupply };
+  }
+
+  private mapNmkrState(state: string): NftMintStatus {
+    switch (state) {
+      case "confirmed":
+        return NftMintStatus.SUBMITTED;
+      case "finished":
+        return NftMintStatus.MINTED;
+      case "canceled":
+      case "expired":
+        return NftMintStatus.FAILED;
+      default:
+        throw new Error(`Unsupported NMKR state: ${state}`);
     }
   }
 }
