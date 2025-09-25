@@ -1,6 +1,6 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlOrderCreateInput, GqlOrderCreatePayload } from "@/types/graphql";
+import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { buildCustomProps, parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
@@ -11,11 +11,6 @@ import OrderPresenter from "./presenter";
 import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
 import NftMintService from "@/application/domain/account/nft-mint/service";
 import { OrderStatus } from "@prisma/client";
-import { OrderValidationError, InsufficientInventoryError, NmkrApiError } from "./errors";
-
-interface OrderCreateArgs {
-  input: GqlOrderCreateInput;
-}
 
 @injectable()
 export default class OrderUseCase {
@@ -27,19 +22,19 @@ export default class OrderUseCase {
     @inject("NftMintService") private readonly nftMintService: NftMintService,
   ) {}
 
-  async createOrder(ctx: IContext, args: OrderCreateArgs): Promise<GqlOrderCreatePayload> {
+  async userCreateOrder(
+    ctx: IContext,
+    args: GqlMutationOrderCreateArgs,
+  ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
     const { items, receiverAddress } = args.input;
 
     if (!items || items.length === 0) {
-      throw new OrderValidationError("Order must contain at least one item", "EMPTY_ORDER");
+      throw new Error("Order must contain at least one item");
     }
 
     if (items.length > 1) {
-      throw new OrderValidationError(
-        "Multiple items not yet supported",
-        "MULTIPLE_ITEMS_NOT_SUPPORTED",
-      );
+      throw new Error("Multiple items not yet supported");
     }
 
     const { productId, quantity } = items[0];
@@ -52,15 +47,12 @@ export default class OrderUseCase {
 
         const inventoryBefore = await this.productService.calculateInventory(ctx, productId, tx);
         if (inventoryBefore.maxSupply != null && inventoryBefore.available < quantity) {
-          throw new InsufficientInventoryError(
+          throw new Error(
             `Insufficient inventory. Available: ${inventoryBefore.available}, Requested: ${quantity}`,
-            productId,
-            inventoryBefore.available,
-            quantity,
           );
         }
 
-        order = await this.orderService.create(
+        order = await this.orderService.createOrder(
           ctx,
           {
             userId: currentUserId,
@@ -78,12 +70,7 @@ export default class OrderUseCase {
             inventoryAfter,
             requestedQuantity: quantity,
           });
-          throw new InsufficientInventoryError(
-            `Inventory oversold. Available after creation: ${inventoryAfter.available}`,
-            productId,
-            inventoryAfter.available,
-            quantity,
-          );
+          throw new Error("Inventory oversold detected after order creation");
         }
       });
 
@@ -103,7 +90,7 @@ export default class OrderUseCase {
       });
 
       if (!paymentResponse.uid) {
-        throw new NmkrApiError("NMKR payment transaction not created", "PAYMENT_TRANSACTION_ERROR");
+        throw new Error("NMKR payment transaction not created");
       }
 
       const externalRef = paymentResponse.uid;
@@ -129,8 +116,6 @@ export default class OrderUseCase {
         items,
         error: error instanceof Error ? error.message : "Unknown error",
       });
-
-      OrderPresenter.error(error);
       throw error;
     }
   }
@@ -146,15 +131,7 @@ export default class OrderUseCase {
       customProperty?: string;
     },
   ): Promise<void> {
-    const { paymentTransactionUid, state, paymentTransactionSubstate, txHash, customProperty } =
-      payload;
-
-    logger.info("Processing NMKR webhook", {
-      paymentTransactionUid,
-      state,
-      substate: paymentTransactionSubstate,
-      txHash,
-    });
+    const { paymentTransactionUid, state, txHash, customProperty } = payload;
 
     if (!customProperty) {
       logger.warn("NMKR webhook missing customProperty", { paymentTransactionUid });
@@ -198,8 +175,6 @@ export default class OrderUseCase {
     orderId: string,
     paymentTransactionUid: string,
   ): Promise<void> {
-    logger.info("Processing order payment confirmation", { orderId, paymentTransactionUid });
-
     try {
       await ctx.issuer.internal(async (tx) => {
         const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
@@ -221,20 +196,6 @@ export default class OrderUseCase {
             inventory,
           });
         }
-
-        logger.info("Inventory transfer audit", {
-          orderId,
-          paymentTransactionUid,
-          transition: "PENDING->PAID",
-          inventorySnapshots,
-        });
-
-        logger.info("Order payment processed successfully", {
-          orderId,
-          paymentTransactionUid,
-          itemCount: order.items.length,
-          correlationId: `webhook-${paymentTransactionUid}-${Date.now()}`,
-        });
       });
     } catch (error) {
       logger.error("Failed to process order payment", {
