@@ -3,21 +3,25 @@ type Order {
   status: OrderStatus!
   paymentProvider: PaymentProvider!
   externalRef: String
-  totalAmount: Int!
+  totalAmount: Int
+
   user: User!
-  items: [OrderItem!]!
+  items: [OrderItem!]
+
   createdAt: Datetime!
-  updatedAt: Datetime!
+  updatedAt: Datetime
 }
 
 type OrderItem {
   id: ID!
   priceSnapshot: Int!
   quantity: Int!
+
   product: Product!
   nftMints: [NftMint!]!
+
   createdAt: Datetime!
-  updatedAt: Datetime!
+  updatedAt: Datetime
 }
 
 enum OrderStatus {
