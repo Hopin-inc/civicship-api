@@ -16,10 +16,16 @@ union OrderCreatePayload = OrderCreateSuccess | OrderCreateError
 
 type OrderCreateSuccess {
   order: Order!
-  paymentAddress: String!
+  paymentLink: String!
+  paymentProvider: GqlPaymentProvider!
   paymentDeadline: Datetime!
   totalAmount: Int!
+  currency: String
   customProperty: String!
+}
+
+enum GqlPaymentProvider {
+  NMKR_PAY
 }
 
 type OrderCreateError {

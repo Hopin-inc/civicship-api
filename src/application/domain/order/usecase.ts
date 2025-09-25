@@ -114,41 +114,40 @@ export default class OrderUseCase {
         receiverAddress
       };
 
-      logger.info("Requesting NMKR payment address", {
+      logger.info("Requesting NMKR payment transaction", {
         orderId: order.id,
         orderItemId: orderItem.id,
         externalRef: orderItem.product.nftProduct!.externalRef
       });
 
-      const paymentResponse = await this.nmkrClient.getPaymentAddressForSpecificNftSale(
-        orderItem.product.nftProduct!.externalRef!,
-        1,
-        orderItem.priceSnapshot.toString(),
-        buildCustomProps(customProps),
-        receiverAddress
-      );
+      const paymentResponse = await this.nmkrClient.createSpecificNftSale({
+        projectuid: orderItem.product.nftProduct!.externalRef!,
+        receiveraddress: receiverAddress,
+        customproperties: buildCustomProps(customProps),
+      });
 
-      if (!paymentResponse.paymentAddress || !paymentResponse.paymentAddressId) {
-        throw new NmkrApiError('NMKR payment address not received', 'PAYMENT_ADDRESS_ERROR');
+      if (!paymentResponse.uid) {
+        throw new NmkrApiError('NMKR payment transaction not created', 'PAYMENT_TRANSACTION_ERROR');
       }
 
-      const externalRef = paymentResponse.paymentAddressId.toString();
+      const externalRef = paymentResponse.uid;
       const updatedOrder = await this.orderService.updateOrderWithExternalRef(ctx, order.id, externalRef);
 
       logger.info("Order creation completed", {
         orderId: order.id,
-        paymentAddress: paymentResponse.paymentAddress,
-        paymentAddressId: paymentResponse.paymentAddressId,
+        paymentTransactionUid: paymentResponse.uid,
         correlationId: `order-${order.id}-${Date.now()}`
       });
 
       return {
         __typename: 'OrderCreateSuccess',
         order: OrderPresenter.toGraphQL(updatedOrder),
-        customProperty: JSON.stringify(customProps),
-        paymentAddress: paymentResponse.paymentAddress,
+        paymentLink: `https://nmkr.io/pay/${paymentResponse.uid}`,
+        paymentProvider: 'NMKR_PAY' as const,
         paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
         totalAmount: updatedOrder.totalAmount!,
+        currency: 'JPY',
+        customProperty: JSON.stringify(customProps),
       };
     } catch (error) {
       logger.warn('Order creation failed', { 

@@ -528,6 +528,11 @@ export type GqlEvaluationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
+export const GqlGqlPaymentProvider = {
+  NmkrPay: 'NMKR_PAY'
+} as const;
+
+export type GqlGqlPaymentProvider = typeof GqlGqlPaymentProvider[keyof typeof GqlGqlPaymentProvider];
 export type GqlIdentity = {
   __typename?: 'Identity';
   createdAt?: Maybe<Scalars['Datetime']['output']>;
@@ -1491,10 +1496,12 @@ export type GqlOrderCreatePayload = GqlOrderCreateError | GqlOrderCreateSuccess;
 
 export type GqlOrderCreateSuccess = {
   __typename?: 'OrderCreateSuccess';
+  currency?: Maybe<Scalars['String']['output']>;
   customProperty: Scalars['String']['output'];
   order: GqlOrder;
-  paymentAddress: Scalars['String']['output'];
   paymentDeadline: Scalars['Datetime']['output'];
+  paymentLink: Scalars['String']['output'];
+  paymentProvider: GqlGqlPaymentProvider;
   totalAmount: Scalars['Int']['output'];
 };
 
@@ -3227,6 +3234,7 @@ export type GqlResolversTypes = ResolversObject<{
   EvaluationSortInput: GqlEvaluationSortInput;
   EvaluationStatus: GqlEvaluationStatus;
   EvaluationsConnection: ResolverTypeWrapper<Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['EvaluationEdge']> }>;
+  GqlPaymentProvider: GqlGqlPaymentProvider;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Identity: ResolverTypeWrapper<Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
@@ -4487,10 +4495,12 @@ export type GqlOrderCreatePayloadResolvers<ContextType = any, ParentType extends
 }>;
 
 export type GqlOrderCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreateSuccess'] = GqlResolversParentTypes['OrderCreateSuccess']> = ResolversObject<{
+  currency?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   customProperty?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   order?: Resolver<GqlResolversTypes['Order'], ParentType, ContextType>;
-  paymentAddress?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
   paymentDeadline?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
+  paymentLink?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
+  paymentProvider?: Resolver<GqlResolversTypes['GqlPaymentProvider'], ParentType, ContextType>;
   totalAmount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;

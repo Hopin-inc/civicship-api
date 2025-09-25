@@ -36,3 +36,10 @@ export class ProductNotFoundError extends Error {
     this.name = 'ProductNotFoundError';
   }
 }
+
+export class PaymentTransactionError extends Error {
+  constructor(message: string, public code: string) {
+    super(message);
+    this.name = 'PaymentTransactionError';
+  }
+}
