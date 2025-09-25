@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { Prisma, NftMintStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { INftMintRepository } from "./interface";
 import { nftMintSelectBase, PrismaNftMint } from "./type";
@@ -38,8 +38,8 @@ export class NftMintRepository implements INftMintRepository {
   }
 
   async find(ctx: IContext, id: string): Promise<PrismaNftMint | null> {
-    return ctx.issuer.public(ctx, (prismaTx) =>
-      prismaTx.nftMint.findUnique({ where: { id }, select: nftMintSelectBase }),
+    return ctx.issuer.public(ctx, (dbTx) =>
+      dbTx.nftMint.findUnique({ where: { id }, select: nftMintSelectBase }),
     );
   }
 
@@ -52,56 +52,17 @@ export class NftMintRepository implements INftMintRepository {
   }
 
   async update(
-    _ctx: IContext,
+    ctx: IContext,
     id: string,
     data: Prisma.NftMintUpdateInput,
-    tx: Prisma.TransactionClient,
-  ): Promise<PrismaNftMint> {
-    return tx.nftMint.update({ where: { id }, data, select: nftMintSelectBase });
-  }
-
-  async countByWhere(
-    ctx: IContext,
-    where: Prisma.NftMintWhereInput,
-    tx?: Prisma.TransactionClient,
-  ): Promise<number> {
-    if (tx) {
-      return tx.nftMint.count({ where });
-    }
-
-    return ctx.issuer.public(ctx, async (transaction) => {
-      return transaction.nftMint.count({ where });
-    });
-  }
-
-  async updateStatus(
-    ctx: IContext,
-    id: string,
-    status: NftMintStatus,
-    txHash?: string,
-    error?: string,
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
-    const updateData: Prisma.NftMintUpdateInput = {
-      status,
-      txHash: txHash || undefined,
-      error: error || null,
-    };
-
     if (tx) {
-      return tx.nftMint.update({
-        where: { id },
-        data: updateData,
-        select: nftMintSelectBase,
-      });
+      return tx.nftMint.update({ where: { id }, data, select: nftMintSelectBase });
     }
 
-    return ctx.issuer.internal(async (transaction) => {
-      return transaction.nftMint.update({
-        where: { id },
-        data: updateData,
-        select: nftMintSelectBase,
-      });
-    });
+    return ctx.issuer.public(ctx, (dbTx) =>
+      dbTx.nftMint.update({ where: { id }, data, select: nftMintSelectBase }),
+    );
   }
 }
