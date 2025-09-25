@@ -104,7 +104,6 @@ import TicketClaimLinkUseCase from "@/application/domain/reward/ticketClaimLink/
 import TicketClaimLinkConverter from "@/application/domain/reward/ticketClaimLink/data/converter";
 import { TicketIssuerUseCase } from "@/application/domain/reward/ticketIssuer/usecase";
 import { DIDVCServerClient } from "@/infrastructure/libs/did";
-import { MeshClient } from "@/infrastructure/libs/mesh";
 import { DIDIssuanceService } from "@/application/domain/account/identity/didIssuanceRequest/service";
 import { VCIssuanceRequestService } from "@/application/domain/experience/evaluation/vcIssuanceRequest/service";
 import { VCIssuanceRequestRepository } from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/repository";
@@ -121,8 +120,6 @@ export function registerProductionDependencies() {
   container.register("prismaClient", { useValue: prismaClient });
   container.register("PrismaClientIssuer", { useClass: PrismaClientIssuer });
   container.register("getCurrentUserId", { useValue: getCurrentUserId });
-
-  container.register("MeshClient", { useClass: MeshClient });
 
   // ------------------------------
   // 👥 Account
@@ -161,7 +158,6 @@ export function registerProductionDependencies() {
   container.register("ProductRepository", { useClass: ProductRepository });
   container.register("ProductService", { useClass: ProductService });
   container.register("ProductPresenter", { useClass: ProductPresenter });
-  
 
   container.register("OrderRepository", { useClass: OrderRepository });
   container.register("OrderConverter", { useClass: OrderConverter });

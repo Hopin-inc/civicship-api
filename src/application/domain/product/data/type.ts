@@ -6,12 +6,12 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
   name: true,
   description: true,
   imageUrl: true,
+
   price: true,
   maxSupply: true,
   startsAt: true,
   endsAt: true,
-  createdAt: true,
-  updatedAt: true,
+
   nftProduct: {
     select: {
       id: true,
@@ -19,6 +19,9 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
       policyId: true,
     },
   },
+
+  createdAt: true,
+  updatedAt: true,
 });
 
 export type PrismaProduct = Prisma.ProductGetPayload<{
