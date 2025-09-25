@@ -36,41 +36,10 @@ export class NmkrClient {
     );
   }
 
-  async createRandomNftSale(
-    payload: Arg<NmkrEndpoints["createPaymentTransactionForRandomNft"]>,
-  ): Promise<Res<NmkrEndpoints["createPaymentTransactionForRandomNft"]>> {
-    return this.handleRequest(
-      () => this.endpoints.createPaymentTransactionForRandomNft(payload),
-      "Failed to create random NFT sale",
-    );
-  }
-
   async checkUtxo(
     address: Arg<NmkrEndpoints["checkUtxo"]>,
   ): Promise<Res<NmkrEndpoints["checkUtxo"]>> {
     return this.handleRequest(() => this.endpoints.checkUtxo(address), "Failed to check UTXO");
-  }
-
-  async getRates(): Promise<components["schemas"]["PricelistClass"]> {
-    return this.handleRequest(() => this.endpoints.getRates(), "Failed to get rates");
-  }
-
-  async getAdaRates(): Promise<components["schemas"]["PricelistClass"]> {
-    return this.handleRequest(() => this.endpoints.getAdaRates(), "Failed to get ADA rates");
-  }
-
-  async getServerState(): Promise<Res<NmkrEndpoints["getServerState"]>> {
-    return this.handleRequest(() => this.endpoints.getServerState(), "Failed to get server state");
-  }
-
-  async getPublicMints(): Promise<Res<NmkrEndpoints["getPublicMints"]>> {
-    return this.handleRequest(() => this.endpoints.getPublicMints(), "Failed to get public mints");
-  }
-
-  async getCounts(
-    projectUid: Arg<NmkrEndpoints["getCounts"]>,
-  ): Promise<Res<NmkrEndpoints["getCounts"]>> {
-    return this.handleRequest(() => this.endpoints.getCounts(projectUid), "Failed to get counts");
   }
 
   async getProjectTransactions(
@@ -79,15 +48,6 @@ export class NmkrClient {
     return this.handleRequest(
       () => this.endpoints.getProjectTransactions(projectUid),
       "Failed to get project transactions",
-    );
-  }
-
-  async getAdditionalPayoutWallets(
-    projectUid: Arg<NmkrEndpoints["getAdditionalPayoutWallets"]>,
-  ): Promise<Res<NmkrEndpoints["getAdditionalPayoutWallets"]>> {
-    return this.handleRequest(
-      () => this.endpoints.getAdditionalPayoutWallets(projectUid),
-      "Failed to get additional payout wallets",
     );
   }
 
@@ -112,28 +72,6 @@ export class NmkrClient {
     );
   }
 
-  async getPaymentAddressForRandomNftSale(
-    projectUid: string,
-    countNft: number,
-    customerIpAddress: string,
-  ): Promise<components["schemas"]["GetPaymentAddressResultClass"]> {
-    return this.handleRequest(
-      () =>
-        this.endpoints.getPaymentAddressForRandomNftSale(projectUid, countNft, customerIpAddress),
-      "Failed to get payment address for random NFT sale",
-    );
-  }
-
-  async getAllAssetsInWallet(
-    address: string,
-    options?: { timeoutMs?: number },
-  ): Promise<Res<NmkrEndpoints["getAllAssetsInWallet"]>> {
-    return this.handleRequest(
-      () => this.endpoints.getAllAssetsInWallet(address, options),
-      "Failed to get all assets in wallet",
-    );
-  }
-
   async getWalletUtxo(
     address: Arg<NmkrEndpoints["getWalletUtxo"]>,
   ): Promise<Res<NmkrEndpoints["getWalletUtxo"]>> {
@@ -150,15 +88,6 @@ export class NmkrClient {
     return this.handleRequest(
       () => this.endpoints.uploadNft(projectUid, payload),
       "Failed to upload NFT",
-    );
-  }
-
-  async getNmkrPayStatus(
-    paymentTransactionUid: Arg<NmkrEndpoints["getNmkrPayStatus"]>,
-  ): Promise<Res<NmkrEndpoints["getNmkrPayStatus"]>> {
-    return this.handleRequest(
-      () => this.endpoints.getNmkrPayStatus(paymentTransactionUid),
-      "Failed to get NMKR pay status",
     );
   }
 
@@ -194,35 +123,6 @@ export class NmkrClient {
     );
   }
 
-  async reservePaymentgatewayMintAndSendNft(
-    paymentTransactionUid: string,
-    payload: Arg<NmkrEndpoints["reservePaymentgatewayMintAndSendNft"], 1>,
-  ): Promise<Res<NmkrEndpoints["reservePaymentgatewayMintAndSendNft"]>> {
-    return this.handleRequest(
-      () => this.endpoints.reservePaymentgatewayMintAndSendNft(paymentTransactionUid, payload),
-      "Failed to reserve paymentgateway mint and send NFT",
-    );
-  }
-
-  async mintAndSendPaymentgatewayNft(
-    paymentTransactionUid: string,
-    payload: Arg<NmkrEndpoints["mintAndSendPaymentgatewayNft"], 1>,
-  ): Promise<Res<NmkrEndpoints["mintAndSendPaymentgatewayNft"]>> {
-    return this.handleRequest(
-      () => this.endpoints.mintAndSendPaymentgatewayNft(paymentTransactionUid, payload),
-      "Failed to mint and send paymentgateway NFT",
-    );
-  }
-
-  async cancelTransaction(
-    paymentTransactionUid: Arg<NmkrEndpoints["cancelTransaction"]>,
-  ): Promise<Res<NmkrEndpoints["cancelTransaction"]>> {
-    return this.handleRequest(
-      () => this.endpoints.cancelTransaction(paymentTransactionUid),
-      "Failed to cancel transaction",
-    );
-  }
-
   async getProjectDetails(
     projectUid: Arg<NmkrEndpoints["getProjectDetails"]>,
   ): Promise<Res<NmkrEndpoints["getProjectDetails"]>> {
@@ -243,26 +143,6 @@ export class NmkrClient {
     );
   }
 
-  async getPaymentAddressForSpecificNftSale(
-    nftUid: string,
-    tokenCount: number,
-    referer?: string,
-    customProperty?: string,
-    optionalReceiverAddress?: string,
-  ): Promise<components["schemas"]["GetPaymentAddressResultClass"]> {
-    return this.handleRequest(
-      () =>
-        this.endpoints.getPaymentAddressForSpecificNftSale(
-          nftUid,
-          tokenCount,
-          referer,
-          customProperty,
-          optionalReceiverAddress,
-        ),
-      "Failed to get payment address for specific NFT sale",
-    );
-  }
-
   async checkAddress(
     projectUid: string,
     address: string,
@@ -270,29 +150,6 @@ export class NmkrClient {
     return this.handleRequest(
       () => this.endpoints.checkAddress(projectUid, address),
       "Failed to check address",
-    );
-  }
-
-  async getWhitelist(
-    projectUid: Arg<NmkrEndpoints["getWhitelist"]>,
-  ): Promise<Res<NmkrEndpoints["getWhitelist"]>> {
-    return this.handleRequest(
-      () => this.endpoints.getWhitelist(projectUid),
-      "Failed to get whitelist",
-    );
-  }
-
-  async listProjects(): Promise<Res<NmkrEndpoints["listProjects"]>> {
-    return this.handleRequest(() => this.endpoints.listProjects(), "Failed to list projects");
-  }
-
-  async listProjectsPaginated(
-    count: number,
-    page: number,
-  ): Promise<Res<NmkrEndpoints["listProjectsPaginated"]>> {
-    return this.handleRequest(
-      () => this.endpoints.listProjectsPaginated(count, page),
-      "Failed to list projects with pagination",
     );
   }
 
