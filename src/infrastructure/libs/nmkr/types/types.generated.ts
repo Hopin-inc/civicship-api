@@ -26,7 +26,6 @@ export interface CreateWalletRequest {
   walletPassword: string;
 }
 
-
 export const NMKR_CONFIG = {
   DEFAULT_TIMEOUT: 15000,
   MAX_RETRIES: 3,

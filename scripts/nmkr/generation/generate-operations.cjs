@@ -27,6 +27,22 @@ lines.push(``);
 const pathsObj = schema.paths || {};
 const methodKeys = ["get", "post", "put", "patch", "delete"];
 
+// Whitelist of actually used operations - only generate types for these
+const USED_OPERATIONS = new Set([
+  "/CreateProject/{apikey}", // Used by createSpecificNftSale (maps to CreatePaymentTransaction)
+  "/v2/CreateProject/{apikey}", // Alternative path
+  "/CreateWallet/{customerid}", // Used by createWallet
+  "/v2/CreateWallet/{customerid}", // Alternative path
+]);
+
+function isUsedOperation(url) {
+  // Check if this URL path is in our whitelist
+  return USED_OPERATIONS.has(url) || 
+         // Also include paths that contain our key operations
+         url.includes("CreateProject") && url.includes("apikey") ||
+         url.includes("CreateWallet") && url.includes("customerid");
+}
+
 function toPascalCase(str) {
   return str.replace(/(?:^|[^a-zA-Z0-9])([a-zA-Z0-9])/g, (_, char) => char.toUpperCase());
 }
@@ -72,6 +88,11 @@ function getPreferredContentType(content) {
 }
 
 for (const [url, pathItem] of Object.entries(pathsObj)) {
+  // Skip unused operations to reduce generated types
+  if (!isUsedOperation(url)) {
+    continue;
+  }
+  
   for (const method of methodKeys) {
     const op = pathItem?.[method];
     if (!op) continue;

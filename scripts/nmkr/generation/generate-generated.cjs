@@ -60,6 +60,11 @@ out += `  address: string;\n`;
 out += `  walletName: string;\n`;
 out += `  message?: string;\n`;
 out += `}\n\n`;
+out += `export interface CreateWalletRequest {\n`;
+out += `  walletName: string;\n`;
+out += `  enterpriseaddress: boolean;\n`;
+out += `  walletPassword: string;\n`;
+out += `}\n\n`;
 
 // Note: Subcustomer types removed as they are no longer used in the simplified workflow
 
