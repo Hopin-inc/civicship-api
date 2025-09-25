@@ -2,27 +2,24 @@ import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { injectable, inject } from "tsyringe";
 import { OrderItemRepository } from "./data/repository";
-
-export interface IOrderItemReadService {
-  getInventoryCounts(
-    ctx: IContext,
-    productId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<{ reserved: number; soldPendingMint: number; minted: number }>;
-}
+import { IOrderItemReadService } from "@/application/domain/order/orderItem/data/interface";
+import OrderItemConverter from "@/application/domain/order/orderItem/data/converter";
 
 @injectable()
 export class OrderItemReadService implements IOrderItemReadService {
   constructor(
     @inject("OrderItemRepository") private readonly repo: OrderItemRepository,
+    @inject("OrderItemConverter") private readonly converter: OrderItemConverter,
   ) {}
 
   async getInventoryCounts(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
-    const [reserved, soldPendingMint, minted] = await Promise.all([
-      this.repo.countReservedForProduct(ctx, productId, tx),
-      this.repo.countSoldPendingMintForProduct(ctx, productId, tx),
-      this.repo.countMintedForProduct(ctx, productId, tx),
+    const reservedWhere = this.converter.reservedByProduct(productId);
+    const pendingMintWhere = this.converter.soldPendingMintByProduct(productId);
+
+    const [reserved, soldPendingMint] = await Promise.all([
+      this.repo.countByWhere(ctx, reservedWhere, tx),
+      this.repo.countByWhere(ctx, pendingMintWhere, tx),
     ]);
-    return { reserved, soldPendingMint, minted };
+    return { reserved, soldPendingMint };
   }
 }

@@ -1,15 +1,15 @@
-import { injectable } from 'tsyringe';
-import { Prisma, OrderStatus } from '@prisma/client';
-import { IContext } from '@/types/server';
-import { IOrderRepository } from './interface';
-import { orderSelectWithItems, OrderWithItems } from '../type';
+import { injectable } from "tsyringe";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
+import { IOrderRepository } from "@/application/domain/order/data/interface";
+import { orderSelectWithItems, OrderWithItems } from "@/application/domain/order/data/type";
 
 @injectable()
 export default class OrderRepository implements IOrderRepository {
   async create(
     ctx: IContext,
     data: Prisma.OrderCreateInput,
-    tx?: Prisma.TransactionClient
+    tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems> {
     if (tx) {
       return tx.order.create({
@@ -28,7 +28,7 @@ export default class OrderRepository implements IOrderRepository {
   async findById(
     ctx: IContext,
     id: string,
-    tx?: Prisma.TransactionClient
+    tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems | null> {
     if (tx) {
       return tx.order.findUnique({
@@ -44,46 +44,11 @@ export default class OrderRepository implements IOrderRepository {
     });
   }
 
-  async createWithItems(
-    ctx: IContext,
-    orderData: Omit<Prisma.OrderCreateInput, 'items'>,
-    items: Array<{
-      productId: string;
-      quantity: number;
-      priceSnapshot: number;
-    }>,
-    tx?: Prisma.TransactionClient,
-  ): Promise<OrderWithItems> {
-    const orderCreateData: Prisma.OrderCreateInput = {
-      ...orderData,
-      items: {
-        create: items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          priceSnapshot: item.priceSnapshot,
-        })),
-      },
-    };
-
-    if (tx) {
-      return tx.order.create({
-        data: orderCreateData,
-        ...orderSelectWithItems,
-      });
-    }
-    return ctx.issuer.internal(async (transaction) =>
-      transaction.order.create({
-        data: orderCreateData,
-        ...orderSelectWithItems,
-      }),
-    );
-  }
-
   async update(
     ctx: IContext,
     id: string,
     data: Prisma.OrderUpdateInput,
-    tx?: Prisma.TransactionClient
+    tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems> {
     if (tx) {
       return tx.order.update({
@@ -96,28 +61,6 @@ export default class OrderRepository implements IOrderRepository {
       return transaction.order.update({
         where: { id },
         data,
-        ...orderSelectWithItems,
-      });
-    });
-  }
-
-  async updateStatus(
-    ctx: IContext,
-    orderId: string,
-    status: OrderStatus,
-    tx?: Prisma.TransactionClient
-  ): Promise<OrderWithItems> {
-    if (tx) {
-      return tx.order.update({
-        where: { id: orderId },
-        data: { status },
-        ...orderSelectWithItems,
-      });
-    }
-    return ctx.issuer.internal(async (transaction) => {
-      return transaction.order.update({
-        where: { id: orderId },
-        data: { status },
         ...orderSelectWithItems,
       });
     });

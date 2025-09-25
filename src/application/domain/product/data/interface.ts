@@ -1,14 +1,14 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaProductForValidation } from "./type";
 import { InventorySnapshot } from "../service";
+import { PrismaProduct } from "@/application/domain/product/data/type";
 
 export interface IProductService {
-  validateProductForOrder(
+  findOrThrowForOrder(
     ctx: IContext,
     productId: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaProductForValidation>;
+  ): Promise<PrismaProduct>;
 
   calculateInventory(
     ctx: IContext,
@@ -22,11 +22,11 @@ export interface IProductRepository {
     ctx: IContext,
     id: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaProductForValidation | null>;
+  ): Promise<PrismaProduct | null>;
 
   findManyByIdsForValidation(
     ctx: IContext,
     productIds: string[],
     tx?: Prisma.TransactionClient,
-  ): Promise<PrismaProductForValidation[]>;
+  ): Promise<PrismaProduct[]>;
 }

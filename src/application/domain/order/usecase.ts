@@ -43,7 +43,7 @@ export default class OrderUseCase {
       let order;
 
       await ctx.issuer.internal(async (tx) => {
-        const product = await this.productService.validateProductForOrder(ctx, productId, tx);
+        const product = await this.productService.findOrThrowForOrder(ctx, productId, tx);
 
         const inventoryBefore = await this.productService.calculateInventory(ctx, productId, tx);
         if (inventoryBefore.maxSupply != null && inventoryBefore.available < quantity) {
@@ -102,7 +102,7 @@ export default class OrderUseCase {
 
       return {
         __typename: "OrderCreateSuccess",
-        order: OrderPresenter.toGraphQL(updatedOrder),
+        order: OrderPresenter.create(updatedOrder),
         paymentLink: `https://nmkr.io/pay/${paymentResponse.uid}`,
         paymentProvider: "NMKR_PAY" as const,
         paymentDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000),

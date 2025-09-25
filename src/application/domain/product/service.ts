@@ -23,7 +23,7 @@ export default class ProductService implements IProductService {
     @inject("OrderItemReadService") private readonly orderItemReadService: OrderItemReadService,
   ) {}
 
-  async validateProductForOrder(
+  async findOrThrowForOrder(
     ctx: IContext,
     productId: string,
     tx?: Prisma.TransactionClient,
