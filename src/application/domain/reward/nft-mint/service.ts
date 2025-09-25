@@ -40,38 +40,47 @@ export default class NftMintService {
 
   async processStateTransition(
     ctx: IContext,
-    transition: {
-      nftMintId: string;
-      newStatus: NftMintStatus;
-      txHash?: string;
-      error?: string;
-    },
+    transition: { nftMintId: string; newStatus: NftMintStatus; txHash?: string; error?: string },
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
-    const { nftMintId, newStatus, txHash, error } = transition;
-
-    const currentMint = await this.repo.find(ctx, nftMintId);
+    const currentMint = await this.repo.find(ctx, transition.nftMintId);
     if (!currentMint) {
-      throw new Error(`NftMint not found: ${nftMintId}`);
+      throw new Error(`NftMint not found: ${transition.nftMintId}`);
     }
 
-    if (!this.canTransitionTo(currentMint.status, newStatus)) {
+    if (!this.canTransitionTo(currentMint.status, transition.newStatus)) {
       logger.warn("Invalid state transition attempted", {
-        nftMintId,
+        nftMintId: transition.nftMintId,
         currentStatus: currentMint.status,
-        newStatus,
+        newStatus: transition.newStatus,
       });
       return currentMint;
     }
 
     if (
-      !this.shouldUpdateMint(currentMint.status, newStatus, currentMint.txHash ?? undefined, txHash)
+      !this.shouldUpdateMint(
+        currentMint.status,
+        transition.newStatus,
+        currentMint.txHash ?? undefined,
+        transition.txHash,
+      )
     ) {
+      logger.info("Skipping transition due to stale txHash", {
+        nftMintId: transition.nftMintId,
+        currentStatus: currentMint.status,
+        newStatus: transition.newStatus,
+        currentTxHash: currentMint.txHash,
+        newTxHash: transition.txHash,
+      });
       return currentMint;
     }
 
-    const updateData = this.converter.buildStatusUpdate(newStatus, txHash, error);
-    return this.repo.update(ctx, nftMintId, updateData, tx);
+    const input = this.converter.buildStatusUpdate(
+      transition.newStatus,
+      transition.txHash,
+      transition.error,
+    );
+    return this.repo.update(ctx, transition.nftMintId, input, tx);
   }
 
   private canTransitionTo(currentStatus: NftMintStatus, newStatus: NftMintStatus): boolean {
