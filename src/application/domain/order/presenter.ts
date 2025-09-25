@@ -15,19 +15,19 @@ export default class OrderPresenter {
       externalRef: order.externalRef,
       totalAmount: order.totalAmount!,
       user: UserPresenter.get(order.user),
-      items: order.items.map((item) => OrderPresenter.toGraphQLOrderItem(item)),
+      items: order.items.map((item) => OrderPresenter.get(item)),
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
     };
   }
 
-  static toGraphQLOrderItem(item: OrderItemWithProduct): GqlOrderItem {
+  static get(item: OrderItemWithProduct): GqlOrderItem {
     return {
       __typename: "OrderItem",
       id: item.id,
       priceSnapshot: item.priceSnapshot,
       quantity: item.quantity,
-      product: ProductPresenter.toGraphQL(item.product),
+      product: ProductPresenter.get(item.product),
       nftMints: [],
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
