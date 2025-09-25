@@ -1,8 +1,32 @@
-export * from '../type';
 import { Prisma } from '@prisma/client';
 
-export const productSelectForValidation = Prisma.validator<Prisma.ProductDefaultArgs>()({
-  include: { nftProduct: true }
+export const orderSelectWithItems = Prisma.validator<Prisma.OrderDefaultArgs>()({
+  include: {
+    items: {
+      include: {
+        product: {
+          include: {
+            nftProduct: true,
+          },
+        },
+        nftMints: true,
+      },
+    },
+    user: true,
+  },
 });
 
-export type ProductForValidation = Prisma.ProductGetPayload<typeof productSelectForValidation>;
+export type OrderWithItems = Prisma.OrderGetPayload<typeof orderSelectWithItems>;
+
+export const orderItemSelectWithProduct = Prisma.validator<Prisma.OrderItemDefaultArgs>()({
+  include: {
+    product: {
+      include: {
+        nftProduct: true,
+      },
+    },
+    nftMints: true,
+  },
+});
+
+export type OrderItemWithProduct = Prisma.OrderItemGetPayload<typeof orderItemSelectWithProduct>;

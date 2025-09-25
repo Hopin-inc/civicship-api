@@ -6,7 +6,7 @@ import ProductPresenter from "@/application/domain/product/presenter";
 
 @injectable()
 export default class OrderPresenter {
-  static toGraphQL(order: OrderWithItems): GqlOrder {
+  static create(order: OrderWithItems): GqlOrder {
     return {
       __typename: "Order",
       id: order.id,

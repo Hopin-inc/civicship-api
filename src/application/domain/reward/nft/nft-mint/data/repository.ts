@@ -6,6 +6,18 @@ import { nftMintSelectBase, PrismaNftMint } from "./type";
 
 @injectable()
 export class NftMintRepository implements INftMintRepository {
+  async count(
+    ctx: IContext,
+    where: Prisma.NftMintWhereInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    if (tx) {
+      return tx.nftMint.count({ where });
+    }
+
+    return ctx.issuer.public(ctx, (transaction) => transaction.nftMint.count({ where }));
+  }
+
   async findManyByOrderItemId(
     ctx: IContext,
     orderItemId: string,
