@@ -17,6 +17,7 @@ enum OrderStatus {
   PAID
   CANCELED
   REFUNDED
+  FAILED
 }
 
 enum PaymentProvider {

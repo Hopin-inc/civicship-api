@@ -1500,6 +1500,7 @@ export type GqlOrderItem = {
 
 export const GqlOrderStatus = {
   Canceled: 'CANCELED',
+  Failed: 'FAILED',
   Paid: 'PAID',
   Pending: 'PENDING',
   Refunded: 'REFUNDED'
