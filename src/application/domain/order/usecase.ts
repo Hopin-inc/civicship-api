@@ -79,17 +79,8 @@ export default class OrderUseCase {
       throw new Error("NMKR payment transaction not created");
     }
 
-    const updatedOrder = await this.orderService.updateOrderWithExternalRef(
-      ctx,
-      order.id,
-      paymentResponse.uid,
-    );
-
-    return OrderPresenter.createOrderPayload({
-      order: updatedOrder,
-      paymentUid: paymentResponse.uid,
-      customProps,
-    });
+    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResponse.uid);
+    return OrderPresenter.create(paymentResponse.uid);
   }
 
   async processWebhook(
@@ -115,7 +106,7 @@ export default class OrderUseCase {
     }
   }
 
-  async processNmkrWebhook(
+  private async processNmkrWebhook(
     ctx: IContext,
     payload: {
       paymentTransactionUid: string;
