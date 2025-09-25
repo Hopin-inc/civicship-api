@@ -111,6 +111,7 @@ import VCIssuanceRequestUseCase from "@/application/domain/experience/evaluation
 import VCIssuanceRequestConverter from "@/application/domain/experience/evaluation/vcIssuanceRequest/data/converter";
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
+import OrderItemConverter from "@/application/domain/order/orderItem/data/converter";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -163,6 +164,7 @@ export function registerProductionDependencies() {
   container.register("OrderConverter", { useClass: OrderConverter });
   container.register("OrderItemRepository", { useClass: OrderItemRepository });
   container.register("OrderItemService", { useClass: OrderItemService });
+  container.register("OrderItemConverter", { useClass: OrderItemConverter });
   container.register("OrderUseCase", { useClass: OrderUseCase });
   container.register("OrderResolver", { useClass: OrderResolver });
   container.register("OrderService", { useClass: OrderService });
