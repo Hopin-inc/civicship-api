@@ -398,4 +398,24 @@ export class NmkrClient {
       "Failed to create NMKR wallet",
     );
   }
+
+  async createSubcustomer(
+    customerId: number,
+    payload: Arg<NmkrEndpoints["createSubcustomer"], 1>,
+  ): Promise<Res<NmkrEndpoints["createSubcustomer"]>> {
+    return this.handleRequest(
+      () => this.endpoints.createSubcustomer(customerId, payload),
+      "Failed to create NMKR subcustomer",
+    );
+  }
+
+  async createApikeyForSubcustomer(
+    customerId: number,
+    payload: Arg<NmkrEndpoints["createApikeyForSubcustomer"], 1>,
+  ): Promise<Res<NmkrEndpoints["createApikeyForSubcustomer"]>> {
+    return this.handleRequest(
+      () => this.endpoints.createApikeyForSubcustomer(customerId, payload),
+      "Failed to create NMKR API key for subcustomer",
+    );
+  }
 }

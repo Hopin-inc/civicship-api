@@ -38,7 +38,13 @@ import type {
   SaleConditionsPutRequestBody,
   SaleConditionsPutResponse,
 } from "../types/types.aliases";
-import type { CreateWalletResponse } from "../types/types.generated";
+import type { 
+  CreateWalletResponse,
+  CreateSubcustomerRequest,
+  CreateSubcustomerResponse,
+  CreateApikeyForSubcustomerRequest,
+  CreateApikeyForSubcustomerResponse
+} from "../types/types.generated";
 import type {
   GetGetCountsApikeyProjectuid_3ababbResponse,
   GetGetNftDetailsByIdApikeyNftuid_1b8124Response,
@@ -418,6 +424,26 @@ export class NmkrEndpoints {
     return this.http2.postJSON<CreateWalletResponse, Record<string, never>>(
       `/v2/CreateWallet/${customerId}`,
       {},
+    );
+  }
+
+  async createSubcustomer(
+    customerId: number,
+    payload: CreateSubcustomerRequest,
+  ): Promise<CreateSubcustomerResponse> {
+    return this.http2.postJSON<CreateSubcustomerResponse, CreateSubcustomerRequest>(
+      `/v2/CreateSubcustomer/${customerId}`,
+      payload,
+    );
+  }
+
+  async createApikeyForSubcustomer(
+    customerId: number,
+    payload: CreateApikeyForSubcustomerRequest,
+  ): Promise<CreateApikeyForSubcustomerResponse> {
+    return this.http2.postJSON<CreateApikeyForSubcustomerResponse, CreateApikeyForSubcustomerRequest>(
+      `/v2/CreateApikeyForSubcustomer/${customerId}`,
+      payload,
     );
   }
 }
