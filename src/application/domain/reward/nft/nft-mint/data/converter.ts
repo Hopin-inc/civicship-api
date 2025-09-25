@@ -15,16 +15,4 @@ export default class NftMintConverter {
       orderItem: { connect: { id: p.orderItemId } },
     };
   }
-
-  buildMarkSubmitted(p: { txHash: string }): Prisma.NftMintUpdateInput {
-    return { status: NftMintStatus.MINTED, txHash: p.txHash, error: null };
-  }
-
-  buildMarkMinted(p: { txHash: string }): Prisma.NftMintUpdateInput {
-    return { status: NftMintStatus.MINTED, txHash: p.txHash, error: null };
-  }
-
-  buildMarkFailed(p: { error: string }): Prisma.NftMintUpdateInput {
-    return { status: NftMintStatus.FAILED, error: p.error };
-  }
 }
