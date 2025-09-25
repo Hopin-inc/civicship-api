@@ -42,7 +42,7 @@ export default class OrderConverter {
         {
           notificationType: "webhook",
           notificationEndpoint: process.env.NMKR_WEBHOOK_URL!,
-          hmacSecret: process.env.NMKR_HMAC_SECRET!,
+          hmacSecret: process.env.NMKR_WEBHOOK_HMAC_SECRET!,
         },
       ],
       paymentgatewayParameters: {

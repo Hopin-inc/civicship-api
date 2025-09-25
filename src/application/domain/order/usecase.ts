@@ -33,18 +33,18 @@ export default class OrderUseCase {
 
   async userCreateOrder(
     ctx: IContext,
-    { id }: GqlMutationOrderCreateArgs,
+    { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
     const currentUserId = "cmfun8n8u00008z00pqq95nxa";
-    const product = await this.productService.findOrThrowForOrder(ctx, id);
+    const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const { order, nftWallet } = await ctx.issuer.internal(async (tx) => {
       const order = await this.orderService.createOrder(
         ctx,
         {
           userId: currentUserId,
-          items: [{ productId: id, quantity: 1, priceSnapshot: product.price }],
+          items: [{ productId, quantity: 1, priceSnapshot: product.price }],
         },
         tx,
       );
