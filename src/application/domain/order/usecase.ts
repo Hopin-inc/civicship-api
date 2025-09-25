@@ -30,37 +30,32 @@ export default class OrderUseCase {
 
   async userCreateOrder(
     ctx: IContext,
-    args: GqlMutationOrderCreateArgs,
+    { id }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const { items, receiverAddress } = args.input;
+    const quantity = 1;
 
-    if (!items?.length) {
-      throw new ValidationError("Order must contain at least one item");
-    }
-    if (items.length > 1) {
-      throw new ValidationError("Multiple items not yet supported");
-    }
+    const order = await ctx.issuer.internal(async (tx) => {
+      const product = await this.productService.findOrThrowForOrder(ctx, id, tx);
 
-    const { productId, quantity } = items[0];
-
-    let order;
-    await ctx.issuer.internal(async (tx) => {
-      const product = await this.productService.findOrThrowForOrder(ctx, productId, tx);
-
-      await this.assertSufficientInventory(ctx, productId, quantity, tx);
-      order = await this.orderService.createOrder(
+      await this.assertSufficientInventory(ctx, id, quantity, tx);
+      const created = await this.orderService.createOrder(
         ctx,
         {
           userId: currentUserId,
-          items: [{ productId, quantity, priceSnapshot: product.price }],
+          items: [{ productId: id, quantity, priceSnapshot: product.price }],
         },
         tx,
       );
-      await this.assertSufficientInventory(ctx, productId, 0, tx);
+      await this.assertSufficientInventory(ctx, id, 0, tx);
+      return created;
     });
 
     const orderItem = order.items[0];
+    const projectuid = orderItem.product.nftProduct!.externalRef!;
+
+    const receiverAddress = "test";
+
     const customProps = {
       propsVersion: 1 as const,
       orderId: order.id,
@@ -69,18 +64,25 @@ export default class OrderUseCase {
       receiverAddress,
     };
 
-    const paymentResponse = await this.nmkrClient.createSpecificNftSale({
-      projectuid: orderItem.product.nftProduct!.externalRef!,
-      receiveraddress: receiverAddress,
-      customproperties: buildCustomProps(customProps),
-    });
+    let paymentuid: string;
+    try {
+      const paymentResponse = await this.nmkrClient.createSpecificNftSale({
+        projectuid,
+        receiveraddress: receiverAddress,
+        customproperties: buildCustomProps(customProps),
+      });
 
-    if (!paymentResponse.uid) {
-      throw new Error("NMKR payment transaction not created");
+      if (!paymentResponse.uid) {
+        throw new Error("NMKR payment transaction not created");
+      }
+      paymentuid = paymentResponse.uid;
+    } catch (err) {
+      await this.safeMarkOrderFailed(ctx, order.id, err);
+      throw err;
     }
 
-    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResponse.uid);
-    return OrderPresenter.create(paymentResponse.uid);
+    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentuid);
+    return OrderPresenter.create(paymentuid);
   }
 
   async processWebhook(
@@ -229,6 +231,18 @@ export default class OrderUseCase {
         : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
 
     return { productId, reserved, soldPendingMint, minted, available, maxSupply };
+  }
+
+  private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
+    try {
+      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED);
+    } catch (updateErr) {
+      logger.error("Failed to mark order as FAILED after NMKR error", {
+        orderId,
+        nmkrError: cause instanceof Error ? cause.message : String(cause),
+        updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
+      });
+    }
   }
 
   private mapNmkrState(state: string): NftMintStatus {

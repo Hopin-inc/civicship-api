@@ -1276,6 +1276,7 @@ enum OrderStatus {
   PAID
   CANCELED
   REFUNDED
+  FAILED
 }
 
 // ------------------------------ Product (NFTのみ) ------------------------------

@@ -14,7 +14,7 @@ export class OrderItemService implements IOrderItemService {
 
   async countReservedByProduct(ctx: IContext, productId: string, tx?: Prisma.TransactionClient) {
     const where = this.converter.reservedByProduct(productId);
-    return this.repo.count(ctx, where, tx);
+    return this.repo.sumQuantityByWhere(ctx, where, tx);
   }
 
   async countSoldPendingMintByProduct(
@@ -23,6 +23,6 @@ export class OrderItemService implements IOrderItemService {
     tx?: Prisma.TransactionClient,
   ) {
     const where = this.converter.soldPendingMintByProduct(productId);
-    return this.repo.count(ctx, where, tx);
+    return this.repo.sumQuantityByWhere(ctx, where, tx);
   }
 }

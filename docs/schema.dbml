@@ -951,6 +951,7 @@ Enum OrderStatus {
   PAID
   CANCELED
   REFUNDED
+  FAILED
 }
 
 Enum ProductType {

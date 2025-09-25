@@ -1,15 +1,5 @@
 extend type Mutation {
-  orderCreate(input: OrderCreateInput!): OrderCreatePayload! @authz(rules: [IsUser])
-}
-
-input OrderCreateInput {
-  items: [OrderItemInput!]!
-  receiverAddress: String!
-}
-
-input OrderItemInput {
-  productId: ID!
-  quantity: Int!
+  orderCreate(id: ID!): OrderCreatePayload! @authz(rules: [IsUser])
 }
 
 type OrderCreateSuccess {
