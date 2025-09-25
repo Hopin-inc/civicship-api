@@ -8,7 +8,6 @@ import logger from "@/infrastructure/logging";
 import OrderService from "./service";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
-import NftMintWebhookService from "@/application/domain/reward/nft/nft-mint/webhook/service";
 import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
 import { OrderStatus } from "@prisma/client";
 
@@ -18,7 +17,6 @@ export default class OrderUseCase {
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
-    @inject("NftMintWebhookService") private readonly nftMintWebhookService: NftMintWebhookService,
     @inject("NftMintService") private readonly nftMintService: NftMintService,
   ) {}
 
@@ -155,7 +153,7 @@ export default class OrderUseCase {
     }
 
     if (nftMintId) {
-      await this.nftMintWebhookService.processStateTransition(
+      await this.nftMintService.processWebhookStateTransition(
         ctx,
         nftMintId,
         state,
