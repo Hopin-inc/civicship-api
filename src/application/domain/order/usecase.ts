@@ -33,7 +33,7 @@ export default class OrderUseCase {
     args: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const { productId, quantity, receiverAddress } = args.input;
+    const { productId, quantity } = args.input;
 
     if (quantity <= 0) {
       throw new ValidationError("Quantity must be greater than 0");
@@ -58,6 +58,8 @@ export default class OrderUseCase {
     const orderItem = order.items[0];
     const projectuid = orderItem.product.nftProduct!.externalRef!;
 
+    const receiverAddress = "test";
+
     const customProps = {
       propsVersion: 1 as const,
       orderId: order.id,
@@ -66,18 +68,25 @@ export default class OrderUseCase {
       receiverAddress,
     };
 
-    const paymentResponse = await this.nmkrClient.createSpecificNftSale({
-      projectuid,
-      receiveraddress: receiverAddress,
-      customproperties: buildCustomProps(customProps),
-    });
+    let paymentuid: string;
+    try {
+      const paymentResponse = await this.nmkrClient.createSpecificNftSale({
+        projectuid,
+        receiveraddress: receiverAddress,
+        customproperties: buildCustomProps(customProps),
+      });
 
-    if (!paymentResponse.uid) {
-      throw new Error("NMKR payment transaction not created");
+      if (!paymentResponse.uid) {
+        throw new Error("NMKR payment transaction not created");
+      }
+      paymentuid = paymentResponse.uid;
+    } catch (err) {
+      await this.safeMarkOrderFailed(ctx, order.id, err);
+      throw err;
     }
 
-    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResponse.uid);
-    return OrderPresenter.create(paymentResponse.uid);
+    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentuid);
+    return OrderPresenter.create(paymentuid);
   }
 
   async processWebhook(
@@ -226,6 +235,18 @@ export default class OrderUseCase {
         : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
 
     return { productId, reserved, soldPendingMint, minted, available, maxSupply };
+  }
+
+  private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
+    try {
+      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED);
+    } catch (updateErr) {
+      logger.error("Failed to mark order as FAILED after NMKR error", {
+        orderId,
+        nmkrError: cause instanceof Error ? cause.message : String(cause),
+        updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
+      });
+    }
   }
 
   private mapNmkrState(state: string): NftMintStatus {
