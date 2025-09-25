@@ -5,7 +5,6 @@ import {
   GqlOrderCreatePayload,
   GqlPaymentProvider,
 } from "@/types/graphql";
-// import { getCurrentUserId } from "@/application/domain/utils";
 import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import logger from "@/infrastructure/logging";
@@ -18,6 +17,7 @@ import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderConverter from "@/application/domain/order/data/converter";
+import { getCurrentUserId } from "@/application/domain/utils";
 
 @injectable()
 export default class OrderUseCase {
@@ -35,8 +35,8 @@ export default class OrderUseCase {
     ctx: IContext,
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmfzidhe3000n8zta98ux2kil";
+    const currentUserId = getCurrentUserId(ctx);
+    // const currentUserId = "cmfzidhe3000n8zta98ux2kil";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await ctx.issuer.internal(async (tx) => {
