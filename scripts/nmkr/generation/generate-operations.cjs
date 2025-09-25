@@ -29,17 +29,15 @@ const methodKeys = ["get", "post", "put", "patch", "delete"];
 
 // Whitelist of actually used operations - only generate types for these
 const USED_OPERATIONS = new Set([
-  "/CreateProject/{apikey}", // Used by createSpecificNftSale (maps to CreatePaymentTransaction)
-  "/v2/CreateProject/{apikey}", // Alternative path
-  "/CreateWallet/{customerid}", // Used by createWallet
-  "/v2/CreateWallet/{customerid}", // Alternative path
+  "/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}", // Used by createSpecificNftSale (POST endpoint)
+  "/v2/CreateWallet/{customerid}", // Used by createWallet
 ]);
 
 function isUsedOperation(url) {
   // Check if this URL path is in our whitelist
   return USED_OPERATIONS.has(url) || 
          // Also include paths that contain our key operations
-         url.includes("CreateProject") && url.includes("apikey") ||
+         url.includes("GetAddressForSpecificNftSale") && url.includes("nftprojectid") ||
          url.includes("CreateWallet") && url.includes("customerid");
 }
 

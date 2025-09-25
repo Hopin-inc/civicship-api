@@ -29,14 +29,14 @@ function pickOp({ includes = [], suffix }) {
 
 // Only generate aliases for actually used operations - streamlined for 2 methods only
 const tryOps = {
-  // CreatePaymentTransaction (maps to CreateProject since CreatePaymentTransaction doesn't exist)
+  // GetAddressForSpecificNftSale (correct endpoint for createSpecificNftSale)
   // This is used by createSpecificNftSale method
   CreatePaymentTransactionRequestBody: pickOp({
-    includes: ["createproject", "apikey"],
+    includes: ["getaddressforspecificnftsale", "apikey", "nftprojectid"],
     suffix: "RequestBody",
   }),
   CreatePaymentTransactionResponse: pickOp({
-    includes: ["createproject", "apikey"],
+    includes: ["getaddressforspecificnftsale", "apikey", "nftprojectid"],
     suffix: "Response",
   }),
 
@@ -80,14 +80,14 @@ out.push(
   aliasOrPaths(
     "CreatePaymentTransactionRequestBody",
     tryOps.CreatePaymentTransactionRequestBody,
-    'paths["/v2/CreatePaymentTransaction"]["post"]["requestBody"]["content"]["application/json"]',
+    'paths["/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}"]["post"]["requestBody"]["content"]["application/json"]',
   ),
 );
 out.push(
   aliasOrPaths(
     "CreatePaymentTransactionResponse",
     tryOps.CreatePaymentTransactionResponse,
-    'paths["/v2/CreatePaymentTransaction"]["post"]["responses"]["200"]["content"]["application/json"]',
+    'paths["/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}"]["post"]["responses"]["200"]["content"]["application/json"]',
   ),
 );
 

@@ -34,6 +34,8 @@ export default class OrderConverter {
     customProps: CustomPropsV1,
   ) {
     return {
+      apikey: process.env.NMKR_API_KEY!,
+      nftprojectid: parseInt(process.env.NMKR_PROJECT_ID!),
       projectUid: "078b2532-716a-4dac-b135-b43e2f042185",
       paymentTransactionType: "paymentgateway_nft_random",
       paymentgatewayParameters: {

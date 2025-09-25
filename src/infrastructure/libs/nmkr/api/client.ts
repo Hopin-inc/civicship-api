@@ -2,7 +2,6 @@ import { injectable } from "tsyringe";
 import { createNmkrHttpClient, NmkrApiError } from "./http";
 import { NmkrEndpoints } from "./endpoints";
 
-type Arg<T extends (...a: any) => any, I extends number = 0> = Parameters<T>[I];
 type Res<T extends (...a: any) => any> = Awaited<ReturnType<T>>;
 
 @injectable()
@@ -25,11 +24,10 @@ export class NmkrClient {
     }
   }
 
-  async createSpecificNftSale(
-    payload: Arg<NmkrEndpoints["createPaymentTransactionForSpecificNft"]>,
-  ): Promise<any> {
+  async createSpecificNftSale(payload: any): Promise<any> {
+    const { apikey, nftprojectid, ...requestBody } = payload;
     return this.handleRequest(
-      () => this.endpoints.createPaymentTransactionForSpecificNft(payload),
+      () => this.endpoints.createPaymentTransactionForSpecificNft(apikey, nftprojectid, requestBody),
       "Failed to create specific NFT sale",
     );
   }

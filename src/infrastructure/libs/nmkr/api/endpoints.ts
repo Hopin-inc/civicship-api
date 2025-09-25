@@ -14,12 +14,14 @@ export class NmkrEndpoints {
   }
 
   async createPaymentTransactionForSpecificNft(
+    apikey: string,
+    nftprojectid: string,
     payload: CreatePaymentTransactionRequestBody,
   ): Promise<CreatePaymentTransactionResponse> {
     return this.http2.postJSON<
       CreatePaymentTransactionResponse,
       CreatePaymentTransactionRequestBody
-    >("/v2/CreatePaymentTransaction", payload);
+    >(`/GetAddressForSpecificNftSale/${apikey}/${nftprojectid}`, payload);
   }
 
   async createWallet(
