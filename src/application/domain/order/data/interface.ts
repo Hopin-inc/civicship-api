@@ -35,7 +35,7 @@ export interface IOrderRepository {
 }
 
 export interface IOrderService {
-  create(
+  createOrder(
     ctx: IContext,
     input: {
       userId: string;
