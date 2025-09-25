@@ -12,18 +12,6 @@ type Order {
   updatedAt: Datetime
 }
 
-type OrderItem {
-  id: ID!
-  priceSnapshot: Int!
-  quantity: Int!
-
-  product: Product!
-  nftMints: [NftMint!]!
-
-  createdAt: Datetime!
-  updatedAt: Datetime
-}
-
 enum OrderStatus {
   PENDING
   PAID

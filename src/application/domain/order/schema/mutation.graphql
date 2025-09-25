@@ -12,23 +12,8 @@ input OrderItemInput {
   quantity: Int!
 }
 
-union OrderCreatePayload = OrderCreateSuccess | OrderCreateError
-
 type OrderCreateSuccess {
-  order: Order!
   paymentLink: String!
-  paymentProvider: GqlPaymentProvider!
-  paymentDeadline: Datetime!
-  totalAmount: Int!
-  currency: String
-  customProperty: String!
 }
 
-enum GqlPaymentProvider {
-  NMKR_PAY
-}
-
-type OrderCreateError {
-  message: String!
-  code: String!
-}
+union OrderCreatePayload = OrderCreateSuccess

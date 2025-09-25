@@ -528,11 +528,6 @@ export type GqlEvaluationsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-export const GqlGqlPaymentProvider = {
-  NmkrPay: 'NMKR_PAY'
-} as const;
-
-export type GqlGqlPaymentProvider = typeof GqlGqlPaymentProvider[keyof typeof GqlGqlPaymentProvider];
 export type GqlIdentity = {
   __typename?: 'Identity';
   createdAt?: Maybe<Scalars['Datetime']['output']>;
@@ -1479,28 +1474,16 @@ export type GqlOrder = {
   user: GqlUser;
 };
 
-export type GqlOrderCreateError = {
-  __typename?: 'OrderCreateError';
-  code: Scalars['String']['output'];
-  message: Scalars['String']['output'];
-};
-
 export type GqlOrderCreateInput = {
   items: Array<GqlOrderItemInput>;
   receiverAddress: Scalars['String']['input'];
 };
 
-export type GqlOrderCreatePayload = GqlOrderCreateError | GqlOrderCreateSuccess;
+export type GqlOrderCreatePayload = GqlOrderCreateSuccess;
 
 export type GqlOrderCreateSuccess = {
   __typename?: 'OrderCreateSuccess';
-  currency?: Maybe<Scalars['String']['output']>;
-  customProperty: Scalars['String']['output'];
-  order: GqlOrder;
-  paymentDeadline: Scalars['Datetime']['output'];
   paymentLink: Scalars['String']['output'];
-  paymentProvider: GqlGqlPaymentProvider;
-  totalAmount: Scalars['Int']['output'];
 };
 
 export type GqlOrderItem = {
@@ -3125,7 +3108,7 @@ export type GqlResolversUnionTypes<_RefType extends Record<string, unknown>> = R
   OpportunitySlotSetHostingStatusPayload: ( Omit<GqlOpportunitySlotSetHostingStatusSuccess, 'slot'> & { slot: _RefType['OpportunitySlot'] } );
   OpportunitySlotsBulkUpdatePayload: ( Omit<GqlOpportunitySlotsBulkUpdateSuccess, 'slots'> & { slots: Array<_RefType['OpportunitySlot']> } );
   OpportunityUpdateContentPayload: ( Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: _RefType['Opportunity'] } );
-  OrderCreatePayload: ( GqlOrderCreateError ) | ( Omit<GqlOrderCreateSuccess, 'order'> & { order: _RefType['Order'] } );
+  OrderCreatePayload: ( GqlOrderCreateSuccess );
   ParticipationBulkCreatePayload: ( Omit<GqlParticipationBulkCreateSuccess, 'participations'> & { participations: Array<_RefType['Participation']> } );
   ParticipationCreatePersonalRecordPayload: ( Omit<GqlParticipationCreatePersonalRecordSuccess, 'participation'> & { participation: _RefType['Participation'] } );
   ParticipationDeletePayload: ( GqlParticipationDeleteSuccess );
@@ -3232,7 +3215,6 @@ export type GqlResolversTypes = ResolversObject<{
   EvaluationSortInput: GqlEvaluationSortInput;
   EvaluationStatus: GqlEvaluationStatus;
   EvaluationsConnection: ResolverTypeWrapper<Omit<GqlEvaluationsConnection, 'edges'> & { edges: Array<GqlResolversTypes['EvaluationEdge']> }>;
-  GqlPaymentProvider: GqlGqlPaymentProvider;
   ID: ResolverTypeWrapper<Scalars['ID']['output']>;
   Identity: ResolverTypeWrapper<Omit<GqlIdentity, 'user'> & { user?: Maybe<GqlResolversTypes['User']> }>;
   IdentityCheckPhoneUserInput: GqlIdentityCheckPhoneUserInput;
@@ -3317,10 +3299,9 @@ export type GqlResolversTypes = ResolversObject<{
   OpportunityUpdateContentPayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OpportunityUpdateContentPayload']>;
   OpportunityUpdateContentSuccess: ResolverTypeWrapper<Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversTypes['Opportunity'] }>;
   Order: ResolverTypeWrapper<Omit<GqlOrder, 'items' | 'user'> & { items?: Maybe<Array<GqlResolversTypes['OrderItem']>>, user: GqlResolversTypes['User'] }>;
-  OrderCreateError: ResolverTypeWrapper<GqlOrderCreateError>;
   OrderCreateInput: GqlOrderCreateInput;
   OrderCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrderCreatePayload']>;
-  OrderCreateSuccess: ResolverTypeWrapper<Omit<GqlOrderCreateSuccess, 'order'> & { order: GqlResolversTypes['Order'] }>;
+  OrderCreateSuccess: ResolverTypeWrapper<GqlOrderCreateSuccess>;
   OrderItem: ResolverTypeWrapper<Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversTypes['NftMint']> }>;
   OrderItemInput: GqlOrderItemInput;
   OrderStatus: GqlOrderStatus;
@@ -3644,10 +3625,9 @@ export type GqlResolversParentTypes = ResolversObject<{
   OpportunityUpdateContentPayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OpportunityUpdateContentPayload'];
   OpportunityUpdateContentSuccess: Omit<GqlOpportunityUpdateContentSuccess, 'opportunity'> & { opportunity: GqlResolversParentTypes['Opportunity'] };
   Order: Omit<GqlOrder, 'items' | 'user'> & { items?: Maybe<Array<GqlResolversParentTypes['OrderItem']>>, user: GqlResolversParentTypes['User'] };
-  OrderCreateError: GqlOrderCreateError;
   OrderCreateInput: GqlOrderCreateInput;
   OrderCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrderCreatePayload'];
-  OrderCreateSuccess: Omit<GqlOrderCreateSuccess, 'order'> & { order: GqlResolversParentTypes['Order'] };
+  OrderCreateSuccess: GqlOrderCreateSuccess;
   OrderItem: Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversParentTypes['NftMint']> };
   OrderItemInput: GqlOrderItemInput;
   PageInfo: GqlPageInfo;
@@ -4480,24 +4460,12 @@ export type GqlOrderResolvers<ContextType = any, ParentType extends GqlResolvers
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type GqlOrderCreateErrorResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreateError'] = GqlResolversParentTypes['OrderCreateError']> = ResolversObject<{
-  code?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  message?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
 export type GqlOrderCreatePayloadResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreatePayload'] = GqlResolversParentTypes['OrderCreatePayload']> = ResolversObject<{
-  __resolveType: TypeResolveFn<'OrderCreateError' | 'OrderCreateSuccess', ParentType, ContextType>;
+  __resolveType: TypeResolveFn<'OrderCreateSuccess', ParentType, ContextType>;
 }>;
 
 export type GqlOrderCreateSuccessResolvers<ContextType = any, ParentType extends GqlResolversParentTypes['OrderCreateSuccess'] = GqlResolversParentTypes['OrderCreateSuccess']> = ResolversObject<{
-  currency?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
-  customProperty?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  order?: Resolver<GqlResolversTypes['Order'], ParentType, ContextType>;
-  paymentDeadline?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   paymentLink?: Resolver<GqlResolversTypes['String'], ParentType, ContextType>;
-  paymentProvider?: Resolver<GqlResolversTypes['GqlPaymentProvider'], ParentType, ContextType>;
-  totalAmount?: Resolver<GqlResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -5336,7 +5304,6 @@ export type GqlResolvers<ContextType = any> = ResolversObject<{
   OpportunityUpdateContentPayload?: GqlOpportunityUpdateContentPayloadResolvers<ContextType>;
   OpportunityUpdateContentSuccess?: GqlOpportunityUpdateContentSuccessResolvers<ContextType>;
   Order?: GqlOrderResolvers<ContextType>;
-  OrderCreateError?: GqlOrderCreateErrorResolvers<ContextType>;
   OrderCreatePayload?: GqlOrderCreatePayloadResolvers<ContextType>;
   OrderCreateSuccess?: GqlOrderCreateSuccessResolvers<ContextType>;
   OrderItem?: GqlOrderItemResolvers<ContextType>;
