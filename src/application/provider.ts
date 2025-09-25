@@ -18,12 +18,13 @@ import NftInstanceRepository from "@/application/domain/account/nft-instance/dat
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import NftInstanceUseCase from "@/application/domain/account/nft-instance/usecase";
-import NftMintService from "@/application/domain/account/nft-mint/service";
-import { NftMintRepository } from "@/application/domain/account/nft-mint/data/repository";
+import { NftMintRepository } from "@/application/domain/reward/nft/nft-mint/data/repository";
+import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
 import ProductRepository from "@/application/domain/product/data/repository";
 import ProductService from "@/application/domain/product/service";
 import ProductPresenter from "@/application/domain/product/presenter";
-import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
+import NftMintWebhookService from "@/application/domain/reward/nft/nft-mint/webhook/service";
+import NftMintConverter from "@/application/domain/reward/nft/nft-mint/data/converter";
 import NftTokenRepository from "@/application/domain/account/nft-token/data/repository";
 import IdentityService from "@/application/domain/account/identity/service";
 import IdentityUseCase from "@/application/domain/account/identity/usecase";
@@ -158,6 +159,7 @@ export function registerProductionDependencies() {
   container.register("NftMintRepository", { useClass: NftMintRepository });
   container.register("NftMintService", { useClass: NftMintService });
   container.register("NftMintWebhookService", { useClass: NftMintWebhookService });
+  container.register("NftMintConverter", { useClass: NftMintConverter });
   container.register("ProductRepository", { useClass: ProductRepository });
   container.register("ProductService", { useClass: ProductService });
   container.register("ProductPresenter", { useClass: ProductPresenter });

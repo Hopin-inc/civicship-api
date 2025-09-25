@@ -1,5 +1,5 @@
 import { injectable } from "tsyringe";
-import { Prisma } from "@prisma/client";
+import { Prisma, NftMintStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { INftMintRepository } from "./interface";
 import { nftMintSelectBase, PrismaNftMint } from "./type";
@@ -58,5 +58,36 @@ export class NftMintRepository implements INftMintRepository {
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
     return tx.nftMint.update({ where: { id }, data, select: nftMintSelectBase });
+  }
+
+  async updateStatus(
+    ctx: IContext,
+    id: string,
+    status: NftMintStatus,
+    txHash?: string,
+    error?: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint> {
+    const updateData: Prisma.NftMintUpdateInput = {
+      status,
+      txHash: txHash || undefined,
+      error: error || null,
+    };
+
+    if (tx) {
+      return tx.nftMint.update({
+        where: { id },
+        data: updateData,
+        select: nftMintSelectBase,
+      });
+    }
+
+    return ctx.issuer.internal(async (transaction) => {
+      return transaction.nftMint.update({
+        where: { id },
+        data: updateData,
+        select: nftMintSelectBase,
+      });
+    });
   }
 }

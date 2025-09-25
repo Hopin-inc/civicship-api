@@ -58,7 +58,8 @@ export default class ProductService implements IProductService {
     ]);
 
     const maxSupply = product?.maxSupply || null;
-    const { reserved, soldPendingMint, minted } = inventoryAggregates;
+    const { reserved, soldPendingMint } = inventoryAggregates;
+    const minted = 0;
     const available =
       maxSupply == null
         ? Number.MAX_SAFE_INTEGER

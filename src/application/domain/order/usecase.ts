@@ -8,8 +8,8 @@ import logger from "@/infrastructure/logging";
 import OrderService from "./service";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
-import NftMintWebhookService from "@/application/domain/account/nft-mint/webhook/service";
-import NftMintService from "@/application/domain/account/nft-mint/service";
+import NftMintWebhookService from "@/application/domain/reward/nft/nft-mint/webhook/service";
+import NftMintService from "@/application/domain/reward/nft/nft-mint/service";
 import { OrderStatus } from "@prisma/client";
 
 @injectable()

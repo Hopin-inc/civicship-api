@@ -7,6 +7,7 @@ import NftMintConverter from "./data/converter";
 import { PrismaNftMint } from "@/application/domain/reward/nft/nft-mint/data/type";
 import { PrismaOrderItem } from "@/application/domain/order/orderItem/type";
 import NftMintLogger from "@/application/domain/reward/nft/nft-mint/logger";
+import logger from "@/infrastructure/logging";
 import pLimit from "p-limit";
 
 @injectable()
@@ -138,5 +139,61 @@ export default class NftMintService {
     });
     this.logger.phase("mark_failed", Date.now() - failStart, { mintId });
     return result;
+  }
+
+  async createForOrderItem(
+    ctx: IContext,
+    orderItemId: string,
+    nftWalletId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint> {
+    const createData = this.converter.buildMintCreate({
+      orderItemId,
+      nftWalletId,
+      sequenceNum: 0,
+      receiver: 'system-wallet',
+    });
+
+    return this.repo.create(ctx, createData, tx);
+  }
+
+  async processStateTransition(
+    ctx: IContext,
+    transition: {
+      nftMintId: string;
+      newStatus: NftMintStatus;
+      txHash?: string;
+      error?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint> {
+    const { nftMintId, newStatus, txHash, error } = transition;
+
+    const currentMint = await this.repo.find(ctx, nftMintId);
+    if (!currentMint) {
+      throw new Error(`NftMint not found: ${nftMintId}`);
+    }
+
+    if (!this.canTransitionTo(currentMint.status as NftMintStatus, newStatus)) {
+      logger.warn("Invalid state transition attempted", {
+        nftMintId,
+        currentStatus: currentMint.status,
+        newStatus,
+      });
+      return currentMint;
+    }
+
+    return this.repo.updateStatus(ctx, nftMintId, newStatus, txHash, error, tx);
+  }
+
+  private canTransitionTo(currentStatus: NftMintStatus, newStatus: NftMintStatus): boolean {
+    const statusRank: Record<NftMintStatus, number> = {
+      QUEUED: 0,
+      SUBMITTED: 1,
+      MINTED: 2,
+      FAILED: 2,
+    };
+
+    return statusRank[newStatus] > statusRank[currentStatus];
   }
 }
