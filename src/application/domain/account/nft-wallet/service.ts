@@ -55,7 +55,7 @@ export default class NFTWalletService {
   }
 
   async createInternalWallet(ctx: IContext, userId: string, tx: Prisma.TransactionClient) {
-    const customerId = 190395;
+    const customerId = Number(process.env.NMKR_CUSTOMER_ID);
     const nmkrResponse = await this.nmkrClient.createWallet(customerId);
 
     if (!nmkrResponse.success || !nmkrResponse.walletAddress) {
