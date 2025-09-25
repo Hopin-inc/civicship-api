@@ -5,9 +5,11 @@ import { container } from "tsyringe";
 import OrderUseCase from "@/application/domain/order/usecase";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
+import { GqlPaymentProvider } from "@/types/graphql";
 
 type NmkrWebhookPayload = {
   paymentTransactionUid: string;
+  paymentProvider: GqlPaymentProvider;
   projectUid: string;
   state: string;
   paymentTransactionSubstate?: string;
@@ -84,9 +86,12 @@ router.post("/webhook", verifyHmacSignature, async (req, res) => {
 
     const orderUseCase = container.resolve<OrderUseCase>("OrderUseCase");
     const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
-    
+
     const ctx = { issuer } as IContext;
-    await orderUseCase.processNmkrWebhook(ctx, payload);
+    await orderUseCase.processWebhook(ctx, {
+      provider: GqlPaymentProvider.Nmkr,
+      ...payload,
+    });
 
     res.status(200).json({ success: true });
   } catch (error) {
@@ -94,6 +99,5 @@ router.post("/webhook", verifyHmacSignature, async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 export default router;
