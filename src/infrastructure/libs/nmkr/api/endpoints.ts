@@ -37,6 +37,7 @@ import type {
   SaleConditionsGetResponse,
   SaleConditionsPutRequestBody,
   SaleConditionsPutResponse,
+  CreateWalletResponse,
 } from "../types/types.aliases";
 import type {
   GetGetCountsApikeyProjectuid_3ababbResponse,
@@ -410,6 +411,13 @@ export class NmkrEndpoints {
     return this.http2.putJSON<SaleConditionsPutResponse, SaleConditionsPutRequestBody>(
       `/v2/UpdateSaleConditions/${encodeURIComponent(projectUid)}`,
       payload,
+    );
+  }
+
+  async createWallet(customerId: number): Promise<CreateWalletResponse> {
+    return this.http2.postJSON<CreateWalletResponse, Record<string, never>>(
+      `/v2/CreateWallet/${customerId}`,
+      {},
     );
   }
 }

@@ -389,4 +389,13 @@ export class NmkrClient {
       "Failed to update sale conditions",
     );
   }
+
+  async createWallet(
+    customerId: number,
+  ): Promise<Res<NmkrEndpoints["createWallet"]>> {
+    return this.handleRequest(
+      () => this.endpoints.createWallet(customerId),
+      "Failed to create NMKR wallet",
+    );
+  }
 }
