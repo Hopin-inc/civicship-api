@@ -16,6 +16,7 @@ export default class TransactionConverter {
     toWalletId: string,
     transferPoints: number,
     createdBy: string,
+    comment?: string,
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.POINT_ISSUED,
@@ -23,6 +24,7 @@ export default class TransactionConverter {
       fromPointChange: transferPoints,
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
+      comment,
     };
   }
 
@@ -31,6 +33,7 @@ export default class TransactionConverter {
     transferPoints: number,
     toWalletId: string,
     createdBy: string,
+    comment?: string,
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.GRANT,
@@ -39,6 +42,7 @@ export default class TransactionConverter {
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
+      comment,
     };
   }
 
@@ -47,6 +51,7 @@ export default class TransactionConverter {
     toWalletId: string,
     transferPoints: number,
     createdBy: string,
+    comment?: string,
   ): Prisma.TransactionCreateInput {
     return {
       reason: TransactionReason.DONATION,
@@ -55,6 +60,7 @@ export default class TransactionConverter {
       toWallet: { connect: { id: toWalletId } },
       toPointChange: transferPoints,
       createdByUser: { connect: { id: createdBy } },
+      comment,
     };
   }
 
