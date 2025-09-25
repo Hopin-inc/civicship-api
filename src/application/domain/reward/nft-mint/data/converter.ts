@@ -15,4 +15,23 @@ export default class NftMintConverter {
       orderItem: { connect: { id: p.orderItemId } },
     };
   }
+
+  buildStatusUpdate(
+    newStatus: NftMintStatus,
+    txHash?: string,
+    error?: string,
+  ): Prisma.NftMintUpdateInput {
+    return {
+      status: newStatus,
+      txHash: txHash ?? undefined,
+      error: error ?? null,
+    };
+  }
+
+  mintedByProduct(productId: string): Prisma.NftMintWhereInput {
+    return {
+      status: NftMintStatus.MINTED,
+      orderItem: { productId },
+    };
+  }
 }

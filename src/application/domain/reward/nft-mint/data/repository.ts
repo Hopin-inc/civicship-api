@@ -18,7 +18,7 @@ export class NftMintRepository implements INftMintRepository {
     return ctx.issuer.public(ctx, (transaction) => transaction.nftMint.count({ where }));
   }
 
-  async findManyByOrderItemId(
+  async query(
     ctx: IContext,
     orderItemId: string,
     tx?: Prisma.TransactionClient,

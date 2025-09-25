@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
-import { PrismaNftMint } from "@/application/domain/reward/nft/nft-mint/data/type";
+import { PrismaNftMint } from "@/application/domain/reward/nft-mint/data/type";
 
 export interface INftMintRepository {
   count(
@@ -8,7 +8,7 @@ export interface INftMintRepository {
     where: Prisma.NftMintWhereInput,
     tx?: Prisma.TransactionClient,
   ): Promise<number>;
-  findManyByOrderItemId(
+  query(
     ctx: IContext,
     orderItemId: string,
     tx?: Prisma.TransactionClient,
