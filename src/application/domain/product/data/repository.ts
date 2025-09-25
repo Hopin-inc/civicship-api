@@ -1,45 +1,45 @@
-import { injectable } from 'tsyringe';
-import { Prisma } from '@prisma/client';
-import { IContext } from '@/types/server';
-import { IProductRepository } from './interface';
-import { productSelectForValidation, PrismaProductForValidation } from './type';
+import { injectable } from "tsyringe";
+import { Prisma } from "@prisma/client";
+import { IContext } from "@/types/server";
+import { IProductRepository } from "./interface";
+import { productSelect, PrismaProduct } from "./type";
 
 @injectable()
 export default class ProductRepository implements IProductRepository {
-  async findByIdForValidation(
+  async findProduct(
     ctx: IContext,
     id: string,
-    tx?: Prisma.TransactionClient
-  ): Promise<PrismaProductForValidation | null> {
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaProduct | null> {
     if (tx) {
       return tx.product.findUnique({
         where: { id },
-        select: productSelectForValidation,
+        select: productSelect,
       });
     }
     return ctx.issuer.public(ctx, (transaction) => {
       return transaction.product.findUnique({
         where: { id },
-        select: productSelectForValidation,
+        select: productSelect,
       });
     });
   }
 
   async findManyByIdsForValidation(
-    ctx: IContext, 
-    productIds: string[], 
-    tx?: Prisma.TransactionClient
-  ): Promise<PrismaProductForValidation[]> {
+    ctx: IContext,
+    productIds: string[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaProduct[]> {
     if (tx) {
-      return tx.product.findMany({ 
-        where: { id: { in: productIds } }, 
-        select: productSelectForValidation 
+      return tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: productSelect,
       });
     }
     return ctx.issuer.public(ctx, (transaction) =>
-      transaction.product.findMany({ 
-        where: { id: { in: productIds } }, 
-        select: productSelectForValidation 
+      transaction.product.findMany({
+        where: { id: { in: productIds } },
+        select: productSelect,
       }),
     );
   }

@@ -1,12 +1,12 @@
-import { injectable } from 'tsyringe';
-import { GqlProduct, GqlProductType } from '@/types/graphql';
-import { PrismaProductForValidation } from './data/type';
+import { injectable } from "tsyringe";
+import { GqlProduct, GqlProductType } from "@/types/graphql";
+import { PrismaProduct } from "./data/type";
 
 @injectable()
 export default class ProductPresenter {
-  static toGraphQL(product: PrismaProductForValidation): GqlProduct {
+  static toGraphQL(product: PrismaProduct): GqlProduct {
     return {
-      __typename: 'Product',
+      __typename: "Product",
       id: product.id,
       name: product.name,
       price: product.price,

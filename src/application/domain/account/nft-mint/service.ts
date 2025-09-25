@@ -1,10 +1,10 @@
-import 'reflect-metadata';
-import { injectable, inject } from 'tsyringe';
-import { IContext } from '@/types/server';
-import { Prisma, NftMintStatus } from '@prisma/client';
-import { INftMintRepository } from './data/interface';
-import NftMintConverter from './data/converter';
-import logger from '@/infrastructure/logging';
+import "reflect-metadata";
+import { injectable, inject } from "tsyringe";
+import { IContext } from "@/types/server";
+import { Prisma, NftMintStatus } from "@prisma/client";
+import { INftMintRepository } from "./data/interface";
+import NftMintConverter from "./data/converter";
+import logger from "@/infrastructure/logging";
 
 export interface NftMintStateTransition {
   nftMintId: string;
@@ -23,7 +23,7 @@ export default class NftMintService {
     ctx: IContext,
     orderItemId: string,
     nftWalletId: string,
-    tx: Prisma.TransactionClient
+    tx: Prisma.TransactionClient,
   ) {
     const createData = NftMintConverter.toPrismaCreateInput({
       orderItemId,
@@ -37,7 +37,7 @@ export default class NftMintService {
   async processStateTransition(
     ctx: IContext,
     transition: NftMintStateTransition,
-    tx?: Prisma.TransactionClient
+    tx?: Prisma.TransactionClient,
   ) {
     const { nftMintId, newStatus, txHash, error } = transition;
 
@@ -62,14 +62,7 @@ export default class NftMintService {
       return currentMint;
     }
 
-    return this.nftMintRepository.updateStatus(
-      ctx,
-      nftMintId,
-      newStatus,
-      txHash,
-      error,
-      tx
-    );
+    return this.nftMintRepository.updateStatus(ctx, nftMintId, newStatus, txHash, error, tx);
   }
 
   private canTransitionTo(currentStatus: NftMintStatus, newStatus: NftMintStatus): boolean {
@@ -81,15 +74,5 @@ export default class NftMintService {
     };
 
     return statusRank[newStatus] > statusRank[currentStatus];
-  }
-
-  mapNmkrStateToStatus(nmkrState: string): NftMintStatus | null {
-    switch (nmkrState) {
-      case 'confirmed': return NftMintStatus.SUBMITTED;
-      case 'finished': return NftMintStatus.MINTED;
-      case 'canceled':
-      case 'expired': return NftMintStatus.FAILED;
-      default: return null;
-    }
   }
 }

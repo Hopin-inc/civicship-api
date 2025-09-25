@@ -1,6 +1,6 @@
-import { Prisma } from '@prisma/client';
+import { Prisma } from "@prisma/client";
 
-export const productSelectForValidation = Prisma.validator<Prisma.ProductSelect>()({
+export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
   id: true,
   type: true,
   name: true,
@@ -17,10 +17,10 @@ export const productSelectForValidation = Prisma.validator<Prisma.ProductSelect>
       id: true,
       externalRef: true,
       policyId: true,
-    }
-  }
+    },
+  },
 });
 
-export type PrismaProductForValidation = Prisma.ProductGetPayload<{
-  select: typeof productSelectForValidation;
+export type PrismaProduct = Prisma.ProductGetPayload<{
+  select: typeof productSelect;
 }>;
