@@ -33,23 +33,17 @@ export default class OrderUseCase {
     args: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
-    const { items, receiverAddress } = args.input;
+    const { productId, quantity, receiverAddress } = args.input;
 
-    if (!items?.length) {
-      throw new ValidationError("Order must contain at least one item");
-    }
-    if (items.length > 1) {
-      throw new ValidationError("Multiple items not yet supported");
+    if (quantity <= 0) {
+      throw new ValidationError("Quantity must be greater than 0");
     }
 
-    const { productId, quantity } = items[0];
-
-    let order;
-    await ctx.issuer.internal(async (tx) => {
+    const order = await ctx.issuer.internal(async (tx) => {
       const product = await this.productService.findOrThrowForOrder(ctx, productId, tx);
 
       await this.assertSufficientInventory(ctx, productId, quantity, tx);
-      order = await this.orderService.createOrder(
+      const created = await this.orderService.createOrder(
         ctx,
         {
           userId: currentUserId,
@@ -58,9 +52,12 @@ export default class OrderUseCase {
         tx,
       );
       await this.assertSufficientInventory(ctx, productId, 0, tx);
+      return created;
     });
 
     const orderItem = order.items[0];
+    const projectuid = orderItem.product.nftProduct!.externalRef!;
+
     const customProps = {
       propsVersion: 1 as const,
       orderId: order.id,
@@ -70,7 +67,7 @@ export default class OrderUseCase {
     };
 
     const paymentResponse = await this.nmkrClient.createSpecificNftSale({
-      projectuid: orderItem.product.nftProduct!.externalRef!,
+      projectuid,
       receiveraddress: receiverAddress,
       customproperties: buildCustomProps(customProps),
     });
