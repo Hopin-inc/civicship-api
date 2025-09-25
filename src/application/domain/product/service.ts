@@ -4,67 +4,37 @@ import { IContext } from "@/types/server";
 import { IProductService } from "./data/interface";
 import ProductRepository from "./data/repository";
 import { PrismaProduct } from "./data/type";
-import ProductValidator from "@/application/domain/product/validator";
-import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
-
-export interface InventorySnapshot {
-  productId: string;
-  reserved: number;
-  soldPendingMint: number;
-  minted: number;
-  available: number;
-  maxSupply: number | null;
-}
 
 @injectable()
 export default class ProductService implements IProductService {
-  constructor(
-    @inject("ProductRepository") private readonly repository: ProductRepository,
-    @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
-  ) {}
+  constructor(@inject("ProductRepository") private readonly repository: ProductRepository) {}
 
   async findOrThrowForOrder(
     ctx: IContext,
     productId: string,
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaProduct> {
-    const product = await this.repository.findProduct(ctx, productId, tx);
-    ProductValidator.ensureIsValidForOrder(product, productId);
+    const product = await this.repository.find(ctx, productId, tx);
+    this.ensureIsValidForOrder(product, productId);
 
     return product;
   }
 
-  async calculateInventory(
-    ctx: IContext,
+  private ensureIsValidForOrder(
+    product: PrismaProduct | null,
     productId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<InventorySnapshot> {
-    if (tx) {
-      return this.calculateInventoryWithTx(ctx, tx, productId);
+  ): asserts product is PrismaProduct {
+    if (!product) {
+      throw new Error(productId);
     }
-    return ctx.issuer.public(ctx, (transaction) => {
-      return this.calculateInventoryWithTx(ctx, transaction, productId);
-    });
-  }
-
-  private async calculateInventoryWithTx(
-    ctx: IContext,
-    tx: Prisma.TransactionClient,
-    productId: string,
-  ): Promise<InventorySnapshot> {
-    const [product, inventoryAggregates] = await Promise.all([
-      tx.product.findUnique({ where: { id: productId }, select: { maxSupply: true } }),
-      this.orderItemService.getInventoryCounts(ctx, productId, tx),
-    ]);
-
-    const maxSupply = product?.maxSupply || null;
-    const { reserved, soldPendingMint } = inventoryAggregates;
-    const minted = 0;
-    const available =
-      maxSupply == null
-        ? Number.MAX_SAFE_INTEGER
-        : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
-
-    return { productId, reserved, soldPendingMint, minted, available, maxSupply };
+    if (product.type !== "NFT") {
+      throw new Error(`Product is not an NFT: ${productId}`);
+    }
+    if (!product.nftProduct) {
+      throw new Error(`NFT product not found for product: ${productId}`);
+    }
+    if (!product.nftProduct.externalRef) {
+      throw new Error(`NFT product missing externalRef: ${productId}`);
+    }
   }
 }

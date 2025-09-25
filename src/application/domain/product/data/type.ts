@@ -27,3 +27,12 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
 export type PrismaProduct = Prisma.ProductGetPayload<{
   select: typeof productSelect;
 }>;
+
+export interface InventorySnapshot {
+  productId: string;
+  reserved: number;
+  soldPendingMint: number;
+  minted: number;
+  available: number;
+  maxSupply: number | null;
+}

@@ -4,7 +4,7 @@ import { PrismaProduct } from "./data/type";
 
 @injectable()
 export default class ProductPresenter {
-  static toGraphQL(product: PrismaProduct): GqlProduct {
+  static get(product: PrismaProduct): GqlProduct {
     return {
       __typename: "Product",
       id: product.id,

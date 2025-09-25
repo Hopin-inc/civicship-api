@@ -6,26 +6,7 @@ import { productSelect, PrismaProduct } from "./type";
 
 @injectable()
 export default class ProductRepository implements IProductRepository {
-  async findProduct(
-    ctx: IContext,
-    id: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<PrismaProduct | null> {
-    if (tx) {
-      return tx.product.findUnique({
-        where: { id },
-        select: productSelect,
-      });
-    }
-    return ctx.issuer.public(ctx, (transaction) => {
-      return transaction.product.findUnique({
-        where: { id },
-        select: productSelect,
-      });
-    });
-  }
-
-  async findManyByIdsForValidation(
+  async query(
     ctx: IContext,
     productIds: string[],
     tx?: Prisma.TransactionClient,
@@ -42,5 +23,24 @@ export default class ProductRepository implements IProductRepository {
         select: productSelect,
       }),
     );
+  }
+
+  async find(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaProduct | null> {
+    if (tx) {
+      return tx.product.findUnique({
+        where: { id },
+        select: productSelect,
+      });
+    }
+    return ctx.issuer.public(ctx, (transaction) => {
+      return transaction.product.findUnique({
+        where: { id },
+        select: productSelect,
+      });
+    });
   }
 }
