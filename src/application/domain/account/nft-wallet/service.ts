@@ -8,6 +8,7 @@ import NftTokenRepository from "@/application/domain/account/nft-token/data/repo
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 import { ValidationError } from "@/errors/graphql";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 
 @injectable()
 export default class NFTWalletService {
@@ -15,6 +16,7 @@ export default class NFTWalletService {
     @inject("NFTWalletRepository") private nftWalletRepository: NFTWalletRepository,
     @inject("NftTokenRepository") private nftTokenRepository: NftTokenRepository,
     @inject("NftInstanceRepository") private nftInstanceRepository: NftInstanceRepository,
+    @inject("NmkrClient") private nmkrClient: NmkrClient,
   ) {}
 
   async createOrUpdateWalletAddress(
@@ -42,6 +44,54 @@ export default class NFTWalletService {
       },
       tx,
     );
+  }
+
+  async checkIfExists(
+    ctx: IContext,
+    userId: string,
+    type: NftWalletType = NftWalletType.INTERNAL,
+  ) {
+    const existing = await this.nftWalletRepository.findByUserId(ctx, userId);
+    if (existing && existing.type === type) {
+      return existing;
+    }
+    return null;
+  }
+
+  async createInternalWallet(
+    ctx: IContext,
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const customerId = parseInt(userId.slice(-8), 16) % 1000000;
+    const nmkrResponse = await this.nmkrClient.createWallet(customerId);
+    
+    if (!nmkrResponse.success || !nmkrResponse.walletAddress) {
+      throw new Error(`Failed to create NMKR wallet: ${nmkrResponse.message || 'Unknown error'}`);
+    }
+
+    return await this.nftWalletRepository.create(
+      ctx,
+      {
+        walletAddress: nmkrResponse.walletAddress,
+        type: NftWalletType.INTERNAL,
+        user: { connect: { id: userId } },
+      },
+      tx,
+    );
+  }
+
+  async getOrCreateInternalWallet(
+    ctx: IContext,
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const existing = await this.checkIfExists(ctx, userId, NftWalletType.INTERNAL);
+    if (existing) {
+      return existing;
+    }
+
+    return await this.createInternalWallet(ctx, userId, tx);
   }
 
   async storeMetadata(

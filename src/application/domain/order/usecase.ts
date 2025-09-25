@@ -17,6 +17,8 @@ import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 import { ValidationError } from "@/errors/graphql";
+import NFTWalletService from "@/application/domain/account/nft-wallet/service";
+import { container } from "tsyringe";
 
 @injectable()
 export default class OrderUseCase {
@@ -54,7 +56,12 @@ export default class OrderUseCase {
     const orderItem = order.items[0];
     const projectuid = orderItem.product.nftProduct!.externalRef!;
 
-    const receiverAddress = "test";
+    const nftWallet = await ctx.issuer.internal(async (tx) => {
+      const nftWalletService = container.resolve<NFTWalletService>("NFTWalletService");
+      return await nftWalletService.getOrCreateInternalWallet(ctx, currentUserId, tx);
+    });
+
+    const receiverAddress = nftWallet.walletAddress;
 
     const customProps = {
       propsVersion: 1 as const,
@@ -235,7 +242,7 @@ export default class OrderUseCase {
 
   private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
     try {
-      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED);
+      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.CANCELED);
     } catch (updateErr) {
       logger.error("Failed to mark order as FAILED after NMKR error", {
         orderId,

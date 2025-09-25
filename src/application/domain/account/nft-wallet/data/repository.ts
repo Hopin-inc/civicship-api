@@ -18,6 +18,15 @@ export default class NFTWalletRepository implements INFTWalletRepository {
     );
   }
 
+  async findByUserId(ctx: IContext, userId: string) {
+    return ctx.issuer.public(ctx, (client) =>
+      client.nftWallet.findFirst({
+        where: { userId },
+        select: nftWalletSelectDetail,
+      }),
+    );
+  }
+
   async update(
     ctx: IContext,
     id: string,

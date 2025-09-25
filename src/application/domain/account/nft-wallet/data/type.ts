@@ -4,6 +4,7 @@ export const nftWalletSelectDetail = {
     id: true,
     userId: true,
     walletAddress: true,
+    type: true,
     createdAt: true,
     updatedAt: true,
 } as const;
@@ -16,6 +17,7 @@ export const nftWalletCreateSelect = {
     id: true,
     userId: true,
     walletAddress: true,
+    type: true,
     createdAt: true,
     updatedAt: true,
 } as const;

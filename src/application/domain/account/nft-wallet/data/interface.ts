@@ -4,6 +4,7 @@ import { PrismaNftWalletDetail, PrismaNftWalletCreateDetail } from "./type";
 
 export interface INFTWalletRepository {
   findByWalletAddress(ctx: IContext, walletAddress: string): Promise<PrismaNftWalletDetail | null>;
+  findByUserId(ctx: IContext, userId: string): Promise<PrismaNftWalletDetail | null>;
   update(
     ctx: IContext,
     id: string,
