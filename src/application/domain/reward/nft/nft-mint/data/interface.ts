@@ -8,6 +8,11 @@ export interface INftMintRepository {
     where: Prisma.NftMintWhereInput,
     tx?: Prisma.TransactionClient,
   ): Promise<number>;
+  countByWhere(
+    ctx: IContext,
+    where: Prisma.NftMintWhereInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number>;
   findManyByOrderItemId(
     ctx: IContext,
     orderItemId: string,

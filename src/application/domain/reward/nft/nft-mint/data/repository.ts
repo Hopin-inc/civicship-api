@@ -60,6 +60,20 @@ export class NftMintRepository implements INftMintRepository {
     return tx.nftMint.update({ where: { id }, data, select: nftMintSelectBase });
   }
 
+  async countByWhere(
+    ctx: IContext,
+    where: Prisma.NftMintWhereInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<number> {
+    if (tx) {
+      return tx.nftMint.count({ where });
+    }
+
+    return ctx.issuer.public(ctx, async (transaction) => {
+      return transaction.nftMint.count({ where });
+    });
+  }
+
   async updateStatus(
     ctx: IContext,
     id: string,
