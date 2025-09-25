@@ -5,7 +5,7 @@ import { IOrderItemRepository } from "@/application/domain/order/orderItem/data/
 
 @injectable()
 export class OrderItemRepository implements IOrderItemRepository {
-  async count(
+  async sumQuantityByWhere(
     ctx: IContext,
     where: Prisma.OrderItemWhereInput,
     tx?: Prisma.TransactionClient,

@@ -16,7 +16,7 @@ export interface IOrderItemService {
 }
 
 export interface IOrderItemRepository {
-  count(
+  sumQuantityByWhere(
     ctx: IContext,
     where: Prisma.OrderItemWhereInput,
     tx?: Prisma.TransactionClient,
