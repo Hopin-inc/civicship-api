@@ -1475,7 +1475,8 @@ export type GqlOrder = {
 };
 
 export type GqlOrderCreateInput = {
-  items: Array<GqlOrderItemInput>;
+  productId: Scalars['ID']['input'];
+  quantity: Scalars['Int']['input'];
   receiverAddress: Scalars['String']['input'];
 };
 
@@ -1495,11 +1496,6 @@ export type GqlOrderItem = {
   product: GqlProduct;
   quantity: Scalars['Int']['output'];
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
-};
-
-export type GqlOrderItemInput = {
-  productId: Scalars['ID']['input'];
-  quantity: Scalars['Int']['input'];
 };
 
 export const GqlOrderStatus = {
@@ -3303,7 +3299,6 @@ export type GqlResolversTypes = ResolversObject<{
   OrderCreatePayload: ResolverTypeWrapper<GqlResolversUnionTypes<GqlResolversTypes>['OrderCreatePayload']>;
   OrderCreateSuccess: ResolverTypeWrapper<GqlOrderCreateSuccess>;
   OrderItem: ResolverTypeWrapper<Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversTypes['NftMint']> }>;
-  OrderItemInput: GqlOrderItemInput;
   OrderStatus: GqlOrderStatus;
   PageInfo: ResolverTypeWrapper<GqlPageInfo>;
   Paging: ResolverTypeWrapper<GqlPaging>;
@@ -3629,7 +3624,6 @@ export type GqlResolversParentTypes = ResolversObject<{
   OrderCreatePayload: GqlResolversUnionTypes<GqlResolversParentTypes>['OrderCreatePayload'];
   OrderCreateSuccess: GqlOrderCreateSuccess;
   OrderItem: Omit<GqlOrderItem, 'nftMints'> & { nftMints: Array<GqlResolversParentTypes['NftMint']> };
-  OrderItemInput: GqlOrderItemInput;
   PageInfo: GqlPageInfo;
   Paging: GqlPaging;
   Participation: Participation;
