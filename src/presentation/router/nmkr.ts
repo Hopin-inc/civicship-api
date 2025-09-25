@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { container } from "tsyringe";
 import OrderUseCase from "@/application/domain/order/usecase";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
+import { IContext } from "@/types/server";
 
 type NmkrWebhookPayload = {
   paymentTransactionUid: string;
@@ -84,10 +85,8 @@ router.post("/webhook", verifyHmacSignature, async (req, res) => {
     const orderUseCase = container.resolve<OrderUseCase>("OrderUseCase");
     const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
     
-    await issuer.internal(async (tx) => {
-      const ctx = { issuer, user: { id: 'system', isAdmin: true } } as any;
-      await orderUseCase.processNmkrWebhook(ctx, payload);
-    });
+    const ctx = { issuer } as IContext;
+    await orderUseCase.processNmkrWebhook(ctx, payload);
 
     res.status(200).json({ success: true });
   } catch (error) {
