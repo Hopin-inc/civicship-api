@@ -53,45 +53,15 @@ out += `export type MintReservation = { reservationId: string; state: 'reserved'
 out += `export type MintedResult   = { state: 'minted'; txHash: string; nftUid: string; reservationId?: string };\n`;
 out += `export type MintResult     = MintReservation | MintedResult;\n\n`;
 
-// Wallet creation types (not in OpenAPI schema)
+// Wallet creation types (not in OpenAPI schema) - optimized for actual usage
 out += `// Wallet creation types for endpoints not in OpenAPI schema\n`;
 out += `export interface CreateWalletResponse {\n`;
-out += `  walletAddress: string;\n`;
-out += `  customerId: number;\n`;
-out += `  success: boolean;\n`;
+out += `  address: string;\n`;
+out += `  walletName: string;\n`;
 out += `  message?: string;\n`;
-out += `}\n\n`;
-out += `export interface CreateWalletRequest {\n`;
-out += `  // Empty for now, as the endpoint appears to only require the customerid path parameter\n`;
 out += `}\n\n`;
 
-// Subcustomer management types (not in OpenAPI schema)
-out += `// Subcustomer management types for endpoints not in OpenAPI schema\n`;
-out += `export interface CreateSubcustomerRequest {\n`;
-out += `  description: string;\n`;
-out += `  externalId: string;\n`;
-out += `}\n\n`;
-out += `export interface CreateSubcustomerResponse {\n`;
-out += `  subcustomerId: number;\n`;
-out += `  customerId: number;\n`;
-out += `  description: string;\n`;
-out += `  externalId: string;\n`;
-out += `  success: boolean;\n`;
-out += `  message?: string;\n`;
-out += `}\n\n`;
-out += `export interface CreateApikeyForSubcustomerRequest {\n`;
-out += `  subcustomerId: number;\n`;
-out += `  description: string;\n`;
-out += `  expiryDate: string;\n`;
-out += `}\n\n`;
-out += `export interface CreateApikeyForSubcustomerResponse {\n`;
-out += `  apiKey: string;\n`;
-out += `  subcustomerId: number;\n`;
-out += `  description: string;\n`;
-out += `  expiryDate: string;\n`;
-out += `  success: boolean;\n`;
-out += `  message?: string;\n`;
-out += `}\n\n`;
+// Note: Subcustomer types removed as they are no longer used in the simplified workflow
 
 // Configuration constants
 out += `export const NMKR_CONFIG = {

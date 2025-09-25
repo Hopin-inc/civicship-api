@@ -15,45 +15,17 @@ export type MintResult     = MintReservation | MintedResult;
 
 // Wallet creation types for endpoints not in OpenAPI schema
 export interface CreateWalletResponse {
-  walletAddress: string;
-  customerId: number;
-  success: boolean;
+  address: string;
+  walletName: string;
   message?: string;
 }
 
 export interface CreateWalletRequest {
-  // Empty for now, as the endpoint appears to only require the customerid path parameter
+  walletName: string;
+  enterpriseaddress: boolean;
+  walletPassword: string;
 }
 
-// Subcustomer management types for endpoints not in OpenAPI schema
-export interface CreateSubcustomerRequest {
-  description: string;
-  externalId: string;
-}
-
-export interface CreateSubcustomerResponse {
-  subcustomerId: number;
-  customerId: number;
-  description: string;
-  externalId: string;
-  success: boolean;
-  message?: string;
-}
-
-export interface CreateApikeyForSubcustomerRequest {
-  subcustomerId: number;
-  description: string;
-  expiryDate: string;
-}
-
-export interface CreateApikeyForSubcustomerResponse {
-  apiKey: string;
-  subcustomerId: number;
-  description: string;
-  expiryDate: string;
-  success: boolean;
-  message?: string;
-}
 
 export const NMKR_CONFIG = {
   DEFAULT_TIMEOUT: 15000,
