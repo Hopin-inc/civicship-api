@@ -31,14 +31,36 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     const orderWebhook = container.resolve<OrderWebhook>("OrderWebhook");
     const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
-    const eventObject = event.data.object as any;
+    let projectUid: string;
+    let paymentTransactionUid: string;
+    let state: string;
+    let metadata: Record<string, any> = {};
+
+    if (event.type.startsWith('payment_intent.')) {
+      const eventObject = event.data.object;
+      if (eventObject && typeof eventObject === 'object' && 'id' in eventObject && 'status' in eventObject) {
+        projectUid = String(eventObject.id);
+        paymentTransactionUid = String(eventObject.id);
+        state = String(eventObject.status || "unknown");
+        metadata = (eventObject as any).metadata || {};
+      } else {
+        projectUid = event.id;
+        paymentTransactionUid = event.id;
+        state = "unknown";
+      }
+    } else {
+      projectUid = event.id;
+      paymentTransactionUid = event.id;
+      state = "unknown";
+    }
+
     const ctx = { issuer } as IContext;
     await orderWebhook.processWebhook(ctx, {
       provider: GqlPaymentProvider.Stripe,
-      projectUid: eventObject.id || event.id,
-      paymentTransactionUid: eventObject.id || event.id,
-      state: eventObject.status || "unknown",
-      customProperty: JSON.stringify(eventObject.metadata || {}),
+      projectUid,
+      paymentTransactionUid,
+      state,
+      customProperty: JSON.stringify(metadata),
     });
 
     logger.info("Successfully processed Stripe webhook", {

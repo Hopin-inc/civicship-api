@@ -41,8 +41,9 @@ export default class OrderWebhook {
       case GqlPaymentProvider.Nmkr:
         await this.processNmkrWebhook(ctx, payload);
         return "NMKR";
-      // case GqlPaymentProvider.Stripe:
-      //   return this.processStripeWebhook(ctx, payload);
+      case GqlPaymentProvider.Stripe:
+        await this.processStripeWebhook(ctx, payload);
+        return "STRIPE";
       default:
         logger.warn("[OrderWebhook] Unsupported payment provider", { provider: payload.provider });
         return "IGNORED";
@@ -72,6 +73,29 @@ export default class OrderWebhook {
         paymentTransactionUid,
       });
     });
+  }
+
+  private async processStripeWebhook(ctx: IContext, payload: {
+    provider: GqlPaymentProvider;
+    projectUid: string;
+    paymentTransactionUid: string;
+    state: string;
+    txHash?: string;
+    customProperty?: string;
+  }): Promise<void> {
+    const { paymentTransactionUid, state, customProperty } = payload;
+
+    logger.info("[OrderWebhook] Processing Stripe webhook", {
+      paymentTransactionUid,
+      state,
+    });
+
+    if (state === "succeeded") {
+      logger.info("[OrderWebhook] Stripe payment succeeded", {
+        paymentTransactionUid,
+        customProperty,
+      });
+    }
   }
 
   private validateCustomProps(paymentTransactionUid: string, raw?: string) {
