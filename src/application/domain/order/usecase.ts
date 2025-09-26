@@ -194,8 +194,11 @@ export default class OrderUseCase {
     try {
       const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
 
+      const internalWallet = await this.nftWalletService.checkIfExists(ctx, order.user.id);
+      if (!internalWallet) throw new Error("Internal wallet not found for user");
+
       for (const orderItem of order.items) {
-        await this.nftMintService.createForOrderItem(ctx, orderItem.id, "system-wallet", tx);
+        await this.nftMintService.createForOrderItem(ctx, orderItem.id, internalWallet.id, tx);
       }
 
       const inventorySnapshots: Array<{
