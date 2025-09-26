@@ -5,7 +5,7 @@ import {
   GqlOrderCreatePayload,
   GqlPaymentProvider,
 } from "@/types/graphql";
-import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
+import { CustomPropsV1, parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import logger from "@/infrastructure/logging";
 import OrderService from "./service";
@@ -33,9 +33,8 @@ export default class OrderUseCase {
 
   async userCreateOrder(
     ctx: IContext,
-    args: GqlMutationOrderCreateArgs,
+    { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    const productId = (args as any).productId; // TODO: Fix GraphQL type generation
     const currentUserId = getCurrentUserId(ctx);
     // const currentUserId = "cmfzidhe3000n8zta98ux2kil";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
@@ -80,14 +79,14 @@ export default class OrderUseCase {
       }
     }
 
-    const customProps = {
+    const customProps: CustomPropsV1 = {
       orderId: order.id,
       userRef: currentUserId,
     };
     const paymenttransaction = this.converter.nmkrPaymentTransactionInput(
       product,
       nftWallet,
-      customProps as any, // TODO: Fix CustomPropsV1 type
+      customProps,
     );
 
     let paymentUid: string;
@@ -98,7 +97,7 @@ export default class OrderUseCase {
 
       const paymentAddressId = paymentResponse.paymentAddressId;
       const paymentAddress = paymentResponse.paymentAddress;
-      
+
       if (!paymentAddressId) {
         throw new Error("NMKR payment transaction not created");
       }

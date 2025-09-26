@@ -34,7 +34,7 @@ export default class OrderConverter {
     customProps: CustomPropsV1,
   ) {
     return {
-      projectUid: "078b2532-716a-4dac-b135-b43e2f042185",
+      projectUid: product.nftProduct!.externalRef,
       paymentTransactionType: "paymentgateway_nft_random",
       paymentgatewayParameters: {
         mintNfts: {
