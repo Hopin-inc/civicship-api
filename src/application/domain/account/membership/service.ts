@@ -12,6 +12,7 @@ import { getCurrentUserId } from "@/application/domain/utils";
 import { NotFoundError } from "@/errors/graphql";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import MembershipConverter from "@/application/domain/account/membership/data/converter";
+import { PrismaMembershipDetail } from "@/application/domain/account/membership/data/type";
 import { inject, injectable } from "tsyringe";
 
 @injectable()
@@ -26,13 +27,13 @@ export default class MembershipService {
     ctx: IContext,
     { cursor, filter, sort }: GqlQueryMembershipsArgs,
     take: number,
-  ) {
+  ): Promise<PrismaMembershipDetail[]> {
     const where = this.converter.filter(filter ?? {});
     const orderBy = this.converter.sort(sort ?? {});
     return this.repository.query(ctx, where, orderBy, take, cursor);
   }
 
-  async findMembershipDetail(ctx: IContext, userId: string, communityId: string) {
+  async findMembershipDetail(ctx: IContext, userId: string, communityId: string): Promise<PrismaMembershipDetail | null> {
     return this.repository.findDetail(ctx, { userId_communityId: { userId, communityId } });
   }
 

@@ -3,6 +3,7 @@ import { IContext } from "@/types/server";
 import {
   membershipInclude,
   membershipSelectDetail,
+  PrismaMembershipDetail,
 } from "@/application/domain/account/membership/data/type";
 import { IMembershipRepository } from "@/application/domain/account/membership/data/interface";
 import { injectable } from "tsyringe";
@@ -15,7 +16,7 @@ export default class MembershipRepository implements IMembershipRepository {
     orderBy: Prisma.MembershipOrderByWithRelationInput[],
     take: number,
     cursor?: Prisma.MembershipUserIdCommunityIdCompoundUniqueInput,
-  ) {
+  ): Promise<PrismaMembershipDetail[]> {
     return ctx.issuer.onlyBelongingCommunity(ctx, (tx) => {
       return tx.membership.findMany({
         where,
