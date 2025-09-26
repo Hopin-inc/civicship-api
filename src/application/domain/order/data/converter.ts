@@ -3,6 +3,7 @@ import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
 import { PrismaNftWalletCreateDetail } from "@/application/domain/account/nft-wallet/data/type";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { PrismaProduct } from "@/application/domain/product/data/type";
+import Stripe from "stripe";
 
 @injectable()
 export default class OrderConverter {
@@ -10,10 +11,11 @@ export default class OrderConverter {
     userId: string,
     totalAmount: number,
     items: Array<{ productId: string; quantity: number; priceSnapshot: number }>,
+    paymentProvider: PaymentProvider = PaymentProvider.NMKR,
   ): Prisma.OrderCreateInput {
     return {
       status: OrderStatus.PENDING,
-      paymentProvider: PaymentProvider.NMKR,
+      paymentProvider,
       totalAmount,
       user: {
         connect: { id: userId },
@@ -50,6 +52,24 @@ export default class OrderConverter {
           hmacSecret: process.env.NMKR_WEBHOOK_HMAC_SECRET!,
         },
       ],
+    };
+  }
+
+  stripePaymentIntentInput(
+    product: PrismaProduct,
+    customProps: CustomPropsV1,
+  ): Stripe.PaymentIntentCreateParams {
+    return {
+      amount: product.price,
+      currency: "usd",
+      metadata: {
+        orderId: customProps.orderId || "",
+        userRef: customProps.userRef || "",
+        productId: product.id,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
     };
   }
 }

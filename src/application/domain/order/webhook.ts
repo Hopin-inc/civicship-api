@@ -1,7 +1,7 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlPaymentProvider } from "@/types/graphql";
-import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
+import { parseCustomProps, CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import logger from "@/infrastructure/logging";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
@@ -41,8 +41,9 @@ export default class OrderWebhook {
       case GqlPaymentProvider.Nmkr:
         await this.processNmkrWebhook(ctx, payload);
         return "NMKR";
-      // case GqlPaymentProvider.Stripe:
-      //   return this.processStripeWebhook(ctx, payload);
+      case GqlPaymentProvider.Stripe:
+        await this.processStripeWebhook(ctx, payload);
+        return "STRIPE";
       default:
         logger.warn("[OrderWebhook] Unsupported payment provider", { provider: payload.provider });
         return "IGNORED";
@@ -72,6 +73,53 @@ export default class OrderWebhook {
         paymentTransactionUid,
       });
     });
+  }
+
+  private async processStripeWebhook(ctx: IContext, payload: {
+    provider: GqlPaymentProvider;
+    projectUid: string;
+    paymentTransactionUid: string;
+    state: string;
+    txHash?: string;
+    customProperty?: string;
+  }): Promise<void> {
+    const { paymentTransactionUid, state, customProperty } = payload;
+
+    logger.info("[OrderWebhook] Processing Stripe webhook", {
+      paymentTransactionUid,
+      state,
+    });
+
+    let customProps: CustomPropsV1 | null = null;
+    if (customProperty) {
+      const parsed = parseCustomProps(customProperty);
+      if (parsed.success) {
+        customProps = parsed.data;
+      } else {
+        logger.warn("[OrderWebhook] Invalid Stripe metadata", {
+          paymentTransactionUid,
+          error: parsed.error,
+        });
+      }
+    }
+
+    if (state === "succeeded" && customProps?.orderId) {
+      await ctx.issuer.internal(async (tx) => {
+        await this.handleSuccessfulPayment(ctx, customProps!.orderId!, paymentTransactionUid, tx);
+      });
+    } else if (state === "payment_failed" && customProps?.orderId) {
+      await this.orderService.updateOrderStatus(ctx, customProps.orderId, OrderStatus.FAILED);
+      logger.info("[OrderWebhook] Stripe payment failed", {
+        paymentTransactionUid,
+        orderId: customProps.orderId,
+      });
+    } else {
+      logger.info("[OrderWebhook] Stripe webhook processed", {
+        paymentTransactionUid,
+        state,
+        hasCustomProps: !!customProps,
+      });
+    }
   }
 
   private validateCustomProps(paymentTransactionUid: string, raw?: string) {
@@ -104,6 +152,15 @@ export default class OrderWebhook {
     }
     await this.nftMintService.processStateTransition(ctx, { nftMintId, status, txHash }, tx);
     logger.info("[OrderWebhook] NFT mint state transitioned", { nftMintId, status, state });
+  }
+
+  private async handleSuccessfulPayment(
+    ctx: IContext,
+    orderId: string,
+    paymentTransactionUid: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    return this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
   }
 
   private async processOrderPayment(

@@ -930,6 +930,7 @@ export type GqlMutationOpportunityUpdateContentArgs = {
 
 
 export type GqlMutationOrderCreateArgs = {
+  paymentProvider?: InputMaybe<GqlPaymentProvider>;
   productId: Scalars['ID']['input'];
 };
 
@@ -1660,7 +1661,8 @@ export type GqlParticipationsConnection = {
 };
 
 export const GqlPaymentProvider = {
-  Nmkr: 'NMKR'
+  Nmkr: 'NMKR',
+  Stripe: 'STRIPE'
 } as const;
 
 export type GqlPaymentProvider = typeof GqlPaymentProvider[keyof typeof GqlPaymentProvider];
@@ -4199,7 +4201,7 @@ export type GqlMutationResolvers<ContextType = any, ParentType extends GqlResolv
   opportunitySlotSetHostingStatus?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotSetHostingStatusPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotSetHostingStatusArgs, 'id' | 'input' | 'permission'>>;
   opportunitySlotsBulkUpdate?: Resolver<Maybe<GqlResolversTypes['OpportunitySlotsBulkUpdatePayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunitySlotsBulkUpdateArgs, 'input' | 'permission'>>;
   opportunityUpdateContent?: Resolver<Maybe<GqlResolversTypes['OpportunityUpdateContentPayload']>, ParentType, ContextType, RequireFields<GqlMutationOpportunityUpdateContentArgs, 'id' | 'input' | 'permission'>>;
-  orderCreate?: Resolver<GqlResolversTypes['OrderCreatePayload'], ParentType, ContextType, RequireFields<GqlMutationOrderCreateArgs, 'productId'>>;
+  orderCreate?: Resolver<GqlResolversTypes['OrderCreatePayload'], ParentType, ContextType, RequireFields<GqlMutationOrderCreateArgs, 'paymentProvider' | 'productId'>>;
   participationBulkCreate?: Resolver<Maybe<GqlResolversTypes['ParticipationBulkCreatePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationBulkCreateArgs, 'input' | 'permission'>>;
   participationCreatePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationCreatePersonalRecordPayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationCreatePersonalRecordArgs, 'input'>>;
   participationDeletePersonalRecord?: Resolver<Maybe<GqlResolversTypes['ParticipationDeletePayload']>, ParentType, ContextType, RequireFields<GqlMutationParticipationDeletePersonalRecordArgs, 'id' | 'permission'>>;
