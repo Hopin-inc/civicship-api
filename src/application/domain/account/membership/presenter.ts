@@ -14,7 +14,7 @@ import {
 
 export default class MembershipPresenter {
   static query(
-    r: GqlMembership[],
+    r: PrismaMembershipDetail[],
     hasNextPage: boolean,
     cursor?: string,
   ): GqlMembershipsConnection {
@@ -24,14 +24,14 @@ export default class MembershipPresenter {
       pageInfo: {
         hasNextPage,
         hasPreviousPage: !!cursor,
-        startCursor: r[0]?.user?.id + "_" + r[0]?.community?.id,
+        startCursor: r[0]?.userId + "_" + r[0]?.communityId,
         endCursor: r.length
-          ? r[r.length - 1].user?.id + "_" + r[r.length - 1].community?.id
+          ? r[r.length - 1].userId + "_" + r[r.length - 1].communityId
           : undefined,
       },
       edges: r.map((edge) => ({
-        cursor: edge.user?.id + "_" + edge.community?.id,
-        node: edge,
+        cursor: edge.userId + "_" + edge.communityId,
+        node: this.get(edge),
       })),
     };
   }
