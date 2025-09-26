@@ -27,6 +27,26 @@ lines.push(``);
 const pathsObj = schema.paths || {};
 const methodKeys = ["get", "post", "put", "patch", "delete"];
 
+// Whitelist of actually used operations - only generate types for these
+const USED_OPERATIONS = new Set([
+  "/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}", // Used by createSpecificNftSale (POST endpoint only)
+  "/v2/CreateWallet/{customerid}", // Used by createWallet
+]);
+
+function isUsedOperation(url, method) {
+  // For GetAddressForSpecificNftSale, only include POST method
+  if (url === "/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}") {
+    return method === "post";
+  }
+  
+  // For CreateWallet, include all methods
+  if (url === "/v2/CreateWallet/{customerid}") {
+    return true;
+  }
+  
+  return false;
+}
+
 function toPascalCase(str) {
   return str.replace(/(?:^|[^a-zA-Z0-9])([a-zA-Z0-9])/g, (_, char) => char.toUpperCase());
 }
@@ -75,6 +95,11 @@ for (const [url, pathItem] of Object.entries(pathsObj)) {
   for (const method of methodKeys) {
     const op = pathItem?.[method];
     if (!op) continue;
+    
+    // Skip unused operations to reduce generated types
+    if (!isUsedOperation(url, method)) {
+      continue;
+    }
 
     const opId = op.operationId || null;
     const baseName = tsNameFromOperation(opId, method, url);

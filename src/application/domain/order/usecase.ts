@@ -5,7 +5,7 @@ import {
   GqlOrderCreatePayload,
   GqlPaymentProvider,
 } from "@/types/graphql";
-import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
+import { CustomPropsV1, parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import logger from "@/infrastructure/logging";
 import OrderService from "./service";
@@ -79,7 +79,7 @@ export default class OrderUseCase {
       }
     }
 
-    const customProps = {
+    const customProps: CustomPropsV1 = {
       orderId: order.id,
       userRef: currentUserId,
     };
@@ -95,11 +95,14 @@ export default class OrderUseCase {
       const paymentResponse = await this.nmkrClient.createSpecificNftSale(paymenttransaction);
       logger.debug("Created NMKR payment transaction", paymentResponse);
 
-      if (!paymentResponse.paymentTransactionUid) {
+      const paymentAddressId = paymentResponse.paymentAddressId;
+      const paymentAddress = paymentResponse.paymentAddress;
+
+      if (!paymentAddressId) {
         throw new Error("NMKR payment transaction not created");
       }
-      paymentUid = paymentResponse.paymentTransactionUid;
-      paymentUrl = paymentResponse.nmkrPayUrl;
+      paymentUid = paymentAddressId.toString();
+      paymentUrl = paymentAddress || "";
     } catch (err) {
       await this.safeMarkOrderFailed(ctx, order.id, err);
       throw err;
