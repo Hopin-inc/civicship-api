@@ -2,8 +2,8 @@ import { AxiosInstance } from "axios";
 import { NmkrHttp } from "./http";
 import type {
   CreatePaymentTransactionRequestBody,
-  CreatePaymentTransactionResponse,
 } from "../types/types.aliases";
+import type { components } from "../types/openapi";
 import type { CreateWalletResponse } from "../types/types.generated";
 
 export class NmkrEndpoints {
@@ -17,9 +17,9 @@ export class NmkrEndpoints {
     apikey: string,
     nftprojectid: string,
     payload: CreatePaymentTransactionRequestBody,
-  ): Promise<CreatePaymentTransactionResponse> {
+  ): Promise<components["schemas"]["GetPaymentAddressResultClass"]> {
     return this.http2.postJSON<
-      CreatePaymentTransactionResponse,
+      components["schemas"]["GetPaymentAddressResultClass"],
       CreatePaymentTransactionRequestBody
     >(`/GetAddressForSpecificNftSale/${apikey}/${nftprojectid}`, payload);
   }

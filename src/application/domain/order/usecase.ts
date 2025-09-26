@@ -33,8 +33,9 @@ export default class OrderUseCase {
 
   async userCreateOrder(
     ctx: IContext,
-    { productId }: GqlMutationOrderCreateArgs,
+    args: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
+    const productId = (args as any).productId; // TODO: Fix GraphQL type generation
     const currentUserId = getCurrentUserId(ctx);
     // const currentUserId = "cmfzidhe3000n8zta98ux2kil";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
@@ -86,7 +87,7 @@ export default class OrderUseCase {
     const paymenttransaction = this.converter.nmkrPaymentTransactionInput(
       product,
       nftWallet,
-      customProps,
+      customProps as any, // TODO: Fix CustomPropsV1 type
     );
 
     let paymentUid: string;
@@ -95,11 +96,14 @@ export default class OrderUseCase {
       const paymentResponse = await this.nmkrClient.createSpecificNftSale(paymenttransaction);
       logger.debug("Created NMKR payment transaction", paymentResponse);
 
-      if (!paymentResponse.paymentTransactionUid) {
+      const paymentAddressId = paymentResponse.paymentAddressId;
+      const paymentAddress = paymentResponse.paymentAddress;
+      
+      if (!paymentAddressId) {
         throw new Error("NMKR payment transaction not created");
       }
-      paymentUid = paymentResponse.paymentTransactionUid;
-      paymentUrl = paymentResponse.nmkrPayUrl;
+      paymentUid = paymentAddressId.toString();
+      paymentUrl = paymentAddress || "";
     } catch (err) {
       await this.safeMarkOrderFailed(ctx, order.id, err);
       throw err;

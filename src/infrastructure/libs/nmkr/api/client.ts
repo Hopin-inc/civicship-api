@@ -1,8 +1,12 @@
 import { injectable } from "tsyringe";
 import { createNmkrHttpClient, NmkrApiError } from "./http";
 import { NmkrEndpoints } from "./endpoints";
+import type {
+  CreatePaymentTransactionRequestBody,
+} from "../types/types.aliases";
+import type { components } from "../types/openapi";
 
-type Res<T extends (...a: any) => any> = Awaited<ReturnType<T>>;
+type Res<T extends (...args: never[]) => unknown> = Awaited<ReturnType<T>>;
 
 @injectable()
 export class NmkrClient {
@@ -24,7 +28,10 @@ export class NmkrClient {
     }
   }
 
-  async createSpecificNftSale(payload: any): Promise<any> {
+  async createSpecificNftSale(payload: {
+    apikey: string;
+    nftprojectid: string;
+  } & CreatePaymentTransactionRequestBody): Promise<components["schemas"]["GetPaymentAddressResultClass"]> {
     const { apikey, nftprojectid, ...requestBody } = payload;
     return this.handleRequest(
       () => this.endpoints.createPaymentTransactionForSpecificNft(apikey, nftprojectid, requestBody),
