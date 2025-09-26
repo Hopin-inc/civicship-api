@@ -24,7 +24,7 @@ export default class MembershipPresenter {
       pageInfo: {
         hasNextPage,
         hasPreviousPage: !!cursor,
-        startCursor: r[0]?.userId + "_" + r[0]?.communityId,
+        startCursor: r.length ? r[0].userId + "_" + r[0].communityId : undefined,
         endCursor: r.length
           ? r[r.length - 1].userId + "_" + r[r.length - 1].communityId
           : undefined,
