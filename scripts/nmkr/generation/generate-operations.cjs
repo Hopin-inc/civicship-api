@@ -29,16 +29,22 @@ const methodKeys = ["get", "post", "put", "patch", "delete"];
 
 // Whitelist of actually used operations - only generate types for these
 const USED_OPERATIONS = new Set([
-  "/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}", // Used by createSpecificNftSale (POST endpoint)
+  "/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}", // Used by createSpecificNftSale (POST endpoint only)
   "/v2/CreateWallet/{customerid}", // Used by createWallet
 ]);
 
-function isUsedOperation(url) {
-  // Check if this URL path is in our whitelist
-  return USED_OPERATIONS.has(url) || 
-         // Also include paths that contain our key operations
-         url.includes("GetAddressForSpecificNftSale") && url.includes("nftprojectid") ||
-         url.includes("CreateWallet") && url.includes("customerid");
+function isUsedOperation(url, method) {
+  // For GetAddressForSpecificNftSale, only include POST method
+  if (url === "/GetAddressForSpecificNftSale/{apikey}/{nftprojectid}") {
+    return method === "post";
+  }
+  
+  // For CreateWallet, include all methods
+  if (url === "/v2/CreateWallet/{customerid}") {
+    return true;
+  }
+  
+  return false;
 }
 
 function toPascalCase(str) {
@@ -86,14 +92,14 @@ function getPreferredContentType(content) {
 }
 
 for (const [url, pathItem] of Object.entries(pathsObj)) {
-  // Skip unused operations to reduce generated types
-  if (!isUsedOperation(url)) {
-    continue;
-  }
-  
   for (const method of methodKeys) {
     const op = pathItem?.[method];
     if (!op) continue;
+    
+    // Skip unused operations to reduce generated types
+    if (!isUsedOperation(url, method)) {
+      continue;
+    }
 
     const opId = op.operationId || null;
     const baseName = tsNameFromOperation(opId, method, url);
