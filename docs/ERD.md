@@ -663,8 +663,6 @@ FAILED FAILED
     String id "🗝️"
     NftWalletType type 
     String wallet_address 
-    String api_key "❓"
-    String external_ref "❓"
     String user_id 
     DateTime created_at 
     DateTime updated_at "❓"

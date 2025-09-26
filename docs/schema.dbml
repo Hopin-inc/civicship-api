@@ -538,8 +538,6 @@ Table t_nft_wallets {
   id String [pk]
   type NftWalletType [not null, default: 'INTERNAL']
   walletAddress String [unique, not null]
-  apiKey String
-  externalRef String
   userId String [not null]
   user t_users [not null]
   nftInstances t_nft_instances [not null]

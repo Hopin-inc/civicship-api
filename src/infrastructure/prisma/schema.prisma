@@ -1130,9 +1130,7 @@ model NftWallet {
   id   String        @id @default(cuid())
   type NftWalletType @default(INTERNAL)
 
-  walletAddress String  @unique @map("wallet_address")
-  apiKey        String? @map("api_key")
-  externalRef   String? @map("external_ref")
+  walletAddress String @unique @map("wallet_address")
 
   userId       String        @map("user_id")
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
