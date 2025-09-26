@@ -93,7 +93,12 @@ export default class OrderUseCase {
     customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
     try {
-      const payload = this.converter.nmkrPaymentTransactionInput(product, nftWallet, customProps);
+      const payload = this.converter.nmkrPaymentTransactionInput(
+        product,
+        nftWallet.walletAddress,
+        "dummy",
+        customProps,
+      );
 
       const paymentResponse = await this.nmkrClient.createSpecificNftSale(payload);
       const { paymentTransactionUid, nmkrPayUrl } = paymentResponse;

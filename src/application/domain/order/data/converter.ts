@@ -1,8 +1,8 @@
 import { injectable } from "tsyringe";
 import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
-import { PrismaNftWalletCreateDetail } from "@/application/domain/account/nft-wallet/data/type";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { PrismaProduct } from "@/application/domain/product/data/type";
+import { CreatePaymentTransactionRequest } from "@/infrastructure/libs/nmkr/type";
 
 @injectable()
 export default class OrderConverter {
@@ -30,19 +30,27 @@ export default class OrderConverter {
 
   nmkrPaymentTransactionInput(
     product: PrismaProduct,
-    nftWallet: PrismaNftWalletCreateDetail,
+    receiverAddress: string,
+    nftUid: string,
     customProps: CustomPropsV1,
-  ) {
+  ): CreatePaymentTransactionRequest {
     return {
-      projectUid: product.nftProduct!.externalRef,
-      paymentTransactionType: "paymentgateway_nft_random",
+      projectUid: product.nftProduct!.externalRef!,
+      paymentTransactionType: "nmkr_pay_specific",
       paymentgatewayParameters: {
         mintNfts: {
           countNfts: 1,
+          reserveNfts: [
+            {
+              lovelace: product.price,
+              nftUid: nftUid,
+              tokencount: 1,
+            },
+          ],
         },
+        optionalRecevierAddress: receiverAddress,
       },
-      optionalReceiverAddress: nftWallet.walletAddress,
-      customProperties: customProps,
+      customProperties: sanitizeProps(customProps),
       paymentTransactionNotifications: [
         {
           notificationType: "webhook",
@@ -52,4 +60,11 @@ export default class OrderConverter {
       ],
     };
   }
+}
+
+function sanitizeProps(props: CustomPropsV1): Record<string, string> {
+  return Object.fromEntries(Object.entries(props).filter(([, v]) => v !== undefined)) as Record<
+    string,
+    string
+  >;
 }
