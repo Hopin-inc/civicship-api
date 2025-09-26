@@ -13,6 +13,8 @@ import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
+import { getCurrentUserId } from "@/application/domain/utils";
 
 @injectable()
 export default class OrderUseCase {
@@ -21,6 +23,7 @@ export default class OrderUseCase {
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
+    @inject("NftInstanceRepository") private readonly nftInstanceRepo: NftInstanceRepository,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
   ) {}
 
@@ -28,8 +31,8 @@ export default class OrderUseCase {
     ctx: IContext,
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmfzidhe3000n8zta98ux2kil";
+    const currentUserId = getCurrentUserId(ctx);
+    // const currentUserId = "cmfzidhe3000n8zta98ux2kil";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await ctx.issuer.internal((tx) =>
@@ -93,10 +96,22 @@ export default class OrderUseCase {
     customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
     try {
+      const nftInstance = await this.nftInstanceRepo.findAvailableInstance(
+        ctx,
+        ctx.communityId,
+        product.id,
+      );
+
+      if (!nftInstance) {
+        throw new Error(
+          `No available NFT instance found for product ${product.id} in community ${ctx.communityId}`,
+        );
+      }
+
       const payload = this.converter.nmkrPaymentTransactionInput(
         product,
         nftWallet.walletAddress,
-        "dummy",
+        nftInstance.id,
         customProps,
       );
 
