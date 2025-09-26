@@ -1660,7 +1660,8 @@ export type GqlParticipationsConnection = {
 };
 
 export const GqlPaymentProvider = {
-  Nmkr: 'NMKR'
+  Nmkr: 'NMKR',
+  Stripe: 'STRIPE'
 } as const;
 
 export type GqlPaymentProvider = typeof GqlPaymentProvider[keyof typeof GqlPaymentProvider];

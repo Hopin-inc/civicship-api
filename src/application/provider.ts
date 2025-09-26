@@ -34,6 +34,7 @@ import { OrderItemService } from "@/application/domain/order/orderItem/service";
 import OrderUseCase from "@/application/domain/order/usecase";
 import OrderResolver from "@/application/domain/order/controller/resolver";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
 import IdentityRepository from "@/application/domain/account/identity/data/repository";
 import IdentityConverter from "@/application/domain/account/identity/data/converter";
 import DIDIssuanceRequestRepository from "@/application/domain/account/identity/didIssuanceRequest/data/repository";
@@ -320,6 +321,7 @@ export function registerProductionDependencies() {
   // ------------------------------
 
   container.register("NmkrClient", { useClass: NmkrClient });
+  container.register("StripeClient", { useClass: StripeClient });
 }
 
 registerProductionDependencies();
