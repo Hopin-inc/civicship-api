@@ -1,4 +1,5 @@
 export interface CustomPropsV1 {
+  [key: string]: string | undefined;
   nftMintId?: string;
   nftWalletId?: string;
   userRef?: string;

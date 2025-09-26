@@ -1,9 +1,14 @@
 import { injectable } from "tsyringe";
 import { createNmkrHttpClient, NmkrApiError } from "./http";
 import { NmkrEndpoints } from "./endpoints";
-
-type Arg<T extends (...a: any) => any, I extends number = 0> = Parameters<T>[I];
-type Res<T extends (...a: any) => any> = Awaited<ReturnType<T>>;
+import {
+  CreatePaymentTransactionRequest,
+  CreatePaymentTransactionResponse,
+  CreateWalletResponse,
+  MintAndSendSpecificResponse,
+  UploadNftRequest,
+  UploadNftResponse,
+} from "@/infrastructure/libs/nmkr/type";
 
 @injectable()
 export class NmkrClient {
@@ -26,8 +31,8 @@ export class NmkrClient {
   }
 
   async createSpecificNftSale(
-    payload: Arg<NmkrEndpoints["createPaymentTransactionForSpecificNft"]>,
-  ): Promise<any> {
+    payload: CreatePaymentTransactionRequest,
+  ): Promise<CreatePaymentTransactionResponse> {
     return this.handleRequest(
       () => this.endpoints.createPaymentTransactionForSpecificNft(payload),
       "Failed to create specific NFT sale",
@@ -37,10 +42,41 @@ export class NmkrClient {
   async createWallet(
     customerId: number,
     options: { walletName: string; enterpriseaddress: boolean; walletPassword: string },
-  ): Promise<Res<NmkrEndpoints["createWallet"]>> {
+  ): Promise<CreateWalletResponse> {
     return this.handleRequest(
       () => this.endpoints.createWallet(customerId, options),
       "Failed to create NMKR wallet",
+    );
+  }
+
+  async uploadNft(
+    projectUid: string,
+    payload: UploadNftRequest,
+    uploadSource?: string,
+  ): Promise<UploadNftResponse> {
+    return this.handleRequest(
+      () => this.endpoints.uploadNft(projectUid, payload, uploadSource),
+      "Failed to create NMKR wallet",
+    );
+  }
+
+  async mintAndSendSpecific(
+    projectUid: string,
+    nftUid: string,
+    tokenCount: number,
+    receiverAddress: string,
+    blockchain: string = "Cardano",
+  ): Promise<MintAndSendSpecificResponse> {
+    return this.handleRequest(
+      () =>
+        this.endpoints.mintAndSendSpecific(
+          projectUid,
+          nftUid,
+          tokenCount,
+          receiverAddress,
+          blockchain,
+        ),
+      "Failed to mint and send NFT via NMKR",
     );
   }
 }
