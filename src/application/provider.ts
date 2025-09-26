@@ -31,7 +31,6 @@ import OrderRepository from "@/application/domain/order/data/repository";
 import OrderConverter from "@/application/domain/order/data/converter";
 import { OrderItemRepository } from "@/application/domain/order/orderItem/data/repository";
 import { OrderItemService } from "@/application/domain/order/orderItem/service";
-import OrderService from "@/application/domain/order/service";
 import OrderUseCase from "@/application/domain/order/usecase";
 import OrderResolver from "@/application/domain/order/controller/resolver";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
@@ -112,6 +111,7 @@ import VCIssuanceRequestConverter from "@/application/domain/experience/evaluati
 import CommunityConfigService from "@/application/domain/account/community/config/service";
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 import OrderItemConverter from "@/application/domain/order/orderItem/data/converter";
+import OrderService from "@/application/domain/order/service";
 
 export function registerProductionDependencies() {
   // ------------------------------
