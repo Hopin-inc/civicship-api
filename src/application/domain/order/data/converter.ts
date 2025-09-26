@@ -41,7 +41,7 @@ export default class OrderConverter {
           countNfts: 1,
         },
       },
-      optionalRecevierAddress: nftWallet.walletAddress,
+      optionalReceiverAddress: nftWallet.walletAddress,
       customProperties: customProps,
       paymentTransactionNotifications: [
         {
