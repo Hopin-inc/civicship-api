@@ -1,63 +1,63 @@
 import { injectable } from "tsyringe";
-import { createStripeHttpClient, StripeApiError } from "./http";
-import { StripeEndpoints } from "./endpoints";
-
-type Arg<T extends (...a: any) => any, I extends number = 0> = Parameters<T>[I];
-type Res<T extends (...a: any) => any> = Awaited<ReturnType<T>>;
+import Stripe from "stripe";
 
 @injectable()
 export class StripeClient {
-  private readonly endpoints: StripeEndpoints;
+  private readonly stripe: Stripe;
 
   constructor() {
-    const httpClient = createStripeHttpClient();
-    this.endpoints = new StripeEndpoints(httpClient);
-  }
-
-  private async handleRequest<T>(operation: () => Promise<T>, errorMessage: string): Promise<T> {
-    try {
-      return await operation();
-    } catch (error: unknown) {
-      if (error instanceof StripeApiError) {
-        throw error;
-      }
-      throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`);
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) {
+      throw new Error("STRIPE_SECRET_KEY environment variable is required");
     }
+
+    this.stripe = new Stripe(apiKey, {
+      apiVersion: "2023-10-16",
+      typescript: true,
+    });
   }
 
-  async createPaymentIntent(
-    payload: Arg<StripeEndpoints["createPaymentIntent"]>,
-  ): Promise<Res<StripeEndpoints["createPaymentIntent"]>> {
-    return this.handleRequest(
-      () => this.endpoints.createPaymentIntent(payload),
-      "Failed to create Stripe payment intent",
-    );
+  async createPaymentIntent(params: Stripe.PaymentIntentCreateParams): Promise<Stripe.PaymentIntent> {
+    return await this.stripe.paymentIntents.create(params);
   }
 
-  async retrievePaymentIntent(
-    paymentIntentId: string,
-  ): Promise<Res<StripeEndpoints["retrievePaymentIntent"]>> {
-    return this.handleRequest(
-      () => this.endpoints.retrievePaymentIntent(paymentIntentId),
-      "Failed to retrieve Stripe payment intent",
-    );
+  async retrievePaymentIntent(paymentIntentId: string, params?: Stripe.PaymentIntentRetrieveParams): Promise<Stripe.PaymentIntent> {
+    return await this.stripe.paymentIntents.retrieve(paymentIntentId, params);
   }
 
-  async createCustomer(
-    payload: Arg<StripeEndpoints["createCustomer"]>,
-  ): Promise<Res<StripeEndpoints["createCustomer"]>> {
-    return this.handleRequest(
-      () => this.endpoints.createCustomer(payload),
-      "Failed to create Stripe customer",
-    );
+  async confirmPaymentIntent(paymentIntentId: string, params?: Stripe.PaymentIntentConfirmParams): Promise<Stripe.PaymentIntent> {
+    return await this.stripe.paymentIntents.confirm(paymentIntentId, params);
   }
 
-  async retrieveCustomer(
-    customerId: string,
-  ): Promise<Res<StripeEndpoints["retrieveCustomer"]>> {
-    return this.handleRequest(
-      () => this.endpoints.retrieveCustomer(customerId),
-      "Failed to retrieve Stripe customer",
-    );
+  async createCustomer(params: Stripe.CustomerCreateParams): Promise<Stripe.Customer> {
+    return await this.stripe.customers.create(params);
+  }
+
+  async retrieveCustomer(customerId: string, params?: Stripe.CustomerRetrieveParams): Promise<Stripe.Customer> {
+    const customer = await this.stripe.customers.retrieve(customerId, params);
+    if (customer.deleted) {
+      throw new Error(`Customer ${customerId} has been deleted`);
+    }
+    return customer;
+  }
+
+  async updateCustomer(customerId: string, params: Stripe.CustomerUpdateParams): Promise<Stripe.Customer> {
+    return await this.stripe.customers.update(customerId, params);
+  }
+
+  async createSetupIntent(params: Stripe.SetupIntentCreateParams): Promise<Stripe.SetupIntent> {
+    return await this.stripe.setupIntents.create(params);
+  }
+
+  async retrieveSetupIntent(setupIntentId: string, params?: Stripe.SetupIntentRetrieveParams): Promise<Stripe.SetupIntent> {
+    return await this.stripe.setupIntents.retrieve(setupIntentId, params);
+  }
+
+  constructWebhookEvent(payload: string | Buffer, signature: string, secret: string): Stripe.Event {
+    return this.stripe.webhooks.constructEvent(payload, signature, secret);
+  }
+
+  getStripeInstance(): Stripe {
+    return this.stripe;
   }
 }
