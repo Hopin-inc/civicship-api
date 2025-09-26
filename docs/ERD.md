@@ -689,6 +689,7 @@ FAILED FAILED
     String image_url "❓"
     Json json "❓"
     Int sequence_num "❓"
+    String product_id "❓"
     String nft_wallet_id 
     String nft_token_id "❓"
     String nft_mint_id "❓"
@@ -1009,6 +1010,7 @@ FAILED FAILED
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_wallets" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
+    "t_nft_instances" o|--|o "t_products" : "product"
     "t_nft_instances" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
     "t_nft_instances" o|--|o "t_nft_mints" : "nftMint"
@@ -1027,6 +1029,7 @@ FAILED FAILED
     "t_products" o|--|| "ProductType" : "enum:type"
     "t_products" o{--}o "t_order_items" : "orderItem"
     "t_products" o{--}o "t_nft_products" : "nftProduct"
+    "t_products" o{--}o "t_nft_instances" : "nftInstance"
     "t_nft_products" o|--|| "t_products" : "product"
     "v_place_public_opportunity_count" o|--|| "t_places" : "place"
     "v_place_accumulated_participants" o|--|| "t_places" : "place"

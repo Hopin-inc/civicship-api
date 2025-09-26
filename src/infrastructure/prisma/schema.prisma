@@ -1174,8 +1174,8 @@ model NftInstance {
 
   sequenceNum Int? @map("sequence_num")
 
-  // productId String  @map("product_id")
-  // product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String?  @map("product_id")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   nftWalletId String    @map("nft_wallet_id")
   nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
@@ -1294,8 +1294,9 @@ model Product {
   startsAt  DateTime? @map("starts_at")
   endsAt    DateTime? @map("ends_at")
 
-  orderItem  OrderItem[]
-  nftProduct NftProduct?
+  orderItem   OrderItem[]
+  nftProduct  NftProduct?
+  nftInstance NftInstance[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

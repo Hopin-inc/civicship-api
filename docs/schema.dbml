@@ -566,6 +566,8 @@ Table t_nft_instances {
   imageUrl String
   json Json
   sequenceNum Int
+  productId String
+  product t_products
   nftWalletId String [not null]
   nftWallet t_nft_wallets [not null]
   nftTokenId String
@@ -634,6 +636,7 @@ Table t_products {
   endsAt DateTime
   orderItem t_order_items [not null]
   nftProduct t_nft_products
+  nftInstance t_nft_instances [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
 }
@@ -1075,6 +1078,8 @@ Ref: t_transactions.reservationId > t_reservations.id [delete: Set Null]
 Ref: t_transactions.createdBy > t_users.id [delete: Set Null]
 
 Ref: t_nft_wallets.userId > t_users.id [delete: Cascade]
+
+Ref: t_nft_instances.productId > t_products.id [delete: Restrict]
 
 Ref: t_nft_instances.nftWalletId > t_nft_wallets.id [delete: Cascade]
 
