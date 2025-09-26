@@ -232,6 +232,7 @@ FAILED FAILED
 
         PaymentProvider {
             NMKR NMKR
+STRIPE STRIPE
         }
     
 

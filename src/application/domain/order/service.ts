@@ -1,6 +1,6 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { Prisma, OrderStatus } from "@prisma/client";
+import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
 import OrderRepository from "@/application/domain/order/data/repository";
 import { IOrderService } from "@/application/domain/order/data/interface";
 import OrderConverter from "@/application/domain/order/data/converter";
@@ -18,6 +18,7 @@ export default class OrderService implements IOrderService {
     input: {
       userId: string;
       items: Array<{ productId: string; quantity: number; priceSnapshot: number }>;
+      paymentProvider?: PaymentProvider;
     },
     tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems> {
@@ -26,7 +27,7 @@ export default class OrderService implements IOrderService {
       0,
     );
 
-    const createInput = this.converter.create(input.userId, totalAmount, input.items);
+    const createInput = this.converter.create(input.userId, totalAmount, input.items, input.paymentProvider);
     return await this.repository.create(ctx, createInput, tx);
   }
 

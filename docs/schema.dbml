@@ -946,6 +946,7 @@ Enum NftMintStatus {
 
 Enum PaymentProvider {
   NMKR
+  STRIPE
 }
 
 Enum OrderStatus {

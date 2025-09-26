@@ -1,5 +1,5 @@
 extend type Mutation {
-  orderCreate(productId: ID!): OrderCreatePayload!
+  orderCreate(productId: ID!, paymentProvider: PaymentProvider = NMKR): OrderCreatePayload!
 #  @authz(rules: [IsUser])
 }
 

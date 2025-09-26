@@ -1,13 +1,14 @@
 import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
+import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload, GqlPaymentProvider } from "@/types/graphql";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, PaymentProvider } from "@prisma/client";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
@@ -22,11 +23,12 @@ export default class OrderUseCase {
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
+    @inject("StripeClient") private readonly stripeClient: StripeClient,
   ) {}
 
   async userCreateOrder(
     ctx: IContext,
-    { productId }: GqlMutationOrderCreateArgs,
+    { productId, paymentProvider = GqlPaymentProvider.Nmkr }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
     const currentUserId = "cmfzidhe3000n8zta98ux2kil";
@@ -38,23 +40,30 @@ export default class OrderUseCase {
         {
           userId: currentUserId,
           items: [{ productId, quantity: 1, priceSnapshot: product.price }],
+          paymentProvider: paymentProvider === GqlPaymentProvider.Stripe ? PaymentProvider.STRIPE : PaymentProvider.NMKR,
         },
         tx,
       ),
     );
 
-    const nftWallet = await this.ensureWallet(ctx, currentUserId);
-
     const customProps: CustomPropsV1 = {
       orderId: order.id,
       userRef: currentUserId,
     };
-    const { uid: paymentUid, url: paymentUrl } = await this.createPaymentTransaction(
-      ctx,
-      product,
-      nftWallet,
-      customProps,
-    );
+
+    let paymentUid: string;
+    let paymentUrl: string;
+
+    if (paymentProvider === GqlPaymentProvider.Stripe) {
+      const { uid, url } = await this.createStripePaymentIntent(ctx, product, customProps);
+      paymentUid = uid;
+      paymentUrl = url;
+    } else {
+      const nftWallet = await this.ensureWallet(ctx, currentUserId);
+      const { uid, url } = await this.createPaymentTransaction(ctx, product, nftWallet, customProps);
+      paymentUid = uid;
+      paymentUrl = url;
+    }
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentUid);
     return OrderPresenter.create(paymentUrl);
@@ -115,6 +124,36 @@ export default class OrderUseCase {
         await this.safeMarkOrderFailed(ctx, customProps.orderId, error);
       }
       logger.error("[OrderUseCase] Failed to create NMKR payment transaction", {
+        orderId: customProps.orderId,
+        error,
+      });
+      throw error;
+    }
+  }
+
+  private async createStripePaymentIntent(
+    ctx: IContext,
+    product: PrismaProduct,
+    customProps: CustomPropsV1,
+  ): Promise<{ uid: string; url: string }> {
+    try {
+      const paymentIntentParams = this.converter.stripePaymentIntentInput(product, customProps);
+      const paymentIntent = await this.stripeClient.createPaymentIntent(paymentIntentParams);
+
+      logger.debug("[OrderUseCase] Created Stripe payment intent", {
+        orderId: customProps.orderId,
+        paymentIntentId: paymentIntent.id,
+      });
+
+      return {
+        uid: paymentIntent.id,
+        url: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/${paymentIntent.id}?client_secret=${paymentIntent.client_secret}`,
+      };
+    } catch (error) {
+      if (customProps.orderId) {
+        await this.safeMarkOrderFailed(ctx, customProps.orderId, error);
+      }
+      logger.error("[OrderUseCase] Failed to create Stripe payment intent", {
         orderId: customProps.orderId,
         error,
       });

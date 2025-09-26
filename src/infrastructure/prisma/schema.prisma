@@ -1272,6 +1272,7 @@ model OrderItem {
 
 enum PaymentProvider {
   NMKR
+  STRIPE
 }
 
 enum OrderStatus {

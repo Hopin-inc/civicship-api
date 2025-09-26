@@ -1,7 +1,7 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlPaymentProvider } from "@/types/graphql";
-import { parseCustomProps } from "@/infrastructure/libs/nmkr/customProps";
+import { parseCustomProps, CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import logger from "@/infrastructure/logging";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
@@ -90,10 +90,34 @@ export default class OrderWebhook {
       state,
     });
 
-    if (state === "succeeded") {
-      logger.info("[OrderWebhook] Stripe payment succeeded", {
+    let customProps: CustomPropsV1 | null = null;
+    if (customProperty) {
+      const parsed = parseCustomProps(customProperty);
+      if (parsed.success) {
+        customProps = parsed.data;
+      } else {
+        logger.warn("[OrderWebhook] Invalid Stripe metadata", {
+          paymentTransactionUid,
+          error: parsed.error,
+        });
+      }
+    }
+
+    if (state === "succeeded" && customProps?.orderId) {
+      await ctx.issuer.internal(async (tx) => {
+        await this.handleSuccessfulPayment(ctx, customProps!.orderId!, paymentTransactionUid, tx);
+      });
+    } else if (state === "payment_failed" && customProps?.orderId) {
+      await this.orderService.updateOrderStatus(ctx, customProps.orderId, OrderStatus.FAILED);
+      logger.info("[OrderWebhook] Stripe payment failed", {
         paymentTransactionUid,
-        customProperty,
+        orderId: customProps.orderId,
+      });
+    } else {
+      logger.info("[OrderWebhook] Stripe webhook processed", {
+        paymentTransactionUid,
+        state,
+        hasCustomProps: !!customProps,
       });
     }
   }
@@ -128,6 +152,15 @@ export default class OrderWebhook {
     }
     await this.nftMintService.processStateTransition(ctx, { nftMintId, status, txHash }, tx);
     logger.info("[OrderWebhook] NFT mint state transitioned", { nftMintId, status, state });
+  }
+
+  private async handleSuccessfulPayment(
+    ctx: IContext,
+    orderId: string,
+    paymentTransactionUid: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    return this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
   }
 
   private async processOrderPayment(
