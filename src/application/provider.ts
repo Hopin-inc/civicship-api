@@ -112,6 +112,7 @@ import CommunityConfigService from "@/application/domain/account/community/confi
 import CommunityConfigRepository from "@/application/domain/account/community/config/data/repository";
 import OrderItemConverter from "@/application/domain/order/orderItem/data/converter";
 import OrderService from "@/application/domain/order/service";
+import OrderWebhook from "@/application/domain/order/webhook";
 
 export function registerProductionDependencies() {
   // ------------------------------
@@ -168,6 +169,7 @@ export function registerProductionDependencies() {
   container.register("OrderUseCase", { useClass: OrderUseCase });
   container.register("OrderResolver", { useClass: OrderResolver });
   container.register("OrderService", { useClass: OrderService });
+  container.register("OrderWebhook", { useClass: OrderWebhook });
 
   // 🏘️ Community
   container.register("CommunityRepository", { useClass: ICommunityRepository });

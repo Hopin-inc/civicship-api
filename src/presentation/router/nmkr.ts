@@ -2,10 +2,10 @@ import express from "express";
 import logger from "@/infrastructure/logging";
 import crypto from "crypto";
 import { container } from "tsyringe";
-import OrderUseCase from "@/application/domain/order/usecase";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
 import { GqlPaymentProvider } from "@/types/graphql";
+import OrderWebhook from "@/application/domain/order/webhook";
 
 type NmkrWebhookPayload = {
   paymentTransactionUid: string;
@@ -84,11 +84,11 @@ router.post("/webhook", verifyHmacSignature, async (req, res) => {
       txHash: payload.txHash,
     });
 
-    const orderUseCase = container.resolve<OrderUseCase>("OrderUseCase");
+    const orderWebhook = container.resolve<OrderWebhook>("OrderWebhook");
     const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
     const ctx = { issuer } as IContext;
-    await orderUseCase.processWebhook(ctx, {
+    await orderWebhook.processWebhook(ctx, {
       provider: GqlPaymentProvider.Nmkr,
       ...payload,
     });
