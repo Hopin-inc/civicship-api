@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
@@ -68,7 +69,7 @@ export default class OrderUseCase {
       const walletResponse = await this.nmkrClient.createWallet(parentCustomerId, {
         walletName: userId,
         enterpriseaddress: true,
-        walletPassword: "stringstring",
+        walletPassword: crypto.randomBytes(32).toString("hex"),
       });
 
       logger.debug("[OrderUseCase] Created NMKR Managed wallet", {
