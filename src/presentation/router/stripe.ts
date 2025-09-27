@@ -1,5 +1,6 @@
 import express from "express";
 import { container } from "tsyringe";
+import Stripe from "stripe";
 import { GqlPaymentProvider } from "@/types/graphql";
 import OrderWebhook from "@/application/domain/order/webhook";
 import { StripeClient } from "@/infrastructure/libs/stripe/api";
@@ -34,20 +35,14 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     let projectUid: string;
     let paymentTransactionUid: string;
     let state: string;
-    let metadata: Record<string, any> = {};
+    let metadata: Stripe.Metadata = {};
 
     if (event.type.startsWith('payment_intent.')) {
-      const eventObject = event.data.object;
-      if (eventObject && typeof eventObject === 'object' && 'id' in eventObject && 'status' in eventObject) {
-        projectUid = String(eventObject.id);
-        paymentTransactionUid = String(eventObject.id);
-        state = String(eventObject.status || "unknown");
-        metadata = (eventObject as any).metadata || {};
-      } else {
-        projectUid = event.id;
-        paymentTransactionUid = event.id;
-        state = "unknown";
-      }
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      projectUid = paymentIntent.id;
+      paymentTransactionUid = paymentIntent.id;
+      state = paymentIntent.status;
+      metadata = paymentIntent.metadata;
     } else {
       projectUid = event.id;
       paymentTransactionUid = event.id;
@@ -60,7 +55,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       projectUid,
       paymentTransactionUid,
       state,
-      customProperty: JSON.stringify(metadata),
+      customProperty: Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : undefined,
     });
 
     logger.info("Successfully processed Stripe webhook", {

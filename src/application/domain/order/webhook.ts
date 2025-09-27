@@ -104,8 +104,9 @@ export default class OrderWebhook {
     }
 
     if (state === "succeeded" && customProps?.orderId) {
+      const orderId = customProps.orderId;
       await ctx.issuer.internal(async (tx) => {
-        await this.handleSuccessfulPayment(ctx, customProps!.orderId!, paymentTransactionUid, tx);
+        await this.handleSuccessfulPayment(ctx, orderId, paymentTransactionUid, tx);
       });
     } else if (state === "payment_failed" && customProps?.orderId) {
       await this.orderService.updateOrderStatus(ctx, customProps.orderId, OrderStatus.FAILED);

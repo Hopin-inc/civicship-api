@@ -5,6 +5,7 @@ import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload, GqlPaymentProvider }
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
+import { getCurrentUserId } from "@/application/domain/utils";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
@@ -30,8 +31,7 @@ export default class OrderUseCase {
     ctx: IContext,
     { productId, paymentProvider = GqlPaymentProvider.Nmkr }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmfzidhe3000n8zta98ux2kil";
+    const currentUserId = getCurrentUserId(ctx);
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await ctx.issuer.internal((tx) =>
@@ -51,22 +51,16 @@ export default class OrderUseCase {
       userRef: currentUserId,
     };
 
-    let paymentUid: string;
-    let paymentUrl: string;
+    const paymentResult = await this.createPaymentForProvider(
+      ctx,
+      paymentProvider,
+      product,
+      customProps,
+      currentUserId
+    );
 
-    if (paymentProvider === GqlPaymentProvider.Stripe) {
-      const { uid, url } = await this.createStripePaymentIntent(ctx, product, customProps);
-      paymentUid = uid;
-      paymentUrl = url;
-    } else {
-      const nftWallet = await this.ensureWallet(ctx, currentUserId);
-      const { uid, url } = await this.createPaymentTransaction(ctx, product, nftWallet, customProps);
-      paymentUid = uid;
-      paymentUrl = url;
-    }
-
-    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentUid);
-    return OrderPresenter.create(paymentUrl);
+    await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResult.uid);
+    return OrderPresenter.create(paymentResult.url);
   }
 
   private async ensureWallet(ctx: IContext, userId: string) {
@@ -131,12 +125,32 @@ export default class OrderUseCase {
     }
   }
 
+  private async createPaymentForProvider(
+    ctx: IContext,
+    paymentProvider: GqlPaymentProvider,
+    product: PrismaProduct,
+    customProps: CustomPropsV1,
+    currentUserId: string,
+  ): Promise<{ uid: string; url: string }> {
+    if (paymentProvider === GqlPaymentProvider.Stripe) {
+      return this.createStripePaymentIntent(ctx, product, customProps);
+    } else {
+      const nftWallet = await this.ensureWallet(ctx, currentUserId);
+      return this.createPaymentTransaction(ctx, product, nftWallet, customProps);
+    }
+  }
+
   private async createStripePaymentIntent(
     ctx: IContext,
     product: PrismaProduct,
     customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
     try {
+      const frontendUrl = process.env.FRONTEND_URL;
+      if (!frontendUrl) {
+        throw new Error("FRONTEND_URL environment variable is required for Stripe payments");
+      }
+
       const paymentIntentParams = this.converter.stripePaymentIntentInput(product, customProps);
       const paymentIntent = await this.stripeClient.createPaymentIntent(paymentIntentParams);
 
@@ -147,7 +161,7 @@ export default class OrderUseCase {
 
       return {
         uid: paymentIntent.id,
-        url: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/payment/${paymentIntent.id}?client_secret=${paymentIntent.client_secret}`,
+        url: `${frontendUrl}/payment/${paymentIntent.id}?client_secret=${paymentIntent.client_secret}`,
       };
     } catch (error) {
       if (customProps.orderId) {
