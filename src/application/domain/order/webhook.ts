@@ -106,9 +106,9 @@ export default class OrderWebhook {
     if (state === "succeeded" && customProps?.orderId) {
       const orderId = customProps.orderId;
       await ctx.issuer.internal(async (tx) => {
-        await this.handleSuccessfulPayment(ctx, orderId, paymentTransactionUid, tx);
+        await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
       });
-    } else if (state === "payment_failed" && customProps?.orderId) {
+    }else if (state === "payment_failed" && customProps?.orderId) {
       await this.orderService.updateOrderStatus(ctx, customProps.orderId, OrderStatus.FAILED);
       logger.info("[OrderWebhook] Stripe payment failed", {
         paymentTransactionUid,
@@ -155,14 +155,6 @@ export default class OrderWebhook {
     logger.info("[OrderWebhook] NFT mint state transitioned", { nftMintId, status, state });
   }
 
-  private async handleSuccessfulPayment(
-    ctx: IContext,
-    orderId: string,
-    paymentTransactionUid: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<void> {
-    return this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
-  }
 
   private async processOrderPayment(
     ctx: IContext,

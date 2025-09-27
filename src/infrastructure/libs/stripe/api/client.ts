@@ -1,17 +1,16 @@
 import { injectable } from "tsyringe";
 import Stripe from "stripe";
+import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
 
 @injectable()
 export class StripeClient {
   private readonly stripe: Stripe;
+  private readonly config: ReturnType<typeof validateEnvironmentVariables>;
 
   constructor() {
-    const apiKey = process.env.STRIPE_SECRET_KEY;
-    if (!apiKey) {
-      throw new Error("STRIPE_SECRET_KEY environment variable is required");
-    }
+    this.config = validateEnvironmentVariables();
 
-    this.stripe = new Stripe(apiKey, {
+    this.stripe = new Stripe(this.config.stripe.secretKey, {
       apiVersion: "2023-10-16",
       typescript: true,
     });
@@ -53,8 +52,8 @@ export class StripeClient {
     return await this.stripe.setupIntents.retrieve(setupIntentId, params);
   }
 
-  constructWebhookEvent(payload: string | Buffer, signature: string, secret: string): Stripe.Event {
-    return this.stripe.webhooks.constructEvent(payload, signature, secret);
+  constructWebhookEvent(payload: string | Buffer, signature: string): Stripe.Event {
+    return this.stripe.webhooks.constructEvent(payload, signature, this.config.stripe.webhookSecret);
   }
 
   getStripeInstance(): Stripe {

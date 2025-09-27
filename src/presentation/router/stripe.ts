@@ -13,15 +13,14 @@ const router = express();
 router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const signature = req.headers["stripe-signature"];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-    if (!signature || !endpointSecret) {
-      logger.error("Missing Stripe signature or webhook secret");
-      return res.status(400).json({ error: "Missing signature or webhook secret" });
+    if (!signature) {
+      logger.error("Missing Stripe signature");
+      return res.status(400).json({ error: "Missing signature" });
     }
 
     const stripeClient = container.resolve<StripeClient>("StripeClient");
-    const event = stripeClient.constructWebhookEvent(req.body, signature as string, endpointSecret);
+    const event = stripeClient.constructWebhookEvent(req.body, signature as string);
 
     logger.info("Received Stripe webhook event", {
       type: event.type,
@@ -44,9 +43,14 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
       state = paymentIntent.status;
       metadata = paymentIntent.metadata;
     } else {
-      projectUid = event.id;
-      paymentTransactionUid = event.id;
-      state = "unknown";
+      logger.warn("Unhandled Stripe webhook event type", {
+        eventType: event.type,
+        eventId: event.id,
+      });
+      return res.status(200).json({ 
+        received: true, 
+        message: `Event type ${event.type} not handled` 
+      });
     }
 
     const ctx = { issuer } as IContext;

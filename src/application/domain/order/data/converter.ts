@@ -59,9 +59,11 @@ export default class OrderConverter {
     product: PrismaProduct,
     customProps: CustomPropsV1,
   ): Stripe.PaymentIntentCreateParams {
+    const amountInCents = Math.round(product.price * 100);
+    
     return {
-      amount: product.price,
-      currency: "usd",
+      amount: amountInCents,
+      currency: process.env.STRIPE_CURRENCY || "usd",
       metadata: {
         orderId: customProps.orderId || "",
         userRef: customProps.userRef || "",

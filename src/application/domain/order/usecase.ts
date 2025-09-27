@@ -6,6 +6,7 @@ import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
 import { getCurrentUserId } from "@/application/domain/utils";
+import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
@@ -146,11 +147,7 @@ export default class OrderUseCase {
     customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
     try {
-      const frontendUrl = process.env.FRONTEND_URL;
-      if (!frontendUrl) {
-        throw new Error("FRONTEND_URL environment variable is required for Stripe payments");
-      }
-
+      const config = validateEnvironmentVariables();
       const paymentIntentParams = this.converter.stripePaymentIntentInput(product, customProps);
       const paymentIntent = await this.stripeClient.createPaymentIntent(paymentIntentParams);
 
@@ -161,7 +158,7 @@ export default class OrderUseCase {
 
       return {
         uid: paymentIntent.id,
-        url: `${frontendUrl}/payment/${paymentIntent.id}?client_secret=${paymentIntent.client_secret}`,
+        url: `${config.frontendUrl}/payment/${paymentIntent.id}?client_secret=${paymentIntent.client_secret}`,
       };
     } catch (error) {
       if (customProps.orderId) {
