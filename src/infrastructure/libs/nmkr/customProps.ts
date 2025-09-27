@@ -1,12 +1,13 @@
 export interface CustomPropsV1 {
   [key: string]: string | undefined;
-  nftMintId?: string;
+  projectUid?: string;
+  nftUid?: string;
+  receiverAddress?: string;
+  userId?: string;
   nftWalletId?: string;
-  userRef?: string;
+  nftMintId?: string;
   orderId?: string;
   orderItemId?: string;
-  nftInstanceId?: string;
-  receiverAddress?: string;
 }
 
 function isValidCustomPropsV1(obj: any): obj is CustomPropsV1 {
@@ -32,7 +33,7 @@ export function parseCustomProps(
       return { success: true, data: parsed };
     }
     return { success: false, error: "Invalid CustomPropsV1 structure" };
-  } catch (error) {
+  } catch {
     return { success: false, error: "Invalid JSON" };
   }
 }

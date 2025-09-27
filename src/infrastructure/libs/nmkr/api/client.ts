@@ -39,12 +39,15 @@ export class NmkrClient {
     );
   }
 
-  async createWallet(
-    customerId: number,
-    options: { walletName: string; enterpriseaddress: boolean; walletPassword: string },
-  ): Promise<CreateWalletResponse> {
+  async createWallet(options: {
+    walletName: string;
+    enterpriseaddress: boolean;
+    walletPassword: string;
+  }): Promise<CreateWalletResponse> {
+    const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
+
     return this.handleRequest(
-      () => this.endpoints.createWallet(customerId, options),
+      () => this.endpoints.createWallet(parentCustomerId, options),
       "Failed to create NMKR wallet",
     );
   }
