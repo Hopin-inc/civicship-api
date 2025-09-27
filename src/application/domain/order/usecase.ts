@@ -14,7 +14,7 @@ import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
-import { getCurrentUserId } from "@/application/domain/utils";
+// import { getCurrentUserId } from "@/application/domain/utils";
 
 @injectable()
 export default class OrderUseCase {
@@ -31,20 +31,14 @@ export default class OrderUseCase {
     ctx: IContext,
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
-    // const currentUserId = "cmfzidhe3000n8zta98ux2kil";
+    // const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = "cmg0kpnx3000n8zrtyr7imim9";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
-    const order = await ctx.issuer.internal((tx) =>
-      this.orderService.createOrder(
-        ctx,
-        {
-          userId: currentUserId,
-          items: [{ productId, quantity: 1, priceSnapshot: product.price }],
-        },
-        tx,
-      ),
-    );
+    const order = await this.orderService.createOrder(ctx, {
+      userId: currentUserId,
+      items: [{ productId, quantity: 1, priceSnapshot: product.price }],
+    });
 
     const nftWallet = await this.ensureUserNftWallet(ctx, currentUserId);
 
@@ -67,26 +61,17 @@ export default class OrderUseCase {
     const nftWallet = await this.nftWalletService.checkIfExists(ctx, userId);
     if (nftWallet) return nftWallet;
 
-    const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
-    try {
-      const walletResponse = await this.nmkrClient.createWallet(parentCustomerId, {
-        walletName: userId,
-        enterpriseaddress: true,
-        walletPassword: crypto.randomBytes(32).toString("hex"),
-      });
+    const walletResponse = await this.nmkrClient.createWallet({
+      walletName: userId,
+      enterpriseaddress: true,
+      walletPassword: crypto.randomBytes(32).toString("hex"),
+    });
+    logger.debug("[OrderUseCase] Created NMKR Managed wallet", {
+      userId,
+      response: walletResponse,
+    });
 
-      logger.debug("[OrderUseCase] Created NMKR Managed wallet", {
-        userId,
-        response: walletResponse,
-      });
-
-      return await ctx.issuer.internal((tx) =>
-        this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address, tx),
-      );
-    } catch (error) {
-      logger.error("[OrderUseCase] Failed to create NMKR Managed wallet", { userId, error });
-      throw error;
-    }
+    return await this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address);
   }
 
   private async reserveInstanceAndCreatePayment(
@@ -102,6 +87,8 @@ export default class OrderUseCase {
         product.id,
       );
 
+      logger.debug("[OrderUseCase] Found available NFT instance", { nftInstance });
+
       if (!nftInstance) {
         throw new Error(
           `No available NFT instance found for product ${product.id} in community ${ctx.communityId}`,
@@ -111,7 +98,7 @@ export default class OrderUseCase {
       const payload = this.converter.nmkrPaymentTransactionInput(
         product,
         nftWallet.walletAddress,
-        nftInstance.id,
+        nftInstance.instanceId,
         customProps,
       );
 
