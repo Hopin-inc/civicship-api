@@ -1,10 +1,14 @@
 import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload, GqlPaymentProvider } from "@/types/graphql";
+import {
+  GqlMutationOrderCreateArgs,
+  GqlOrderCreatePayload,
+  GqlPaymentProvider,
+} from "@/types/graphql";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
-import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
+import { StripeClient } from "@/infrastructure/libs/stripe";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
 import logger from "@/infrastructure/logging";
@@ -41,7 +45,10 @@ export default class OrderUseCase {
         {
           userId: currentUserId,
           items: [{ productId, quantity: 1, priceSnapshot: product.price }],
-          paymentProvider: paymentProvider === GqlPaymentProvider.Stripe ? PaymentProvider.STRIPE : PaymentProvider.NMKR,
+          paymentProvider:
+            paymentProvider === GqlPaymentProvider.Stripe
+              ? PaymentProvider.STRIPE
+              : PaymentProvider.NMKR,
         },
         tx,
       ),
@@ -57,7 +64,7 @@ export default class OrderUseCase {
       paymentProvider,
       product,
       customProps,
-      currentUserId
+      currentUserId,
     );
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResult.uid);
