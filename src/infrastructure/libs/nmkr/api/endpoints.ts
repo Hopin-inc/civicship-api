@@ -16,7 +16,7 @@ export class NmkrEndpoints {
     this.http2 = new NmkrHttp(http);
   }
 
-  async createPaymentTransactionForSpecificNft(
+  async createPaymentTransaction(
     payload: CreatePaymentTransactionRequest,
   ): Promise<CreatePaymentTransactionResponse> {
     return this.http2.postJSON<CreatePaymentTransactionResponse, CreatePaymentTransactionRequest>(

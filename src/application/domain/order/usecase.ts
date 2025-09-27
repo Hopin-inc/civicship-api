@@ -46,13 +46,13 @@ export default class OrderUseCase {
       ),
     );
 
-    const nftWallet = await this.ensureWallet(ctx, currentUserId);
+    const nftWallet = await this.ensureUserNftWallet(ctx, currentUserId);
 
     const customProps: CustomPropsV1 = {
       orderId: order.id,
       userRef: currentUserId,
     };
-    const { uid: paymentUid, url: paymentUrl } = await this.createPaymentTransaction(
+    const { uid: paymentUid, url: paymentUrl } = await this.reserveInstanceAndCreatePayment(
       ctx,
       product,
       nftWallet,
@@ -63,7 +63,7 @@ export default class OrderUseCase {
     return OrderPresenter.create(paymentUrl);
   }
 
-  private async ensureWallet(ctx: IContext, userId: string) {
+  private async ensureUserNftWallet(ctx: IContext, userId: string) {
     const nftWallet = await this.nftWalletService.checkIfExists(ctx, userId);
     if (nftWallet) return nftWallet;
 
@@ -89,7 +89,7 @@ export default class OrderUseCase {
     }
   }
 
-  private async createPaymentTransaction(
+  private async reserveInstanceAndCreatePayment(
     ctx: IContext,
     product: PrismaProduct,
     nftWallet: PrismaNftWalletDetail,
@@ -115,7 +115,7 @@ export default class OrderUseCase {
         customProps,
       );
 
-      const paymentResponse = await this.nmkrClient.createSpecificNftSale(payload);
+      const paymentResponse = await this.nmkrClient.createPaymentTransaction(payload);
       const { paymentTransactionUid, nmkrPayUrl } = paymentResponse;
       if (!paymentTransactionUid || !nmkrPayUrl) {
         throw new Error("NMKR payment transaction not created");
@@ -132,7 +132,7 @@ export default class OrderUseCase {
       };
     } catch (error) {
       if (customProps.orderId) {
-        await this.safeMarkOrderFailed(ctx, customProps.orderId, error);
+        await this.tryCancelOrderOnError(ctx, customProps.orderId, error);
       }
       logger.error("[OrderUseCase] Failed to create NMKR payment transaction", {
         orderId: customProps.orderId,
@@ -142,7 +142,7 @@ export default class OrderUseCase {
     }
   }
 
-  private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
+  private async tryCancelOrderOnError(ctx: IContext, orderId: string, cause: unknown) {
     try {
       await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.CANCELED);
     } catch (updateErr) {

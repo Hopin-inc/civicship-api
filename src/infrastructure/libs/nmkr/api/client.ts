@@ -30,11 +30,11 @@ export class NmkrClient {
     }
   }
 
-  async createSpecificNftSale(
+  async createPaymentTransaction(
     payload: CreatePaymentTransactionRequest,
   ): Promise<CreatePaymentTransactionResponse> {
     return this.handleRequest(
-      () => this.endpoints.createPaymentTransactionForSpecificNft(payload),
+      () => this.endpoints.createPaymentTransaction(payload),
       "Failed to create specific NFT sale",
     );
   }
