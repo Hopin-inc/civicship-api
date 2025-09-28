@@ -18,6 +18,12 @@ export default interface INftInstanceRepository {
     where: Prisma.NftInstanceWhereInput
   ): Promise<number>;
   
+  findAvailableInstance(
+    ctx: IContext,
+    communityId: string,
+    productId: string,
+  ): Promise<NftInstanceWithRelations | null>;
+
   upsert(
     ctx: IContext,
     data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: Record<string, unknown>; nftWalletId: string; nftTokenId: string },

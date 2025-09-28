@@ -12,6 +12,7 @@ import { OrderStatus, PaymentProvider } from "@prisma/client";
 import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
+import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 
 @injectable()
 export default class OrderUseCase {
@@ -20,6 +21,7 @@ export default class OrderUseCase {
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
     @inject("StripeClient") private readonly stripeClient: StripeClient,
+    @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
   ) {}
 
   async userCreateOrder(
@@ -29,24 +31,22 @@ export default class OrderUseCase {
     const currentUserId = getCurrentUserId(ctx);
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
-    const order = await ctx.issuer.internal((tx) =>
-      this.orderService.createOrder(
-        ctx,
-        {
-          userId: currentUserId,
-          items: [{ productId, quantity: 1, priceSnapshot: product.price }],
-          paymentProvider: PaymentProvider.STRIPE,
-        },
-        tx,
-      ),
-    );
+    const order = await this.orderService.createOrder(ctx, {
+      userId: currentUserId,
+      items: [{ productId, quantity: 1, priceSnapshot: product.price }],
+      paymentProvider: PaymentProvider.STRIPE,
+    });
 
     const customProps: CustomPropsV1 = {
       orderId: order.id,
       userRef: currentUserId,
     };
 
-    const paymentResult = await this.createStripePaymentIntent(ctx, product, customProps);
+    const paymentResult = await this.reserveInstanceAndCreateStripePayment(
+      ctx,
+      product,
+      customProps,
+    );
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResult.uid);
     return OrderPresenter.create(paymentResult.url);
@@ -55,19 +55,38 @@ export default class OrderUseCase {
 
 
 
-  private async createStripePaymentIntent(
+  private async reserveInstanceAndCreateStripePayment(
     ctx: IContext,
     product: PrismaProduct,
     customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
     try {
+      const nftInstance = await this.nftInstanceRepo.findAvailableInstance(
+        ctx,
+        ctx.communityId,
+        product.id,
+      );
+
+      logger.debug("[OrderUseCase] Found available NFT instance", { nftInstance });
+
+      if (!nftInstance) {
+        throw new Error(
+          `No available NFT instance found for product ${product.id} in community ${ctx.communityId}`,
+        );
+      }
+
       const config = validateEnvironmentVariables();
-      const paymentIntentParams = this.converter.stripePaymentIntentInput(product, customProps);
+      const paymentIntentParams = this.converter.stripePaymentIntentWithInstanceInput(
+        product,
+        nftInstance.instanceId,
+        customProps,
+      );
       const paymentIntent = await this.stripeClient.createPaymentIntent(paymentIntentParams);
 
       logger.debug("[OrderUseCase] Created Stripe payment intent", {
         orderId: customProps.orderId,
         paymentIntentId: paymentIntent.id,
+        instanceId: nftInstance.instanceId,
       });
 
       return {
@@ -76,9 +95,9 @@ export default class OrderUseCase {
       };
     } catch (error) {
       if (customProps.orderId) {
-        await this.safeMarkOrderFailed(ctx, customProps.orderId, error);
+        await this.tryCancelOrderOnError(ctx, customProps.orderId, error);
       }
-      logger.error("[OrderUseCase] Failed to create Stripe payment intent", {
+      logger.error("[OrderUseCase] Failed to reserve instance and create Stripe payment intent", {
         orderId: customProps.orderId,
         error,
       });
@@ -86,13 +105,13 @@ export default class OrderUseCase {
     }
   }
 
-  private async safeMarkOrderFailed(ctx: IContext, orderId: string, cause: unknown) {
+  private async tryCancelOrderOnError(ctx: IContext, orderId: string, cause: unknown) {
     try {
       await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.CANCELED);
     } catch (updateErr) {
-      logger.error("[OrderUseCase] Failed to mark order as FAILED after NMKR error", {
+      logger.error("[OrderUseCase] Failed to mark order as CANCELED after payment error", {
         orderId,
-        nmkrError: cause instanceof Error ? cause.message : String(cause),
+        paymentError: cause instanceof Error ? cause.message : String(cause),
         updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
       });
     }

@@ -112,7 +112,7 @@ export default class OrderWebhook {
     if (state === "succeeded" && customProps?.orderId) {
       const orderId = customProps.orderId;
       await ctx.issuer.internal(async (tx) => {
-        await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
+        await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx, customProperty);
       });
     }else if (state === "payment_failed" && customProps?.orderId) {
       await this.orderService.updateOrderStatus(ctx, customProps.orderId, OrderStatus.FAILED);
@@ -167,6 +167,7 @@ export default class OrderWebhook {
     orderId: string,
     paymentTransactionUid: string,
     tx: Prisma.TransactionClient,
+    customProperty?: string,
   ): Promise<void> {
     try {
       const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
@@ -180,11 +181,32 @@ export default class OrderWebhook {
       }
 
       for (const orderItem of order.items) {
-        await this.nftMintService.createForOrderItem(ctx, orderItem.id, nftWallet.id, tx);
+        let nftInstanceId = nftWallet.id;
+        
+        if (customProperty) {
+          try {
+            const metadata = JSON.parse(customProperty);
+            if (metadata.instanceId) {
+              const nftInstance = await ctx.issuer.public(ctx, (prisma) =>
+                prisma.nftInstance.findFirst({
+                  where: { instanceId: metadata.instanceId },
+                  select: { id: true },
+                })
+              );
+              if (nftInstance) {
+                nftInstanceId = nftInstance.id;
+              }
+            }
+          } catch (parseError) {
+            logger.warn("[OrderWebhook] Failed to parse instanceId from metadata", { parseError });
+          }
+        }
+
+        await this.nftMintService.createForOrderItem(ctx, orderItem.id, nftInstanceId, tx);
         logger.debug("[OrderWebhook] NFT mint created for orderItem", {
           orderId,
           orderItemId: orderItem.id,
-          nftWalletId: nftWallet.id,
+          nftInstanceId,
         });
       }
 

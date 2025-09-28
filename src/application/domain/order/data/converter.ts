@@ -74,4 +74,26 @@ export default class OrderConverter {
       },
     };
   }
+
+  stripePaymentIntentWithInstanceInput(
+    product: PrismaProduct,
+    instanceId: string,
+    customProps: CustomPropsV1,
+  ): Stripe.PaymentIntentCreateParams {
+    const amountInCents = Math.round(product.price * 100);
+    
+    return {
+      amount: amountInCents,
+      currency: process.env.STRIPE_CURRENCY || "usd",
+      metadata: {
+        orderId: customProps.orderId || "",
+        userRef: customProps.userRef || "",
+        productId: product.id,
+        instanceId,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    };
+  }
 }
