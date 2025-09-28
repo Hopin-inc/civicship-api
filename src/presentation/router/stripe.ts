@@ -3,10 +3,10 @@ import { container } from "tsyringe";
 import Stripe from "stripe";
 import { GqlPaymentProvider } from "@/types/graphql";
 import OrderWebhook from "@/application/domain/order/webhook";
-import { StripeClient } from "@/infrastructure/libs/stripe/api";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
+import { StripeClient } from "@/infrastructure/libs/stripe";
 
 const router = express();
 
@@ -36,7 +36,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     let state: string;
     let metadata: Stripe.Metadata = {};
 
-    if (event.type.startsWith('payment_intent.')) {
+    if (event.type.startsWith("payment_intent.")) {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       projectUid = paymentIntent.id;
       paymentTransactionUid = paymentIntent.id;
@@ -47,9 +47,9 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         eventType: event.type,
         eventId: event.id,
       });
-      return res.status(200).json({ 
-        received: true, 
-        message: `Event type ${event.type} not handled` 
+      return res.status(200).json({
+        received: true,
+        message: `Event type ${event.type} not handled`,
       });
     }
 

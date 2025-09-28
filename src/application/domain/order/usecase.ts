@@ -2,7 +2,7 @@ import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
-import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
+import { StripeClient } from "@/infrastructure/libs/stripe";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
 import logger from "@/infrastructure/logging";
