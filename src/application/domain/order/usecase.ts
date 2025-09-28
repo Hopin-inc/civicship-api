@@ -1,9 +1,7 @@
-import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload, GqlPaymentProvider } from "@/types/graphql";
+import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
-import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { StripeClient } from "@/infrastructure/libs/stripe/api/client";
 import { getCurrentUserId } from "@/application/domain/utils";
 import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
@@ -11,26 +9,22 @@ import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
 import { OrderStatus, PaymentProvider } from "@prisma/client";
-import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
-import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 
 @injectable()
 export default class OrderUseCase {
   constructor(
     @inject("OrderConverter") private readonly converter: OrderConverter,
-    @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("ProductService") private readonly productService: ProductService,
-    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
     @inject("StripeClient") private readonly stripeClient: StripeClient,
   ) {}
 
   async userCreateOrder(
     ctx: IContext,
-    { productId, paymentProvider = GqlPaymentProvider.Nmkr }: GqlMutationOrderCreateArgs,
+    { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     const currentUserId = getCurrentUserId(ctx);
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
@@ -41,7 +35,7 @@ export default class OrderUseCase {
         {
           userId: currentUserId,
           items: [{ productId, quantity: 1, priceSnapshot: product.price }],
-          paymentProvider: paymentProvider === GqlPaymentProvider.Stripe ? PaymentProvider.STRIPE : PaymentProvider.NMKR,
+          paymentProvider: PaymentProvider.STRIPE,
         },
         tx,
       ),
@@ -52,94 +46,14 @@ export default class OrderUseCase {
       userRef: currentUserId,
     };
 
-    const paymentResult = await this.createPaymentForProvider(
-      ctx,
-      paymentProvider,
-      product,
-      customProps,
-      currentUserId
-    );
+    const paymentResult = await this.createStripePaymentIntent(ctx, product, customProps);
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResult.uid);
     return OrderPresenter.create(paymentResult.url);
   }
 
-  private async ensureWallet(ctx: IContext, userId: string) {
-    const nftWallet = await this.nftWalletService.checkIfExists(ctx, userId);
-    if (nftWallet) return nftWallet;
 
-    const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
-    try {
-      const walletResponse = await this.nmkrClient.createWallet(parentCustomerId, {
-        walletName: userId,
-        enterpriseaddress: true,
-        walletPassword: crypto.randomBytes(32).toString("hex"),
-      });
 
-      logger.debug("[OrderUseCase] Created NMKR Managed wallet", {
-        userId,
-        response: walletResponse,
-      });
-
-      return await ctx.issuer.internal((tx) =>
-        this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address, tx),
-      );
-    } catch (error) {
-      logger.error("[OrderUseCase] Failed to create NMKR Managed wallet", { userId, error });
-      throw error;
-    }
-  }
-
-  private async createPaymentTransaction(
-    ctx: IContext,
-    product: PrismaProduct,
-    nftWallet: PrismaNftWalletDetail,
-    customProps: CustomPropsV1,
-  ): Promise<{ uid: string; url: string }> {
-    try {
-      const payload = this.converter.nmkrPaymentTransactionInput(product, nftWallet, customProps);
-
-      const paymentResponse = await this.nmkrClient.createSpecificNftSale(payload);
-      const { paymentTransactionUid, nmkrPayUrl } = paymentResponse;
-      if (!paymentTransactionUid || !nmkrPayUrl) {
-        throw new Error("NMKR payment transaction not created");
-      }
-
-      logger.debug("[OrderUseCase] Created NMKR payment transaction", {
-        orderId: customProps.orderId,
-        paymentTransactionUid,
-      });
-
-      return {
-        uid: paymentTransactionUid,
-        url: nmkrPayUrl,
-      };
-    } catch (error) {
-      if (customProps.orderId) {
-        await this.safeMarkOrderFailed(ctx, customProps.orderId, error);
-      }
-      logger.error("[OrderUseCase] Failed to create NMKR payment transaction", {
-        orderId: customProps.orderId,
-        error,
-      });
-      throw error;
-    }
-  }
-
-  private async createPaymentForProvider(
-    ctx: IContext,
-    paymentProvider: GqlPaymentProvider,
-    product: PrismaProduct,
-    customProps: CustomPropsV1,
-    currentUserId: string,
-  ): Promise<{ uid: string; url: string }> {
-    if (paymentProvider === GqlPaymentProvider.Stripe) {
-      return this.createStripePaymentIntent(ctx, product, customProps);
-    } else {
-      const nftWallet = await this.ensureWallet(ctx, currentUserId);
-      return this.createPaymentTransaction(ctx, product, nftWallet, customProps);
-    }
-  }
 
   private async createStripePaymentIntent(
     ctx: IContext,

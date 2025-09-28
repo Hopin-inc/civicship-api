@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlPaymentProvider } from "@/types/graphql";
@@ -8,6 +9,9 @@ import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 import OrderService from "@/application/domain/order/service";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import NFTWalletService from "@/application/domain/account/nft-wallet/service";
+import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 
 type NmkrWebhookPayload = {
   paymentTransactionUid: string;
@@ -24,6 +28,8 @@ export default class OrderWebhook {
     @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
     @inject("NftMintService") private readonly nftMintService: NftMintService,
     @inject("OrderService") private readonly orderService: OrderService,
+    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
+    @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
   ) {}
 
   async processWebhook(
@@ -38,12 +44,12 @@ export default class OrderWebhook {
     },
   ): Promise<"NMKR" | "STRIPE" | "IGNORED"> {
     switch (payload.provider) {
-      case GqlPaymentProvider.Nmkr:
-        await this.processNmkrWebhook(ctx, payload);
-        return "NMKR";
       case GqlPaymentProvider.Stripe:
         await this.processStripeWebhook(ctx, payload);
         return "STRIPE";
+      case GqlPaymentProvider.Nmkr:
+        await this.processNmkrWebhook(ctx, payload);
+        return "NMKR";
       default:
         logger.warn("[OrderWebhook] Unsupported payment provider", { provider: payload.provider });
         return "IGNORED";
@@ -166,11 +172,19 @@ export default class OrderWebhook {
       const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
       logger.info("[OrderWebhook] Order marked as PAID", { orderId, paymentTransactionUid });
 
+      const userId = order.userId;
+      let nftWallet = await this.nftWalletService.checkIfExists(ctx, userId);
+      
+      if (!nftWallet) {
+        nftWallet = await this.ensureNmkrWallet(ctx, userId, tx);
+      }
+
       for (const orderItem of order.items) {
-        await this.nftMintService.createForOrderItem(ctx, orderItem.id, "system-wallet", tx);
+        await this.nftMintService.createForOrderItem(ctx, orderItem.id, nftWallet.id, tx);
         logger.debug("[OrderWebhook] NFT mint created for orderItem", {
           orderId,
           orderItemId: orderItem.id,
+          nftWalletId: nftWallet.id,
         });
       }
 
@@ -229,6 +243,31 @@ export default class OrderWebhook {
         return NftMintStatus.FAILED;
       default:
         return null;
+    }
+  }
+
+  private async ensureNmkrWallet(
+    ctx: IContext,
+    userId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<PrismaNftWalletDetail> {
+    const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
+    try {
+      const walletResponse = await this.nmkrClient.createWallet(parentCustomerId, {
+        walletName: userId,
+        enterpriseaddress: true,
+        walletPassword: crypto.randomBytes(32).toString("hex"),
+      });
+
+      logger.debug("[OrderWebhook] Created NMKR Managed wallet for Stripe payment", {
+        userId,
+        response: walletResponse,
+      });
+
+      return await this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address, tx);
+    } catch (error) {
+      logger.error("[OrderWebhook] Failed to create NMKR Managed wallet", { userId, error });
+      throw error;
     }
   }
 }
