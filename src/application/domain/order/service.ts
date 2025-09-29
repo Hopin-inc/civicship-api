@@ -1,10 +1,11 @@
-import { injectable, inject } from "tsyringe";
+import { injectable, inject, container } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
 import OrderRepository from "@/application/domain/order/data/repository";
 import { IOrderService } from "@/application/domain/order/data/interface";
 import OrderConverter from "@/application/domain/order/data/converter";
 import { OrderWithItems } from "@/application/domain/order/data/type";
+import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import logger from "@/infrastructure/logging";
 
 @injectable()
@@ -67,5 +68,42 @@ export default class OrderService implements IOrderService {
     tx: Prisma.TransactionClient,
   ): Promise<void> {
     await this.updateOrderStatus(ctx, orderId, OrderStatus.FAILED, tx);
+  }
+
+  async handlePaymentFailure(
+    ctx: IContext,
+    orderId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await this.processPaymentFailure(ctx, orderId, tx);
+    
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (order?.items) {
+      for (const item of order.items) {
+        await this.releaseItemReservations(ctx, item, tx);
+      }
+    }
+  }
+
+  private async releaseItemReservations(
+    ctx: IContext,
+    item: { productId: string; quantity: number },
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    const nftInstanceService = container.resolve<NftInstanceService>("NftInstanceService");
+    
+    const nftInstances = await nftInstanceService.findReservedInstancesForProduct(
+      ctx,
+      item.productId,
+      item.quantity,
+      tx,
+    );
+
+    const instanceIds = nftInstances.map(instance => instance.id);
+    await nftInstanceService.releaseReservations(ctx, instanceIds, tx);
   }
 }

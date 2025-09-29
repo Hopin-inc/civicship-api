@@ -87,29 +87,10 @@ export default class OrderWebhook {
   ) {
     try {
       await ctx.issuer.internal(async (tx) => {
-        await this.orderService.processPaymentFailure(ctx, orderId, tx);
-
-        const order = await tx.order.findUnique({
-          where: { id: orderId },
-          include: { items: true },
-        });
-
-        if (order?.items) {
-          for (const item of order.items) {
-            const nftInstances = await this.nftInstanceService.findReservedInstancesForProduct(
-              ctx,
-              item.productId,
-              item.quantity,
-              tx,
-            );
-
-            const instanceIds = nftInstances.map(instance => instance.id);
-            await this.nftInstanceService.releaseReservations(ctx, instanceIds, tx);
-          }
-        }
+        await this.orderService.handlePaymentFailure(ctx, orderId, tx);
       });
 
-      logger.info("[OrderWebhook] Marked order as FAILED and released reservations", {
+      logger.info("[OrderWebhook] Payment failure handled", {
         orderId,
         paymentTransactionUid,
         state,
@@ -117,7 +98,7 @@ export default class OrderWebhook {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       throw new PaymentStateTransitionError(
-        "Failed to update order status to FAILED and release reservations",
+        "Failed to handle payment failure",
         orderId,
         state,
         "FAILED",
