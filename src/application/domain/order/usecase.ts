@@ -27,7 +27,7 @@ export default class OrderUseCase {
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmg4n0lei00048z18gudi15l4";
+    const currentUserId = "cmg4qdxub000n8zjbfr16vtsw";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
