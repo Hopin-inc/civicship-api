@@ -10,7 +10,7 @@ import { UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import * as process from "node:process";
 import fs from "fs";
 import path from "path";
-import { StripeClient } from "../../src/infrastructure/libs/stripe";
+import { StripeClient } from "../../src/infrastructure/libs/stripe/client";
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
