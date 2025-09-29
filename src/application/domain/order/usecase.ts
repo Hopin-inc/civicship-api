@@ -37,16 +37,7 @@ export default class OrderUseCase {
       paymentProvider: PaymentProvider.STRIPE,
     });
 
-    const customProps: CustomPropsV1 = {
-      orderId: order.id,
-      userId: currentUserId,
-    };
-
-    const paymentResult = await this.reserveInstanceAndCreateStripePayment(
-      ctx,
-      product,
-      customProps,
-    );
+    const paymentResult = await this.reserveInstanceAndCreateStripePayment(ctx, order.id, product);
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResult.uid);
     return OrderPresenter.create(paymentResult.url);
@@ -54,8 +45,8 @@ export default class OrderUseCase {
 
   private async reserveInstanceAndCreateStripePayment(
     ctx: IContext,
+    orderId: string,
     product: PrismaProduct,
-    customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
     return ctx.issuer.internal(async (tx) => {
       try {
@@ -66,21 +57,26 @@ export default class OrderUseCase {
           tx,
         );
 
-        logger.debug("[OrderUseCase] Reserved NFT instance", { nftInstance });
-
         if (!nftInstance) {
-          throw new InventoryUnavailableError(product.id, ctx.communityId, customProps.orderId);
+          throw new InventoryUnavailableError(product.id, ctx.communityId);
         }
 
+        const nftInstanceId = nftInstance["instance_id"];
+
         logger.debug("[NftInstanceRepository] Reserved NFT instance", {
-          instanceId: nftInstance.instanceId,
+          instanceId: nftInstanceId,
           communityId: ctx.communityId,
           productId: product.id,
           sequenceNum: nftInstance.sequenceNum,
         });
 
-        customProps.nftInstanceId = nftInstance.id;
-        customProps.nmkrNftUid = nftInstance.instanceId;
+        const customProps: CustomPropsV1 = {
+          orderId: orderId,
+          nftInstanceId: nftInstance.id,
+          nmkrProjectUid: product.nftProduct?.nmkrProjectId ?? "",
+          nmkrNftUid: nftInstanceId,
+        };
+
         const sessionParams = this.converter.stripeCheckoutSessionInput(product, customProps);
         const session = await this.stripeClient.createCheckoutSession(sessionParams);
 
@@ -99,7 +95,7 @@ export default class OrderUseCase {
         logger.error(
           "[OrderUseCase] Failed to reserve instance and create Stripe payment session",
           {
-            orderId: customProps.orderId,
+            orderId,
             error,
           },
         );
@@ -110,7 +106,7 @@ export default class OrderUseCase {
 
         throw new PaymentSessionCreationError(
           "Failed to create Stripe checkout session",
-          customProps.orderId,
+          orderId,
           error,
         );
       }
