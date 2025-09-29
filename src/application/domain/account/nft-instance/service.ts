@@ -65,4 +65,50 @@ export default class NftInstanceService {
       },
     });
   }
+
+  async findReservedInstancesForProduct(
+    ctx: IContext,
+    productId: string,
+    quantity: number,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.nftInstance.findMany({
+      where: {
+        productId,
+        status: NftInstanceStatus.RESERVED,
+        communityId: ctx.communityId,
+      },
+      take: quantity,
+      orderBy: { sequenceNum: "asc" },
+    });
+  }
+
+  async releaseReservations(
+    ctx: IContext,
+    instanceIds: string[],
+    tx: Prisma.TransactionClient,
+  ) {
+    for (const instanceId of instanceIds) {
+      await this.repository.releaseReservation(ctx, instanceId, tx);
+    }
+  }
+
+  async findInstanceById(
+    ctx: IContext,
+    instanceId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    if (tx) {
+      return tx.nftInstance.findFirst({
+        where: { id: instanceId },
+        select: { id: true },
+      });
+    }
+    return ctx.issuer.public(ctx, (prisma) =>
+      prisma.nftInstance.findFirst({
+        where: { id: instanceId },
+        select: { id: true },
+      }),
+    );
+  }
 }

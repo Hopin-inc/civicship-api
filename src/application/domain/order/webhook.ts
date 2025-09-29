@@ -7,9 +7,9 @@ import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
-import { Prisma, NftInstanceStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
-import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
+import NftInstanceService from "@/application/domain/account/nft-instance/service";
 import {
   WebhookMetadataError,
   PaymentStateTransitionError,
@@ -34,7 +34,7 @@ export default class OrderWebhook {
     @inject("NftMintService") private readonly nftMintService: NftMintService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
-    @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
+    @inject("NftInstanceService") private readonly nftInstanceService: NftInstanceService,
   ) {}
 
   public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
@@ -96,19 +96,15 @@ export default class OrderWebhook {
 
         if (order?.items) {
           for (const item of order.items) {
-            const nftInstances = await tx.nftInstance.findMany({
-              where: {
-                productId: item.productId,
-                status: NftInstanceStatus.RESERVED,
-                communityId: ctx.communityId,
-              },
-              take: item.quantity,
-              orderBy: { sequenceNum: "asc" },
-            });
+            const nftInstances = await this.nftInstanceService.findReservedInstancesForProduct(
+              ctx,
+              item.productId,
+              item.quantity,
+              tx,
+            );
 
-            for (const instance of nftInstances) {
-              await this.nftInstanceRepo.releaseReservation(ctx, instance.id, tx);
-            }
+            const instanceIds = nftInstances.map(instance => instance.id);
+            await this.nftInstanceService.releaseReservations(ctx, instanceIds, tx);
           }
         }
       });
@@ -175,14 +171,7 @@ export default class OrderWebhook {
       const mint = await this.nftMintService.createMintRecord(ctx, orderItem.id, wallet.id, tx);
 
       if (nftInstanceId) {
-        await tx.nftInstance.update({
-          where: { id: nftInstanceId },
-          data: {
-            nftMintId: mint.id,
-            nftWalletId: wallet.id,
-            status: NftInstanceStatus.MINTING,
-          },
-        });
+        await this.nftInstanceService.markAsMinting(ctx, nftInstanceId, mint.id, wallet.id, tx);
       } else {
         logger.error("[OrderWebhook] No nftInstance found for nftUid", {
           orderId: order.id,
@@ -220,13 +209,7 @@ export default class OrderWebhook {
 
   private async resolveInstanceId(ctx: IContext, id: string | undefined, fallbackWalletId: string) {
     if (!id) return null;
-    const found = await ctx.issuer.public(ctx, (prisma) =>
-      prisma.nftInstance.findFirst({
-        where: { id },
-        select: { id: true },
-      }),
-    );
-
+    const found = await this.nftInstanceService.findInstanceById(ctx, id);
     return found ? found.id : fallbackWalletId;
   }
 
