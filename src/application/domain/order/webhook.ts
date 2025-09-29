@@ -1,24 +1,34 @@
 import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
-import { GqlPaymentProvider } from "@/types/graphql";
-import { parseCustomProps, CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import logger from "@/infrastructure/logging";
+
+import { parseCustomProps, CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
+
 import NftMintService from "@/application/domain/reward/nft-mint/service";
-import { NftMintStatus, OrderStatus, Prisma } from "@prisma/client";
-import { InventorySnapshot } from "@/application/domain/product/data/type";
-import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
-import OrderService from "@/application/domain/order/service";
-import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
+import OrderService from "@/application/domain/order/service";
+import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
+
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+
+import { InventorySnapshot } from "@/application/domain/product/data/type";
+import { Prisma, OrderStatus, NftMintStatus } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 
-type NmkrWebhookPayload = {
-  paymentTransactionUid: string;
-  projectUid: string;
+type StripePayload = {
+  /** Checkout Session ID or PaymentIntent ID */
+  id: string;
+  /** "succeeded" | "payment_failed" | ... */
   state: string;
-  paymentTransactionSubstate?: string;
-  txHash?: string;
+  /**
+   * JSON.stringify(metadata)
+   * 期待キー例:
+   * - orderId (必須)
+   * - projectId or projectUid (NMKRプロジェクト)
+   * - instanceId or nftUid    (NMKRトークンインスタンスID)
+   * - userId / userRef, productId etc...
+   */
   customProperty?: string;
 };
 
@@ -28,268 +38,195 @@ export default class OrderWebhook {
     @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
     @inject("NftMintService") private readonly nftMintService: NftMintService,
     @inject("OrderService") private readonly orderService: OrderService,
-    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
+    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
   ) {}
 
-  async processWebhook(
-    ctx: IContext,
-    payload: {
-      provider: GqlPaymentProvider;
-      projectUid: string;
-      paymentTransactionUid: string;
-      state: string;
-      txHash?: string;
-      customProperty?: string;
-    },
-  ): Promise<"NMKR" | "STRIPE" | "IGNORED"> {
-    switch (payload.provider) {
-      case GqlPaymentProvider.Stripe:
-        await this.processStripeWebhook(ctx, payload);
-        return "STRIPE";
-      case GqlPaymentProvider.Nmkr:
-        await this.processNmkrWebhook(ctx, payload);
-        return "NMKR";
-      default:
-        logger.warn("[OrderWebhook] Unsupported payment provider", { provider: payload.provider });
-        return "IGNORED";
-    }
-  }
+  /**
+   * Router側で Stripe のイベント（checkout.session.completed / payment_intent.succeeded 等）を受け、
+   * 必要情報を詰めてこのメソッドに渡してください。
+   */
+  public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
+    const { id: paymentTransactionUid, state, customProperty } = payload;
 
-  private async processNmkrWebhook(ctx: IContext, payload: NmkrWebhookPayload): Promise<void> {
-    const { paymentTransactionUid, state, txHash, customProperty } = payload;
-
-    const props = this.validateCustomProps(paymentTransactionUid, customProperty);
-    if (!props) return;
-
-    const { orderId, nftMintId, projectUid, nftUid, receiverAddress } = props;
-
-    await ctx.issuer.internal(async (tx) => {
-      if (orderId && state === "confirmed") {
-        await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx);
-        return;
-      }
-
-      if (nftMintId && projectUid && nftUid && receiverAddress) {
-        await this.handleMintTransition(
-          ctx,
-          projectUid,
-          nftUid,
-          receiverAddress,
-          nftMintId,
-          state,
-          txHash,
-          tx,
-        );
-        return;
-      }
-
-      logger.warn("[OrderWebhook] No actionable IDs in customProperty", {
-        paymentTransactionUid,
-      });
-    });
-  }
-
-  private async processStripeWebhook(
-    ctx: IContext,
-    payload: {
-      provider: GqlPaymentProvider;
-      projectUid: string;
-      paymentTransactionUid: string;
-      state: string;
-      txHash?: string;
-      customProperty?: string;
-    },
-  ): Promise<void> {
-    const { paymentTransactionUid, state, customProperty } = payload;
-
-    logger.info("[OrderWebhook] Processing Stripe webhook", {
+    logger.info("[OrderWebhook] Stripe webhook received", {
       paymentTransactionUid,
       state,
     });
 
-    let customProps: CustomPropsV1 | null = null;
-    if (customProperty) {
-      const parsed = parseCustomProps(customProperty);
-      if (parsed.success) {
-        customProps = parsed.data;
-      } else {
-        logger.warn("[OrderWebhook] Invalid Stripe metadata", {
-          paymentTransactionUid,
-          error: parsed.error,
-        });
-      }
-    }
-
-    if (state === "succeeded" && customProps?.orderId) {
-      const orderId = customProps.orderId;
-      await ctx.issuer.internal(async (tx) => {
-        await this.processOrderPayment(ctx, orderId, paymentTransactionUid, tx, customProperty);
-      });
-    } else if (state === "payment_failed" && customProps?.orderId) {
-      await this.orderService.updateOrderStatus(ctx, customProps.orderId, OrderStatus.FAILED);
-      logger.info("[OrderWebhook] Stripe payment failed", {
-        paymentTransactionUid,
-        orderId: customProps.orderId,
-      });
-    } else {
-      logger.info("[OrderWebhook] Stripe webhook processed", {
-        paymentTransactionUid,
-        state,
-        hasCustomProps: !!customProps,
-      });
-    }
-  }
-
-  private validateCustomProps(paymentTransactionUid: string, raw?: string) {
-    if (!raw) {
-      logger.warn("[OrderWebhook] Missing customProperty", { paymentTransactionUid });
-      return null;
-    }
-    const parsed = parseCustomProps(raw);
-    if (!parsed.success) {
-      logger.error("[OrderWebhook] Invalid customProperty", {
-        paymentTransactionUid,
-        error: parsed.error,
-      });
-      return null;
-    }
-    return parsed.data;
-  }
-
-  private async handleMintTransition(
-    ctx: IContext,
-    projectUid: string,
-    nftUid: string,
-    receiverAddress: string,
-    nftMintId: string,
-    state: string,
-    txHash: string | undefined,
-    tx: Prisma.TransactionClient,
-  ) {
-    const status = this.mapNmkrState(state);
-    if (!status) {
-      logger.warn("[OrderWebhook] Unsupported NMKR state for mint transition", { state });
+    // --- メタデータの抽出 ---
+    const meta = this.parseMeta(customProperty);
+    if (!meta?.orderId) {
+      logger.warn("[OrderWebhook] Missing orderId in metadata. Skip.");
       return;
     }
 
-    await this.nmkrClient.mintAndSendSpecific(projectUid, nftUid, 1, receiverAddress);
-    logger.info("[OrderWebhook] Triggered manual mint via NMKR", { nftMintId, nftUid });
+    if (state !== "succeeded") {
+      if (state === "payment_failed") {
+        await this.orderService.updateOrderStatus(ctx, meta.orderId, OrderStatus.FAILED);
+        logger.info("[OrderWebhook] Marked order as FAILED", {
+          orderId: meta.orderId,
+          paymentTransactionUid,
+        });
+      } else {
+        logger.info("[OrderWebhook] Non-success state; no-op", {
+          orderId: meta.orderId,
+          state,
+        });
+      }
+      return;
+    }
 
-    await this.nftMintService.processStateTransition(ctx, { nftMintId, status, txHash }, tx);
-    logger.info("[OrderWebhook] NFT mint state transitioned", { nftMintId, status, state });
+    // --- 決済成功処理をトランザクションで ---
+    await ctx.issuer.internal(async (tx) => {
+      await this.processOrderPayment(ctx, {
+        orderId: meta.orderId!,
+        paymentTransactionUid,
+        tx,
+        meta,
+      });
+    });
   }
 
+  // =========================
+  // Core Business
+  // =========================
   private async processOrderPayment(
     ctx: IContext,
-    orderId: string,
-    paymentTransactionUid: string,
-    tx: Prisma.TransactionClient,
-    customProperty?: string,
+    args: {
+      orderId: string;
+      paymentTransactionUid: string;
+      tx: Prisma.TransactionClient;
+      meta: ReturnType<OrderWebhook["parseMeta"]>;
+    },
   ): Promise<void> {
-    try {
-      const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
-      logger.info("[OrderWebhook] Order marked as PAID", { orderId, paymentTransactionUid });
+    const { orderId, paymentTransactionUid, tx, meta } = args;
 
-      const userId = order.userId;
-      let nftWallet = await this.nftWalletService.checkIfExists(ctx, userId);
+    // 1) 注文を PAID に
+    const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
+    logger.info("[OrderWebhook] Order marked as PAID", { orderId, paymentTransactionUid });
 
-      if (!nftWallet) {
-        nftWallet = await this.ensureNmkrWallet(ctx, userId);
+    // 2) ユーザーのNFTウォレット確保（無ければNMKR Managed Wallet作成）
+    const userId = order.userId;
+    let wallet = await this.nftWalletService.checkIfExists(ctx, userId);
+    if (!wallet) wallet = await this.ensureNmkrWallet(ctx, userId);
+
+    // 3) アイテムごとに Mint レコード作成
+    //    metadata.instanceId/nftUid があれば該当インスタンスに紐づけ。無ければユーザウォレットを紐づけ。
+    const { instanceId, projectUid } = meta ?? {};
+
+    for (const orderItem of order.items) {
+      let targetNftInstanceId = wallet.id;
+
+      if (instanceId) {
+        const found = await ctx.issuer.public(ctx, (prisma) =>
+          prisma.nftInstance.findFirst({
+            where: { instanceId },
+            select: { id: true },
+          }),
+        );
+        if (found) targetNftInstanceId = found.id;
       }
 
-      let instanceIdFromMeta: string | undefined;
-      let projectUidFromMeta: string | undefined;
-      if (customProperty) {
+      const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, wallet.id, tx);
+
+      logger.debug("[OrderWebhook] Mint record created", {
+        orderId,
+        orderItemId: orderItem.id,
+        nftInstanceId: targetNftInstanceId,
+        mintId: mint.id,
+      });
+
+      // 4) NMKR ミント実行（metadata に必要情報がある時のみ）
+      if (projectUid && instanceId) {
         try {
-          const meta = JSON.parse(customProperty) as Record<string, string>;
-          instanceIdFromMeta = meta.instanceId || meta.nftUid; // どっちのキーでも拾う
-          projectUidFromMeta = meta.projectId;
-        } catch (e) {
-          logger.warn("[OrderWebhook] Failed to parse Stripe metadata", { orderId, e });
-        }
-      }
-
-      for (const orderItem of order.items) {
-        let nftInstanceId = nftWallet.id;
-        if (instanceIdFromMeta) {
-          const nftInstance = await ctx.issuer.public(ctx, (prisma) =>
-            prisma.nftInstance.findFirst({
-              where: { instanceId: instanceIdFromMeta },
-              select: { id: true },
-            }),
+          await this.nmkrClient.mintAndSendSpecific(
+            projectUid,
+            instanceId,
+            1,
+            wallet.walletAddress,
           );
-          if (nftInstance) {
-            nftInstanceId = nftInstance.id;
-          }
-        }
 
-        const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, nftInstanceId, tx);
-        logger.debug("[OrderWebhook] NFT mint created for orderItem", {
-          orderId,
-          orderItemId: orderItem.id,
-          nftInstanceId,
-          mintId: mint.id,
-        });
+          // 送信開始＝SUBMITTED としておく（実チェーン反映はNMKRの別Webhookで最終確定が良い）
+          await this.nftMintService.processStateTransition(
+            ctx,
+            { nftMintId: mint.id, status: NftMintStatus.SUBMITTED },
+            tx,
+          );
 
-        if (projectUidFromMeta && instanceIdFromMeta) {
-          try {
-            await this.nmkrClient.mintAndSendSpecific(
-              projectUidFromMeta,
-              instanceIdFromMeta,
-              1,
-              nftWallet.walletAddress, // 送付先
-            );
-
-            await this.nftMintService.processStateTransition(
-              ctx,
-              { nftMintId: mint.id, status: NftMintStatus.SUBMITTED },
-              tx,
-            );
-
-            logger.info("[OrderWebhook] Triggered NMKR mint & marked SUBMITTED", {
-              orderId,
-              orderItemId: orderItem.id,
-              mintId: mint.id,
-              projectUid: projectUidFromMeta,
-              instanceId: instanceIdFromMeta,
-              receiver: nftWallet.walletAddress,
-            });
-          } catch (mintErr) {
-            logger.error("[OrderWebhook] NMKR mint failed", {
-              orderId,
-              orderItemId: orderItem.id,
-              mintId: mint.id,
-              error: mintErr instanceof Error ? mintErr.message : String(mintErr),
-            });
-            // await this.nftMintService.processStateTransition(ctx, { nftMintId: mint.id, status: NftMintStatus.FAILED }, tx);
-          }
-        } else {
-          logger.warn("[OrderWebhook] Missing projectUid or instanceId; skip NMKR mint", {
+          logger.info("[OrderWebhook] NMKR mint triggered & marked SUBMITTED", {
             orderId,
             orderItemId: orderItem.id,
-            projectUidFromMeta,
-            instanceIdFromMeta,
+            mintId: mint.id,
+            projectUid,
+            instanceId,
+            receiver: wallet.walletAddress,
           });
+        } catch (e) {
+          logger.error("[OrderWebhook] NMKR mint failed", {
+            orderId,
+            orderItemId: orderItem.id,
+            mintId: mint.id,
+            error: e instanceof Error ? e.message : String(e),
+          });
+          // ここで FAILED に倒すかは運用方針次第（リトライ設計があるならSUBMITTEDのまま or 専用状態を用意）
+          // await this.nftMintService.processStateTransition(ctx, { nftMintId: mint.id, status: NftMintStatus.FAILED }, tx);
         }
-      }
-
-      for (const item of order.items) {
-        const inventory = await this.calculateInventory(ctx, item.productId, tx);
-        logger.debug("[OrderWebhook] Inventory snapshot", {
+      } else {
+        logger.warn("[OrderWebhook] Missing projectUid or instanceId in metadata; skip NMKR mint", {
           orderId,
-          orderItemId: item.id,
-          inventory,
+          orderItemId: orderItem.id,
+          projectUid,
+          instanceId,
         });
       }
-    } catch (error) {
-      logger.error("[OrderWebhook] Failed to process order payment", {
-        orderId,
-        paymentTransactionUid,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
     }
+
+    // 5) 在庫ログ（任意）
+    for (const item of order.items) {
+      const inventory = await this.calculateInventory(ctx, item.productId, tx);
+      logger.debug("[OrderWebhook] Inventory snapshot", {
+        orderId,
+        orderItemId: item.id,
+        inventory,
+      });
+    }
+  }
+
+  // =========================
+  // Helpers
+  // =========================
+  private parseMeta(customProperty?: string):
+    | (CustomPropsV1 & {
+        projectUid?: string; // projectId / projectUid の正規化
+        instanceId?: string; // instanceId / nftUid の正規化
+      })
+    | null {
+    if (!customProperty) return null;
+
+    const parsed = parseCustomProps(customProperty);
+    if (!parsed.success) {
+      logger.warn("[OrderWebhook] parseCustomProps failed", { error: parsed.error });
+      // Stripe metadata が CustomPropsV1 形式じゃない時の保険: 素朴パース
+      try {
+        const fallback = JSON.parse(customProperty) as Record<string, string>;
+        return {
+          orderId: fallback.orderId,
+          projectUid: fallback.projectUid || fallback.projectId,
+          instanceId: fallback.instanceId || fallback.nftUid,
+          // 必要なら他フィールドも拾う
+        } as any;
+      } catch {
+        return null;
+      }
+    }
+
+    const data = parsed.data;
+    return {
+      ...data,
+      projectUid: (data as any).projectUid || (data as any).projectId,
+      instanceId: (data as any).instanceId || (data as any).nftUid,
+    };
   }
 
   private async calculateInventory(
@@ -312,42 +249,27 @@ export default class OrderWebhook {
     const available =
       maxSupply == null
         ? Number.MAX_SAFE_INTEGER
-        : Math.max(0, maxSupply - reserved - soldPendingMint - minted);
+        : Math.max(0, (maxSupply ?? 0) - reserved - soldPendingMint - minted);
 
     return { productId, reserved, soldPendingMint, minted, available, maxSupply };
   }
 
-  private mapNmkrState(state: string): NftMintStatus | null {
-    switch (state) {
-      case "confirmed":
-        return NftMintStatus.SUBMITTED;
-      case "finished":
-        return NftMintStatus.MINTED;
-      case "canceled":
-      case "expired":
-        return NftMintStatus.FAILED;
-      default:
-        return null;
-    }
-  }
-
+  /**
+   * NMKR Managed Wallet 作成 → 内部ウォレットとして登録
+   * ※ 独自のウォレット生成があるならここを差し替え
+   */
   private async ensureNmkrWallet(ctx: IContext, userId: string): Promise<PrismaNftWalletDetail> {
-    try {
-      const walletResponse = await this.nmkrClient.createWallet({
-        walletName: userId,
-        enterpriseaddress: true,
-        walletPassword: crypto.randomBytes(32).toString("hex"),
-      });
+    const walletResponse = await this.nmkrClient.createWallet({
+      walletName: userId,
+      enterpriseaddress: true,
+      walletPassword: crypto.randomBytes(32).toString("hex"),
+    });
 
-      logger.debug("[OrderWebhook] Created NMKR Managed wallet for Stripe payment", {
-        userId,
-        response: walletResponse,
-      });
+    logger.debug("[OrderWebhook] Created NMKR Managed wallet", {
+      userId,
+      address: walletResponse.address,
+    });
 
-      return await this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address);
-    } catch (error) {
-      logger.error("[OrderWebhook] Failed to create NMKR Managed wallet", { userId, error });
-      throw error;
-    }
+    return this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address);
   }
 }
