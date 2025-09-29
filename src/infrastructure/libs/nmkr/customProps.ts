@@ -1,5 +1,4 @@
 export interface CustomPropsV1 {
-  [key: string]: string | undefined;
   projectUid?: string;
   nftUid?: string;
   receiverAddress?: string;

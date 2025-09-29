@@ -2,8 +2,6 @@ import { injectable } from "tsyringe";
 import { createNmkrHttpClient, NmkrApiError } from "./http";
 import { NmkrEndpoints } from "./endpoints";
 import {
-  CreatePaymentTransactionRequest,
-  CreatePaymentTransactionResponse,
   CreateWalletResponse,
   MintAndSendSpecificResponse,
   UploadNftRequest,
@@ -28,15 +26,6 @@ export class NmkrClient {
       }
       throw new Error(`${errorMessage}: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }
-
-  async createPaymentTransaction(
-    payload: CreatePaymentTransactionRequest,
-  ): Promise<CreatePaymentTransactionResponse> {
-    return this.handleRequest(
-      () => this.endpoints.createPaymentTransaction(payload),
-      "Failed to create specific NFT sale",
-    );
   }
 
   async createWallet(options: {
