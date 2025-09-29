@@ -19,6 +19,7 @@ import {
   NmkrInsufficientCreditsError,
   PaymentStateTransitionError,
 } from "@/errors/graphql";
+import { OrderWithItems } from "@/application/domain/order/data/type";
 
 type StripePayload = {
   id: string;
@@ -51,74 +52,87 @@ export default class OrderWebhook {
       metadata,
     });
 
-    const meta: StripeMetadata = metadata || {};
-    if (!meta || !meta.orderId || !meta.nmkrProjectUid || !meta.nmkrNftUid || !meta.nftInstanceId) {
-      logger.error("[OrderWebhook] Missing orderId in metadata. Skip.");
-      throw new WebhookMetadataError(
-        "Missing orderId in webhook metadata",
-        JSON.stringify(metadata),
-      );
-    }
+    this.validateMetadata(metadata);
+    const meta = metadata;
 
-    if (state !== "succeeded") {
-      if (state === "payment_failed") {
-        try {
-          await ctx.issuer.internal(async (tx) => {
-            await this.orderService.updateOrderStatus(ctx, meta.orderId!, OrderStatus.FAILED, tx);
-
-            const order = await tx.order.findUnique({
-              where: { id: meta.orderId! },
-              include: { items: true },
-            });
-
-            if (order?.items) {
-              for (const item of order.items) {
-                const nftInstances = await tx.nftInstance.findMany({
-                  where: {
-                    productId: item.productId,
-                    status: NftInstanceStatus.RESERVED,
-                    communityId: ctx.communityId,
-                  },
-                  take: item.quantity,
-                  orderBy: { sequenceNum: "asc" },
-                });
-
-                for (const instance of nftInstances) {
-                  await this.nftInstanceRepo.releaseReservation(ctx, instance.id, tx);
-                }
-              }
-            }
-          });
-
-          logger.info("[OrderWebhook] Marked order as FAILED and released reservations", {
+    switch (state) {
+      case "succeeded":
+        await ctx.issuer.internal(async (tx) => {
+          await this.processOrderPayment(ctx, {
             orderId: meta.orderId,
             paymentTransactionUid,
+            tx,
+            meta,
           });
-        } catch (error) {
-          throw new PaymentStateTransitionError(
-            "Failed to update order status to FAILED and release reservations",
-            meta.orderId!,
-            state,
-            "FAILED",
-          );
-        }
-      } else {
-        logger.info("[OrderWebhook] Non-success state; no-op", {
-          orderId: meta.orderId,
-          state,
         });
-      }
-      return;
-    }
+        break;
 
-    await ctx.issuer.internal(async (tx) => {
-      await this.processOrderPayment(ctx, {
-        orderId: meta.orderId!,
-        paymentTransactionUid,
-        tx,
-        meta,
+      case "payment_failed":
+      case "expired":
+      case "canceled":
+        await this.handleFailedOrder(ctx, meta.orderId, paymentTransactionUid, state);
+        break;
+
+      default:
+        logger.info("[OrderWebhook] Unhandled state; no-op", { orderId: meta.orderId, state });
+    }
+  }
+
+  private validateMetadata(meta?: StripeMetadata): asserts meta is Required<StripeMetadata> {
+    if (!meta?.orderId || !meta?.nmkrProjectUid || !meta?.nmkrNftUid || !meta?.nftInstanceId) {
+      logger.error("[OrderWebhook] Missing required metadata", { meta });
+      throw new WebhookMetadataError("Missing required metadata", JSON.stringify(meta));
+    }
+  }
+
+  private async handleFailedOrder(
+    ctx: IContext,
+    orderId: string,
+    paymentTransactionUid: string,
+    state: string,
+  ) {
+    try {
+      await ctx.issuer.internal(async (tx) => {
+        await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED, tx);
+
+        const order = await tx.order.findUnique({
+          where: { id: orderId },
+          include: { items: true },
+        });
+
+        if (order?.items) {
+          for (const item of order.items) {
+            const nftInstances = await tx.nftInstance.findMany({
+              where: {
+                productId: item.productId,
+                status: NftInstanceStatus.RESERVED,
+                communityId: ctx.communityId,
+              },
+              take: item.quantity,
+              orderBy: { sequenceNum: "asc" },
+            });
+
+            for (const instance of nftInstances) {
+              await this.nftInstanceRepo.releaseReservation(ctx, instance.id, tx);
+            }
+          }
+        }
       });
-    });
+
+      logger.info("[OrderWebhook] Marked order as FAILED and released reservations", {
+        orderId,
+        paymentTransactionUid,
+        state,
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      throw new PaymentStateTransitionError(
+        "Failed to update order status to FAILED and release reservations",
+        orderId,
+        state,
+        "FAILED",
+      );
+    }
   }
 
   private async processOrderPayment(
@@ -160,7 +174,7 @@ export default class OrderWebhook {
 
   private async processOrderItems(
     ctx: IContext,
-    order: Awaited<ReturnType<OrderService["updateOrderStatus"]>>,
+    order: OrderWithItems,
     wallet: PrismaNftWalletDetail,
     meta: { nmkrProjectUid?: string; nmkrNftUid?: string; nftInstanceId?: string } | null,
     tx: Prisma.TransactionClient,
@@ -170,14 +184,7 @@ export default class OrderWebhook {
     for (const orderItem of order.items) {
       const nftInstanceId = await this.resolveInstanceId(ctx, metaNftInstanceId, wallet.id);
 
-      const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, wallet.id, tx);
-
-      logger.debug("[OrderWebhook] Mint record created", {
-        orderId: order.id,
-        orderItemId: orderItem.id,
-        nftInstanceId,
-        mintId: mint.id,
-      });
+      const mint = await this.nftMintService.createMintRecord(ctx, orderItem.id, wallet.id, tx);
 
       if (nftInstanceId) {
         await tx.nftInstance.update({

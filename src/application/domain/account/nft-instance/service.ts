@@ -6,6 +6,7 @@ import INftInstanceRepository from "@/application/domain/account/nft-instance/da
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstancePresenter from "@/application/domain/account/nft-instance/presenter";
 import { clampFirst } from "@/application/domain/utils";
+import { NftInstanceStatus, Prisma } from "@prisma/client";
 
 @injectable()
 export default class NftInstanceService {
@@ -19,7 +20,7 @@ export default class NftInstanceService {
     sort: GqlNftInstanceSortInput | undefined,
     ctx: IContext,
     cursor?: string,
-    first?: number
+    first?: number,
   ) {
     const where = this.converter.filter(filter);
     const orderBy = this.converter.sort(sort);
@@ -27,14 +28,15 @@ export default class NftInstanceService {
 
     const [nftInstances, totalCount] = await Promise.all([
       this.repository.query(ctx, where, orderBy, take + 1, cursor),
-      this.repository.count(ctx, where)
+      this.repository.count(ctx, where),
     ]);
 
     const hasNextPage = nftInstances.length > take;
-    const nftInstanceNodes = nftInstances.slice(0, take).map((nftInstance) =>
-      NftInstancePresenter.get(nftInstance)
-    );
-    const endCursor = nftInstanceNodes.length > 0 ? nftInstanceNodes[nftInstanceNodes.length - 1].id : undefined;
+    const nftInstanceNodes = nftInstances
+      .slice(0, take)
+      .map((nftInstance) => NftInstancePresenter.get(nftInstance));
+    const endCursor =
+      nftInstanceNodes.length > 0 ? nftInstanceNodes[nftInstanceNodes.length - 1].id : undefined;
 
     return NftInstancePresenter.query(nftInstanceNodes, hasNextPage, totalCount, endCursor);
   }
@@ -45,5 +47,22 @@ export default class NftInstanceService {
       throw new NotFoundError("NftInstance", { id });
     }
     return NftInstancePresenter.get(nftInstance);
+  }
+
+  async markAsMinting(
+    ctx: IContext,
+    nftInstanceId: string,
+    mintId: string,
+    walletId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    return tx.nftInstance.update({
+      where: { id: nftInstanceId },
+      data: {
+        nftMintId: mintId,
+        nftWalletId: walletId,
+        status: NftInstanceStatus.MINTING,
+      },
+    });
   }
 }

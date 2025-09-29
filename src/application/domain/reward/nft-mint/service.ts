@@ -22,19 +22,24 @@ export default class NftMintService {
     return this.repo.count(ctx, where, tx);
   }
 
-  async createForOrderItem(
+  async createMintRecord(
     ctx: IContext,
     orderItemId: string,
     nftWalletId: string,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
-    const createData = this.converter.buildMintCreate({
+    const input = this.converter.buildMintCreate({
       orderItemId,
       nftWalletId,
       sequenceNum: 0,
     });
+    const mint = await this.repo.create(ctx, input, tx);
 
-    return this.repo.create(ctx, createData, tx);
+    logger.debug("[OrderWebhook] Mint record created", {
+      orderItemId,
+      mintId: mint.id,
+    });
+    return mint;
   }
 
   async processStateTransition(
