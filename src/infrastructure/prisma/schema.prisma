@@ -1324,8 +1324,10 @@ model NftProduct {
   productId String  @unique @map("product_id")
   product   Product @relation(fields: [productId], references: [id])
 
-  externalRef String? @map("external_ref")
-  policyId    String  @map("policy_id")
+  stripeProductId String @map("stripe_product_id")
+  nmkrProjectId   String @map("nmkr_project_id")
+
+  policyId String @map("policy_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

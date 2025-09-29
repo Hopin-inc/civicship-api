@@ -7793,6 +7793,8 @@ export const defineProductFactory = (<TOptions extends ProductFactoryDefineOptio
 defineProductFactory.withTransientFields = defaultTransientFieldValues => options => defineProductFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type NftProductScalarOrEnumFields = {
+    stripeProductId: string;
+    nmkrProjectId: string;
     policyId: string;
 };
 
@@ -7803,7 +7805,8 @@ type NftProductproductFactory = {
 
 type NftProductFactoryDefineInput = {
     id?: string;
-    externalRef?: string | null;
+    stripeProductId?: string;
+    nmkrProjectId?: string;
     policyId?: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -7850,6 +7853,8 @@ function autoGenerateNftProductScalarsOrEnums({ seq }: {
     readonly seq: number;
 }): NftProductScalarOrEnumFields {
     return {
+        stripeProductId: getScalarFieldValueGenerator().String({ modelName: "NftProduct", fieldName: "stripeProductId", isId: false, isUnique: false, seq }),
+        nmkrProjectId: getScalarFieldValueGenerator().String({ modelName: "NftProduct", fieldName: "nmkrProjectId", isId: false, isUnique: false, seq }),
         policyId: getScalarFieldValueGenerator().String({ modelName: "NftProduct", fieldName: "policyId", isId: false, isUnique: false, seq })
     };
 }
