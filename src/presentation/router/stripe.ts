@@ -5,7 +5,7 @@ import OrderWebhook from "@/application/domain/order/webhook";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
 import { IContext } from "@/types/server";
-import { StripeClient } from "@/infrastructure/libs/stripe";
+import { StripeClient } from "@/infrastructure/libs/stripe/client";
 
 const router = express();
 
@@ -67,7 +67,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         Object.keys(metadata).length > 0
           ? {
               orderId: metadata.orderId,
-              userId: metadata.userId,
               nmkrProjectUid: metadata.nmkrProjectUid,
               nmkrNftUid: metadata.nmkrNftUid,
               nftInstanceId: metadata.nftInstanceId,

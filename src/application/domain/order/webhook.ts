@@ -23,7 +23,7 @@ import {
 type StripePayload = {
   id: string;
   state: string;
-  metadata: {
+  metadata?: {
     orderId: string;
     nmkrProjectUid: string;
     nmkrNftUid: string;
@@ -51,8 +51,8 @@ export default class OrderWebhook {
       metadata,
     });
 
-    const meta = metadata || {};
-    if (!meta.orderId && !meta.nftInstanceId && !meta.nmkrProjectUid && !meta.nmkrNftUid) {
+    const meta: StripeMetadata = metadata || {};
+    if (!meta || !meta.orderId || !meta.nmkrProjectUid || !meta.nmkrNftUid || !meta.nftInstanceId) {
       logger.error("[OrderWebhook] Missing orderId in metadata. Skip.");
       throw new WebhookMetadataError(
         "Missing orderId in webhook metadata",
