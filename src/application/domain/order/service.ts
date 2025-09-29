@@ -1,4 +1,4 @@
-import { injectable, inject, container } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
 import OrderRepository from "@/application/domain/order/data/repository";
@@ -13,6 +13,7 @@ export default class OrderService implements IOrderService {
   constructor(
     @inject("OrderRepository") private readonly repository: OrderRepository,
     @inject("OrderConverter") private readonly converter: OrderConverter,
+    @inject("NftInstanceService") private readonly nftInstanceService: NftInstanceService,
   ) {}
 
   async createOrder(
@@ -94,9 +95,7 @@ export default class OrderService implements IOrderService {
     item: { productId: string; quantity: number },
     tx: Prisma.TransactionClient,
   ): Promise<void> {
-    const nftInstanceService = container.resolve<NftInstanceService>("NftInstanceService");
-    
-    const nftInstances = await nftInstanceService.findReservedInstancesForProduct(
+    const nftInstances = await this.nftInstanceService.findReservedInstancesForProduct(
       ctx,
       item.productId,
       item.quantity,
@@ -104,6 +103,6 @@ export default class OrderService implements IOrderService {
     );
 
     const instanceIds = nftInstances.map(instance => instance.id);
-    await nftInstanceService.releaseReservations(ctx, instanceIds, tx);
+    await this.nftInstanceService.releaseReservations(ctx, instanceIds, tx);
   }
 }

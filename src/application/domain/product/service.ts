@@ -1,4 +1,4 @@
-import { injectable, inject, container } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 import { Prisma } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { IProductService } from "./data/interface";
@@ -11,7 +11,11 @@ import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class ProductService implements IProductService {
-  constructor(@inject("ProductRepository") private readonly repository: ProductRepository) {}
+  constructor(
+    @inject("ProductRepository") private readonly repository: ProductRepository,
+    @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
+    @inject("NftMintService") private readonly nftMintService: NftMintService,
+  ) {}
 
   async findOrThrowForOrder(
     ctx: IContext,
@@ -71,13 +75,10 @@ export default class ProductService implements IProductService {
       select: { maxSupply: true },
     });
 
-    const orderItemService = container.resolve<IOrderItemService>("OrderItemService");
-    const nftMintService = container.resolve<NftMintService>("NftMintService");
-
     const [reserved, soldPendingMint, minted] = await Promise.all([
-      orderItemService.countReservedByProduct(ctx, productId, tx),
-      orderItemService.countSoldPendingMintByProduct(ctx, productId, tx),
-      nftMintService.countMintedByProduct(ctx, productId, tx),
+      this.orderItemService.countReservedByProduct(ctx, productId, tx),
+      this.orderItemService.countSoldPendingMintByProduct(ctx, productId, tx),
+      this.nftMintService.countMintedByProduct(ctx, productId, tx),
     ]);
 
     const maxSupply = product?.maxSupply ?? null;
