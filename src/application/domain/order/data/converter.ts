@@ -1,6 +1,6 @@
 import { injectable } from "tsyringe";
 import { Prisma, OrderStatus, PaymentProvider } from "@prisma/client";
-import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
+import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import Stripe from "stripe";
 
@@ -31,7 +31,7 @@ export default class OrderConverter {
 
   stripeCheckoutSessionInput(
     product: PrismaProduct,
-    customProps: CustomPropsV1,
+    customProps: StripeMetadata,
   ): Stripe.Checkout.SessionCreateParams {
     const amountInYen = Math.round(product.price);
 

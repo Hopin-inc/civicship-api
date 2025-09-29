@@ -1,8 +1,8 @@
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
-import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
-import { StripeClient } from "@/infrastructure/libs/stripe";
+import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
+import { StripeClient } from "@/infrastructure/libs/stripe/client";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
@@ -70,21 +70,19 @@ export default class OrderUseCase {
           sequenceNum: nftInstance.sequenceNum,
         });
 
-        const customProps: CustomPropsV1 = {
+        const metadata: StripeMetadata = {
           orderId: orderId,
           nftInstanceId: nftInstance.id,
           nmkrProjectUid: product.nftProduct?.nmkrProjectId ?? "",
           nmkrNftUid: nftInstanceId,
         };
 
-        const sessionParams = this.converter.stripeCheckoutSessionInput(product, customProps);
+        const sessionParams = this.converter.stripeCheckoutSessionInput(product, metadata);
         const session = await this.stripeClient.createCheckoutSession(sessionParams);
 
         logger.debug("[OrderUseCase] Created Stripe checkout session", {
-          orderId: customProps.orderId,
           sessionId: session.id,
-          instanceId: nftInstance.instanceId,
-          customProps: customProps,
+          metadata: metadata,
         });
 
         return {

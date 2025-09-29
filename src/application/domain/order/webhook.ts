@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
-import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
+import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
@@ -23,15 +23,12 @@ import {
 type StripePayload = {
   id: string;
   state: string;
-  metadata?:
-    | {
-        orderId?: string | undefined;
-        userId?: string | undefined;
-        nmkrProjectUid?: string | undefined;
-        nmkrNftUid?: string | undefined;
-        nftInstanceId?: string | undefined;
-      }
-    | undefined;
+  metadata: {
+    orderId: string;
+    nmkrProjectUid: string;
+    nmkrNftUid: string;
+    nftInstanceId: string;
+  };
 };
 
 @injectable()
@@ -55,7 +52,7 @@ export default class OrderWebhook {
     });
 
     const meta = metadata || {};
-    if (!meta.orderId) {
+    if (!meta.orderId && !meta.nftInstanceId && !meta.nmkrProjectUid && !meta.nmkrNftUid) {
       logger.error("[OrderWebhook] Missing orderId in metadata. Skip.");
       throw new WebhookMetadataError(
         "Missing orderId in webhook metadata",
@@ -130,7 +127,7 @@ export default class OrderWebhook {
       orderId: string;
       paymentTransactionUid: string;
       tx: Prisma.TransactionClient;
-      meta: CustomPropsV1;
+      meta: StripeMetadata;
     },
   ): Promise<void> {
     const { orderId, paymentTransactionUid, tx, meta } = args;
