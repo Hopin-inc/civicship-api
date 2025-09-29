@@ -9,7 +9,7 @@ import OrderService from "@/application/domain/order/service";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
 import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
-import { Prisma, OrderStatus, NftMintStatus } from "@prisma/client";
+import { Prisma, OrderStatus, NftMintStatus, NftInstanceStatus } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 
 type StripePayload = {
@@ -130,6 +130,24 @@ export default class OrderWebhook {
         mintId: mint.id,
       });
 
+      if (nftInstanceId) {
+        await tx.nftInstance.update({
+          where: { id: nftInstanceId },
+          data: {
+            nftMintId: mint.id,
+            nftWalletId: wallet.id,
+            status: NftInstanceStatus.MINTING,
+          },
+        });
+      }
+
+      logger.debug("[OrderWebhook] Mint record created & instance updated", {
+        orderId: order.id,
+        orderItemId: orderItem.id,
+        nftInstanceId,
+        mintId: mint.id,
+      });
+
       if (projectUid && nftUid) {
         await this.tryMintViaNmkr(ctx, {
           order,
@@ -183,7 +201,8 @@ export default class OrderWebhook {
     const { order, orderItemId, mintId, projectUid, nftUid, walletAddress, tx } = args;
 
     try {
-      await this.nmkrClient.mintAndSendSpecific(projectUid, nftUid, 1, walletAddress);
+      const res = await this.nmkrClient.mintAndSendSpecific(projectUid, nftUid, 1, walletAddress);
+      logger.debug("[OrderWebhook] NMKR mint triggered", res);
 
       await this.nftMintService.processStateTransition(
         ctx,
