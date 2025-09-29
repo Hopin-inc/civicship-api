@@ -62,7 +62,7 @@ export default class OrderWebhook {
     const props = this.validateCustomProps(paymentTransactionUid, customProperty);
     if (!props) return;
 
-    const { orderId, nftMintId } = props;
+    const { orderId, nftMintId, projectUid, nftUid, receiverAddress } = props;
 
     await ctx.issuer.internal(async (tx) => {
       if (orderId && state === "confirmed") {
@@ -70,8 +70,17 @@ export default class OrderWebhook {
         return;
       }
 
-      if (nftMintId) {
-        await this.handleMintTransition(ctx, nftMintId, state, txHash, tx);
+      if (nftMintId && projectUid && nftUid && receiverAddress) {
+        await this.handleMintTransition(
+          ctx,
+          projectUid,
+          nftUid,
+          receiverAddress,
+          nftMintId,
+          state,
+          txHash,
+          tx,
+        );
         return;
       }
 
@@ -147,6 +156,9 @@ export default class OrderWebhook {
 
   private async handleMintTransition(
     ctx: IContext,
+    projectUid: string,
+    nftUid: string,
+    receiverAddress: string,
     nftMintId: string,
     state: string,
     txHash: string | undefined,
@@ -157,6 +169,10 @@ export default class OrderWebhook {
       logger.warn("[OrderWebhook] Unsupported NMKR state for mint transition", { state });
       return;
     }
+
+    await this.nmkrClient.mintAndSendSpecific(projectUid, nftUid, 1, receiverAddress);
+    logger.info("[OrderWebhook] Triggered manual mint via NMKR", { nftMintId, nftUid });
+
     await this.nftMintService.processStateTransition(ctx, { nftMintId, status, txHash }, tx);
     logger.info("[OrderWebhook] NFT mint state transitioned", { nftMintId, status, state });
   }
@@ -175,14 +191,14 @@ export default class OrderWebhook {
 
       const userId = order.userId;
       let nftWallet = await this.nftWalletService.checkIfExists(ctx, userId);
-      
+
       if (!nftWallet) {
         nftWallet = await this.ensureNmkrWallet(ctx, userId, tx);
       }
 
       for (const orderItem of order.items) {
         let nftInstanceId = nftWallet.id;
-        
+
         if (customProperty) {
           try {
             const metadata = JSON.parse(customProperty);
@@ -210,7 +226,6 @@ export default class OrderWebhook {
         });
       }
 
-      // 在庫計算（今は返却先なし → 将来 InventoryService に移す想定）
       for (const item of order.items) {
         const inventory = await this.calculateInventory(ctx, item.productId, tx);
         logger.debug("[OrderWebhook] Inventory snapshot", {

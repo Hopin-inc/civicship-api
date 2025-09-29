@@ -11,10 +11,9 @@ export interface INFTWalletRepository {
     data: Prisma.NftWalletUpdateInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftWalletDetail>;
-
   create(
     ctx: IContext,
     data: Prisma.NftWalletCreateInput,
-    tx: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient,
   ): Promise<PrismaNftWalletCreateDetail>;
 }

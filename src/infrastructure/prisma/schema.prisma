@@ -1130,12 +1130,10 @@ model NftWallet {
   id   String        @id @default(cuid())
   type NftWalletType @default(INTERNAL)
 
-  walletAddress String  @unique @map("wallet_address")
-  apiKey        String? @map("api_key")
-  externalRef   String? @map("external_ref")
+  walletAddress String @unique @map("wallet_address")
 
   userId       String        @map("user_id")
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   nftInstances NftInstance[]
   nftMints     NftMint[]
 
@@ -1151,12 +1149,13 @@ enum NftWalletType {
 }
 
 model NftToken {
-  id      String  @id @default(cuid())
-  address String  @unique
-  name    String?
-  symbol  String?
-  type    String
-  json    Json?
+  id      String @id @default(cuid())
+  address String @unique // コントラクト/PolicyId として運用
+  type    String // "ERC-721" など（命名は standard にしてもOK）
+
+  name   String?
+  symbol String?
+  json   Json?
 
   nftInstances NftInstance[]
 
@@ -1167,20 +1166,21 @@ model NftToken {
 }
 
 model NftInstance {
-  id          String  @id @default(cuid())
-  instanceId  String  @map("instance_id")
+  id          String @id @default(cuid())
+  instanceId  String @map("instance_id")
+  sequenceNum Int?   @map("sequence_num")
+
+  status      NftInstanceStatus @default(STOCK)
   name        String?
   description String?
-  imageUrl    String? @map("image_url")
+  imageUrl    String?           @map("image_url")
   json        Json?
 
-  sequenceNum Int? @map("sequence_num")
+  productId String?  @map("product_id")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Restrict)
 
-  // productId String  @map("product_id")
-  // product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-
-  nftWalletId String    @map("nft_wallet_id")
-  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
+  nftWalletId String?    @map("nft_wallet_id")
+  nftWallet   NftWallet? @relation(fields: [nftWalletId], references: [id], onDelete: SetNull)
 
   nftTokenId String?   @map("nft_token_id")
   nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
@@ -1195,15 +1195,23 @@ model NftInstance {
   updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@unique([nftWalletId, instanceId])
-  // @@unique([productId, instanceId])
+  @@index([nftWalletId])
   @@map("t_nft_instances")
+}
+
+enum NftInstanceStatus {
+  STOCK
+  RESERVED
+  MINTING
+  OWNED
+  RETIRED
 }
 
 model NftMint {
   id     String        @id @default(cuid())
   status NftMintStatus @default(QUEUED)
 
-  txHash String? @map("tx_hash")
+  txHash String? @unique @map("tx_hash")
   error  String?
 
   orderItemId String?    @map("order_item_id")
@@ -1262,7 +1270,7 @@ model OrderItem {
   productId String  @map("product_id")
   product   Product @relation(fields: [productId], references: [id])
 
-  nftMints NftMint[] // NFT の場合だけ発行される
+  nftMints NftMint[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1297,8 +1305,9 @@ model Product {
   startsAt  DateTime? @map("starts_at")
   endsAt    DateTime? @map("ends_at")
 
-  orderItem  OrderItem[]
-  nftProduct NftProduct?
+  orderItem   OrderItem[]
+  nftProduct  NftProduct?
+  nftInstance NftInstance[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

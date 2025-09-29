@@ -40,10 +40,19 @@ export default class NFTWalletRepository implements INFTWalletRepository {
     });
   }
 
-  async create(ctx: IContext, data: Prisma.NftWalletCreateInput, tx: Prisma.TransactionClient) {
-    return tx.nftWallet.create({
-      data,
-      select: nftWalletCreateSelect,
-    });
+  async create(ctx: IContext, data: Prisma.NftWalletCreateInput, tx?: Prisma.TransactionClient) {
+    if (tx) {
+      return tx.nftWallet.create({
+        data,
+        select: nftWalletCreateSelect,
+      });
+    }
+
+    return ctx.issuer.public(ctx, (dbTx) =>
+      dbTx.nftWallet.create({
+        data,
+        select: nftWalletCreateSelect,
+      }),
+    );
   }
 }

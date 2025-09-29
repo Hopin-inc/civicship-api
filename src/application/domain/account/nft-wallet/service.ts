@@ -123,20 +123,11 @@ export default class NFTWalletService {
     return null;
   }
 
-  async createInternalWallet(
-    ctx: IContext,
-    userId: string,
-    walletAddress: string,
-    tx: Prisma.TransactionClient,
-  ) {
-    return await this.nftWalletRepository.create(
-      ctx,
-      {
-        walletAddress,
-        type: NftWalletType.INTERNAL,
-        user: { connect: { id: userId } },
-      },
-      tx,
-    );
+  async createInternalWallet(ctx: IContext, userId: string, walletAddress: string) {
+    return await this.nftWalletRepository.create(ctx, {
+      walletAddress,
+      type: NftWalletType.INTERNAL,
+      user: { connect: { id: userId } },
+    });
   }
 }

@@ -1,10 +1,13 @@
 import { AxiosInstance } from "axios";
 import { NmkrHttp } from "./http";
-import type {
-  CreatePaymentTransactionRequestBody,
+import {
+  CreatePaymentTransactionRequest,
   CreatePaymentTransactionResponse,
-} from "../types/types.aliases";
-import type { CreateWalletResponse } from "../types/types.generated";
+  CreateWalletResponse,
+  MintAndSendSpecificResponse,
+  UploadNftRequest,
+  UploadNftResponse,
+} from "@/infrastructure/libs/nmkr/type";
 
 export class NmkrEndpoints {
   private readonly http2: NmkrHttp;
@@ -13,13 +16,13 @@ export class NmkrEndpoints {
     this.http2 = new NmkrHttp(http);
   }
 
-  async createPaymentTransactionForSpecificNft(
-    payload: CreatePaymentTransactionRequestBody,
+  async createPaymentTransaction(
+    payload: CreatePaymentTransactionRequest,
   ): Promise<CreatePaymentTransactionResponse> {
-    return this.http2.postJSON<
-      CreatePaymentTransactionResponse,
-      CreatePaymentTransactionRequestBody
-    >("/v2/CreatePaymentTransaction", payload);
+    return this.http2.postJSON<CreatePaymentTransactionResponse, CreatePaymentTransactionRequest>(
+      "/v2/CreatePaymentTransaction",
+      payload,
+    );
   }
 
   async createWallet(
@@ -30,5 +33,30 @@ export class NmkrEndpoints {
       `/v2/CreateWallet/${customerId}`,
       options,
     );
+  }
+
+  async uploadNft(
+    projectUid: string,
+    payload: UploadNftRequest,
+    uploadSource?: string,
+  ): Promise<UploadNftResponse> {
+    const query = uploadSource ? `?uploadsource=${encodeURIComponent(uploadSource)}` : "";
+    return this.http2.postJSON<UploadNftResponse, UploadNftRequest>(
+      `/v2/UploadNft/${projectUid}${query}`,
+      payload,
+    );
+  }
+
+  async mintAndSendSpecific(
+    projectUid: string,
+    nftUid: string,
+    tokenCount: number,
+    receiverAddress: string,
+    blockchain: string = "Cardano",
+  ): Promise<MintAndSendSpecificResponse> {
+    const path = `/v2/MintAndSendSpecific/${projectUid}/${nftUid}/${tokenCount}/${receiverAddress}?blockchain=${encodeURIComponent(
+      blockchain,
+    )}`;
+    return this.http2.getJSON<MintAndSendSpecificResponse>(path);
   }
 }

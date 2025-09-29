@@ -1,5 +1,5 @@
 import { IContext } from "@/types/server";
-import { Prisma } from "@prisma/client";
+import { Prisma, NftInstance } from "@prisma/client";
 import { injectable } from "tsyringe";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
@@ -11,7 +11,7 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     where: Prisma.NftInstanceWhereInput,
     orderBy: Prisma.NftInstanceOrderByWithRelationInput[],
     take: number,
-    cursor?: string
+    cursor?: string,
   ): Promise<NftInstanceWithRelations[]> {
     return ctx.issuer.public(ctx, async (tx) => {
       const result = await tx.nftInstance.findMany({
@@ -28,10 +28,24 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async count(
+  async findAvailableInstance(
     ctx: IContext,
-    where: Prisma.NftInstanceWhereInput
-  ): Promise<number> {
+    communityId: string,
+    productId: string,
+  ): Promise<NftInstance | null> {
+    return ctx.issuer.public(ctx, async (tx) => {
+      return tx.nftInstance.findFirst({
+        where: {
+          communityId,
+          productId,
+          nftMintId: null,
+        },
+        orderBy: { sequenceNum: "asc" },
+      });
+    });
+  }
+
+  async count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number> {
     return ctx.issuer.public(ctx, (tx) => {
       return tx.nftInstance.count({
         where,
@@ -75,7 +89,15 @@ export default class NftInstanceRepository implements INftInstanceRepository {
 
   async upsert(
     ctx: IContext,
-    data: { instanceId: string; name?: string | null; description?: string | null; imageUrl?: string | null; json: unknown; nftWalletId: string; nftTokenId: string },
+    data: {
+      instanceId: string;
+      name?: string | null;
+      description?: string | null;
+      imageUrl?: string | null;
+      json: unknown;
+      nftWalletId: string;
+      nftTokenId: string;
+    },
     tx: Prisma.TransactionClient,
   ) {
     return tx.nftInstance.upsert({
