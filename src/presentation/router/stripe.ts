@@ -13,7 +13,6 @@ const router = express();
 router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const signature = req.headers["stripe-signature"];
-
     if (!signature) {
       logger.error("Missing Stripe signature");
       return res.status(400).json({ error: "Missing signature" });
@@ -36,12 +35,24 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     let state: string;
     let metadata: Stripe.Metadata = {};
 
-    if (event.type.startsWith("payment_intent.")) {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      projectUid = paymentIntent.id;
-      paymentTransactionUid = paymentIntent.id;
-      state = paymentIntent.status;
-      metadata = paymentIntent.metadata;
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      projectUid = session.id;
+      paymentTransactionUid = session.payment_intent as string;
+      state = "succeeded";
+      metadata = session.metadata ?? {};
+    } else if (event.type === "checkout.session.async_payment_failed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      projectUid = session.id;
+      paymentTransactionUid = session.payment_intent as string;
+      state = "payment_failed";
+      metadata = session.metadata ?? {};
+    } else if (event.type === "checkout.session.expired") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      projectUid = session.id;
+      paymentTransactionUid = session.payment_intent as string;
+      state = "expired";
+      metadata = session.metadata ?? {};
     } else {
       logger.warn("Unhandled Stripe webhook event type", {
         eventType: event.type,
