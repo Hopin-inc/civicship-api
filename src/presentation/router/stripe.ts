@@ -1,7 +1,6 @@
 import express from "express";
 import { container } from "tsyringe";
 import Stripe from "stripe";
-import { GqlPaymentProvider } from "@/types/graphql";
 import OrderWebhook from "@/application/domain/order/webhook";
 import logger from "@/infrastructure/logging";
 import { PrismaClientIssuer } from "@/infrastructure/prisma/client";
@@ -30,26 +29,22 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     const orderWebhook = container.resolve<OrderWebhook>("OrderWebhook");
     const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
 
-    let projectUid: string;
     let paymentTransactionUid: string;
     let state: string;
     let metadata: Stripe.Metadata = {};
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      projectUid = session.id;
       paymentTransactionUid = session.payment_intent as string;
       state = "succeeded";
       metadata = session.metadata ?? {};
     } else if (event.type === "checkout.session.async_payment_failed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      projectUid = session.id;
       paymentTransactionUid = session.payment_intent as string;
       state = "payment_failed";
       metadata = session.metadata ?? {};
     } else if (event.type === "checkout.session.expired") {
       const session = event.data.object as Stripe.Checkout.Session;
-      projectUid = session.id;
       paymentTransactionUid = session.payment_intent as string;
       state = "expired";
       metadata = session.metadata ?? {};
@@ -66,9 +61,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
     const ctx = { issuer } as IContext;
     await orderWebhook.processStripeWebhook(ctx, {
-      provider: GqlPaymentProvider.Stripe,
-      projectUid,
-      paymentTransactionUid,
+      id: paymentTransactionUid,
       state,
       customProperty: Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : undefined,
     });
