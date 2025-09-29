@@ -6,6 +6,7 @@ import {
   CreateProjectResponse,
   CreateWalletResponse,
   MintAndSendSpecificResponse,
+  NftDetailResponse,
   UploadNftRequest,
   UploadNftResponse,
 } from "@/infrastructure/libs/nmkr/type";
@@ -78,6 +79,13 @@ export class NmkrClient {
           blockchain,
         ),
       "Failed to mint and send NFT via NMKR",
+    );
+  }
+
+  async getNftDetails(nftUid: string): Promise<NftDetailResponse> {
+    return this.handleRequest(
+      () => this.endpoints.getNftDetails(nftUid),
+      "Failed to get NFT details from NMKR",
     );
   }
 }

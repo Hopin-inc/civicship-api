@@ -5,6 +5,7 @@ import {
   CreateProjectResponse,
   CreateWalletResponse,
   MintAndSendSpecificResponse,
+  NftDetailResponse,
   UploadNftRequest,
   UploadNftResponse,
 } from "@/infrastructure/libs/nmkr/type";
@@ -56,6 +57,11 @@ export class NmkrEndpoints {
       blockchain,
     )}`;
     return this.http2.getJSON<MintAndSendSpecificResponse>(path);
+  }
+
+  async getNftDetails(nftUid: string): Promise<NftDetailResponse> {
+    const path = `/v2/GetNftDetailsById/${nftUid}`;
+    return this.http2.getJSON<NftDetailResponse>(path);
   }
 
   // async createPaymentTransaction(

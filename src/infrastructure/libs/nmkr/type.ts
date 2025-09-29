@@ -104,6 +104,40 @@ export type CreateWalletResponse = {
   pkh: string; // Public Key Hash
 };
 
+export interface NftDetailResponse {
+  id: number;
+  ipfshash: string;
+  state: string;
+  name: string;
+  displayname: string;
+  detaildata: string;
+  minted: boolean;
+  receiveraddress: string;
+  selldate: string; // ISO8601形式 ("2025-09-29T17:04:07.294Z")
+  soldby: string;
+  reserveduntil: string; // ISO8601形式
+  policyid: string;
+  assetid: string;
+  assetname: string;
+  fingerprint: string;
+  initialminttxhash: string;
+  title: string;
+  series: string;
+  ipfsGatewayAddress: string;
+  metadata: string;
+  singlePrice: number;
+  uid: string;
+  paymentGatewayLinkForSpecificSale: string;
+  sendBackCentralPaymentInLovelace: number;
+  priceInLovelaceCentralPayments: number;
+  uploadSource: string;
+  priceInLamportCentralPayments: number;
+  singlePriceSolana: number;
+  priceInOctsCentralPayments: number;
+  mintedOnBlockchain: "Cardano" | "Solana" | "Other"; // NMKR拡張を見越してunion型
+  mintingfees: number;
+}
+
 // export type CreatePaymentTransactionRequest = {
 //   projectUid: string;
 //   referer?: string;
