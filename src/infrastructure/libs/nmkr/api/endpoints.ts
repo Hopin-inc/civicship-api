@@ -1,8 +1,8 @@
 import { AxiosInstance } from "axios";
 import { NmkrHttp } from "./http";
 import {
-  CreatePaymentTransactionRequest,
-  CreatePaymentTransactionResponse,
+  CreateProjectRequest,
+  CreateProjectResponse,
   CreateWalletResponse,
   MintAndSendSpecificResponse,
   UploadNftRequest,
@@ -16,22 +16,10 @@ export class NmkrEndpoints {
     this.http2 = new NmkrHttp(http);
   }
 
-  async createPaymentTransaction(
-    payload: CreatePaymentTransactionRequest,
-  ): Promise<CreatePaymentTransactionResponse> {
-    return this.http2.postJSON<CreatePaymentTransactionResponse, CreatePaymentTransactionRequest>(
-      "/v2/CreatePaymentTransaction",
+  async createProject(payload: CreateProjectRequest): Promise<CreateProjectResponse> {
+    return this.http2.postJSON<CreateProjectRequest, CreateProjectResponse>(
+      `/v2/CreateProject`,
       payload,
-    );
-  }
-
-  async createWallet(
-    customerId: number,
-    options: { walletName: string; enterpriseaddress: boolean; walletPassword: string },
-  ): Promise<CreateWalletResponse> {
-    return this.http2.postJSON<CreateWalletResponse, typeof options>(
-      `/v2/CreateWallet/${customerId}`,
-      options,
     );
   }
 
@@ -47,6 +35,16 @@ export class NmkrEndpoints {
     );
   }
 
+  async createWallet(
+    customerId: number,
+    options: { walletName: string; enterpriseaddress: boolean; walletPassword: string },
+  ): Promise<CreateWalletResponse> {
+    return this.http2.postJSON<CreateWalletResponse, typeof options>(
+      `/v2/CreateWallet/${customerId}`,
+      options,
+    );
+  }
+
   async mintAndSendSpecific(
     projectUid: string,
     nftUid: string,
@@ -59,4 +57,13 @@ export class NmkrEndpoints {
     )}`;
     return this.http2.getJSON<MintAndSendSpecificResponse>(path);
   }
+
+  // async createPaymentTransaction(
+  //   payload: CreatePaymentTransactionRequest,
+  // ): Promise<CreatePaymentTransactionResponse> {
+  //   return this.http2.postJSON<CreatePaymentTransactionResponse, CreatePaymentTransactionRequest>(
+  //     "/v2/CreatePaymentTransaction",
+  //     payload,
+  //   );
+  // }
 }

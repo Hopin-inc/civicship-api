@@ -2,6 +2,8 @@ import { injectable } from "tsyringe";
 import { createNmkrHttpClient, NmkrApiError } from "./http";
 import { NmkrEndpoints } from "./endpoints";
 import {
+  CreateProjectRequest,
+  CreateProjectResponse,
   CreateWalletResponse,
   MintAndSendSpecificResponse,
   UploadNftRequest,
@@ -28,16 +30,10 @@ export class NmkrClient {
     }
   }
 
-  async createWallet(options: {
-    walletName: string;
-    enterpriseaddress: boolean;
-    walletPassword: string;
-  }): Promise<CreateWalletResponse> {
-    const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
-
+  async createProject(payload: CreateProjectRequest): Promise<CreateProjectResponse> {
     return this.handleRequest(
-      () => this.endpoints.createWallet(parentCustomerId, options),
-      "Failed to create NMKR wallet",
+      () => this.endpoints.createProject(payload),
+      "Failed to create NMKR project",
     );
   }
 
@@ -48,6 +44,19 @@ export class NmkrClient {
   ): Promise<UploadNftResponse> {
     return this.handleRequest(
       () => this.endpoints.uploadNft(projectUid, payload, uploadSource),
+      "Failed to create NMKR wallet",
+    );
+  }
+
+  async createWallet(options: {
+    walletName: string;
+    enterpriseaddress: boolean;
+    walletPassword: string;
+  }): Promise<CreateWalletResponse> {
+    const parentCustomerId = Number(process.env.NMKR_CUSTOMER_ID);
+
+    return this.handleRequest(
+      () => this.endpoints.createWallet(parentCustomerId, options),
       "Failed to create NMKR wallet",
     );
   }

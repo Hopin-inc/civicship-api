@@ -1,4 +1,35 @@
-// ===== UploadNft Input =====
+export type CreateProjectRequest = {
+  projectname: string;
+  description: string;
+  projecturl: string;
+  tokennamePrefix: string;
+  policyExpires: boolean;
+  policyLocksDateTime: string; // ISO8601
+  payoutWalletaddress: string;
+  maxNftSupply: number;
+  // metadataTemplate: string;
+  addressExpiretime: number;
+  pricelist: {
+    countNft: number;
+    price: number;
+    currency: "ADA";
+    isActive: boolean;
+    validFrom: string; // ISO8601
+    validTo: string; // ISO8601
+  }[];
+  enableCardano: boolean;
+};
+
+export type CreateProjectResponse = {
+  projectId: number;
+  metadata: string;
+  policyId: string;
+  policyScript: string;
+  policyExpiration: string; // ISO8601
+  uid: string;
+  created: string; // ISO8601
+};
+
 export type UploadNftRequest = {
   tokenname: string;
   displayname: string;
@@ -26,7 +57,6 @@ export type UploadNftRequest = {
   isBlocked?: boolean;
 };
 
-// ===== UploadNft Response =====
 export type UploadNftResponse = {
   nftId: number;
   nftUid: string;
@@ -38,7 +68,6 @@ export type UploadNftResponse = {
   metadataSolana?: string | null;
 };
 
-// ===== MintAndSendSpecific Response =====
 export type MintAndSendSpecificResponse = {
   mintAndSendId: number;
   sendedNft: Array<{
