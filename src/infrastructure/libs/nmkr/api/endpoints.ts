@@ -17,7 +17,7 @@ export class NmkrEndpoints {
   }
 
   async createProject(payload: CreateProjectRequest): Promise<CreateProjectResponse> {
-    return this.http2.postJSON<CreateProjectRequest, CreateProjectResponse>(
+    return this.http2.postJSON<CreateProjectResponse, CreateProjectRequest>(
       `/v2/CreateProject`,
       payload,
     );
