@@ -65,7 +65,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     }
 
     const ctx = { issuer } as IContext;
-    await orderWebhook.processWebhook(ctx, {
+    await orderWebhook.processStripeWebhook(ctx, {
       provider: GqlPaymentProvider.Stripe,
       projectUid,
       paymentTransactionUid,
