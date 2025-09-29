@@ -42,21 +42,15 @@ async function main() {
   const COMMUNITY_ID = "neo88";
 
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 13);
-  const PROJECT_NAME = `LocalTestProject-${timestamp}`; // プロジェクト名
-  const PROJECT_DESC = "Test project created from local script"; // 説明
-  const PROJECT_URL = "https://example.com"; // 表示用URL
-  const TOKEN_PREFIX = "TESTNFT"; // NFTのプレフィックス
+  const PROJECT_NAME = `KIBOTCHAスマートエコビレッジDAO-${timestamp}`; // プロジェクト名
+  const PROJECT_DESC =
+    "スマートエコビレッジ住民証NFTは、何が起きても「大丈夫」と希望を持てるデジタルな御守りです。KIBOTCHAスマートエコビレッジは、宮城県東松島の廃校をリノベーションし、1万人規模の安心安全な村づくりを実践する共創プロジェクトです。食・住・エネルギーを地域資源から自律的に生み出す最先端技術を導入し、DAOによる住民主導の意思決定で未来を描きます。";
+  const PROJECT_URL = "https://dao.kibotcha.com/"; // 表示用URL
+  const TOKEN_PREFIX = "KIBOTCHA"; // NFTのプレフィックス
 
   const PER_PRICE = 10000;
   const MAX_SUPPLY = files.length; // 最大発行数（デフォルト 50）
   const POLICY_LOCKS = new Date("9999-12-31").toISOString(); // 実質無期限ポリシー
-
-  // const metadataTemplate = JSON.stringify({
-  //   name: "#NAME#",
-  //   image: "#IPFS_LINK#",
-  //   mediaType: "image/png",
-  //   description: "#DESCRIPTION#",
-  // });
 
   /**
    * -------------------------------
@@ -90,7 +84,6 @@ async function main() {
     policyLocksDateTime: POLICY_LOCKS,
     payoutWalletaddress: PAYOUT_ADDR,
     maxNftSupply: 1,
-    // metadataTemplate, // 修正済み
     addressExpiretime: 60, // 受取アドレスの有効期限（分単位）
     pricelist: PRICE_LIST,
     enableCardano: true,
