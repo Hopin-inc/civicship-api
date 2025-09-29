@@ -31,7 +31,6 @@ export default class OrderConverter {
 
   stripeCheckoutSessionInput(
     product: PrismaProduct,
-    instanceId: string,
     customProps: CustomPropsV1,
   ): Stripe.Checkout.SessionCreateParams {
     const amountInYen = Math.round(product.price);
@@ -56,13 +55,20 @@ export default class OrderConverter {
           },
         },
       ],
+      custom_text: {
+        submit: {
+          message:
+            "NFT購入後、KIBOTCHA DAOの住民として参加できる権利（非業務執行社員権トークン）が付与されます。",
+        },
+      },
       success_url: `https://localhost:8000/users/me`,
       cancel_url: `https://localhost:8000/users/me`,
       metadata: {
         orderId: customProps.orderId || "",
         userId: customProps.userId || "",
-        projectUid: product.nftProduct?.nmkrProjectId || "",
-        nftUid: instanceId,
+        nmkrProjectId: product.nftProduct?.nmkrProjectId || "",
+        nmkrNftUid: customProps.nmkrNftUid || "",
+        nftInstanceId: customProps.nftInstanceId || "",
       },
     };
   }

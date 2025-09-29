@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
-import { parseCustomProps, CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
+import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
@@ -23,11 +23,15 @@ import {
 type StripePayload = {
   id: string;
   state: string;
-  customProperty?: string;
-};
-
-type NormalizedCustomProps = CustomPropsV1 & {
-  projectUid?: string;
+  metadata?:
+    | {
+        orderId?: string | undefined;
+        userId?: string | undefined;
+        nmkrProjectId?: string | undefined;
+        nmkrNftUid?: string | undefined;
+        nftInstanceId?: string | undefined;
+      }
+    | undefined;
 };
 
 @injectable()
@@ -42,17 +46,21 @@ export default class OrderWebhook {
   ) {}
 
   public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
-    const { id: paymentTransactionUid, state, customProperty } = payload;
+    const { id: paymentTransactionUid, state, metadata } = payload;
 
     logger.info("[OrderWebhook] Stripe webhook received", {
       paymentTransactionUid,
       state,
+      metadata,
     });
 
-    const meta = this.parseMeta(customProperty);
-    if (!meta?.orderId) {
-      logger.warn("[OrderWebhook] Missing orderId in metadata. Skip.");
-      throw new WebhookMetadataError("Missing orderId in webhook metadata", customProperty);
+    const meta = metadata || {};
+    if (!meta.orderId) {
+      logger.error("[OrderWebhook] Missing orderId in metadata. Skip.");
+      throw new WebhookMetadataError(
+        "Missing orderId in webhook metadata",
+        JSON.stringify(metadata),
+      );
     }
 
     if (state !== "succeeded") {
@@ -72,8 +80,10 @@ export default class OrderWebhook {
                   where: {
                     productId: item.productId,
                     status: NftInstanceStatus.RESERVED,
+                    communityId: ctx.communityId,
                   },
                   take: item.quantity,
+                  orderBy: { sequenceNum: "asc" },
                 });
 
                 for (const instance of nftInstances) {
@@ -120,7 +130,7 @@ export default class OrderWebhook {
       orderId: string;
       paymentTransactionUid: string;
       tx: Prisma.TransactionClient;
-      meta: ReturnType<OrderWebhook["parseMeta"]>;
+      meta: CustomPropsV1;
     },
   ): Promise<void> {
     const { orderId, paymentTransactionUid, tx, meta } = args;
@@ -155,13 +165,13 @@ export default class OrderWebhook {
     ctx: IContext,
     order: Awaited<ReturnType<OrderService["updateOrderStatus"]>>,
     wallet: PrismaNftWalletDetail,
-    meta: { projectUid?: string; nftUid?: string } | null,
+    meta: { nmkrProjectUid?: string; nmkrNftUid?: string; nftInstanceId?: string } | null,
     tx: Prisma.TransactionClient,
   ) {
-    const { projectUid, nftUid } = meta ?? {};
+    const { nmkrProjectUid, nmkrNftUid, nftInstanceId } = meta ?? {};
 
     for (const orderItem of order.items) {
-      const nftInstanceId = await this.resolveInstanceId(ctx, nftUid, wallet.id);
+      const nftInstanceId = await this.resolveInstanceId(ctx, nftInstanceId, wallet.id);
 
       const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, wallet.id, tx);
 
@@ -182,10 +192,10 @@ export default class OrderWebhook {
           },
         });
       } else {
-        logger.warn("[OrderWebhook] No nftInstance found for nftUid", {
+        logger.error("[OrderWebhook] No nftInstance found for nftUid", {
           orderId: order.id,
           orderItemId: orderItem.id,
-          nftUid,
+          nmkrNftUid,
         });
       }
 
@@ -196,37 +206,32 @@ export default class OrderWebhook {
         mintId: mint.id,
       });
 
-      if (projectUid && nftUid) {
+      if (nmkrProjectUid && nmkrNftUid) {
         await this.tryMintViaNmkr(ctx, {
           order,
           orderItemId: orderItem.id,
           mintId: mint.id,
-          projectUid,
-          nftUid,
+          projectUid: nmkrProjectUid,
+          nftUid: nmkrNftUid,
           walletAddress: wallet.walletAddress,
           tx,
         });
       } else {
-        logger.warn("[OrderWebhook] Missing projectUid or nftUid; skip NMKR mint", {
+        logger.error("[OrderWebhook] Missing projectUid or nftUid; skip NMKR mint", {
           orderId: order.id,
           orderItemId: orderItem.id,
-          projectUid,
-          nftUid,
+          nmkrProjectUid,
+          nmkrNftUid,
         });
       }
     }
   }
 
-  private async resolveInstanceId(
-    ctx: IContext,
-    nftUid: string | undefined,
-    fallbackWalletId: string,
-  ) {
-    if (!nftUid) return null;
-
+  private async resolveInstanceId(ctx: IContext, id: string | undefined, fallbackWalletId: string) {
+    if (!id) return null;
     const found = await ctx.issuer.public(ctx, (prisma) =>
       prisma.nftInstance.findFirst({
-        where: { instanceId: nftUid },
+        where: { id },
         select: { id: true },
       }),
     );
@@ -309,32 +314,6 @@ export default class OrderWebhook {
         inventory,
       });
     }
-  }
-
-  private parseMeta(customProperty?: string): NormalizedCustomProps | null {
-    if (!customProperty) return null;
-
-    const parsed = parseCustomProps(customProperty);
-    if (!parsed.success) {
-      logger.warn("[OrderWebhook] parseCustomProps failed", { error: parsed.error });
-      try {
-        const fallback = JSON.parse(customProperty) as Record<string, string>;
-        return {
-          orderId: fallback.orderId,
-          projectUid: fallback.projectUid || fallback.projectId,
-          nftUid: fallback.nftUid || fallback.instanceId,
-        };
-      } catch {
-        return null;
-      }
-    }
-
-    const data = parsed.data;
-    return {
-      ...data,
-      projectUid: data.projectUid ?? (data as { projectId?: string }).projectId,
-      nftUid: data.nftUid,
-    };
   }
 
   private async calculateInventory(

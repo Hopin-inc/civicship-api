@@ -1,9 +1,9 @@
 export interface CustomPropsV1 {
-  projectUid?: string;
-  nftUid?: string;
-  receiverAddress?: string;
+  nmkrProjectUid?: string;
+  nmkrNftUid?: string;
   userId?: string;
   nftWalletId?: string;
+  nftInstanceId?: string;
   nftMintId?: string;
   orderId?: string;
   orderItemId?: string;

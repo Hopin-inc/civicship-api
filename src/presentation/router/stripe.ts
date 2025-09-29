@@ -63,7 +63,16 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
     await orderWebhook.processStripeWebhook(ctx, {
       id: paymentTransactionUid,
       state,
-      customProperty: Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : undefined,
+      metadata:
+        Object.keys(metadata).length > 0
+          ? {
+              orderId: metadata.orderId,
+              userId: metadata.userId,
+              nmkrProjectId: metadata.nmkrProjectId,
+              nmkrNftUid: metadata.nmkrNftUid,
+              nftInstanceId: metadata.nftInstanceId,
+            }
+          : undefined,
     });
 
     logger.info("Successfully processed Stripe webhook", {

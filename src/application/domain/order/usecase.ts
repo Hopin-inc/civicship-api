@@ -79,12 +79,9 @@ export default class OrderUseCase {
           sequenceNum: nftInstance.sequenceNum,
         });
 
-        customProps.nftUid = nftInstance.instanceId;
-        const sessionParams = this.converter.stripeCheckoutSessionInput(
-          product,
-          nftInstance.instanceId,
-          customProps,
-        );
+        customProps.nftInstanceId = nftInstance.id;
+        customProps.nmkrNftUid = nftInstance.instanceId;
+        const sessionParams = this.converter.stripeCheckoutSessionInput(product, customProps);
         const session = await this.stripeClient.createCheckoutSession(sessionParams);
 
         logger.debug("[OrderUseCase] Created Stripe checkout session", {
