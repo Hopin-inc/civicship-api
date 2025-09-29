@@ -1,19 +1,16 @@
 export interface StripeConfig {
   secretKey: string;
   webhookSecret: string;
-  currency: string;
 }
 
 export interface AppConfig {
-  frontendUrl: string;
   stripe: StripeConfig;
 }
 
 export function validateEnvironmentVariables(): AppConfig {
   const requiredEnvVars = [
     'STRIPE_SECRET_KEY',
-    'STRIPE_WEBHOOK_SECRET', 
-    'FRONTEND_URL'
+    'STRIPE_WEBHOOK_SECRET'
   ];
 
   const missing = requiredEnvVars.filter(envVar => !process.env[envVar]);
@@ -23,11 +20,9 @@ export function validateEnvironmentVariables(): AppConfig {
   }
 
   return {
-    frontendUrl: process.env.FRONTEND_URL!,
     stripe: {
       secretKey: process.env.STRIPE_SECRET_KEY!,
       webhookSecret: process.env.STRIPE_WEBHOOK_SECRET!,
-      currency: process.env.STRIPE_CURRENCY || 'usd',
     },
   };
 }
