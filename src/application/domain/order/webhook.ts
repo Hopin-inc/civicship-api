@@ -198,34 +198,80 @@ export default class OrderWebhook {
         nftWallet = await this.ensureNmkrWallet(ctx, userId);
       }
 
+      let instanceIdFromMeta: string | undefined;
+      let projectUidFromMeta: string | undefined;
+      if (customProperty) {
+        try {
+          const meta = JSON.parse(customProperty) as Record<string, string>;
+          instanceIdFromMeta = meta.instanceId || meta.nftUid; // どっちのキーでも拾う
+          projectUidFromMeta = meta.projectId;
+        } catch (e) {
+          logger.warn("[OrderWebhook] Failed to parse Stripe metadata", { orderId, e });
+        }
+      }
+
       for (const orderItem of order.items) {
         let nftInstanceId = nftWallet.id;
-
-        if (customProperty) {
-          try {
-            const metadata = JSON.parse(customProperty);
-            if (metadata.instanceId) {
-              const nftInstance = await ctx.issuer.public(ctx, (prisma) =>
-                prisma.nftInstance.findFirst({
-                  where: { instanceId: metadata.instanceId },
-                  select: { id: true },
-                }),
-              );
-              if (nftInstance) {
-                nftInstanceId = nftInstance.id;
-              }
-            }
-          } catch (parseError) {
-            logger.warn("[OrderWebhook] Failed to parse instanceId from metadata", { parseError });
+        if (instanceIdFromMeta) {
+          const nftInstance = await ctx.issuer.public(ctx, (prisma) =>
+            prisma.nftInstance.findFirst({
+              where: { instanceId: instanceIdFromMeta },
+              select: { id: true },
+            }),
+          );
+          if (nftInstance) {
+            nftInstanceId = nftInstance.id;
           }
         }
 
-        await this.nftMintService.createForOrderItem(ctx, orderItem.id, nftInstanceId, tx);
+        const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, nftInstanceId, tx);
         logger.debug("[OrderWebhook] NFT mint created for orderItem", {
           orderId,
           orderItemId: orderItem.id,
           nftInstanceId,
+          mintId: mint.id,
         });
+
+        if (projectUidFromMeta && instanceIdFromMeta) {
+          try {
+            await this.nmkrClient.mintAndSendSpecific(
+              projectUidFromMeta,
+              instanceIdFromMeta,
+              1,
+              nftWallet.walletAddress, // 送付先
+            );
+
+            await this.nftMintService.processStateTransition(
+              ctx,
+              { nftMintId: mint.id, status: NftMintStatus.SUBMITTED },
+              tx,
+            );
+
+            logger.info("[OrderWebhook] Triggered NMKR mint & marked SUBMITTED", {
+              orderId,
+              orderItemId: orderItem.id,
+              mintId: mint.id,
+              projectUid: projectUidFromMeta,
+              instanceId: instanceIdFromMeta,
+              receiver: nftWallet.walletAddress,
+            });
+          } catch (mintErr) {
+            logger.error("[OrderWebhook] NMKR mint failed", {
+              orderId,
+              orderItemId: orderItem.id,
+              mintId: mint.id,
+              error: mintErr instanceof Error ? mintErr.message : String(mintErr),
+            });
+            // await this.nftMintService.processStateTransition(ctx, { nftMintId: mint.id, status: NftMintStatus.FAILED }, tx);
+          }
+        } else {
+          logger.warn("[OrderWebhook] Missing projectUid or instanceId; skip NMKR mint", {
+            orderId,
+            orderItemId: orderItem.id,
+            projectUidFromMeta,
+            instanceIdFromMeta,
+          });
+        }
       }
 
       for (const item of order.items) {
