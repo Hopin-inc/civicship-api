@@ -39,14 +39,17 @@ async function startServer() {
   const apolloServer = await createApolloServer(server);
 
   app.use(corsHandler);
+  app.use("/stripe", stripeRouter);
   app.use(express.json({ limit: "50mb" }));
   app.use(requestLogger);
   app.use(tokenUpdaterMiddleware);
-  app.use(graphqlUploadExpress({ 
-    maxFileSize: 10_000_000, 
-    maxFiles: 10,
-    processRequest: customProcessRequest 
-  }));
+  app.use(
+    graphqlUploadExpress({
+      maxFileSize: 10_000_000,
+      maxFiles: 10,
+      processRequest: customProcessRequest,
+    }),
+  );
 
   app.use((err, req, res, _next) => {
     logger.error("Unhandled Express Error:", {
@@ -59,7 +62,6 @@ async function startServer() {
   app.use("/graphql", authHandler(apolloServer), tokenUpdaterMiddleware);
   app.use("/line", lineRouter);
   app.use("/nmkr", nmkrRouter);
-  app.use("/stripe", stripeRouter);
 
   app.get("/health", (req, res) => {
     res.status(200).json({ status: "healthy", service: "internal-api" });
@@ -76,9 +78,9 @@ async function startServer() {
 
 async function main() {
   if (process.env.PROCESS_TYPE === "batch") {
-    logger.info(`Batch process started: ${ process.env.BATCH_PROCESS_NAME }`);
+    logger.info(`Batch process started: ${process.env.BATCH_PROCESS_NAME}`);
     await batchProcess();
-    logger.info(`Batch process completed: ${ process.env.BATCH_PROCESS_NAME }`);
+    logger.info(`Batch process completed: ${process.env.BATCH_PROCESS_NAME}`);
     if (process.env.ENV === "LOCAL") {
       process.exit(0);
     }
