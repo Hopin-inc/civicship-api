@@ -27,7 +27,7 @@ type StripePayload = {
     | {
         orderId?: string | undefined;
         userId?: string | undefined;
-        nmkrProjectId?: string | undefined;
+        nmkrProjectUid?: string | undefined;
         nmkrNftUid?: string | undefined;
         nftInstanceId?: string | undefined;
       }
@@ -168,10 +168,10 @@ export default class OrderWebhook {
     meta: { nmkrProjectUid?: string; nmkrNftUid?: string; nftInstanceId?: string } | null,
     tx: Prisma.TransactionClient,
   ) {
-    const { nmkrProjectUid, nmkrNftUid, nftInstanceId } = meta ?? {};
+    const { nmkrProjectUid, nmkrNftUid, nftInstanceId: metaNftInstanceId } = meta ?? {};
 
     for (const orderItem of order.items) {
-      const nftInstanceId = await this.resolveInstanceId(ctx, nftInstanceId, wallet.id);
+      const nftInstanceId = await this.resolveInstanceId(ctx, metaNftInstanceId, wallet.id);
 
       const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, wallet.id, tx);
 

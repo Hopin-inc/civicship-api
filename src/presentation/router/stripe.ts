@@ -68,7 +68,7 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           ? {
               orderId: metadata.orderId,
               userId: metadata.userId,
-              nmkrProjectId: metadata.nmkrProjectId,
+              nmkrProjectUid: metadata.nmkrProjectUid,
               nmkrNftUid: metadata.nmkrNftUid,
               nftInstanceId: metadata.nftInstanceId,
             }

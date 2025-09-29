@@ -66,7 +66,7 @@ export default class OrderConverter {
       metadata: {
         orderId: customProps.orderId || "",
         userId: customProps.userId || "",
-        nmkrProjectId: product.nftProduct?.nmkrProjectId || "",
+        nmkrProjectUid: product.nftProduct?.nmkrProjectId || "",
         nmkrNftUid: customProps.nmkrNftUid || "",
         nftInstanceId: customProps.nftInstanceId || "",
       },
