@@ -6,15 +6,14 @@ import { StripeClient } from "@/infrastructure/libs/stripe";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
-import { OrderStatus, PaymentProvider } from "@prisma/client";
+import { PaymentProvider } from "@prisma/client";
 import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { 
   InventoryUnavailableError, 
-  PaymentSessionCreationError, 
-  OrderCancellationError 
+  PaymentSessionCreationError 
 } from "@/errors/graphql";
 
 @injectable()
@@ -61,69 +60,56 @@ export default class OrderUseCase {
     product: PrismaProduct,
     customProps: CustomPropsV1,
   ): Promise<{ uid: string; url: string }> {
-    try {
-      const nftInstance = await this.nftInstanceRepo.findAvailableInstance(
-        ctx,
-        ctx.communityId,
-        product.id,
-      );
+    return ctx.issuer.internal(async (tx) => {
+      try {
+        const nftInstance = await this.nftInstanceRepo.findAndReserveInstance(
+          ctx,
+          ctx.communityId,
+          product.id,
+          tx,
+        );
 
-      logger.debug("[OrderUseCase] Found available NFT instance", { nftInstance });
+        logger.debug("[OrderUseCase] Reserved NFT instance", { nftInstance });
 
-      if (!nftInstance) {
-        throw new InventoryUnavailableError(product.id, ctx.communityId, customProps.orderId);
+        if (!nftInstance) {
+          throw new InventoryUnavailableError(product.id, ctx.communityId, customProps.orderId);
+        }
+
+        const sessionParams = this.converter.stripeCheckoutSessionInput(
+          product,
+          nftInstance.instanceId,
+          customProps,
+        );
+        const session = await this.stripeClient.createCheckoutSession(sessionParams);
+
+        logger.debug("[OrderUseCase] Created Stripe checkout session", {
+          orderId: customProps.orderId,
+          sessionId: session.id,
+          instanceId: nftInstance.instanceId,
+          customProps: customProps,
+        });
+
+        return {
+          uid: session.id,
+          url: session.url ?? "",
+        };
+      } catch (error) {
+        logger.error("[OrderUseCase] Failed to reserve instance and create Stripe payment session", {
+          orderId: customProps.orderId,
+          error,
+        });
+        
+        if (error instanceof InventoryUnavailableError) {
+          throw error;
+        }
+        
+        throw new PaymentSessionCreationError(
+          "Failed to create Stripe checkout session",
+          customProps.orderId,
+          error,
+        );
       }
-
-      const sessionParams = this.converter.stripeCheckoutSessionInput(
-        product,
-        nftInstance.instanceId,
-        customProps,
-      );
-      const session = await this.stripeClient.createCheckoutSession(sessionParams);
-
-      logger.debug("[OrderUseCase] Created Stripe checkout session", {
-        orderId: customProps.orderId,
-        sessionId: session.id,
-        instanceId: nftInstance.instanceId,
-        customProps: customProps,
-      });
-
-      return {
-        uid: session.id,
-        url: session.url ?? "",
-      };
-    } catch (error) {
-      if (customProps.orderId) {
-        await this.tryCancelOrderOnError(ctx, customProps.orderId, error);
-      }
-      logger.error("[OrderUseCase] Failed to reserve instance and create Stripe payment intent", {
-        orderId: customProps.orderId,
-        error,
-      });
-      
-      if (error instanceof InventoryUnavailableError) {
-        throw error;
-      }
-      
-      throw new PaymentSessionCreationError(
-        "Failed to create Stripe checkout session",
-        customProps.orderId,
-        error,
-      );
-    }
+    });
   }
 
-  private async tryCancelOrderOnError(ctx: IContext, orderId: string, cause: unknown) {
-    try {
-      await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.CANCELED);
-    } catch (updateErr) {
-      logger.error("[OrderUseCase] Failed to mark order as CANCELED after payment error", {
-        orderId,
-        paymentError: cause instanceof Error ? cause.message : String(cause),
-        updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
-      });
-      
-      throw new OrderCancellationError(orderId, updateErr);
-    }
-  }
 }

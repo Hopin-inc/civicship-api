@@ -1,8 +1,9 @@
 import { IContext } from "@/types/server";
-import { Prisma, NftInstance } from "@prisma/client";
+import { Prisma, NftInstance, NftInstanceStatus } from "@prisma/client";
 import { injectable } from "tsyringe";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class NftInstanceRepository implements INftInstanceRepository {
@@ -38,11 +39,87 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         where: {
           communityId,
           productId,
-          nftMintId: null,
+          status: NftInstanceStatus.STOCK,
         },
         orderBy: { sequenceNum: "asc" },
       });
     });
+  }
+
+  async findAndReserveInstance(
+    ctx: IContext,
+    communityId: string,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance | null> {
+    const availableInstance = await tx.nftInstance.findFirst({
+      where: {
+        communityId,
+        productId,
+        status: NftInstanceStatus.STOCK,
+      },
+      orderBy: { sequenceNum: "asc" },
+    });
+
+    if (!availableInstance) {
+      return null;
+    }
+
+    const updatedInstance = await tx.nftInstance.update({
+      where: { id: availableInstance.id },
+      data: { status: NftInstanceStatus.RESERVED },
+    });
+
+    logger.debug("[NftInstanceRepository] Reserved NFT instance", {
+      instanceId: updatedInstance.id,
+      communityId,
+      productId,
+      sequenceNum: updatedInstance.sequenceNum,
+    });
+
+    return updatedInstance;
+  }
+
+  async releaseReservation(
+    ctx: IContext,
+    instanceId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await tx.nftInstance.update({
+      where: { id: instanceId },
+      data: { status: NftInstanceStatus.STOCK },
+    });
+
+    logger.debug("[NftInstanceRepository] Released NFT instance reservation", {
+      instanceId,
+    });
+  }
+
+  async updateStatus(
+    ctx: IContext,
+    instanceId: string,
+    status: NftInstanceStatus,
+    tx?: Prisma.TransactionClient,
+  ): Promise<NftInstance> {
+    const updateFn = async (prisma: Prisma.TransactionClient) => {
+      const updatedInstance = await prisma.nftInstance.update({
+        where: { id: instanceId },
+        data: { status },
+      });
+
+      logger.debug("[NftInstanceRepository] Updated NFT instance status", {
+        instanceId,
+        status,
+      });
+
+      return updatedInstance;
+    };
+
+    if (tx) {
+      return updateFn(tx);
+    }
+
+    return ctx.issuer.internal(updateFn);
   }
 
   async count(ctx: IContext, where: Prisma.NftInstanceWhereInput): Promise<number> {

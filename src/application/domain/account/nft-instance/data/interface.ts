@@ -1,4 +1,4 @@
-import { Prisma, NftInstance } from "@prisma/client";
+import { Prisma, NftInstance, NftInstanceStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { NftInstanceWithRelations } from "@/application/domain/account/nft-instance/data/type";
 
@@ -16,6 +16,26 @@ export default interface INftInstanceRepository {
     communityId: string,
     productId: string,
   ): Promise<NftInstance | null>;
+
+  findAndReserveInstance(
+    ctx: IContext,
+    communityId: string,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance | null>;
+
+  releaseReservation(
+    ctx: IContext,
+    instanceId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void>;
+
+  updateStatus(
+    ctx: IContext,
+    instanceId: string,
+    status: NftInstanceStatus,
+    tx?: Prisma.TransactionClient,
+  ): Promise<NftInstance>;
 
   findById(ctx: IContext, id: string): Promise<NftInstanceWithRelations | null>;
 

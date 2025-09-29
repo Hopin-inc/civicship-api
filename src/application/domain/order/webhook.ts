@@ -11,6 +11,7 @@ import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { Prisma, OrderStatus, NftMintStatus, NftInstanceStatus } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { 
   WebhookMetadataError, 
   NmkrMintingError, 
@@ -37,6 +38,7 @@ export default class OrderWebhook {
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
+    @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
   ) {}
 
   public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
@@ -56,15 +58,39 @@ export default class OrderWebhook {
     if (state !== "succeeded") {
       if (state === "payment_failed") {
         try {
-          await this.orderService.updateOrderStatus(ctx, meta.orderId, OrderStatus.FAILED);
-          logger.info("[OrderWebhook] Marked order as FAILED", {
+          await ctx.issuer.internal(async (tx) => {
+            await this.orderService.updateOrderStatus(ctx, meta.orderId!, OrderStatus.FAILED, tx);
+            
+            const order = await tx.order.findUnique({
+              where: { id: meta.orderId! },
+              include: { items: true },
+            });
+            
+            if (order?.items) {
+              for (const item of order.items) {
+                const nftInstances = await tx.nftInstance.findMany({
+                  where: {
+                    productId: item.productId,
+                    status: NftInstanceStatus.RESERVED,
+                  },
+                  take: item.quantity,
+                });
+                
+                for (const instance of nftInstances) {
+                  await this.nftInstanceRepo.releaseReservation(ctx, instance.id, tx);
+                }
+              }
+            }
+          });
+          
+          logger.info("[OrderWebhook] Marked order as FAILED and released reservations", {
             orderId: meta.orderId,
             paymentTransactionUid,
           });
         } catch (error) {
           throw new PaymentStateTransitionError(
-            "Failed to update order status to FAILED",
-            meta.orderId,
+            "Failed to update order status to FAILED and release reservations",
+            meta.orderId!,
             state,
             "FAILED",
           );
