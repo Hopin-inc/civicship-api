@@ -11,6 +11,8 @@ import {
   NmkrTokenUnavailableError,
   NmkrInsufficientCreditsError,
 } from "@/errors/graphql";
+import { MintAndSendSpecificResponse } from "@/infrastructure/libs/nmkr/type";
+import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 
 @injectable()
 export default class NftMintService {
@@ -127,12 +129,17 @@ export default class NftMintService {
     tx: Prisma.TransactionClient,
   ): Promise<void> {
     try {
-      await this.nmkrClient.mintAndSendSpecific(
+      const res = await this.nmkrClient.mintAndSendSpecific(
         params.projectUid,
         params.nftUid,
         1,
         params.walletAddress,
       );
+
+      if (!this.validateMintResponse(res)) {
+        logger.error("NMKR mint failed", { res });
+        return;
+      }
 
       await this.processStateTransition(
         ctx,
@@ -143,28 +150,27 @@ export default class NftMintService {
       logger.info("[NftMintService] NMKR mint triggered & marked SUBMITTED", params);
     } catch (e) {
       const classifiedError = this.classifyNmkrError(e, params);
-      logger.error("[NftMintService] NMKR mint failed", { ...params, error: classifiedError });
+      logger.error("[NftMintService] NMKR mint failed", { ...params, error: classifiedError, e });
       throw classifiedError;
     }
   }
 
-  private classifyNmkrError(error: unknown, params: any): NmkrMintingError {
+  private validateMintResponse(resp: MintAndSendSpecificResponse) {
+    if (resp.mintAndSendId <= 0) return false;
+    if (!resp.sendedNft?.length) return false;
+    return !resp.sendedNft.some((nft) => !nft.minted);
+  }
+
+  private classifyNmkrError(error: unknown, params: StripeMetadata): NmkrMintingError {
     if (error instanceof Error && error.message.includes("404")) {
-      return new NmkrTokenUnavailableError(
-        params.nftUid,
-        params.orderId,
-        params.orderItemId,
-        params.mintId,
-      );
+      return new NmkrTokenUnavailableError(params.nmkrNftUid, params.orderId, params.orderItemId);
     } else if (error instanceof Error && error.message.includes("402")) {
-      return new NmkrInsufficientCreditsError(params.orderId, params.orderItemId, params.mintId);
+      return new NmkrInsufficientCreditsError(params.orderId, params.orderItemId);
     }
     return new NmkrMintingError(
       "NMKR minting operation failed",
       params.orderId,
       params.orderItemId,
-      params.mintId,
-      error,
     );
   }
 }
