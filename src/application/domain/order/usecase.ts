@@ -11,10 +11,7 @@ import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
-import { 
-  InventoryUnavailableError, 
-  PaymentSessionCreationError 
-} from "@/errors/graphql";
+import { InventoryUnavailableError, PaymentSessionCreationError } from "@/errors/graphql";
 
 @injectable()
 export default class OrderUseCase {
@@ -31,7 +28,7 @@ export default class OrderUseCase {
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmg4qdxub000n8zjbfr16vtsw";
+    const currentUserId = "cmg546cxo000g8zfb6dgpeqcf";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
@@ -66,6 +63,7 @@ export default class OrderUseCase {
           ctx,
           ctx.communityId,
           product.id,
+          tx,
         );
 
         logger.debug("[OrderUseCase] Reserved NFT instance", { nftInstance });
@@ -74,6 +72,14 @@ export default class OrderUseCase {
           throw new InventoryUnavailableError(product.id, ctx.communityId, customProps.orderId);
         }
 
+        logger.debug("[NftInstanceRepository] Reserved NFT instance", {
+          instanceId: nftInstance.instanceId,
+          communityId: ctx.communityId,
+          productId: product.id,
+          sequenceNum: nftInstance.sequenceNum,
+        });
+
+        customProps.nftUid = nftInstance.instanceId;
         const sessionParams = this.converter.stripeCheckoutSessionInput(
           product,
           nftInstance.instanceId,
@@ -93,15 +99,18 @@ export default class OrderUseCase {
           url: session.url ?? "",
         };
       } catch (error) {
-        logger.error("[OrderUseCase] Failed to reserve instance and create Stripe payment session", {
-          orderId: customProps.orderId,
-          error,
-        });
-        
+        logger.error(
+          "[OrderUseCase] Failed to reserve instance and create Stripe payment session",
+          {
+            orderId: customProps.orderId,
+            error,
+          },
+        );
+
         if (error instanceof InventoryUnavailableError) {
           throw error;
         }
-        
+
         throw new PaymentSessionCreationError(
           "Failed to create Stripe checkout session",
           customProps.orderId,
@@ -110,5 +119,4 @@ export default class OrderUseCase {
       }
     });
   }
-
 }
