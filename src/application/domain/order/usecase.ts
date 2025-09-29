@@ -4,7 +4,6 @@ import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graph
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { StripeClient } from "@/infrastructure/libs/stripe";
 import { getCurrentUserId } from "@/application/domain/utils";
-import { validateEnvironmentVariables } from "@/infrastructure/config/validation";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
@@ -75,7 +74,6 @@ export default class OrderUseCase {
         );
       }
 
-      const config = validateEnvironmentVariables();
       const paymentIntentParams = this.converter.stripePaymentIntentWithInstanceInput(
         product,
         nftInstance.instanceId,
@@ -91,7 +89,7 @@ export default class OrderUseCase {
 
       return {
         uid: paymentIntent.id,
-        url: `${config.frontendUrl}/payment/${paymentIntent.id}?client_secret=${paymentIntent.client_secret}`,
+        url: paymentIntent.client_secret ? `https://checkout.stripe.com/pay/${paymentIntent.client_secret}` : "",
       };
     } catch (error) {
       if (customProps.orderId) {
