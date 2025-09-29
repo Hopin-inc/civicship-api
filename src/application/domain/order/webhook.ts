@@ -20,7 +20,6 @@ type StripePayload = {
 
 type NormalizedCustomProps = CustomPropsV1 & {
   projectUid?: string;
-  instanceId?: string;
 };
 
 @injectable()
@@ -114,13 +113,13 @@ export default class OrderWebhook {
     ctx: IContext,
     order: Awaited<ReturnType<OrderService["updateOrderStatus"]>>,
     wallet: PrismaNftWalletDetail,
-    meta: { projectUid?: string; instanceId?: string } | null,
+    meta: { projectUid?: string; nftUid?: string } | null,
     tx: Prisma.TransactionClient,
   ) {
-    const { projectUid, instanceId } = meta ?? {};
+    const { projectUid, nftUid } = meta ?? {};
 
     for (const orderItem of order.items) {
-      const nftInstanceId = await this.resolveInstanceId(ctx, instanceId, wallet.id);
+      const nftInstanceId = await this.resolveInstanceId(ctx, nftUid, wallet.id);
 
       const mint = await this.nftMintService.createForOrderItem(ctx, orderItem.id, wallet.id, tx);
 
@@ -131,22 +130,22 @@ export default class OrderWebhook {
         mintId: mint.id,
       });
 
-      if (projectUid && instanceId) {
+      if (projectUid && nftUid) {
         await this.tryMintViaNmkr(ctx, {
           order,
           orderItemId: orderItem.id,
           mintId: mint.id,
           projectUid,
-          instanceId,
+          nftUid,
           walletAddress: wallet.walletAddress,
           tx,
         });
       } else {
-        logger.warn("[OrderWebhook] Missing projectUid or instanceId; skip NMKR mint", {
+        logger.warn("[OrderWebhook] Missing projectUid or nftUid; skip NMKR mint", {
           orderId: order.id,
           orderItemId: orderItem.id,
           projectUid,
-          instanceId,
+          nftUid,
         });
       }
     }
@@ -154,14 +153,14 @@ export default class OrderWebhook {
 
   private async resolveInstanceId(
     ctx: IContext,
-    instanceId: string | undefined,
+    nftUid: string | undefined,
     fallbackWalletId: string,
   ) {
-    if (!instanceId) return fallbackWalletId;
+    if (!nftUid) return fallbackWalletId;
 
     const found = await ctx.issuer.public(ctx, (prisma) =>
       prisma.nftInstance.findFirst({
-        where: { instanceId },
+        where: { instanceId: nftUid },
         select: { id: true },
       }),
     );
@@ -176,15 +175,15 @@ export default class OrderWebhook {
       orderItemId: string;
       mintId: string;
       projectUid: string;
-      instanceId: string;
+      nftUid: string;
       walletAddress: string;
       tx: Prisma.TransactionClient;
     },
   ) {
-    const { order, orderItemId, mintId, projectUid, instanceId, walletAddress, tx } = args;
+    const { order, orderItemId, mintId, projectUid, nftUid, walletAddress, tx } = args;
 
     try {
-      await this.nmkrClient.mintAndSendSpecific(projectUid, instanceId, 1, walletAddress);
+      await this.nmkrClient.mintAndSendSpecific(projectUid, nftUid, 1, walletAddress);
 
       await this.nftMintService.processStateTransition(
         ctx,
@@ -197,7 +196,7 @@ export default class OrderWebhook {
         orderItemId,
         mintId,
         projectUid,
-        instanceId,
+        nftUid,
         receiver: walletAddress,
       });
     } catch (e) {
@@ -237,7 +236,7 @@ export default class OrderWebhook {
         return {
           orderId: fallback.orderId,
           projectUid: fallback.projectUid || fallback.projectId,
-          instanceId: fallback.instanceId || fallback.nftUid,
+          nftUid: fallback.nftUid || fallback.instanceId,
         };
       } catch {
         return null;
@@ -248,7 +247,7 @@ export default class OrderWebhook {
     return {
       ...data,
       projectUid: data.projectUid ?? (data as { projectId?: string }).projectId,
-      instanceId: data.nftUid ?? data.nftUid,
+      nftUid: data.nftUid,
     };
   }
 
