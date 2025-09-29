@@ -38,7 +38,7 @@ export default class OrderUseCase {
 
     const customProps: CustomPropsV1 = {
       orderId: order.id,
-      userRef: currentUserId,
+      userId: currentUserId,
     };
 
     const paymentResult = await this.reserveInstanceAndCreateStripePayment(
@@ -78,12 +78,11 @@ export default class OrderUseCase {
       );
       const session = await this.stripeClient.createCheckoutSession(sessionParams);
 
-      logger.debug(session);
-
       logger.debug("[OrderUseCase] Created Stripe checkout session", {
         orderId: customProps.orderId,
         sessionId: session.id,
         instanceId: nftInstance.instanceId,
+        customProps: customProps,
       });
 
       return {

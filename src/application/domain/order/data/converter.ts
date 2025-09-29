@@ -29,28 +29,6 @@ export default class OrderConverter {
     };
   }
 
-  stripePaymentIntentWithInstanceInput(
-    product: PrismaProduct,
-    instanceId: string,
-    customProps: CustomPropsV1,
-  ): Stripe.PaymentIntentCreateParams {
-    const amountInYen = Math.round(product.price);
-
-    return {
-      amount: amountInYen,
-      currency: "jpy",
-      metadata: {
-        orderId: customProps.orderId || "",
-        userRef: customProps.userRef || "",
-        productId: product.id,
-        instanceId,
-      },
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    };
-  }
-
   stripeCheckoutSessionInput(
     product: PrismaProduct,
     instanceId: string,
@@ -67,19 +45,25 @@ export default class OrderConverter {
             currency: "jpy",
             product_data: {
               name: product.name,
+              description: product.description ?? undefined,
+              images: product.imageUrl ? [product.imageUrl] : [],
             },
             unit_amount: amountInYen,
           },
           quantity: 1,
+          adjustable_quantity: {
+            enabled: false,
+          },
         },
       ],
-      success_url: `https://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `https://localhost:3000//payment/cancel`,
+      success_url: `https://localhost:8000/users/me`,
+      cancel_url: `https://localhost:8000/users/me`,
       metadata: {
+        projectId: customProps.projectUid || "",
         orderId: customProps.orderId || "",
-        userRef: customProps.userRef || "",
+        userRef: customProps.userId || "",
         productId: product.id,
-        instanceId,
+        nftUid: instanceId,
       },
     };
   }
