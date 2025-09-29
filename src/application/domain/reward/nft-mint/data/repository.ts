@@ -37,7 +37,14 @@ export class NftMintRepository implements INftMintRepository {
     });
   }
 
-  async find(ctx: IContext, id: string): Promise<PrismaNftMint | null> {
+  async find(
+    ctx: IContext,
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaNftMint | null> {
+    if (tx) {
+      return tx.nftMint.findUnique({ where: { id }, select: nftMintSelectBase });
+    }
     return ctx.issuer.public(ctx, (dbTx) =>
       dbTx.nftMint.findUnique({ where: { id }, select: nftMintSelectBase }),
     );

@@ -42,7 +42,7 @@ export default class NftMintService {
     transition: { nftMintId: string; status: NftMintStatus; txHash?: string; error?: string },
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint> {
-    const currentMint = await this.repo.find(ctx, transition.nftMintId);
+    const currentMint = await this.repo.find(ctx, transition.nftMintId, tx);
     if (!currentMint) {
       throw new Error(`NftMint not found: ${transition.nftMintId}`);
     }

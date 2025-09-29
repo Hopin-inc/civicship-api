@@ -24,5 +24,5 @@ export interface INftMintRepository {
     data: Prisma.NftMintUpdateInput,
     tx: Prisma.TransactionClient,
   ): Promise<PrismaNftMint>;
-  find(ctx: IContext, id: string): Promise<PrismaNftMint | null>;
+  find(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaNftMint | null>;
 }
