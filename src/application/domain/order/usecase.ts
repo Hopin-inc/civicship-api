@@ -3,7 +3,6 @@ import { IContext } from "@/types/server";
 import { GqlMutationOrderCreateArgs, GqlOrderCreatePayload } from "@/types/graphql";
 import { CustomPropsV1 } from "@/infrastructure/libs/nmkr/customProps";
 import { StripeClient } from "@/infrastructure/libs/stripe";
-import { getCurrentUserId } from "@/application/domain/utils";
 import logger from "@/infrastructure/logging";
 import ProductService from "@/application/domain/product/service";
 import OrderPresenter from "./presenter";
@@ -27,7 +26,8 @@ export default class OrderUseCase {
     ctx: IContext,
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
-    const currentUserId = getCurrentUserId(ctx);
+    // const currentUserId = getCurrentUserId(ctx);
+    const currentUserId = "cmg0kpnx3000n8zrtyr7imim9";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
@@ -71,24 +71,24 @@ export default class OrderUseCase {
         );
       }
 
-      const paymentIntentParams = this.converter.stripePaymentIntentWithInstanceInput(
+      const sessionParams = this.converter.stripeCheckoutSessionInput(
         product,
         nftInstance.instanceId,
         customProps,
       );
-      const paymentIntent = await this.stripeClient.createPaymentIntent(paymentIntentParams);
+      const session = await this.stripeClient.createCheckoutSession(sessionParams);
 
-      logger.debug("[OrderUseCase] Created Stripe payment intent", {
+      logger.debug(session);
+
+      logger.debug("[OrderUseCase] Created Stripe checkout session", {
         orderId: customProps.orderId,
-        paymentIntentId: paymentIntent.id,
+        sessionId: session.id,
         instanceId: nftInstance.instanceId,
       });
 
       return {
-        uid: paymentIntent.id,
-        url: paymentIntent.client_secret
-          ? `https://checkout.stripe.com/pay/${paymentIntent.client_secret}`
-          : "",
+        uid: session.id,
+        url: session.url ?? "",
       };
     } catch (error) {
       if (customProps.orderId) {

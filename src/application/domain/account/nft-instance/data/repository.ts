@@ -66,27 +66,6 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async findAvailableInstance(
-    ctx: IContext,
-    communityId: string,
-    productId: string,
-  ): Promise<NftInstanceWithRelations | null> {
-    return ctx.issuer.public(ctx, async (prisma) => {
-      const result = await prisma.nftInstance.findFirst({
-        where: {
-          communityId,
-          nftMintId: null,
-        },
-        include: {
-          nftToken: true,
-          nftWallet: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-      return result as NftInstanceWithRelations | null;
-    });
-  }
-
   async upsert(
     ctx: IContext,
     data: {
