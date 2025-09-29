@@ -17,7 +17,7 @@ async function main() {
   const nmkrClient = container.resolve(NmkrClient);
   const stripeClient = container.resolve(StripeClient);
 
-  const NFTS_DIR = path.join(process.cwd(), "scripts/nmkr/nfts");
+  const NFTS_DIR = path.join(process.cwd(), "scripts/salesNft/nfts");
 
   const files = fs
     .readdirSync(NFTS_DIR)
