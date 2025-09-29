@@ -32,7 +32,6 @@ export default class NftMintService {
       orderItemId,
       nftWalletId,
       sequenceNum: 0,
-      receiver: "system-wallet",
     });
 
     return this.repo.create(ctx, createData, tx);

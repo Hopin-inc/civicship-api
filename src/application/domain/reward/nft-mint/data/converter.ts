@@ -7,7 +7,6 @@ export default class NftMintConverter {
     orderItemId: string;
     nftWalletId: string;
     sequenceNum: number;
-    receiver: string;
   }): Prisma.NftMintCreateInput {
     return {
       status: NftMintStatus.QUEUED,
