@@ -15,7 +15,8 @@ export const productSelect = Prisma.validator<Prisma.ProductSelect>()({
   nftProduct: {
     select: {
       id: true,
-      externalRef: true,
+      stripeProductId: true,
+      nmkrProjectId: true,
       policyId: true,
     },
   },

@@ -33,8 +33,12 @@ export default class ProductService implements IProductService {
     if (!product.nftProduct) {
       throw new Error(`NFT product not found for product: ${productId}`);
     }
-    if (!product.nftProduct.externalRef) {
-      throw new Error(`NFT product missing externalRef: ${productId}`);
+    if (!product.nftProduct.stripeProductId) {
+      throw new Error(`NFT product missing stripeProductId: ${productId}`);
+    }
+
+    if (!product.nftProduct.nmkrProjectId) {
+      throw new Error(`NFT product missing nmkrProjectId: ${productId}`);
     }
   }
 }
