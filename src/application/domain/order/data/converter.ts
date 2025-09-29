@@ -65,7 +65,6 @@ export default class OrderConverter {
       cancel_url: `https://localhost:8000/users/me`,
       metadata: {
         orderId: customProps.orderId || "",
-        userId: customProps.userId || "",
         nmkrProjectUid: customProps.nmkrProjectUid || "",
         nmkrNftUid: customProps.nmkrNftUid || "",
         nftInstanceId: customProps.nftInstanceId || "",

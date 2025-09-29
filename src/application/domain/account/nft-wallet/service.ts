@@ -1,6 +1,6 @@
 import { IContext } from "@/types/server";
 import { NftWalletType, Prisma } from "@prisma/client";
-import { injectable, inject } from "tsyringe";
+import { injectable, inject, container } from "tsyringe";
 import { fetchData } from "@/utils/fetch";
 import logger from "@/infrastructure/logging";
 import NFTWalletRepository from "@/application/domain/account/nft-wallet/data/repository";
@@ -8,6 +8,9 @@ import NftTokenRepository from "@/application/domain/account/nft-token/data/repo
 import NftInstanceRepository from "@/application/domain/account/nft-instance/data/repository";
 import { BaseSepoliaNftResponse, BaseSepoliaTokenResponse } from "@/types/external/baseSepolia";
 import { ValidationError } from "@/errors/graphql";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import crypto from "crypto";
 
 @injectable()
 export default class NFTWalletService {
@@ -129,5 +132,24 @@ export default class NFTWalletService {
       type: NftWalletType.INTERNAL,
       user: { connect: { id: userId } },
     });
+  }
+
+  async ensureNmkrWallet(ctx: IContext, userId: string): Promise<PrismaNftWalletDetail> {
+    const existing = await this.checkIfExists(ctx, userId, NftWalletType.INTERNAL);
+    if (existing) return existing;
+
+    const nmkrClient = container.resolve<NmkrClient>("NmkrClient");
+    const walletResponse = await nmkrClient.createWallet({
+      walletName: userId,
+      enterpriseaddress: true,
+      walletPassword: crypto.randomBytes(32).toString("hex"),
+    });
+
+    logger.debug("[NFTWalletService] Created NMKR Managed wallet", {
+      userId,
+      address: walletResponse.address,
+    });
+
+    return this.createInternalWallet(ctx, userId, walletResponse.address);
   }
 }

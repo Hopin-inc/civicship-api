@@ -5,6 +5,7 @@ import OrderRepository from "@/application/domain/order/data/repository";
 import { IOrderService } from "@/application/domain/order/data/interface";
 import OrderConverter from "@/application/domain/order/data/converter";
 import { OrderWithItems } from "@/application/domain/order/data/type";
+import logger from "@/infrastructure/logging";
 
 @injectable()
 export default class OrderService implements IOrderService {
@@ -47,5 +48,24 @@ export default class OrderService implements IOrderService {
     tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems> {
     return this.repository.update(ctx, orderId, { status }, tx);
+  }
+
+  async processPaymentCompletion(
+    ctx: IContext,
+    orderId: string,
+    paymentTransactionUid: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<OrderWithItems> {
+    const order = await this.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
+    logger.info("[OrderService] Order marked as PAID", { orderId, paymentTransactionUid });
+    return order;
+  }
+
+  async processPaymentFailure(
+    ctx: IContext,
+    orderId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<void> {
+    await this.updateOrderStatus(ctx, orderId, OrderStatus.FAILED, tx);
   }
 }
