@@ -15,6 +15,17 @@ async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
 
+  const NFTS_DIR = path.join(process.cwd(), "scripts/nmkr/nfts");
+
+  const files = fs
+    .readdirSync(NFTS_DIR)
+    .filter((f) => f.endsWith(".png"))
+    .sort((a, b) => {
+      const aNum = parseInt(a.replace(/\D/g, ""), 10);
+      const bNum = parseInt(b.replace(/\D/g, ""), 10);
+      return aNum - bNum;
+    });
+
   /**
    * -------------------------------
    * 環境変数
@@ -37,7 +48,7 @@ async function main() {
   const TOKEN_PREFIX = "TESTNFT"; // NFTのプレフィックス
 
   const PER_PRICE = 10000;
-  const MAX_SUPPLY = 50; // 最大発行数（デフォルト 50）
+  const MAX_SUPPLY = files.length; // 最大発行数（デフォルト 50）
   const POLICY_LOCKS = new Date("9999-12-31").toISOString(); // 実質無期限ポリシー
 
   // const metadataTemplate = JSON.stringify({
@@ -78,7 +89,7 @@ async function main() {
     policyExpires: true,
     policyLocksDateTime: POLICY_LOCKS,
     payoutWalletaddress: PAYOUT_ADDR,
-    maxNftSupply: MAX_SUPPLY,
+    maxNftSupply: 1,
     // metadataTemplate, // 修正済み
     addressExpiretime: 60, // 受取アドレスの有効期限（分単位）
     pricelist: PRICE_LIST,
@@ -154,17 +165,6 @@ async function main() {
    * NFT アップロード（複数）
    * -------------------------------
    */
-  const NFTS_DIR = path.join(process.cwd(), "scripts/nmkr/nfts");
-
-  const files = fs
-    .readdirSync(NFTS_DIR)
-    .filter((f) => f.endsWith(".png"))
-    .sort((a, b) => {
-      const aNum = parseInt(a.replace(/\D/g, ""), 10);
-      const bNum = parseInt(b.replace(/\D/g, ""), 10);
-      return aNum - bNum;
-    });
-
   await issuer.internal(async (tx) => {
     const nftToken = await tx.nftToken.upsert({
       where: { address: project.policyId },
