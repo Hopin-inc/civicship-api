@@ -5,12 +5,19 @@ import { INftMintRepository } from "./data/interface";
 import NftMintConverter from "./data/converter";
 import { PrismaNftMint } from "./data/type";
 import logger from "@/infrastructure/logging";
+import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
+import {
+  NmkrMintingError,
+  NmkrTokenUnavailableError,
+  NmkrInsufficientCreditsError,
+} from "@/errors/graphql";
 
 @injectable()
 export default class NftMintService {
   constructor(
     @inject("NftMintRepository") private readonly repo: INftMintRepository,
     @inject("NftMintConverter") private readonly converter: NftMintConverter,
+    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
   ) {}
 
   async countMintedByProduct(
@@ -106,5 +113,48 @@ export default class NftMintService {
     const canTransition = this.canTransitionTo(currentStatus, newStatus);
     if (!canTransition) return false;
     return !(currentTxHash && !newTxHash);
+  }
+
+  async mintViaNmkr(
+    ctx: IContext,
+    params: {
+      mintId: string;
+      projectUid: string;
+      nftUid: string;
+      walletAddress: string;
+      orderId: string;
+      orderItemId: string;
+    },
+    tx: Prisma.TransactionClient
+  ): Promise<void> {
+    try {
+      await this.nmkrClient.mintAndSendSpecific(
+        params.projectUid, 
+        params.nftUid, 
+        1, 
+        params.walletAddress
+      );
+      
+      await this.processStateTransition(
+        ctx,
+        { nftMintId: params.mintId, status: NftMintStatus.SUBMITTED },
+        tx
+      );
+
+      logger.info("[NftMintService] NMKR mint triggered & marked SUBMITTED", params);
+    } catch (e) {
+      const classifiedError = this.classifyNmkrError(e, params);
+      logger.error("[NftMintService] NMKR mint failed", { ...params, error: classifiedError });
+      throw classifiedError;
+    }
+  }
+
+  private classifyNmkrError(error: unknown, params: any): NmkrMintingError {
+    if (error instanceof Error && error.message.includes("404")) {
+      return new NmkrTokenUnavailableError(params.nftUid, params.orderId, params.orderItemId, params.mintId);
+    } else if (error instanceof Error && error.message.includes("402")) {
+      return new NmkrInsufficientCreditsError(params.orderId, params.orderItemId, params.mintId);
+    }
+    return new NmkrMintingError("NMKR minting operation failed", params.orderId, params.orderItemId, params.mintId, error);
   }
 }

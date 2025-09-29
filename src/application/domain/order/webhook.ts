@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import { injectable, inject } from "tsyringe";
 import { IContext } from "@/types/server";
 import logger from "@/infrastructure/logging";
@@ -7,16 +6,12 @@ import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
 import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
-import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
-import { Prisma, OrderStatus, NftMintStatus, NftInstanceStatus } from "@prisma/client";
+import { Prisma, NftInstanceStatus } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import {
   WebhookMetadataError,
-  NmkrMintingError,
-  NmkrTokenUnavailableError,
-  NmkrInsufficientCreditsError,
   PaymentStateTransitionError,
 } from "@/errors/graphql";
 import { OrderWithItems } from "@/application/domain/order/data/type";
@@ -39,7 +34,6 @@ export default class OrderWebhook {
     @inject("NftMintService") private readonly nftMintService: NftMintService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
-    @inject("NmkrClient") private readonly nmkrClient: NmkrClient,
     @inject("NftInstanceRepository") private readonly nftInstanceRepo: INftInstanceRepository,
   ) {}
 
@@ -93,7 +87,7 @@ export default class OrderWebhook {
   ) {
     try {
       await ctx.issuer.internal(async (tx) => {
-        await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.FAILED, tx);
+        await this.orderService.processPaymentFailure(ctx, orderId, tx);
 
         const order = await tx.order.findUnique({
           where: { id: orderId },
@@ -159,17 +153,11 @@ export default class OrderWebhook {
     paymentTransactionUid: string,
     tx: Prisma.TransactionClient,
   ) {
-    const order = await this.orderService.updateOrderStatus(ctx, orderId, OrderStatus.PAID, tx);
-    logger.info("[OrderWebhook] Order marked as PAID", { orderId, paymentTransactionUid });
-    return order;
+    return await this.orderService.processPaymentCompletion(ctx, orderId, paymentTransactionUid, tx);
   }
 
   private async getOrCreateWallet(ctx: IContext, userId: string) {
-    let wallet = await this.nftWalletService.checkIfExists(ctx, userId);
-    if (!wallet) {
-      wallet = await this.ensureNmkrWallet(ctx, userId);
-    }
-    return wallet;
+    return await this.nftWalletService.ensureNmkrWallet(ctx, userId);
   }
 
   private async processOrderItems(
@@ -211,15 +199,14 @@ export default class OrderWebhook {
       });
 
       if (nmkrProjectUid && nmkrNftUid) {
-        await this.tryMintViaNmkr(ctx, {
-          order,
-          orderItemId: orderItem.id,
+        await this.nftMintService.mintViaNmkr(ctx, {
           mintId: mint.id,
           projectUid: nmkrProjectUid,
           nftUid: nmkrNftUid,
           walletAddress: wallet.walletAddress,
-          tx,
-        });
+          orderId: order.id,
+          orderItemId: orderItem.id,
+        }, tx);
       } else {
         logger.error("[OrderWebhook] Missing projectUid or nftUid; skip NMKR mint", {
           orderId: order.id,
@@ -243,67 +230,6 @@ export default class OrderWebhook {
     return found ? found.id : fallbackWalletId;
   }
 
-  private async tryMintViaNmkr(
-    ctx: IContext,
-    args: {
-      order: { id: string };
-      orderItemId: string;
-      mintId: string;
-      projectUid: string;
-      nftUid: string;
-      walletAddress: string;
-      tx: Prisma.TransactionClient;
-    },
-  ) {
-    const { order, orderItemId, mintId, projectUid, nftUid, walletAddress, tx } = args;
-
-    try {
-      const res = await this.nmkrClient.mintAndSendSpecific(projectUid, nftUid, 1, walletAddress);
-      logger.debug("[OrderWebhook] NMKR mint triggered", res);
-
-      await this.nftMintService.processStateTransition(
-        ctx,
-        { nftMintId: mintId, status: NftMintStatus.SUBMITTED },
-        tx,
-      );
-
-      logger.info("[OrderWebhook] NMKR mint triggered & marked SUBMITTED", {
-        orderId: order.id,
-        orderItemId,
-        mintId,
-        projectUid,
-        nftUid,
-        receiver: walletAddress,
-      });
-    } catch (e) {
-      let nmkrError: NmkrMintingError;
-
-      if (e instanceof Error && e.message.includes("404")) {
-        nmkrError = new NmkrTokenUnavailableError(nftUid, order.id, orderItemId, mintId);
-      } else if (e instanceof Error && e.message.includes("402")) {
-        nmkrError = new NmkrInsufficientCreditsError(order.id, orderItemId, mintId);
-      } else {
-        nmkrError = new NmkrMintingError(
-          "NMKR minting operation failed",
-          order.id,
-          orderItemId,
-          mintId,
-          e,
-        );
-      }
-
-      logger.error("[OrderWebhook] NMKR mint failed", {
-        orderId: order.id,
-        orderItemId,
-        mintId,
-        error: e instanceof Error ? e.message : String(e),
-        details: e,
-        errorType: nmkrError.constructor.name,
-      });
-
-      throw nmkrError;
-    }
-  }
 
   private async snapshotInventory(
     ctx: IContext,
@@ -345,18 +271,4 @@ export default class OrderWebhook {
     return { productId, reserved, soldPendingMint, minted, available, maxSupply };
   }
 
-  private async ensureNmkrWallet(ctx: IContext, userId: string): Promise<PrismaNftWalletDetail> {
-    const walletResponse = await this.nmkrClient.createWallet({
-      walletName: userId,
-      enterpriseaddress: true,
-      walletPassword: crypto.randomBytes(32).toString("hex"),
-    });
-
-    logger.debug("[OrderWebhook] Created NMKR Managed wallet", {
-      userId,
-      address: walletResponse.address,
-    });
-
-    return this.nftWalletService.createInternalWallet(ctx, userId, walletResponse.address);
-  }
 }
