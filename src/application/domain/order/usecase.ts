@@ -11,6 +11,11 @@ import OrderConverter from "@/application/domain/order/data/converter";
 import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
+import { 
+  InventoryUnavailableError, 
+  PaymentSessionCreationError, 
+  OrderCancellationError 
+} from "@/errors/graphql";
 
 @injectable()
 export default class OrderUseCase {
@@ -66,9 +71,7 @@ export default class OrderUseCase {
       logger.debug("[OrderUseCase] Found available NFT instance", { nftInstance });
 
       if (!nftInstance) {
-        throw new Error(
-          `No available NFT instance found for product ${product.id} in community ${ctx.communityId}`,
-        );
+        throw new InventoryUnavailableError(product.id, ctx.communityId, customProps.orderId);
       }
 
       const sessionParams = this.converter.stripeCheckoutSessionInput(
@@ -97,7 +100,16 @@ export default class OrderUseCase {
         orderId: customProps.orderId,
         error,
       });
-      throw error;
+      
+      if (error instanceof InventoryUnavailableError) {
+        throw error;
+      }
+      
+      throw new PaymentSessionCreationError(
+        "Failed to create Stripe checkout session",
+        customProps.orderId,
+        error,
+      );
     }
   }
 
@@ -110,6 +122,8 @@ export default class OrderUseCase {
         paymentError: cause instanceof Error ? cause.message : String(cause),
         updateError: updateErr instanceof Error ? updateErr.message : String(updateErr),
       });
+      
+      throw new OrderCancellationError(orderId, updateErr);
     }
   }
 }

@@ -11,6 +11,13 @@ import { NmkrClient } from "@/infrastructure/libs/nmkr/api/client";
 import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { Prisma, OrderStatus, NftMintStatus, NftInstanceStatus } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
+import { 
+  WebhookMetadataError, 
+  NmkrMintingError, 
+  NmkrTokenUnavailableError, 
+  NmkrInsufficientCreditsError,
+  PaymentStateTransitionError 
+} from "@/errors/graphql";
 
 type StripePayload = {
   id: string;
@@ -43,16 +50,25 @@ export default class OrderWebhook {
     const meta = this.parseMeta(customProperty);
     if (!meta?.orderId) {
       logger.warn("[OrderWebhook] Missing orderId in metadata. Skip.");
-      return;
+      throw new WebhookMetadataError("Missing orderId in webhook metadata", customProperty);
     }
 
     if (state !== "succeeded") {
       if (state === "payment_failed") {
-        await this.orderService.updateOrderStatus(ctx, meta.orderId, OrderStatus.FAILED);
-        logger.info("[OrderWebhook] Marked order as FAILED", {
-          orderId: meta.orderId,
-          paymentTransactionUid,
-        });
+        try {
+          await this.orderService.updateOrderStatus(ctx, meta.orderId, OrderStatus.FAILED);
+          logger.info("[OrderWebhook] Marked order as FAILED", {
+            orderId: meta.orderId,
+            paymentTransactionUid,
+          });
+        } catch (error) {
+          throw new PaymentStateTransitionError(
+            "Failed to update order status to FAILED",
+            meta.orderId,
+            state,
+            "FAILED",
+          );
+        }
       } else {
         logger.info("[OrderWebhook] Non-success state; no-op", {
           orderId: meta.orderId,
@@ -219,13 +235,37 @@ export default class OrderWebhook {
         receiver: walletAddress,
       });
     } catch (e) {
+      let nmkrError: NmkrMintingError;
+      
+      if (e instanceof Error && e.message.includes("404")) {
+        nmkrError = new NmkrTokenUnavailableError(
+          nftUid,
+          order.id,
+          orderItemId,
+          mintId,
+        );
+      } else if (e instanceof Error && e.message.includes("402")) {
+        nmkrError = new NmkrInsufficientCreditsError(order.id, orderItemId, mintId);
+      } else {
+        nmkrError = new NmkrMintingError(
+          "NMKR minting operation failed",
+          order.id,
+          orderItemId,
+          mintId,
+          e,
+        );
+      }
+      
       logger.error("[OrderWebhook] NMKR mint failed", {
         orderId: order.id,
         orderItemId,
         mintId,
         error: e instanceof Error ? e.message : String(e),
         details: e,
+        errorType: nmkrError.constructor.name,
       });
+      
+      throw nmkrError;
     }
   }
 

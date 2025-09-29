@@ -228,3 +228,118 @@ export class ClaimLinkExpiredError extends ApolloError {
     Object.defineProperty(this, "name", { value: "ClaimLinkExpiredError" });
   }
 }
+
+export abstract class OrderProcessingError extends ApolloError {
+  public orderId?: string;
+
+  constructor(message: string, code: string, orderId?: string) {
+    super(message, code);
+    this.orderId = orderId;
+    Object.defineProperty(this, "name", { value: "OrderProcessingError" });
+  }
+}
+
+export class InventoryUnavailableError extends OrderProcessingError {
+  public productId: string;
+  public communityId: string;
+
+  constructor(productId: string, communityId: string, orderId?: string) {
+    const message = `No available NFT instance found for product ${productId} in community ${communityId}`;
+    super(message, "INVENTORY_UNAVAILABLE", orderId);
+    this.productId = productId;
+    this.communityId = communityId;
+    Object.defineProperty(this, "name", { value: "InventoryUnavailableError" });
+  }
+}
+
+export class PaymentSessionCreationError extends OrderProcessingError {
+  public cause?: string;
+
+  constructor(message: string = "Failed to create payment session", orderId?: string, cause?: unknown) {
+    super(message, "PAYMENT_SESSION_CREATION_FAILED", orderId);
+    this.cause = cause instanceof Error ? cause.message : String(cause);
+    Object.defineProperty(this, "name", { value: "PaymentSessionCreationError" });
+  }
+}
+
+export class OrderCancellationError extends OrderProcessingError {
+  public cause?: string;
+
+  constructor(orderId: string, cause?: unknown) {
+    const message = `Failed to cancel order ${orderId}`;
+    super(message, "ORDER_CANCELLATION_FAILED", orderId);
+    this.cause = cause instanceof Error ? cause.message : String(cause);
+    Object.defineProperty(this, "name", { value: "OrderCancellationError" });
+  }
+}
+
+export class WebhookMetadataError extends OrderProcessingError {
+  public rawMetadata?: string;
+
+  constructor(message: string = "Invalid or missing webhook metadata", rawMetadata?: string) {
+    super(message, "WEBHOOK_METADATA_INVALID");
+    this.rawMetadata = rawMetadata;
+    Object.defineProperty(this, "name", { value: "WebhookMetadataError" });
+  }
+}
+
+export class NmkrMintingError extends OrderProcessingError {
+  public orderItemId?: string;
+  public mintId?: string;
+  public nmkrErrorCode?: string;
+  public cause?: string;
+
+  constructor(
+    message: string,
+    orderId?: string,
+    orderItemId?: string,
+    mintId?: string,
+    cause?: unknown,
+    nmkrErrorCode?: string,
+  ) {
+    super(message, "NMKR_MINTING_FAILED", orderId);
+    this.orderItemId = orderItemId;
+    this.mintId = mintId;
+    this.nmkrErrorCode = nmkrErrorCode;
+    this.cause = cause instanceof Error ? cause.message : String(cause);
+    Object.defineProperty(this, "name", { value: "NmkrMintingError" });
+  }
+}
+
+export class NmkrTokenUnavailableError extends NmkrMintingError {
+  public nftUid?: string;
+
+  constructor(nftUid?: string, orderId?: string, orderItemId?: string, mintId?: string) {
+    const message = nftUid 
+      ? `NMKR token ${nftUid} is not available or does not exist`
+      : "NMKR token is not available";
+    super(message, orderId, orderItemId, mintId, undefined, "404");
+    this.nftUid = nftUid;
+    Object.defineProperty(this, "name", { value: "NmkrTokenUnavailableError" });
+  }
+}
+
+export class NmkrInsufficientCreditsError extends NmkrMintingError {
+  constructor(orderId?: string, orderItemId?: string, mintId?: string) {
+    const message = "Insufficient credits in NMKR account";
+    super(message, orderId, orderItemId, mintId, undefined, "402");
+    Object.defineProperty(this, "name", { value: "NmkrInsufficientCreditsError" });
+  }
+}
+
+export class PaymentStateTransitionError extends OrderProcessingError {
+  public currentState?: string;
+  public targetState?: string;
+
+  constructor(
+    message: string,
+    orderId?: string,
+    currentState?: string,
+    targetState?: string,
+  ) {
+    super(message, "PAYMENT_STATE_TRANSITION_FAILED", orderId);
+    this.currentState = currentState;
+    this.targetState = targetState;
+    Object.defineProperty(this, "name", { value: "PaymentStateTransitionError" });
+  }
+}
