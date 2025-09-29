@@ -5,8 +5,7 @@ import { StripeMetadata } from "@/infrastructure/libs/stripe/type";
 import NftMintService from "@/application/domain/reward/nft-mint/service";
 import NFTWalletService from "@/application/domain/account/nft-wallet/service";
 import OrderService from "@/application/domain/order/service";
-import { IOrderItemService } from "@/application/domain/order/orderItem/data/interface";
-import { InventorySnapshot } from "@/application/domain/product/data/type";
+import ProductService from "@/application/domain/product/service";
 import { Prisma } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import NftInstanceService from "@/application/domain/account/nft-instance/service";
@@ -30,11 +29,11 @@ type StripePayload = {
 @injectable()
 export default class OrderWebhook {
   constructor(
-    @inject("OrderItemService") private readonly orderItemService: IOrderItemService,
     @inject("NftMintService") private readonly nftMintService: NftMintService,
     @inject("OrderService") private readonly orderService: OrderService,
     @inject("NFTWalletService") private readonly nftWalletService: NFTWalletService,
     @inject("NftInstanceService") private readonly nftInstanceService: NftInstanceService,
+    @inject("ProductService") private readonly productService: ProductService,
   ) {}
 
   public async processStripeWebhook(ctx: IContext, payload: StripePayload): Promise<void> {
@@ -121,7 +120,7 @@ export default class OrderWebhook {
     const wallet = await this.getOrCreateWallet(ctx, order.userId);
 
     await this.processOrderItems(ctx, order, wallet, meta, tx);
-    await this.snapshotInventory(ctx, order, tx);
+    await this.productService.snapshotOrderInventory(ctx, order, tx);
   }
 
   private async markOrderPaid(
@@ -195,44 +194,5 @@ export default class OrderWebhook {
   }
 
 
-  private async snapshotInventory(
-    ctx: IContext,
-    order: Awaited<ReturnType<OrderService["updateOrderStatus"]>>,
-    tx: Prisma.TransactionClient,
-  ) {
-    for (const item of order.items) {
-      const inventory = await this.calculateInventory(ctx, item.productId, tx);
-      logger.debug("[OrderWebhook] Inventory snapshot", {
-        orderId: order.id,
-        orderItemId: item.id,
-        inventory,
-      });
-    }
-  }
-
-  private async calculateInventory(
-    ctx: IContext,
-    productId: string,
-    tx: Prisma.TransactionClient,
-  ): Promise<InventorySnapshot> {
-    const product = await tx.product.findUnique({
-      where: { id: productId },
-      select: { maxSupply: true },
-    });
-
-    const [reserved, soldPendingMint, minted] = await Promise.all([
-      this.orderItemService.countReservedByProduct(ctx, productId, tx),
-      this.orderItemService.countSoldPendingMintByProduct(ctx, productId, tx),
-      this.nftMintService.countMintedByProduct(ctx, productId, tx),
-    ]);
-
-    const maxSupply = product?.maxSupply ?? null;
-    const available =
-      maxSupply == null
-        ? Number.MAX_SAFE_INTEGER
-        : Math.max(0, (maxSupply ?? 0) - reserved - soldPendingMint - minted);
-
-    return { productId, reserved, soldPendingMint, minted, available, maxSupply };
-  }
 
 }
