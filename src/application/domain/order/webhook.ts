@@ -12,12 +12,12 @@ import { InventorySnapshot } from "@/application/domain/product/data/type";
 import { Prisma, OrderStatus, NftMintStatus, NftInstanceStatus } from "@prisma/client";
 import { PrismaNftWalletDetail } from "@/application/domain/account/nft-wallet/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
-import { 
-  WebhookMetadataError, 
-  NmkrMintingError, 
-  NmkrTokenUnavailableError, 
+import {
+  WebhookMetadataError,
+  NmkrMintingError,
+  NmkrTokenUnavailableError,
   NmkrInsufficientCreditsError,
-  PaymentStateTransitionError 
+  PaymentStateTransitionError,
 } from "@/errors/graphql";
 
 type StripePayload = {
@@ -60,12 +60,12 @@ export default class OrderWebhook {
         try {
           await ctx.issuer.internal(async (tx) => {
             await this.orderService.updateOrderStatus(ctx, meta.orderId!, OrderStatus.FAILED, tx);
-            
+
             const order = await tx.order.findUnique({
               where: { id: meta.orderId! },
               include: { items: true },
             });
-            
+
             if (order?.items) {
               for (const item of order.items) {
                 const nftInstances = await tx.nftInstance.findMany({
@@ -75,14 +75,14 @@ export default class OrderWebhook {
                   },
                   take: item.quantity,
                 });
-                
+
                 for (const instance of nftInstances) {
                   await this.nftInstanceRepo.releaseReservation(ctx, instance.id, tx);
                 }
               }
             }
           });
-          
+
           logger.info("[OrderWebhook] Marked order as FAILED and released reservations", {
             orderId: meta.orderId,
             paymentTransactionUid,
@@ -181,6 +181,12 @@ export default class OrderWebhook {
             status: NftInstanceStatus.MINTING,
           },
         });
+      } else {
+        logger.warn("[OrderWebhook] No nftInstance found for nftUid", {
+          orderId: order.id,
+          orderItemId: orderItem.id,
+          nftUid,
+        });
       }
 
       logger.debug("[OrderWebhook] Mint record created & instance updated", {
@@ -216,7 +222,7 @@ export default class OrderWebhook {
     nftUid: string | undefined,
     fallbackWalletId: string,
   ) {
-    if (!nftUid) return fallbackWalletId;
+    if (!nftUid) return null;
 
     const found = await ctx.issuer.public(ctx, (prisma) =>
       prisma.nftInstance.findFirst({
@@ -262,14 +268,9 @@ export default class OrderWebhook {
       });
     } catch (e) {
       let nmkrError: NmkrMintingError;
-      
+
       if (e instanceof Error && e.message.includes("404")) {
-        nmkrError = new NmkrTokenUnavailableError(
-          nftUid,
-          order.id,
-          orderItemId,
-          mintId,
-        );
+        nmkrError = new NmkrTokenUnavailableError(nftUid, order.id, orderItemId, mintId);
       } else if (e instanceof Error && e.message.includes("402")) {
         nmkrError = new NmkrInsufficientCreditsError(order.id, orderItemId, mintId);
       } else {
@@ -281,7 +282,7 @@ export default class OrderWebhook {
           e,
         );
       }
-      
+
       logger.error("[OrderWebhook] NMKR mint failed", {
         orderId: order.id,
         orderItemId,
@@ -290,7 +291,7 @@ export default class OrderWebhook {
         details: e,
         errorType: nmkrError.constructor.name,
       });
-      
+
       throw nmkrError;
     }
   }
