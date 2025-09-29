@@ -66,7 +66,6 @@ export default class OrderUseCase {
           ctx,
           ctx.communityId,
           product.id,
-          tx,
         );
 
         logger.debug("[OrderUseCase] Reserved NFT instance", { nftInstance });

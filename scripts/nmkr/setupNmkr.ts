@@ -10,10 +10,12 @@ import { UploadNftRequest } from "../../src/infrastructure/libs/nmkr/type";
 import * as process from "node:process";
 import fs from "fs";
 import path from "path";
+import { StripeClient } from "../../src/infrastructure/libs/stripe";
 
 async function main() {
   const issuer = container.resolve<PrismaClientIssuer>("PrismaClientIssuer");
   const nmkrClient = container.resolve(NmkrClient);
+  const stripeClient = container.resolve(StripeClient);
 
   const NFTS_DIR = path.join(process.cwd(), "scripts/nmkr/nfts");
 
@@ -31,7 +33,6 @@ async function main() {
    * 環境変数
    * -------------------------------
    */
-  const STRIPE_PRODUCT_ID = process.env.STRIPE_PRODUCT_ID ?? "prod_";
   const PAYOUT_ADDR = process.env.NMKR_PAYOUT_ADDR ?? "addr_test1..."; // 売上送金先
 
   /**
@@ -42,21 +43,19 @@ async function main() {
   const COMMUNITY_ID = "neo88";
 
   const timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 13);
-  const PROJECT_NAME = `LocalTestProject-${timestamp}`; // プロジェクト名
-  const PROJECT_DESC = "Test project created from local script"; // 説明
-  const PROJECT_URL = "https://example.com"; // 表示用URL
-  const TOKEN_PREFIX = "TESTNFT"; // NFTのプレフィックス
+  const PROJECT_NAME = `KIBOTCHAスマートエコビレッジDAO-${timestamp}`; // プロジェクト名
+  const PROJECT_IMG =
+    "https://storage.googleapis.com/studio-design-asset-files/projects/BXaxJLbXO7/s-3534x2926_v-frms_webp_f7afab6f-3f7c-4067-8367-0991ab4d1651_small.webp";
+  const PROJECT_DESC =
+    "スマートエコビレッジ住民証NFTは、何が起きても「大丈夫」と希望を持てるデジタルな御守りです。KIBOTCHAスマートエコビレッジは、宮城県東松島の廃校をリノベーションし、1万人規模の安心安全な村づくりを実践する共創プロジェクトです。食・住・エネルギーを地域資源から自律的に生み出す最先端技術を導入し、DAOによる住民主導の意思決定で未来を描きます。";
+  const PROJECT_URL = "https://dao.kibotcha.com/"; // 表示用URL
+  const TOKEN_PREFIX = "KIBOTCHA"; // NFTのプレフィックス
 
   const PER_PRICE = 10000;
+  const STATMENT_INVOICE = "KIBOTCHA DAO NFT";
+
   const MAX_SUPPLY = files.length; // 最大発行数（デフォルト 50）
   const POLICY_LOCKS = new Date("9999-12-31").toISOString(); // 実質無期限ポリシー
-
-  // const metadataTemplate = JSON.stringify({
-  //   name: "#NAME#",
-  //   image: "#IPFS_LINK#",
-  //   mediaType: "image/png",
-  //   description: "#DESCRIPTION#",
-  // });
 
   /**
    * -------------------------------
@@ -90,7 +89,6 @@ async function main() {
     policyLocksDateTime: POLICY_LOCKS,
     payoutWalletaddress: PAYOUT_ADDR,
     maxNftSupply: 1,
-    // metadataTemplate, // 修正済み
     addressExpiretime: 60, // 受取アドレスの有効期限（分単位）
     pricelist: PRICE_LIST,
     enableCardano: true,
@@ -119,6 +117,39 @@ async function main() {
     process.exit(1); // ここで終了（DBに中途半端に登録しない）
   }
 
+  const stripeProduct = await stripeClient.createProduct({
+    name: PROJECT_NAME, // 表示名
+    active: true, // 販売可能状態
+    description: PROJECT_DESC,
+    images: [PROJECT_IMG],
+    metadata: {
+      communityId: COMMUNITY_ID,
+      projectUid: project.uid,
+      policyId: project.policyId,
+    },
+    shippable: false,
+    statement_descriptor: STATMENT_INVOICE,
+    url: PROJECT_URL,
+  });
+
+  const stripePrice = await stripeClient.createPrice({
+    currency: "jpy",
+    unit_amount: PER_PRICE,
+    product: stripeProduct.id,
+    active: true,
+    tax_behavior: "inclusive",
+    metadata: {
+      communityId: COMMUNITY_ID,
+      projectUid: project.uid,
+      policyId: project.policyId,
+    },
+  });
+
+  logger.info("✅ Stripe product/price created", {
+    stripeProductId: stripeProduct.id,
+    stripePriceId: stripePrice.id,
+  });
+
   /**
    * -------------------------------
    * DB 登録
@@ -141,7 +172,7 @@ async function main() {
           productId: product.id,
           nmkrProjectId: String(project.uid),
           policyId: project.policyId,
-          stripeProductId: STRIPE_PRODUCT_ID,
+          stripeProductId: stripeProduct.id,
         },
       });
 

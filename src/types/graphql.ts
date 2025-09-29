@@ -408,9 +408,16 @@ export const GqlErrorCode = {
   InsufficientBalance: 'INSUFFICIENT_BALANCE',
   InternalServerError: 'INTERNAL_SERVER_ERROR',
   InvalidTransferMethod: 'INVALID_TRANSFER_METHOD',
+  InventoryUnavailable: 'INVENTORY_UNAVAILABLE',
   MissingWalletInformation: 'MISSING_WALLET_INFORMATION',
+  NmkrInsufficientCredits: 'NMKR_INSUFFICIENT_CREDITS',
+  NmkrMintingFailed: 'NMKR_MINTING_FAILED',
+  NmkrTokenUnavailable: 'NMKR_TOKEN_UNAVAILABLE',
   NotFound: 'NOT_FOUND',
   NoAvailableParticipationSlots: 'NO_AVAILABLE_PARTICIPATION_SLOTS',
+  OrderCancellationFailed: 'ORDER_CANCELLATION_FAILED',
+  PaymentSessionCreationFailed: 'PAYMENT_SESSION_CREATION_FAILED',
+  PaymentStateTransitionFailed: 'PAYMENT_STATE_TRANSITION_FAILED',
   PersonalRecordOnlyDeletable: 'PERSONAL_RECORD_ONLY_DELETABLE',
   RateLimit: 'RATE_LIMIT',
   ReservationAdvanceBookingRequired: 'RESERVATION_ADVANCE_BOOKING_REQUIRED',
@@ -422,7 +429,8 @@ export const GqlErrorCode = {
   Unauthenticated: 'UNAUTHENTICATED',
   Unknown: 'UNKNOWN',
   UnsupportedTransactionReason: 'UNSUPPORTED_TRANSACTION_REASON',
-  ValidationError: 'VALIDATION_ERROR'
+  ValidationError: 'VALIDATION_ERROR',
+  WebhookMetadataInvalid: 'WEBHOOK_METADATA_INVALID'
 } as const;
 
 export type GqlErrorCode = typeof GqlErrorCode[keyof typeof GqlErrorCode];

@@ -29,55 +29,39 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async findAvailableInstance(
-    ctx: IContext,
-    communityId: string,
-    productId: string,
-  ): Promise<NftInstance | null> {
-    return ctx.issuer.public(ctx, async (tx) => {
-      return tx.nftInstance.findFirst({
-        where: {
-          communityId,
-          productId,
-          status: NftInstanceStatus.STOCK,
-        },
-        orderBy: { sequenceNum: "asc" },
-      });
-    });
-  }
-
   async findAndReserveInstance(
     ctx: IContext,
     communityId: string,
     productId: string,
-    tx: Prisma.TransactionClient,
   ): Promise<NftInstance | null> {
-    const availableInstance = await tx.nftInstance.findFirst({
-      where: {
-        communityId,
-        productId,
-        status: NftInstanceStatus.STOCK,
-      },
-      orderBy: { sequenceNum: "asc" },
+    return ctx.issuer.internal(async (tx) => {
+      const rows = await tx.$queryRaw<NftInstance[]>`
+        UPDATE t_nft_instances
+        SET status = 'RESERVED'::"NftInstanceStatus"
+        WHERE id = (
+          SELECT id FROM t_nft_instances
+          WHERE community_id = ${communityId}
+            AND product_id = ${productId}
+            AND status = 'STOCK'::"NftInstanceStatus"
+          ORDER BY sequence_num ASC
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        )
+        RETURNING *
+      `;
+      
+      const reservedInstance = rows[0] ?? null;
+      if (reservedInstance) {
+        logger.debug("[NftInstanceRepository] Reserved NFT instance", {
+          instanceId: reservedInstance.id,
+          communityId,
+          productId,
+          sequenceNum: reservedInstance.sequenceNum,
+        });
+      }
+      
+      return reservedInstance;
     });
-
-    if (!availableInstance) {
-      return null;
-    }
-
-    const updatedInstance = await tx.nftInstance.update({
-      where: { id: availableInstance.id },
-      data: { status: NftInstanceStatus.RESERVED },
-    });
-
-    logger.debug("[NftInstanceRepository] Reserved NFT instance", {
-      instanceId: updatedInstance.id,
-      communityId,
-      productId,
-      sequenceNum: updatedInstance.sequenceNum,
-    });
-
-    return updatedInstance;
   }
 
   async releaseReservation(

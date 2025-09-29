@@ -11,17 +11,10 @@ export default interface INftInstanceRepository {
     cursor?: string,
   ): Promise<NftInstanceWithRelations[]>;
 
-  findAvailableInstance(
-    ctx: IContext,
-    communityId: string,
-    productId: string,
-  ): Promise<NftInstance | null>;
-
   findAndReserveInstance(
     ctx: IContext,
     communityId: string,
     productId: string,
-    tx: Prisma.TransactionClient,
   ): Promise<NftInstance | null>;
 
   releaseReservation(
