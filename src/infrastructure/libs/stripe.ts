@@ -22,26 +22,6 @@ export class StripeClient {
     return await this.stripe.checkout.sessions.create(params);
   }
 
-  async createPaymentIntent(
-    params: Stripe.PaymentIntentCreateParams,
-  ): Promise<Stripe.PaymentIntent> {
-    return await this.stripe.paymentIntents.create(params);
-  }
-
-  async retrievePaymentIntent(
-    paymentIntentId: string,
-    params?: Stripe.PaymentIntentRetrieveParams,
-  ): Promise<Stripe.PaymentIntent> {
-    return await this.stripe.paymentIntents.retrieve(paymentIntentId, params);
-  }
-
-  async confirmPaymentIntent(
-    paymentIntentId: string,
-    params?: Stripe.PaymentIntentConfirmParams,
-  ): Promise<Stripe.PaymentIntent> {
-    return await this.stripe.paymentIntents.confirm(paymentIntentId, params);
-  }
-
   async createCustomer(params: Stripe.CustomerCreateParams): Promise<Stripe.Customer> {
     return await this.stripe.customers.create(params);
   }
@@ -66,13 +46,6 @@ export class StripeClient {
 
   async createSetupIntent(params: Stripe.SetupIntentCreateParams): Promise<Stripe.SetupIntent> {
     return await this.stripe.setupIntents.create(params);
-  }
-
-  async retrieveSetupIntent(
-    setupIntentId: string,
-    params?: Stripe.SetupIntentRetrieveParams,
-  ): Promise<Stripe.SetupIntent> {
-    return await this.stripe.setupIntents.retrieve(setupIntentId, params);
   }
 
   constructWebhookEvent(payload: string | Buffer, signature: string): Stripe.Event {
