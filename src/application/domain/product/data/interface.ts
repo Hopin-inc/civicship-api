@@ -17,5 +17,15 @@ export interface IProductRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<PrismaProduct[]>;
 
-  find(ctx: IContext, id: string, tx?: Prisma.TransactionClient): Promise<PrismaProduct | null>;
+  find(
+    ctx: IContext,
+    productId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<PrismaProduct | null>;
+
+  findMaxSupplyById(
+    ctx: IContext,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ maxSupply: number | null } | null>;
 }

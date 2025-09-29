@@ -78,10 +78,7 @@ export default class OrderService implements IOrderService {
   ): Promise<void> {
     await this.processPaymentFailure(ctx, orderId, tx);
     
-    const order = await tx.order.findUnique({
-      where: { id: orderId },
-      include: { items: true },
-    });
+    const order = await this.repository.findWithItemsById(ctx, orderId, tx);
 
     if (order?.items) {
       for (const item of order.items) {

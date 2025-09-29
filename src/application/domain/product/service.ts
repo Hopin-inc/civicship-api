@@ -70,10 +70,7 @@ export default class ProductService implements IProductService {
     productId: string,
     tx: Prisma.TransactionClient,
   ): Promise<InventorySnapshot> {
-    const product = await tx.product.findUnique({
-      where: { id: productId },
-      select: { maxSupply: true },
-    });
+    const product = await this.repository.findMaxSupplyById(ctx, productId, tx);
 
     const [reserved, soldPendingMint, minted] = await Promise.all([
       this.orderItemService.countReservedByProduct(ctx, productId, tx),

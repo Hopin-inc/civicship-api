@@ -6,7 +6,7 @@ import INftInstanceRepository from "@/application/domain/account/nft-instance/da
 import NftInstanceConverter from "@/application/domain/account/nft-instance/data/converter";
 import NftInstancePresenter from "@/application/domain/account/nft-instance/presenter";
 import { clampFirst } from "@/application/domain/utils";
-import { NftInstanceStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 @injectable()
 export default class NftInstanceService {
@@ -56,14 +56,7 @@ export default class NftInstanceService {
     walletId: string,
     tx: Prisma.TransactionClient,
   ) {
-    return tx.nftInstance.update({
-      where: { id: nftInstanceId },
-      data: {
-        nftMintId: mintId,
-        nftWalletId: walletId,
-        status: NftInstanceStatus.MINTING,
-      },
-    });
+    return this.repository.markAsMinting(ctx, nftInstanceId, mintId, walletId, tx);
   }
 
   async findReservedInstancesForProduct(
@@ -72,15 +65,7 @@ export default class NftInstanceService {
     quantity: number,
     tx: Prisma.TransactionClient,
   ) {
-    return tx.nftInstance.findMany({
-      where: {
-        productId,
-        status: NftInstanceStatus.RESERVED,
-        communityId: ctx.communityId,
-      },
-      take: quantity,
-      orderBy: { sequenceNum: "asc" },
-    });
+    return this.repository.findReservedByProduct(ctx, productId, quantity, tx);
   }
 
   async releaseReservations(
@@ -98,17 +83,6 @@ export default class NftInstanceService {
     instanceId: string,
     tx?: Prisma.TransactionClient,
   ) {
-    if (tx) {
-      return tx.nftInstance.findFirst({
-        where: { id: instanceId },
-        select: { id: true },
-      });
-    }
-    return ctx.issuer.public(ctx, (prisma) =>
-      prisma.nftInstance.findFirst({
-        where: { id: instanceId },
-        select: { id: true },
-      }),
-    );
+    return this.repository.findByIdWithTransaction(ctx, instanceId, tx);
   }
 }

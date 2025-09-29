@@ -48,4 +48,25 @@ export default interface INftInstanceRepository {
     },
     tx: Prisma.TransactionClient,
   ): Promise<{ id: string }>;
+
+  findReservedByProduct(
+    ctx: IContext,
+    productId: string,
+    quantity: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance[]>;
+
+  findByIdWithTransaction(
+    ctx: IContext,
+    instanceId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string } | null>;
+
+  markAsMinting(
+    ctx: IContext,
+    nftInstanceId: string,
+    mintId: string,
+    walletId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance>;
 }

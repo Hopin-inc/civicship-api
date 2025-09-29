@@ -43,4 +43,15 @@ export default class ProductRepository implements IProductRepository {
       });
     });
   }
+
+  async findMaxSupplyById(
+    ctx: IContext,
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<{ maxSupply: number | null } | null> {
+    return tx.product.findUnique({
+      where: { id: productId },
+      select: { maxSupply: true },
+    });
+  }
 }

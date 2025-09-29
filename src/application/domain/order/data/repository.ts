@@ -65,4 +65,15 @@ export default class OrderRepository implements IOrderRepository {
       });
     });
   }
+
+  async findWithItemsById(
+    ctx: IContext,
+    orderId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<OrderWithItems | null> {
+    return tx.order.findUnique({
+      where: { id: orderId },
+      ...orderSelectWithItems,
+    });
+  }
 }

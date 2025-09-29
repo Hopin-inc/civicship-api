@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, OrderStatus } from "@prisma/client";
 import { IContext } from "@/types/server";
 import { OrderWithItems } from "./type";
 
@@ -21,6 +21,12 @@ export interface IOrderRepository {
     data: Prisma.OrderUpdateInput,
     tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems>;
+
+  findWithItemsById(
+    ctx: IContext,
+    orderId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<OrderWithItems | null>;
 }
 
 export interface IOrderService {
@@ -37,6 +43,13 @@ export interface IOrderService {
     ctx: IContext,
     orderId: string,
     externalRef: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<OrderWithItems>;
+
+  updateOrderStatus(
+    ctx: IContext,
+    orderId: string,
+    status: OrderStatus,
     tx?: Prisma.TransactionClient,
   ): Promise<OrderWithItems>;
 }

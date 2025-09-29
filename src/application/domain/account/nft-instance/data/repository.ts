@@ -157,4 +157,57 @@ export default class NftInstanceRepository implements INftInstanceRepository {
       },
     });
   }
+
+  async findReservedByProduct(
+    ctx: IContext,
+    productId: string,
+    quantity: number,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance[]> {
+    return tx.nftInstance.findMany({
+      where: {
+        productId,
+        status: NftInstanceStatus.RESERVED,
+        communityId: ctx.communityId,
+      },
+      take: quantity,
+      orderBy: { sequenceNum: "asc" },
+    });
+  }
+
+  async findByIdWithTransaction(
+    ctx: IContext,
+    instanceId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ id: string } | null> {
+    if (tx) {
+      return tx.nftInstance.findFirst({
+        where: { id: instanceId },
+        select: { id: true },
+      });
+    }
+    return ctx.issuer.public(ctx, (prisma) =>
+      prisma.nftInstance.findFirst({
+        where: { id: instanceId },
+        select: { id: true },
+      }),
+    );
+  }
+
+  async markAsMinting(
+    ctx: IContext,
+    nftInstanceId: string,
+    mintId: string,
+    walletId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<NftInstance> {
+    return tx.nftInstance.update({
+      where: { id: nftInstanceId },
+      data: {
+        nftMintId: mintId,
+        nftWalletId: walletId,
+        status: NftInstanceStatus.MINTING,
+      },
+    });
+  }
 }
