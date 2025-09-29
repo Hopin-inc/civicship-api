@@ -15,6 +15,7 @@ export default interface INftInstanceRepository {
     ctx: IContext,
     communityId: string,
     productId: string,
+    tx: Prisma.TransactionClient,
   ): Promise<NftInstance | null>;
 
   releaseReservation(

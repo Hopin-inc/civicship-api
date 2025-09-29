@@ -33,9 +33,9 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     ctx: IContext,
     communityId: string,
     productId: string,
+    tx: Prisma.TransactionClient,
   ): Promise<NftInstance | null> {
-    return ctx.issuer.internal(async (tx) => {
-      const rows = await tx.$queryRaw<NftInstance[]>`
+    const rows = await tx.$queryRaw<NftInstance[]>`
         UPDATE t_nft_instances
         SET status = 'RESERVED'::"NftInstanceStatus"
         WHERE id = (
@@ -49,19 +49,8 @@ export default class NftInstanceRepository implements INftInstanceRepository {
         )
         RETURNING *
       `;
-      
-      const reservedInstance = rows[0] ?? null;
-      if (reservedInstance) {
-        logger.debug("[NftInstanceRepository] Reserved NFT instance", {
-          instanceId: reservedInstance.id,
-          communityId,
-          productId,
-          sequenceNum: reservedInstance.sequenceNum,
-        });
-      }
-      
-      return reservedInstance;
-    });
+
+    return rows[0] ?? null;
   }
 
   async releaseReservation(
