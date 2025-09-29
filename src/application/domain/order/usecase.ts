@@ -51,9 +51,6 @@ export default class OrderUseCase {
     return OrderPresenter.create(paymentResult.url);
   }
 
-
-
-
   private async reserveInstanceAndCreateStripePayment(
     ctx: IContext,
     product: PrismaProduct,
@@ -89,7 +86,9 @@ export default class OrderUseCase {
 
       return {
         uid: paymentIntent.id,
-        url: paymentIntent.client_secret ? `https://checkout.stripe.com/pay/${paymentIntent.client_secret}` : "",
+        url: paymentIntent.client_secret
+          ? `https://checkout.stripe.com/pay/${paymentIntent.client_secret}`
+          : "",
       };
     } catch (error) {
       if (customProps.orderId) {
