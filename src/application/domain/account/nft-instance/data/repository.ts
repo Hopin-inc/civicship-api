@@ -28,20 +28,27 @@ export default class NftInstanceRepository implements INftInstanceRepository {
     });
   }
 
-  async findAvailableInstance(
+  async findAndReserveInstance(
     ctx: IContext,
     communityId: string,
     productId: string,
   ): Promise<NftInstance | null> {
     return ctx.issuer.public(ctx, async (tx) => {
-      return tx.nftInstance.findFirst({
-        where: {
-          communityId,
-          productId,
-          nftMintId: null,
-        },
-        orderBy: { sequenceNum: "asc" },
-      });
+      const rows = await tx.$queryRaw<NftInstance[]>`
+        UPDATE t_nft_instances
+        SET status = 'RESERVED'::"NftInstanceStatus"
+        WHERE id = (
+          SELECT id FROM t_nft_instances
+          WHERE community_id = ${communityId}
+            AND product_id = ${productId}
+            AND status = 'STOCK'::"NftInstanceStatus"
+          ORDER BY sequence_num ASC
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        )
+        RETURNING *
+      `;
+      return rows[0] ?? null;
     });
   }
 

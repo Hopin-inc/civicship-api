@@ -11,7 +11,7 @@ export default interface INftInstanceRepository {
     cursor?: string,
   ): Promise<NftInstanceWithRelations[]>;
 
-  findAvailableInstance(
+  findAndReserveInstance(
     ctx: IContext,
     communityId: string,
     productId: string,
