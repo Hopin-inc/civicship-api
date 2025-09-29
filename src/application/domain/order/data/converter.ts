@@ -59,10 +59,9 @@ export default class OrderConverter {
       success_url: `https://localhost:8000/users/me`,
       cancel_url: `https://localhost:8000/users/me`,
       metadata: {
-        projectId: customProps.projectUid || "",
         orderId: customProps.orderId || "",
-        userRef: customProps.userId || "",
-        productId: product.id,
+        userId: customProps.userId || "",
+        projectUid: product.nftProduct?.externalRef || "",
         nftUid: instanceId,
       },
     };
