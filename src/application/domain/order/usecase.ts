@@ -12,6 +12,7 @@ import OrderService from "@/application/domain/order/service";
 import { PrismaProduct } from "@/application/domain/product/data/type";
 import INftInstanceRepository from "@/application/domain/account/nft-instance/data/interface";
 import { InventoryUnavailableError, PaymentSessionCreationError } from "@/errors/graphql";
+import { OrderWithItems } from "@/application/domain/order/data/type";
 
 @injectable()
 export default class OrderUseCase {
@@ -28,7 +29,7 @@ export default class OrderUseCase {
     { productId }: GqlMutationOrderCreateArgs,
   ): Promise<GqlOrderCreatePayload> {
     // const currentUserId = getCurrentUserId(ctx);
-    const currentUserId = "cmg546cxo000g8zfb6dgpeqcf";
+    const currentUserId = "cmg546cy0000n8zfb5mru7sl3";
     const product = await this.productService.findOrThrowForOrder(ctx, productId);
 
     const order = await this.orderService.createOrder(ctx, {
@@ -37,7 +38,7 @@ export default class OrderUseCase {
       paymentProvider: PaymentProvider.STRIPE,
     });
 
-    const paymentResult = await this.reserveInstanceAndCreateStripePayment(ctx, order.id, product);
+    const paymentResult = await this.reserveInstanceAndCreateStripePayment(ctx, order, product);
 
     await this.orderService.updateOrderWithExternalRef(ctx, order.id, paymentResult.uid);
     return OrderPresenter.create(paymentResult.url);
@@ -45,7 +46,7 @@ export default class OrderUseCase {
 
   private async reserveInstanceAndCreateStripePayment(
     ctx: IContext,
-    orderId: string,
+    order: OrderWithItems,
     product: PrismaProduct,
   ): Promise<{ uid: string; url: string }> {
     return ctx.issuer.internal(async (tx) => {
@@ -71,7 +72,8 @@ export default class OrderUseCase {
         });
 
         const metadata: StripeMetadata = {
-          orderId: orderId,
+          orderId: order.id,
+          orderItemId: order.items?.[0].id,
           nftInstanceId: nftInstance.id,
           nmkrProjectUid: product.nftProduct?.nmkrProjectId ?? "",
           nmkrNftUid: nftInstanceId,
@@ -93,7 +95,7 @@ export default class OrderUseCase {
         logger.error(
           "[OrderUseCase] Failed to reserve instance and create Stripe payment session",
           {
-            orderId,
+            orderId: order.id,
             error,
           },
         );
@@ -104,7 +106,7 @@ export default class OrderUseCase {
 
         throw new PaymentSessionCreationError(
           "Failed to create Stripe checkout session",
-          orderId,
+          order.id,
           error,
         );
       }
