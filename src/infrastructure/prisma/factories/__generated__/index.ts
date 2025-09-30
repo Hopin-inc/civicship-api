@@ -36,6 +36,7 @@ import type { NftInstance } from "@prisma/client";
 import type { NftMint } from "@prisma/client";
 import type { Order } from "@prisma/client";
 import type { OrderItem } from "@prisma/client";
+import type { StripeEvent } from "@prisma/client";
 import type { Product } from "@prisma/client";
 import type { NftProduct } from "@prisma/client";
 import type { PlacePublicOpportunityCountView } from "@prisma/client";
@@ -855,6 +856,9 @@ const modelFieldDefinitions: ModelWithFields[] = [{
                 type: "NftMint",
                 relationName: "NftMintToOrderItem"
             }]
+    }, {
+        name: "StripeEvent",
+        fields: []
     }, {
         name: "Product",
         fields: [{
@@ -7146,6 +7150,7 @@ type NftMintFactoryDefineInput = {
     status?: NftMintStatus;
     txHash?: string | null;
     error?: string | null;
+    retryCount?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
     orderItem?: NftMintorderItemFactory | Prisma.OrderItemCreateNestedOneWithoutNftMintsInput;
@@ -7626,6 +7631,149 @@ export const defineOrderItemFactory = (<TOptions extends OrderItemFactoryDefineO
 }) as OrderItemFactoryBuilder;
 
 defineOrderItemFactory.withTransientFields = defaultTransientFieldValues => options => defineOrderItemFactoryInternal(options, defaultTransientFieldValues);
+
+type StripeEventScalarOrEnumFields = {
+    eventId: string;
+    eventType: string;
+};
+
+type StripeEventFactoryDefineInput = {
+    id?: string;
+    eventId?: string;
+    eventType?: string;
+    orderId?: string | null;
+    processedAt?: Date;
+};
+
+type StripeEventTransientFields = Record<string, unknown> & Partial<Record<keyof StripeEventFactoryDefineInput, never>>;
+
+type StripeEventFactoryTrait<TTransients extends Record<string, unknown>> = {
+    data?: Resolver<Partial<StripeEventFactoryDefineInput>, BuildDataOptions<TTransients>>;
+} & CallbackDefineOptions<StripeEvent, Prisma.StripeEventCreateInput, TTransients>;
+
+type StripeEventFactoryDefineOptions<TTransients extends Record<string, unknown> = Record<string, unknown>> = {
+    defaultData?: Resolver<StripeEventFactoryDefineInput, BuildDataOptions<TTransients>>;
+    traits?: {
+        [traitName: TraitName]: StripeEventFactoryTrait<TTransients>;
+    };
+} & CallbackDefineOptions<StripeEvent, Prisma.StripeEventCreateInput, TTransients>;
+
+type StripeEventTraitKeys<TOptions extends StripeEventFactoryDefineOptions<any>> = Exclude<keyof TOptions["traits"], number>;
+
+export interface StripeEventFactoryInterfaceWithoutTraits<TTransients extends Record<string, unknown>> {
+    readonly _factoryFor: "StripeEvent";
+    build(inputData?: Partial<Prisma.StripeEventCreateInput & TTransients>): PromiseLike<Prisma.StripeEventCreateInput>;
+    buildCreateInput(inputData?: Partial<Prisma.StripeEventCreateInput & TTransients>): PromiseLike<Prisma.StripeEventCreateInput>;
+    buildList(list: readonly Partial<Prisma.StripeEventCreateInput & TTransients>[]): PromiseLike<Prisma.StripeEventCreateInput[]>;
+    buildList(count: number, item?: Partial<Prisma.StripeEventCreateInput & TTransients>): PromiseLike<Prisma.StripeEventCreateInput[]>;
+    pickForConnect(inputData: StripeEvent): Pick<StripeEvent, "id">;
+    create(inputData?: Partial<Prisma.StripeEventCreateInput & TTransients>): PromiseLike<StripeEvent>;
+    createList(list: readonly Partial<Prisma.StripeEventCreateInput & TTransients>[]): PromiseLike<StripeEvent[]>;
+    createList(count: number, item?: Partial<Prisma.StripeEventCreateInput & TTransients>): PromiseLike<StripeEvent[]>;
+    createForConnect(inputData?: Partial<Prisma.StripeEventCreateInput & TTransients>): PromiseLike<Pick<StripeEvent, "id">>;
+}
+
+export interface StripeEventFactoryInterface<TTransients extends Record<string, unknown> = Record<string, unknown>, TTraitName extends TraitName = TraitName> extends StripeEventFactoryInterfaceWithoutTraits<TTransients> {
+    use(name: TTraitName, ...names: readonly TTraitName[]): StripeEventFactoryInterfaceWithoutTraits<TTransients>;
+}
+
+function autoGenerateStripeEventScalarsOrEnums({ seq }: {
+    readonly seq: number;
+}): StripeEventScalarOrEnumFields {
+    return {
+        eventId: getScalarFieldValueGenerator().String({ modelName: "StripeEvent", fieldName: "eventId", isId: false, isUnique: true, seq }),
+        eventType: getScalarFieldValueGenerator().String({ modelName: "StripeEvent", fieldName: "eventType", isId: false, isUnique: false, seq })
+    };
+}
+
+function defineStripeEventFactoryInternal<TTransients extends Record<string, unknown>, TOptions extends StripeEventFactoryDefineOptions<TTransients>>({ defaultData: defaultDataResolver, onAfterBuild, onBeforeCreate, onAfterCreate, traits: traitsDefs = {} }: TOptions, defaultTransientFieldValues: TTransients): StripeEventFactoryInterface<TTransients, StripeEventTraitKeys<TOptions>> {
+    const getFactoryWithTraits = (traitKeys: readonly StripeEventTraitKeys<TOptions>[] = []) => {
+        const seqKey = {};
+        const getSeq = () => getSequenceCounter(seqKey);
+        const screen = createScreener("StripeEvent", modelFieldDefinitions);
+        const handleAfterBuild = createCallbackChain([
+            onAfterBuild,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterBuild),
+        ]);
+        const handleBeforeCreate = createCallbackChain([
+            ...traitKeys.slice().reverse().map(traitKey => traitsDefs[traitKey]?.onBeforeCreate),
+            onBeforeCreate,
+        ]);
+        const handleAfterCreate = createCallbackChain([
+            onAfterCreate,
+            ...traitKeys.map(traitKey => traitsDefs[traitKey]?.onAfterCreate),
+        ]);
+        const build = async (inputData: Partial<Prisma.StripeEventCreateInput & TTransients> = {}) => {
+            const seq = getSeq();
+            const requiredScalarData = autoGenerateStripeEventScalarsOrEnums({ seq });
+            const resolveValue = normalizeResolver<StripeEventFactoryDefineInput, BuildDataOptions<any>>(defaultDataResolver ?? {});
+            const [transientFields, filteredInputData] = destructure(defaultTransientFieldValues, inputData);
+            const resolverInput = { seq, ...transientFields };
+            const defaultData = await traitKeys.reduce(async (queue, traitKey) => {
+                const acc = await queue;
+                const resolveTraitValue = normalizeResolver<Partial<StripeEventFactoryDefineInput>, BuildDataOptions<TTransients>>(traitsDefs[traitKey]?.data ?? {});
+                const traitData = await resolveTraitValue(resolverInput);
+                return {
+                    ...acc,
+                    ...traitData,
+                };
+            }, resolveValue(resolverInput));
+            const defaultAssociations = {} as Prisma.StripeEventCreateInput;
+            const data: Prisma.StripeEventCreateInput = { ...requiredScalarData, ...defaultData, ...defaultAssociations, ...filteredInputData };
+            await handleAfterBuild(data, transientFields);
+            return data;
+        };
+        const buildList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StripeEventCreateInput & TTransients>>(...args).map(data => build(data)));
+        const pickForConnect = (inputData: StripeEvent) => ({
+            id: inputData.id
+        });
+        const create = async (inputData: Partial<Prisma.StripeEventCreateInput & TTransients> = {}) => {
+            const data = await build({ ...inputData }).then(screen);
+            const [transientFields] = destructure(defaultTransientFieldValues, inputData);
+            await handleBeforeCreate(data, transientFields);
+            const createdData = await getClient<PrismaClient>().stripeEvent.create({ data });
+            await handleAfterCreate(createdData, transientFields);
+            return createdData;
+        };
+        const createList = (...args: unknown[]) => Promise.all(normalizeList<Partial<Prisma.StripeEventCreateInput & TTransients>>(...args).map(data => create(data)));
+        const createForConnect = (inputData: Partial<Prisma.StripeEventCreateInput & TTransients> = {}) => create(inputData).then(pickForConnect);
+        return {
+            _factoryFor: "StripeEvent" as const,
+            build,
+            buildList,
+            buildCreateInput: build,
+            pickForConnect,
+            create,
+            createList,
+            createForConnect,
+        };
+    };
+    const factory = getFactoryWithTraits();
+    const useTraits = (name: StripeEventTraitKeys<TOptions>, ...names: readonly StripeEventTraitKeys<TOptions>[]) => {
+        return getFactoryWithTraits([name, ...names]);
+    };
+    return {
+        ...factory,
+        use: useTraits,
+    };
+}
+
+interface StripeEventFactoryBuilder {
+    <TOptions extends StripeEventFactoryDefineOptions>(options?: TOptions): StripeEventFactoryInterface<{}, StripeEventTraitKeys<TOptions>>;
+    withTransientFields: <TTransients extends StripeEventTransientFields>(defaultTransientFieldValues: TTransients) => <TOptions extends StripeEventFactoryDefineOptions<TTransients>>(options?: TOptions) => StripeEventFactoryInterface<TTransients, StripeEventTraitKeys<TOptions>>;
+}
+
+/**
+ * Define factory for {@link StripeEvent} model.
+ *
+ * @param options
+ * @returns factory {@link StripeEventFactoryInterface}
+ */
+export const defineStripeEventFactory = (<TOptions extends StripeEventFactoryDefineOptions>(options?: TOptions): StripeEventFactoryInterface<TOptions> => {
+    return defineStripeEventFactoryInternal(options ?? {}, {});
+}) as StripeEventFactoryBuilder;
+
+defineStripeEventFactory.withTransientFields = defaultTransientFieldValues => options => defineStripeEventFactoryInternal(options ?? {}, defaultTransientFieldValues);
 
 type ProductScalarOrEnumFields = {
     name: string;

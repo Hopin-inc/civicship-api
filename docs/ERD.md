@@ -716,6 +716,7 @@ FAILED FAILED
     NftMintStatus status 
     String tx_hash "❓"
     String error "❓"
+    Int retry_count 
     String order_item_id "❓"
     String nft_wallet_id 
     DateTime created_at 
@@ -743,6 +744,15 @@ FAILED FAILED
     String product_id 
     DateTime created_at 
     DateTime updated_at 
+    }
+  
+
+  "t_stripe_events" {
+    String id "🗝️"
+    String event_id 
+    String event_type 
+    String order_id "❓"
+    DateTime processed_at 
     }
   
 

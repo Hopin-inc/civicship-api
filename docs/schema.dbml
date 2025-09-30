@@ -590,7 +590,8 @@ Table t_nft_mints {
   status NftMintStatus [not null, default: 'QUEUED']
   txHash String [unique]
   error String
-  orderItemId String
+  retryCount Int [not null, default: 0]
+  orderItemId String [unique]
   orderItem t_order_items
   nftWalletId String [not null]
   nftWallet t_nft_wallets [not null]
@@ -623,6 +624,14 @@ Table t_order_items {
   nftMints t_nft_mints [not null]
   createdAt DateTime [default: `now()`, not null]
   updatedAt DateTime [not null]
+}
+
+Table t_stripe_events {
+  id String [pk]
+  eventId String [unique, not null]
+  eventType String [not null]
+  orderId String
+  processedAt DateTime [default: `now()`, not null]
 }
 
 Table t_products {
