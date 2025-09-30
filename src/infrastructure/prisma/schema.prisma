@@ -1219,7 +1219,7 @@ model NftMint {
   orderItemId String    @map("order_item_id")
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
 
-  nftInstanceId String      @unique @map("nft_instance_id")
+  nftInstanceId String      @map("nft_instance_id")
   nftInstance   NftInstance @relation(fields: [nftInstanceId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
