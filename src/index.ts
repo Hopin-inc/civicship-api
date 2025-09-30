@@ -7,7 +7,6 @@ import { createApolloServer } from "@/presentation/graphql/server";
 import logger from "@/infrastructure/logging";
 import { authHandler } from "@/presentation/middleware/auth";
 import lineRouter from "@/presentation/router/line";
-import stripeRouter from "@/presentation/router/stripe";
 import { batchProcess } from "@/batch";
 import express from "express";
 import { corsHandler } from "@/presentation/middleware/cors";
@@ -38,7 +37,6 @@ async function startServer() {
   const apolloServer = await createApolloServer(server);
 
   app.use(corsHandler);
-  app.use("/stripe", stripeRouter);
   app.use(express.json({ limit: "50mb" }));
   app.use(requestLogger);
   app.use(tokenUpdaterMiddleware);
