@@ -1215,8 +1215,8 @@ model NftMint {
   error      String?
   retryCount Int     @default(0) @map("retry_count")
 
-  orderItemId String?    @unique @map("order_item_id")
-  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+  orderItemId String    @unique @map("order_item_id")
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
 
   nftWalletId String    @map("nft_wallet_id")
   nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)

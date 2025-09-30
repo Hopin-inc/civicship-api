@@ -717,7 +717,7 @@ FAILED FAILED
     String tx_hash "❓"
     String error "❓"
     Int retry_count 
-    String order_item_id "❓"
+    String order_item_id 
     String nft_wallet_id 
     DateTime created_at 
     DateTime updated_at "❓"
@@ -1040,7 +1040,7 @@ FAILED FAILED
     "t_nft_instances" o|--|o "t_nft_mints" : "nftMint"
     "t_nft_instances" o|--|o "t_communities" : "community"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
-    "t_nft_mints" o|--|o "t_order_items" : "orderItem"
+    "t_nft_mints" o|--|| "t_order_items" : "orderItem"
     "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
     "t_nft_mints" o{--}o "t_nft_instances" : "nftInstance"
     "t_orders" o|--|| "OrderStatus" : "enum:status"

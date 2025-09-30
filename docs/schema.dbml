@@ -591,8 +591,8 @@ Table t_nft_mints {
   txHash String [unique]
   error String
   retryCount Int [not null, default: 0]
-  orderItemId String [unique]
-  orderItem t_order_items
+  orderItemId String [unique, not null]
+  orderItem t_order_items [not null]
   nftWalletId String [not null]
   nftWallet t_nft_wallets [not null]
   nftInstance t_nft_instances

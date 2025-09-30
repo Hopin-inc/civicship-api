@@ -7153,7 +7153,7 @@ type NftMintFactoryDefineInput = {
     retryCount?: number;
     createdAt?: Date;
     updatedAt?: Date | null;
-    orderItem?: NftMintorderItemFactory | Prisma.OrderItemCreateNestedOneWithoutNftMintsInput;
+    orderItem: NftMintorderItemFactory | Prisma.OrderItemCreateNestedOneWithoutNftMintsInput;
     nftWallet: NftMintnftWalletFactory | Prisma.NftWalletCreateNestedOneWithoutNftMintsInput;
     nftInstance?: NftMintnftInstanceFactory | Prisma.NftInstanceCreateNestedOneWithoutNftMintInput;
 };
