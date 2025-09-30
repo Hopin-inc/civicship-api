@@ -1135,7 +1135,6 @@ model NftWallet {
   userId       String        @map("user_id")
   user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
   nftInstances NftInstance[]
-  nftMints     NftMint[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
@@ -1185,8 +1184,7 @@ model NftInstance {
   nftTokenId String?   @map("nft_token_id")
   nftToken   NftToken? @relation(fields: [nftTokenId], references: [id], onDelete: SetNull)
 
-  nftMintId String?  @unique @map("nft_mint_id")
-  nftMint   NftMint? @relation(fields: [nftMintId], references: [id], onDelete: SetNull)
+  nftMints NftMint[]
 
   communityId String?    @map("community_id")
   community   Community? @relation(fields: [communityId], references: [id])
@@ -1194,7 +1192,8 @@ model NftInstance {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@unique([nftWalletId, instanceId])
+  @@unique([productId, instanceId])
+  @@index([instanceId])
   @@index([nftWalletId])
   @@map("t_nft_instances")
 }
@@ -1211,23 +1210,22 @@ model NftMint {
   id     String        @id @default(cuid())
   status NftMintStatus @default(QUEUED)
 
-  txHash     String? @unique @map("tx_hash")
+  txHash     String? @map("tx_hash")
   error      String?
   retryCount Int     @default(0) @map("retry_count")
 
-  orderItemId String    @unique @map("order_item_id")
+  externalRequestId String @unique @map("external_request_id")
+
+  orderItemId String    @map("order_item_id")
   orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
 
-  nftWalletId String    @map("nft_wallet_id")
-  nftWallet   NftWallet @relation(fields: [nftWalletId], references: [id], onDelete: Cascade)
-
-  nftInstance NftInstance?
+  nftInstanceId String      @unique @map("nft_instance_id")
+  nftInstance   NftInstance @relation(fields: [nftInstanceId], references: [id], onDelete: Restrict)
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime? @updatedAt @map("updated_at")
 
-  @@index([createdAt, id])
-  @@index([status, createdAt])
+  @@index([status, retryCount, createdAt])
   @@map("t_nft_mints")
 }
 
@@ -1340,7 +1338,7 @@ model NftProduct {
   productId String  @unique @map("product_id")
   product   Product @relation(fields: [productId], references: [id])
 
-  stripeProductId String @map("stripe_product_id")
+  stripeProductId String @map("stripe_product_id") //TODO サービス依存やめる
   nmkrProjectId   String @map("nmkr_project_id")
 
   policyId String @map("policy_id")

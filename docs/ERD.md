@@ -704,7 +704,6 @@ FAILED FAILED
     String product_id "❓"
     String nft_wallet_id "❓"
     String nft_token_id "❓"
-    String nft_mint_id "❓"
     String community_id "❓"
     DateTime created_at 
     DateTime updated_at "❓"
@@ -717,8 +716,9 @@ FAILED FAILED
     String tx_hash "❓"
     String error "❓"
     Int retry_count 
+    String external_request_id 
     String order_item_id 
-    String nft_wallet_id 
+    String nft_instance_id 
     DateTime created_at 
     DateTime updated_at "❓"
     }
@@ -1031,18 +1031,16 @@ FAILED FAILED
     "t_nft_wallets" o|--|| "NftWalletType" : "enum:type"
     "t_nft_wallets" o|--|| "t_users" : "user"
     "t_nft_wallets" o{--}o "t_nft_instances" : "nftInstances"
-    "t_nft_wallets" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_tokens" o{--}o "t_nft_instances" : "nftInstances"
     "t_nft_instances" o|--|| "NftInstanceStatus" : "enum:status"
     "t_nft_instances" o|--|o "t_products" : "product"
     "t_nft_instances" o|--|o "t_nft_wallets" : "nftWallet"
     "t_nft_instances" o|--|o "t_nft_tokens" : "nftToken"
-    "t_nft_instances" o|--|o "t_nft_mints" : "nftMint"
+    "t_nft_instances" o{--}o "t_nft_mints" : "nftMints"
     "t_nft_instances" o|--|o "t_communities" : "community"
     "t_nft_mints" o|--|| "NftMintStatus" : "enum:status"
     "t_nft_mints" o|--|| "t_order_items" : "orderItem"
-    "t_nft_mints" o|--|| "t_nft_wallets" : "nftWallet"
-    "t_nft_mints" o{--}o "t_nft_instances" : "nftInstance"
+    "t_nft_mints" o|--|| "t_nft_instances" : "nftInstance"
     "t_orders" o|--|| "OrderStatus" : "enum:status"
     "t_orders" o|--|| "PaymentProvider" : "enum:payment_provider"
     "t_orders" o|--|| "t_users" : "user"
