@@ -1179,9 +1179,8 @@ export type GqlNftMint = {
   createdAt: Scalars['Datetime']['output'];
   error?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
-  nftInstance?: Maybe<GqlNftInstance>;
-  nftWallet?: Maybe<GqlNftWallet>;
-  order?: Maybe<GqlOrder>;
+  nftInstance: GqlNftInstance;
+  order: GqlOrder;
   status: GqlNftMintStatus;
   txHash?: Maybe<Scalars['String']['output']>;
   updatedAt?: Maybe<Scalars['Datetime']['output']>;
@@ -3260,7 +3259,7 @@ export type GqlResolversTypes = ResolversObject<{
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
   NftInstancesConnection: ResolverTypeWrapper<Omit<GqlNftInstancesConnection, 'edges'> & { edges: Array<GqlResolversTypes['NftInstanceEdge']> }>;
-  NftMint: ResolverTypeWrapper<Omit<GqlNftMint, 'nftInstance' | 'nftWallet' | 'order'> & { nftInstance?: Maybe<GqlResolversTypes['NftInstance']>, nftWallet?: Maybe<GqlResolversTypes['NftWallet']>, order?: Maybe<GqlResolversTypes['Order']> }>;
+  NftMint: ResolverTypeWrapper<Omit<GqlNftMint, 'nftInstance' | 'order'> & { nftInstance: GqlResolversTypes['NftInstance'], order: GqlResolversTypes['Order'] }>;
   NftMintStatus: GqlNftMintStatus;
   NftProduct: ResolverTypeWrapper<GqlNftProduct>;
   NftToken: ResolverTypeWrapper<GqlNftToken>;
@@ -3587,7 +3586,7 @@ export type GqlResolversParentTypes = ResolversObject<{
   NftInstanceFilterInput: GqlNftInstanceFilterInput;
   NftInstanceSortInput: GqlNftInstanceSortInput;
   NftInstancesConnection: Omit<GqlNftInstancesConnection, 'edges'> & { edges: Array<GqlResolversParentTypes['NftInstanceEdge']> };
-  NftMint: Omit<GqlNftMint, 'nftInstance' | 'nftWallet' | 'order'> & { nftInstance?: Maybe<GqlResolversParentTypes['NftInstance']>, nftWallet?: Maybe<GqlResolversParentTypes['NftWallet']>, order?: Maybe<GqlResolversParentTypes['Order']> };
+  NftMint: Omit<GqlNftMint, 'nftInstance' | 'order'> & { nftInstance: GqlResolversParentTypes['NftInstance'], order: GqlResolversParentTypes['Order'] };
   NftProduct: GqlNftProduct;
   NftToken: GqlNftToken;
   NftWallet: Omit<GqlNftWallet, 'user'> & { user: GqlResolversParentTypes['User'] };
@@ -4269,9 +4268,8 @@ export type GqlNftMintResolvers<ContextType = any, ParentType extends GqlResolve
   createdAt?: Resolver<GqlResolversTypes['Datetime'], ParentType, ContextType>;
   error?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   id?: Resolver<GqlResolversTypes['ID'], ParentType, ContextType>;
-  nftInstance?: Resolver<Maybe<GqlResolversTypes['NftInstance']>, ParentType, ContextType>;
-  nftWallet?: Resolver<Maybe<GqlResolversTypes['NftWallet']>, ParentType, ContextType>;
-  order?: Resolver<Maybe<GqlResolversTypes['Order']>, ParentType, ContextType>;
+  nftInstance?: Resolver<GqlResolversTypes['NftInstance'], ParentType, ContextType>;
+  order?: Resolver<GqlResolversTypes['Order'], ParentType, ContextType>;
   status?: Resolver<GqlResolversTypes['NftMintStatus'], ParentType, ContextType>;
   txHash?: Resolver<Maybe<GqlResolversTypes['String']>, ParentType, ContextType>;
   updatedAt?: Resolver<Maybe<GqlResolversTypes['Datetime']>, ParentType, ContextType>;
